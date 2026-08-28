@@ -1,5 +1,4 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { ISharedStrings, IState, MediaFileD } from '../../model';
 import { Typography, Box, Stack } from '@mui/material';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import {
@@ -16,6 +15,7 @@ import {
   MediaSt,
   related,
   remoteIdGuid,
+  remoteIdNum,
   useFetchMediaUrl,
   useSharedResRead,
   VernacularTag,
@@ -35,7 +35,7 @@ import BigDialogBp from '../../hoc/BigDialogBp';
 import VersionDlg from '../AudioTab/VersionDlg';
 import { usePassageVernacularVersionCount } from '../AudioTab/usePassageVersionAudioRows';
 import SpeakerName from '../SpeakerName';
-import { sharedSelector } from '../../selector';
+import { mediaTabSelector, sharedSelector } from '../../selector';
 import { useMobile } from '../../utils';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -45,6 +45,9 @@ import {
 } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
+import Confirm from '../AlertDialog';
+import { hasPendingUploadForPassage } from '../../store/upload/pendingMediaUploads';
+import { IMediaTabStrings, ISharedStrings, IState, MediaFileD } from '../../model';
 
 interface IProps {
   ready?: () => boolean;
@@ -57,6 +60,7 @@ export function PassageDetailRecord(props: IProps) {
   const { ready } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const mt: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const {
     startSave,
     toolChanged,
@@ -98,6 +102,11 @@ export function PassageDetailRecord(props: IProps) {
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
   const [uploadVisible, setUploadVisiblex] = useState(false);
+  const pendingConfirmRef = useRef<{
+    promise: Promise<boolean>;
+    resolve: (ok: boolean) => void;
+  } | null>(null);
+  const [pendingWarnOpen, setPendingWarnOpen] = useState(false);
   const [audacityVisible, setAudacityVisible] = useState(false);
   const [versionVisible, setVersionVisible] = useState(false);
   const [preload, setPreload] = useState(0);
@@ -197,6 +206,56 @@ export function PassageDetailRecord(props: IProps) {
     [sharedResource, passage]
   );
   const vernacularVersionCount = usePassageVernacularVersionCount(passageId);
+
+  const uploadShapedIds = useCallback(() => {
+    const keyMap = memory?.keyMap as RecordKeyMap;
+    const planRemote = remoteIdNum('plan', plan, keyMap) || plan;
+    const passageRemote =
+      remoteIdNum('passage', passageId, keyMap) || passageId;
+    return {
+      planId: String(planRemote),
+      passageId: String(passageRemote),
+    };
+  }, [memory, plan, passageId]);
+
+  const confirmIfPending = useCallback((): Promise<boolean> => {
+    const ids = uploadShapedIds();
+    if (
+      !hasPendingUploadForPassage({
+        ...ids,
+        artifactTypeId: null,
+      })
+    ) {
+      return Promise.resolve(true);
+    }
+    if (pendingConfirmRef.current) {
+      return pendingConfirmRef.current.promise;
+    }
+    let resolve!: (ok: boolean) => void;
+    const promise = new Promise<boolean>((res) => {
+      resolve = res;
+    });
+    pendingConfirmRef.current = { promise, resolve };
+    setPendingWarnOpen(true);
+    return promise;
+  }, [uploadShapedIds]);
+
+  const handlePendingWarnYes = () => {
+    pendingConfirmRef.current?.resolve(true);
+    pendingConfirmRef.current = null;
+    setPendingWarnOpen(false);
+  };
+  const handlePendingWarnNo = () => {
+    pendingConfirmRef.current?.resolve(false);
+    pendingConfirmRef.current = null;
+    setPendingWarnOpen(false);
+  };
+
+  const onBeforeStartRecord = useCallback(
+    () => confirmIfPending(),
+    [confirmIfPending]
+  );
+
   const handleSave = () => {
     startSave(toolId);
   };
@@ -254,8 +313,11 @@ export function PassageDetailRecord(props: IProps) {
 
   const handleAudacityImport = (i: number, list: File[]) => {
     saveIfChanged(() => {
-      setImportList(list);
-      setUploadVisible(true);
+      void confirmIfPending().then((ok) => {
+        if (!ok) return;
+        setImportList(list);
+        setUploadVisible(true);
+      });
     });
   };
 
@@ -267,7 +329,9 @@ export function PassageDetailRecord(props: IProps) {
   };
   const handleUpload = () => {
     saveIfChanged(() => {
-      setUploadVisible(true);
+      void confirmIfPending().then((ok) => {
+        if (ok) setUploadVisible(true);
+      });
     });
   };
   // const handleAudacity = () => {
@@ -343,6 +407,7 @@ export function PassageDetailRecord(props: IProps) {
         onSaving={onSaving}
         onReady={onReady}
         onRecording={handleRecording}
+        onBeforeStartRecord={onBeforeStartRecord}
         defaultFilename={defaultFilename}
         allowRecord={hasRights && canVern}
         allowZoom={true}
@@ -435,6 +500,13 @@ export function PassageDetailRecord(props: IProps) {
           onVersionApplied={handleReload}
         />
       </BigDialog>
+      {pendingWarnOpen && (
+        <Confirm
+          text={mt.pendingUploadExistsWarn}
+          yesResponse={handlePendingWarnYes}
+          noResponse={handlePendingWarnNo}
+        />
+      )}
     </Stack>
   );
 }

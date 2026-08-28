@@ -7,10 +7,14 @@ const mockSetStepComplete = jest.fn().mockResolvedValue(undefined);
 const mockGotoNextStep = jest.fn();
 const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 
+const PENDING_WARN_TEXT =
+  'This passage already has a pending media upload. Continue anyway?';
+
 let capturedMediaRecordProps: {
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   onRecordingCleared?: () => void | Promise<void>;
   allowRecord?: boolean;
+  onBeforeStartRecord?: () => boolean | Promise<boolean>;
 } | null = null;
 
 const linkedSharedResource = {
@@ -53,13 +57,34 @@ jest.mock('../MediaRecord', () => ({
     afterUploadCb: (mediaId: string | undefined) => Promise<void>;
     onRecordingCleared?: () => void | Promise<void>;
     allowRecord?: boolean;
+    onBeforeStartRecord?: () => boolean | Promise<boolean>;
   }) => {
     capturedMediaRecordProps = props;
     return <div data-testid="media-record" />;
   },
 }));
 
-jest.mock('../Uploader', () => () => null);
+jest.mock('../Uploader', () => (props: { isOpen?: boolean }) =>
+  props.isOpen ? <div data-testid="uploader-open" /> : null
+);
+jest.mock('../AlertDialog', () => ({
+  __esModule: true,
+  default: (props: {
+    text: string;
+    yesResponse: () => void;
+    noResponse: () => void;
+  }) => (
+    <div data-testid="pending-warn-confirm">
+      <span>{props.text}</span>
+      <button id="alertYes" type="button" onClick={props.yesResponse}>
+        Yes
+      </button>
+      <button id="alertNo" type="button" onClick={props.noResponse}>
+        No
+      </button>
+    </div>
+  ),
+}));
 jest.mock('../Sheet/AudacityManager', () => () => null);
 jest.mock('../../hoc/BigDialog', () => () => null);
 jest.mock('../AudioTab/VersionDlg', () => () => null);
@@ -83,8 +108,16 @@ jest.mock('../AudioTab/usePassageVersionAudioRows', () => ({
   usePassageVernacularVersionCount: () => 1,
 }));
 jest.mock('../../control', () => ({
-  Button: (props: { id?: string; children?: React.ReactNode }) =>
-    props.id ? <button id={props.id}>{props.children}</button> : null,
+  Button: (props: {
+    id?: string;
+    children?: React.ReactNode;
+    onClick?: () => void;
+  }) =>
+    props.id ? (
+      <button id={props.id} type="button" onClick={props.onClick}>
+        {props.children}
+      </button>
+    ) : null,
 }));
 
 jest.mock('../../hoc/useOrbitData', () => ({
@@ -122,10 +155,24 @@ jest.mock('../../context/UnsavedContext', () => {
 });
 
 jest.mock('../../crud', () => ({
-  VernacularTag: 'vernacular',
+  VernacularTag: null,
   findRecord: jest.fn(),
-  related: jest.fn(() => 's1'),
+  related: jest.fn(
+    (
+      rec: {
+        relationships?: { passage?: { data?: { id?: string } } };
+      } | null,
+      rel: string
+    ) => {
+      if (!rec) return undefined;
+      if (rel === 'passage') {
+        return rec.relationships?.passage?.data?.id;
+      }
+      return 's1';
+    }
+  ),
   remoteIdGuid: jest.fn((_t: string, id: string) => id),
+  remoteIdNum: jest.fn(() => NaN),
   MediaSt: { FETCHED: 'FETCHED' },
   useFetchMediaUrl: () => ({
     fetchMediaUrl: jest.fn(),
@@ -153,23 +200,21 @@ jest.mock('../../utils/passageDefaultFilename', () => ({
 }));
 
 jest.mock('../../selector', () => ({
-  sharedSelector: jest.fn(),
+  sharedSelector: jest.fn(() => ({
+    loadFromFile: 'Load',
+    save: 'Save',
+    NoSaveWoMedia: 'No save',
+    versionHistory: 'Versions',
+  })),
+  mediaTabSelector: jest.fn(() => ({
+    pendingUploadExistsWarn: PENDING_WARN_TEXT,
+  })),
 }));
 
 jest.mock('react-redux', () => ({
-  useSelector: jest.fn((sel: (s: unknown) => unknown) => {
-    const mockState = { books: { bookData: [] } };
-    const result = sel(mockState);
-    if (result === undefined || result === null) {
-      return {
-        loadFromFile: 'Load',
-        save: 'Save',
-        NoSaveWoMedia: 'No save',
-        versionHistory: 'Versions',
-      };
-    }
-    return result;
-  }),
+  useSelector: jest.fn((sel: (s: unknown) => unknown) =>
+    sel({ books: { bookData: [] } })
+  ),
   shallowEqual: jest.fn(),
 }));
 
@@ -177,13 +222,39 @@ jest.mock('../../hoc/SnackBar', () => ({
   useSnackBar: () => ({ showMessage: jest.fn() }),
 }));
 
+import { UploadType } from '../UploadType';
+import {
+  appendPendingMediaUpload,
+  type PendingUploadMediaRecord,
+} from '../../store/upload/pendingMediaUploads';
 import { PassageDetailRecord } from './PassageDetailRecord';
 
 const renderRecord = () => render(<PassageDetailRecord width={400} />);
 
+const seedPendingForCurrentPassage = () => {
+  appendPendingMediaUpload({
+    localAbsolutePath: '/pending/luke.mp3',
+    fileSize: 100,
+    uploadType: UploadType.Media,
+    record: {
+      planId: 'plan1',
+      versionNumber: 1,
+      originalFile: 'luke.mp3',
+      contentType: 'audio/mpeg',
+      artifactTypeId: '',
+      passageId: 'p1',
+      userId: 'user-1',
+      recordedbyUserId: 'user-1',
+      sourceMediaId: '',
+      sourceSegments: '{}',
+    } as PendingUploadMediaRecord,
+  });
+};
+
 describe('PassageDetailRecord BOLD step completion', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
     capturedMediaRecordProps = null;
     passageDetailCtx.isBoldWorkflow = true;
     passageDetailCtx.mediafileId = 'mf1';
@@ -250,6 +321,7 @@ describe('PassageDetailRecord BOLD step completion', () => {
 describe('PassageDetailRecord linked note play-only (TT-5873)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
     capturedMediaRecordProps = null;
     passageDetailCtx.isBoldWorkflow = true;
     passageDetailCtx.mediafileId = 'mf1';
@@ -278,5 +350,106 @@ describe('PassageDetailRecord linked note play-only (TT-5873)', () => {
     expect(document.getElementById('pdRecordLoadFile')).toBeNull();
     expect(capturedMediaRecordProps?.allowRecord).toBe(false);
     expect(document.querySelector('[data-testid="media-record"]')).not.toBeNull();
+  });
+});
+
+describe('PassageDetailRecord pending upload warn (TT-7366)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    capturedMediaRecordProps = null;
+    passageDetailCtx.isBoldWorkflow = true;
+    passageDetailCtx.mediafileId = 'mf1';
+    passageDetailCtx.currentstep = 'step-record';
+    passageDetailCtx.sharedResource = undefined;
+  });
+
+  it('opens Load File immediately when there is no pending upload', async () => {
+    renderRecord();
+    await act(async () => {
+      document.getElementById('pdRecordLoadFile')?.click();
+    });
+    expect(document.querySelector('[data-testid="pending-warn-confirm"]')).toBeNull();
+    expect(document.querySelector('[data-testid="uploader-open"]')).not.toBeNull();
+  });
+
+  it('warns on Load File when a pending upload exists; No cancels; Yes opens Uploader', async () => {
+    seedPendingForCurrentPassage();
+    renderRecord();
+
+    await act(async () => {
+      document.getElementById('pdRecordLoadFile')?.click();
+    });
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-testid="pending-warn-confirm"]')
+      ).not.toBeNull();
+    });
+    expect(document.body.textContent).toContain(PENDING_WARN_TEXT);
+    expect(document.querySelector('[data-testid="uploader-open"]')).toBeNull();
+
+    await act(async () => {
+      document.getElementById('alertNo')?.click();
+    });
+    expect(document.querySelector('[data-testid="uploader-open"]')).toBeNull();
+
+    await act(async () => {
+      document.getElementById('pdRecordLoadFile')?.click();
+    });
+    await waitFor(() => {
+      expect(document.getElementById('alertYes')).not.toBeNull();
+    });
+    await act(async () => {
+      document.getElementById('alertYes')?.click();
+    });
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="uploader-open"]')).not.toBeNull();
+    });
+  });
+
+  it('allows onBeforeStartRecord immediately when there is no pending upload', async () => {
+    renderRecord();
+    expect(capturedMediaRecordProps?.onBeforeStartRecord).toBeDefined();
+    let allowed: boolean | undefined;
+    await act(async () => {
+      allowed = await capturedMediaRecordProps!.onBeforeStartRecord!();
+    });
+    expect(allowed).toBe(true);
+    expect(document.querySelector('[data-testid="pending-warn-confirm"]')).toBeNull();
+  });
+
+  it('warns before record start when pending exists; No blocks; Yes allows', async () => {
+    seedPendingForCurrentPassage();
+    renderRecord();
+    expect(capturedMediaRecordProps?.onBeforeStartRecord).toBeDefined();
+
+    let blockedPromise: Promise<boolean>;
+    await act(async () => {
+      blockedPromise = Promise.resolve(
+        capturedMediaRecordProps!.onBeforeStartRecord!()
+      );
+    });
+    await waitFor(() => {
+      expect(document.getElementById('alertNo')).not.toBeNull();
+    });
+    await act(async () => {
+      document.getElementById('alertNo')?.click();
+    });
+    expect(await blockedPromise!).toBe(false);
+
+    let allowedPromise: Promise<boolean>;
+    await act(async () => {
+      allowedPromise = Promise.resolve(
+        capturedMediaRecordProps!.onBeforeStartRecord!()
+      );
+    });
+    await waitFor(() => {
+      expect(document.getElementById('alertYes')).not.toBeNull();
+    });
+    await act(async () => {
+      document.getElementById('alertYes')?.click();
+    });
+    expect(await allowedPromise!).toBe(true);
   });
 });

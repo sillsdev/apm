@@ -1,6 +1,7 @@
 import { UploadType } from '../../components/UploadType';
 import {
   appendPendingMediaUpload,
+  hasPendingUploadForPassage,
   loadPendingMediaUploads,
   removeMatchingPendingUploads,
   removePendingMediaUpload,
@@ -212,5 +213,110 @@ describe('pendingMediaUploads', () => {
       rightsHolder: 'Speaker',
       organizationId: 'org-1',
     });
+  });
+});
+
+describe('hasPendingUploadForPassage (TT-7366)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('returns false when the queue is empty', () => {
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-1',
+        artifactTypeId: null,
+      })
+    ).toBe(false);
+  });
+
+  it('returns true when a vernacular pending row matches plan and passage', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/pending/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-1',
+        artifactTypeId: null,
+      })
+    ).toBe(true);
+  });
+
+  it('returns false for a different passage or plan', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/pending/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-other',
+        artifactTypeId: null,
+      })
+    ).toBe(false);
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-other',
+        passageId: 'passage-1',
+        artifactTypeId: null,
+      })
+    ).toBe(false);
+  });
+
+  it('does not match a non-vernacular pending row when querying vernacular', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/pending/resource.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: { ...baseRecord, artifactTypeId: 'artifact-resource' },
+    });
+
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-1',
+        artifactTypeId: null,
+      })
+    ).toBe(false);
+  });
+
+  it('treats empty string, null, and undefined artifactTypeId as vernacular', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/pending/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: { ...baseRecord, artifactTypeId: '' },
+    });
+
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-1',
+        artifactTypeId: null,
+      })
+    ).toBe(true);
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-1',
+        artifactTypeId: undefined,
+      })
+    ).toBe(true);
+    expect(
+      hasPendingUploadForPassage({
+        planId: 'plan-1',
+        passageId: 'passage-1',
+        artifactTypeId: '',
+      })
+    ).toBe(true);
   });
 });

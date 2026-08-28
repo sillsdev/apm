@@ -232,6 +232,8 @@ interface IProps {
   /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
   showDockedRecordButton?: boolean;
   onRecordingCleared?: () => void;
+  /** Gate starting a new recording; return false (or resolve false) to abort. */
+  onBeforeStartRecord?: () => boolean | Promise<boolean>;
 }
 
 export interface WSAudioPlayerControls {
@@ -407,6 +409,7 @@ function WSAudioPlayer(props: IProps) {
     onDockedRecordButton,
     showDockedRecordButton,
     onRecordingCleared,
+    onBeforeStartRecord,
   } = props;
 
   const audioDownload = useAudioDownload(mediaId ?? '');
@@ -830,25 +833,34 @@ function WSAudioPlayer(props: IProps) {
     )
       return false;
     if (!recordingRef.current) {
-      recordPreviewSuppressedRef.current = false;
-      setPxPerSec(100);
-      setBlobReady && setBlobReady(false);
-      wsPause(); //stop if playing
-      recordStartPosition.current = wsPosition();
-      wsStartRecord();
-      recordingStartPendingRef.current = true;
-      // onRecording(true) fires only after startRecording succeeds — not while
-      // the mic is still being acquired (see recordingStartPendingRef for that
-      // window). Consumers should treat onRecording(true) as "capture active".
-      startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
-        recordingStartPendingRef.current = false;
-        if (value) setRecording(true);
-      });
+      const startCapture = () => {
+        recordPreviewSuppressedRef.current = false;
+        setPxPerSec(100);
+        setBlobReady && setBlobReady(false);
+        wsPause(); //stop if playing
+        recordStartPosition.current = wsPosition();
+        wsStartRecord();
+        recordingStartPendingRef.current = true;
+        // onRecording(true) fires only after startRecording succeeds — not while
+        // the mic is still being acquired (see recordingStartPendingRef for that
+        // window). Consumers should treat onRecording(true) as "capture active".
+        startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
+          recordingStartPendingRef.current = false;
+          if (value) setRecording(true);
+        });
 
-      insertingRef.current = durationRef.current > 0;
-      recordOverwritePosition.current = insertingRef.current
-        ? recordStartPosition.current
-        : undefined;
+        insertingRef.current = durationRef.current > 0;
+        recordOverwritePosition.current = insertingRef.current
+          ? recordStartPosition.current
+          : undefined;
+      };
+      if (onBeforeStartRecord) {
+        void Promise.resolve(onBeforeStartRecord()).then((ok) => {
+          if (ok) startCapture();
+        });
+      } else {
+        startCapture();
+      }
     } else {
       recordPreviewSuppressedRef.current = true;
       setProcessingRecording(true);
@@ -870,6 +882,7 @@ function WSAudioPlayer(props: IProps) {
     wsStopRecord,
     oneTryOnly,
     setOneShotUsed,
+    onBeforeStartRecord,
     oneShotUsed,
     setPxPerSec,
     setRecording,

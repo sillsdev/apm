@@ -114,6 +114,33 @@ function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
   ].join('\0');
 }
 
+/** Passage-level match (any originalFile) for TT-7366 re-record/upload warn. */
+function pendingUploadPassageKey(
+  record: Pick<
+    PendingUploadMediaRecord,
+    'planId' | 'passageId' | 'artifactTypeId'
+  >
+): string {
+  return [
+    record.planId || '',
+    record.passageId || '',
+    record.artifactTypeId || '',
+  ].join('\0');
+}
+
+/** True when a pending upload exists for this plan/passage/artifact (vernacular: null/''/undefined). */
+export function hasPendingUploadForPassage(query: {
+  planId: string;
+  passageId: string;
+  artifactTypeId?: string | null;
+}): boolean {
+  if (!query.passageId) return false;
+  const key = pendingUploadPassageKey(query);
+  return loadPendingMediaUploads().some(
+    (p) => pendingUploadPassageKey(p.record) === key
+  );
+}
+
 export function removeMatchingPendingUploads(
   identity: PendingUploadIdentity
 ): number {
