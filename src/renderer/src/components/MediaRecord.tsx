@@ -49,6 +49,10 @@ interface IProps {
   languagebcp47?: string | undefined;
   keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  /**
+   * Domain restore metadata for pending-upload Retry (TT-7363).
+   */
+  pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -132,6 +136,7 @@ function MediaRecord(props: IProps) {
     topic,
     languagebcp47,
     afterUploadCb,
+    pendingRestore,
     setCanSave,
     setCanCancel,
     setStatusText,
@@ -348,6 +353,7 @@ function MediaRecord(props: IProps) {
     topic,
     languagebcp47,
     afterUploadCb: myAfterUploadCb,
+    pendingRestore,
   });
 
   useEffect(() => {

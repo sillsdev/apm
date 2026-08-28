@@ -40,6 +40,7 @@ import {
   appendPendingMediaUpload,
   PendingUploadRecord,
   PendingUploadMediaRecord,
+  PendingUploadRestore,
   removeMatchingPendingUploads,
   removePendingMediaUpload,
   updatePendingMediaUpload,
@@ -256,6 +257,11 @@ export interface NextUploadProps {
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
   /**
+   * Domain restore metadata persisted on the pending row so Retry can recreate
+   * secondary Orbit links after re-upload (TT-7363).
+   */
+  pendingRestore?: PendingUploadRestore;
+  /**
    * When set, online uploads wait until this is false before staging/POST so first-login
    * ImportTab sync (`importexportBusy`) can finish first.
    */
@@ -273,6 +279,7 @@ export const nextUpload =
     cb,
     onTerminalFailure,
     pendingUploadIdToClearOnSuccess,
+    pendingRestore,
     getImportExportBusy,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
@@ -478,6 +485,7 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
+          ...(pendingRestore ? { restore: pendingRestore } : {}),
         };
         const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
@@ -514,12 +522,11 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
+          ...(pendingRestore ? { restore: pendingRestore } : {}),
         };
         const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(
-              pendingIdToClear,
-              queuePatch
-            ) ?? appendPendingMediaUpload(queuePatch))
+          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+            appendPendingMediaUpload(queuePatch))
           : appendPendingMediaUpload(queuePatch);
         onTerminalFailure?.({
           localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,

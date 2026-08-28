@@ -8,7 +8,7 @@ import {
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import JSONAPISource from '@orbit/jsonapi';
 import { waitForIt } from '../utils';
-import remoteId from './remoteId';
+import { remoteId } from './remoteId';
 import { recToMemory } from './syncToMemory';
 
 interface GraphicAttributes {
