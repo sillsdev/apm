@@ -5026,6 +5026,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaTab.pendingUploadExistsWarn">
+         <segment>
+            <source>This passage already has a pending media upload. Continue anyway?</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaTab.pendingUploadMenu">
          <segment>
             <source>Pending media uploads</source>

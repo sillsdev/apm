@@ -13,6 +13,38 @@ export type PendingUploadMediaRecord = MediaFileAttributes & {
   sourceMediaId?: string;
 };
 
+/**
+ * Domain side-effects that normal UI `afterUploadCb` would run on success.
+ * Persisted on the pending row so Home → Retry can recreate Orbit links
+ * after re-upload (TT-7363).
+ */
+export type PendingUploadRestore =
+  | {
+      kind: 'intellectualproperty';
+      rightsHolder: string;
+      organizationId: string;
+      notes?: string;
+      transcription?: string;
+    }
+  | {
+      kind: 'comment';
+      discussionId: string;
+      commentId?: string;
+      text: string;
+      /**
+       * JSON string matching useSaveComment / computeCommentVisibleString.
+       * Optional for older pending rows staged before TT-7363 visible fix.
+       */
+      visible?: string;
+    }
+  | {
+      kind: 'title';
+      sectionId: string;
+    };
+
+export type PendingRestoreInput =
+  PendingUploadRestore | (() => PendingUploadRestore | undefined);
+
 export interface PendingUploadRecord {
   id: string;
   failedAt: string;
@@ -20,6 +52,8 @@ export interface PendingUploadRecord {
   fileSize: number;
   uploadType: UploadType;
   record: PendingUploadMediaRecord;
+  /** Optional secondary-link restore metadata (TT-7363). */
+  restore?: PendingUploadRestore;
 }
 
 /** Identity for matching pending rows across different staged disk paths (TT-7347). */
@@ -45,12 +79,30 @@ export function loadPendingMediaUploads(): PendingUploadRecord[] {
   }
 }
 
+/** Fired on this window when the pending list changes (localStorage `storage`
+ * events only reach *other* windows, so same-window listeners need this). */
+const CHANGE_EVENT = 'pendingMediaUploadsChanged';
+
 function savePendingMediaUploads(items: PendingUploadRecord[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {
     // ignore quota / private mode
   }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }
+}
+
+/** Subscribe to pending upload list changes. Returns an unsubscribe function. */
+export function subscribePendingMediaUploads(onChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener(CHANGE_EVENT, onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener(CHANGE_EVENT, onChange);
+    window.removeEventListener('storage', onChange);
+  };
 }
 
 function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
@@ -60,6 +112,33 @@ function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
     record.artifactTypeId || '',
     record.originalFile || '',
   ].join('\0');
+}
+
+/** Passage-level match (any originalFile) for TT-7366 re-record/upload warn. */
+function pendingUploadPassageKey(
+  record: Pick<
+    PendingUploadMediaRecord,
+    'planId' | 'passageId' | 'artifactTypeId'
+  >
+): string {
+  return [
+    record.planId || '',
+    record.passageId || '',
+    record.artifactTypeId || '',
+  ].join('\0');
+}
+
+/** True when a pending upload exists for this plan/passage/artifact (vernacular: null/''/undefined). */
+export function hasPendingUploadForPassage(query: {
+  planId: string;
+  passageId: string;
+  artifactTypeId?: string | null;
+}): boolean {
+  if (!query.passageId) return false;
+  const key = pendingUploadPassageKey(query);
+  return loadPendingMediaUploads().some(
+    (p) => pendingUploadPassageKey(p.record) === key
+  );
 }
 
 export function removeMatchingPendingUploads(
@@ -85,6 +164,7 @@ export function appendPendingMediaUpload(
     fileSize: entry.fileSize,
     uploadType: entry.uploadType,
     record: entry.record,
+    ...(entry.restore ? { restore: entry.restore } : {}),
   };
   const next = loadPendingMediaUploads().filter((p) => {
     const samePath =
@@ -105,7 +185,7 @@ export function updatePendingMediaUpload(
   patch: Partial<
     Pick<
       PendingUploadRecord,
-      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType'
+      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType' | 'restore'
     >
   >
 ): PendingUploadRecord | undefined {

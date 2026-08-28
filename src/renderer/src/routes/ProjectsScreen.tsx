@@ -1,39 +1,31 @@
-import React from 'react';
-import { Box, Typography, Grid, BoxProps, styled } from '@mui/material';
-import AppLayout from '../components/App/AppLayout';
-import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
-import { useLocation } from 'react-router-dom';
-import { ProjectCard } from '../components/Team/ProjectCard';
-import { DialogMode, ICardsStrings, VProject } from '../model';
+import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import { Box, Typography, Grid, useTheme } from '@mui/material';
+import { DialogMode, ICardsStrings, VProject } from '../model';
 import { cardsSelector } from '../selector';
-import { ProjectDialog } from '../components/Team/ProjectDialog';
-import { useMyNavigate } from '../utils/useMyNavigate';
-import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
-import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
-import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
-import { UnsavedContext } from '../context/UnsavedContext';
-import BigDialog from '../hoc/BigDialog';
+import AppLayout from '../components/App/AppLayout';
+import ContentLayout from '../components/App/ContentLayout';
 import { StepEditor } from '../components/StepEditor';
+import { CardSizeProvider } from '../components/Team/CardSize';
+import { ProjectCard } from '../components/Team/ProjectCard';
+import { ProjectDialog } from '../components/Team/ProjectDialog';
+import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
+import { UnsavedContext } from '../context/UnsavedContext';
+import { useGlobal, useGetGlobal } from '../context/useGlobal';
+import { Button, rowSx, spreadSx } from '../control';
+import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
+import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
+import BigDialog from '../hoc/BigDialog';
+import { LocalKey, localUserKey, useJsonParams } from '../utils';
 import { useIsPapLike } from '../utils/useIsPapLike';
-import { Button } from '../control/Button';
+import { useMyNavigate } from '../utils/useMyNavigate';
 
-interface ProjectBoxProps extends BoxProps {
-  isMobile?: boolean;
-}
-const ProjectsBox = styled(Box)<ProjectBoxProps>(({ theme, isMobile }) => ({
-  ...(isMobile && {
-    '& #projectMenu': {
-      color: theme.palette.common.white,
-    },
-  }),
-}));
-
-export const ProjectsScreenInner: React.FC = () => {
+export const ProjectsScreenInner = () => {
+  const theme = useTheme();
   const navigate = useMyNavigate();
   const teamId = localStorage.getItem(localUserKey(LocalKey.team));
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const { teamProjects, personalProjects, personalTeam, teams, isAdmin } =
     ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
@@ -44,25 +36,24 @@ export const ProjectsScreenInner: React.FC = () => {
   const [connected] = useGlobal('connected');
   const [isOffline] = useGlobal('offline');
   const [offlineOnly] = useGlobal('offlineOnly');
-  const unsavedCtx = React.useContext(UnsavedContext);
+  const unsavedCtx = useContext(UnsavedContext);
   const { startClear, startSave, waitForSave } = unsavedCtx.state;
   const getGlobal = useGetGlobal();
-  const { isMobile } = useMobile();
 
-  const handleSwitchTeams = React.useCallback(() => {
+  const handleSwitchTeams = useCallback(() => {
     localStorage.removeItem(LocalKey.plan);
     navigate('/switch-teams');
   }, [navigate]);
 
-  // Missing teamId: always open picker; SwitchTeamsGuard redirects true PAP-like users back to /team
-  React.useEffect(() => {
+  // Missing teamId: always open picker; SwitchTeamsInner redirects true PAP-like users back to /team
+  useEffect(() => {
     const currentId = localStorage.getItem(localUserKey(LocalKey.team));
     if (currentId) return;
     if (!personalTeam) return;
     handleSwitchTeams();
   }, [personalTeam, handleSwitchTeams]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     startClear();
     setHome(true);
     // we intentionally do not reset project/plan here; selection will set them
@@ -71,12 +62,12 @@ export const ProjectsScreenInner: React.FC = () => {
 
   const isPersonal = teamId === personalTeam;
   const isPapLike = useIsPapLike() && isPersonal;
-  const projects = React.useMemo(
+  const projects = useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
     [isPersonal, personalProjects, teamId, teamProjects]
   );
 
-  const thisTeam = React.useMemo(() => {
+  const thisTeam = useMemo(() => {
     if (isPersonal)
       return {
         id: personalTeam,
@@ -90,11 +81,11 @@ export const ProjectsScreenInner: React.FC = () => {
   const workflowEditProcess = teamWorkflowProcess ?? defaultWorkflow;
 
   // New project dialog state
-  const [addOpen, setAddOpen] = React.useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const handleAddProject = () => setAddOpen(true);
 
   // Edit workflow dialog state
-  const [showWorkflow, setShowWorkflow] = React.useState(false);
+  const [showWorkflow, setShowWorkflow] = useState(false);
   const handleWorkflowOpen = (isOpen: boolean) => {
     if (getGlobal('changed')) {
       startSave();
@@ -103,7 +94,7 @@ export const ProjectsScreenInner: React.FC = () => {
   };
 
   // duplicate name check for add dialog
-  const nameInUse = React.useCallback(
+  const nameInUse = useCallback(
     (newName: string) => {
       const trimmedName = newName.trim();
       if (trimmedName === '') return false;
@@ -176,7 +167,7 @@ export const ProjectsScreenInner: React.FC = () => {
   };
 
   // Navigate to plan page only after user explicitly leaves home (card click triggers leaveHome)
-  React.useEffect(() => {
+  useEffect(() => {
     if (!plan) return; // no selection yet
     if (home) return; // still in home state (e.g., menu action opened dialog)
     // We no longer require current pathname to be /projects because plan might be set just as navigation fires
@@ -190,7 +181,7 @@ export const ProjectsScreenInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pathname, home]);
 
-  const showAddButton = React.useMemo(() => {
+  const showAddButton = useMemo(() => {
     const canAdd =
       ((!isOffline && connected) || offlineOnly) &&
       thisTeam &&
@@ -204,81 +195,77 @@ export const ProjectsScreenInner: React.FC = () => {
   }
 
   return (
-    <AppLayout>
-      <ProjectsBox
-        id="ProjectsScreen"
-        isMobile={isMobile}
-        sx={{
-          px: 2,
-          pb: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        <Grid container spacing={1}>
-          {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
-          {projects.length === 0 && (
-            <Typography variant="body2" sx={{ opacity: 0.7 }}>
-              {t.noProjects || 'No projects yet.'}
-            </Typography>
-          )}
-        </Grid>
-        {/* spacer to ensure content isn't hidden behind floating actions */}
-        <Box sx={{ height: 120 }} />
-      </ProjectsBox>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 32,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <Box
-          sx={{
-            pointerEvents: 'auto',
-            display: 'inline-grid',
-            gridAutoFlow: 'column',
-            gridAutoColumns: '1fr',
-            alignItems: 'center',
-            gap: 2,
-          }}
+    <>
+      <AppLayout appHeadProps={{ drawBottomBorder: false }}>
+        <ContentLayout
+          header={
+            <Box sx={spreadSx}>
+              <Box sx={rowSx}>
+                {!isPapLike && (
+                  <Button id="ProjectActSwitch" onClick={handleSwitchTeams}>
+                    {t.switchTeams || 'Switch Teams'}
+                  </Button>
+                )}
+              </Box>
+              <Box sx={rowSx}>
+                {showAddButton && (
+                  <Button
+                    id="ProjectActAdd"
+                    data-testid="add-project-button"
+                    onClick={handleAddProject}
+                  >
+                    {t.addNewProject || 'Add New Project...'}
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          }
+          drawBottomBorder
+          contentSx={{ p: theme.layout.gap }}
         >
-          {showAddButton && (
-            <Button
-              id="ProjectActAdd"
-              data-testid="add-project-button"
-              variant="outlined"
-              onClick={handleAddProject}
-              sx={(theme) => ({
-                bgcolor: theme.palette.common.white,
-              })}
-            >
-              {t.addNewProject || 'Add New Project...'}
-            </Button>
-          )}
-          {!isPapLike && (
-            <Button
-              id="ProjectActSwitch"
-              variant="outlined"
-              onClick={handleSwitchTeams}
-              sx={(theme) => ({
-                bgcolor: theme.palette.common.white,
-              })}
-            >
-              {t.switchTeams || 'Switch Teams'}
-            </Button>
-          )}
-        </Box>
-      </Box>
+          <Box
+            id="ProjectsScreen"
+            sx={{
+              flex: '1 0 auto',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              p: theme.layout.p,
+            }}
+          >
+            <CardSizeProvider>
+              <Grid container spacing={theme.layout.gap}>
+                {projects.map((p) => (
+                  <ProjectCard key={p.id} project={p} />
+                ))}
+              </Grid>
+            </CardSizeProvider>
+            {projects.length === 0 && (
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography
+                  noWrap
+                  sx={{
+                    fontSize: 'large',
+                    fontWeight: 'bold',
+                    opacity: 0.7,
+                    userSelect: 'none',
+                  }}
+                >
+                  {t.noProjects || 'No projects yet.'}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </ContentLayout>
+      </AppLayout>
       <BigDialog
         title={t.editWorkflow.replace(
           '{0}',
@@ -301,11 +288,11 @@ export const ProjectsScreenInner: React.FC = () => {
           team={isPersonal ? undefined : thisTeam?.id}
         />
       )}
-    </AppLayout>
+    </>
   );
 };
 
-export const ProjectsScreen: React.FC = () => (
+export const ProjectsScreen = () => (
   <TeamProvider>
     <ProjectsScreenInner />
   </TeamProvider>

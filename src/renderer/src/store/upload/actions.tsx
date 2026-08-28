@@ -40,6 +40,7 @@ import {
   appendPendingMediaUpload,
   PendingUploadRecord,
   PendingUploadMediaRecord,
+  PendingUploadRestore,
   removeMatchingPendingUploads,
   removePendingMediaUpload,
   updatePendingMediaUpload,
@@ -93,7 +94,7 @@ export const writeFileLocal = async (
     // Modern replacement for deprecated readAsBinaryString
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    ipc?.write(writeName, bytes, {
+    await ipc?.write(writeName, bytes, {
       encoding: 'binary',
       flag: 'wx', // write - fail if file exists
     });
@@ -256,6 +257,11 @@ export interface NextUploadProps {
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
   /**
+   * Domain restore metadata persisted on the pending row so Retry can recreate
+   * secondary Orbit links after re-upload (TT-7363).
+   */
+  pendingRestore?: PendingUploadRestore;
+  /**
    * When set, online uploads wait until this is false before staging/POST so first-login
    * ImportTab sync (`importexportBusy`) can finish first.
    */
@@ -273,6 +279,7 @@ export const nextUpload =
     cb,
     onTerminalFailure,
     pendingUploadIdToClearOnSuccess,
+    pendingRestore,
     getImportExportBusy,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
@@ -308,19 +315,21 @@ export const nextUpload =
     if (offline) {
       if (!isDownloadable) {
         if (cb) cb(n, true, { ...record });
-      } else
-        try {
-          writeFileLocal(files[n] as File).then((w) => {
+      } else {
+        void (async () => {
+          try {
+            const w = await writeFileLocal(files[n] as File);
             if (cb) cb(n, true, { ...record, audioUrl: w.relativeMediaPath });
-          });
-        } catch (err: unknown) {
-          logError(
-            Severity.error,
-            errorReporter,
-            infoMsg(err as Error, `failed getting name: ${name}`)
-          );
-          sendError(n, `${name} failed local write`);
-        }
+          } catch (err: unknown) {
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(err as Error, `local write failed: ${name}`)
+            );
+            sendError(n, `${name} failed local write`);
+          }
+        })();
+      }
       return;
     }
     const completeCB = (
@@ -478,6 +487,7 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
+          ...(pendingRestore ? { restore: pendingRestore } : {}),
         };
         const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
@@ -514,12 +524,11 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
+          ...(pendingRestore ? { restore: pendingRestore } : {}),
         };
         const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(
-              pendingIdToClear,
-              queuePatch
-            ) ?? appendPendingMediaUpload(queuePatch))
+          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+            appendPendingMediaUpload(queuePatch))
           : appendPendingMediaUpload(queuePatch);
         onTerminalFailure?.({
           localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,

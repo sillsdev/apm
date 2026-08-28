@@ -980,6 +980,7 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "pendingUploadDeleteFailed": string;
     "pendingUploadDismiss": string;
     "pendingUploadEmpty": string;
+    "pendingUploadExistsWarn": string;
     "pendingUploadMenu": string;
     "pendingUploadPathLabel": string;
     "pendingUploadQueuedHint": string;

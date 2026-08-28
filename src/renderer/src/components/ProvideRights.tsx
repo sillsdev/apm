@@ -134,6 +134,36 @@ export function ProvideRights(props: IProps) {
 
   const artifactState = useMemo(() => ({ id: recordTypeId }), [recordTypeId]);
 
+  const pendingRestore = useCallback(() => {
+    let orgId = team || organizationId;
+    if (!orgId) {
+      const planRec = findRecord(memory, 'plan', planId || getGlobal('plan'));
+      const projRec = findRecord(
+        memory,
+        'project',
+        related(planRec, 'project')
+      );
+      orgId = related(projRec, 'organization');
+    }
+    if (!orgId || !speaker) return undefined;
+    return {
+      kind: 'intellectualproperty' as const,
+      rightsHolder: speaker,
+      organizationId: orgId,
+      notes: JSON.stringify(state),
+      ...(statement ? { transcription: statement } : {}),
+    };
+  }, [
+    team,
+    organizationId,
+    memory,
+    planId,
+    getGlobal,
+    speaker,
+    state,
+    statement,
+  ]);
+
   useEffect(() => {
     setDefaultFileName(cleanFileName(`${speaker}_ip`));
     const state = getOrgDefault(orgDefaultVoices) as IVoicePerm;
@@ -306,6 +336,7 @@ export function ProvideRights(props: IProps) {
         setResetMedia={setResetMedia}
         resetMedia={resetMedia}
         afterUploadCb={(mediaId) => afterUploadCb(mediaId)}
+        pendingRestore={pendingRestore}
         handleSetCanSave={handleSetCanSave}
         paperWidth={paperWidth}
       />
@@ -322,6 +353,7 @@ export function ProvideRights(props: IProps) {
         performedBy={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}
+        pendingRestore={pendingRestore}
       />
     </div>
   );

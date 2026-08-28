@@ -1,17 +1,18 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useGlobal } from '../context/useGlobal';
-import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
-import { Grid } from '@mui/material';
-import AppLayout from '../components/App/AppLayout';
-import { TeamProvider } from '../context/TeamContext';
-import { TeamProjects } from '../components/Team';
-import StickyRedirect from '../components/StickyRedirect';
-import { findRecord, related, remoteId } from '../crud';
-import TeamActions from '../components/Team/TeamActions';
-import { UnsavedContext } from '../context/UnsavedContext';
+import { Box, Divider, useTheme } from '@mui/material';
 import { RecordKeyMap } from '@orbit/records';
+import AppLayout from '../components/App/AppLayout';
+import StickyRedirect from '../components/StickyRedirect';
+import { TeamProjects } from '../components/Team';
+import TeamActions from '../components/Team/TeamActions';
+import { TeamProvider } from '../context/TeamContext';
+import { UnsavedContext } from '../context/UnsavedContext';
+import { useGlobal } from '../context/useGlobal';
+import { findRecord, related, remoteId } from '../crud';
 import { PlanD } from '../model';
+import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
+import { flexibleSx } from '../control';
 import ProjectsScreen from './ProjectsScreen';
 
 export const TeamScreen = () => {
@@ -27,6 +28,7 @@ export const TeamScreen = () => {
   const { resetProject } = useHome();
   const { isMobile } = useMobile();
   const loaded = useRef(false);
+  const theme = useTheme();
 
   useEffect(() => {
     startClear();
@@ -76,14 +78,40 @@ export const TeamScreen = () => {
   return !isMobile ? (
     <TeamProvider>
       <AppLayout>
-        <Grid container id="TeamScreen" sx={{ display: 'flex' }}>
-          <Grid size={{ xs: 6, md: 3, lg: 2 }}>
+        <Box
+          id="TeamScreen"
+          sx={{
+            display: 'flex',
+            height: '100%',
+            gap: theme.layout.gap,
+          }}
+        >
+          <Box
+            sx={[
+              flexibleSx,
+              {
+                maxWidth: 250,
+                py: theme.layout.gap,
+                pl: theme.layout.gap,
+              },
+            ]}
+          >
             <TeamActions />
-          </Grid>
-          <Grid size={{ xs: 12, md: 9, lg: 10 }}>
+          </Box>
+          <Divider orientation="vertical" flexItem />
+          <Box
+            sx={[
+              flexibleSx,
+              {
+                overflow: 'auto',
+                py: theme.layout.gap,
+                pr: theme.layout.gap,
+              },
+            ]}
+          >
             <TeamProjects />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </AppLayout>
     </TeamProvider>
   ) : (

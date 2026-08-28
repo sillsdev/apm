@@ -10,6 +10,7 @@ import { IMainStrings, ISharedStrings, IState } from '../../model';
 import { useGlobal, useGetGlobal } from '../../context/useGlobal';
 import { isElectron } from '../../../api-variable';
 import { LocalKey } from '../../utils/localUserKey';
+import { markNeedItfSync } from '../../utils/needItfSync';
 import { Online } from '../../utils/useCheckOnline';
 import { mainSelector, sharedSelector } from '../../selector';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
@@ -75,6 +76,10 @@ export const HeadStatus = (props: IProps) => {
         ? 'online-cloud'
         : 'online-local'
     );
+    // Either leaving online (start of an offline session) or returning from
+    // offline. Marking on the way back also covers sessions that began before
+    // this flag existed.
+    markNeedItfSync();
     localStorage.setItem(LocalKey.plan, getGlobal('plan'));
     handleMenu('Logout', !getGlobal('offline') ? 'cloud' : null);
   };

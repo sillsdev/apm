@@ -376,6 +376,7 @@ const pasResult = {
   mediaId: undefined,
   publishStatus: '',
   sharedResource: undefined,
+  discussionCount: 0,
 };
 
 const flatResult = {
@@ -398,6 +399,7 @@ const flatResult = {
   transcriber: undefined,
   publishStatus: '',
   sharedResource: undefined,
+  discussionCount: 0,
 };
 
 afterEach(cleanup);
@@ -755,6 +757,26 @@ test('update one flat section to two flat section ignoring other plan', () => {
   ]);
 });
 
+test('merge picks up a shared resource added without touching the passage', () => {
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+  } as any);
+  expect((sheet[1] as ISheet).sharedResource).toBeUndefined();
+  const sr = { type: 'sharedresource', id: 'sr1' } as any;
+  const updated = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    current: sheet.map((r) => ({ ...r })),
+    getSharedResource: () => sr,
+  } as any);
+  expect((updated[1] as ISheet).sharedResource).toBe(sr);
+});
+
 test('one section and one passage with step gives output', () => {
   expect(
     getSheet({
@@ -882,6 +904,50 @@ test('two flat sections with steps gives output', () => {
       stepId: 'owf1',
     },
   ]);
+});
+
+test('merge picks up another user changes to discussions and assignment', () => {
+  const s1WithScheme = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      organizationScheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+    },
+  } as SectionD;
+  const schemeStep = {
+    type: 'organizationschemestep',
+    id: 'oss1',
+    attributes: { dateUpdated: '2021-09-15', lastModifiedBy: 1 },
+    relationships: {
+      organizationscheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+      orgWorkflowStep: { data: { type: 'orgworkflowstep', id: 'owf1' } },
+      user: { data: { type: 'user', id: 'u2' } },
+      group: {},
+    },
+  };
+  const args = {
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1WithScheme],
+    passages: [pa1],
+    orgWorkflowSteps: owf,
+  };
+  const sheet = getSheet({ ...args } as any);
+  expect((sheet[1] as ISheet).discussionCount).toBe(0);
+  expect((sheet[1] as ISheet).assign).toBeUndefined();
+  //passage untouched; only the discussion and scheme step records changed
+  const updated = getSheet({
+    ...args,
+    organizationSchemeSteps: [schemeStep],
+    getDiscussionCount: () => 3,
+    current: sheet.map((r) => ({ ...r })),
+  } as any);
+  expect((updated[1] as ISheet).discussionCount).toBe(3);
+  expect((updated[1] as ISheet).assign).toEqual({ type: 'user', id: 'u2' });
 });
 
 test('merge keeps NOTE|category when orbit snapshot is still bare NOTE', () => {

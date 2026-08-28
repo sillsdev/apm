@@ -2,6 +2,7 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { useDispatch } from 'react-redux';
 import { useGlobal } from '../context/useGlobal';
 import { findRecord, PermissionName, remoteIdGuid, usePermissions } from '.';
+import { computeCommentVisibleString } from './computeCommentVisible';
 import { IApiError, CommentD, MediaFileD } from '../model';
 import {
   AddRecord,
@@ -13,6 +14,7 @@ import {
 import { orbitErr } from '../utils';
 import * as actions from '../store';
 import { RecordKeyMap } from '@orbit/records';
+import { remoteId } from './remoteId';
 
 export const useSaveComment = () => {
   const [memory] = useGlobal('memory');
@@ -20,8 +22,7 @@ export const useSaveComment = () => {
   const dispatch = useDispatch();
   const doOrbitError = (ex: IApiError) =>
     dispatch(actions.doOrbitError(ex) as any);
-  const { hasPermission, addAccess, addNeedsApproval, approve } =
-    usePermissions();
+  const { hasPermission } = usePermissions();
   return async (
     discussionId: string,
     commentId: string,
@@ -37,23 +38,13 @@ export const useSaveComment = () => {
         mediaRemId;
       mediafile = findRecord(memory, 'mediafile', id) as MediaFileD;
     }
-    interface IIndexable {
-      [key: string]: any;
-    }
-    let visible: IIndexable = {};
-    if (approved !== undefined) {
-      visible = approve(approved, permissions);
-    } else if (
-      hasPermission(PermissionName.CIT) ||
-      hasPermission(PermissionName.Mentor)
-    ) {
-      visible = addAccess(
-        addAccess(visible, PermissionName.CIT),
-        PermissionName.Mentor
-      );
-      if (hasPermission(PermissionName.CIT))
-        visible = addNeedsApproval(visible);
-    }
+    const visible = computeCommentVisibleString({
+      approved,
+      existingPermissions: permissions,
+      isCIT: hasPermission(PermissionName.CIT),
+      isMentor: hasPermission(PermissionName.Mentor),
+      authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
+    });
 
     const t = new RecordTransformBuilder();
     const ops: RecordOperation[] = [];
@@ -61,14 +52,14 @@ export const useSaveComment = () => {
     if (commentId) {
       commentRec = findRecord(memory, 'comment', commentId) as CommentD;
       commentRec.attributes.commentText = commentText;
-      commentRec.attributes.visible = JSON.stringify(visible);
+      commentRec.attributes.visible = visible;
       ops.push(...UpdateRecord(t, commentRec, user));
     } else {
       commentRec = {
         type: 'comment',
         attributes: {
           commentText: commentText,
-          visible: JSON.stringify(visible),
+          visible,
         },
       } as CommentD;
       ops.push(

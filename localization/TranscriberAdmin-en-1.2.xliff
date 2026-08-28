@@ -5862,6 +5862,13 @@
                <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadExistsWarn">
+            <source>This passage already has a pending media upload. Continue anyway?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mediaTab.pendingUploadMenu">
             <source>Pending media uploads</source>
             <target/>

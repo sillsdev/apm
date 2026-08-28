@@ -68,6 +68,7 @@ import {
   tryParseJSON,
   useDataChanges,
   doSort,
+  clearNeedItfSync,
 } from '../utils';
 import { Button, ActionRow } from '../control';
 import { useSelector } from 'react-redux';
@@ -97,8 +98,13 @@ import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent from './FilterContent';
 import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
 import { readItfEmbeddedProject } from '../utils/readItfEmbeddedProject';
+import { shouldStartItfSyncUpload } from './shouldStartItfSyncUpload';
 
 const ipc = window?.api as MainAPI;
+
+// Module-level: a component ref resets on Strict Mode remount, which would
+// fire uploadSyncITF twice and send itfs twice.
+let lastItfSyncBuffer: Buffer | undefined;
 
 const headerProps = {
   display: 'flex',
@@ -368,7 +374,12 @@ export function ImportTab(props: IProps) {
   useEffect(() => {
     setImportTitle('');
     setChangeData([]);
-    if (isElectron && syncFile && syncBuffer) {
+    if (
+      isElectron &&
+      syncFile &&
+      shouldStartItfSyncUpload(syncBuffer, lastItfSyncBuffer)
+    ) {
+      lastItfSyncBuffer = syncBuffer;
       uploadSyncITF(syncBuffer, syncFile);
     } // Need to ask user if they want to import PTF or ITF
     else if (offerPtf) setShowImportTypeSelection(true);
@@ -1042,6 +1053,7 @@ export function ImportTab(props: IProps) {
       } else {
         if (importStatus.complete) {
           //import completed ok but might have message
+          if (syncFile) clearNeedItfSync();
           const chdata = getChangeData(importStatus.errMsg);
           setChangeData([...changeData].concat(chdata));
           const syncExtra = userVisibleImportErrMsg(importStatus.errMsg);

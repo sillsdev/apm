@@ -43,6 +43,9 @@ import {
   usePermissions,
   useRole,
 } from '../../crud';
+import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
+import { remoteId } from '../../crud/remoteId';
+import { RecordKeyMap } from '@orbit/records';
 import CommentCard from './CommentCard';
 import ReplyCard from './ReplyCard';
 import UserAvatar from '../UserAvatar';
@@ -327,6 +330,19 @@ export const DiscussionCard = (props: IProps) => {
       await saveMyComment();
     }
   };
+  const pendingRestore = () =>
+    discussion.id
+      ? {
+          kind: 'comment' as const,
+          discussionId: discussion.id,
+          text: commentText.current,
+          visible: computeCommentVisibleString({
+            isCIT: hasPermission(PermissionName.CIT),
+            isMentor: hasPermission(PermissionName.Mentor),
+            authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
+          }),
+        }
+      : undefined;
   const saveMyComment = async () => {
     if (discussion.id && (commentText.current || commentMediaId.current)) {
       await saveComment(
@@ -1020,6 +1036,7 @@ export const DiscussionCard = (props: IProps) => {
                     passageId={passageId}
                     onTextChange={handleTextChange}
                     cancelOnlyIfChanged={true}
+                    pendingRestore={pendingRestore}
                   />
                 )}
                 <Box sx={{ display: 'flex', flexDirection: 'row' }}>

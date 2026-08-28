@@ -6,6 +6,12 @@ export const rowSx = (theme: Theme) => ({
   minWidth: 0,
 });
 
+export const columnSx = (theme: Theme) => ({
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: theme.layout.gap,
+});
+
 export const spreadSx = (theme: Theme) => ({
   ...rowSx(theme),
   justifyContent: 'space-between',

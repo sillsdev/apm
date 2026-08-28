@@ -25,13 +25,13 @@ import {
 } from '../../store/upload/pendingMediaUploads';
 import { formatUploadTerminalFailureMessage } from '../../store/upload/uploadTerminalMessages';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
-import { pullTableList } from '../../crud';
 import JSONAPISource from '@orbit/jsonapi';
 import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
 import { Online } from '../../utils';
 import { Button } from '../../control/Button';
+import { completePendingUploadRetry } from '../../store/upload/completePendingUploadRetry';
 
 const ipc = window?.api as MainAPI;
 
@@ -50,6 +50,7 @@ export function PendingUploadsDialog(props: IProps) {
   const [coordinator] = useGlobal('coordinator');
   const [connected] = useGlobal('connected');
   const [offline] = useGlobal('offline');
+  const [user] = useGlobal('user');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -148,14 +149,15 @@ export function PendingUploadsDialog(props: IProps) {
         cb: async (_n, success, data) => {
           const sid = (data as { stringId?: string } | undefined)?.stringId;
           if (success && sid && memory && remote && backup) {
-            await pullTableList(
-              'mediafile',
-              [sid],
+            await completePendingUploadRetry({
+              stringId: sid,
+              restore: entry.restore,
               memory,
               remote,
               backup,
-              reporter
-            );
+              reporter,
+              user,
+            });
           }
           finishOrContinue();
         },

@@ -19,6 +19,7 @@ interface IProps {
   onMyRecording: (recording: boolean) => void;
   handleSetCanSave: (canSave: boolean) => void;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   setStatusText: (status: string) => void;
   onCancel?: () => void;
   onSave?: () => void;
@@ -33,6 +34,7 @@ export default function TitleRecord(props: IProps) {
     defaultFilename,
     onMyRecording,
     afterUploadCb,
+    pendingRestore,
     canSave,
     handleSetCanSave,
     setStatusText,
@@ -67,6 +69,7 @@ export default function TitleRecord(props: IProps) {
         setCanSave={handleSetCanSave}
         setStatusText={setStatusText}
         afterUploadCb={afterUploadCb}
+        pendingRestore={pendingRestore}
         height={200}
         width={stackWidth}
         allowDeltaVoice={true}

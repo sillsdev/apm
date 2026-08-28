@@ -19,6 +19,7 @@ export enum LocalKey {
   userId = 'user-id', // guid for current user
   onlineUserId = 'online-user-id', // user id last time we went online"
   goingOnline = 'goingOnline', // reloading and going online
+  needItfSync = 'needItfSync', // online-linked user worked offline; send ITF on next go-online if changed
   loggedIn = 'isLoggedIn', // true if logged in
   offlineAdmin = 'offlineAdmin', // allow admin functions because offline only
   developer = 'developer', // enable developer features

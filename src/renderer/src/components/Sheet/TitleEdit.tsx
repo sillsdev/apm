@@ -61,6 +61,7 @@ export function TitleEdit({
           onMediaIdChange={handleChangeTitleMedia}
           disabled={readonly}
           passageId={passageId}
+          sectionId={ws.sectionId?.id}
         />
       )}
     </>

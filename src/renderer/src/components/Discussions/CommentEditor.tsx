@@ -49,6 +49,8 @@ interface IProps extends IStateProps {
   fileName: string;
   cancelOnlyIfChanged?: boolean;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  /** Domain restore metadata for pending-upload Retry (TT-7363). */
+  pendingRestore?: import('../../store/upload/pendingMediaUploads').PendingRestoreInput;
   refresh: number;
   onOk?: () => void;
   onCancel?: () => void;
@@ -65,6 +67,7 @@ export const CommentEditor = (props: IProps) => {
     fileName,
     cancelOnlyIfChanged,
     afterUploadCb,
+    pendingRestore,
     refresh,
     onOk,
     onCancel,
@@ -230,6 +233,7 @@ export const CommentEditor = (props: IProps) => {
         artifactId={commentId}
         onRecording={onRecording}
         afterUploadCb={afterUploadCb}
+        pendingRestore={pendingRestore}
         defaultFilename={fileName}
         allowWave={false}
         setCanSave={handleSetCanSave}

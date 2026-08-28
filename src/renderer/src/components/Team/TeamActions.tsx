@@ -1,28 +1,23 @@
-import { Badge, Box, BoxProps, styled } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { DialogMode } from '../../model';
-import TeamDialog from './TeamDialog';
-import { Button } from '../../control';
+import { Badge, Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import ImportTab from '../ImportTab';
+import { isElectron } from '../../../api-variable';
+import { DialogMode } from '../../model';
+import { mediaTabSelector } from '../../selector';
+import {
+  pendingMediaUploadCount,
+  subscribePendingMediaUploads,
+} from '../../store/upload/pendingMediaUploads';
+import { Button, columnSx } from '../../control';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
-import { useTeamActions } from './useTeamActions';
+import ImportTab from '../ImportTab';
+import TeamDialog from './TeamDialog';
 import { SharedContentCreatorDialog } from './SharedContentCreatorDialog';
 import { PendingUploadsDialog } from './PendingUploadsDialog';
-import { isElectron } from '../../../api-variable';
-import { pendingMediaUploadCount } from '../../store/upload/pendingMediaUploads';
-import { mediaTabSelector } from '../../selector';
+import { useTeamActions } from './useTeamActions';
 
-const RootBox = styled(Box)<BoxProps>(({ theme }) => ({
-  padding: theme.spacing(2),
-  minWidth: theme.spacing(20),
-  display: 'flex',
-  flexDirection: 'column',
-  alignContent: 'center',
-}));
-
-const TeamActions = () => {
+export default function TeamActions() {
   const {
     t,
     offline,
@@ -50,50 +45,47 @@ const TeamActions = () => {
 
   const mt = useSelector(mediaTabSelector, shallowEqual);
   const [pendingOpen, setPendingOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-
-  useEffect(() => {
-    setPendingCount(pendingMediaUploadCount());
-  }, [pendingOpen, importOpen]);
+  const pendingCount = useSyncExternalStore(
+    subscribePendingMediaUploads,
+    pendingMediaUploadCount
+  );
 
   return (
-    <RootBox>
+    <Box sx={columnSx}>
       {!offline && connected && (
-        <Button id="TeamActAdd" sx={{ mb: 2 }} onClick={handleAddClick}>
+        <Button id="TeamActAdd" onClick={handleAddClick}>
           {t.addTeam}
         </Button>
       )}
-      <Button id="teamActImport" sx={{ mb: 2 }} onClick={handleImportClick}>
+      <Button id="teamActImport" onClick={handleImportClick}>
         {t.import}
       </Button>
       {isElectron && !offline && (
-        <Button
-          disableTypography
-          id="teamActPendingUploads"
-          sx={{ mb: 2 }}
-          onClick={() => setPendingOpen(true)}
+        <Badge
+          badgeContent={pendingCount}
+          color="warning"
+          overlap="rectangular"
         >
-          <Badge
-            badgeContent={pendingCount}
-            color="warning"
-            overlap="rectangular"
+          <Button
+            id="teamActPendingUploads"
+            onClick={() => setPendingOpen(true)}
+            sx={{ width: '100%' }}
           >
-            <span>{mt.pendingUploadMenu}</span>
-          </Badge>
-        </Button>
+            {mt.pendingUploadMenu}
+          </Button>
+        </Badge>
       )}
       {!offline && userIsSharedContentAdmin && (
         <Button
-          disableTypography
           id="contentCreator"
-          sx={{ mb: 2 }}
           onClick={handleContentClick}
+          disableTypography
         >
-          <AddIcon fontSize="small" />
+          <AddIcon />
         </Button>
       )}
       {isDeveloper && (
-        <Button id="Error" sx={{ mt: 2 }} onClick={() => navigate('/error')}>
+        <Button id="Error" onClick={() => navigate('/error')}>
           Error
         </Button>
       )}
@@ -129,8 +121,6 @@ const TeamActions = () => {
         open={pendingOpen}
         onClose={() => setPendingOpen(false)}
       />
-    </RootBox>
+    </Box>
   );
-};
-
-export default TeamActions;
+}
