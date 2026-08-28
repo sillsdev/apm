@@ -43,7 +43,7 @@ interface IProps {
   canPublish: boolean;
 }
 
-export default function ProjectMenu(props: IProps) {
+export function ProjectMenu(props: IProps) {
   const {
     inProject,
     isAdmin,
@@ -207,3 +207,5 @@ export default function ProjectMenu(props: IProps) {
     </>
   );
 }
+
+export default ProjectMenu;
