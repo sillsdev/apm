@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 
 const RECORD_KEY = 'F9,CTRL+9';
 
@@ -84,11 +84,23 @@ jest.mock('../crud/useWaveSurfer', () => ({
   },
 }));
 
+let capturedOnRecordError:
+  | ((e: { deviceLost?: boolean; deviceId?: string }) => void)
+  | undefined;
+
 jest.mock('../crud/useWavRecorder', () => ({
-  useWavRecorder: () => ({
-    startRecording: jest.fn(() => Promise.resolve(true)),
-    stopRecording: jest.fn(),
-  }),
+  useWavRecorder: (
+    _allowRecord: unknown,
+    _onStart: unknown,
+    _onStop: unknown,
+    onError: (e: { deviceLost?: boolean; deviceId?: string }) => void
+  ) => {
+    capturedOnRecordError = onError;
+    return {
+      startRecording: jest.fn(() => Promise.resolve(true)),
+      stopRecording: jest.fn(),
+    };
+  },
 }));
 
 jest.mock('react-redux', () => ({
@@ -105,6 +117,10 @@ jest.mock('react-redux', () => ({
     clearRecordingTip: 'Clear',
     reduceNoise: 'Reduce noise',
     downloadMedia: 'Download',
+    microphoneDisconnected:
+      'The microphone was disconnected. Select another microphone to record.',
+    microphoneDisconnectedFallback:
+      'The preferred microphone was disconnected. Default microphone selected.',
     getString: (key: string) => key,
   }),
   shallowEqual: jest.fn(),
@@ -120,9 +136,17 @@ jest.mock('../context/useGlobal', () => ({
   useGlobal: () => [undefined, jest.fn()],
 }));
 
+const mockShowMessage = jest.fn();
+
 jest.mock('../hoc/SnackBar', () => ({
+  AlertSeverity: {
+    Error: 'error',
+    Info: 'info',
+    Success: 'success',
+    Warning: 'warning',
+  },
   useSnackBar: () => ({
-    showMessage: jest.fn(),
+    showMessage: mockShowMessage,
     showTitledMessage: jest.fn(),
     messageReset: jest.fn(),
   }),
@@ -297,10 +321,80 @@ describe('WSAudioPlayer record hotkeys', () => {
     act(() => {
       capturedOnWSReady?.(10, false);
     });
-    rerender(
-      <WSAudioPlayer {...defaultProps} loading={false} blob={blob} />
-    );
+    rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={blob} />);
 
     expect(queryByText('Loading')).toBeNull();
+  });
+});
+
+describe('WSAudioPlayer microphone disconnect fallback', () => {
+  const headset = {
+    kind: 'audioinput' as const,
+    deviceId: 'headset',
+    label: 'Headset',
+  };
+  const laptop = {
+    kind: 'audioinput' as const,
+    deviceId: 'laptop',
+    label: 'Laptop',
+  };
+  let enumerateDevices: jest.Mock;
+  let onDeviceChange: (() => void) | undefined;
+  let previousMediaDevices: MediaDevices | undefined;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    capturedOnRecordError = undefined;
+    onDeviceChange = undefined;
+    localStorage.setItem('microphoneId', 'headset');
+    enumerateDevices = jest
+      .fn()
+      .mockResolvedValueOnce([headset, laptop])
+      .mockResolvedValue([laptop]);
+    previousMediaDevices = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        enumerateDevices,
+        addEventListener: jest.fn((_type: string, cb: () => void) => {
+          onDeviceChange = cb;
+        }),
+        removeEventListener: jest.fn(),
+        getSupportedConstraints: () => ({}),
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.removeItem('microphoneId');
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: previousMediaDevices,
+    });
+  });
+
+  it('applies the refreshed fallback when the selected first device is unplugged before enumerateDevices updates', async () => {
+    await act(async () => {
+      render(<WSAudioPlayer {...defaultProps} />);
+    });
+
+    expect(localStorage.getItem('microphoneId')).toBe('headset');
+
+    act(() => {
+      capturedOnRecordError?.({ deviceLost: true });
+    });
+
+    expect(localStorage.getItem('microphoneId')).toBe('headset');
+    expect(mockShowMessage).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      onDeviceChange?.();
+    });
+
+    await waitFor(() =>
+      expect(localStorage.getItem('microphoneId')).toBe('laptop')
+    );
+    expect(mockShowMessage).toHaveBeenCalledTimes(1);
   });
 });

@@ -511,11 +511,14 @@ function WSAudioPlayer(props: IProps) {
   const warnedMicLossRef = useRef(false);
 
   function warnMicrophoneDisconnected(fallbackDeviceId?: string) {
-    if (warnedMicLossRef.current) return;
-    warnedMicLossRef.current = true;
-    if (fallbackDeviceId) {
+    if (
+      fallbackDeviceId &&
+      fallbackDeviceId !== selectedMicrophoneIdRef.current
+    ) {
       setSelectedMicrophoneId(fallbackDeviceId);
     }
+    if (warnedMicLossRef.current) return;
+    warnedMicLossRef.current = true;
     showMessage(
       fallbackDeviceId
         ? t.microphoneDisconnectedFallback ||
@@ -1381,6 +1384,7 @@ function WSAudioPlayer(props: IProps) {
       launchTimer();
     } else if (e.deviceLost) {
       if (recordingRef.current) {
+        recordPreviewSuppressedRef.current = true;
         wsStopRecord();
         setRecording(false);
       }

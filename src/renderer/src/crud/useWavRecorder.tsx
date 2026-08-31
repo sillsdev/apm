@@ -22,6 +22,7 @@ import {
   isUnusableCaptureStream,
   listenForCaptureDeviceLoss,
 } from './captureConstraints';
+import { finalizeRecordingOnDeviceLoss } from './finalizeRecordingOnDeviceLoss';
 
 /** Defaults match Record step toolSettings when keys are absent (both off). */
 export function parseRecordCaptureAudioProcessing(
@@ -238,18 +239,22 @@ export function useWavRecorder(
       e?.error || e?.message || e?.toString?.() || 'Recorder error';
     logError(Severity.error, reporter, message);
     if (isDeviceLossError(e)) {
+      const wasRecording = isRecordingRef.current;
+      const recorder = recorderRef.current;
       isRecordingRef.current = false;
       peaksCaptureRef.current?.stop();
       peaksCaptureRef.current = undefined;
-      const recorder = recorderRef.current;
       recorderRef.current = undefined;
       recorderStreamIdRef.current = undefined;
-      dropCaptureStream();
-      try {
-        recorder?.cleanup();
-      } catch {
-        /* AudioContext may already be shut down */
-      }
+      ignoreTrackEndedRef.current = true;
+      stopWatchingStreamRef.current();
+      stopWatchingStreamRef.current = () => undefined;
+      void finalizeRecordingOnDeviceLoss(recorder, wasRecording).then(
+        (blob) => {
+          dropCaptureStream();
+          if (blob) onStop(blob);
+        }
+      );
       onError({ error: message, deviceLost: true });
       return;
     }
