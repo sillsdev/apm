@@ -13,6 +13,7 @@ import {
   Grid,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import EditSquareIcon from '@mui/icons-material/EditSquare';
@@ -461,10 +462,15 @@ export const ProjectCard = (props: IProps) => {
   const showEditSheet = canEditSheet && !isAdmin;
   const showPublish = canPublish && !isAdmin;
   const showStatusRow = showOffline || showEditSheet || showPublish;
+  const theme = useTheme();
+
+  // Height of one line of the card title
+  const cardTitleLine = theme.spacing(3.5);
 
   return (
     <>
-      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+      {/* This grid spacing allows maximum of 4 cards per row */}
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Card
           id={`card-${project.id}`}
           sx={{
@@ -511,28 +517,29 @@ export const ProjectCard = (props: IProps) => {
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1,
                     minWidth: 0,
-                    pr: '40px',
+                    // Title icon sizes are 32px and gap sizes are 4px
+                    pl: project?.attributes?.isPublic ? '72px' : '36px',
+                    pr: '36px',
                   }}
                 >
-                  {showBoldCardMark ? (
-                    <FormatBoldIcon />
-                  ) : (project?.attributes?.type || '').toLowerCase() ===
-                    'scripture' ? (
-                    <ScriptureIcon sx={{ p: 0.5 }} />
-                  ) : isStory ? (
-                    <StoryIcon sx={{ p: 0.5 }} />
-                  ) : (
-                    <EditSquareIcon sx={{ p: 0.5 }} />
-                  )}
-                  {project.attributes.isPublic && <ShareIcon />}
                   <Tooltip
                     title={
                       isMobileWidth ? '' : (project?.attributes?.name ?? '')
                     }
                   >
-                    <Typography noWrap sx={{ fontSize: 'large' }}>
+                    <Typography
+                      sx={{
+                        fontSize: 'large',
+                        lineHeight: cardTitleLine,
+                        minWidth: 0,
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 2,
+                        overflow: 'hidden',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
                       {project?.attributes?.name}
                     </Typography>
                   </Tooltip>
@@ -619,11 +626,38 @@ export const ProjectCard = (props: IProps) => {
             </Box>
           </CardActionArea>
           <Box
-            sx={(theme) => ({
+            sx={{
+              position: 'absolute',
+              top: theme.spacing(1.5),
+              left: theme.spacing(1.5),
+              height: cardTitleLine,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              pointerEvents: 'none',
+            }}
+          >
+            {showBoldCardMark ? (
+              <FormatBoldIcon sx={{ p: 0.5 }} />
+            ) : (project?.attributes?.type || '').toLowerCase() ===
+              'scripture' ? (
+              <ScriptureIcon sx={{ p: 0.5 }} />
+            ) : isStory ? (
+              <StoryIcon sx={{ p: 0.5 }} />
+            ) : (
+              <EditSquareIcon sx={{ p: 0.5 }} />
+            )}
+            {project?.attributes?.isPublic && <ShareIcon />}
+          </Box>
+          <Box
+            sx={{
               position: 'absolute',
               top: theme.spacing(1.5),
               right: theme.spacing(1.5),
-            })}
+              height: cardTitleLine,
+              display: 'flex',
+              alignItems: 'center',
+            }}
           >
             <ProjectMenu
               action={handleProjectAction}
