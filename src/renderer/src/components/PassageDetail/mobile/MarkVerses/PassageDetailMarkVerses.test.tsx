@@ -26,6 +26,11 @@ import PassageDetailMarkVerses, {
   MarkVersesProps,
 } from './PassageDetailMarkVerses';
 import { DetailPlayerProps } from '../../PassageDetailPlayer';
+import { type ApplyRegionColor } from '../../../../crud/useWavesurferRegions';
+import {
+  MARK_VERSES_COMPLETED_RGBA,
+  MARK_VERSES_UNMARKED_RGBA,
+} from '../../../../utils/markVersesSegmentColors';
 
 jest.mock('../../../../context/useGlobal', () => ({
   useGlobal: jest.fn(),
@@ -105,6 +110,10 @@ const mockSetCurrentStep = jest.fn();
 const mockSetCurrentSegment = jest.fn();
 let mockPlayerAction: ((segment: string, init: boolean) => void) | undefined;
 let mockClearSegments: (() => void | Promise<void>) | undefined;
+/** The colour callback the tool hands the waveform, captured from the player props. */
+let mockApplyRegionColor: ApplyRegionColor | undefined;
+/** The waveform repaint the tool triggers when the set of marked verses changes. */
+const mockApplyRegionColors = jest.fn();
 const mockRowData: IRow[] = [];
 
 const passageAttributes = {
@@ -187,9 +196,11 @@ jest.mock('../../PassageDetailPlayer', () => {
     controlsRef,
     hasSegmentUndo,
     onSegmentUndo,
+    applyRegionColor,
   }: DetailPlayerProps) => {
     mockPlayerAction = onSegment;
     mockClearSegments = onClearSegments;
+    mockApplyRegionColor = applyRegionColor;
     if (controlsRef) {
       controlsRef.current = {
         gotoTime: mockGotoTime,
@@ -197,6 +208,7 @@ jest.mock('../../PassageDetailPlayer', () => {
         getProgress: () => 0,
         getPlaybackRate: () => 1,
         isPlaying: () => false,
+        applyRegionColors: mockApplyRegionColors,
       } as any;
     }
     // Mirror the real player, which renders a segment-undo IconButton
@@ -524,6 +536,101 @@ test('updates timestamp rows when the player emits verse markers', async () => {
   expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
   expect(screen.getByLabelText('verse-reference-2')).toHaveTextContent('1:2');
   expect(screen.getByLabelText('verse-reference-3')).toHaveTextContent('1:3');
+});
+
+/** The tbody row whose Limits cell reads `limitsText`. */
+const markVersesRowByLimits = (limitsText: string) => {
+  const row = within(markVersesTbody()).getByText(limitsText).closest('tr');
+  if (!row) throw new Error(`mark verses row not found for ${limitsText}`);
+  return row;
+};
+
+/**
+ * Emit waveform segments as the player would, one region per pair.
+ * `[[0, 10], [10, 69]]` is two segments, the second running to the end of the
+ * audio. Each carries the verse label the tool would have assigned it, so the
+ * emit does not trigger a label-rewrite round trip that would swallow the next
+ * one.
+ */
+const emitSegments = async (bounds: [number, number][]) => {
+  await act(async () => {
+    mockPlayerAction?.(
+      JSON.stringify({
+        regions: JSON.stringify(
+          bounds.map(([start, end], index) => ({
+            start,
+            end,
+            label: `1:${index + 1}`,
+          }))
+        ),
+      }),
+      false
+    );
+    await Promise.resolve();
+  });
+};
+
+/**
+ * The last segment - the one running to the end of the audio - is only the
+ * grey "unmarked" colour while verses below it are still unmarked. Once every
+ * verse row has limits the tail is closed, so that segment and its table row
+ * are completed/green like the rest.
+ *
+ * Both halves are asserted together on purpose. The green half alone passes
+ * vacuously if the tool stops distinguishing the open tail at all, and the grey
+ * half alone passes if the tail is treated as permanently open - which is the
+ * reported failure: the final segment and its row staying grey after every
+ * verse has been marked. The waveform is checked through the colour callback
+ * the tool hands the player, since the region colours themselves live in
+ * WaveSurfer.
+ */
+test('the segment ending with the audio is completed once every verse is marked', async () => {
+  runTest({ width: 375 });
+  await waitForPassageRowsReady();
+
+  // Passage is 1:1-4, so four rows. Three segments leave 1:4 unmarked: the
+  // tail is still open and the last segment must read as unfinished.
+  await emitSegments([
+    [0, 10],
+    [10, 20],
+    [20, 69],
+  ]);
+
+  await waitFor(() => {
+    expect(markVersesRowByLimits(lim(0, 10))).toHaveStyle({
+      backgroundColor: MARK_VERSES_COMPLETED_RGBA,
+    });
+  });
+  // The table leaves an unfinished row on the default paper background rather
+  // than tinting it; only the waveform gets the explicit unmarked grey.
+  expect(markVersesRowByLimits(lim(20, 69))).not.toHaveStyle({
+    backgroundColor: MARK_VERSES_COMPLETED_RGBA,
+  });
+  expect(mockApplyRegionColor?.('base', 2, 3)).toBe(MARK_VERSES_UNMARKED_RGBA);
+
+  mockApplyRegionColors.mockClear();
+
+  // Marking 1:4 closes the tail. Every row, and every waveform region, is now
+  // completed - including the segment that ends with the audio.
+  await emitSegments([
+    [0, 10],
+    [10, 20],
+    [20, 30],
+    [30, 69],
+  ]);
+
+  await waitFor(() => {
+    expect(markVersesRowByLimits(lim(30, 69))).toHaveStyle({
+      backgroundColor: MARK_VERSES_COMPLETED_RGBA,
+    });
+  });
+  expect(markVersesRowByLimits(lim(20, 30))).toHaveStyle({
+    backgroundColor: MARK_VERSES_COMPLETED_RGBA,
+  });
+  expect(mockApplyRegionColor?.('base', 3, 4)).toBe(MARK_VERSES_COMPLETED_RGBA);
+  // The waveform is only repainted when the tool asks it to, so a correct
+  // colour callback that is never re-applied still leaves the tail grey.
+  expect(mockApplyRegionColors).toHaveBeenCalled();
 });
 
 test('highlights the matching waveform region when a row is edited', async () => {

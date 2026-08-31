@@ -717,6 +717,14 @@ export function PassageDetailGuidedPhraseRecord({
         // How long this clause will take, so Record can be withheld for exactly
         // that long. See recordBlocked for why this is timed rather than driven
         // by an event.
+        // Always 1 as things stand: the speed control is only rendered when
+        // PassageDetailPlayer is given allowSpeed or allowZoomAndSpeed, and this
+        // step passes neither, so nothing here can change the rate. Dividing by
+        // it is for whenever that is turned on - at 0.25x a clause takes four
+        // times as long, and withholding Record for the unscaled span would
+        // release it three quarters of the way through the audio. Untested at
+        // any rate other than 1 for the same reason: there is no way to reach
+        // one from this step yet.
         const rate = ctrl.getPlaybackRate?.() || 1;
         setRecordBlockedUntil(
           Date.now() +
