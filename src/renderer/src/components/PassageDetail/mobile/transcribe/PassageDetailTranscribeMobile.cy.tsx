@@ -182,6 +182,8 @@ describe('PassageDetailTranscribeMobile', () => {
       onNavigate?: () => void;
       projType?: string;
       projectTypeName?: string;
+      aiTranscribe?: boolean;
+      offline?: boolean;
     } = {}
   ) => {
     const {
@@ -206,6 +208,8 @@ describe('PassageDetailTranscribeMobile', () => {
       onNavigate,
       projType = 'Scripture',
       projectTypeName = 'Scripture',
+      aiTranscribe = true,
+      offline = false,
     } = options;
 
     const defaultMedia: MediaFileD = {
@@ -284,7 +288,10 @@ describe('PassageDetailTranscribeMobile', () => {
             type: 'organization',
             attributes: {
               name: 'Test Team',
-              defaultParams: JSON.stringify({ permissions: true }),
+              defaultParams: JSON.stringify({
+                permissions: true,
+                features: { aiTranscribe },
+              }),
             },
           },
         ],
@@ -479,6 +486,7 @@ describe('PassageDetailTranscribeMobile', () => {
           init={createInitialState(memory, {
             orgRole: hasPermission ? RoleNames.Admin : RoleNames.Member,
             projType,
+            offline,
           })}
         >
           <OrbitContext.Provider value={orbitContextValue}>
@@ -496,6 +504,29 @@ describe('PassageDetailTranscribeMobile', () => {
       </Provider>
     );
   };
+
+  it('hides ASR button when team aiTranscribe feature is disabled', () => {
+    mountTranscribeMobile({ aiTranscribe: false });
+
+    cy.get('#asrButton').should('not.exist');
+    cy.get('#transcriptionText')
+      .should('be.visible')
+      .and('not.have.attr', 'readonly');
+    cy.get('#transcriber\\.save').should('be.visible');
+  });
+
+  it('shows enabled ASR button when team aiTranscribe is enabled and user has permission', () => {
+    mountTranscribeMobile({ aiTranscribe: true });
+
+    cy.get('[data-cy="mobile-asr-control"]').should('be.visible');
+    cy.get('#asrButton').should('be.visible').and('not.be.disabled');
+  });
+
+  it('hides ASR button when offline even if team aiTranscribe is enabled', () => {
+    mountTranscribeMobile({ aiTranscribe: true, offline: true });
+
+    cy.get('#asrButton').should('not.exist');
+  });
 
   it('renders top player toolbar, speed, ASR button, textarea and action buttons', () => {
     mountTranscribeMobile();

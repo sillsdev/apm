@@ -42,6 +42,7 @@ import {
   related,
   ToolSlug,
   useArtifactType,
+  orgDefaultFeatures,
   useOrgDefaults,
   useProjectType,
   useStepTool,
@@ -144,12 +145,16 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const [project] = useGlobal('project');
   const [projType] = useGlobal('projType');
   const [organization] = useGlobal('organization');
+  const [offline] = useGlobal('offline');
   const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const { showMessage } = useSnackBar();
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
+  const features = getOrgDefault(orgDefaultFeatures) as
+    { aiTranscribe?: boolean } | undefined;
+  const showAsrButton = Boolean(features?.aiTranscribe) && !offline;
   const { getProjType } = useProjectType();
   const { slugFromId } = useArtifactType();
 
@@ -725,25 +730,30 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         parentToolId={currentstep}
       />
 
-      <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-        <Button
-          id="asrButton"
-          variant="outlined"
-          onClick={asr.handleTranscribe}
-          startIcon={<TranscriptionLogo />}
-          disabled={isReadOnly}
-          sx={{
-            textTransform: 'none',
-            borderColor: 'divider',
-            color: 'text.primary',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 1,
-          }}
+      {showAsrButton && (
+        <Box
+          data-cy="mobile-asr-control"
+          sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
         >
-          {tPlayer.recognizeSpeech || 'Auto Transcription...'}
-        </Button>
-      </Box>
+          <Button
+            id="asrButton"
+            variant="outlined"
+            onClick={asr.handleTranscribe}
+            startIcon={<TranscriptionLogo />}
+            disabled={isReadOnly}
+            sx={{
+              textTransform: 'none',
+              borderColor: 'divider',
+              color: 'text.primary',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+            }}
+          >
+            {tPlayer.recognizeSpeech || 'Auto Transcription...'}
+          </Button>
+        </Box>
+      )}
 
       <Box sx={{ width: '100%', minWidth: 0 }}>
         <StyledTextAreaAutosize
