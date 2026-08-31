@@ -44,7 +44,13 @@ import {
 } from '../../../../crud';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
-import { NamedRegions } from '../../../../utils/namedSegments';
+import {
+  getSegments,
+  NamedRegions,
+  updateSegments,
+} from '../../../../utils/namedSegments';
+import { logError, Severity } from '../../../../utils/logErrorService';
+import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
 import type { FontData } from '../../../../crud/fontChoice';
 import {
   ArtifactTypeSlug,
@@ -102,7 +108,9 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const { setState } = useContext(PassageDetailContext);
   const { waitForSave } = useContext(UnsavedContext).state;
-  const { toolChanged, isChanged } = useContext(UnsavedContext).state;
+  const { toolChanged, isChanged, saveCompleted } =
+    useContext(UnsavedContext).state;
+  const projectSegmentSave = useProjectSegmentSave();
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission =
     canDoSectionStep(currentstep, section) &&
@@ -344,7 +352,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     getPosition: getPositionCb,
     setPosition: setPositionCb,
     toolChanged,
-    saveCompleted: () => toolChanged(currentstep, false),
+    saveCompleted,
     showMessage,
     savingMessage: t.saving,
     errorReporter,
@@ -466,11 +474,30 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   );
 
   const onSegmentChange = useCallback(
-    (segments: string) => {
+    async (segments: string, init?: boolean) => {
       segmentsRef.current = segments;
-      toolChanged(currentstep, true);
+      if (init) return;
+      if (!mediafile) return;
+      const currentSavedSegments = getSegments(
+        NamedRegions.Transcription,
+        mediafile.attributes?.segments ?? '{}'
+      );
+      if (segments === currentSavedSegments) return;
+      const updatedSegments = updateSegments(
+        NamedRegions.Transcription,
+        mediafile.attributes?.segments ?? '{}',
+        segments
+      );
+      try {
+        await projectSegmentSave({
+          media: mediafile,
+          segments: updatedSegments,
+        });
+      } catch (err) {
+        logError(Severity.error, errorReporter, err as Error);
+      }
     },
-    [toolChanged, currentstep]
+    [mediafile, projectSegmentSave, errorReporter]
   );
 
   const handleProgress = useCallback((progress: number) => {

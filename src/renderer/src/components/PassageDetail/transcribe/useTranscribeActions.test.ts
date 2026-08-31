@@ -229,4 +229,28 @@ describe('useTranscribeActions', () => {
     expect(mockSetComplete).toHaveBeenCalledWith(false);
     expect(mockOnReopen).toHaveBeenCalled();
   });
+
+  it('handleSave forwards error to saveCompleted when update fails', async () => {
+    (mockMemory.update as any).mockRejectedValueOnce(new Error('Save failed'));
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: mockMediafile,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        getTranscriptionText: () => 'Updated transcription text',
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSaveCompleted).toHaveBeenCalledWith('step1', 'Save failed');
+  });
 });

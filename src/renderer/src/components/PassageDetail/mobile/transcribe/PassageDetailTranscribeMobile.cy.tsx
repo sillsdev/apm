@@ -52,7 +52,10 @@ const createMockQueryBuilder = (recordsByType: RecordsByType) => ({
     ),
 });
 
-const createMockMemory = (recordsByType: RecordsByType): Memory =>
+const createMockMemory = (
+  recordsByType: RecordsByType,
+  memoryUpdate?: any
+): Memory =>
   ({
     cache: {
       query: (queryFn: (q: unknown) => unknown) =>
@@ -62,7 +65,7 @@ const createMockMemory = (recordsByType: RecordsByType): Memory =>
         query: () => queryFn(createMockQueryBuilder(recordsByType)),
       }),
     },
-    update: cy.stub().as('memoryUpdate').resolves(),
+    update: memoryUpdate ?? cy.stub().as('memoryUpdate').resolves(),
     schema: {
       models: {},
       generateId: () => 'id-mock',
@@ -146,6 +149,8 @@ describe('PassageDetailTranscribeMobile', () => {
       onSetStepComplete?: (complete: boolean) => void;
       onHideHeader?: (hide: boolean) => void;
       onSetSelected?: (id: string, inPlayer: any) => void;
+      onSaveCompleted?: (toolId: string, err?: string) => void;
+      memoryUpdate?: any;
       playerMediafile?: MediaFileD | undefined;
     } = {}
   ) => {
@@ -155,6 +160,8 @@ describe('PassageDetailTranscribeMobile', () => {
       onSetStepComplete = cy.stub().as('setStepComplete'),
       onHideHeader = cy.stub().as('setHideMobileHeader'),
       onSetSelected = cy.stub().as('setSelected'),
+      onSaveCompleted = cy.stub().as('saveCompleted'),
+      memoryUpdate,
       playerMediafile,
     } = options;
 
@@ -195,50 +202,53 @@ describe('PassageDetailTranscribeMobile', () => {
       },
     } as unknown as SectionD;
 
-    const memory = createMockMemory({
-      organization: [
-        {
-          id: 'org-1',
-          type: 'organization',
-          attributes: {
-            name: 'Test Team',
-            defaultParams: '{}',
+    const memory = createMockMemory(
+      {
+        organization: [
+          {
+            id: 'org-1',
+            type: 'organization',
+            attributes: {
+              name: 'Test Team',
+              defaultParams: '{}',
+            },
           },
-        },
-      ],
-      project: [
-        {
-          id: 'proj-1',
-          type: 'project',
-          attributes: {
-            name: 'Test Project',
-            defaultFont: 'Charis SIL',
-            defaultFontSize: '14pt',
-            rtl: false,
+        ],
+        project: [
+          {
+            id: 'proj-1',
+            type: 'project',
+            attributes: {
+              name: 'Test Project',
+              defaultFont: 'Charis SIL',
+              defaultFontSize: '14pt',
+              rtl: false,
+            },
           },
-        },
-      ],
-      plan: [
-        {
-          id: 'plan-1',
-          type: 'plan',
-          attributes: { slug: 'test-plan', flat: false },
-        },
-      ],
-      section: [mockSection],
-      passage: [mockPassage],
-      mediafile: [mockMedia],
-      orgworkflowstep: [
-        {
-          id: 'step-transcribe',
-          type: 'orgworkflowstep',
-          attributes: {
-            sequencenum: 1,
-            tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
+        ],
+        plan: [
+          {
+            id: 'plan-1',
+            type: 'plan',
+            attributes: { slug: 'test-plan', flat: false },
           },
-        },
-      ],
-    });
+        ],
+        section: [mockSection],
+        passage: [mockPassage],
+        mediafile: [mockMedia],
+        orgworkflowstep: [
+          {
+            id: 'step-transcribe',
+            type: 'orgworkflowstep',
+            attributes: {
+              sequencenum: 1,
+              tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
+            },
+          },
+        ],
+      },
+      memoryUpdate
+    );
 
     const orbitCache = new Map<string, unknown[]>();
     const orbitContextValue: IOrbitContext = {
@@ -259,7 +269,7 @@ describe('PassageDetailTranscribeMobile', () => {
       clearRequested: () => false,
       clearCompleted: cy.stub(),
       waitForSave: (_cb: any, _ms?: number) => Promise.resolve(),
-      saveCompleted: cy.stub(),
+      saveCompleted: onSaveCompleted,
     };
 
     const passageDetailContextValue = {
@@ -393,6 +403,36 @@ describe('PassageDetailTranscribeMobile', () => {
       'have.been.calledWith',
       'media-1',
       PlayInPlayer.yes
+    );
+  });
+
+  it('forwards error to saveCompleted when save fails so unsaved state is not silently cleared', () => {
+    cy.on('uncaught:exception', () => false);
+    const onSaveCompleted = cy.stub().as('saveCompleted');
+    const memoryUpdate = cy.stub().as('memoryUpdate').rejects(new Error('Save failed'));
+    mountTranscribeMobile({
+      onSaveCompleted,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriber\\.save').click();
+    cy.get('@saveCompleted').should(
+      'have.been.calledWith',
+      'step-transcribe',
+      'Save failed'
+    );
+  });
+
+  it('notifies saveCompleted on successful save', () => {
+    const onSaveCompleted = cy.stub().as('saveCompleted');
+    mountTranscribeMobile({
+      onSaveCompleted,
+    });
+
+    cy.get('#transcriber\\.save').click();
+    cy.get('@saveCompleted').should(
+      'have.been.calledWith',
+      'step-transcribe'
     );
   });
 });
