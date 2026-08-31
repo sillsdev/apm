@@ -26,6 +26,7 @@ import {
   ActivityStates,
   MediaFileD,
   PassageD,
+  RoleNames,
   SectionD,
 } from '../../../../model';
 import { createMinimalWavBlob } from '../../../../../cypress/support/recordingMocks';
@@ -166,6 +167,7 @@ describe('PassageDetailTranscribeMobile', () => {
     const {
       transcription = 'Existing transcription text',
       transcriptionstate = ActivityStates.Transcribing,
+      hasPermission = true,
       onSetStepComplete = cy.stub().as('setStepComplete'),
       onGotoNextStep = cy.stub().as('gotoNextStep'),
       onHideHeader = cy.stub().as('setHideMobileHeader'),
@@ -228,6 +230,13 @@ describe('PassageDetailTranscribeMobile', () => {
       relationships: {
         plan: { data: { type: 'plan', id: 'plan-1' } },
         passages: { data: [{ type: 'passage', id: 'pass-1' }] },
+        ...(hasPermission
+          ? {}
+          : {
+              organizationScheme: {
+                data: { type: 'organizationscheme', id: 'scheme-1' },
+              },
+            }),
       },
     } as unknown as SectionD;
 
@@ -251,10 +260,33 @@ describe('PassageDetailTranscribeMobile', () => {
             type: 'organization',
             attributes: {
               name: 'Test Team',
-              defaultParams: '{}',
+              defaultParams: JSON.stringify({ permissions: true }),
             },
           },
         ],
+        organizationschemestep: hasPermission
+          ? []
+          : [
+              {
+                id: 'scheme-step-1',
+                type: 'organizationschemestep',
+                attributes: {},
+                relationships: {
+                  organizationscheme: {
+                    data: { type: 'organizationscheme', id: 'scheme-1' },
+                  },
+                  orgWorkflowStep: {
+                    data: {
+                      type: 'orgworkflowstep',
+                      id: currentstep,
+                    },
+                  },
+                  user: {
+                    data: { type: 'user', id: 'user-other' },
+                  },
+                },
+              },
+            ],
         project: [
           {
             id: 'proj-1',
@@ -289,6 +321,9 @@ describe('PassageDetailTranscribeMobile', () => {
         mediafile: mediaList,
         artifacttype: artifactTypes,
         orgworkflowstep: stepList,
+        user: [{ id: 'user-1', type: 'user', attributes: { name: 'User 1' } }],
+        group: [],
+        groupmembership: [],
       },
       memoryUpdate
     );
@@ -355,7 +390,11 @@ describe('PassageDetailTranscribeMobile', () => {
 
     cy.mount(
       <Provider store={mockStore}>
-        <GlobalProvider init={createInitialState(memory)}>
+        <GlobalProvider
+          init={createInitialState(memory, {
+            orgRole: hasPermission ? RoleNames.Admin : RoleNames.Member,
+          })}
+        >
           <OrbitContext.Provider value={orbitContextValue}>
             <UnsavedContext.Provider
               value={{ state: unsavedState as any, setState: cy.stub() }}
@@ -726,5 +765,29 @@ describe('PassageDetailTranscribeMobile', () => {
 
     // Textarea should display French text
     cy.get('#transcriptionText').should('have.value', 'French BT text');
+  });
+
+  it('disables segment editing, ASR, and text editing when user has no edit permission', () => {
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      hasPermission: false,
+      memoryUpdate,
+    });
+
+    cy.get('[data-cy="transcribe-state-badge"]').should(
+      'contain.text',
+      'Transcribing'
+    );
+    cy.get('#transcriber\\.save').should('not.exist');
+    cy.get('#transcriber\\.reject').should('not.exist');
+    cy.get('#transcriber\\.complete').should('not.exist');
+    cy.get('#transcriber\\.reopen').should('be.disabled');
+    cy.get('#transcriptionText').should('have.attr', 'readonly');
+    cy.get('#asrButton').should('be.disabled');
+    cy.get('#wsSegment').should('not.exist');
+    cy.get('#wsSplit').should('not.exist');
+    cy.get('#wsSegmentReset').should('not.exist');
+    cy.get('@memoryUpdate').should('not.have.been.called');
   });
 });

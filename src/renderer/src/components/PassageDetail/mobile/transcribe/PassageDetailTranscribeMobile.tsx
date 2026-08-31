@@ -451,13 +451,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleTextAdd = useCallback(
     (newText: string) => {
+      if (!hasPermission) return;
       setTextValue((prev) => {
         const updated = prev + newText;
         toolChanged(currentstep, true);
         return updated;
       });
     },
-    [toolChanged, currentstep]
+    [hasPermission, toolChanged, currentstep]
   );
 
   const asr = useTranscribeAsr({
@@ -471,10 +472,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (!hasPermission) return;
       setTextValue(e.target.value);
       toolChanged(currentstep, true);
     },
-    [toolChanged, currentstep]
+    [hasPermission, toolChanged, currentstep]
   );
 
   const handleFocus = useCallback(() => {
@@ -505,16 +507,17 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const onSegmentParamChange = useCallback(
     (params: IRegionParams, teamDefault: boolean) => {
       setSegParams(params);
-      if (teamDefault) setOrgDefault(NamedRegions.Transcription, params);
+      if (teamDefault && hasPermission && canSetOrgDefault) {
+        setOrgDefault(NamedRegions.Transcription, params);
+      }
     },
-    [setOrgDefault]
+    [canSetOrgDefault, hasPermission, setOrgDefault]
   );
 
   const onSegmentChange = useCallback(
     async (segments: string, init?: boolean) => {
       segmentsRef.current = segments;
-      if (init) return;
-      if (!mediafile) return;
+      if (!hasPermission || init || !mediafile) return;
       const currentSavedSegments = getSegments(
         NamedRegions.Transcription,
         mediafile.attributes?.segments ?? '{}'
@@ -534,7 +537,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         logError(Severity.error, errorReporter, err as Error);
       }
     },
-    [mediafile, projectSegmentSave, errorReporter]
+    [hasPermission, mediafile, projectSegmentSave, errorReporter]
   );
 
   const handleProgress = useCallback((progress: number) => {
@@ -597,16 +600,16 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       <PassageDetailPlayer
         width={width}
         layoutMode="mobileTranscribe"
-        allowSegment={NamedRegions.Transcription}
-        allowAutoSegment={true}
+        allowSegment={hasPermission ? NamedRegions.Transcription : undefined}
+        allowAutoSegment={hasPermission}
         allowZoomAndSpeed={true}
         hideZoom={true}
         showTranscriptionButton={false}
         defaultSegParams={segParams}
-        canSetDefaultParams={canSetOrgDefault}
+        canSetDefaultParams={hasPermission && canSetOrgDefault}
         onProgress={handleProgress}
-        onSegment={onSegmentChange}
-        onSegmentParamChange={onSegmentParamChange}
+        onSegment={hasPermission ? onSegmentChange : undefined}
+        onSegmentParamChange={hasPermission ? onSegmentParamChange : undefined}
         parentToolId={currentstep}
       />
 
@@ -616,6 +619,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           variant="outlined"
           onClick={asr.handleTranscribe}
           startIcon={<TranscriptionLogo />}
+          disabled={!hasPermission}
           sx={{
             textTransform: 'none',
             borderColor: 'divider',
@@ -638,6 +642,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           onChange={handleTextChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          readOnly={!hasPermission}
           placeholder={t.transcriptionType ?? 'Transcription'}
           style={{
             ...fontStyle,
