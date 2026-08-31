@@ -32,6 +32,30 @@ describe('useTranscribeActions', () => {
     return stateOp?.record?.attributes?.transcriptionstate;
   };
 
+  const mockMemoryWithUnassignedTranscriber = () => {
+    const sectionRec = {
+      ...mockSection,
+      relationships: {
+        transcriber: { data: null },
+      },
+    } as unknown as SectionD;
+    mockMemory.cache.query = jest.fn((queryFn: any) =>
+      queryFn({
+        findRecord: ({ type, id }: { type: string; id: string }) => {
+          if (type === 'mediafile' && id === 'm1') return mockMediafile;
+          if (type === 'section' && id === 's1') return sectionRec;
+          return undefined;
+        },
+      })
+    );
+  };
+
+  const mockTranscriptionSaveThenAssignFailure = () => {
+    (mockMemory.update as jest.Mock)
+      .mockResolvedValueOnce(undefined as unknown as never)
+      .mockRejectedValueOnce(new Error('Assign failed') as unknown as never);
+  };
+
   beforeEach(() => {
     mockMemory = {
       schema: {
@@ -610,6 +634,132 @@ describe('useTranscribeActions', () => {
 
     expect(mockMemory.update).not.toHaveBeenCalled();
     expect(mockSaveCompleted).toHaveBeenCalledWith('step1', expect.any(String));
+  });
+
+  describe('assignment failure after successful transcription save', () => {
+    beforeEach(() => {
+      mockMemoryWithUnassignedTranscriber();
+      mockTranscriptionSaveThenAssignFailure();
+    });
+
+    it('save notifies saveCompleted of success and does not report transcription save failure when assignment fails', async () => {
+      const { result } = renderHook(() =>
+        useTranscribeActions({
+          passage: mockPassage,
+          mediafile: mockMediafile,
+          user: 'user1',
+          memory: mockMemory,
+          section: mockSection,
+          toolId: 'step1',
+          getTranscriptionText: () => 'Updated transcription text',
+          saveCompleted: mockSaveCompleted,
+        })
+      );
+
+      await act(async () => {
+        await result.current.save(
+          ActivityStates.Transcribing,
+          0,
+          undefined,
+          undefined
+        );
+      });
+
+      expect(mockMemory.update).toHaveBeenCalledTimes(2);
+      expect(mockSaveCompleted).toHaveBeenCalledWith('step1');
+      expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+        'step1',
+        'Assign failed'
+      );
+      expect(mockSaveCompleted).toHaveBeenCalledTimes(1);
+    });
+
+    it('handleSave does not report transcription save failure when assignment fails', async () => {
+      const { result } = renderHook(() =>
+        useTranscribeActions({
+          passage: mockPassage,
+          mediafile: mockMediafile,
+          user: 'user1',
+          memory: mockMemory,
+          section: mockSection,
+          toolId: 'step1',
+          getTranscriptionText: () => 'Updated transcription text',
+          saveCompleted: mockSaveCompleted,
+        })
+      );
+
+      await act(async () => {
+        await result.current.handleSave();
+      });
+
+      expect(mockSaveCompleted).toHaveBeenCalledWith('step1');
+      expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+        'step1',
+        'Assign failed'
+      );
+      expect(mockSaveCompleted).toHaveBeenCalledTimes(1);
+    });
+
+    it('handleSubmit still completes step when assignment fails after transcription save succeeds', async () => {
+      const { result } = renderHook(() =>
+        useTranscribeActions({
+          passage: mockPassage,
+          mediafile: mockMediafile,
+          user: 'user1',
+          memory: mockMemory,
+          section: mockSection,
+          toolId: 'step1',
+          hasChecking: true,
+          noParatext: false,
+          getTranscriptionText: () => 'Completed text',
+          setComplete: mockSetComplete,
+          onReloadPlayer: mockOnReloadPlayer,
+          setPosition: mockSetPosition,
+          saveCompleted: mockSaveCompleted,
+        })
+      );
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(mockSetComplete).toHaveBeenCalledWith(true);
+      expect(mockOnReloadPlayer).toHaveBeenCalledWith(mockMediafile);
+      expect(mockSetPosition).toHaveBeenCalledWith(0);
+      expect(mockSaveCompleted).toHaveBeenCalledWith('step1');
+      expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+        'step1',
+        'Assign failed'
+      );
+    });
+
+    it('does not attempt assignment when transcription update fails', async () => {
+      (mockMemory.update as jest.Mock).mockReset();
+      (mockMemory.update as jest.Mock).mockRejectedValueOnce(
+        new Error('Save failed') as unknown as never
+      );
+
+      const { result } = renderHook(() =>
+        useTranscribeActions({
+          passage: mockPassage,
+          mediafile: mockMediafile,
+          user: 'user1',
+          memory: mockMemory,
+          section: mockSection,
+          toolId: 'step1',
+          getTranscriptionText: () => 'Updated transcription text',
+          saveCompleted: mockSaveCompleted,
+        })
+      );
+
+      await act(async () => {
+        await result.current.handleSave();
+      });
+
+      expect(mockMemory.update).toHaveBeenCalledTimes(1);
+      expect(mockSaveCompleted).toHaveBeenCalledWith('step1', 'Save failed');
+      expect(mockSaveCompleted).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('reports canReopen as false when mediafile is undefined', () => {

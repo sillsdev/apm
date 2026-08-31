@@ -198,15 +198,23 @@ export function useTranscribeActions({
       transcriptionInRef.current = transcription;
       try {
         await memory.update(ops);
-        saveCompleted?.(toolId);
-        setLastSaved(currentDateTime());
-        savingRef.current = false;
-        await handleAssign(curState);
       } catch (err: any) {
         transcriptionInRef.current = prevtran;
         saveCompleted?.(toolId, err?.message);
         savingRef.current = false;
         throw err;
+      }
+      saveCompleted?.(toolId);
+      setLastSaved(currentDateTime());
+      savingRef.current = false;
+      try {
+        await handleAssign(curState);
+      } catch (err: any) {
+        logError(
+          Severity.error,
+          errorReporter,
+          `Assignment failed: ${err?.message}`
+        );
       }
     },
     [
@@ -219,6 +227,7 @@ export function useTranscribeActions({
       toolId,
       saveCompleted,
       handleAssign,
+      errorReporter,
     ]
   );
 
