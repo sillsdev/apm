@@ -60,6 +60,8 @@ import type { MediaFileD } from '../../src/model';
 import { boldDefaultSegParams } from '../../src/components/PassageDetail/carefulSpeech/boldCarefulSpeechSegParams';
 import { regionsJsonFromList } from '../../src/components/PassageDetail/carefulSpeech/carefulSpeechBoundary';
 import { prettySegment } from '../../src/utils/prettySegment';
+import { parseMediaLanguageBcp47 } from '../../src/utils/mediaLanguage';
+import { phraseBtBoundaryRegionName } from '../../src/components/PassageDetail/carefulSpeech/matchesGuidedOutputRow';
 import PassageDetailPhraseBackTranslate from '../../src/components/PassageDetail/PassageDetailPhraseBackTranslate';
 
 // ---------------------------------------------------------------------------
@@ -97,16 +99,8 @@ export const USER_ID = 'user-1';
 export const ORG_ID = 'org-1';
 export const STEP_LANGUAGE = 'English|en';
 export const STEP_BCP47 = 'en';
-/** Named-region bucket PBT stores its boundaries in (phraseBtBoundaryRegionName). */
-export const BT_REGION_NAME = `BT:${STEP_BCP47}`;
-
-function parseBcp47FromLanguageField(value: string): string {
-  const trimmed = String(value ?? '').trim();
-  if (!trimmed) return 'und';
-  const pipe = trimmed.indexOf('|');
-  if (pipe === -1) return trimmed;
-  return trimmed.slice(pipe + 1) || 'und';
-}
+/** Named-region bucket PBT stores its boundaries in. */
+export const BT_REGION_NAME = phraseBtBoundaryRegionName(STEP_BCP47);
 
 /** Fake S3 host the intercepted POST hands back for the audio PUT. */
 const FAKE_AUDIO_HOST = 'https://pbt-test.invalid';
@@ -457,7 +451,7 @@ function segmentsAttribute(segments: SegmentSpec[], bcp47: string): string {
   }));
   return JSON.stringify([
     {
-      name: `BT:${bcp47}`,
+      name: phraseBtBoundaryRegionName(bcp47),
       regionInfo: regionsJsonFromList(regions, boldDefaultSegParams),
     },
   ]);
@@ -499,7 +493,7 @@ function takeRecord(
 function seedRecords(memory: Memory, options: MountPbtOptions) {
   const segments = options.segments ?? [];
   const stepLanguage = options.stepLanguage ?? STEP_LANGUAGE;
-  const stepBcp47 = parseBcp47FromLanguageField(stepLanguage);
+  const stepBcp47 = parseMediaLanguageBcp47(stepLanguage);
   const stepTool = JSON.stringify({
     tool: 'phraseBackTranslate',
     settings: JSON.stringify({
