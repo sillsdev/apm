@@ -6,6 +6,7 @@ import {
   applyMiddleware,
 } from 'redux';
 import { thunk } from 'redux-thunk';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { createAppTheme } from '../../../../theme';
 import Memory from '@orbit/memory';
@@ -152,6 +153,12 @@ describe('PassageDetailTranscribeMobile', () => {
       onSaveCompleted?: (toolId: string, err?: string) => void;
       memoryUpdate?: any;
       playerMediafile?: MediaFileD | undefined;
+      mediafileId?: string;
+      currentstep?: string;
+      mediafiles?: MediaFileD[];
+      workflowSteps?: any[];
+      artifactTypes?: any[];
+      routePasId?: string;
     } = {}
   ) => {
     const {
@@ -163,9 +170,15 @@ describe('PassageDetailTranscribeMobile', () => {
       onSaveCompleted = cy.stub().as('saveCompleted'),
       memoryUpdate,
       playerMediafile,
+      mediafileId = 'media-1',
+      currentstep = 'step-transcribe',
+      mediafiles,
+      workflowSteps,
+      artifactTypes = [],
+      routePasId = 'pass-1',
     } = options;
 
-    const mockMedia: MediaFileD = {
+    const defaultMedia: MediaFileD = {
       id: 'media-1',
       type: 'mediafile',
       attributes: {
@@ -175,11 +188,19 @@ describe('PassageDetailTranscribeMobile', () => {
         duration: 20,
         position: 0,
         segments: '{"regions":[{"start":0,"end":5}]}',
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
       },
     } as unknown as MediaFileD;
 
+    const mediaList = mediafiles ?? [defaultMedia];
+    const initialMedia = mediaList.find((m) => m.id === mediafileId) ?? defaultMedia;
+
     const playerMediafileToUse =
-      'playerMediafile' in options ? options.playerMediafile : mockMedia;
+      'playerMediafile' in options ? options.playerMediafile : initialMedia;
 
     const mockPassage: PassageD = {
       id: 'pass-1',
@@ -187,6 +208,9 @@ describe('PassageDetailTranscribeMobile', () => {
       attributes: {
         sequencenum: 1,
         reference: 'MAT 1:1',
+      },
+      relationships: {
+        section: { data: { type: 'section', id: 'sec-1' } },
       },
     } as unknown as PassageD;
 
@@ -199,8 +223,21 @@ describe('PassageDetailTranscribeMobile', () => {
       },
       relationships: {
         plan: { data: { type: 'plan', id: 'plan-1' } },
+        passages: { data: [{ type: 'passage', id: 'pass-1' }] },
       },
     } as unknown as SectionD;
+
+    const defaultWorkflowSteps = [
+      {
+        id: 'step-transcribe',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
+        },
+      },
+    ];
+    const stepList = workflowSteps ?? defaultWorkflowSteps;
 
     const memory = createMockMemory(
       {
@@ -230,22 +267,24 @@ describe('PassageDetailTranscribeMobile', () => {
           {
             id: 'plan-1',
             type: 'plan',
-            attributes: { slug: 'test-plan', flat: false },
+            attributes: { slug: 'test-plan', name: 'Test Plan', flat: false },
+            relationships: {
+              plantype: { data: { type: 'plantype', id: 'plantype-1' } },
+            },
+          },
+        ],
+        plantype: [
+          {
+            id: 'plantype-1',
+            type: 'plantype',
+            attributes: { name: 'Scripture' },
           },
         ],
         section: [mockSection],
         passage: [mockPassage],
-        mediafile: [mockMedia],
-        orgworkflowstep: [
-          {
-            id: 'step-transcribe',
-            type: 'orgworkflowstep',
-            attributes: {
-              sequencenum: 1,
-              tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
-            },
-          },
-        ],
+        mediafile: mediaList,
+        artifacttype: artifactTypes,
+        orgworkflowstep: stepList,
       },
       memoryUpdate
     );
@@ -276,19 +315,10 @@ describe('PassageDetailTranscribeMobile', () => {
       state: {
         passage: mockPassage,
         section: mockSection,
-        mediafileId: 'media-1',
-        currentstep: 'step-transcribe',
+        mediafileId,
+        currentstep,
         tool: 'transcribe',
-        orgWorkflowSteps: [
-          {
-            id: 'step-transcribe',
-            type: 'orgworkflowstep',
-            attributes: {
-              sequencenum: 1,
-              tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
-            },
-          },
-        ],
+        orgWorkflowSteps: stepList,
         rowData: [],
         stepComplete: () => false,
         setStepComplete: onSetStepComplete,
@@ -340,7 +370,14 @@ describe('PassageDetailTranscribeMobile', () => {
                   }}
                 >
                   <ThemeProvider theme={createAppTheme('en')}>
-                    <PassageDetailTranscribeMobile width={360} />
+                    <MemoryRouter initialEntries={[`/detail/proj-1/${routePasId}`]}>
+                      <Routes>
+                        <Route
+                          path="/detail/:prjId/:pasId"
+                          element={<PassageDetailTranscribeMobile width={360} />}
+                        />
+                      </Routes>
+                    </MemoryRouter>
                   </ThemeProvider>
                 </HotKeyContext.Provider>
               </PassageDetailContext.Provider>
@@ -434,5 +471,224 @@ describe('PassageDetailTranscribeMobile', () => {
       'have.been.calledWith',
       'step-transcribe'
     );
+  });
+
+  it('resolves artifact task media for artifactTypeId instead of vernacular mediafileId', () => {
+    const vernMedia: MediaFileD = {
+      id: 'media-vernacular',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Vernacular text',
+        transcriptionstate: ActivityStates.Approved,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    const artifactMedia: MediaFileD = {
+      id: 'media-artifact-1',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Phrase BT text',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        languagebcp47: 'es',
+        dateCreated: '2026-01-02T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+        artifactType: { data: { type: 'artifacttype', id: 'art-type-pbt' } },
+        sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+      },
+    } as unknown as MediaFileD;
+
+    const artifactTypes = [
+      {
+        id: 'art-type-pbt',
+        type: 'artifacttype',
+        attributes: {
+          typename: 'backtranslation',
+        },
+      },
+    ];
+
+    const workflowSteps = [
+      {
+        id: 'step-bt-transcribe',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({
+            tool: 'transcribe',
+            settings: JSON.stringify({ artifactTypeId: 'art-type-pbt', language: 'es' }),
+          }),
+        },
+      },
+    ];
+
+    const onSetSelected = cy.stub().as('setSelected');
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      mediafileId: 'media-vernacular',
+      currentstep: 'step-bt-transcribe',
+      mediafiles: [vernMedia, artifactMedia],
+      artifactTypes,
+      workflowSteps,
+      playerMediafile: undefined,
+      onSetSelected,
+      memoryUpdate,
+    });
+
+    // Should load the artifact media into player, not the vernacular media
+    cy.get('@setSelected').should(
+      'have.been.calledWith',
+      'media-artifact-1',
+      PlayInPlayer.yes
+    );
+
+    // Textarea should display the artifact task transcription text
+    cy.get('#transcriptionText').should('have.value', 'Phrase BT text');
+
+    // Saving should update the artifact mediafile record
+    cy.get('#transcriptionText').clear().type('Updated Phrase BT');
+    cy.get('#transcriber\\.save').click();
+
+    cy.get('@memoryUpdate').should((stub: any) => {
+      const calls = stub.getCalls();
+      expect(calls.length).to.be.greaterThan(0);
+      const firstTransform = calls[0].args[0];
+      const ops = Array.isArray(firstTransform)
+        ? firstTransform
+        : (firstTransform?.operations ?? []);
+      const mediaOp = ops.find(
+        (op: any) =>
+          op.record?.type === 'mediafile' &&
+          op.record?.id === 'media-artifact-1'
+      );
+      expect(mediaOp).to.exist;
+      expect(mediaOp?.record?.attributes?.transcription).to.equal(
+        'Updated Phrase BT'
+      );
+    });
+  });
+
+  it('filters artifact media by step language settings', () => {
+    const vernMedia: MediaFileD = {
+      id: 'media-vernacular',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Vernacular text',
+        transcriptionstate: ActivityStates.Approved,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    const esMedia: MediaFileD = {
+      id: 'media-artifact-es',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Spanish BT text',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        languagebcp47: 'es',
+        dateCreated: '2026-01-02T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+        artifactType: { data: { type: 'artifacttype', id: 'art-type-pbt' } },
+        sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+      },
+    } as unknown as MediaFileD;
+
+    const frMedia: MediaFileD = {
+      id: 'media-artifact-fr',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'French BT text',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        languagebcp47: 'fr',
+        dateCreated: '2026-01-03T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+        artifactType: { data: { type: 'artifacttype', id: 'art-type-pbt' } },
+        sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+      },
+    } as unknown as MediaFileD;
+
+    const artifactTypes = [
+      {
+        id: 'art-type-pbt',
+        type: 'artifacttype',
+        attributes: {
+          typename: 'backtranslation',
+        },
+      },
+    ];
+
+    const workflowSteps = [
+      {
+        id: 'step-bt-transcribe-fr',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({
+            tool: 'transcribe',
+            settings: JSON.stringify({ artifactTypeId: 'art-type-pbt', language: 'fr' }),
+          }),
+        },
+      },
+    ];
+
+    const onSetSelected = cy.stub().as('setSelected');
+
+    mountTranscribeMobile({
+      mediafileId: 'media-vernacular',
+      currentstep: 'step-bt-transcribe-fr',
+      mediafiles: [vernMedia, esMedia, frMedia],
+      artifactTypes,
+      workflowSteps,
+      playerMediafile: undefined,
+      onSetSelected,
+    });
+
+    // Should load the French artifact media into player based on step language 'fr'
+    cy.get('@setSelected').should(
+      'have.been.calledWith',
+      'media-artifact-fr',
+      PlayInPlayer.yes
+    );
+
+    // Textarea should display French text
+    cy.get('#transcriptionText').should('have.value', 'French BT text');
   });
 });

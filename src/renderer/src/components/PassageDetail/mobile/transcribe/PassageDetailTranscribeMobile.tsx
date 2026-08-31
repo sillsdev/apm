@@ -17,7 +17,9 @@ import {
   MediaFile,
   MediaFileD,
   OrganizationD,
+  PassageD,
   Project,
+  SectionD,
 } from '../../../../model';
 import {
   activitySelector,
@@ -30,6 +32,7 @@ import usePassageDetailContext from '../../../../context/usePassageDetailContext
 import { PassageDetailContext } from '../../../../context/PassageDetailContext';
 import { PlayInPlayer } from '../../../../context/PlayInPlayer';
 import { TranscriberProvider } from '../../../../context/TranscriberContext';
+import useTodo from '../../../../context/useTodo';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import {
   findRecord,
@@ -142,10 +145,6 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   );
 
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const mediafile = useMemo(
-    () => mediafiles.find((m) => m.id === mediafileId),
-    [mediafiles, mediafileId]
-  );
 
   const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
   const stepSettings = useMemo(() => {
@@ -164,6 +163,28 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   }, [stepSettings]);
 
   const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
+
+  const { rowData, transSelected } = useTodo();
+
+  const selectedMediaRow = useMemo(() => {
+    if (!artifactTypeId || !transSelected) return undefined;
+    const asTranscriber = rowData.find(
+      (r) => r.mediafile?.id === transSelected && r.role === 'transcriber'
+    );
+    if (asTranscriber) return asTranscriber;
+    return rowData.find((r) => r.mediafile?.id === transSelected);
+  }, [artifactTypeId, rowData, transSelected]);
+
+  const mediafile = useMemo(() => {
+    if (artifactTypeId) {
+      if (!selectedMediaRow?.mediafile?.id) return undefined;
+      return (
+        mediafiles.find((m) => m.id === selectedMediaRow.mediafile.id) ??
+        (selectedMediaRow.mediafile as MediaFileD)
+      );
+    }
+    return mediafiles.find((m) => m.id === mediafileId);
+  }, [artifactTypeId, selectedMediaRow, mediafiles, mediafileId]);
 
   const parsedSteps = useMemo(() => {
     if (!orgWorkflowSteps) return [];
@@ -335,11 +356,15 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   }, []);
 
   const actions = useTranscribeActions({
-    passage,
+    passage: selectedMediaRow?.passage?.id
+      ? (selectedMediaRow.passage as PassageD)
+      : passage,
     mediafile,
     user,
     memory,
-    section,
+    section: selectedMediaRow?.section?.id
+      ? (selectedMediaRow.section as SectionD)
+      : section,
     toolId: currentstep,
     hasChecking,
     noParatext: false,
@@ -359,11 +384,19 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   });
 
   useEffect(() => {
-    const targetMediaId = mediafile?.id ?? mediafileId;
+    const targetMediaId = artifactTypeId
+      ? mediafile?.id
+      : (mediafile?.id ?? mediafileId);
     if (targetMediaId && playerMediafile?.id !== targetMediaId) {
       setSelected(targetMediaId, PlayInPlayer.yes);
     }
-  }, [mediafile?.id, mediafileId, playerMediafile?.id, setSelected]);
+  }, [
+    artifactTypeId,
+    mediafile?.id,
+    mediafileId,
+    playerMediafile?.id,
+    setSelected,
+  ]);
 
   useEffect(() => {
     const isDifferentMedia = mediaRef.current?.id !== mediafile?.id;
