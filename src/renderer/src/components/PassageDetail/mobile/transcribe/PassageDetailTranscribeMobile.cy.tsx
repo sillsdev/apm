@@ -16,7 +16,10 @@ import { RecordTransformBuilder } from '@orbit/records';
 import { GlobalProvider, GlobalState } from '../../../../context/GlobalContext';
 import { IOrbitContext } from '../../../../hoc/OrbitContext';
 import { OrbitContext } from '../../../../hoc/OrbitContextProvider';
-import { UnsavedContext, UnsavedProvider } from '../../../../context/UnsavedContext';
+import {
+  UnsavedContext,
+  UnsavedProvider,
+} from '../../../../context/UnsavedContext';
 import { PassageDetailContext } from '../../../../context/PassageDetailContext';
 import { PlayInPlayer } from '../../../../context/PlayInPlayer';
 import { HotKeyContext } from '../../../../context/HotKeyContext';
@@ -184,6 +187,7 @@ describe('PassageDetailTranscribeMobile', () => {
       projectTypeName?: string;
       aiTranscribe?: boolean;
       offline?: boolean;
+      projectAttributes?: Record<string, unknown>;
     } = {}
   ) => {
     const {
@@ -210,6 +214,7 @@ describe('PassageDetailTranscribeMobile', () => {
       projectTypeName = 'Scripture',
       aiTranscribe = true,
       offline = false,
+      projectAttributes = {},
     } = options;
 
     const defaultMedia: MediaFileD = {
@@ -231,7 +236,8 @@ describe('PassageDetailTranscribeMobile', () => {
     } as unknown as MediaFileD;
 
     const mediaList = mediafiles ?? [defaultMedia];
-    const initialMedia = mediaList.find((m) => m.id === mediafileId) ?? defaultMedia;
+    const initialMedia =
+      mediaList.find((m) => m.id === mediafileId) ?? defaultMedia;
 
     const playerMediafileToUse =
       'playerMediafile' in options ? options.playerMediafile : initialMedia;
@@ -327,6 +333,8 @@ describe('PassageDetailTranscribeMobile', () => {
               defaultFont: 'Charis SIL',
               defaultFontSize: '14pt',
               rtl: false,
+              language: 'en',
+              ...projectAttributes,
             },
             relationships: {
               projecttype: {
@@ -446,9 +454,7 @@ describe('PassageDetailTranscribeMobile', () => {
     };
 
     const content = (
-      <PassageDetailContext.Provider
-        value={passageDetailContextValue as any}
-      >
+      <PassageDetailContext.Provider value={passageDetailContextValue as any}>
         <HotKeyContext.Provider
           value={{
             state: {
@@ -535,7 +541,10 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.get('#asrButton').should('be.visible');
 
     // Check textarea with initial text
-    cy.get('#transcriptionText').should('have.value', 'Existing transcription text');
+    cy.get('#transcriptionText').should(
+      'have.value',
+      'Existing transcription text'
+    );
 
     // Check state badge
     cy.get('[data-cy="transcribe-state-badge"]').should('be.visible');
@@ -573,7 +582,10 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.on('uncaught:exception', () => false);
     const onSetStepComplete = cy.stub().as('setStepComplete');
     const onGotoNextStep = cy.stub().as('gotoNextStep');
-    const memoryUpdate = cy.stub().as('memoryUpdate').rejects(new Error('Save failed'));
+    const memoryUpdate = cy
+      .stub()
+      .as('memoryUpdate')
+      .rejects(new Error('Save failed'));
     mountTranscribeMobile({
       onSetStepComplete,
       onGotoNextStep,
@@ -589,7 +601,10 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.on('uncaught:exception', () => false);
     const onSetStepComplete = cy.stub().as('setStepComplete');
     const onGotoNextStep = cy.stub().as('gotoNextStep');
-    const waitForSave = cy.stub().as('waitForSave').rejects(new Error('Save failed'));
+    const waitForSave = cy
+      .stub()
+      .as('waitForSave')
+      .rejects(new Error('Save failed'));
     mountTranscribeMobile({
       onSetStepComplete,
       onGotoNextStep,
@@ -618,7 +633,10 @@ describe('PassageDetailTranscribeMobile', () => {
   it('forwards error to saveCompleted when save fails so unsaved state is not silently cleared', () => {
     cy.on('uncaught:exception', () => false);
     const onSaveCompleted = cy.stub().as('saveCompleted');
-    const memoryUpdate = cy.stub().as('memoryUpdate').rejects(new Error('Save failed'));
+    const memoryUpdate = cy
+      .stub()
+      .as('memoryUpdate')
+      .rejects(new Error('Save failed'));
     mountTranscribeMobile({
       onSaveCompleted,
       memoryUpdate,
@@ -639,10 +657,7 @@ describe('PassageDetailTranscribeMobile', () => {
     });
 
     cy.get('#transcriber\\.save').click();
-    cy.get('@saveCompleted').should(
-      'have.been.calledWith',
-      'step-transcribe'
-    );
+    cy.get('@saveCompleted').should('have.been.calledWith', 'step-transcribe');
   });
 
   it('resolves artifact task media for artifactTypeId instead of vernacular mediafileId', () => {
@@ -703,7 +718,10 @@ describe('PassageDetailTranscribeMobile', () => {
           sequencenum: 1,
           tool: JSON.stringify({
             tool: 'transcribe',
-            settings: JSON.stringify({ artifactTypeId: 'art-type-pbt', language: 'es' }),
+            settings: JSON.stringify({
+              artifactTypeId: 'art-type-pbt',
+              language: 'es',
+            }),
           }),
         },
       },
@@ -835,7 +853,10 @@ describe('PassageDetailTranscribeMobile', () => {
           sequencenum: 1,
           tool: JSON.stringify({
             tool: 'transcribe',
-            settings: JSON.stringify({ artifactTypeId: 'art-type-pbt', language: 'fr' }),
+            settings: JSON.stringify({
+              artifactTypeId: 'art-type-pbt',
+              language: 'fr',
+            }),
           }),
         },
       },
@@ -1261,7 +1282,10 @@ describe('PassageDetailTranscribeMobile', () => {
           sequencenum: 1,
           tool: JSON.stringify({
             tool: 'transcribe',
-            settings: JSON.stringify({ artifactTypeId: 'art-type-pbt', language: 'es' }),
+            settings: JSON.stringify({
+              artifactTypeId: 'art-type-pbt',
+              language: 'es',
+            }),
           }),
         },
       },
@@ -1290,34 +1314,37 @@ describe('PassageDetailTranscribeMobile', () => {
     });
 
     const recordedOpsList: any[][] = [];
-    const memoryUpdate = cy.stub().as('memoryUpdate').callsFake((transformOrOps: any) => {
-      let ops: any[] = [];
-      if (Array.isArray(transformOrOps)) {
-        ops = transformOrOps;
-      } else if (typeof transformOrOps === 'function') {
-        const res = transformOrOps(new RecordTransformBuilder());
-        ops = Array.isArray(res) ? res : [res];
-      } else if (Array.isArray(transformOrOps?.operations)) {
-        ops = transformOrOps.operations;
-      } else if (transformOrOps) {
-        ops = [transformOrOps];
-      }
-      recordedOpsList.push(ops);
+    const memoryUpdate = cy
+      .stub()
+      .as('memoryUpdate')
+      .callsFake((transformOrOps: any) => {
+        let ops: any[] = [];
+        if (Array.isArray(transformOrOps)) {
+          ops = transformOrOps;
+        } else if (typeof transformOrOps === 'function') {
+          const res = transformOrOps(new RecordTransformBuilder());
+          ops = Array.isArray(res) ? res : [res];
+        } else if (Array.isArray(transformOrOps?.operations)) {
+          ops = transformOrOps.operations;
+        } else if (transformOrOps) {
+          ops = [transformOrOps];
+        }
+        recordedOpsList.push(ops);
 
-      const isSegmentOp = ops.some(
-        (op: any) =>
-          (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
-          (op?.op === 'updateRecord' &&
-            op?.record?.type === 'mediafile' &&
-            op?.record?.attributes?.segments &&
-            !op?.record?.attributes?.transcriptionstate)
-      );
+        const isSegmentOp = ops.some(
+          (op: any) =>
+            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+            (op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.segments &&
+              !op?.record?.attributes?.transcriptionstate)
+        );
 
-      if (isSegmentOp) {
-        return segmentUpdatePromise;
-      }
-      return Promise.resolve();
-    });
+        if (isSegmentOp) {
+          return segmentUpdatePromise;
+        }
+        return Promise.resolve();
+      });
 
     const onSetStepComplete = cy.stub().as('setStepComplete');
     const onGotoNextStep = cy.stub().as('gotoNextStep');
@@ -1357,16 +1384,17 @@ describe('PassageDetailTranscribeMobile', () => {
     // Verify segment update is called and pending
     cy.wrap(null).should(() => {
       expect(recordedOpsList.length).to.be.greaterThan(0);
-      const segCall = recordedOpsList.find((ops) =>
-        Array.isArray(ops) &&
-        ops.some(
-          (op: any) =>
-            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
-            (op?.op === 'updateRecord' &&
-              op?.record?.type === 'mediafile' &&
-              op?.record?.attributes?.segments &&
-              !op?.record?.attributes?.transcriptionstate)
-        )
+      const segCall = recordedOpsList.find(
+        (ops) =>
+          Array.isArray(ops) &&
+          ops.some(
+            (op: any) =>
+              (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+              (op?.op === 'updateRecord' &&
+                op?.record?.type === 'mediafile' &&
+                op?.record?.attributes?.segments &&
+                !op?.record?.attributes?.transcriptionstate)
+          )
       );
       expect(segCall).to.exist;
     });
@@ -1389,25 +1417,27 @@ describe('PassageDetailTranscribeMobile', () => {
 
     // 5. Verify both segment persistence and submit updates were recorded
     cy.wrap(null).should(() => {
-      const hasSegmentUpdate = recordedOpsList.some((ops) =>
-        Array.isArray(ops) &&
-        ops.some(
-          (op: any) =>
-            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
-            (op?.op === 'updateRecord' &&
-              op?.record?.type === 'mediafile' &&
-              op?.record?.attributes?.segments &&
-              !op?.record?.attributes?.transcriptionstate)
-        )
+      const hasSegmentUpdate = recordedOpsList.some(
+        (ops) =>
+          Array.isArray(ops) &&
+          ops.some(
+            (op: any) =>
+              (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+              (op?.op === 'updateRecord' &&
+                op?.record?.type === 'mediafile' &&
+                op?.record?.attributes?.segments &&
+                !op?.record?.attributes?.transcriptionstate)
+          )
       );
-      const hasSubmitUpdate = recordedOpsList.some((ops) =>
-        Array.isArray(ops) &&
-        ops.some(
-          (op: any) =>
-            op?.op === 'updateRecord' &&
-            op?.record?.type === 'mediafile' &&
-            op?.record?.attributes?.transcriptionstate
-        )
+      const hasSubmitUpdate = recordedOpsList.some(
+        (ops) =>
+          Array.isArray(ops) &&
+          ops.some(
+            (op: any) =>
+              op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.transcriptionstate
+          )
       );
       expect(hasSegmentUpdate, 'segment update recorded').to.be.true;
       expect(hasSubmitUpdate, 'submit update recorded').to.be.true;
@@ -1421,34 +1451,37 @@ describe('PassageDetailTranscribeMobile', () => {
     });
 
     const recordedOpsList: any[][] = [];
-    const memoryUpdate = cy.stub().as('memoryUpdate').callsFake((transformOrOps: any) => {
-      let ops: any[] = [];
-      if (Array.isArray(transformOrOps)) {
-        ops = transformOrOps;
-      } else if (typeof transformOrOps === 'function') {
-        const res = transformOrOps(new RecordTransformBuilder());
-        ops = Array.isArray(res) ? res : [res];
-      } else if (Array.isArray(transformOrOps?.operations)) {
-        ops = transformOrOps.operations;
-      } else if (transformOrOps) {
-        ops = [transformOrOps];
-      }
-      recordedOpsList.push(ops);
+    const memoryUpdate = cy
+      .stub()
+      .as('memoryUpdate')
+      .callsFake((transformOrOps: any) => {
+        let ops: any[] = [];
+        if (Array.isArray(transformOrOps)) {
+          ops = transformOrOps;
+        } else if (typeof transformOrOps === 'function') {
+          const res = transformOrOps(new RecordTransformBuilder());
+          ops = Array.isArray(res) ? res : [res];
+        } else if (Array.isArray(transformOrOps?.operations)) {
+          ops = transformOrOps.operations;
+        } else if (transformOrOps) {
+          ops = [transformOrOps];
+        }
+        recordedOpsList.push(ops);
 
-      const isSegmentOp = ops.some(
-        (op: any) =>
-          (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
-          (op?.op === 'updateRecord' &&
-            op?.record?.type === 'mediafile' &&
-            op?.record?.attributes?.segments &&
-            !op?.record?.attributes?.transcriptionstate)
-      );
+        const isSegmentOp = ops.some(
+          (op: any) =>
+            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+            (op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.segments &&
+              !op?.record?.attributes?.transcriptionstate)
+        );
 
-      if (isSegmentOp) {
-        return segmentUpdatePromise;
-      }
-      return Promise.resolve();
-    });
+        if (isSegmentOp) {
+          return segmentUpdatePromise;
+        }
+        return Promise.resolve();
+      });
 
     const onSetStepComplete = cy.stub().as('setStepComplete');
     const onGotoNextStep = cy.stub().as('gotoNextStep');
@@ -1488,16 +1521,17 @@ describe('PassageDetailTranscribeMobile', () => {
     // Verify segment update is called and pending
     cy.wrap(null).should(() => {
       expect(recordedOpsList.length).to.be.greaterThan(0);
-      const segCall = recordedOpsList.find((ops) =>
-        Array.isArray(ops) &&
-        ops.some(
-          (op: any) =>
-            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
-            (op?.op === 'updateRecord' &&
-              op?.record?.type === 'mediafile' &&
-              op?.record?.attributes?.segments &&
-              !op?.record?.attributes?.transcriptionstate)
-        )
+      const segCall = recordedOpsList.find(
+        (ops) =>
+          Array.isArray(ops) &&
+          ops.some(
+            (op: any) =>
+              (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+              (op?.op === 'updateRecord' &&
+                op?.record?.type === 'mediafile' &&
+                op?.record?.attributes?.segments &&
+                !op?.record?.attributes?.transcriptionstate)
+          )
       );
       expect(segCall).to.exist;
     });
@@ -1507,14 +1541,15 @@ describe('PassageDetailTranscribeMobile', () => {
 
     // 3. Verify submit save ran, but step completion and navigation MUST WAIT for pending segment save
     cy.wrap(null).should(() => {
-      const hasSubmitUpdate = recordedOpsList.some((ops) =>
-        Array.isArray(ops) &&
-        ops.some(
-          (op: any) =>
-            op?.op === 'updateRecord' &&
-            op?.record?.type === 'mediafile' &&
-            op?.record?.attributes?.transcriptionstate
-        )
+      const hasSubmitUpdate = recordedOpsList.some(
+        (ops) =>
+          Array.isArray(ops) &&
+          ops.some(
+            (op: any) =>
+              op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.transcriptionstate
+          )
       );
       expect(hasSubmitUpdate, 'submit save was processed').to.be.true;
     });
@@ -1723,6 +1758,183 @@ describe('PassageDetailTranscribeMobile', () => {
         }
       }
       expect(savedState).to.equal(ActivityStates.TranscribeReady);
+    });
+  });
+
+  describe('transcription font from step settings', () => {
+    const pbtArtifactTypes = [
+      {
+        id: 'art-type-pbt',
+        type: 'artifacttype',
+        attributes: {
+          typename: 'backtranslation',
+        },
+      },
+    ];
+
+    const makePbtMedia = (overrides: Partial<MediaFileD['attributes']> = {}) =>
+      ({
+        id: 'media-artifact-1',
+        type: 'mediafile',
+        attributes: {
+          versionNumber: 1,
+          transcription: 'Phrase BT text',
+          transcriptionstate: ActivityStates.Transcribing,
+          duration: 10,
+          position: 0,
+          segments: '{}',
+          languagebcp47: 'ar',
+          dateCreated: '2026-01-02T00:00:00Z',
+          ...overrides,
+        },
+        relationships: {
+          passage: { data: { type: 'passage', id: 'pass-1' } },
+          plan: { data: { type: 'plan', id: 'plan-1' } },
+          artifactType: { data: { type: 'artifacttype', id: 'art-type-pbt' } },
+          sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+        },
+      }) as unknown as MediaFileD;
+
+    const makeVernMedia = () =>
+      ({
+        id: 'media-vernacular',
+        type: 'mediafile',
+        attributes: {
+          versionNumber: 1,
+          transcription: 'Vernacular text',
+          transcriptionstate: ActivityStates.Approved,
+          duration: 10,
+          position: 0,
+          segments: '{}',
+          dateCreated: '2026-01-01T00:00:00Z',
+        },
+        relationships: {
+          passage: { data: { type: 'passage', id: 'pass-1' } },
+          plan: { data: { type: 'plan', id: 'plan-1' } },
+        },
+      }) as unknown as MediaFileD;
+
+    it('uses non-vernacular step rtl/font settings instead of project defaults', () => {
+      const workflowSteps = [
+        {
+          id: 'step-bt-transcribe',
+          type: 'orgworkflowstep',
+          attributes: {
+            sequencenum: 1,
+            tool: JSON.stringify({
+              tool: 'transcribe',
+              settings: JSON.stringify({
+                artifactTypeId: 'art-type-pbt',
+                language: 'ar',
+                rtl: true,
+                font: 'Scheherazade New',
+                fontSize: '18pt',
+              }),
+            }),
+          },
+        },
+      ];
+
+      mountTranscribeMobile({
+        mediafileId: 'media-vernacular',
+        currentstep: 'step-bt-transcribe',
+        mediafiles: [makeVernMedia(), makePbtMedia()],
+        artifactTypes: pbtArtifactTypes,
+        workflowSteps,
+        projectAttributes: {
+          language: 'en',
+          rtl: false,
+          defaultFont: 'Charis SIL',
+          defaultFontSize: '14pt',
+        },
+      });
+
+      cy.get('#transcriptionText', { timeout: 10000 })
+        .should('have.css', 'direction', 'rtl')
+        .invoke('css', 'font-size')
+        .then((size) => {
+          expect(parseFloat(String(size))).to.be.closeTo(24, 0.5);
+        });
+      cy.get('#transcriptionText')
+        .invoke('css', 'font-family')
+        .should('match', /Scheherazade/i);
+    });
+
+    it('falls back to project typography for vernacular when step has no language', () => {
+      const workflowSteps = [
+        {
+          id: 'step-transcribe',
+          type: 'orgworkflowstep',
+          attributes: {
+            sequencenum: 1,
+            tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
+          },
+        },
+      ];
+
+      mountTranscribeMobile({
+        currentstep: 'step-transcribe',
+        workflowSteps,
+        projectAttributes: {
+          language: 'he',
+          rtl: true,
+          defaultFont: 'Ezra SIL',
+          defaultFontSize: '16pt',
+        },
+      });
+
+      cy.get('#transcriptionText', { timeout: 10000 })
+        .should('have.css', 'direction', 'rtl')
+        .invoke('css', 'font-size')
+        .then((size) => {
+          expect(parseFloat(String(size))).to.be.closeTo(21.33, 0.5);
+        });
+      cy.get('#transcriptionText')
+        .invoke('css', 'font-family')
+        .should('match', /Ezra/i);
+    });
+
+    it('falls back to project typography for non-vernacular when step has no language', () => {
+      const workflowSteps = [
+        {
+          id: 'step-bt-transcribe',
+          type: 'orgworkflowstep',
+          attributes: {
+            sequencenum: 1,
+            tool: JSON.stringify({
+              tool: 'transcribe',
+              settings: JSON.stringify({ artifactTypeId: 'art-type-pbt' }),
+            }),
+          },
+        },
+      ];
+
+      mountTranscribeMobile({
+        mediafileId: 'media-vernacular',
+        currentstep: 'step-bt-transcribe',
+        mediafiles: [
+          makeVernMedia(),
+          makePbtMedia({ languagebcp47: undefined }),
+        ],
+        artifactTypes: pbtArtifactTypes,
+        workflowSteps,
+        projectAttributes: {
+          language: 'he',
+          rtl: true,
+          defaultFont: 'Ezra SIL',
+          defaultFontSize: '16pt',
+        },
+      });
+
+      cy.get('#transcriptionText', { timeout: 10000 })
+        .should('have.css', 'direction', 'rtl')
+        .invoke('css', 'font-size')
+        .then((size) => {
+          expect(parseFloat(String(size))).to.be.closeTo(21.33, 0.5);
+        });
+      cy.get('#transcriptionText')
+        .invoke('css', 'font-family')
+        .should('match', /Ezra/i);
     });
   });
 });

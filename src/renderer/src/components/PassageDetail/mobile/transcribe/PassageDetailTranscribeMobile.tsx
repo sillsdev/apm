@@ -36,7 +36,6 @@ import useTodo from '../../../../context/useTodo';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import {
   findRecord,
-  getFontData,
   GetUser,
   pullTableList,
   related,
@@ -60,7 +59,12 @@ import {
 } from '../../../../utils/namedSegments';
 import { logError, Severity } from '../../../../utils/logErrorService';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
-import type { FontData } from '../../../../crud/fontChoice';
+import {
+  getFontData,
+  loadFontData,
+  type FontData,
+} from '../../../../crud/fontChoice';
+import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
 import {
   ArtifactTypeSlug,
   artifactStampsStepLanguage,
@@ -518,20 +522,53 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     actions.savingRef,
   ]);
 
-  // Load project font data
+  // Resolve transcription language and typography from step settings (matching
+  // Transcriber), falling back to project attrs for vernacular or when the step
+  // has no language; then call getFontData with a synthetic project record.
   useEffect(() => {
     if (!project) return;
     const projRec = findRecord(memory, 'project', project) as
       Project | undefined;
     if (!projRec) return;
     let cancelled = false;
-    void getFontData(projRec, artifactTypeId ?? 'project').then((data) => {
+
+    const lgSettings = JSON.parse(stepSettings || '{}') as {
+      font?: string;
+      fontSize?: string;
+      rtl?: boolean;
+      language?: unknown;
+    };
+    const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
+    const hasStepLanguage = isLangSet(stepLang);
+
+    let langTag = hasStepLanguage ? stepLang : undefined;
+    let defaultFont = lgSettings?.font;
+    let rtl = lgSettings?.rtl ?? false;
+    let defaultFontSize = lgSettings?.fontSize;
+    const useProjectLang =
+      artifactTypeSlug === ArtifactTypeSlug.Vernacular || !hasStepLanguage;
+    if (useProjectLang) {
+      langTag = projRec.attributes?.language ?? langTag;
+      defaultFont =
+        (defaultFont ?? projRec.attributes?.defaultFont) || undefined;
+      rtl = projRec.attributes?.rtl ?? rtl;
+      defaultFontSize =
+        (defaultFontSize ?? projRec.attributes?.defaultFontSize) || undefined;
+    }
+
+    const lastFontData = loadFontData(artifactTypeId ?? 'project');
+    defaultFontSize = lastFontData?.fontSize ?? defaultFontSize ?? 'large';
+
+    const rec = {
+      attributes: { language: langTag, defaultFont, defaultFontSize, rtl },
+    } as Project;
+    void getFontData(rec, artifactTypeId ?? 'project').then((data) => {
       if (!cancelled) setProjData(data);
     });
     return () => {
       cancelled = true;
     };
-  }, [project, memory, artifactTypeId]);
+  }, [project, memory, artifactTypeId, stepSettings, artifactTypeSlug]);
 
   const handleTextAdd = useCallback(
     (newText: string) => {
