@@ -104,7 +104,8 @@ export function useTranscribeActions({
     state === ActivityStates.TranscribeReady;
   const reviewing =
     state === ActivityStates.Reviewing || state === ActivityStates.Transcribed;
-  const canReopen = Object.prototype.hasOwnProperty.call(previous, state);
+  const canReopen =
+    Boolean(mediafile) && Object.prototype.hasOwnProperty.call(previous, state);
 
   const handleAssign = useCallback(
     async (curState: string) => {
@@ -137,7 +138,11 @@ export function useTranscribeActions({
       segments: string | undefined,
       thiscomment: string | undefined
     ) => {
-      if (!mediafile) return;
+      if (!mediafile) {
+        const err = new Error('No media file');
+        saveCompleted?.(toolId, err.message);
+        throw err;
+      }
       savingRef.current = true;
       const transcription = getTranscriptionText();
       const curState = state;
@@ -265,15 +270,17 @@ export function useTranscribeActions({
   ]);
 
   const handleReject = useCallback(() => {
+    if (!mediafile) return;
     if (savingRef.current) {
       if (showMessage) showMessage(savingMessage);
       return;
     }
     setRejectVisible(true);
-  }, [showMessage, savingMessage]);
+  }, [mediafile, showMessage, savingMessage]);
 
   const handleRejected = useCallback(
     async (media: MediaFile, comment: string) => {
+      if (!mediafile) return;
       setRejectVisible(false);
       await memory.update(
         UpdateMediaStateOps(
@@ -290,7 +297,7 @@ export function useTranscribeActions({
       setLastSaved(currentDateTime());
       if (onReject) onReject(media.attributes.transcriptionstate);
     },
-    [passage.id, user, memory, onReject]
+    [mediafile, passage.id, user, memory, onReject]
   );
 
   const handleRejectCancel = useCallback(() => {

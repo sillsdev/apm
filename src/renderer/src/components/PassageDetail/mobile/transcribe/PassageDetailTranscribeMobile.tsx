@@ -493,14 +493,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleTextAdd = useCallback(
     (newText: string) => {
-      if (!hasPermission) return;
+      if (!hasPermission || !mediafile) return;
       setTextValue((prev) => {
         const updated = prev + newText;
         toolChanged(currentstep, true);
         return updated;
       });
     },
-    [hasPermission, toolChanged, currentstep]
+    [hasPermission, mediafile, toolChanged, currentstep]
   );
 
   const asr = useTranscribeAsr({
@@ -514,11 +514,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (!hasPermission) return;
+      if (!hasPermission || !mediafile) return;
       setTextValue(e.target.value);
       toolChanged(currentstep, true);
     },
-    [hasPermission, toolChanged, currentstep]
+    [hasPermission, mediafile, toolChanged, currentstep]
   );
 
   const handleFocus = useCallback(() => {
@@ -670,7 +670,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           variant="outlined"
           onClick={asr.handleTranscribe}
           startIcon={<TranscriptionLogo />}
-          disabled={!hasPermission}
+          disabled={!hasPermission || !mediafile}
           sx={{
             textTransform: 'none',
             borderColor: 'divider',
@@ -693,7 +693,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           onChange={handleTextChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          readOnly={!hasPermission}
+          readOnly={!hasPermission || !mediafile}
           placeholder={t.transcriptionType ?? 'Transcription'}
           style={{
             ...fontStyle,
@@ -744,7 +744,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
               <Button
                 id="transcriber.reject"
                 variant="outlined"
-                disabled={playing || !hasPermission}
+                disabled={playing || !hasPermission || !mediafile}
                 onClick={actions.handleReject}
               >
                 {t.reject}
@@ -753,7 +753,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
                 id="transcriber.save"
                 variant="outlined"
                 color={isChanged(currentstep) ? 'primary' : 'inherit'}
-                disabled={playing || !hasPermission}
+                disabled={playing || !hasPermission || !mediafile}
                 onClick={() => actions.handleSave()}
               >
                 {t.save}
@@ -762,7 +762,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
                 id="transcriber.submit"
                 variant="contained"
                 color="primary"
-                disabled={playing || !hasPermission}
+                disabled={playing || !hasPermission || !mediafile}
                 onClick={actions.handleSubmit}
               >
                 {t.submit}
@@ -772,7 +772,9 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
             <Button
               id="transcriber.reopen"
               variant="outlined"
-              disabled={!actions.canReopen || playing || !hasPermission}
+              disabled={
+                !actions.canReopen || playing || !hasPermission || !mediafile
+              }
               onClick={actions.handleReopen}
             >
               {t.reopen}

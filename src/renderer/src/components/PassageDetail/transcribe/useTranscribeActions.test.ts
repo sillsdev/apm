@@ -495,4 +495,92 @@ describe('useTranscribeActions', () => {
     expect(mockOnReloadPlayer).not.toHaveBeenCalled();
     expect(mockSetPosition).not.toHaveBeenCalled();
   });
+
+  it('handleSubmit does not mark step complete, reload player, or reset position when mediafile is undefined', async () => {
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: undefined,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: true,
+        noParatext: false,
+        getTranscriptionText: () => 'Completed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).not.toHaveBeenCalled();
+    expect(mockSaveCompleted).toHaveBeenCalledWith('step1', expect.any(String));
+    expect(mockSetComplete).not.toHaveBeenCalled();
+    expect(mockOnReloadPlayer).not.toHaveBeenCalled();
+    expect(mockSetPosition).not.toHaveBeenCalled();
+  });
+
+  it('save rejects and reports save failure when mediafile is undefined', async () => {
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: undefined,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        getTranscriptionText: () => 'Updated transcription text',
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await expect(
+      result.current.save(ActivityStates.TranscribeReady, 0, undefined, '')
+    ).rejects.toThrow();
+    expect(mockSaveCompleted).toHaveBeenCalledWith('step1', expect.any(String));
+  });
+
+  it('handleSave forwards error to saveCompleted when mediafile is undefined', async () => {
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: undefined,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        getTranscriptionText: () => 'Updated transcription text',
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(mockMemory.update).not.toHaveBeenCalled();
+    expect(mockSaveCompleted).toHaveBeenCalledWith('step1', expect.any(String));
+  });
+
+  it('reports canReopen as false when mediafile is undefined', () => {
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: undefined,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        getTranscriptionText: () => 'Initial text',
+      })
+    );
+
+    expect(result.current.canReopen).toBe(false);
+  });
 });

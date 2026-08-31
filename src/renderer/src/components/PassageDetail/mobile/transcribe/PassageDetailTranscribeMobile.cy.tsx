@@ -1195,4 +1195,59 @@ describe('PassageDetailTranscribeMobile', () => {
       expect(savedState).to.equal(ActivityStates.Approved);
     });
   });
+
+  it('disables action buttons and makes textarea readonly when no mediafile exists', () => {
+    mountTranscribeMobile({
+      mediafileId: '',
+      mediafiles: [],
+      playerMediafile: undefined,
+    });
+
+    cy.get('#asrButton').should('be.disabled');
+    cy.get('#transcriptionText').should('have.attr', 'readonly');
+    cy.get('#transcriber\\.reject').should('be.disabled');
+    cy.get('#transcriber\\.save').should('be.disabled');
+    cy.get('#transcriber\\.submit').should('be.disabled');
+  });
+
+  it('disables action buttons when artifact task has no matching mediafile', () => {
+    const artifactTypes = [
+      {
+        id: 'art-type-pbt',
+        type: 'artifacttype',
+        attributes: {
+          typename: 'backtranslation',
+        },
+      },
+    ];
+
+    const workflowSteps = [
+      {
+        id: 'step-bt-transcribe',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({
+            tool: 'transcribe',
+            settings: JSON.stringify({ artifactTypeId: 'art-type-pbt', language: 'es' }),
+          }),
+        },
+      },
+    ];
+
+    mountTranscribeMobile({
+      mediafileId: 'media-vernacular',
+      currentstep: 'step-bt-transcribe',
+      mediafiles: [],
+      artifactTypes,
+      workflowSteps,
+      playerMediafile: undefined,
+    });
+
+    cy.get('#asrButton').should('be.disabled');
+    cy.get('#transcriptionText').should('have.attr', 'readonly');
+    cy.get('#transcriber\\.reject').should('be.disabled');
+    cy.get('#transcriber\\.save').should('be.disabled');
+    cy.get('#transcriber\\.submit').should('be.disabled');
+  });
 });
