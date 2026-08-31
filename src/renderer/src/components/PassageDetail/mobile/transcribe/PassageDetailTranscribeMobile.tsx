@@ -317,7 +317,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleRejectCallback = useCallback(
     async (reason: string) => {
-      uncompletedSteps();
+      await uncompletedSteps();
       if (reason === ActivityStates.NeedsNewRecording) {
         const curStep = parsedSteps.find((s) => s.id === currentstep);
         if (curStep?.settings === '{}') {
