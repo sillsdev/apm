@@ -28,7 +28,6 @@ import {
   mountPbt,
   waitForPbtReady,
   startRecordingPass,
-  sampleDom,
   readSourcePlaying,
   playheadText,
   parseTime,

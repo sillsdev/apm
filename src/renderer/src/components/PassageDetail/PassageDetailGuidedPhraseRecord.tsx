@@ -1731,7 +1731,7 @@ export function PassageDetailGuidedPhraseRecord({
    * exists to prevent, and the step's phase flags do not enforce it: the seek
    * that starts a clause emits a region-out indistinguishable from the one that
    * ends it, so handleRegionPlayEnd parks and marks the clause heard about 60ms
-   * in, leaving Record operable for the rest of it (TT-7621).
+   * in, leaving Record operable for the rest of it.
    *
    * Two event-based fixes were tried and reverted. Withholding the park strands
    * the step, because the navigation flows are built on it and the genuine end

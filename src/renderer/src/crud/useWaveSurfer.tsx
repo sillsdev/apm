@@ -466,7 +466,7 @@ export function useWaveSurfer(
       // at the end of a segment, wsGoto pausing on a seek to exactly the
       // duration, a media element dropping out of playback. The pause icon then
       // stays up and every consumer reading the playing state is desynchronised
-      // from the audio (TT-7621).
+      // from the audio.
       //
       // Only reports - it does not pause anything, so nothing about when
       // playback stops changes. The playingRef guard keeps it to a falling edge,
