@@ -15,7 +15,7 @@ import Coordinator from '@orbit/coordinator';
 import { GlobalProvider, GlobalState } from '../../../../context/GlobalContext';
 import { IOrbitContext } from '../../../../hoc/OrbitContext';
 import { OrbitContext } from '../../../../hoc/OrbitContextProvider';
-import { UnsavedContext } from '../../../../context/UnsavedContext';
+import { UnsavedContext, UnsavedProvider } from '../../../../context/UnsavedContext';
 import { PassageDetailContext } from '../../../../context/PassageDetailContext';
 import { PlayInPlayer } from '../../../../context/PlayInPlayer';
 import { HotKeyContext } from '../../../../context/HotKeyContext';
@@ -142,6 +142,21 @@ const createInitialState = (
   ...overrides,
 });
 
+const NavigationTrigger = ({ onNavigate }: { onNavigate?: () => void }) => {
+  const { checkSavedFn } = React.useContext(UnsavedContext).state;
+  return (
+    <button
+      id="test-navigate-button"
+      type="button"
+      onClick={() => {
+        if (onNavigate) checkSavedFn(onNavigate);
+      }}
+    >
+      Navigate
+    </button>
+  );
+};
+
 describe('PassageDetailTranscribeMobile', () => {
   const mountTranscribeMobile = (
     options: {
@@ -162,6 +177,8 @@ describe('PassageDetailTranscribeMobile', () => {
       workflowSteps?: any[];
       artifactTypes?: any[];
       routePasId?: string;
+      useRealUnsaved?: boolean;
+      onNavigate?: () => void;
     } = {}
   ) => {
     const {
@@ -182,6 +199,8 @@ describe('PassageDetailTranscribeMobile', () => {
       workflowSteps,
       artifactTypes = [],
       routePasId = 'pass-1',
+      useRealUnsaved = false,
+      onNavigate,
     } = options;
 
     const defaultMedia: MediaFileD = {
@@ -193,7 +212,7 @@ describe('PassageDetailTranscribeMobile', () => {
         transcriptionstate,
         duration: 20,
         position: 0,
-        segments: '{"regions":[{"start":0,"end":5}]}',
+        segments: '{}',
         dateCreated: '2026-01-01T00:00:00Z',
       },
       relationships: {
@@ -388,6 +407,41 @@ describe('PassageDetailTranscribeMobile', () => {
       setState: cy.stub(),
     };
 
+    const content = (
+      <PassageDetailContext.Provider
+        value={passageDetailContextValue as any}
+      >
+        <HotKeyContext.Provider
+          value={{
+            state: {
+              subscribe: () => {},
+              unsubscribe: () => {},
+              localizeHotKey: (key: string) => key,
+            },
+            setState: () => {},
+          }}
+        >
+          <ThemeProvider theme={createAppTheme('en')}>
+            <MemoryRouter initialEntries={[`/detail/proj-1/${routePasId}`]}>
+              <Routes>
+                <Route
+                  path="/detail/:prjId/:pasId"
+                  element={
+                    <>
+                      {useRealUnsaved && (
+                        <NavigationTrigger onNavigate={onNavigate} />
+                      )}
+                      <PassageDetailTranscribeMobile width={360} />
+                    </>
+                  }
+                />
+              </Routes>
+            </MemoryRouter>
+          </ThemeProvider>
+        </HotKeyContext.Provider>
+      </PassageDetailContext.Provider>
+    );
+
     cy.mount(
       <Provider store={mockStore}>
         <GlobalProvider
@@ -396,35 +450,15 @@ describe('PassageDetailTranscribeMobile', () => {
           })}
         >
           <OrbitContext.Provider value={orbitContextValue}>
-            <UnsavedContext.Provider
-              value={{ state: unsavedState as any, setState: cy.stub() }}
-            >
-              <PassageDetailContext.Provider
-                value={passageDetailContextValue as any}
+            {useRealUnsaved ? (
+              <UnsavedProvider>{content}</UnsavedProvider>
+            ) : (
+              <UnsavedContext.Provider
+                value={{ state: unsavedState as any, setState: cy.stub() }}
               >
-                <HotKeyContext.Provider
-                  value={{
-                    state: {
-                      subscribe: () => {},
-                      unsubscribe: () => {},
-                      localizeHotKey: (key: string) => key,
-                    },
-                    setState: () => {},
-                  }}
-                >
-                  <ThemeProvider theme={createAppTheme('en')}>
-                    <MemoryRouter initialEntries={[`/detail/proj-1/${routePasId}`]}>
-                      <Routes>
-                        <Route
-                          path="/detail/:prjId/:pasId"
-                          element={<PassageDetailTranscribeMobile width={360} />}
-                        />
-                      </Routes>
-                    </MemoryRouter>
-                  </ThemeProvider>
-                </HotKeyContext.Provider>
-              </PassageDetailContext.Provider>
-            </UnsavedContext.Provider>
+                {content}
+              </UnsavedContext.Provider>
+            )}
           </OrbitContext.Provider>
         </GlobalProvider>
       </Provider>
@@ -788,6 +822,60 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.get('#wsSegment').should('not.exist');
     cy.get('#wsSplit').should('not.exist');
     cy.get('#wsSegmentReset').should('not.exist');
+    cy.get('@memoryUpdate').should('not.have.been.called');
+  });
+
+  it('saves pending transcription when save is confirmed via navigation confirmation', () => {
+    const onNavigate = cy.stub().as('onNavigate');
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      useRealUnsaved: true,
+      onNavigate,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriptionText').should(
+      'have.value',
+      'Existing transcription text'
+    );
+    cy.get('#transcriptionText')
+      .clear()
+      .type('Transcription saved via navigation prompt');
+
+    cy.get('#test-navigate-button').click();
+
+    cy.get('#alertDlg').should('be.visible');
+    cy.get('#alertYes').click();
+
+    cy.get('@memoryUpdate').should('have.been.called');
+    cy.get('@onNavigate').should('have.been.called');
+  });
+
+  it('discards pending transcription when save is refused via navigation confirmation', () => {
+    const onNavigate = cy.stub().as('onNavigate');
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      useRealUnsaved: true,
+      onNavigate,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriptionText').should(
+      'have.value',
+      'Existing transcription text'
+    );
+    cy.get('#transcriptionText').clear().type('Transcription to discard');
+
+    cy.get('@memoryUpdate').then((stub: any) => stub.resetHistory());
+
+    cy.get('#test-navigate-button').click();
+
+    cy.get('#alertDlg').should('be.visible');
+    cy.get('#alertNo').click();
+
+    cy.get('@onNavigate').should('have.been.called');
     cy.get('@memoryUpdate').should('not.have.been.called');
   });
 });

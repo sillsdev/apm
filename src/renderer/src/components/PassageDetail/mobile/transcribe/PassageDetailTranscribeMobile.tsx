@@ -111,8 +111,15 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const { setState } = useContext(PassageDetailContext);
   const { waitForSave } = useContext(UnsavedContext).state;
-  const { toolChanged, isChanged, saveCompleted } =
-    useContext(UnsavedContext).state;
+  const {
+    toolChanged,
+    isChanged,
+    saveCompleted,
+    clearCompleted,
+    saveRequested,
+    clearRequested,
+    toolsChanged,
+  } = useContext(UnsavedContext).state;
   const projectSegmentSave = useProjectSegmentSave();
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission =
@@ -574,6 +581,15 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     actions.handleSave();
     setConfirm(undefined);
   }, [actions]);
+
+  useEffect(() => {
+    if (saveRequested(currentstep)) {
+      actions.handleSave();
+    } else if (clearRequested(currentstep)) {
+      clearCompleted(currentstep);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsChanged]);
 
   const stateKey = toCamel(actions.state);
   const localizedState = (ta as any)[stateKey] || actions.state;
