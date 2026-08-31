@@ -104,6 +104,12 @@ interface IProps {
  */
 const SPURIOUS_STOP_WINDOW_MS = 250;
 
+/**
+ * Slack added to the span a clause is expected to take, so Record is not offered
+ * a frame before the audio actually runs out.
+ */
+const CLAUSE_PLAYBACK_MARGIN_MS = 150;
+
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
     (r) =>
@@ -213,6 +219,12 @@ export function PassageDetailGuidedPhraseRecord({
   const [allowSourcePlayer, setAllowSourcePlayer] = useState(false);
   const [entryPositioned, setEntryPositioned] = useState(false);
   const [playerPlaying, setPlayerPlaying] = useState(false);
+  /**
+   * When the clause being played is expected to run out, and whether we are
+   * still before it. See recordBlocked.
+   */
+  const [recordBlockedUntil, setRecordBlockedUntil] = useState(0);
+  const [recordBlocked, setRecordBlocked] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<CarefulSpeechPhase>('bootstrapping');
@@ -702,6 +714,15 @@ export function PassageDetailGuidedPhraseRecord({
         setPhase('playing');
         const seek =
           region.start > 0 ? region.start + CLAUSE_BOUNDARY_THRESHOLD_SEC : 0;
+        // How long this clause will take, so Record can be withheld for exactly
+        // that long. See recordBlocked for why this is timed rather than driven
+        // by an event.
+        const rate = ctrl.getPlaybackRate?.() || 1;
+        setRecordBlockedUntil(
+          Date.now() +
+            (Math.max(0, region.end - seek) * 1000) / rate +
+            CLAUSE_PLAYBACK_MARGIN_MS
+        );
         await ctrl.gotoTime(seek, region);
         if (!ctrl.isPlaying()) {
           skipBeforePlayRef.current = true;
@@ -791,6 +812,9 @@ export function PassageDetailGuidedPhraseRecord({
       ) {
         return;
       }
+      // A real stop - the user pausing - means the rest of the clause is not
+      // coming, so stop withholding Record for it (#529's behaviour, kept).
+      setRecordBlockedUntil(0);
       setCurrentClausePlayed(true);
       setPhase((p) =>
         p === 'recording' || p === 'recorded' ? p : 'recordReady'
@@ -1700,6 +1724,43 @@ export function PassageDetailGuidedPhraseRecord({
     (phase === 'recordReady' || phase === 'recording') &&
     !completedIndices.has(currentIndex);
 
+  /**
+   * Withhold Record for as long as the clause will take to play.
+   *
+   * Recording over the reference audio is what the listen-then-record flow
+   * exists to prevent, and the step's phase flags do not enforce it: the seek
+   * that starts a clause emits a region-out indistinguishable from the one that
+   * ends it, so handleRegionPlayEnd parks and marks the clause heard about 60ms
+   * in, leaving Record operable for the rest of it (TT-7621).
+   *
+   * Two event-based fixes were tried and reverted. Withholding the park strands
+   * the step, because the navigation flows are built on it and the genuine end
+   * is not reliably reported. Gating on the player's own playing state flickers,
+   * because starting a clause pauses and resumes it - and that blip turns out to
+   * be load-bearing: it is what makes the end-of-region event arrive at all, so
+   * removing it strands the step too. See ADR 0011.
+   *
+   * So don't infer it from events. The clause span and the playback rate are
+   * both known when playback starts, so how long the audio will run is known
+   * too. This degrades safely in every direction: if playback is cut short
+   * Record returns a little late, if it is a sliver Record returns almost at
+   * once, and nothing can leave it withheld indefinitely.
+   *
+   * Deliberately not folded into allowRecord: that prop is capability, and
+   * useWavRecorder releases the capture stream when it goes false, so a take
+   * could not start until the microphone had been re-acquired. This disables the
+   * button only, and changes no step state.
+   */
+  useEffect(() => {
+    const remaining = recordBlockedUntil - Date.now();
+    if (remaining <= 0) {
+      setRecordBlocked(false);
+      return;
+    }
+    setRecordBlocked(true);
+    const timer = setTimeout(() => setRecordBlocked(false), remaining);
+    return () => clearTimeout(timer);
+  }, [recordBlockedUntil]);
   const highlightSpeaker =
     recordingPassStarted && showRecorder && !speaker.trim();
 
@@ -1823,6 +1884,7 @@ export function PassageDetailGuidedPhraseRecord({
           allClausesComplete={allClausesComplete}
           highlightSpeaker={highlightSpeaker}
           allowRecord={allowRecord && editStep}
+          recordBlocked={recordBlocked && phase !== 'recording'}
           savingRecording={savingRecording}
           onSaving={() => {
             savingRecordingRef.current = true;

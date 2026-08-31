@@ -195,6 +195,7 @@ jest.mock('../../PassageDetailPlayer', () => {
         gotoTime: mockGotoTime,
         isReady: () => true,
         getProgress: () => 0,
+        getPlaybackRate: () => 1,
         isPlaying: () => false,
       } as any;
     }
