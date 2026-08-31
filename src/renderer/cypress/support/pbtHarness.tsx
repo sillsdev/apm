@@ -100,6 +100,14 @@ export const STEP_BCP47 = 'en';
 /** Named-region bucket PBT stores its boundaries in (phraseBtBoundaryRegionName). */
 export const BT_REGION_NAME = `BT:${STEP_BCP47}`;
 
+function parseBcp47FromLanguageField(value: string): string {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return 'und';
+  const pipe = trimmed.indexOf('|');
+  if (pipe === -1) return trimmed;
+  return trimmed.slice(pipe + 1) || 'und';
+}
+
 /** Fake S3 host the intercepted POST hands back for the audio PUT. */
 const FAKE_AUDIO_HOST = 'https://pbt-test.invalid';
 
@@ -144,6 +152,8 @@ interface ServerState {
   generation: number;
   /** Outstanding lagged writes, so a reset can cancel them. */
   pendingTimers: ReturnType<typeof setTimeout>[];
+  /** ids requested through GET /mediafiles/:id/fileurl (in request order). */
+  fileurlRequestedIds: string[];
 }
 
 const serverState: ServerState = {
@@ -154,6 +164,7 @@ const serverState: ServerState = {
   nextRemoteId: 1000,
   generation: 0,
   pendingTimers: [],
+  fileurlRequestedIds: [],
 };
 
 /** Reset the fake server. Call from beforeEach before installing intercepts. */
@@ -168,6 +179,7 @@ export function resetPbtServer(options?: {
   serverState.pendingTimers = [];
   serverState.generation += 1;
   serverState.takes = [];
+  serverState.fileurlRequestedIds = [];
   serverState.nextRemoteId = 1000;
   serverState.putDelayMs = options?.putDelayMs ?? 0;
   serverState.fileurlDelayMs = options?.fileurlDelayMs ?? 0;
@@ -180,6 +192,11 @@ export function resetPbtServer(options?: {
 /** Everything the fake server saw, in post order. */
 export function postedTakes(): PostedTake[] {
   return serverState.takes;
+}
+
+/** mediafile ids requested by MediaRecord load calls (GET /mediafiles/:id/fileurl). */
+export function fileurlRequestedIds(): string[] {
+  return serverState.fileurlRequestedIds;
 }
 
 /** Make later uploads fail (used mid-spec for save-failure paths). */
@@ -269,6 +286,10 @@ export function installPbtServer() {
 
   // Existing-take load (useFetchUrlNow → GET mediafiles/<id>/fileurl).
   cy.intercept('GET', '**/mediafiles/*/fileurl', (req) => {
+    const match = /\/mediafiles\/([^/]+)\/fileurl(?:\?|$)/.exec(req.url);
+    if (match?.[1]) {
+      serverState.fileurlRequestedIds.push(decodeURIComponent(match[1]));
+    }
     req.reply({
       statusCode: 200,
       delay: serverState.fileurlDelayMs,
@@ -378,6 +399,15 @@ export interface MountPbtOptions {
   segments?: SegmentSpec[];
   /** Indices that already have a saved take when the step opens. */
   existingTakes?: number[];
+  /** Exact seeded takes for multi-language and duplicate-segment cases. */
+  existingTakeRows?: Array<{
+    segmentIndex: number;
+    languagebcp47: string;
+    remoteId: string;
+    performedBy?: string;
+  }>;
+  /** Step language stamped in Step Settings (`Name|bcp47`). */
+  stepLanguage?: string;
   /** Source audio length (s). Must cover the last segment end. */
   durationSec?: number;
   /** ms before an uploaded take shows up in rowData (0 = immediate). */
@@ -419,7 +449,7 @@ function interiorBoundaries(
     .filter((t) => t > 0.01 && t < durationSec - 0.01);
 }
 
-function segmentsAttribute(segments: SegmentSpec[]): string {
+function segmentsAttribute(segments: SegmentSpec[], bcp47: string): string {
   const regions: IRegion[] = segments.map((s) => ({
     start: s.start,
     end: s.end,
@@ -427,7 +457,7 @@ function segmentsAttribute(segments: SegmentSpec[]): string {
   }));
   return JSON.stringify([
     {
-      name: BT_REGION_NAME,
+      name: `BT:${bcp47}`,
       regionInfo: regionsJsonFromList(regions, boldDefaultSegParams),
     },
   ]);
@@ -437,7 +467,8 @@ function takeRecord(
   id: string,
   remoteId: string,
   sourceSegments: string,
-  performedBy: string | null
+  performedBy: string | null,
+  languagebcp47 = STEP_LANGUAGE
 ): MediaFileD {
   return {
     type: 'mediafile',
@@ -450,7 +481,7 @@ function takeRecord(
       originalFile: `${id}.ogg`,
       audioUrl: `${FAKE_AUDIO_HOST}/audio/${id}.wav`,
       sourceSegments,
-      languagebcp47: STEP_LANGUAGE,
+      languagebcp47,
       performedBy,
       dateCreated: new Date(2026, 0, 1).toISOString(),
       segments: '[]',
@@ -467,10 +498,12 @@ function takeRecord(
 
 function seedRecords(memory: Memory, options: MountPbtOptions) {
   const segments = options.segments ?? [];
+  const stepLanguage = options.stepLanguage ?? STEP_LANGUAGE;
+  const stepBcp47 = parseBcp47FromLanguageField(stepLanguage);
   const stepTool = JSON.stringify({
     tool: 'phraseBackTranslate',
     settings: JSON.stringify({
-      language: STEP_LANGUAGE,
+      language: stepLanguage,
       artifactTypeId: ARTIFACT_TYPE_ID,
     }),
   });
@@ -536,7 +569,7 @@ function seedRecords(memory: Memory, options: MountPbtOptions) {
         contentType: 'audio/wav',
         originalFile: 'vern.wav',
         audioUrl: `${FAKE_AUDIO_HOST}/audio/vern.wav`,
-        segments: segmentsAttribute(segments),
+        segments: segmentsAttribute(segments, stepBcp47),
         transcription: '',
       },
       relationships: {
@@ -546,19 +579,37 @@ function seedRecords(memory: Memory, options: MountPbtOptions) {
     },
   ];
 
-  (options.existingTakes ?? []).forEach((idx) => {
-    const seg = segments[idx];
-    if (!seg) return;
-    records.push(
-      takeRecord(
-        `mf-take-${idx}`,
-        String(500 + idx),
-        JSON.stringify({ start: seg.start, end: seg.end, label: '' }),
-        'Existing Speaker'
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ) as any
-    );
-  });
+  if ((options.existingTakeRows?.length ?? 0) > 0) {
+    options.existingTakeRows?.forEach((row) => {
+      const seg = segments[row.segmentIndex];
+      if (!seg) return;
+      records.push(
+        takeRecord(
+          `mf-take-${row.remoteId}`,
+          row.remoteId,
+          JSON.stringify({ start: seg.start, end: seg.end, label: '' }),
+          row.performedBy ?? 'Existing Speaker',
+          row.languagebcp47
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ) as any
+      );
+    });
+  } else {
+    (options.existingTakes ?? []).forEach((idx) => {
+      const seg = segments[idx];
+      if (!seg) return;
+      records.push(
+        takeRecord(
+          `mf-take-${idx}`,
+          String(500 + idx),
+          JSON.stringify({ start: seg.start, end: seg.end, label: '' }),
+          'Existing Speaker',
+          stepLanguage
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ) as any
+      );
+    });
+  }
 
   memory.cache.update((t) =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
