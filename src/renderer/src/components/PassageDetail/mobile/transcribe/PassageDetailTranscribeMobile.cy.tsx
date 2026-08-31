@@ -11,6 +11,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { createAppTheme } from '../../../../theme';
 import Memory from '@orbit/memory';
 import Coordinator from '@orbit/coordinator';
+import { RecordTransformBuilder } from '@orbit/records';
 
 import { GlobalProvider, GlobalState } from '../../../../context/GlobalContext';
 import { IOrbitContext } from '../../../../hoc/OrbitContext';
@@ -1249,5 +1250,259 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.get('#transcriber\\.reject').should('be.disabled');
     cy.get('#transcriber\\.save').should('be.disabled');
     cy.get('#transcriber\\.submit').should('be.disabled');
+  });
+
+  it('coordinates deferred segment persistence followed by submit when segment save resolves first', () => {
+    let resolveSegmentUpdate!: () => void;
+    const segmentUpdatePromise = new Promise<void>((resolve) => {
+      resolveSegmentUpdate = resolve;
+    });
+
+    const recordedOpsList: any[][] = [];
+    const memoryUpdate = cy.stub().as('memoryUpdate').callsFake((transformOrOps: any) => {
+      let ops: any[] = [];
+      if (Array.isArray(transformOrOps)) {
+        ops = transformOrOps;
+      } else if (typeof transformOrOps === 'function') {
+        const res = transformOrOps(new RecordTransformBuilder());
+        ops = Array.isArray(res) ? res : [res];
+      } else if (Array.isArray(transformOrOps?.operations)) {
+        ops = transformOrOps.operations;
+      } else if (transformOrOps) {
+        ops = [transformOrOps];
+      }
+      recordedOpsList.push(ops);
+
+      const isSegmentOp = ops.some(
+        (op: any) =>
+          (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+          (op?.op === 'updateRecord' &&
+            op?.record?.type === 'mediafile' &&
+            op?.record?.attributes?.segments &&
+            !op?.record?.attributes?.transcriptionstate)
+      );
+
+      if (isSegmentOp) {
+        return segmentUpdatePromise;
+      }
+      return Promise.resolve();
+    });
+
+    const onSetStepComplete = cy.stub().as('setStepComplete');
+    const onGotoNextStep = cy.stub().as('gotoNextStep');
+
+    const initialSegments = '{"regions":[{"start":0,"end":1}]}';
+    const mediaWithSegments: MediaFileD = {
+      id: 'media-1',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Existing transcription text',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 20,
+        position: 0,
+        segments: initialSegments,
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    mountTranscribeMobile({
+      mediafiles: [mediaWithSegments],
+      memoryUpdate,
+      onSetStepComplete,
+      onGotoNextStep,
+    });
+
+    // 1. Trigger segment change via Reset Segments
+    cy.get('#wsSegmentReset', { timeout: 10000 })
+      .should('be.visible')
+      .and('not.be.disabled')
+      .click();
+
+    // Verify segment update is called and pending
+    cy.wrap(null).should(() => {
+      expect(recordedOpsList.length).to.be.greaterThan(0);
+      const segCall = recordedOpsList.find((ops) =>
+        Array.isArray(ops) &&
+        ops.some(
+          (op: any) =>
+            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+            (op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.segments &&
+              !op?.record?.attributes?.transcriptionstate)
+        )
+      );
+      expect(segCall).to.exist;
+    });
+
+    // 2. Click Submit
+    cy.get('#transcriber\\.submit').click();
+
+    // 3. Resolve segment update FIRST
+    cy.then(() => {
+      resolveSegmentUpdate();
+    });
+
+    // 4. Verify step completion and navigation succeed after both resolve
+    cy.get('@setStepComplete').should(
+      'have.been.calledWith',
+      'step-transcribe',
+      true
+    );
+    cy.get('@gotoNextStep').should('have.been.called');
+
+    // 5. Verify both segment persistence and submit updates were recorded
+    cy.wrap(null).should(() => {
+      const hasSegmentUpdate = recordedOpsList.some((ops) =>
+        Array.isArray(ops) &&
+        ops.some(
+          (op: any) =>
+            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+            (op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.segments &&
+              !op?.record?.attributes?.transcriptionstate)
+        )
+      );
+      const hasSubmitUpdate = recordedOpsList.some((ops) =>
+        Array.isArray(ops) &&
+        ops.some(
+          (op: any) =>
+            op?.op === 'updateRecord' &&
+            op?.record?.type === 'mediafile' &&
+            op?.record?.attributes?.transcriptionstate
+        )
+      );
+      expect(hasSegmentUpdate, 'segment update recorded').to.be.true;
+      expect(hasSubmitUpdate, 'submit update recorded').to.be.true;
+    });
+  });
+
+  it('coordinates deferred segment persistence followed by submit when submit save resolves first (deferred segment save resolves later)', () => {
+    let resolveSegmentUpdate!: () => void;
+    const segmentUpdatePromise = new Promise<void>((resolve) => {
+      resolveSegmentUpdate = resolve;
+    });
+
+    const recordedOpsList: any[][] = [];
+    const memoryUpdate = cy.stub().as('memoryUpdate').callsFake((transformOrOps: any) => {
+      let ops: any[] = [];
+      if (Array.isArray(transformOrOps)) {
+        ops = transformOrOps;
+      } else if (typeof transformOrOps === 'function') {
+        const res = transformOrOps(new RecordTransformBuilder());
+        ops = Array.isArray(res) ? res : [res];
+      } else if (Array.isArray(transformOrOps?.operations)) {
+        ops = transformOrOps.operations;
+      } else if (transformOrOps) {
+        ops = [transformOrOps];
+      }
+      recordedOpsList.push(ops);
+
+      const isSegmentOp = ops.some(
+        (op: any) =>
+          (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+          (op?.op === 'updateRecord' &&
+            op?.record?.type === 'mediafile' &&
+            op?.record?.attributes?.segments &&
+            !op?.record?.attributes?.transcriptionstate)
+      );
+
+      if (isSegmentOp) {
+        return segmentUpdatePromise;
+      }
+      return Promise.resolve();
+    });
+
+    const onSetStepComplete = cy.stub().as('setStepComplete');
+    const onGotoNextStep = cy.stub().as('gotoNextStep');
+
+    const initialSegments = '{"regions":[{"start":0,"end":1}]}';
+    const mediaWithSegments: MediaFileD = {
+      id: 'media-1',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Existing transcription text',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 20,
+        position: 0,
+        segments: initialSegments,
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    mountTranscribeMobile({
+      mediafiles: [mediaWithSegments],
+      memoryUpdate,
+      onSetStepComplete,
+      onGotoNextStep,
+    });
+
+    // 1. Trigger segment change via Reset Segments
+    cy.get('#wsSegmentReset', { timeout: 10000 })
+      .should('be.visible')
+      .and('not.be.disabled')
+      .click();
+
+    // Verify segment update is called and pending
+    cy.wrap(null).should(() => {
+      expect(recordedOpsList.length).to.be.greaterThan(0);
+      const segCall = recordedOpsList.find((ops) =>
+        Array.isArray(ops) &&
+        ops.some(
+          (op: any) =>
+            (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+            (op?.op === 'updateRecord' &&
+              op?.record?.type === 'mediafile' &&
+              op?.record?.attributes?.segments &&
+              !op?.record?.attributes?.transcriptionstate)
+        )
+      );
+      expect(segCall).to.exist;
+    });
+
+    // 2. Click Submit while segment update is still pending
+    cy.get('#transcriber\\.submit').click();
+
+    // 3. Verify submit save ran, but step completion and navigation MUST WAIT for pending segment save
+    cy.wrap(null).should(() => {
+      const hasSubmitUpdate = recordedOpsList.some((ops) =>
+        Array.isArray(ops) &&
+        ops.some(
+          (op: any) =>
+            op?.op === 'updateRecord' &&
+            op?.record?.type === 'mediafile' &&
+            op?.record?.attributes?.transcriptionstate
+        )
+      );
+      expect(hasSubmitUpdate, 'submit save was processed').to.be.true;
+    });
+
+    // While segment update is still pending, step complete and navigation must NOT have been called yet
+    cy.get('@setStepComplete').should('not.have.been.called');
+    cy.get('@gotoNextStep').should('not.have.been.called');
+
+    // 4. Now resolve deferred segment update
+    cy.then(() => {
+      resolveSegmentUpdate();
+    });
+
+    // 5. Verify step completion and navigation now proceed after deferred segment save resolves
+    cy.get('@setStepComplete').should(
+      'have.been.calledWith',
+      'step-transcribe',
+      true
+    );
+    cy.get('@gotoNextStep').should('have.been.called');
   });
 });

@@ -285,8 +285,16 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleComplete = useCallback(
     (complete: boolean) => {
-      waitForSave(undefined, 200)
+      const waitPending = pendingSegmentSaveRef.current
+        ? pendingSegmentSaveRef.current.catch(() => {})
+        : Promise.resolve();
+
+      waitPending
+        .then(() => waitForSave(undefined, 200))
         .then(async () => {
+          if (pendingSegmentSaveRef.current) {
+            await pendingSegmentSaveRef.current.catch(() => {});
+          }
           await setStepComplete(currentstep, complete);
           if (complete) gotoNextStep();
         })
@@ -361,6 +369,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const [confirm, setConfirm] = useState<string | undefined>(undefined);
   const playedSecsRef = useRef(0);
   const segmentsRef = useRef<string | undefined>(undefined);
+  const pendingSegmentSaveRef = useRef<Promise<void> | null>(null);
   const transcriptionInRef = useRef<string | undefined>(
     mediafile?.attributes?.transcription ?? ''
   );
@@ -560,26 +569,39 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     async (segments: string, init?: boolean) => {
       segmentsRef.current = segments;
       if (!hasPermission || init || !mediafile) return;
+      const currentMedia =
+        (findRecord(memory, 'mediafile', mediafile.id) as
+          MediaFileD | undefined) ?? mediafile;
       const currentSavedSegments = getSegments(
         NamedRegions.Transcription,
-        mediafile.attributes?.segments ?? '{}'
+        currentMedia.attributes?.segments ?? '{}'
       );
       if (segments === currentSavedSegments) return;
       const updatedSegments = updateSegments(
         NamedRegions.Transcription,
-        mediafile.attributes?.segments ?? '{}',
+        currentMedia.attributes?.segments ?? '{}',
         segments
       );
+      const savePromise = (async () => {
+        try {
+          await projectSegmentSave({
+            media: currentMedia,
+            segments: updatedSegments,
+          });
+        } catch (err) {
+          logError(Severity.error, errorReporter, err as Error);
+        }
+      })();
+      pendingSegmentSaveRef.current = savePromise;
       try {
-        await projectSegmentSave({
-          media: mediafile,
-          segments: updatedSegments,
-        });
-      } catch (err) {
-        logError(Severity.error, errorReporter, err as Error);
+        await savePromise;
+      } finally {
+        if (pendingSegmentSaveRef.current === savePromise) {
+          pendingSegmentSaveRef.current = null;
+        }
       }
     },
-    [hasPermission, mediafile, projectSegmentSave, errorReporter]
+    [hasPermission, mediafile, memory, projectSegmentSave, errorReporter]
   );
 
   const handleProgress = useCallback((progress: number) => {

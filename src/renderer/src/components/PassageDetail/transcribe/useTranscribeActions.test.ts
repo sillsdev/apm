@@ -144,6 +144,50 @@ describe('useTranscribeActions', () => {
     expect(mockSaveCompleted).toHaveBeenCalledWith('step1');
   });
 
+  it('reads latest attributes from memory cache so concurrently persisted segments are not overwritten by stale mediafile snapshot', async () => {
+    const cachedMedia = {
+      ...mockMediafile,
+      attributes: {
+        ...mockMediafile.attributes,
+        segments: '{"regions":[{"start":1,"end":8}]}',
+      },
+    };
+    mockMemory.cache.query = jest.fn((queryFn: any) =>
+      queryFn({
+        findRecord: ({ type, id }: { type: string; id: string }) => {
+          if (type === 'mediafile' && id === 'm1') return cachedMedia;
+          return undefined;
+        },
+      })
+    );
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: mockMediafile, // stale snapshot with segments: '{"regions":[]}'
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        getTranscriptionText: () => 'Updated transcription text',
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    const ops = mockMemory.update.mock.calls[0][0] as any[];
+    const mediaUpdateOp = ops.find(
+      (op: any) => op.op === 'updateRecord' && op.record?.type === 'mediafile'
+    );
+    expect(mediaUpdateOp?.record?.attributes?.segments).toBe(
+      '{"regions":[{"start":1,"end":8}]}'
+    );
+  });
+
   it('handleSubmit advances transcription state and marks step complete', async () => {
     const { result } = renderHook(() =>
       useTranscribeActions({

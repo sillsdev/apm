@@ -163,6 +163,19 @@ export function useTranscribeActions({
         }
       }
 
+      const currentMedia =
+        (findRecord(memory, 'mediafile', mediafile.id) as
+          MediaFileD | undefined) ?? mediafile;
+
+      const updatedSegments =
+        segments !== undefined
+          ? updateSegments(
+              NamedRegions.Transcription,
+              currentMedia.attributes?.segments,
+              segments
+            )
+          : currentMedia.attributes?.segments;
+
       ops.push(
         ...UpdateRecord(
           tb,
@@ -170,14 +183,10 @@ export function useTranscribeActions({
             type: 'mediafile',
             id: mediafile.id,
             attributes: {
-              ...mediafile.attributes,
+              ...currentMedia.attributes,
               transcription,
               position: newPosition,
-              segments: updateSegments(
-                NamedRegions.Transcription,
-                mediafile.attributes?.segments,
-                segments || '{}'
-              ),
+              segments: updatedSegments,
               transcriptionstate: nextState,
             },
           } as MediaFileD,
