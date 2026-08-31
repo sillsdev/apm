@@ -1505,4 +1505,193 @@ describe('PassageDetailTranscribeMobile', () => {
     );
     cy.get('@gotoNextStep').should('have.been.called');
   });
+
+  it('renders enabled Reopen button, readonly textarea, disabled ASR, and hides Save/Submit for Approved media with permission', () => {
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      transcriptionstate: ActivityStates.Approved,
+      hasPermission: true,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriptionText').should('have.attr', 'readonly');
+    cy.get('#asrButton').should('be.disabled');
+    cy.get('#transcriber\\.save').should('not.exist');
+    cy.get('#transcriber\\.submit').should('not.exist');
+    cy.get('#transcriber\\.reject').should('not.exist');
+    cy.get('#transcriber\\.reopen').should('be.visible').and('not.be.disabled');
+
+    cy.get('#transcriber\\.reopen').click();
+
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        const ops = Array.isArray(arg) ? arg : (arg?.operations ?? []);
+        const mediaOp = ops.find(
+          (op: any) =>
+            op.record?.type === 'mediafile' &&
+            op.record?.id === 'media-1' &&
+            (op.attribute === 'transcriptionstate' ||
+              op.record?.attributes?.transcriptionstate !== undefined)
+        );
+        if (mediaOp) {
+          savedState =
+            mediaOp.value ?? mediaOp.record?.attributes?.transcriptionstate;
+          break;
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.TranscribeReady);
+    });
+  });
+
+  it('renders enabled Reopen button, readonly textarea, disabled ASR, and hides Save/Submit for Done media with permission', () => {
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      transcriptionstate: ActivityStates.Done,
+      hasPermission: true,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriptionText').should('have.attr', 'readonly');
+    cy.get('#asrButton').should('be.disabled');
+    cy.get('#transcriber\\.save').should('not.exist');
+    cy.get('#transcriber\\.submit').should('not.exist');
+    cy.get('#transcriber\\.reject').should('not.exist');
+    cy.get('#transcriber\\.reopen').should('be.visible').and('not.be.disabled');
+
+    cy.get('#transcriber\\.reopen').click();
+
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        const ops = Array.isArray(arg) ? arg : (arg?.operations ?? []);
+        const mediaOp = ops.find(
+          (op: any) =>
+            op.record?.type === 'mediafile' &&
+            op.record?.id === 'media-1' &&
+            (op.attribute === 'transcriptionstate' ||
+              op.record?.attributes?.transcriptionstate !== undefined)
+        );
+        if (mediaOp) {
+          savedState =
+            mediaOp.value ?? mediaOp.record?.attributes?.transcriptionstate;
+          break;
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.TranscribeReady);
+    });
+  });
+
+  it('renders enabled Reopen button and readonly textarea for Approved artifact task media with permission', () => {
+    const vernMedia: MediaFileD = {
+      id: 'media-vernacular',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Vernacular text',
+        transcriptionstate: ActivityStates.Approved,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    const artifactMedia: MediaFileD = {
+      id: 'media-artifact-1',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Phrase BT text',
+        transcriptionstate: ActivityStates.Approved,
+        duration: 10,
+        position: 0,
+        segments: '{}',
+        languagebcp47: 'es',
+        dateCreated: '2026-01-02T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+        artifactType: { data: { type: 'artifacttype', id: 'art-type-pbt' } },
+        sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+      },
+    } as unknown as MediaFileD;
+
+    const artifactTypes = [
+      {
+        id: 'art-type-pbt',
+        type: 'artifacttype',
+        attributes: {
+          typename: 'backtranslation',
+        },
+      },
+    ];
+
+    const workflowSteps = [
+      {
+        id: 'step-bt-transcribe',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({
+            tool: 'transcribe',
+            settings: JSON.stringify({
+              artifactTypeId: 'art-type-pbt',
+              language: 'es',
+            }),
+          }),
+        },
+      },
+    ];
+
+    const memoryUpdate = cy.stub().as('memoryUpdate').resolves();
+
+    mountTranscribeMobile({
+      mediafileId: 'media-vernacular',
+      currentstep: 'step-bt-transcribe',
+      mediafiles: [vernMedia, artifactMedia],
+      artifactTypes,
+      workflowSteps,
+      hasPermission: true,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriptionText').should('have.attr', 'readonly');
+    cy.get('#asrButton').should('be.disabled');
+    cy.get('#transcriber\\.save').should('not.exist');
+    cy.get('#transcriber\\.submit').should('not.exist');
+    cy.get('#transcriber\\.reopen').should('be.visible').and('not.be.disabled');
+
+    cy.get('#transcriber\\.reopen').click();
+
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        const ops = Array.isArray(arg) ? arg : (arg?.operations ?? []);
+        const mediaOp = ops.find(
+          (op: any) =>
+            op.record?.type === 'mediafile' &&
+            op.record?.id === 'media-artifact-1' &&
+            (op.attribute === 'transcriptionstate' ||
+              op.record?.attributes?.transcriptionstate !== undefined)
+        );
+        if (mediaOp) {
+          savedState =
+            mediaOp.value ?? mediaOp.record?.attributes?.transcriptionstate;
+          break;
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.TranscribeReady);
+    });
+  });
 });

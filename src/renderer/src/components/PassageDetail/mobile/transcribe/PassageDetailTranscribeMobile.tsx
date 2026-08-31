@@ -182,13 +182,20 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const { rowData, transSelected } = useTodo();
 
   const selectedMediaRow = useMemo(() => {
-    if (!artifactTypeId || !transSelected) return undefined;
+    const targetId = artifactTypeId
+      ? transSelected
+      : (transSelected ?? mediafileId);
+    if (!targetId) return undefined;
     const asTranscriber = rowData.find(
-      (r) => r.mediafile?.id === transSelected && r.role === 'transcriber'
+      (r) => r.mediafile?.id === targetId && r.role === 'transcriber'
     );
     if (asTranscriber) return asTranscriber;
-    return rowData.find((r) => r.mediafile?.id === transSelected);
-  }, [artifactTypeId, rowData, transSelected]);
+    const asEditor = rowData.find(
+      (r) => r.mediafile?.id === targetId && r.role === 'editor'
+    );
+    if (asEditor) return asEditor;
+    return rowData.find((r) => r.mediafile?.id === targetId);
+  }, [artifactTypeId, rowData, transSelected, mediafileId]);
 
   const mediafile = useMemo(() => {
     if (artifactTypeId) {
@@ -438,6 +445,27 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     errorReporter,
   });
 
+  const isCompleted = useMemo(() => {
+    const st = actions.state;
+    return (
+      st === ActivityStates.Approved ||
+      st === ActivityStates.Done ||
+      st === ActivityStates.Synced
+    );
+  }, [actions.state]);
+
+  const effectiveRole = useMemo(() => {
+    if (!hasPermission) return 'view';
+    if (isCompleted || selectedMediaRow?.role === 'view') return 'view';
+    if (selectedMediaRow?.role && selectedMediaRow.role !== 'view') {
+      return selectedMediaRow.role;
+    }
+    return curRole;
+  }, [hasPermission, isCompleted, selectedMediaRow?.role, curRole]);
+
+  const isReadOnly =
+    !hasPermission || !mediafile || isCompleted || effectiveRole === 'view';
+
   useEffect(() => {
     const targetMediaId = artifactTypeId
       ? mediafile?.id
@@ -502,14 +530,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleTextAdd = useCallback(
     (newText: string) => {
-      if (!hasPermission || !mediafile) return;
+      if (isReadOnly || !hasPermission || !mediafile) return;
       setTextValue((prev) => {
         const updated = prev + newText;
         toolChanged(currentstep, true);
         return updated;
       });
     },
-    [hasPermission, mediafile, toolChanged, currentstep]
+    [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
   );
 
   const asr = useTranscribeAsr({
@@ -523,11 +551,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (!hasPermission || !mediafile) return;
+      if (isReadOnly || !hasPermission || !mediafile) return;
       setTextValue(e.target.value);
       toolChanged(currentstep, true);
     },
-    [hasPermission, mediafile, toolChanged, currentstep]
+    [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
   );
 
   const handleFocus = useCallback(() => {
@@ -568,7 +596,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const onSegmentChange = useCallback(
     async (segments: string, init?: boolean) => {
       segmentsRef.current = segments;
-      if (!hasPermission || init || !mediafile) return;
+      if (isReadOnly || !hasPermission || init || !mediafile) return;
       const currentMedia =
         (findRecord(memory, 'mediafile', mediafile.id) as
           MediaFileD | undefined) ?? mediafile;
@@ -601,7 +629,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         }
       }
     },
-    [hasPermission, mediafile, memory, projectSegmentSave, errorReporter]
+    [
+      isReadOnly,
+      hasPermission,
+      mediafile,
+      memory,
+      projectSegmentSave,
+      errorReporter,
+    ]
   );
 
   const handleProgress = useCallback((progress: number) => {
@@ -673,16 +708,20 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       <PassageDetailPlayer
         width={width}
         layoutMode="mobileTranscribe"
-        allowSegment={hasPermission ? NamedRegions.Transcription : undefined}
-        allowAutoSegment={hasPermission}
+        allowSegment={
+          !isReadOnly && hasPermission ? NamedRegions.Transcription : undefined
+        }
+        allowAutoSegment={!isReadOnly && hasPermission}
         allowZoomAndSpeed={true}
         hideZoom={true}
         showTranscriptionButton={false}
         defaultSegParams={segParams}
-        canSetDefaultParams={hasPermission && canSetOrgDefault}
+        canSetDefaultParams={!isReadOnly && hasPermission && canSetOrgDefault}
         onProgress={handleProgress}
-        onSegment={hasPermission ? onSegmentChange : undefined}
-        onSegmentParamChange={hasPermission ? onSegmentParamChange : undefined}
+        onSegment={!isReadOnly && hasPermission ? onSegmentChange : undefined}
+        onSegmentParamChange={
+          !isReadOnly && hasPermission ? onSegmentParamChange : undefined
+        }
         parentToolId={currentstep}
       />
 
@@ -692,7 +731,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           variant="outlined"
           onClick={asr.handleTranscribe}
           startIcon={<TranscriptionLogo />}
-          disabled={!hasPermission || !mediafile}
+          disabled={isReadOnly}
           sx={{
             textTransform: 'none',
             borderColor: 'divider',
@@ -715,7 +754,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           onChange={handleTextChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          readOnly={!hasPermission || !mediafile}
+          readOnly={isReadOnly}
           placeholder={t.transcriptionType ?? 'Transcription'}
           style={{
             ...fontStyle,
@@ -761,7 +800,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         </Box>
 
         <Stack direction="row" spacing={1} alignItems="center">
-          {curRole !== 'view' ? (
+          {effectiveRole !== 'view' ? (
             <>
               <Button
                 id="transcriber.reject"
