@@ -29,6 +29,7 @@ import {
   waitForPbtReady,
   startRecordingPass,
   readSourcePlaying,
+  readRecordEnabled,
   playheadText,
   parseTime,
   expectRecordEnabled,
@@ -112,6 +113,33 @@ describe('PBT region playback contract, last segment ends with the audio', () =>
     unitLabel('0:03', '0:06').should('be.visible');
     cy.get(PBT.nextUnit).click();
     unitLabel('0:06', '0:09').should('be.visible');
+
+    // Both halves: Record withheld while the segment plays, then offered once it
+    // finishes. Either alone can be satisfied for the wrong reason - Record
+    // appearing eventually covers the dead end, but a premature park offers it
+    // immediately, which passes that half while the audio is still going.
+    //
+    // Read this as a statement of the contract rather than as a repro. Reverting
+    // the fixes does not reliably turn it red: whether the boundary emits a
+    // region-out at all is itself nondeterministic here, so on some runs the
+    // premature park supplies the parked state and this goes green without them.
+    // It will not fail when the behaviour is right, which is what makes it worth
+    // keeping; the dependable guards for these fixes are the arrow tests in the
+    // main spec and the clicked-segment test in the selection spec, which fail
+    // every time the fixes are removed.
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio still playing').to.equal(
+        true
+      );
+      expect(
+        readRecordEnabled(doc),
+        'Record withheld while the last segment plays'
+      ).to.equal(false);
+    });
     expectRecordEnabled();
   });
 });
