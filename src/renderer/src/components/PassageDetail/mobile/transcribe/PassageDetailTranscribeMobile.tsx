@@ -270,10 +270,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleComplete = useCallback(
     (complete: boolean) => {
-      waitForSave(undefined, 200).finally(async () => {
-        await setStepComplete(currentstep, complete);
-        if (complete) gotoNextStep();
-      });
+      waitForSave(undefined, 200)
+        .then(async () => {
+          await setStepComplete(currentstep, complete);
+          if (complete) gotoNextStep();
+        })
+        .catch(() => {
+          // save failed or timed out; do not mark complete or navigate
+        });
     },
     [waitForSave, setStepComplete, currentstep, gotoNextStep]
   );

@@ -148,9 +148,11 @@ describe('PassageDetailTranscribeMobile', () => {
       transcriptionstate?: string;
       hasPermission?: boolean;
       onSetStepComplete?: (complete: boolean) => void;
+      onGotoNextStep?: () => void;
       onHideHeader?: (hide: boolean) => void;
       onSetSelected?: (id: string, inPlayer: any) => void;
       onSaveCompleted?: (toolId: string, err?: string) => void;
+      waitForSave?: any;
       memoryUpdate?: any;
       playerMediafile?: MediaFileD | undefined;
       mediafileId?: string;
@@ -165,9 +167,11 @@ describe('PassageDetailTranscribeMobile', () => {
       transcription = 'Existing transcription text',
       transcriptionstate = ActivityStates.Transcribing,
       onSetStepComplete = cy.stub().as('setStepComplete'),
+      onGotoNextStep = cy.stub().as('gotoNextStep'),
       onHideHeader = cy.stub().as('setHideMobileHeader'),
       onSetSelected = cy.stub().as('setSelected'),
       onSaveCompleted = cy.stub().as('saveCompleted'),
+      waitForSave = (_cb: any, _ms?: number) => Promise.resolve(),
       memoryUpdate,
       playerMediafile,
       mediafileId = 'media-1',
@@ -307,7 +311,7 @@ describe('PassageDetailTranscribeMobile', () => {
       saveRequested: () => false,
       clearRequested: () => false,
       clearCompleted: cy.stub(),
-      waitForSave: (_cb: any, _ms?: number) => Promise.resolve(),
+      waitForSave,
       saveCompleted: onSaveCompleted,
     };
 
@@ -323,7 +327,7 @@ describe('PassageDetailTranscribeMobile', () => {
         stepComplete: () => false,
         setStepComplete: onSetStepComplete,
         setCurrentStep: cy.stub(),
-        gotoNextStep: cy.stub(),
+        gotoNextStep: onGotoNextStep,
         sharedResource: null,
         playing: false,
         hideMobileHeader: false,
@@ -427,6 +431,38 @@ describe('PassageDetailTranscribeMobile', () => {
       'step-transcribe',
       true
     );
+  });
+
+  it('does not complete step or navigate when submit update fails', () => {
+    cy.on('uncaught:exception', () => false);
+    const onSetStepComplete = cy.stub().as('setStepComplete');
+    const onGotoNextStep = cy.stub().as('gotoNextStep');
+    const memoryUpdate = cy.stub().as('memoryUpdate').rejects(new Error('Save failed'));
+    mountTranscribeMobile({
+      onSetStepComplete,
+      onGotoNextStep,
+      memoryUpdate,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@setStepComplete').should('not.have.been.called');
+    cy.get('@gotoNextStep').should('not.have.been.called');
+  });
+
+  it('does not complete step or navigate when waitForSave rejects in handleComplete', () => {
+    cy.on('uncaught:exception', () => false);
+    const onSetStepComplete = cy.stub().as('setStepComplete');
+    const onGotoNextStep = cy.stub().as('gotoNextStep');
+    const waitForSave = cy.stub().as('waitForSave').rejects(new Error('Save failed'));
+    mountTranscribeMobile({
+      onSetStepComplete,
+      onGotoNextStep,
+      waitForSave,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@setStepComplete').should('not.have.been.called');
+    cy.get('@gotoNextStep').should('not.have.been.called');
   });
 
   it('selects media into player when playerMediafile is undefined or differs from mediafileId', () => {

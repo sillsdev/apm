@@ -253,4 +253,58 @@ describe('useTranscribeActions', () => {
     expect(mockMemory.update).toHaveBeenCalled();
     expect(mockSaveCompleted).toHaveBeenCalledWith('step1', 'Save failed');
   });
+
+  it('save rethrows error so callers can observe save failures', async () => {
+    (mockMemory.update as any).mockRejectedValueOnce(new Error('Save failed'));
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: mockMediafile,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        getTranscriptionText: () => 'Updated transcription text',
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await expect(
+      result.current.save(ActivityStates.TranscribeReady, 0, undefined, '')
+    ).rejects.toThrow('Save failed');
+    expect(mockSaveCompleted).toHaveBeenCalledWith('step1', 'Save failed');
+  });
+
+  it('handleSubmit does not mark step complete, reload player, or reset position when save fails', async () => {
+    (mockMemory.update as any).mockRejectedValueOnce(new Error('Save failed'));
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: mockMediafile,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: true,
+        noParatext: false,
+        getTranscriptionText: () => 'Completed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSaveCompleted).toHaveBeenCalledWith('step1', 'Save failed');
+    expect(mockSetComplete).not.toHaveBeenCalled();
+    expect(mockOnReloadPlayer).not.toHaveBeenCalled();
+    expect(mockSetPosition).not.toHaveBeenCalled();
+  });
 });

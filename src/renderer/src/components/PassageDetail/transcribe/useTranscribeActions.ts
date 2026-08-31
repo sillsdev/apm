@@ -192,6 +192,7 @@ export function useTranscribeActions({
         transcriptionInRef.current = prevtran;
         saveCompleted?.(toolId, err?.message);
         savingRef.current = false;
+        throw err;
       }
     },
     [
@@ -216,7 +217,11 @@ export function useTranscribeActions({
       const nextState = overrideState ?? nextOnSave[state] ?? state;
       const pos = getPosition?.() ?? 0;
       const segs = getSegments?.();
-      await save(nextState, pos, segs, undefined);
+      try {
+        await save(nextState, pos, segs, undefined);
+      } catch {
+        // save failure reported via saveCompleted
+      }
     },
     [state, getPosition, getSegments, save, showMessage, savingMessage]
   );
@@ -233,10 +238,14 @@ export function useTranscribeActions({
     });
     if (nextState) {
       const segs = getSegments?.();
-      await save(nextState || ActivityStates.TranscribeReady, 0, segs, '');
-      if (mediafile && onReloadPlayer) onReloadPlayer(mediafile);
-      if (setPosition) setPosition(0);
-      if (setComplete) setComplete(true);
+      try {
+        await save(nextState || ActivityStates.TranscribeReady, 0, segs, '');
+        if (mediafile && onReloadPlayer) onReloadPlayer(mediafile);
+        if (setPosition) setPosition(0);
+        if (setComplete) setComplete(true);
+      } catch {
+        // save failure reported via saveCompleted; do not reload, reset position, or complete
+      }
     } else if (errorReporter) {
       logError(Severity.error, errorReporter, `Unhandled state: ${state}`);
     }
