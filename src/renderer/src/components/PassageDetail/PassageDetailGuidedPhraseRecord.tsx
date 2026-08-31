@@ -798,6 +798,29 @@ export function PassageDetailGuidedPhraseRecord({
         // stop that this start provokes is discarded below instead of being read
         // as the clause having finished.
         clausePlaybackStartedAtRef.current = Date.now();
+        // Withhold Record for what is left of the clause. playCurrentClause sets
+        // this too, for the step's own playback, but a user replaying a clause
+        // they have already heard never goes through it - and by then the clause
+        // counts as heard, so Record is operable and could be pressed over the
+        // reference audio, which is the very thing withholding it prevents
+        // (Devin). Measured from the playhead, since a replay can start part way
+        // in.
+        //
+        // Set here rather than in beforePlay: the player awaits that hook, and
+        // setting state inside it re-renders mid-start and the play never
+        // happens at all. Here the audio is already running.
+        const region = clauseRegions[currentIndex];
+        const ctrl = playerControlsRef.current;
+        if (region && ctrl) {
+          const from = ctrl.getProgress?.() ?? region.start;
+          const rate = ctrl.getPlaybackRate?.() || 1;
+          const remainingMs = (Math.max(0, region.end - from) * 1000) / rate;
+          if (remainingMs > 0) {
+            setRecordBlockedUntil(
+              Date.now() + remainingMs + CLAUSE_PLAYBACK_MARGIN_MS
+            );
+          }
+        }
       }
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
@@ -822,6 +845,20 @@ export function PassageDetailGuidedPhraseRecord({
       }
       // A real stop - the user pausing - means the rest of the clause is not
       // coming, so stop withholding Record for it (#529's behaviour, kept).
+      //
+      // A pause inside the window above does not get here, so Record stays
+      // withheld for the remainder of the clause's span even though the audio
+      // has stopped (Devin). Deliberate: inside that window a stop cannot be
+      // told apart from the seek that starts the clause, and clearing on the
+      // seek would reinstate the defect this all exists to fix. The wait is
+      // bounded by the clause length, and it is the same limitation #529 already
+      // has for currentClausePlayed - a pause that quick does not mark the
+      // clause heard either.
+      //
+      // Reaching it means pausing within 250ms of a clause starting, which
+      // Noel's call is unlikely in practice and near enough impossible without a
+      // touchscreen: the step starts the clause itself, so it needs the pointer
+      // already over Play and a press inside that window.
       setRecordBlockedUntil(0);
       setCurrentClausePlayed(true);
       setPhase((p) =>
@@ -846,6 +883,7 @@ export function PassageDetailGuidedPhraseRecord({
     currentClausePlayed,
     snapToClauseStart,
     currentIndex,
+    clauseRegions,
   ]);
 
   const setPlayerPlayingBoth = useCallback(

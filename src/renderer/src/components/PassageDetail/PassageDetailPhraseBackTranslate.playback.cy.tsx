@@ -33,6 +33,7 @@ import {
   playheadText,
   parseTime,
   expectRecordEnabled,
+  sourcePlay,
   pbtCleanup,
   PBT,
   SEGMENTS_3,
@@ -66,6 +67,29 @@ describe('PBT region playback contract', () => {
         parseTime(t),
         'playhead near the start of segment 2, not part way in'
       ).to.be.lessThan(3.6);
+    });
+  });
+
+  it('keeps Record off while the user replays a segment they have heard', () => {
+    // Found in review. The step withholds Record for the clause span whenever it
+    // starts playback itself, but a user pressing Play to hear a segment again
+    // never goes through that path - and by then the clause counts as heard, so
+    // Record is operable and can be pressed over the reference audio.
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:03', '0:06').should('be.visible');
+    expectRecordEnabled(); // heard once, Record now offered
+
+    sourcePlay().click(); // replay it
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'replay started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      expect(readSourcePlaying(doc), 'replay still playing').to.equal(true);
+      expect(
+        readRecordEnabled(doc),
+        'Record withheld while the segment is replayed'
+      ).to.equal(false);
     });
   });
 
