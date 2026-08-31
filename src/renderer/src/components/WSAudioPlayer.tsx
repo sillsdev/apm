@@ -43,6 +43,7 @@ import { FaHandScissors } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 
 import { useWavRecorder } from '../crud/useWavRecorder';
+import { fallbackInputDeviceId } from '../crud/captureConstraints';
 import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
 import { Duration } from '../control/Duration';
 import { LightTooltip } from '../control/LightTooltip';
@@ -505,6 +506,25 @@ function WSAudioPlayer(props: IProps) {
   const [selectedMicrophoneId, setSelectedMicrophoneId] = useState(
     localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
   );
+  const selectedMicrophoneIdRef = useRef(selectedMicrophoneId);
+  selectedMicrophoneIdRef.current = selectedMicrophoneId;
+  const warnedMicLossRef = useRef(false);
+
+  function warnMicrophoneDisconnected(fallbackDeviceId?: string) {
+    if (warnedMicLossRef.current) return;
+    warnedMicLossRef.current = true;
+    if (fallbackDeviceId) {
+      setSelectedMicrophoneId(fallbackDeviceId);
+    }
+    showMessage(
+      fallbackDeviceId
+        ? t.microphoneDisconnectedFallback ||
+            'The preferred microphone was disconnected. Default microphone selected.'
+        : t.microphoneDisconnected ||
+            'The microphone was disconnected. Select another microphone to record.',
+      AlertSeverity.Warning
+    );
+  }
 
   const [micMenuAnchorEl, setMicMenuAnchorEl] = useState<null | HTMLElement>(
     null
@@ -581,6 +601,8 @@ function WSAudioPlayer(props: IProps) {
       const storageKey = localUserKey(LocalKey.microphoneId);
       if (selectedMicrophoneId) {
         localStorage.setItem(storageKey, selectedMicrophoneId);
+      } else {
+        localStorage.removeItem(storageKey);
       }
     } catch {
       // ignore storage errors
@@ -597,6 +619,7 @@ function WSAudioPlayer(props: IProps) {
   };
 
   const handleMicSelect = (deviceId: string) => {
+    warnedMicLossRef.current = false;
     setSelectedMicrophoneId(deviceId);
     handleMicMenuClose();
   };
@@ -864,7 +887,10 @@ function WSAudioPlayer(props: IProps) {
         // window). Consumers should treat onRecording(true) as "capture active".
         startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
           recordingStartPendingRef.current = false;
-          if (value) setRecording(true);
+          if (value) {
+            warnedMicLossRef.current = false;
+            setRecording(true);
+          }
         });
 
         insertingRef.current = durationRef.current > 0;
@@ -962,12 +988,14 @@ function WSAudioPlayer(props: IProps) {
         if (!active) return;
         const inputs = devices.filter((device) => device.kind === 'audioinput');
         setAudioInputDevices(inputs);
-        setSelectedMicrophoneId((current) => {
-          if (current && inputs.some((device) => device.deviceId === current)) {
-            return current;
-          }
-          return inputs[0]?.deviceId ?? '';
-        });
+        if (recordingRef.current) return;
+        const current = selectedMicrophoneIdRef.current;
+        const fallbackId = fallbackInputDeviceId(inputs, current);
+        if (fallbackId !== undefined) {
+          warnMicrophoneDisconnected(fallbackId);
+        } else if (!current && inputs[0]?.deviceId) {
+          setSelectedMicrophoneId(inputs[0].deviceId);
+        }
       } catch {
         if (active) {
           setAudioInputDevices([]);
@@ -1352,7 +1380,11 @@ function WSAudioPlayer(props: IProps) {
       cleanupAutoStart();
       launchTimer();
     } else if (e.deviceLost) {
-      showMessage(t.microphoneDisconnected, AlertSeverity.Warning);
+      if (recordingRef.current) {
+        wsStopRecord();
+        setRecording(false);
+      }
+      warnMicrophoneDisconnected(e.deviceId || audioInputDevices[0]?.deviceId);
     } else {
       showMessage(e.error || e.toString());
     }

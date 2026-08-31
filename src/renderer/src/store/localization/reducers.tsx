@@ -2280,6 +2280,7 @@ const initialState = {
 			"loopoff": "Loop Off",
 			"loopon": "Loop On",
 			"microphoneDisconnected": "The microphone was disconnected. Select another microphone to record.",
+			"microphoneDisconnectedFallback": "The preferred microphone was disconnected. Default microphone selected.",
 			"moreOptions": "More Options",
 			"nextRegion": "Next Segment [{0}]",
 			"noiseremovalFailed": "Noise removal failed (More than likely, the server is unavailable).",

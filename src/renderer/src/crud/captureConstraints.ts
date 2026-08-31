@@ -1,5 +1,18 @@
 export const CAPTURE_DEVICE_LOSS_RETRY_MS = 250;
 
+export class CaptureDeviceLostError extends Error {
+  readonly deviceLost = true as const;
+
+  constructor(cause?: unknown) {
+    const message =
+      cause && typeof cause === 'object' && 'message' in cause
+        ? String((cause as { message?: unknown }).message)
+        : 'microphone disconnected';
+    super(message);
+    this.name = 'CaptureDeviceLostError';
+  }
+}
+
 export function buildCaptureConstraints(
   deviceId: string | undefined,
   echoCancellation: boolean,
@@ -42,9 +55,58 @@ export function constraintsWithoutDeviceId(
   return { ...constraints, audio: audioRest };
 }
 
+export function captureStreamDeviceId(stream: MediaStream): string | undefined {
+  if (typeof stream.getAudioTracks !== 'function') return undefined;
+  const id = stream.getAudioTracks()[0]?.getSettings?.().deviceId;
+  return id || undefined;
+}
+
+/** If the saved input is gone, the deviceId to select instead (usually the first remaining mic). */
+export function fallbackInputDeviceId(
+  inputs: Pick<MediaDeviceInfo, 'deviceId'>[],
+  selectedId: string | undefined
+): string | undefined {
+  if (!selectedId) return undefined;
+  if (!inputs.some((device) => device.deviceId)) return undefined;
+  if (inputs.some((device) => device.deviceId === selectedId)) return undefined;
+  return inputs[0]?.deviceId ?? '';
+}
+
+function stopCaptureStream(stream: MediaStream) {
+  if (typeof stream.getTracks !== 'function') return;
+  stream.getTracks().forEach((track) => {
+    try {
+      track.stop();
+    } catch {
+      /* already gone */
+    }
+  });
+}
+
+async function requestedCaptureDeviceMissing(
+  requestedDeviceId: string | undefined
+): Promise<boolean> {
+  if (!requestedDeviceId) return false;
+  if (typeof navigator.mediaDevices?.enumerateDevices !== 'function') {
+    return false;
+  }
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return (
+      fallbackInputDeviceId(
+        devices.filter((device) => device.kind === 'audioinput'),
+        requestedDeviceId
+      ) !== undefined
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function isUnusableCaptureStream(stream?: MediaStream | null): boolean {
   if (!stream) return true;
   if (!stream.active) return true;
+  if (typeof stream.getAudioTracks !== 'function') return false;
   const tracks = stream.getAudioTracks();
   return (
     tracks.length === 0 || tracks.every((track) => track.readyState !== 'live')
@@ -57,54 +119,198 @@ function errorText(error: unknown): string {
   return `${e.name ?? ''} ${e.message ?? ''} ${e.error ?? ''}`;
 }
 
-/** Headset/USB unplug: Chromium tears down the audio IPC. */
-export function isDeviceLossError(error: unknown): boolean {
-  const text = errorText(error);
-  if (/shutdown/i.test(text)) return true;
-  return (error as { name?: string } | undefined)?.name === 'NotReadableError';
-}
-
-function requestedExactDeviceId(constraints: MediaStreamConstraints): boolean {
+function requestedExactDeviceId(
+  constraints: MediaStreamConstraints
+): string | undefined {
   const audio = constraints.audio;
-  if (!audio || typeof audio === 'boolean') return false;
+  if (!audio || typeof audio === 'boolean') return undefined;
   const id = audio.deviceId;
-  return (
-    typeof id === 'object' && id !== null && 'exact' in id && Boolean(id.exact)
-  );
+  if (typeof id === 'object' && id !== null && 'exact' in id) {
+    const exact = (id as ConstrainDOMStringParameters).exact;
+    return typeof exact === 'string' && exact ? exact : undefined;
+  }
+  return undefined;
 }
 
-function isRecoverableCaptureError(error: unknown): boolean {
-  if (isDeviceLossError(error)) return true;
+function isMissingDeviceError(
+  error: unknown,
+  constraints: MediaStreamConstraints
+): boolean {
   if (!error || typeof error !== 'object') return false;
   const { name, constraint } = error as {
     name?: string;
     constraint?: string;
   };
+  if (name === 'NotFoundError') return true;
+  if (!requestedExactDeviceId(constraints)) return false;
   if (name !== 'OverconstrainedError') return false;
   return constraint === 'deviceId' || constraint == null || constraint === '';
+}
+
+/** Headset/USB unplug: Chromium tears down the audio IPC. */
+export function isDeviceLossError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  if ((error as { deviceLost?: boolean }).deviceLost) return true;
+  const { name } = error as { name?: string };
+  if (name === 'CaptureDeviceLostError' || name === 'NotFoundError') {
+    return true;
+  }
+  const text = errorText(error);
+  if (/shutdown/i.test(text)) return true;
+  return name === 'NotReadableError';
 }
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function toDeviceLostError(cause?: unknown): CaptureDeviceLostError {
+  return cause instanceof CaptureDeviceLostError
+    ? cause
+    : new CaptureDeviceLostError(cause);
+}
+
+export async function ensureCaptureStreamUsable(
+  stream: MediaStream,
+  constraints: MediaStreamConstraints,
+  wait: (ms: number) => Promise<void> = delay
+): Promise<void> {
+  if (typeof stream.getAudioTracks !== 'function') return;
+  if (isUnusableCaptureStream(stream)) throw toDeviceLostError();
+  const track = stream.getAudioTracks()[0];
+  if (!track) throw toDeviceLostError();
+  const requested = requestedExactDeviceId(constraints);
+  const actual = track.getSettings?.().deviceId;
+  if (requested && actual && actual !== requested) throw toDeviceLostError();
+  if (track.muted) {
+    await wait(CAPTURE_DEVICE_LOSS_RETRY_MS);
+    if (track.muted || track.readyState !== 'live') throw toDeviceLostError();
+  }
+  if (await requestedCaptureDeviceMissing(requested)) throw toDeviceLostError();
+}
+
+export function captureTrackIsLost(track?: MediaStreamTrack | null): boolean {
+  if (!track) return true;
+  return track.readyState !== 'live' || Boolean(track.muted);
+}
+
+/** Fires when the capture device is unplugged (ended) or mutes after it had audio. */
+export function listenForCaptureDeviceLoss(
+  stream: MediaStream,
+  onLost: () => void,
+  isCapturing?: () => boolean
+): () => void {
+  if (typeof stream.getAudioTracks !== 'function') return () => undefined;
+  const tracks = stream.getAudioTracks();
+  const heardAudio = new WeakSet<MediaStreamTrack>();
+  const onEnded = () => onLost();
+  const onUnmute = (event: Event) => {
+    const track = event.target as MediaStreamTrack | null;
+    if (track) heardAudio.add(track);
+  };
+  const onMute = (event: Event) => {
+    const track = event.target as MediaStreamTrack | null;
+    if (!track) return;
+    // Windows often mutes on unplug without a prior unmute. Idle muted-at-open
+    // is handled by ensureCaptureStreamUsable; once a take is running, mute is loss.
+    if (heardAudio.has(track) || isCapturing?.()) onLost();
+  };
+  tracks.forEach((track) => {
+    track.addEventListener('ended', onEnded);
+    track.addEventListener('unmute', onUnmute);
+    track.addEventListener('mute', onMute);
+  });
+
+  const onDeviceChange = () => {
+    if (!isCapturing?.()) return;
+    const track = stream.getAudioTracks()[0];
+    if (captureTrackIsLost(track)) {
+      onLost();
+      return;
+    }
+    const captureId = track.getSettings?.().deviceId;
+    if (!captureId || !navigator.mediaDevices?.enumerateDevices) return;
+    void navigator.mediaDevices.enumerateDevices().then((devices) => {
+      if (!isCapturing?.()) return;
+      if (
+        fallbackInputDeviceId(
+          devices.filter((device) => device.kind === 'audioinput'),
+          captureId
+        ) !== undefined
+      ) {
+        onLost();
+      }
+    });
+  };
+  navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange);
+
+  return () => {
+    tracks.forEach((track) => {
+      track.removeEventListener('ended', onEnded);
+      track.removeEventListener('unmute', onUnmute);
+      track.removeEventListener('mute', onMute);
+    });
+    navigator.mediaDevices?.removeEventListener?.(
+      'devicechange',
+      onDeviceChange
+    );
+  };
+}
+
 export async function getUserMediaWithDeviceFallback(
   constraints: MediaStreamConstraints,
   getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>,
   wait: (ms: number) => Promise<void> = delay
-): Promise<MediaStream> {
-  try {
-    return await getUserMedia(constraints);
-  } catch (error) {
-    if (!isRecoverableCaptureError(error)) {
+): Promise<{ stream: MediaStream; fellBack: boolean }> {
+  const acquire = async (next: MediaStreamConstraints) => {
+    const stream = await getUserMedia(next);
+    try {
+      await ensureCaptureStreamUsable(stream, next, wait);
+      return stream;
+    } catch (error) {
+      stopCaptureStream(stream);
       throw error;
     }
-    const retryConstraints = requestedExactDeviceId(constraints)
-      ? constraintsWithoutDeviceId(constraints)
-      : constraints;
-    if (isDeviceLossError(error)) {
-      await wait(CAPTURE_DEVICE_LOSS_RETRY_MS);
+  };
+
+  try {
+    return { stream: await acquire(constraints), fellBack: false };
+  } catch (error) {
+    if (
+      !isDeviceLossError(error) &&
+      !isMissingDeviceError(error, constraints)
+    ) {
+      throw error;
     }
-    return await getUserMedia(retryConstraints);
+
+    const hadExact = Boolean(requestedExactDeviceId(constraints));
+    const shutdownRetry =
+      isDeviceLossError(error) &&
+      !(error instanceof CaptureDeviceLostError) &&
+      !isMissingDeviceError(error, constraints);
+
+    if (shutdownRetry) {
+      await wait(CAPTURE_DEVICE_LOSS_RETRY_MS);
+      try {
+        return { stream: await acquire(constraints), fellBack: false };
+      } catch {
+        // Selected device is still gone; try the OS default below.
+      }
+    }
+
+    if (!hadExact) {
+      throw error instanceof CaptureDeviceLostError
+        ? error
+        : toDeviceLostError(error);
+    }
+
+    try {
+      return {
+        stream: await acquire(constraintsWithoutDeviceId(constraints)),
+        fellBack: true,
+      };
+    } catch (fallbackError) {
+      throw toDeviceLostError(fallbackError);
+    }
   }
 }

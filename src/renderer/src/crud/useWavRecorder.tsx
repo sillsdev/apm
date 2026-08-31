@@ -16,8 +16,11 @@ import {
 } from './audioDiagnostics';
 import {
   buildCaptureConstraints,
+  CaptureDeviceLostError,
+  captureStreamDeviceId,
   isDeviceLossError,
   isUnusableCaptureStream,
+  listenForCaptureDeviceLoss,
 } from './captureConstraints';
 
 /** Defaults match Record step toolSettings when keys are absent (both off). */
@@ -97,22 +100,65 @@ export function useWavRecorder(
   );
   const getMediaStream = useUserMedia(captureOptions);
   const mediaStreamRef = useRef<MediaStream | undefined>(undefined);
+  const ignoreTrackEndedRef = useRef(false);
+  const stopWatchingStreamRef = useRef<() => void>(() => undefined);
   const previousDeviceIdRef = useRef<string | undefined>(undefined);
   const recorderStreamIdRef = useRef<string | undefined>(undefined);
   const [reporter] = useGlobal('errorReporter');
   const { showMessage } = useSnackBar();
 
+  function dropCaptureStream() {
+    ignoreTrackEndedRef.current = true;
+    stopWatchingStreamRef.current();
+    stopWatchingStreamRef.current = () => undefined;
+    mediaStreamRef.current?.getTracks().forEach((track) => {
+      try {
+        track.stop();
+      } catch {
+        /* device already gone */
+      }
+    });
+    mediaStreamRef.current = undefined;
+  }
+
+  function adoptCaptureStream(stream: MediaStream) {
+    stopWatchingStreamRef.current();
+    ignoreTrackEndedRef.current = false;
+    mediaStreamRef.current = stream;
+    stopWatchingStreamRef.current = listenForCaptureDeviceLoss(
+      stream,
+      () => {
+        if (!ignoreTrackEndedRef.current) {
+          handleError(new CaptureDeviceLostError());
+        }
+      },
+      () => isRecordingRef.current
+    );
+  }
+
+  function takeCaptureStream(stream: MediaStream, fellBack: boolean) {
+    adoptCaptureStream(stream);
+    logAudioDiagnostic('media-stream-ready', {
+      requestedCaptureOptions: captureOptions,
+      selectedDeviceId: deviceId,
+      stream: { id: stream.id, active: stream.active },
+      tracks: getAudioTrackDiagnostics(stream),
+    });
+    if (fellBack) {
+      onError({
+        error: 'microphone disconnected',
+        deviceLost: true,
+        fellBack: true,
+        deviceId: captureStreamDeviceId(stream),
+      });
+    }
+  }
+
   useEffect(() => {
     return () => {
       peaksCaptureRef.current?.stop();
       peaksCaptureRef.current = undefined;
-      mediaStreamRef.current?.getTracks().forEach((track) => {
-        try {
-          track.stop();
-        } catch {
-          /* device already gone */
-        }
-      });
+      dropCaptureStream();
       if (recorderRef.current) {
         const recorder = recorderRef.current;
         recorder
@@ -133,14 +179,7 @@ export function useWavRecorder(
 
   useEffect(() => {
     if (!allowRecord) {
-      mediaStreamRef.current?.getTracks().forEach((track) => {
-        try {
-          track.stop();
-        } catch {
-          /* device already gone */
-        }
-      });
-      mediaStreamRef.current = undefined;
+      dropCaptureStream();
       previousDeviceIdRef.current = deviceId;
       captureProcessingKeyRef.current = '';
       return;
@@ -153,14 +192,7 @@ export function useWavRecorder(
       mediaStreamRef.current !== undefined;
 
     if (processingChanged && !isRecordingRef.current) {
-      mediaStreamRef.current?.getTracks().forEach((track) => {
-        try {
-          track.stop();
-        } catch {
-          /* device already gone */
-        }
-      });
-      mediaStreamRef.current = undefined;
+      dropCaptureStream();
     }
 
     const deviceChanged =
@@ -170,20 +202,11 @@ export function useWavRecorder(
 
     const ensureStream = async () => {
       try {
-        const stream = await getMediaStream(
+        const { stream, fellBack } = await getMediaStream(
           deviceChanged || processingChanged || streamGone
         );
         if (stream && stream.id && stream.active) {
-          mediaStreamRef.current = stream;
-          logAudioDiagnostic('media-stream-ready', {
-            requestedCaptureOptions: captureOptions,
-            selectedDeviceId: deviceId,
-            stream: {
-              id: stream.id,
-              active: stream.active,
-            },
-            tracks: getAudioTrackDiagnostics(stream),
-          });
+          takeCaptureStream(stream, fellBack);
         } else {
           const err = 'no media stream ' + stream?.toString();
           logError(Severity.error, reporter, err);
@@ -194,7 +217,9 @@ export function useWavRecorder(
       }
     };
 
-    if (streamGone || deviceChanged || processingChanged) {
+    if (isRecordingRef.current) {
+      if (streamGone) handleError(new CaptureDeviceLostError());
+    } else if (streamGone || deviceChanged || processingChanged) {
       ensureStream();
     }
 
@@ -213,9 +238,18 @@ export function useWavRecorder(
       e?.error || e?.message || e?.toString?.() || 'Recorder error';
     logError(Severity.error, reporter, message);
     if (isDeviceLossError(e)) {
-      mediaStreamRef.current = undefined;
+      isRecordingRef.current = false;
+      peaksCaptureRef.current?.stop();
+      peaksCaptureRef.current = undefined;
+      const recorder = recorderRef.current;
       recorderRef.current = undefined;
       recorderStreamIdRef.current = undefined;
+      dropCaptureStream();
+      try {
+        recorder?.cleanup();
+      } catch {
+        /* AudioContext may already be shut down */
+      }
       onError({ error: message, deviceLost: true });
       return;
     }
@@ -225,16 +259,8 @@ export function useWavRecorder(
   async function startRecorder() {
     if (isUnusableCaptureStream(mediaStreamRef.current)) {
       try {
-        mediaStreamRef.current = await getMediaStream(true);
-        logAudioDiagnostic('media-stream-ready', {
-          requestedCaptureOptions: captureOptions,
-          selectedDeviceId: deviceId,
-          stream: {
-            id: mediaStreamRef.current.id,
-            active: mediaStreamRef.current.active,
-          },
-          tracks: getAudioTrackDiagnostics(mediaStreamRef.current),
-        });
+        const { stream, fellBack } = await getMediaStream(true);
+        takeCaptureStream(stream, fellBack);
       } catch (error) {
         handleError(error);
         return undefined;

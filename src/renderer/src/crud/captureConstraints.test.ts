@@ -1,10 +1,14 @@
 import {
   buildCaptureConstraints,
   CAPTURE_DEVICE_LOSS_RETRY_MS,
+  CaptureDeviceLostError,
+  captureTrackIsLost,
   constraintsWithoutDeviceId,
+  fallbackInputDeviceId,
   getUserMediaWithDeviceFallback,
   isDeviceLossError,
   isUnusableCaptureStream,
+  listenForCaptureDeviceLoss,
 } from './captureConstraints';
 
 describe('buildCaptureConstraints', () => {
@@ -53,6 +57,20 @@ describe('isDeviceLossError', () => {
     ).toBe(true);
   });
 
+  it('recognizes CaptureDeviceLostError', () => {
+    expect(isDeviceLossError(new CaptureDeviceLostError())).toBe(true);
+  });
+
+  it('recognizes NotFoundError', () => {
+    expect(
+      isDeviceLossError(
+        Object.assign(new Error('Requested device not found'), {
+          name: 'NotFoundError',
+        })
+      )
+    ).toBe(true);
+  });
+
   it('ignores permission denial', () => {
     expect(
       isDeviceLossError(
@@ -91,6 +109,39 @@ describe('isUnusableCaptureStream', () => {
   });
 });
 
+describe('fallbackInputDeviceId', () => {
+  it('returns the first remaining mic when the selected one is gone', () => {
+    expect(
+      fallbackInputDeviceId(
+        [{ deviceId: 'laptop' }, { deviceId: 'usb' }],
+        'headset'
+      )
+    ).toBe('laptop');
+  });
+
+  it('does nothing when the selected mic is still listed', () => {
+    expect(
+      fallbackInputDeviceId(
+        [{ deviceId: 'headset' }, { deviceId: 'laptop' }],
+        'headset'
+      )
+    ).toBeUndefined();
+  });
+
+  it('does nothing when device ids are still hidden (no permission yet)', () => {
+    expect(
+      fallbackInputDeviceId([{ deviceId: '' }, { deviceId: '' }], 'headset')
+    ).toBeUndefined();
+  });
+
+  it('does nothing when nothing was selected', () => {
+    expect(fallbackInputDeviceId([{ deviceId: 'laptop' }], '')).toBeUndefined();
+    expect(
+      fallbackInputDeviceId([{ deviceId: 'laptop' }], undefined)
+    ).toBeUndefined();
+  });
+});
+
 describe('getUserMediaWithDeviceFallback', () => {
   const exactConstraints = buildCaptureConstraints('gone-mic', false, false);
   const defaultConstraints = buildCaptureConstraints(undefined, false, false);
@@ -106,12 +157,12 @@ describe('getUserMediaWithDeviceFallback', () => {
     const getUserMedia = jest.fn().mockResolvedValue(wanted);
     await expect(
       getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
-    ).resolves.toBe(wanted);
+    ).resolves.toEqual({ stream: wanted, fellBack: false });
     expect(getUserMedia).toHaveBeenCalledTimes(1);
     expect(wait).not.toHaveBeenCalled();
   });
 
-  it('retries without deviceId when the exact device is gone', async () => {
+  it('falls back to the OS default when the exact device is gone', async () => {
     const overconstrained = Object.assign(new Error('OverconstrainedError'), {
       name: 'OverconstrainedError',
       constraint: 'deviceId',
@@ -123,32 +174,47 @@ describe('getUserMediaWithDeviceFallback', () => {
 
     await expect(
       getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
-    ).resolves.toBe(fallbackStream);
+    ).resolves.toEqual({ stream: fallbackStream, fellBack: true });
 
     expect(getUserMedia).toHaveBeenCalledTimes(2);
-    const retry = getUserMedia.mock.calls[1][0] as MediaStreamConstraints;
-    expect(retry).toEqual(constraintsWithoutDeviceId(exactConstraints));
-    expect((retry.audio as MediaTrackConstraints).deviceId).toBeUndefined();
+    expect(getUserMedia.mock.calls[1][0]).toEqual(
+      constraintsWithoutDeviceId(exactConstraints)
+    );
     expect(wait).not.toHaveBeenCalled();
   });
 
-  it('retries after Chromium audio shutdown when a headset is unplugged', async () => {
+  it('retries the same device after Chromium audio shutdown', async () => {
     const shutdown = Object.assign(
       new Error('The operation failed due to shutdown'),
       { name: 'AbortError' }
     );
+    const recovered = { id: 'same-mic' } as MediaStream;
     const getUserMedia = jest
       .fn()
       .mockRejectedValueOnce(shutdown)
-      .mockResolvedValueOnce(fallbackStream);
+      .mockResolvedValueOnce(recovered);
 
     await expect(
       getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
-    ).resolves.toBe(fallbackStream);
+    ).resolves.toEqual({ stream: recovered, fellBack: false });
 
     expect(wait).toHaveBeenCalledWith(CAPTURE_DEVICE_LOSS_RETRY_MS);
     expect(getUserMedia).toHaveBeenCalledTimes(2);
-    expect(getUserMedia.mock.calls[1][0]).toEqual(
+    expect(getUserMedia.mock.calls[1][0]).toBe(exactConstraints);
+  });
+
+  it('signals device loss when shutdown retry still cannot open the selected mic', async () => {
+    const shutdown = new Error('Failed due to shutdown');
+    const getUserMedia = jest.fn().mockRejectedValue(shutdown);
+
+    await expect(
+      getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
+    ).rejects.toBeInstanceOf(CaptureDeviceLostError);
+
+    expect(wait).toHaveBeenCalledWith(CAPTURE_DEVICE_LOSS_RETRY_MS);
+    expect(getUserMedia).toHaveBeenCalledTimes(3);
+    expect(getUserMedia.mock.calls[1][0]).toBe(exactConstraints);
+    expect(getUserMedia.mock.calls[2][0]).toEqual(
       constraintsWithoutDeviceId(exactConstraints)
     );
   });
@@ -162,10 +228,86 @@ describe('getUserMediaWithDeviceFallback', () => {
 
     await expect(
       getUserMediaWithDeviceFallback(defaultConstraints, getUserMedia, wait)
-    ).resolves.toBe(fallbackStream);
+    ).resolves.toEqual({ stream: fallbackStream, fellBack: false });
 
     expect(wait).toHaveBeenCalledWith(CAPTURE_DEVICE_LOSS_RETRY_MS);
     expect(getUserMedia.mock.calls[1][0]).toBe(defaultConstraints);
+  });
+
+  it('signals device loss when the requested device is not found', async () => {
+    const notFound = Object.assign(new Error('Requested device not found'), {
+      name: 'NotFoundError',
+    });
+    const getUserMedia = jest
+      .fn()
+      .mockRejectedValueOnce(notFound)
+      .mockResolvedValueOnce(fallbackStream);
+    await expect(
+      getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
+    ).resolves.toEqual({ stream: fallbackStream, fellBack: true });
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to the default when the opened track stays muted', async () => {
+    const muted = {
+      id: 'ghost',
+      active: true,
+      getAudioTracks: () => [
+        {
+          readyState: 'live',
+          muted: true,
+          getSettings: () => ({ deviceId: 'gone-mic' }),
+        },
+      ],
+    } as unknown as MediaStream;
+    const getUserMedia = jest
+      .fn()
+      .mockResolvedValueOnce(muted)
+      .mockResolvedValueOnce(fallbackStream);
+    await expect(
+      getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
+    ).resolves.toEqual({ stream: fallbackStream, fellBack: true });
+    expect(wait).toHaveBeenCalledWith(CAPTURE_DEVICE_LOSS_RETRY_MS);
+  });
+
+  it('falls back when the exact device is missing from the device list after open', async () => {
+    const track = {
+      readyState: 'live',
+      muted: false,
+      getSettings: () => ({ deviceId: 'gone-mic' }),
+      stop: jest.fn(),
+    };
+    const ghost = {
+      id: 'ghost',
+      active: true,
+      getAudioTracks: () => [track],
+      getTracks: () => [track],
+    } as unknown as MediaStream;
+    const getUserMedia = jest
+      .fn()
+      .mockResolvedValueOnce(ghost)
+      .mockResolvedValueOnce(fallbackStream);
+    const previous = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        enumerateDevices: jest
+          .fn()
+          .mockResolvedValue([{ kind: 'audioinput', deviceId: 'laptop-mic' }]),
+      },
+    });
+    try {
+      await expect(
+        getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
+      ).resolves.toEqual({ stream: fallbackStream, fellBack: true });
+      expect(track.stop).toHaveBeenCalled();
+      expect(getUserMedia).toHaveBeenCalledTimes(2);
+    } finally {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: previous,
+      });
+    }
   });
 
   it('does not retry permission failures', async () => {
@@ -189,5 +331,81 @@ describe('getUserMediaWithDeviceFallback', () => {
       getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
     ).rejects.toBe(sampleRate);
     expect(getUserMedia).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('captureTrackIsLost', () => {
+  it('treats a missing, ended, or muted track as lost', () => {
+    expect(captureTrackIsLost(undefined)).toBe(true);
+    expect(
+      captureTrackIsLost({
+        readyState: 'ended',
+        muted: false,
+      } as MediaStreamTrack)
+    ).toBe(true);
+    expect(
+      captureTrackIsLost({
+        readyState: 'live',
+        muted: true,
+      } as MediaStreamTrack)
+    ).toBe(true);
+    expect(
+      captureTrackIsLost({
+        readyState: 'live',
+        muted: false,
+      } as MediaStreamTrack)
+    ).toBe(false);
+  });
+});
+
+describe('listenForCaptureDeviceLoss', () => {
+  function trackWithListeners() {
+    const listeners: Record<string, (event?: Event) => void> = {};
+    const track = {
+      addEventListener: (type: string, fn: (event?: Event) => void) => {
+        listeners[type] = fn;
+      },
+      removeEventListener: jest.fn(),
+    };
+    return { track, listeners };
+  }
+
+  it('reports when the capture track ends', () => {
+    const { track, listeners } = trackWithListeners();
+    const onLost = jest.fn();
+    const stop = listenForCaptureDeviceLoss(
+      { getAudioTracks: () => [track] } as unknown as MediaStream,
+      onLost
+    );
+    listeners.ended();
+    expect(onLost).toHaveBeenCalledTimes(1);
+    listeners.unmute?.({ target: track } as unknown as Event);
+    listeners.mute?.({ target: track } as unknown as Event);
+    expect(onLost).toHaveBeenCalledTimes(2);
+    stop();
+  });
+
+  it('reports mute during a take even if the track never unmuted', () => {
+    const { track, listeners } = trackWithListeners();
+    const onLost = jest.fn();
+    listenForCaptureDeviceLoss(
+      { getAudioTracks: () => [track] } as unknown as MediaStream,
+      onLost,
+      () => true
+    );
+    listeners.mute?.({ target: track } as unknown as Event);
+    expect(onLost).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores mute before a take when the track never unmuted', () => {
+    const { track, listeners } = trackWithListeners();
+    const onLost = jest.fn();
+    listenForCaptureDeviceLoss(
+      { getAudioTracks: () => [track] } as unknown as MediaStream,
+      onLost,
+      () => false
+    );
+    listeners.mute?.({ target: track } as unknown as Event);
+    expect(onLost).not.toHaveBeenCalled();
   });
 });

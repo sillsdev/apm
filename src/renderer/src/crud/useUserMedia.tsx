@@ -13,13 +13,18 @@ export function useUserMedia(requestedMedia: MediaStreamConstraints) {
   }, [requestedMedia]);
 
   const getStream = useCallback(
-    async (forceNew = false): Promise<MediaStream> => {
+    async (
+      forceNew = false
+    ): Promise<{
+      stream: MediaStream;
+      fellBack: boolean;
+    }> => {
       if (
         mediaStreamRef.current &&
         !forceNew &&
         !isUnusableCaptureStream(mediaStreamRef.current)
       ) {
-        return mediaStreamRef.current;
+        return { stream: mediaStreamRef.current, fellBack: false };
       }
 
       if (mediaStreamRef.current) {
@@ -33,12 +38,12 @@ export function useUserMedia(requestedMedia: MediaStreamConstraints) {
         mediaStreamRef.current = undefined;
       }
 
-      const stream = await getUserMediaWithDeviceFallback(
+      const { stream, fellBack } = await getUserMediaWithDeviceFallback(
         constraintsRef.current,
         (next) => navigator.mediaDevices.getUserMedia(next)
       );
       mediaStreamRef.current = stream;
-      return stream;
+      return { stream, fellBack };
     },
     []
   );

@@ -12943,6 +12943,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.microphoneDisconnectedFallback">
+            <source>The preferred microphone was disconnected. Default microphone selected.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.moreOptions">
             <source>More Options</source>
             <target/>
