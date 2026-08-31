@@ -5028,7 +5028,7 @@
       </unit>
       <unit id="mediaTab.pendingUploadExistsWarn">
          <segment>
-            <source>This passage already has a pending media upload. Continue anyway?</source>
+            <source>A recording for this passage is already pending upload. Recording it again will replace the existing pending recording. Do you want to continue?</source>
             <target/>
          </segment>
       </unit>
