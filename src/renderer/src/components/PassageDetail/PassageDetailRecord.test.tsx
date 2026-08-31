@@ -8,7 +8,7 @@ const mockGotoNextStep = jest.fn();
 const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 
 const PENDING_WARN_TEXT =
-  'This passage already has a pending media upload. Continue anyway?';
+  'A recording for this passage is already pending upload. Recording it again will replace the existing pending recording. Do you want to continue?';
 
 let capturedMediaRecordProps: {
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;

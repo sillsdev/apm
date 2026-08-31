@@ -5863,7 +5863,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="mediaTab.pendingUploadExistsWarn">
-            <source>This passage already has a pending media upload. Continue anyway?</source>
+            <source>A recording for this passage is already pending upload. Recording it again will replace the existing pending recording. Do you want to continue?</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailRecord.tsx</context>
