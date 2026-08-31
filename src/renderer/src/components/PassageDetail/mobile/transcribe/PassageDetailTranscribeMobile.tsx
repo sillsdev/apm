@@ -43,8 +43,13 @@ import {
   ToolSlug,
   useArtifactType,
   useOrgDefaults,
+  useProjectType,
   useStepTool,
 } from '../../../../crud';
+import {
+  isNoParatextWorkflow,
+  resolvedProjectType,
+} from '../../../../crud/nextTranscriptionState';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import {
@@ -137,6 +142,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [project] = useGlobal('project');
+  const [projType] = useGlobal('projType');
   const [organization] = useGlobal('organization');
   const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
@@ -144,6 +150,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const { showMessage } = useSnackBar();
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
+  const { getProjType } = useProjectType();
+  const { slugFromId } = useArtifactType();
 
   const teams = useOrbitData<OrganizationD[]>('organization');
   const team = useMemo(
@@ -366,6 +374,33 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     playedSecsRef.current = pos;
   }, []);
 
+  const projRec = useMemo(
+    () =>
+      project
+        ? (findRecord(memory, 'project', project) as Project | undefined)
+        : undefined,
+    [memory, project]
+  );
+  const recordType = useMemo(
+    () => (projRec && project ? getProjType(project) : ''),
+    [getProjType, projRec, project]
+  );
+  const resolvedType = useMemo(
+    () => resolvedProjectType(projType, recordType),
+    [projType, recordType]
+  );
+  const artifactTypeSlug = useMemo(
+    () =>
+      artifactTypeId
+        ? (slugFromId(artifactTypeId) as ArtifactTypeSlug)
+        : ArtifactTypeSlug.Vernacular,
+    [artifactTypeId, slugFromId]
+  );
+  const noParatext = useMemo(
+    () => isNoParatextWorkflow(resolvedType, artifactTypeSlug),
+    [resolvedType, artifactTypeSlug]
+  );
+
   const actions = useTranscribeActions({
     passage: selectedMediaRow?.passage?.id
       ? (selectedMediaRow.passage as PassageD)
@@ -378,7 +413,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       : section,
     toolId: currentstep,
     hasChecking,
-    noParatext: false,
+    noParatext,
     onReject: handleRejectCallback,
     onReopen: handleReopenCallback,
     onReloadPlayer: handleReloadPlayer,

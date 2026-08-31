@@ -21,6 +21,17 @@ describe('useTranscribeActions', () => {
   let mockSetPosition: jest.Mock;
   let mockSaveCompleted: jest.Mock;
 
+  const getSavedTranscriptionState = (memoryUpdateMock: jest.Mock) => {
+    const ops = memoryUpdateMock.mock.calls[0][0] as any[];
+    const stateOp = ops.find(
+      (op: any) =>
+        op.op === 'updateRecord' &&
+        op.record?.type === 'mediafile' &&
+        op.record?.attributes?.transcriptionstate !== undefined
+    );
+    return stateOp?.record?.attributes?.transcriptionstate;
+  };
+
   beforeEach(() => {
     mockMemory = {
       schema: {
@@ -160,6 +171,183 @@ describe('useTranscribeActions', () => {
     expect(mockSetPosition).toHaveBeenCalledWith(0);
     expect(mockSetComplete).toHaveBeenCalledWith(true);
     expect(mockOnReloadPlayer).toHaveBeenCalledWith(mockMediafile);
+    expect(getSavedTranscriptionState(mockMemory.update)).toBe(
+      ActivityStates.Transcribed
+    );
+  });
+
+  it('handleSubmit advances reviewing state to approved when noParatext is false (Scripture)', async () => {
+    const reviewingMedia = {
+      ...mockMediafile,
+      attributes: {
+        ...mockMediafile.attributes,
+        transcriptionstate: ActivityStates.Reviewing,
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: reviewingMedia,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: true,
+        noParatext: false,
+        getTranscriptionText: () => 'Reviewed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSetComplete).toHaveBeenCalledWith(true);
+    expect(getSavedTranscriptionState(mockMemory.update)).toBe(
+      ActivityStates.Approved
+    );
+  });
+
+  it('handleSubmit advances transcribing state to approved when hasChecking is false and noParatext is false', async () => {
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: mockMediafile,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: false,
+        noParatext: false,
+        getTranscriptionText: () => 'Completed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSetComplete).toHaveBeenCalledWith(true);
+    expect(getSavedTranscriptionState(mockMemory.update)).toBe(
+      ActivityStates.Approved
+    );
+  });
+
+  it('handleSubmit advances reviewing state to done when noParatext is true (non-Scripture or Retell/Q&A)', async () => {
+    const reviewingMedia = {
+      ...mockMediafile,
+      attributes: {
+        ...mockMediafile.attributes,
+        transcriptionstate: ActivityStates.Reviewing,
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: reviewingMedia,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: true,
+        noParatext: true,
+        getTranscriptionText: () => 'Reviewed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSetComplete).toHaveBeenCalledWith(true);
+    expect(getSavedTranscriptionState(mockMemory.update)).toBe(
+      ActivityStates.Done
+    );
+  });
+
+  it('handleSubmit advances transcribed state to done when noParatext is true', async () => {
+    const transcribedMedia = {
+      ...mockMediafile,
+      attributes: {
+        ...mockMediafile.attributes,
+        transcriptionstate: ActivityStates.Transcribed,
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: transcribedMedia,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: true,
+        noParatext: true,
+        getTranscriptionText: () => 'Reviewed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSetComplete).toHaveBeenCalledWith(true);
+    expect(getSavedTranscriptionState(mockMemory.update)).toBe(
+      ActivityStates.Done
+    );
+  });
+
+  it('handleSubmit advances transcribing state directly to done when hasChecking is false and noParatext is true', async () => {
+    const { result } = renderHook(() =>
+      useTranscribeActions({
+        passage: mockPassage,
+        mediafile: mockMediafile,
+        user: 'user1',
+        memory: mockMemory,
+        section: mockSection,
+        toolId: 'step1',
+        hasChecking: false,
+        noParatext: true,
+        getTranscriptionText: () => 'Completed text',
+        setComplete: mockSetComplete,
+        onReloadPlayer: mockOnReloadPlayer,
+        setPosition: mockSetPosition,
+        saveCompleted: mockSaveCompleted,
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit();
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockSetComplete).toHaveBeenCalledWith(true);
+    expect(getSavedTranscriptionState(mockMemory.update)).toBe(
+      ActivityStates.Done
+    );
   });
 
   it('handleReject opens reject dialog and handleRejected updates state with comment', async () => {

@@ -179,6 +179,8 @@ describe('PassageDetailTranscribeMobile', () => {
       routePasId?: string;
       useRealUnsaved?: boolean;
       onNavigate?: () => void;
+      projType?: string;
+      projectTypeName?: string;
     } = {}
   ) => {
     const {
@@ -201,6 +203,8 @@ describe('PassageDetailTranscribeMobile', () => {
       routePasId = 'pass-1',
       useRealUnsaved = false,
       onNavigate,
+      projType = 'Scripture',
+      projectTypeName = 'Scripture',
     } = options;
 
     const defaultMedia: MediaFileD = {
@@ -316,6 +320,18 @@ describe('PassageDetailTranscribeMobile', () => {
               defaultFontSize: '14pt',
               rtl: false,
             },
+            relationships: {
+              projecttype: {
+                data: { type: 'projecttype', id: 'projecttype-1' },
+              },
+            },
+          },
+        ],
+        projecttype: [
+          {
+            id: 'projecttype-1',
+            type: 'projecttype',
+            attributes: { name: projectTypeName },
           },
         ],
         plan: [
@@ -338,7 +354,21 @@ describe('PassageDetailTranscribeMobile', () => {
         section: [mockSection],
         passage: [mockPassage],
         mediafile: mediaList,
-        artifacttype: artifactTypes,
+        artifacttype:
+          artifactTypes.length > 0
+            ? artifactTypes
+            : [
+                {
+                  id: 'art-retell',
+                  type: 'artifacttype',
+                  attributes: { typename: 'retell' },
+                },
+                {
+                  id: 'art-qanda',
+                  type: 'artifacttype',
+                  attributes: { typename: 'qanda' },
+                },
+              ],
         orgworkflowstep: stepList,
         user: [{ id: 'user-1', type: 'user', attributes: { name: 'User 1' } }],
         group: [],
@@ -447,6 +477,7 @@ describe('PassageDetailTranscribeMobile', () => {
         <GlobalProvider
           init={createInitialState(memory, {
             orgRole: hasPermission ? RoleNames.Admin : RoleNames.Member,
+            projType,
           })}
         >
           <OrbitContext.Provider value={orbitContextValue}>
@@ -877,5 +908,291 @@ describe('PassageDetailTranscribeMobile', () => {
 
     cy.get('@onNavigate').should('have.been.called');
     cy.get('@memoryUpdate').should('not.have.been.called');
+  });
+
+  it('submits transcription in Scripture project and advances to Approved when no checking step exists', () => {
+    mountTranscribeMobile({
+      projType: 'Scripture',
+      projectTypeName: 'Scripture',
+      transcriptionstate: ActivityStates.Transcribing,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        if (Array.isArray(arg)) {
+          const updateOp = arg.find(
+            (op: any) =>
+              op.op === 'updateRecord' &&
+              op.record?.type === 'mediafile' &&
+              op.record?.attributes?.transcriptionstate !== undefined
+          );
+          if (updateOp) {
+            savedState = updateOp.record.attributes.transcriptionstate;
+            break;
+          }
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.Approved);
+    });
+  });
+
+  it('submits transcription in non-Scripture project and advances to Done', () => {
+    mountTranscribeMobile({
+      projType: 'General',
+      projectTypeName: 'General',
+      transcriptionstate: ActivityStates.Transcribing,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        if (Array.isArray(arg)) {
+          const updateOp = arg.find(
+            (op: any) =>
+              op.op === 'updateRecord' &&
+              op.record?.type === 'mediafile' &&
+              op.record?.attributes?.transcriptionstate !== undefined
+          );
+          if (updateOp) {
+            savedState = updateOp.record.attributes.transcriptionstate;
+            break;
+          }
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.Done);
+    });
+  });
+
+  it('submits transcription in Scripture project for Retell workflow step and advances to Done', () => {
+    const vernMedia: MediaFileD = {
+      id: 'media-vernacular',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Vernacular text',
+        transcriptionstate: ActivityStates.Transcribed,
+        duration: 20,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    const retellMedia: MediaFileD = {
+      id: 'media-retell',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Retell transcription',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 20,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-02T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+        artifactType: { data: { type: 'artifacttype', id: 'art-retell' } },
+        sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+      },
+    } as unknown as MediaFileD;
+
+    const retellSteps = [
+      {
+        id: 'step-retell',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({
+            tool: 'transcribe',
+            settings: JSON.stringify({ artifactTypeId: 'art-retell' }),
+          }),
+        },
+      },
+    ];
+
+    mountTranscribeMobile({
+      projType: 'Scripture',
+      projectTypeName: 'Scripture',
+      currentstep: 'step-retell',
+      workflowSteps: retellSteps,
+      mediafiles: [vernMedia, retellMedia],
+      mediafileId: 'media-vernacular',
+      playerMediafile: retellMedia,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        if (Array.isArray(arg)) {
+          const updateOp = arg.find(
+            (op: any) =>
+              op.op === 'updateRecord' &&
+              op.record?.type === 'mediafile' &&
+              op.record?.attributes?.transcriptionstate !== undefined
+          );
+          if (updateOp) {
+            savedState = updateOp.record.attributes.transcriptionstate;
+            break;
+          }
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.Done);
+    });
+  });
+
+  it('submits transcription in Scripture project for Q&A workflow step and advances to Done', () => {
+    const vernMedia: MediaFileD = {
+      id: 'media-vernacular',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Vernacular text',
+        transcriptionstate: ActivityStates.Transcribed,
+        duration: 20,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    const qandaMedia: MediaFileD = {
+      id: 'media-qanda',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Q&A transcription',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 20,
+        position: 0,
+        segments: '{}',
+        dateCreated: '2026-01-02T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+        artifactType: { data: { type: 'artifacttype', id: 'art-qanda' } },
+        sourceMedia: { data: { type: 'mediafile', id: 'media-vernacular' } },
+      },
+    } as unknown as MediaFileD;
+
+    const qandaSteps = [
+      {
+        id: 'step-qanda',
+        type: 'orgworkflowstep',
+        attributes: {
+          sequencenum: 1,
+          tool: JSON.stringify({
+            tool: 'transcribe',
+            settings: JSON.stringify({ artifactTypeId: 'art-qanda' }),
+          }),
+        },
+      },
+    ];
+
+    mountTranscribeMobile({
+      projType: 'Scripture',
+      projectTypeName: 'Scripture',
+      currentstep: 'step-qanda',
+      workflowSteps: qandaSteps,
+      mediafiles: [vernMedia, qandaMedia],
+      mediafileId: 'media-vernacular',
+      playerMediafile: qandaMedia,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        if (Array.isArray(arg)) {
+          const updateOp = arg.find(
+            (op: any) =>
+              op.op === 'updateRecord' &&
+              op.record?.type === 'mediafile' &&
+              op.record?.attributes?.transcriptionstate !== undefined
+          );
+          if (updateOp) {
+            savedState = updateOp.record.attributes.transcriptionstate;
+            break;
+          }
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.Done);
+    });
+  });
+
+  it('submits transcription with empty global projType resolving from project record to General and advances to Done', () => {
+    mountTranscribeMobile({
+      projType: '',
+      projectTypeName: 'General',
+      transcriptionstate: ActivityStates.Transcribing,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        if (Array.isArray(arg)) {
+          const updateOp = arg.find(
+            (op: any) =>
+              op.op === 'updateRecord' &&
+              op.record?.type === 'mediafile' &&
+              op.record?.attributes?.transcriptionstate !== undefined
+          );
+          if (updateOp) {
+            savedState = updateOp.record.attributes.transcriptionstate;
+            break;
+          }
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.Done);
+    });
+  });
+
+  it('submits transcription with empty global projType resolving from project record to Scripture and advances to Approved', () => {
+    mountTranscribeMobile({
+      projType: '',
+      projectTypeName: 'Scripture',
+      transcriptionstate: ActivityStates.Transcribing,
+    });
+
+    cy.get('#transcriber\\.submit').click();
+    cy.get('@memoryUpdate').should((stub: any) => {
+      let savedState: string | undefined;
+      for (const call of stub.getCalls()) {
+        const arg = call.args[0];
+        if (Array.isArray(arg)) {
+          const updateOp = arg.find(
+            (op: any) =>
+              op.op === 'updateRecord' &&
+              op.record?.type === 'mediafile' &&
+              op.record?.attributes?.transcriptionstate !== undefined
+          );
+          if (updateOp) {
+            savedState = updateOp.record.attributes.transcriptionstate;
+            break;
+          }
+        }
+      }
+      expect(savedState).to.equal(ActivityStates.Approved);
+    });
   });
 });
