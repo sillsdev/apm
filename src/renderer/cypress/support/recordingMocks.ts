@@ -9,6 +9,8 @@ export interface RecordingMockHelpers {
   getInstances: () => MockMediaRecorder[];
   getLastInstance: () => MockMediaRecorder | undefined;
   audioContext?: AudioContext;
+  /** Fire `ended` on capture tracks so `listenForCaptureDeviceLoss` runs. */
+  unplugCapture: () => void;
 }
 
 declare global {
@@ -211,6 +213,16 @@ export async function installRecordingMocks(
     getLastInstance: () =>
       MockMediaRecorder.instances[MockMediaRecorder.instances.length - 1],
     audioContext,
+    unplugCapture: () => {
+      stream.getAudioTracks().forEach((track) => {
+        track.dispatchEvent(new Event('ended'));
+        try {
+          track.stop();
+        } catch {
+          /* already gone */
+        }
+      });
+    },
   };
 
   win.__recordingMock = helpers;

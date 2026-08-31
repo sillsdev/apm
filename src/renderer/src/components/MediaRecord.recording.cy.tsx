@@ -3,6 +3,8 @@
  *
  * Exercises MediaRecord → WSAudioPlayer → useWaveSurfer → save gating with real
  * components and browser-level recording mocks (no WSAudioPlayer stub).
+ * Device-loss recovery uses the same stack through recorder shutdown, waveform
+ * insert, and Save (not the isolated finalizeRecordingOnDeviceLoss unit tests).
  *
  * Repro strategy: force the MediaRecorder fallback path (no AudioWorklet) with
  * MockMediaRecorder that emits one-second fragments each preview tick. Unfixed
@@ -205,7 +207,10 @@ const pauseRecording = () => {
 };
 
 const parseDurationText = (text: string): number => {
-  const parts = text.trim().split(':').map((p) => parseInt(p, 10));
+  const parts = text
+    .trim()
+    .split(':')
+    .map((p) => parseInt(p, 10));
   if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   return parts[0] ?? 0;
@@ -341,6 +346,13 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
     });
   });
 
+  afterEach(() => {
+    cy.window({ log: false }).then((win) => {
+      const ctx = win.__recordingMock?.audioContext;
+      if (ctx && ctx.state !== 'closed') void ctx.close();
+    });
+  });
+
   it('shows Save after a short recording is paused (tracer bullet)', () => {
     mountMediaRecord();
     cy.get('#wsAudioWaveform').should('exist');
@@ -402,5 +414,31 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
     pauseRecording();
     assertSaveReady();
     assertWaveformDurationAtLeast(5);
+  });
+
+  it('recovers the take to Save when the microphone is unplugged mid-record', () => {
+    mountMediaRecord();
+    waitForRecordReady();
+    startRecording();
+    advanceRecordingTicks(3);
+
+    cy.window().then((win) => {
+      win.__recordingMock?.unplugCapture();
+    });
+
+    cy.get('svg[data-testid="PauseIcon"]').should('not.exist');
+    // Finalize is still in flight (clock frozen): Record/Save stay blocked.
+    cy.get('#wsAudioWaveform')
+      .closest('.MuiStack-root')
+      .parent()
+      .children()
+      .last()
+      .find('[role="button"]')
+      .should('have.attr', 'aria-disabled', 'true');
+    cy.get('#rec-save').should('not.exist');
+
+    cy.tick(200);
+    assertSaveReady();
+    assertWaveformDurationAtLeast(2);
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 
 const RECORD_KEY = 'F9,CTRL+9';
 
@@ -87,17 +87,20 @@ jest.mock('../crud/useWaveSurfer', () => ({
 let capturedOnRecordError:
   | ((e: { deviceLost?: boolean; deviceId?: string }) => void)
   | undefined;
+let capturedOnRecordStop: ((blob?: Blob) => void | Promise<void>) | undefined;
+const mockStartRecording = jest.fn(() => Promise.resolve(true));
 
 jest.mock('../crud/useWavRecorder', () => ({
   useWavRecorder: (
     _allowRecord: unknown,
     _onStart: unknown,
-    _onStop: unknown,
+    onStop: (blob?: Blob) => void | Promise<void>,
     onError: (e: { deviceLost?: boolean; deviceId?: string }) => void
   ) => {
+    capturedOnRecordStop = onStop;
     capturedOnRecordError = onError;
     return {
-      startRecording: jest.fn(() => Promise.resolve(true)),
+      startRecording: mockStartRecording,
       stopRecording: jest.fn(),
     };
   },
@@ -107,6 +110,7 @@ jest.mock('react-redux', () => ({
   useSelector: () => ({
     record: 'Record',
     stop: 'Stop',
+    save: 'Save',
     clearRecording: 'Clear',
     aiInProgress: 'AI in progress',
     loading: 'Loading',
@@ -176,8 +180,20 @@ jest.mock('../utils', () => ({
 }));
 
 jest.mock('../control', () => ({
-  Button: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button">{children}</button>
+  Button: ({
+    children,
+    disabled,
+    id,
+    onClick,
+  }: {
+    children?: React.ReactNode;
+    disabled?: boolean;
+    id?: string;
+    onClick?: () => void;
+  }) => (
+    <button type="button" id={id} disabled={disabled} onClick={onClick}>
+      {children}
+    </button>
   ),
   smallButtonProps: {},
   Duration: () => null,
@@ -396,5 +412,101 @@ describe('WSAudioPlayer microphone disconnect fallback', () => {
       expect(localStorage.getItem('microphoneId')).toBe('laptop')
     );
     expect(mockShowMessage).toHaveBeenCalledTimes(1);
+  });
+});
+
+function latestRecordHandler() {
+  const calls = mockSubscribe.mock.calls.filter(
+    (call) => call[0] === RECORD_KEY
+  );
+  return calls[calls.length - 1]?.[1] as (() => boolean) | undefined;
+}
+
+function PlayerWithProcessingSave(
+  props: React.ComponentProps<typeof WSAudioPlayer>
+) {
+  const [processing, setProcessing] = React.useState(false);
+  return (
+    <WSAudioPlayer
+      {...props}
+      onProcessingRecordingChange={setProcessing}
+      handleSave={props.handleSave ?? jest.fn()}
+      isSaveDisabled={processing}
+    />
+  );
+}
+
+describe('WSAudioPlayer microphone-loss stop processing', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    capturedOnRecordError = undefined;
+    capturedOnRecordStop = undefined;
+  });
+
+  afterEach(cleanup);
+
+  async function startTake() {
+    await act(async () => {
+      latestRecordHandler()?.();
+      await Promise.resolve(mockStartRecording.mock.results.at(-1)?.value);
+    });
+    expect(mockStartRecording).toHaveBeenCalled();
+  }
+
+  it('keeps save and record blocked until the recovered blob finishes onRecordStop', async () => {
+    const onRecording = jest.fn();
+    render(
+      <PlayerWithProcessingSave {...defaultProps} onRecording={onRecording} />
+    );
+    await startTake();
+    await waitFor(() => expect(onRecording).toHaveBeenCalledWith(true));
+
+    act(() => {
+      capturedOnRecordError?.({ deviceLost: true });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    );
+    const startsAfterLoss = mockStartRecording.mock.calls.length;
+    act(() => {
+      latestRecordHandler()?.();
+    });
+    expect(mockStartRecording.mock.calls.length).toBe(startsAfterLoss);
+
+    await act(async () => {
+      await capturedOnRecordStop?.(new Blob(['take'], { type: 'audio/wav' }));
+    });
+
+    expect(waveSurferMock.wsInsertAudio).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save' })).not.toBeDisabled()
+    );
+  });
+
+  it('clears processing when device-loss finalization returns no blob', async () => {
+    const onRecording = jest.fn();
+    render(
+      <PlayerWithProcessingSave {...defaultProps} onRecording={onRecording} />
+    );
+    await startTake();
+    await waitFor(() => expect(onRecording).toHaveBeenCalledWith(true));
+
+    act(() => {
+      capturedOnRecordError?.({ deviceLost: true });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    );
+
+    await act(async () => {
+      await capturedOnRecordStop?.(undefined);
+    });
+
+    expect(waveSurferMock.wsInsertAudio).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save' })).not.toBeDisabled()
+    );
   });
 });

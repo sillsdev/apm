@@ -1,6 +1,6 @@
 import { useGlobal } from '../context/useGlobal';
 import { useEffect, useMemo, useRef } from 'react';
-import { useUserMedia } from './useUserMedia';
+import { CaptureAcquireSupersededError, useUserMedia } from './useUserMedia';
 import { useSnackBar } from '../hoc/SnackBar';
 import { logError, Severity } from '../utils';
 import { createWavRecorder } from './WavRecorder';
@@ -81,7 +81,7 @@ function isAudioWorkletAvailable(): boolean {
 export function useWavRecorder(
   allowRecord: boolean = true,
   onStart: () => void = noop,
-  onStop: (blob: Blob) => void = noop,
+  onStop: (blob?: Blob) => void = noop,
   onError: (e: any) => void = noop,
   onDataAvailable: (blob: Blob) => Promise<void>,
   deviceId?: string,
@@ -105,6 +105,7 @@ export function useWavRecorder(
   const stopWatchingStreamRef = useRef<() => void>(() => undefined);
   const previousDeviceIdRef = useRef<string | undefined>(undefined);
   const recorderStreamIdRef = useRef<string | undefined>(undefined);
+  const captureGenerationRef = useRef(0);
   const [reporter] = useGlobal('errorReporter');
   const { showMessage } = useSnackBar();
 
@@ -157,6 +158,7 @@ export function useWavRecorder(
 
   useEffect(() => {
     return () => {
+      captureGenerationRef.current += 1;
       peaksCaptureRef.current?.stop();
       peaksCaptureRef.current = undefined;
       dropCaptureStream();
@@ -179,6 +181,7 @@ export function useWavRecorder(
   const captureProcessingKeyRef = useRef('');
 
   useEffect(() => {
+    const generation = ++captureGenerationRef.current;
     if (!allowRecord) {
       dropCaptureStream();
       previousDeviceIdRef.current = deviceId;
@@ -206,6 +209,7 @@ export function useWavRecorder(
         const { stream, fellBack } = await getMediaStream(
           deviceChanged || processingChanged || streamGone
         );
+        if (generation !== captureGenerationRef.current) return;
         if (stream && stream.id && stream.active) {
           takeCaptureStream(stream, fellBack);
         } else {
@@ -214,6 +218,8 @@ export function useWavRecorder(
           showMessage(err);
         }
       } catch (e) {
+        if (generation !== captureGenerationRef.current) return;
+        if (e instanceof CaptureAcquireSupersededError) return;
         handleError(e as Error);
       }
     };
@@ -249,12 +255,16 @@ export function useWavRecorder(
       ignoreTrackEndedRef.current = true;
       stopWatchingStreamRef.current();
       stopWatchingStreamRef.current = () => undefined;
-      void finalizeRecordingOnDeviceLoss(recorder, wasRecording).then(
-        (blob) => {
-          dropCaptureStream();
-          if (blob) onStop(blob);
+      void (async () => {
+        let blob: Blob | undefined;
+        try {
+          blob = await finalizeRecordingOnDeviceLoss(recorder, wasRecording);
+        } catch {
+          blob = undefined;
         }
-      );
+        dropCaptureStream();
+        if (wasRecording) onStop(blob);
+      })();
       onError({ error: message, deviceLost: true });
       return;
     }
@@ -264,9 +274,12 @@ export function useWavRecorder(
   async function startRecorder() {
     if (isUnusableCaptureStream(mediaStreamRef.current)) {
       try {
+        const generation = captureGenerationRef.current;
         const { stream, fellBack } = await getMediaStream(true);
+        if (generation !== captureGenerationRef.current) return undefined;
         takeCaptureStream(stream, fellBack);
       } catch (error) {
+        if (error instanceof CaptureAcquireSupersededError) return undefined;
         handleError(error);
         return undefined;
       }

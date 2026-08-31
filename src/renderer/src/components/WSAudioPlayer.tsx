@@ -1313,9 +1313,10 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSec(100);
   }
 
-  async function onRecordStop(blob: Blob) {
+  async function onRecordStop(blob?: Blob) {
     recordingStartPendingRef.current = false;
     try {
+      if (!blob) return;
       try {
         await wsInsertAudio(
           blob,
@@ -1359,37 +1360,47 @@ function WSAudioPlayer(props: IProps) {
     } finally {
       recordPreviewSuppressedRef.current = false;
       setProcessingRecording(false);
-      // Preview ticks may have already updated the waveform when adding to
-      // existing audio; always sync blob/duration/save even if the final insert
-      // threw (TT-7384).
-      try {
-        await handleChanged();
-      } catch (err) {
-        logError(
-          Severity.error,
-          errorReporter,
-          err instanceof Error ? err : new Error(String(err))
-        );
+      if (blob) {
+        // Preview ticks may have already updated the waveform when adding to
+        // existing audio; always sync blob/duration/save even if the final insert
+        // threw (TT-7384).
+        try {
+          await handleChanged();
+        } catch (err) {
+          logError(
+            Severity.error,
+            errorReporter,
+            err instanceof Error ? err : new Error(String(err))
+          );
+        }
       }
     }
   }
 
   function onRecordError(e: any) {
     recordingStartPendingRef.current = false;
-    recordPreviewSuppressedRef.current = false;
-    setProcessingRecording(false);
 
     if (autostartTimer.current && e.error === 'No mediaRecorder') {
+      recordPreviewSuppressedRef.current = false;
+      setProcessingRecording(false);
       cleanupAutoStart();
       launchTimer();
     } else if (e.deviceLost) {
       if (recordingRef.current) {
+        // Same as the user Stop path: keep controls/save/nav blocked until
+        // finalizeRecordingOnDeviceLoss → onRecordStop finishes (blob or none).
         recordPreviewSuppressedRef.current = true;
+        setProcessingRecording(true);
         wsStopRecord();
         setRecording(false);
+      } else if (!processRecordRef.current) {
+        recordPreviewSuppressedRef.current = false;
+        setProcessingRecording(false);
       }
       warnMicrophoneDisconnected(e.deviceId || audioInputDevices[0]?.deviceId);
     } else {
+      recordPreviewSuppressedRef.current = false;
+      setProcessingRecording(false);
       showMessage(e.error || e.toString());
     }
   }
