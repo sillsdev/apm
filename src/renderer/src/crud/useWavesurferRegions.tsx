@@ -186,7 +186,8 @@ export function useWaveSurferRegions(
   const finishHandlerRef = useRef<(() => void) | undefined>(undefined);
 
   const CLICK_DEBOUNCE_MS = 100; // Minimum time between clicks
-  const CURRENT_REGION_BORDER = (theme.palette as any).custom.currentRegion;
+  const CURRENT_REGION_BORDER =
+    (theme.palette as any)?.custom?.currentRegion || '#66ff0080';
 
   useEffect(() => {
     applyRegionColorRef.current = applyRegionColor;

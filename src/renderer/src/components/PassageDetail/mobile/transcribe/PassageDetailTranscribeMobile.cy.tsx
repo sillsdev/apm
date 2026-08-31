@@ -1,7 +1,13 @@
 import React from 'react';
 import { Provider } from 'react-redux';
-import { legacy_createStore as createStore, combineReducers } from 'redux';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import {
+  legacy_createStore as createStore,
+  combineReducers,
+  applyMiddleware,
+} from 'redux';
+import { thunk } from 'redux-thunk';
+import { ThemeProvider } from '@mui/material/styles';
+import { createAppTheme } from '../../../../theme';
 import Memory from '@orbit/memory';
 import Coordinator from '@orbit/coordinator';
 
@@ -10,6 +16,7 @@ import { IOrbitContext } from '../../../../hoc/OrbitContext';
 import { OrbitContext } from '../../../../hoc/OrbitContextProvider';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import { PassageDetailContext } from '../../../../context/PassageDetailContext';
+import { PlayInPlayer } from '../../../../context/PlayInPlayer';
 import { HotKeyContext } from '../../../../context/HotKeyContext';
 
 import localizationReducer from '../../../../store/localization/reducers';
@@ -20,6 +27,7 @@ import {
   PassageD,
   SectionD,
 } from '../../../../model';
+import { createMinimalWavBlob } from '../../../../../cypress/support/recordingMocks';
 import PassageDetailTranscribeMobile from './PassageDetailTranscribeMobile';
 
 type RecordsByType = Record<string, unknown[]>;
@@ -78,7 +86,9 @@ const mockStore = createStore(
   combineReducers({
     strings: mockStringsReducer,
     books: bookReducer,
-  })
+  }),
+  undefined,
+  applyMiddleware(thunk as any)
 );
 
 const createInitialState = (
@@ -135,6 +145,8 @@ describe('PassageDetailTranscribeMobile', () => {
       hasPermission?: boolean;
       onSetStepComplete?: (complete: boolean) => void;
       onHideHeader?: (hide: boolean) => void;
+      onSetSelected?: (id: string, inPlayer: any) => void;
+      playerMediafile?: MediaFileD | undefined;
     } = {}
   ) => {
     const {
@@ -142,6 +154,8 @@ describe('PassageDetailTranscribeMobile', () => {
       transcriptionstate = ActivityStates.Transcribing,
       onSetStepComplete = cy.stub().as('setStepComplete'),
       onHideHeader = cy.stub().as('setHideMobileHeader'),
+      onSetSelected = cy.stub().as('setSelected'),
+      playerMediafile,
     } = options;
 
     const mockMedia: MediaFileD = {
@@ -156,6 +170,9 @@ describe('PassageDetailTranscribeMobile', () => {
         segments: '{"regions":[{"start":0,"end":5}]}',
       },
     } as unknown as MediaFileD;
+
+    const playerMediafileToUse =
+      'playerMediafile' in options ? options.playerMediafile : mockMedia;
 
     const mockPassage: PassageD = {
       id: 'pass-1',
@@ -272,11 +289,22 @@ describe('PassageDetailTranscribeMobile', () => {
         hideMobileHeader: false,
         setHideMobileHeader: onHideHeader,
         allBookData: [],
-        playerMediafile: mockMedia,
-        audioBlob: new Blob(['mock audio'], { type: 'audio/wav' }),
+        playerMediafile: playerMediafileToUse,
+        setSelected: onSetSelected,
+        audioBlob: createMinimalWavBlob(2),
         loading: false,
         pdBusy: false,
         setPDBusy: cy.stub(),
+        setupLocate: cy.stub(),
+        setCurrentSegment: cy.stub(),
+        setPlayerSegments: cy.stub(),
+        getCurrentSegment: () => undefined,
+        setPlaying: cy.stub(),
+        setRecording: cy.stub(),
+        setCommentRecording: cy.stub(),
+        setDiscussionMarkers: cy.stub(),
+        handleHighlightDiscussion: cy.stub(),
+        forceRefresh: cy.stub(),
       } as any,
       setState: cy.stub(),
     };
@@ -285,7 +313,9 @@ describe('PassageDetailTranscribeMobile', () => {
       <Provider store={mockStore}>
         <GlobalProvider init={createInitialState(memory)}>
           <OrbitContext.Provider value={orbitContextValue}>
-            <UnsavedContext.Provider value={unsavedState as any}>
+            <UnsavedContext.Provider
+              value={{ state: unsavedState as any, setState: cy.stub() }}
+            >
               <PassageDetailContext.Provider
                 value={passageDetailContextValue as any}
               >
@@ -299,7 +329,7 @@ describe('PassageDetailTranscribeMobile', () => {
                     setState: () => {},
                   }}
                 >
-                  <ThemeProvider theme={createTheme()}>
+                  <ThemeProvider theme={createAppTheme('en')}>
                     <PassageDetailTranscribeMobile width={360} />
                   </ThemeProvider>
                 </HotKeyContext.Provider>
@@ -318,7 +348,7 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.get('#asrButton').should('be.visible');
 
     // Check textarea with initial text
-    cy.get('textarea').should('have.value', 'Existing transcription text');
+    cy.get('#transcriptionText').should('have.value', 'Existing transcription text');
 
     // Check state badge
     cy.get('[data-cy="transcribe-state-badge"]').should('be.visible');
@@ -333,10 +363,10 @@ describe('PassageDetailTranscribeMobile', () => {
     const onHideHeader = cy.stub().as('setHideMobileHeader');
     mountTranscribeMobile({ onHideHeader });
 
-    cy.get('textarea').focus();
+    cy.get('#transcriptionText').focus();
     cy.get('@setHideMobileHeader').should('have.been.calledWith', true);
 
-    cy.get('textarea').blur();
+    cy.get('#transcriptionText').blur();
     cy.get('@setHideMobileHeader').should('have.been.calledWith', false);
   });
 
@@ -349,6 +379,20 @@ describe('PassageDetailTranscribeMobile', () => {
       'have.been.calledWith',
       'step-transcribe',
       true
+    );
+  });
+
+  it('selects media into player when playerMediafile is undefined or differs from mediafileId', () => {
+    const onSetSelected = cy.stub().as('setSelected');
+    mountTranscribeMobile({
+      playerMediafile: undefined,
+      onSetSelected,
+    });
+
+    cy.get('@setSelected').should(
+      'have.been.calledWith',
+      'media-1',
+      PlayInPlayer.yes
     );
   });
 });

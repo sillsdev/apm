@@ -28,6 +28,7 @@ import {
 import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
 import { PassageDetailContext } from '../../../../context/PassageDetailContext';
+import { PlayInPlayer } from '../../../../context/PlayInPlayer';
 import { TranscriberProvider } from '../../../../context/TranscriberContext';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import {
@@ -95,6 +96,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     playing,
     setHideMobileHeader,
     forceRefresh,
+    playerMediafile,
+    setSelected,
   } = usePassageDetailContext();
 
   const { setState } = useContext(PassageDetailContext);
@@ -348,6 +351,13 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   });
 
   useEffect(() => {
+    const targetMediaId = mediafile?.id ?? mediafileId;
+    if (targetMediaId && playerMediafile?.id !== targetMediaId) {
+      setSelected(targetMediaId, PlayInPlayer.yes);
+    }
+  }, [mediafile?.id, mediafileId, playerMediafile?.id, setSelected]);
+
+  useEffect(() => {
     const isDifferentMedia = mediaRef.current?.id !== mediafile?.id;
     mediaRef.current = mediafile;
     const incomingTranscription = mediafile?.attributes?.transcription ?? '';
@@ -557,6 +567,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
       <Box sx={{ width: '100%', minWidth: 0 }}>
         <StyledTextAreaAutosize
+          id="transcriptionText"
           ref={textareaRef}
           value={textValue}
           family={fontStyle.fontFamily}
