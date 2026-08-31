@@ -41,18 +41,6 @@ import {
 
 const SEGMENTS = SEGMENTS_3;
 
-/**
- * A last clause too short for the step's own effects to intervene before it
- * ends. On a normal clause the step stops playback itself when the overshoot
- * lands, which hides whether the engine reported its own stop; a sliver leaves
- * the engine's report as the only one there is.
- */
-const SEGMENTS_SHORT_LAST = [
-  { start: 0, end: 3 },
-  { start: 3, end: 6 },
-  { start: 6, end: 6.2 },
-];
-
 afterEach(() => pbtCleanup());
 
 describe('PBT region playback contract', () => {
@@ -102,36 +90,29 @@ describe('PBT region playback contract', () => {
 
 describe('PBT region playback contract, last segment ends with the audio', () => {
   beforeEach(() => {
-    // durationSec pinned to the last segment's end so the segment finishes
-    // exactly where the file does, which is the case that was reported.
-    mountPbt({ segments: SEGMENTS_SHORT_LAST, durationSec: 6.2 });
+    // durationSec pinned to the last segment's end, so that segment finishes
+    // exactly where the file does. That, not the segment being short, is the
+    // condition that was reported - a sliver at the end of a 6s file makes the
+    // fixture itself unreliable, and the segment length is beside the point.
+    mountPbt({ segments: SEGMENTS, durationSec: 9 });
     waitForPbtReady();
     startRecordingPass();
   });
 
-  it(
-    'DEFECT: never offers Record when the last segment ends at the end of the audio',
-    { tags: '@known-defect' },
-    () => {
-      // The stall found by hand, and NOT fixed by the record-button gate. Both
-      // signals that would mark the clause heard can be missing here at once:
-      // playback ends at the file end without the playhead leaving the region,
-      // so the regions plugin's inclusive membership test emits no region-out
-      // and nothing parks; and seeking to exactly the duration pauses the media
-      // element directly (useWaveSurfer wsGoto), which onPlayStatus never hears
-      // about because it is only raised from the imperative setPlaying. With no
-      // park and no stop, currentClausePlayed is never set and Record cannot be
-      // offered however it is gated.
-      //
-      // Whether it strands depends on where the playhead lands relative to the
-      // boundary, so this reproduces intermittently. Fixing it means reporting
-      // that pause - ADR 0011 Piece 2, or the narrow ws.on('pause') the ADR
-      // discusses - and is deliberately not attempted here.
-      cy.get(PBT.nextUnit).click();
-      unitLabel('0:03', '0:06').should('be.visible');
-      cy.get(PBT.nextUnit).click();
-      unitLabel('0:06', '0:06').should('be.visible');
-      expectRecordEnabled();
-    }
-  );
+  it('offers Record when the last segment ends at the end of the audio', () => {
+    // The stall found by hand. Both signals that would mark the clause heard
+    // were missing here at once: playback ends at the file end without the
+    // playhead leaving the region, so the regions plugin's inclusive membership
+    // test emits no region-out and nothing parks; and seeking to exactly the
+    // duration pauses the media element directly, which onPlayStatus never heard
+    // about because it was only ever raised from the imperative setPlaying. With
+    // no park and no stop, currentClausePlayed was never set and Record could not
+    // be offered however the button was gated. The engine now reports its own
+    // pauses, so the stop arrives and the clause counts as heard.
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:03', '0:06').should('be.visible');
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:06', '0:09').should('be.visible');
+    expectRecordEnabled();
+  });
 });

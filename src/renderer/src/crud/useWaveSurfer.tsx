@@ -460,6 +460,23 @@ export function useWaveSurfer(
           setPlaying(false);
         }
       });
+      // Report a pause the engine performed itself. onPlayStatus is otherwise
+      // only ever raised from setPlayingx, so anything wavesurfer does on its own
+      // is invisible to the app: `play(start, end)` reaching its stopAtPosition
+      // at the end of a segment, wsGoto pausing on a seek to exactly the
+      // duration, a media element dropping out of playback. The pause icon then
+      // stays up and every consumer reading the playing state is desynchronised
+      // from the audio (TT-7621).
+      //
+      // Only reports - it does not pause anything, so nothing about when
+      // playback stops changes. The playingRef guard keeps it to a falling edge,
+      // so a pause the app asked for (already reported by setPlayingx, which
+      // clears the ref first) does not report twice.
+      wavesurfer.on('pause', function () {
+        if (!playingRef.current) return;
+        playingRef.current = false;
+        onPlayStatus(false);
+      });
       wavesurfer.on('interaction', function (/*newTime: number*/) {
         onInteraction();
       });
