@@ -38,7 +38,7 @@ const testViteConfig = {
   // (`/__cypress/src/...`) hits the app Vite and fails to load.
   server: {
     ...viteConfig.server,
-    port: 5174,
+    port: 5175,
     strictPort: false,
   },
   // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies

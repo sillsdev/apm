@@ -355,6 +355,10 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
     cy.clock().then((clock) => {
       clock.restore();
     });
+    cy.window({ log: false }).then((win) => {
+      const ctx = win.__recordingMock?.audioContext;
+      if (ctx && ctx.state !== 'closed') void ctx.close();
+    });
   });
 
   it('shows Save after a short recording is paused (tracer bullet)', () => {
