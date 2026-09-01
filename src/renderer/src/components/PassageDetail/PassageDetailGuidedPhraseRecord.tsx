@@ -388,7 +388,7 @@ export function PassageDetailGuidedPhraseRecord({
     setPhraseSegString: setClauseSegString,
     bootstrapped,
     ensureSegments,
-    resetForMediafile,
+    resetForScope,
     resegmentWithParams,
     resetToDefaultSegments,
     persistPhraseSegments: persistClauseSegments,
@@ -850,7 +850,7 @@ export function PassageDetailGuidedPhraseRecord({
     const stepScope = `${mediafileId ?? ''}|${currentstep}`;
     if (lastResetScopeRef.current === stepScope) return;
     lastResetScopeRef.current = stepScope;
-    resetForMediafile(mediafileId);
+    resetForScope(mediafileId);
     // The legacy claim is per step language, so a reused instance has to be
     // allowed to run it again for the step just moved to.
     claimRanRef.current = false;
@@ -879,7 +879,7 @@ export function PassageDetailGuidedPhraseRecord({
     suppressClauseAutoPlayRef.current = 0;
     setHighlightPlayButton(false);
     // Gate only on the stable mediafileId / currentstep strings.
-    // resetForMediafile's identity changes whenever the mediafile record is
+    // resetForScope's identity changes whenever the mediafile record is
     // updated (e.g. persisting combined clause segments), which would otherwise
     // re-fire this reset and drop the user from the recording pass back into
     // the listen pass (TT-7360).

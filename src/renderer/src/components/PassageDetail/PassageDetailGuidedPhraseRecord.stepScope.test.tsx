@@ -72,14 +72,14 @@ const ctx: {
 
 jest.mock('../../context/usePassageDetailContext', () => () => ctx);
 
-const mockResetForMediafile = jest.fn();
+const mockResetForScope = jest.fn();
 jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => ({
   useGuidedPhraseSegments: () => ({
     phraseSegString: '[]',
     setPhraseSegString: jest.fn(),
     bootstrapped: true,
     ensureSegments: jest.fn().mockResolvedValue(true),
-    resetForMediafile: mockResetForMediafile,
+    resetForScope: mockResetForScope,
     resegmentWithParams: jest.fn().mockResolvedValue(false),
     resetToDefaultSegments: jest.fn().mockResolvedValue(false),
     persistPhraseSegments: jest.fn().mockResolvedValue(undefined),
@@ -248,8 +248,11 @@ describe('PassageDetailGuidedPhraseRecord - step scope (TT-7643)', () => {
     );
     expect(controlsProps?.showRecorder).toBe(false);
     expect(controlsProps?.recordingMediaId).toBeUndefined();
-    // Segment boundaries are per language: the new step re-reads its own.
-    expect(mockResetForMediafile).toHaveBeenCalledTimes(2);
+    // The boundaries the new step opens on are the segment hook's business,
+    // and this suite mocks that hook - so whether the reset it is handed
+    // actually re-reads the next language's bucket is asserted against the
+    // real hook in useGuidedPhraseSegments.test.tsx, not here.
+    expect(mockResetForScope).toHaveBeenCalledWith('m1');
   });
 
   it('records against the language of the step now showing', async () => {
