@@ -1036,7 +1036,7 @@ const initialState = {
 			"pendingUploadDeleteFailed": "The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.",
 			"pendingUploadDismiss": "Remove from list",
 			"pendingUploadEmpty": "No pending uploads.",
-			"pendingUploadExistsWarn": "This passage already has a pending media upload. Continue anyway?",
+			"pendingUploadExistsWarn": "A recording for this passage is already pending upload. Recording it again will replace the existing pending recording. Do you want to continue?",
 			"pendingUploadMenu": "Pending media uploads",
 			"pendingUploadPathLabel": "File saved at: {0}",
 			"pendingUploadQueuedHint": "You can retry from Team → {0} when your connection improves.",
