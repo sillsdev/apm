@@ -160,9 +160,12 @@ export interface InstallRecordingMocksOptions {
  * stuck waiting. Native resume still runs for the real hardware path.
  */
 function patchAudioContextResume(win: Window & typeof globalThis): void {
-  const proto = win.AudioContext?.prototype as
-    | (AudioContext['prototype'] & { __apmResumePatched?: boolean })
-    | undefined;
+  // Window ∩ globalThis types AudioContext as the instance, not the ctor.
+  const proto = (
+    win.AudioContext as unknown as {
+      prototype: AudioContext & { __apmResumePatched?: boolean };
+    }
+  )?.prototype;
   if (!proto || proto.__apmResumePatched) return;
   const native = proto.resume;
   proto.resume = function (this: AudioContext) {
