@@ -1288,6 +1288,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.planNotFound">
+         <segment>
+            <source>Bible Media Plan not found. Please contact APM Support.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.process">
          <segment>
             <source>Default Workflow</source>

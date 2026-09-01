@@ -262,6 +262,7 @@ const initialState = {
 			"personal": "Personal",
 			"personalProjects": "Personal Audio Projects",
 			"personalSettings": "Personal Settings",
+			"planNotFound": "Bible Media Plan not found. Please contact APM Support.",
 			"process": "Default Workflow",
 			"projectCreated": "Audio Project Created",
 			"projectRequired": "A project must be added before recordings are allowed",

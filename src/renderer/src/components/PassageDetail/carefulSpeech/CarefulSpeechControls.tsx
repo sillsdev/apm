@@ -49,6 +49,12 @@ interface Props {
   allClausesComplete: boolean;
   highlightSpeaker: boolean;
   allowRecord: boolean;
+  /**
+   * Record is unavailable for the moment because the reference audio is
+   * playing. Kept apart from allowRecord so the recorder keeps the microphone;
+   * see the prop of the same name on WSAudioPlayer.
+   */
+  recordBlocked?: boolean;
   savingRecording?: boolean;
   onSaving?: () => void;
   onSaveSettled?: () => void;
@@ -105,6 +111,7 @@ export default function CarefulSpeechControls({
   allClausesComplete,
   highlightSpeaker,
   allowRecord,
+  recordBlocked,
   savingRecording = false,
   onSaving,
   onSaveSettled,
@@ -310,6 +317,7 @@ export default function CarefulSpeechControls({
                 defaultFilename={defaultFilename}
                 mediaId={recordingMediaId}
                 allowRecord={allowRecord}
+                recordBlocked={recordBlocked}
                 allowWave={false}
                 disableDragSelection={true}
                 height={160}

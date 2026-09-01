@@ -112,6 +112,8 @@ interface IProps {
   onDockedRecordButton?: (node: React.ReactNode | null) => void;
   /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
   showDockedRecordButton?: boolean;
+  /** Disable the record button without releasing the microphone. */
+  recordBlocked?: boolean;
   onRecordingCleared?: () => void;
   /** Gate starting a new recording; return false (or resolve false) to abort. */
   onBeforeStartRecord?: () => boolean | Promise<boolean>;
@@ -177,6 +179,7 @@ function MediaRecord(props: IProps) {
     dockRecordButton,
     onDockedRecordButton,
     showDockedRecordButton,
+    recordBlocked,
     onRecordingCleared,
     onSaveRejected,
     onBeforeStartRecord,
@@ -857,6 +860,7 @@ function MediaRecord(props: IProps) {
         dockRecordButton={dockRecordButton}
         onDockedRecordButton={onDockedRecordButton}
         showDockedRecordButton={showDockedRecordButton}
+        recordBlocked={recordBlocked}
         onRecordingCleared={handleRecordingCleared}
         onBeforeStartRecord={onBeforeStartRecord}
       />

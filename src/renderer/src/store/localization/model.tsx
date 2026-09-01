@@ -246,6 +246,7 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "personal": string;
     "personalProjects": string;
     "personalSettings": string;
+    "planNotFound": string;
     "process": string;
     "projectCreated": string;
     "projectRequired": string;
