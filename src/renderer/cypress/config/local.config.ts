@@ -32,13 +32,15 @@ const { auth0Domain, webClientId, apiIdentifier } = JSON.parse(
 );
 
 // Merge the base vite config with test-specific overrides
+const { port: _appPort, ...viteServerRest } = viteConfig.server ?? {};
 const testViteConfig = {
   ...viteConfig,
   // App `npm start` owns 3000. CT must not steal it or the spec URL
   // (`/__cypress/src/...`) hits the app Vite and fails to load.
+  // leftover Vite often occupies 5173.
   server: {
-    ...viteConfig.server,
-    port: 5175,
+    ...viteServerRest,
+    port: 5188,
     strictPort: false,
   },
   // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies

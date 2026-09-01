@@ -351,10 +351,10 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
   });
 
   afterEach(() => {
+    // Unmount before closing the oscillator so track `ended` does not land on
+    // a still-mounted take. Restore clock so the next test is not frozen.
     cy.mount(<></>);
-    cy.clock().then((clock) => {
-      clock.restore();
-    });
+    cy.clock().then((clock) => clock.restore());
     cy.window({ log: false }).then((win) => {
       const ctx = win.__recordingMock?.audioContext;
       if (ctx && ctx.state !== 'closed') void ctx.close();

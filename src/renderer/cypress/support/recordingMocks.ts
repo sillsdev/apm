@@ -154,16 +154,23 @@ export interface InstallRecordingMocksOptions {
   useMockMediaRecorder?: boolean;
 }
 
-function patchAudioContextResume(win: Window & typeof globalThis) {
+/**
+ * cy.clock() freezes timers; AudioContext.resume() on a later context in the
+ * same document often never settles. Resolve immediately so start/stop are not
+ * stuck waiting. Native resume still runs for the real hardware path.
+ */
+function patchAudioContextResume(win: Window & typeof globalThis): void {
   const proto = win.AudioContext?.prototype as
     | (AudioContext['prototype'] & { __apmResumePatched?: boolean })
     | undefined;
   if (!proto || proto.__apmResumePatched) return;
-  const originalResume = proto.resume;
-  // cy.clock() stubs timers Chrome uses to settle resume(); start() awaits it
-  // and Record never reaches PauseIcon on the 2nd+ AudioContext in a spec.
+  const native = proto.resume;
   proto.resume = function (this: AudioContext) {
-    void originalResume.call(this);
+    try {
+      void native.call(this);
+    } catch {
+      /* closed / invalid state */
+    }
     return Promise.resolve();
   };
   proto.__apmResumePatched = true;
@@ -172,6 +179,7 @@ function patchAudioContextResume(win: Window & typeof globalThis) {
 async function createOscillatorStream(
   win: Window & typeof globalThis
 ): Promise<{ stream: MediaStream; audioContext: AudioContext }> {
+  patchAudioContextResume(win);
   const audioContext = new win.AudioContext({ sampleRate: 48000 });
   if (audioContext.state === 'suspended') {
     await audioContext.resume();
