@@ -169,7 +169,7 @@ function AboutDialog(props: AboutDialogProps) {
         <Tooltip title={t.copyClipboard} onClick={handleVersionCopy}>
           <div>
             <ProductIdentBox>
-              <ApmLogo sx={{ width: '64px', height: '64px' }} />
+              <ApmLogo size={64} />
               {'\u00A0'}
               <Typography variant="h4">{API_CONFIG.productName}</Typography>
             </ProductIdentBox>

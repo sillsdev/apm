@@ -1,17 +1,30 @@
-import apmLogo from '../assets/apm-logo.min.svg';
-import { LogoImg } from '.';
-import { SxProps } from '@mui/material';
+import type { ComponentPropsWithoutRef } from 'react';
+import apmLogo from '../assets/apm-logo.svg';
 
-interface IProps {
-  sx?: SxProps;
+const baseStyle = { alignSelf: 'center' } as const;
+
+interface IProps extends Omit<
+  ComponentPropsWithoutRef<'img'>,
+  'src' | 'width' | 'height'
+> {
+  size?: number;
 }
 
-export const ApmLogo = (props: IProps) => {
+export const ApmLogo = ({
+  size = 256,
+  alt = 'Audio Project Manager logo',
+  style,
+  ...rest
+}: IProps) => {
   return (
-    <LogoImg
+    <img
       src={apmLogo}
-      sx={{ alignSelf: 'center', width: '256px', height: '256px', ...props.sx }}
-      alt="Audio Project Manager Logo"
+      width={size}
+      height={size}
+      alt={alt}
+      draggable={false}
+      style={style ? { ...baseStyle, ...style } : baseStyle}
+      {...rest}
     />
   );
 };
