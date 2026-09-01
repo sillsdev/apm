@@ -405,7 +405,7 @@ describe('PassageDetailTranscribeMobile', () => {
 
     const unsavedState = {
       startSave: cy.stub(),
-      toolChanged: cy.stub(),
+      toolChanged: cy.stub().as('toolChanged'),
       toolsChanged: {},
       isChanged: () => false,
       saveRequested: () => false,
@@ -1570,6 +1570,237 @@ describe('PassageDetailTranscribeMobile', () => {
       true
     );
     cy.get('@gotoNextStep').should('have.been.called');
+  });
+
+  describe('segment persistence and unsaved coordination', () => {
+    const initialSegments = '{"regions":[{"start":0,"end":1}]}';
+
+    const mediaWithSegments: MediaFileD = {
+      id: 'media-1',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Existing transcription text',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 20,
+        position: 0,
+        segments: initialSegments,
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+
+    const isSegmentMemoryOp = (ops: any[]) =>
+      ops.some(
+        (op: any) =>
+          (op?.op === 'replaceAttribute' && op?.attribute === 'segments') ||
+          (op?.op === 'updateRecord' &&
+            op?.record?.type === 'mediafile' &&
+            op?.record?.attributes?.segments &&
+            !op?.record?.attributes?.transcriptionstate)
+      );
+
+    const parseMemoryOps = (transformOrOps: any): any[] => {
+      if (Array.isArray(transformOrOps)) return transformOrOps;
+      if (typeof transformOrOps === 'function') {
+        const res = transformOrOps(new RecordTransformBuilder());
+        return Array.isArray(res) ? res : [res];
+      }
+      if (Array.isArray(transformOrOps?.operations)) {
+        return transformOrOps.operations;
+      }
+      return transformOrOps ? [transformOrOps] : [];
+    };
+
+    const createSegmentMemoryUpdate = (
+      segmentBehavior:
+        | { type: 'reject'; message?: string }
+        | { type: 'defer'; resolveRef: { current?: () => void } }
+        | { type: 'resolve' } = { type: 'resolve' },
+      recordedOpsList: any[][] = []
+    ) =>
+      cy.stub().callsFake((transformOrOps: any) => {
+        const ops = parseMemoryOps(transformOrOps);
+        recordedOpsList.push(ops);
+
+        if (!isSegmentMemoryOp(ops)) {
+          return Promise.resolve();
+        }
+
+        if (segmentBehavior.type === 'reject') {
+          return Promise.reject(
+            new Error(segmentBehavior.message ?? 'Segment save failed')
+          );
+        }
+        if (segmentBehavior.type === 'defer') {
+          return new Promise<void>((resolve) => {
+            segmentBehavior.resolveRef.current = resolve;
+          });
+        }
+        return Promise.resolve();
+      });
+
+    const triggerSegmentChange = () => {
+      cy.get('#wsSegmentReset', { timeout: 10000 })
+        .should('be.visible')
+        .and('not.be.disabled')
+        .click();
+    };
+
+    it('registers segment edits as unsaved via toolChanged for the current step', () => {
+      mountTranscribeMobile({
+        mediafiles: [mediaWithSegments],
+        currentstep: 'step-transcribe',
+      });
+
+      triggerSegmentChange();
+
+      cy.get('@toolChanged').should(
+        'have.been.calledWith',
+        'step-transcribe',
+        true
+      );
+    });
+
+    it('reports segment save failure through saveCompleted for the current step', () => {
+      cy.on('uncaught:exception', () => false);
+      const memoryUpdate = createSegmentMemoryUpdate({
+        type: 'reject',
+        message: 'Segment save failed',
+      }).as('memoryUpdate');
+
+      mountTranscribeMobile({
+        mediafiles: [mediaWithSegments],
+        memoryUpdate,
+      });
+
+      triggerSegmentChange();
+
+      cy.get('@saveCompleted').should(
+        'have.been.calledWith',
+        'step-transcribe',
+        'Segment save failed'
+      );
+    });
+
+    it('clears unsaved state via saveCompleted after successful segment save', () => {
+      const memoryUpdate = createSegmentMemoryUpdate({ type: 'resolve' }).as(
+        'memoryUpdate'
+      );
+
+      mountTranscribeMobile({
+        mediafiles: [mediaWithSegments],
+        memoryUpdate,
+      });
+
+      triggerSegmentChange();
+
+      cy.get('@saveCompleted').should('have.been.calledWith', 'step-transcribe');
+    });
+
+    it('does not complete step or navigate when segment save fails before submit', () => {
+      cy.on('uncaught:exception', () => false);
+      const onSetStepComplete = cy.stub().as('setStepComplete');
+      const onGotoNextStep = cy.stub().as('gotoNextStep');
+      const memoryUpdate = createSegmentMemoryUpdate({
+        type: 'reject',
+        message: 'Segment save failed',
+      }).as('memoryUpdate');
+
+      mountTranscribeMobile({
+        mediafiles: [mediaWithSegments],
+        memoryUpdate,
+        onSetStepComplete,
+        onGotoNextStep,
+      });
+
+      triggerSegmentChange();
+      cy.get('#transcriber\\.submit').click();
+
+      cy.get('@setStepComplete').should('not.have.been.called');
+      cy.get('@gotoNextStep').should('not.have.been.called');
+    });
+
+    it('does not complete step or navigate when deferred segment save rejects during submit', () => {
+      cy.on('uncaught:exception', () => false);
+      let rejectSegmentUpdate!: (err: Error) => void;
+      const segmentUpdatePromise = new Promise<void>((_resolve, reject) => {
+        rejectSegmentUpdate = reject;
+      });
+
+      const recordedOpsList: any[][] = [];
+      const memoryUpdate = cy
+        .stub()
+        .as('memoryUpdate')
+        .callsFake((transformOrOps: any) => {
+          const ops = parseMemoryOps(transformOrOps);
+          recordedOpsList.push(ops);
+
+          if (isSegmentMemoryOp(ops)) {
+            return segmentUpdatePromise;
+          }
+          return Promise.resolve();
+        });
+
+      const onSetStepComplete = cy.stub().as('setStepComplete');
+      const onGotoNextStep = cy.stub().as('gotoNextStep');
+
+      mountTranscribeMobile({
+        mediafiles: [mediaWithSegments],
+        memoryUpdate,
+        onSetStepComplete,
+        onGotoNextStep,
+      });
+
+      triggerSegmentChange();
+
+      cy.wrap(null).should(() => {
+        expect(
+          recordedOpsList.some((ops) => isSegmentMemoryOp(ops)),
+          'segment save started'
+        ).to.be.true;
+      });
+
+      cy.get('#transcriber\\.submit').click();
+
+      cy.then(() => {
+        rejectSegmentUpdate(new Error('Segment save failed'));
+      });
+
+      // Failure must be reported for the step tool before submit may proceed.
+      cy.get('@saveCompleted').should(
+        'have.been.calledWith',
+        'step-transcribe',
+        'Segment save failed'
+      );
+      cy.get('@setStepComplete').should('not.have.been.called');
+      cy.get('@gotoNextStep').should('not.have.been.called');
+    });
+
+    it('blocks navigation when segment save fails and segments differ from saved', () => {
+      cy.on('uncaught:exception', () => false);
+      const onNavigate = cy.stub().as('onNavigate');
+      const memoryUpdate = createSegmentMemoryUpdate({
+        type: 'reject',
+        message: 'Segment save failed',
+      }).as('memoryUpdate');
+
+      mountTranscribeMobile({
+        mediafiles: [mediaWithSegments],
+        memoryUpdate,
+        useRealUnsaved: true,
+        onNavigate,
+      });
+
+      triggerSegmentChange();
+
+      cy.get('#test-navigate-button').click();
+      cy.get('#alertDlg').should('be.visible');
+      cy.get('@onNavigate').should('not.have.been.called');
+    });
   });
 
   it('renders enabled Reopen button, readonly textarea, disabled ASR, and hides Save/Submit for Approved media with permission', () => {

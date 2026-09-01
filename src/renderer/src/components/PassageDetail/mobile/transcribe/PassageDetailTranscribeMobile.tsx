@@ -77,6 +77,7 @@ import { Button } from '../../../../control/Button';
 import TranscriptionLogo from '../../../../control/TranscriptionLogo';
 import { StyledTextAreaAutosize } from '../../../../control/WebFontStyles';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
+import { SaveSegments } from '../../SaveSegments';
 import BigDialog from '../../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../../hoc/BigDialogBp';
 import Confirm from '../../../AlertDialog';
@@ -302,14 +303,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const handleComplete = useCallback(
     (complete: boolean) => {
       const waitPending = pendingSegmentSaveRef.current
-        ? pendingSegmentSaveRef.current.catch(() => {})
+        ? pendingSegmentSaveRef.current
         : Promise.resolve();
 
       waitPending
         .then(() => waitForSave(undefined, 200))
         .then(async () => {
           if (pendingSegmentSaveRef.current) {
-            await pendingSegmentSaveRef.current.catch(() => {});
+            await pendingSegmentSaveRef.current;
           }
           await setStepComplete(currentstep, complete);
           if (complete) gotoNextStep();
@@ -652,23 +653,29 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         currentMedia.attributes?.segments ?? '{}',
         segments
       );
+      toolChanged(currentstep, true);
       const savePromise = (async () => {
         try {
           await projectSegmentSave({
             media: currentMedia,
             segments: updatedSegments,
           });
+          saveCompleted(currentstep);
         } catch (err) {
+          const message = (err as Error).message;
           logError(Severity.error, errorReporter, err as Error);
+          saveCompleted(currentstep, message);
+          throw err;
         }
       })();
       pendingSegmentSaveRef.current = savePromise;
       try {
         await savePromise;
-      } finally {
         if (pendingSegmentSaveRef.current === savePromise) {
           pendingSegmentSaveRef.current = null;
         }
+      } catch {
+        // Keep rejected savePromise in pendingSegmentSaveRef so handleComplete blocks.
       }
     },
     [
@@ -678,6 +685,9 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       memory,
       projectSegmentSave,
       errorReporter,
+      saveCompleted,
+      toolChanged,
+      currentstep,
     ]
   );
 
@@ -754,6 +764,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           !isReadOnly && hasPermission ? NamedRegions.Transcription : undefined
         }
         allowAutoSegment={!isReadOnly && hasPermission}
+        saveSegments={
+          !isReadOnly && hasPermission
+            ? SaveSegments.saveButNoButton
+            : undefined
+        }
         allowZoomAndSpeed={true}
         hideZoom={true}
         showTranscriptionButton={false}
