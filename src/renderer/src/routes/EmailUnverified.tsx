@@ -121,15 +121,15 @@ export const EmailUnverified = () => {
             alignItems: 'center',
             justifyContent: 'center',
             alignSelf: 'center',
-            p: 1.5,
+            p: 1,
             borderRadius: 2,
             bgcolor: 'grey.100',
           }}
         >
-          <EmailOutlinedIcon fontSize="large" />
+          <EmailOutlinedIcon fontSize="medium" />
         </Box>
         <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
             {t.emailUnverified}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ pt: 1 }}>
