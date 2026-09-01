@@ -813,6 +813,9 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           ref={textareaRef}
           value={textValue}
           family={fontStyle.fontFamily}
+          url={projData?.url}
+          lang={projData?.langTag || 'en'}
+          spellCheck={projData?.spellCheck === true}
           onChange={handleTextChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
