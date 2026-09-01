@@ -738,7 +738,11 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
             id,
             take.remoteId,
             take.sourceSegments,
-            take.performedBy
+            take.performedBy,
+            // The real pull-after-upload returns what was posted; stamping
+            // every uploaded take English hid whether the step language ever
+            // reached the upload at all.
+            take.languagebcp47
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ) as any
         )

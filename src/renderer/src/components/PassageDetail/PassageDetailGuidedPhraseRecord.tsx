@@ -520,7 +520,11 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const defaultFilename = useMemo(() => {
-    const postfix = config.buildFilenamePostfix(currentIndex, currentVersion);
+    const postfix = config.buildFilenamePostfix(
+      currentIndex,
+      currentVersion,
+      stepLanguageBcp47
+    );
     return passageDefaultFilename(
       passage,
       plan,
@@ -537,6 +541,7 @@ export function PassageDetailGuidedPhraseRecord({
     offline,
     currentIndex,
     currentVersion,
+    stepLanguageBcp47,
     config,
   ]);
 

@@ -306,4 +306,29 @@ describe('PBT language scoping', () => {
       )
     );
   });
+
+  it('uploads a take under a name no other language can take', () => {
+    // The name a take uploads under is the name its audio is cached under on
+    // disk: dataPath resolves a mediafile's audioUrl to
+    // `<offlineData>/media/<basename>` and hands back whatever file is already
+    // sitting there. The name carried the segment index and the source version
+    // but not the language, so the Hebrew step's segment 1 uploaded as exactly
+    // the name the Sena step's segment 1 had already cached - and Sena is what
+    // played (TT-7643).
+    mountPbt({ segments: SEGMENTS, stepLanguage: 'Hebrew|he' });
+    waitForPbtReady();
+    startRecordingPass();
+    recordAndSettle(1);
+
+    cy.then(() => {
+      const posted = postedTakes()[0];
+      expect(posted?.languagebcp47, 'take is stamped').to.equal('Hebrew|he');
+      expect(posted?.originalFile, 'name carries the language').to.contain(
+        '_he'
+      );
+      // What the Sena step would have uploaded for this same segment.
+      const senaName = (posted?.originalFile ?? '').replace('_he', '_seh');
+      expect(posted?.originalFile).to.not.equal(senaName);
+    });
+  });
 });

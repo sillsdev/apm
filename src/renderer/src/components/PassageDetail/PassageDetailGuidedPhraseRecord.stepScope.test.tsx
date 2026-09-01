@@ -110,8 +110,11 @@ jest.mock('../../crud/related', () => ({ related: () => 'p1' }));
 jest.mock('../../utils/useStepPermission', () => ({
   useStepPermissions: () => ({ canDoSectionStep: () => true }),
 }));
+// Echo the postfix the config built, so a spec can see what the take would be
+// named. Real signature: (passage, plan, memory, artifactType, offline, postfix).
 jest.mock('../../utils/passageDefaultFilename', () => ({
-  passageDefaultFilename: () => 'file.ogg',
+  passageDefaultFilename: (...args: unknown[]) =>
+    `GEN001_014-019${args[5]}_plan`,
 }));
 jest.mock('../../selector', () => ({
   sharedSelector: jest.fn(),
@@ -253,6 +256,27 @@ describe('PassageDetailGuidedPhraseRecord - step scope (TT-7643)', () => {
     // actually re-reads the next language's bucket is asserted against the
     // real hook in useGuidedPhraseSegments.test.tsx, not here.
     expect(mockResetForScope).toHaveBeenCalledWith('m1');
+  });
+
+  it('names a take so it cannot collide with another language of the same segment', async () => {
+    // The uploaded file name is what the media cache is keyed on: `dataPath`
+    // resolves a mediafile's audioUrl to `<offlineData>/media/<basename>`, so
+    // two takes that upload under one name share one cached file and the first
+    // one downloaded is what plays. Segment index and source version were in
+    // the name but the step language was not, so Hebrew segment 1 and Sena
+    // segment 1 were the same file (TT-7643).
+    const { rerender } = await mountAndSettle();
+    const senaName = controlsProps?.defaultFilename as string;
+    expect(senaName).toContain('seh');
+
+    ctx.currentstep = 'step-hebrew';
+    await act(async () => {
+      rerender(ui());
+    });
+    await waitFor(() =>
+      expect(controlsProps?.defaultFilename).not.toEqual(senaName)
+    );
+    expect(controlsProps?.defaultFilename).toContain('he');
   });
 
   it('records against the language of the step now showing', async () => {
