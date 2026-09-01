@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="69.83 69.83 860.34 860.34" role="img" aria-labelledby="apm-title">
+  <title id="apm-title">Audio Project Manager</title>
+
+  <defs>
+    <linearGradient id="apm-ring-fill" gradientUnits="userSpaceOnUse" x1="0" y1="40" x2="0" y2="780">
+      <stop offset="0" stop-color="#B9D435"/>
+      <stop offset="1" stop-color="#90A828"/>
+    </linearGradient>
+
+    <!-- every cut crosses the ring; the two front shapes keep their clearance -->
+    <mask id="apm-ring" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
+      <rect width="1000" height="1000" fill="#fff"/>
+      <g fill="#000">
+      <path d="M 314.24 421.90 L 456.82 659.17 L 482.54 643.71 L 339.96 406.44 Z"/>
+      <path d="M 669.79 390.87 L 527.16 628.14 L 552.88 643.60 L 695.51 406.33 Z"/>
+      <path d="M 749.82 471.20 L 607.19 708.46 L 632.91 723.92 L 775.54 486.66 Z"/>
+      <path d="M 762.50 613.08 L 905.13 850.34 L 930.84 834.88 L 788.21 597.62 Z"/>
+      <path d="M 706.54 710.30 L 849.17 947.56 L 874.88 932.10 L 732.25 694.84 Z"/>
+      <path d="M 259.71 684.91 L 117.08 922.18 L 142.79 937.63 L 285.42 700.36 Z"/>
+      <path d="M 186.14 617.03 L 43.51 854.30 L 69.23 869.76 L 211.86 632.49 Z"/>
+      <path d="M 623.04 367.81 L 765.67 605.08 L 791.39 589.62 L 648.76 352.35 Z"/>
+      <path d="M 94.03 805.55 L 315.55 436.35 L 332.69 436.35 L 434.46 605.97 L 380.82 695.37 L 324.12 600.88 L 147.67 894.96 Z"/>
+      <path d="M 385.09 706.22 L 489.43 880.12 L 506.57 880.12 L 738.51 493.56 L 684.86 404.15 L 498.00 715.59 L 438.73 616.81 Z"/>
+      </g>
+    </mask>
+
+    <!-- only three of the cuts pass through the A itself -->
+    <mask id="apm-a" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
+      <rect width="1000" height="1000" fill="#fff"/>
+      <g fill="#000">
+      <path d="M 314.24 421.90 L 456.82 659.17 L 482.54 643.71 L 339.96 406.44 Z"/>
+      <path d="M 669.79 390.87 L 527.16 628.14 L 552.88 643.60 L 695.51 406.33 Z"/>
+      <path d="M 749.82 471.20 L 607.19 708.46 L 632.91 723.92 L 775.54 486.66 Z"/>
+      <path d="M 94.03 805.55 L 315.55 436.35 L 332.69 436.35 L 434.46 605.97 L 380.82 695.37 L 324.12 600.88 L 147.67 894.96 Z"/>
+      <path d="M 385.09 706.22 L 489.43 880.12 L 506.57 880.12 L 738.51 493.56 L 684.86 404.15 L 498.00 715.59 L 438.73 616.81 Z"/>
+      </g>
+    </mask>
+
+    <!-- the check passes in front of the light-green chevron -->
+    <mask id="apm-chevron" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
+      <rect width="1000" height="1000" fill="#fff"/>
+      <path d="M 385.09 706.22 L 489.43 880.12 L 506.57 880.12 L 738.51 493.56 L 684.86 404.15 L 498.00 715.59 L 438.73 616.81 Z" fill="#000"/>
+    </mask>
+
+    <!-- one diagonal cut also crosses the check -->
+    <mask id="apm-check" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1000">
+      <rect width="1000" height="1000" fill="#fff"/>
+      <path d="M 623.04 367.81 L 765.67 605.08 L 791.39 589.62 L 648.76 352.35 Z" fill="#000"/>
+    </mask>
+  </defs>
+
+  <g transform="translate(500 500) scale(0.8815) translate(-500 -500)">
+  <!-- white plate, 28 units proud of the artwork: the same width
+       as the cut gaps between the A's legs and the ring -->
+  <g fill="#FFFFFF">
+    <circle cx="500" cy="500" r="488"/>
+    <path d="M 73.03 805.55 L 468.99 145.62 L 517.01 145.62 L 912.97 805.55 L 838.33 929.94 L 493.00 354.39 L 147.67 929.94 Z"/>
+    <path d="M 73.04 805.55 L 300.11 427.09 L 348.13 427.09 L 455.45 605.97 L 380.82 730.36 L 324.12 635.86 L 147.67 929.94 Z"/>
+    <path d="M 364.09 706.22 L 473.99 889.38 L 522.01 889.38 L 759.50 493.56 L 684.86 369.16 L 498.00 680.61 L 438.73 581.82 Z"/>
+  </g>
+
+    <path d="M 40 500 a 460 460 0 1 0 920 0 a 460 460 0 1 0 -920 0 Z M 112 500 a 388 388 0 1 1 776 0 a 388 388 0 1 1 -776 0 Z" fill="url(#apm-ring-fill)" fill-rule="evenodd" mask="url(#apm-ring)"/>
+    <path d="M 105.69 805.55 L 493.00 160.03 L 880.31 805.55 L 838.33 875.52 L 493.00 299.97 L 147.67 875.52 Z" fill="#90A828" mask="url(#apm-a)"/>
+
+    <g mask="url(#apm-chevron)"><path d="M 105.69 805.55 L 324.12 441.50 L 422.80 605.97 L 380.82 675.94 L 324.12 581.44 L 147.67 875.52 Z" fill="#B9D435"/></g>
+    <g mask="url(#apm-check)"><path d="M 396.75 706.22 L 498.00 874.97 L 726.85 493.56 L 684.86 423.59 L 498.00 735.03 L 438.73 636.25 Z" fill="#135CB9"/></g>
+  </g>
+</svg>
