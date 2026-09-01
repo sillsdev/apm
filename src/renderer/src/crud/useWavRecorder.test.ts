@@ -299,4 +299,41 @@ describe('useWavRecorder capture races', () => {
     expect(onStop).toHaveBeenCalledTimes(1);
     expect(onStop).toHaveBeenCalledWith(blob);
   });
+
+  it('publishes a new blob when the same recorder is used for a second take', async () => {
+    const stream = fakeStream('mic-a');
+    mockGetMediaStream.mockResolvedValue({ stream, fellBack: false });
+    mockStop
+      .mockResolvedValueOnce(new Blob(['take-1']))
+      .mockResolvedValueOnce(new Blob(['take-2']));
+
+    const { result, onStop } = renderRecorder('mic-a');
+    await flushEnsureStream();
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    act(() => {
+      result.current.stopRecording();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(onStop).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    act(() => {
+      result.current.stopRecording();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockStop).toHaveBeenCalledTimes(2);
+    expect(onStop).toHaveBeenCalledTimes(2);
+  });
 });

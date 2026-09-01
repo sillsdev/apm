@@ -306,7 +306,7 @@ export function createAudioMediaRecorder(
       inFlightStop = pending;
       void pending.finally(() => {
         if (inFlightStop === pending) inFlightStop = undefined;
-      });
+      }).catch(() => undefined);
       return pending;
     },
 

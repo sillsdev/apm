@@ -111,6 +111,7 @@ export function useWavRecorder(
         recorder: APMRecorder;
         stop: Promise<Blob | undefined>;
         published?: Promise<void>;
+        settled?: boolean;
       }
     | undefined
   >(undefined);
@@ -277,14 +278,20 @@ export function useWavRecorder(
   function ensureRecorderStopped(
     recorder: APMRecorder
   ): Promise<Blob | undefined> {
-    if (recorderStopRef.current?.recorder === recorder) {
-      return recorderStopRef.current.stop;
+    const slot = recorderStopRef.current;
+    if (slot?.recorder === recorder && !slot.settled) {
+      return slot.stop;
     }
     const stop = recorder
       .stop()
       .then((blob) => (blob.size > 0 ? blob : undefined))
       .catch(() => undefined);
-    recorderStopRef.current = { recorder, stop };
+    recorderStopRef.current = { recorder, stop, settled: false };
+    void stop.finally(() => {
+      if (recorderStopRef.current?.stop === stop) {
+        recorderStopRef.current.settled = true;
+      }
+    });
     return stop;
   }
 
@@ -467,6 +474,7 @@ export function useWavRecorder(
     if (takeFinalizationRef.current) {
       await takeFinalizationRef.current;
     }
+    recorderStopRef.current = undefined;
     const generation = captureGenerationRef.current;
     const streamMuted = Boolean(
       mediaStreamRef.current?.getAudioTracks?.()[0]?.muted

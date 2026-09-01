@@ -280,23 +280,20 @@ describe('getUserMediaWithDeviceFallback', () => {
     expect(wait).toHaveBeenCalledWith(CAPTURE_DEVICE_LOSS_RETRY_MS);
   });
 
-  it('falls back when the exact device is missing from the device list after open', async () => {
+  it('keeps a working exact-device stream when enumeration still lists other mics', async () => {
     const track = {
       readyState: 'live',
       muted: false,
       getSettings: () => ({ deviceId: 'gone-mic' }),
       stop: jest.fn(),
     };
-    const ghost = {
-      id: 'ghost',
+    const opened = {
+      id: 'opened',
       active: true,
       getAudioTracks: () => [track],
       getTracks: () => [track],
     } as unknown as MediaStream;
-    const getUserMedia = jest
-      .fn()
-      .mockResolvedValueOnce(ghost)
-      .mockResolvedValueOnce(fallbackStream);
+    const getUserMedia = jest.fn().mockResolvedValue(opened);
     const previous = navigator.mediaDevices;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
@@ -309,9 +306,9 @@ describe('getUserMediaWithDeviceFallback', () => {
     try {
       await expect(
         getUserMediaWithDeviceFallback(exactConstraints, getUserMedia, wait)
-      ).resolves.toEqual({ stream: fallbackStream, fellBack: true });
-      expect(track.stop).toHaveBeenCalled();
-      expect(getUserMedia).toHaveBeenCalledTimes(2);
+      ).resolves.toEqual({ stream: opened, fellBack: false });
+      expect(track.stop).not.toHaveBeenCalled();
+      expect(getUserMedia).toHaveBeenCalledTimes(1);
     } finally {
       Object.defineProperty(navigator, 'mediaDevices', {
         configurable: true,
@@ -523,6 +520,48 @@ describe('listenForCaptureDeviceLoss', () => {
       await Promise.resolve();
       expect(onLost).toHaveBeenCalledTimes(1);
     } finally {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: previous,
+      });
+    }
+  });
+
+  it('does not reject when enumerateDevices fails during a take', async () => {
+    const { track } = trackWithListeners();
+    const onLost = jest.fn();
+    const previous = navigator.mediaDevices;
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        enumerateDevices: jest.fn().mockRejectedValue(new Error('denied')),
+      },
+    });
+    try {
+      listenForCaptureDeviceLoss(
+        { getAudioTracks: () => [track] } as unknown as MediaStream,
+        onLost,
+        () => true
+      );
+      const onDeviceChange = (
+        navigator.mediaDevices.addEventListener as jest.Mock
+      ).mock.calls.find((call) => call[0] === 'devicechange')?.[1] as
+        | (() => void)
+        | undefined;
+      onDeviceChange?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(onLost).not.toHaveBeenCalled();
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
       Object.defineProperty(navigator, 'mediaDevices', {
         configurable: true,
         value: previous,

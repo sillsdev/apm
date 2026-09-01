@@ -198,7 +198,9 @@ export async function ensureCaptureStreamUsable(
     await wait(CAPTURE_DEVICE_LOSS_RETRY_MS);
     if (track.muted || track.readyState !== 'live') throw toDeviceLostError();
   }
-  if (await requestedCaptureDeviceMissing(requested)) throw toDeviceLostError();
+  if (!(requested && actual && actual === requested)) {
+    if (await requestedCaptureDeviceMissing(requested)) throw toDeviceLostError();
+  }
 }
 
 export function captureTrackIsLost(track?: MediaStreamTrack | null): boolean {
@@ -273,7 +275,7 @@ export function listenForCaptureDeviceLoss(
       ) {
         confirmLost();
       }
-    });
+    }).catch(() => undefined);
   };
   navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange);
 
