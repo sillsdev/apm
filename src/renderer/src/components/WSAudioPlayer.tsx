@@ -1388,7 +1388,7 @@ function WSAudioPlayer(props: IProps) {
     } else if (e.deviceLost) {
       if (recordingRef.current) {
         // Same as the user Stop path: keep controls/save/nav blocked until
-        // finalizeRecordingOnDeviceLoss → onRecordStop finishes (blob or none).
+        // shared stop finalization → onRecordStop finishes (blob or none).
         recordPreviewSuppressedRef.current = true;
         setProcessingRecording(true);
         wsStopRecord();

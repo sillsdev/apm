@@ -23,7 +23,6 @@ import {
   listenForCaptureDeviceLoss,
   waitOutTransientCaptureMute,
 } from './captureConstraints';
-import { finalizeRecordingOnDeviceLoss } from './finalizeRecordingOnDeviceLoss';
 
 /** Defaults match Record step toolSettings when keys are absent (both off). */
 export function parseRecordCaptureAudioProcessing(
@@ -107,6 +106,18 @@ export function useWavRecorder(
   const previousDeviceIdRef = useRef<string | undefined>(undefined);
   const recorderStreamIdRef = useRef<string | undefined>(undefined);
   const captureGenerationRef = useRef(0);
+  const recorderStopRef = useRef<
+    | {
+        recorder: APMRecorder;
+        stop: Promise<Blob | undefined>;
+        published?: Promise<void>;
+      }
+    | undefined
+  >(undefined);
+  const takeFinalizationRef = useRef<Promise<void> | undefined>(undefined);
+  const dropStreamQueuedRef = useRef(false);
+  const suppressPreviewRef = useRef(false);
+  const startingRef = useRef(false);
   const [reporter] = useGlobal('errorReporter');
   const { showMessage } = useSnackBar();
 
@@ -135,7 +146,7 @@ export function useWavRecorder(
           handleError(new CaptureDeviceLostError());
         }
       },
-      () => isRecordingRef.current
+      () => isRecordingRef.current || takeFinalizationRef.current !== undefined
     );
   }
 
@@ -160,23 +171,21 @@ export function useWavRecorder(
   useEffect(() => {
     return () => {
       captureGenerationRef.current += 1;
+      suppressPreviewRef.current = true;
       peaksCaptureRef.current?.stop();
       peaksCaptureRef.current = undefined;
+      const recorder = recorderRef.current;
       dropCaptureStream();
-      if (recorderRef.current) {
-        const recorder = recorderRef.current;
-        recorder
-          .stop()
-          .then(() => {
-            recorder.cleanup();
-            recorderRef.current = undefined;
-          })
-          .catch(() => {
-            recorder.cleanup();
-            recorderRef.current = undefined;
-          });
+      if (startingRef.current) return;
+      if (recorder && (isRecordingRef.current || takeFinalizationRef.current)) {
+        void ensureRecorderStopped(recorder)
+          .catch(() => undefined)
+          .then(() => discardRecorder(recorder));
+      } else {
+        discardRecorder(recorder);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const captureProcessingKeyRef = useRef('');
@@ -246,26 +255,10 @@ export function useWavRecorder(
       e?.error || e?.message || e?.toString?.() || 'Recorder error';
     logError(Severity.error, reporter, message);
     if (isDeviceLossError(e)) {
-      const wasRecording = isRecordingRef.current;
-      const recorder = recorderRef.current;
-      isRecordingRef.current = false;
-      peaksCaptureRef.current?.stop();
-      peaksCaptureRef.current = undefined;
-      recorderRef.current = undefined;
-      recorderStreamIdRef.current = undefined;
       ignoreTrackEndedRef.current = true;
       stopWatchingStreamRef.current();
       stopWatchingStreamRef.current = () => undefined;
-      void (async () => {
-        let blob: Blob | undefined;
-        try {
-          blob = await finalizeRecordingOnDeviceLoss(recorder, wasRecording);
-        } catch {
-          blob = undefined;
-        }
-        dropCaptureStream();
-        if (wasRecording) onStop(blob);
-      })();
+      void finalizeTake({ dropStream: true });
       onError({ error: message, deviceLost: true });
       return;
     }
@@ -281,6 +274,88 @@ export function useWavRecorder(
     }
   }
 
+  function ensureRecorderStopped(
+    recorder: APMRecorder
+  ): Promise<Blob | undefined> {
+    if (recorderStopRef.current?.recorder === recorder) {
+      return recorderStopRef.current.stop;
+    }
+    const stop = recorder
+      .stop()
+      .then((blob) => (blob.size > 0 ? blob : undefined))
+      .catch(() => undefined);
+    recorderStopRef.current = { recorder, stop };
+    return stop;
+  }
+
+  function publishTake(blob: Blob | undefined): Promise<void> {
+    const slot = recorderStopRef.current;
+    if (slot?.published) return slot.published;
+    const published = Promise.resolve(onStop(blob)).then(() => undefined);
+    if (slot) slot.published = published;
+    return published;
+  }
+
+  function finalizeTake(opts: { dropStream: boolean }): Promise<void> {
+    if (!takeFinalizationRef.current) {
+      const recorder = recorderRef.current;
+      const wasRecording = isRecordingRef.current;
+      suppressPreviewRef.current = true;
+      isRecordingRef.current = false;
+      peaksCaptureRef.current?.stop();
+      peaksCaptureRef.current = undefined;
+      takeFinalizationRef.current = (async () => {
+        if (recorder && wasRecording) {
+          const blob = await ensureRecorderStopped(recorder);
+          const durationSeconds = recordingStartedAtRef.current
+            ? (performance.now() - recordingStartedAtRef.current) / 1000
+            : undefined;
+          logAudioDiagnostic('recording-stopped', {
+            fallbackRecorder: useFallbackRef.current,
+            recordedBlob: blob
+              ? getBlobDiagnostics(blob, durationSeconds)
+              : undefined,
+            tracks: mediaStreamRef.current
+              ? getAudioTrackDiagnostics(mediaStreamRef.current)
+              : undefined,
+          });
+          recordingStartedAtRef.current = undefined;
+          await publishTake(blob);
+        }
+      })();
+    }
+    if (opts.dropStream && !dropStreamQueuedRef.current) {
+      dropStreamQueuedRef.current = true;
+      takeFinalizationRef.current = takeFinalizationRef.current.finally(() => {
+        const recorder =
+          recorderRef.current ?? recorderStopRef.current?.recorder;
+        discardRecorder(recorder);
+        if (recorderRef.current === recorder) {
+          recorderRef.current = undefined;
+          recorderStreamIdRef.current = undefined;
+        }
+        dropCaptureStream();
+      });
+    }
+    const chain = takeFinalizationRef.current;
+    return chain.finally(() => {
+      if (takeFinalizationRef.current === chain) {
+        takeFinalizationRef.current = undefined;
+        dropStreamQueuedRef.current = false;
+      }
+    });
+  }
+
+  async function discardStartedRecorder(recorder: APMRecorder) {
+    suppressPreviewRef.current = true;
+    await ensureRecorderStopped(recorder);
+    discardRecorder(recorder);
+    if (recorderRef.current === recorder) {
+      recorderRef.current = undefined;
+      recorderStreamIdRef.current = undefined;
+    }
+  }
+
   function recorderStillCurrent(
     generation: number,
     stream: MediaStream | undefined
@@ -290,6 +365,11 @@ export function useWavRecorder(
       stream !== undefined &&
       mediaStreamRef.current === stream
     );
+  }
+
+  function emitPreview(blob: Blob) {
+    if (suppressPreviewRef.current) return;
+    void onDataAvailable(blob);
   }
 
   async function startRecorder() {
@@ -328,7 +408,7 @@ export function useWavRecorder(
           reason: 'AudioWorklet unavailable',
           tracks: getAudioTrackDiagnostics(stream),
         });
-        recorder = createAudioMediaRecorder(stream, onDataAvailable);
+        recorder = createAudioMediaRecorder(stream, emitPreview);
       } else {
         // Use WavRecorder with AudioWorklet (when we need WAV format)
         logAudioDiagnostic('recorder-selected', {
@@ -336,7 +416,7 @@ export function useWavRecorder(
           fallbackRecorder: false,
           tracks: getAudioTrackDiagnostics(stream),
         });
-        recorder = createWavRecorder(stream, onDataAvailable);
+        recorder = createWavRecorder(stream, emitPreview);
       }
 
       await recorder.initializeWorklet();
@@ -362,7 +442,7 @@ export function useWavRecorder(
           });
           const fallbackRecorder = createAudioMediaRecorder(
             stream,
-            onDataAvailable
+            emitPreview
           );
           await fallbackRecorder.initializeWorklet();
           if (!recorderStillCurrent(generation, stream)) {
@@ -384,6 +464,9 @@ export function useWavRecorder(
   }
 
   async function startRecording(timeSlice?: number) {
+    if (takeFinalizationRef.current) {
+      await takeFinalizationRef.current;
+    }
     const generation = captureGenerationRef.current;
     const streamMuted = Boolean(
       mediaStreamRef.current?.getAudioTracks?.()[0]?.muted
@@ -407,13 +490,18 @@ export function useWavRecorder(
     }
     if (recorder) {
       try {
-        await recorder.start(timeSlice);
+        suppressPreviewRef.current = true;
+        startingRef.current = true;
+        try {
+          await recorder.start(timeSlice);
+        } finally {
+          startingRef.current = false;
+        }
         if (!recorderStillCurrent(generation, mediaStreamRef.current)) {
-          discardRecorder(recorder);
-          recorderRef.current = undefined;
-          recorderStreamIdRef.current = undefined;
+          await discardStartedRecorder(recorder);
           return false;
         }
+        suppressPreviewRef.current = false;
         recordingStartedAtRef.current = performance.now();
         logAudioDiagnostic('recording-started', {
           timeSliceMs: timeSlice,
@@ -445,32 +533,12 @@ export function useWavRecorder(
   }
 
   function stopRecording() {
-    peaksCaptureRef.current?.stop();
-    peaksCaptureRef.current = undefined;
-    if (isRecordingRef.current && recorderRef.current) {
-      recorderRef.current
-        .stop()
-        .then((blob: Blob) => {
-          const durationSeconds = recordingStartedAtRef.current
-            ? (performance.now() - recordingStartedAtRef.current) / 1000
-            : undefined;
-          logAudioDiagnostic('recording-stopped', {
-            fallbackRecorder: useFallbackRef.current,
-            recordedBlob: getBlobDiagnostics(blob, durationSeconds),
-            tracks: mediaStreamRef.current
-              ? getAudioTrackDiagnostics(mediaStreamRef.current)
-              : undefined,
-          });
-          recordingStartedAtRef.current = undefined;
-          isRecordingRef.current = false;
-          onStop(blob);
-        })
-        .catch((error: any) => {
-          handleError(error);
-        });
-    } else {
+    if (takeFinalizationRef.current) return;
+    if (!isRecordingRef.current || !recorderRef.current) {
       onError({ error: 'Not recording' });
+      return;
     }
+    void finalizeTake({ dropStream: false });
   }
   return {
     startRecording: allowRecord

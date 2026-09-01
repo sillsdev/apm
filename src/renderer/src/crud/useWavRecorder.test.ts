@@ -100,19 +100,29 @@ describe('useWavRecorder capture races', () => {
     });
   });
 
-  function renderRecorder(deviceId = 'mic-a') {
-    return renderHook(
-      ({ id }: { id: string }) =>
-        useWavRecorder(
-          true,
-          jest.fn(),
-          jest.fn(),
-          jest.fn(),
-          async () => undefined,
-          id
-        ),
-      { initialProps: { id: deviceId } }
-    );
+  function renderRecorder(
+    deviceId = 'mic-a',
+    {
+      onStop = jest.fn(),
+      onError = jest.fn(),
+    }: { onStop?: jest.Mock; onError?: jest.Mock } = {}
+  ) {
+    return {
+      ...renderHook(
+        ({ id }: { id: string }) =>
+          useWavRecorder(
+            true,
+            jest.fn(),
+            onStop,
+            onError,
+            async () => undefined,
+            id
+          ),
+        { initialProps: { id: deviceId } }
+      ),
+      onStop,
+      onError,
+    };
   }
 
   async function flushEnsureStream() {
@@ -202,5 +212,91 @@ describe('useWavRecorder capture races', () => {
 
     expect(mockCleanup).toHaveBeenCalled();
     expect(mockStart).not.toHaveBeenCalled();
+  });
+
+  it('stops a recorder that started after a device change without publishing', async () => {
+    const first = fakeStream('mic-a');
+    const second = fakeStream('mic-b');
+    mockGetMediaStream
+      .mockResolvedValueOnce({ stream: first, fellBack: false })
+      .mockResolvedValue({ stream: second, fellBack: false });
+
+    let resolveStart: () => void = () => undefined;
+    mockStart.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveStart = resolve;
+      })
+    );
+
+    const { result, rerender, onStop } = renderRecorder('mic-a');
+    await flushEnsureStream();
+
+    let started: Promise<boolean> | undefined;
+    act(() => {
+      started = result.current.startRecording();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(mockStart).toHaveBeenCalled();
+
+    rerender({ id: 'mic-b' });
+    await flushEnsureStream();
+
+    await act(async () => {
+      resolveStart();
+      await started;
+    });
+
+    expect(await started).toBe(false);
+    expect(mockStop).toHaveBeenCalled();
+    expect(mockCleanup).toHaveBeenCalled();
+    expect(onStop).not.toHaveBeenCalled();
+  });
+
+  it('joins an in-flight stop when the capture track ends', async () => {
+    const stream = fakeStream('mic-a');
+    mockGetMediaStream.mockResolvedValue({ stream, fellBack: false });
+
+    let resolveStop: (blob: Blob) => void = () => undefined;
+    mockStop.mockReturnValue(
+      new Promise<Blob>((resolve) => {
+        resolveStop = resolve;
+      })
+    );
+
+    const { result, onStop, onError } = renderRecorder('mic-a');
+    await flushEnsureStream();
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    act(() => {
+      result.current.stopRecording();
+    });
+    expect(mockStop).toHaveBeenCalledTimes(1);
+
+    const ended = stream.track.addEventListener.mock.calls.find(
+      (call) => call[0] === 'ended'
+    )?.[1] as (() => void) | undefined;
+    expect(ended).toBeDefined();
+    act(() => {
+      ended?.();
+    });
+    expect(mockStop).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceLost: true })
+    );
+
+    const blob = new Blob(['take']);
+    await act(async () => {
+      resolveStop(blob);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onStop).toHaveBeenCalledTimes(1);
+    expect(onStop).toHaveBeenCalledWith(blob);
   });
 });

@@ -52,6 +52,7 @@ export function createWavRecorder(
   let lastEmittedChunkIndex = 0;
   let pendingRecordingCompleteResolve: (() => void) | null = null;
   let previewTickInFlight = false;
+  let inFlightStop: Promise<Blob> | undefined;
 
   async function initializeWorklet(): Promise<void> {
     if (workletLoaded) return;
@@ -288,62 +289,69 @@ export function createWavRecorder(
     return audioBufferToWavBlob(audioBuffer);
   }
 
-  async function stop(): Promise<Blob> {
-    isRecording = false;
-
-    // Stop the data available timer
-    stopDataAvailableTimer();
-
-    // Disconnect capture graph
-    try {
-      mediaStreamSource.disconnect();
-    } catch {
-      /* */
+  function stop(): Promise<Blob> {
+    if (inFlightStop) return inFlightStop;
+    if (!isRecording) {
+      return Promise.resolve(new Blob([]));
     }
-    if (workletNode) {
-      workletNode.disconnect();
-    }
-    try {
-      silentSinkGain.disconnect();
-    } catch {
-      /* */
-    }
+    const pending = (async () => {
+      isRecording = false;
+      stopDataAvailableTimer();
 
-    const waitComplete = new Promise<void>((resolve) => {
-      pendingRecordingCompleteResolve = resolve;
-    });
-
-    // Send stop message to worklet
-    workletNode?.port.postMessage({ type: 'stopRecording' });
-
-    const RECORDING_COMPLETE_MS = 15000;
-    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
-    try {
-      await Promise.race([
-        waitComplete,
-        new Promise<void>((_, reject) => {
-          timeoutHandle = setTimeout(
-            () =>
-              reject(
-                new Error('WavRecorder: recordingComplete timeout from worklet')
-              ),
-            RECORDING_COMPLETE_MS
-          );
-        }),
-      ]);
-    } catch (e) {
-      console.error(e);
-      pendingRecordingCompleteResolve = null;
-    } finally {
-      // Clear the timeout on success so it cannot fire later and produce
-      // an unhandled rejection long after stop() has resolved.
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-        timeoutHandle = null;
+      try {
+        mediaStreamSource.disconnect();
+      } catch {
+        /* */
       }
-    }
+      if (workletNode) {
+        workletNode.disconnect();
+      }
+      try {
+        silentSinkGain.disconnect();
+      } catch {
+        /* */
+      }
 
-    return convertAudioDataToWav();
+      const waitComplete = new Promise<void>((resolve) => {
+        pendingRecordingCompleteResolve = resolve;
+      });
+
+      workletNode?.port.postMessage({ type: 'stopRecording' });
+
+      const RECORDING_COMPLETE_MS = 15000;
+      let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+      try {
+        await Promise.race([
+          waitComplete,
+          new Promise<void>((_, reject) => {
+            timeoutHandle = setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    'WavRecorder: recordingComplete timeout from worklet'
+                  )
+                ),
+              RECORDING_COMPLETE_MS
+            );
+          }),
+        ]);
+      } catch (e) {
+        console.error(e);
+        pendingRecordingCompleteResolve = null;
+      } finally {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
+      }
+
+      return convertAudioDataToWav();
+    })();
+    inFlightStop = pending;
+    void pending.finally(() => {
+      if (inFlightStop === pending) inFlightStop = undefined;
+    });
+    return pending;
   }
 
   /**
@@ -351,6 +359,10 @@ export function createWavRecorder(
    * Should be called when the WavRecorder is being destroyed.
    */
   function cleanup(): void {
+    isRecording = false;
+    stopDataAvailableTimer();
+    if (inFlightStop) return;
+    pendingRecordingCompleteResolve = null;
     try {
       mediaStreamSource.disconnect();
     } catch {
@@ -369,7 +381,6 @@ export function createWavRecorder(
       /* */
     }
 
-    // Close audio context
     if (audioContext && audioContext.state !== 'closed') {
       audioContext.close().catch((error) => {
         console.error('Error closing audio context:', error);

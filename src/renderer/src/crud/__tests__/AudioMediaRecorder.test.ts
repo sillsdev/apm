@@ -94,4 +94,21 @@ describe('createAudioMediaRecorder', () => {
     expect(finalBlob.type).toContain('audio/wav');
     expect(finalBlob.size).toBeGreaterThan(0);
   });
+
+  it('shares one stop promise so a second stop does not strand the first blob', async () => {
+    const rec = createAudioMediaRecorder({} as MediaStream, jest.fn());
+    await rec.start(1000);
+    const inst = MockMediaRecorder.instances[0];
+    inst.simulateChunk(new Blob(['a'], { type: 'audio/webm' }));
+
+    const stopSpy = jest.spyOn(inst, 'stop');
+    const first = rec.stop();
+    const second = rec.stop();
+    expect(second).toBe(first);
+    expect(stopSpy).toHaveBeenCalledTimes(1);
+
+    const [blob1, blob2] = await Promise.all([first, second]);
+    expect(blob1.size).toBeGreaterThan(0);
+    expect(blob2).toBe(blob1);
+  });
 });

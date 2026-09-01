@@ -509,4 +509,33 @@ describe('WSAudioPlayer microphone-loss stop processing', () => {
       expect(screen.getByRole('button', { name: 'Save' })).not.toBeDisabled()
     );
   });
+
+  it('keeps save blocked when the mic is lost while stop is already finalizing', async () => {
+    const onRecording = jest.fn();
+    render(
+      <PlayerWithProcessingSave {...defaultProps} onRecording={onRecording} />
+    );
+    await startTake();
+    await waitFor(() => expect(onRecording).toHaveBeenCalledWith(true));
+
+    act(() => {
+      latestRecordHandler()?.();
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+    );
+
+    act(() => {
+      capturedOnRecordError?.({ deviceLost: true });
+    });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await act(async () => {
+      await capturedOnRecordStop?.(new Blob(['take'], { type: 'audio/wav' }));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save' })).not.toBeDisabled()
+    );
+  });
 });
