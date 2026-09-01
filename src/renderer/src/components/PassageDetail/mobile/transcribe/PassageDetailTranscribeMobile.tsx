@@ -742,7 +742,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     return {
       fontFamily: projData?.fontFamily || 'inherit',
       fontSize: projData?.fontSize || 'inherit',
-      direction: projData?.fontDir === 'rtl' ? 'rtl' : 'ltr',
+      direction: projData?.fontDir ? ('rtl' as const) : ('ltr' as const),
     };
   }, [projData]);
 
