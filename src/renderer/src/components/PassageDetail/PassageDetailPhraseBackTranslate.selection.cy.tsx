@@ -102,34 +102,35 @@ describe('PBT segment selection after a take exists', () => {
     recordAndSettle(1); // a take on segment 1 - the precondition that matters
   });
 
-  it(
-    'DEFECT: Record is operable while a newly clicked segment plays',
-    { tags: '@known-defect' },
-    () => {
-      // Reported: "if I click on a unselected segment to select it, it starts
-      // playing, but the record button is enabled while playing so I can record
-      // during playing which should not be possible". Recording over the
-      // reference audio is what the listen-then-record flow prevents everywhere
-      // else, and Record is correctly off for this same click before any take
-      // exists (see the previous describe). Fixed separately - this change only
-      // stops the click itself being swallowed.
-      clickSegmentOnWaveform(2);
-
-      sampleDom(
-        (doc) => ({
-          playing: readSourcePlaying(doc),
-          record: readRecordEnabled(doc),
-        }),
-        { forMs: 6000 }
-      ).then((samples) => {
-        const bothLive = samples.filter((s) => s.playing && s.record);
-        expect(
-          bothLive,
-          'Record was never operable while the reference audio played'
-        ).to.have.length(0);
-      });
-    }
-  );
+  it('keeps Record off while a newly clicked segment plays', () => {
+    // Reported: "if I click on a unselected segment to select it, it starts
+    // playing, but the record button is enabled while playing so I can record
+    // during playing which should not be possible". Recording over the reference
+    // audio is what the listen-then-record flow prevents everywhere else, and
+    // Record was correctly off for this same click before any take existed (see
+    // the previous describe) - a take on segment 1 was the difference.
+    //
+    // One reading from the middle of playback, for the reason the sibling test
+    // above gives: `playing` is the player's state and Record's operability is
+    // the step's, so at either end of playback the two flip on unrelated renders
+    // and a sample can legitimately catch both live for a frame. Segment 3 runs
+    // 0:06-0:09, so settling for most of a second after playback starts lands
+    // clear of both edges.
+    clickSegmentOnWaveform(2);
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      const playing = readSourcePlaying(doc);
+      const record = readRecordEnabled(doc);
+      expect(playing, 'reference audio still playing').to.equal(true);
+      expect(
+        record,
+        'Record operable while the reference audio plays'
+      ).to.equal(false);
+    });
+  });
 
   it(
     'DEFECT: the waveform selection and the segment label disagree',

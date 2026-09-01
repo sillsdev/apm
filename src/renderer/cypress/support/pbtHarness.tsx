@@ -999,8 +999,20 @@ export function readLabelSegmentIndex(
   return segments.findIndex((s) => Math.abs(s.start - start) < 1);
 }
 
-/** True while the source player is playing (its button shows Pause). */
+/**
+ * True while the source player is playing.
+ *
+ * Read from the step's own playing state where it is available, not from the
+ * play/pause icon. The icon is a proxy, and it used to be able to latch showing
+ * Pause after the audio had stopped, which made assertions built on it report
+ * playback that was not happening - tests flipping between runs rather than
+ * catching anything. Falls back to the icon so this stays usable before the
+ * harness API has mounted.
+ */
 export function readSourcePlaying(doc: Document): boolean {
+  const api = (doc.defaultView as (Window & { __pbt?: PbtHarnessApi }) | null)
+    ?.__pbt;
+  if (api) return api.playing();
   const play = doc.querySelector('#detailplayer #wsAudioPlay');
   return Boolean(play?.querySelector('svg[data-testid="PauseIcon"]'));
 }

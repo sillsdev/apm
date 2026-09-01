@@ -31,9 +31,22 @@ import {
   sourcePlay,
   startRecordingPass,
   recordAndSettle,
+  readSourcePlaying,
+  readRecordEnabled,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
+
+/**
+ * A last clause far shorter than a normal one. Auto-segmenting can leave a
+ * sliver at the end of the audio, and a user hit one by hand: it played, the
+ * audio stopped part way along, and the step never offered Record again.
+ */
+const SEGMENTS_SHORT_LAST = [
+  { start: 0, end: 3 },
+  { start: 3, end: 6 },
+  { start: 6, end: 6.2 },
+];
 
 afterEach(() => pbtCleanup());
 
@@ -155,6 +168,37 @@ describe('PBT record and save', () => {
     });
   });
 
+  it('keeps Record off while the segment reached by the arrow plays', () => {
+    // Reported from hand testing: record segment 1, press the right arrow, and
+    // segment 2 starts playing with Record still operable - so a take can be
+    // recorded over the reference audio, which the listen-then-record flow
+    // prevents everywhere else.
+    recordAndSettle(1);
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:03', '0:06').should('be.visible');
+
+    // One reading, taken from the middle of the segment. `playing` is the
+    // player's own state and Record's operability is the step's, so at either
+    // end of playback the two flip on unrelated renders and a sample can
+    // legitimately catch both live for a frame. Segment 2 runs 0:03-0:06, so
+    // waiting for playback to start and then settling for most of a second
+    // lands clear of both edges. Asserting `playing` in the same reading is
+    // what makes the Record assertion mean anything.
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      const playing = readSourcePlaying(doc);
+      const record = readRecordEnabled(doc);
+      expect(playing, 'reference audio still playing').to.equal(true);
+      expect(
+        record,
+        'Record operable while the reference audio plays'
+      ).to.equal(false);
+    });
+  });
+
   it('starts the next segment with an empty recorder', () => {
     recordAndSettle(1);
     cy.get(PBT.nextUnit).click();
@@ -170,6 +214,37 @@ describe('PBT record and save', () => {
     recordAndSettle(3);
     cy.window().should((win) => {
       expect(win.__pbt?.stepComplete(), 'step complete').to.equal(true);
+    });
+  });
+});
+
+describe('PBT a clause shorter than the playback-start window', () => {
+  beforeEach(() => {
+    mountPbt({ segments: SEGMENTS_SHORT_LAST });
+    waitForPbtReady();
+    startRecordingPass();
+  });
+
+  it('offers Record once a very short last clause has played', () => {
+    // Reported from hand testing: the short clause auto-played, the playhead
+    // stopped part way along, and the step was stuck - the pause icon stayed up
+    // and Record never came back, so there was no way to record the clause.
+    //
+    // Telling the seek that starts a clause from the clause finishing by how
+    // long playback has been running assumes clauses are longer than that
+    // window. This one is not: its whole span is shorter, so the signal that
+    // says "heard" arrives inside the window and is discarded as the seek.
+    cy.get(PBT.nextUnit).click();
+    expectRecordEnabled();
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:06', '0:06').should('be.visible');
+
+    // The clause is 0.2s: by the time Record could be offered it has long
+    // finished. Anything else is the dead state.
+    expectRecordEnabled();
+    cy.document().then((doc) => {
+      expect(readSourcePlaying(doc), 'playback stopped').to.equal(false);
+      expect(readRecordEnabled(doc), 'Record offered').to.equal(true);
     });
   });
 });

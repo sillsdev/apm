@@ -231,6 +231,15 @@ interface IProps {
   onDockedRecordButton?: (node: React.ReactNode | null) => void;
   /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
   showDockedRecordButton?: boolean;
+  /**
+   * Recording is unavailable for the moment, but the recorder keeps the
+   * microphone. Distinct from `allowRecord`, which is capability: dropping that
+   * releases the capture stream (useWavRecorder), so using it for a passing
+   * condition costs a re-acquisition and leaves the first click afterwards with
+   * nothing to record into. Use this for "not right now" - reference audio
+   * playing, say.
+   */
+  recordBlocked?: boolean;
   onRecordingCleared?: () => void;
   /** Gate starting a new recording; return false (or resolve false) to abort. */
   onBeforeStartRecord?: () => boolean | Promise<boolean>;
@@ -248,6 +257,8 @@ export interface WSAudioPlayerControls {
   deleteRecording: () => void;
   confirmedDelete: () => void;
   getProgress: () => number;
+  /** Current playback rate; 1 is real time. Consumers timing playback need it. */
+  getPlaybackRate: () => number;
   getDuration: () => number;
   isReady: () => boolean;
   isPlaying: () => boolean;
@@ -408,6 +419,7 @@ function WSAudioPlayer(props: IProps) {
     dockRecordButton,
     onDockedRecordButton,
     showDockedRecordButton,
+    recordBlocked,
     onRecordingCleared,
     onBeforeStartRecord,
   } = props;
@@ -430,6 +442,9 @@ function WSAudioPlayer(props: IProps) {
   const [jump] = useState(2);
   const playbackRef = useRef(1);
   const [playbackRate, setPlaybackRatex] = useState(1);
+  /** Read by controlsRef.getPlaybackRate, which must not go stale. */
+  const playbackRateRef = useRef(1);
+  playbackRateRef.current = playbackRate;
   const playingRef = useRef(false);
   const lastTogglePlayRef = useRef(0);
   const TOGGLE_PLAY_DEBOUNCE_MS = 300;
@@ -824,6 +839,7 @@ function WSAudioPlayer(props: IProps) {
   const handleRecorder = useCallback(() => {
     if (
       !allowRecord ||
+      recordBlocked ||
       playingRef.current ||
       processRecordRef.current ||
       oneShotUsed ||
@@ -873,6 +889,7 @@ function WSAudioPlayer(props: IProps) {
     return true;
   }, [
     allowRecord,
+    recordBlocked,
     setBlobReady,
     wsPause,
     wsPosition,
@@ -1521,6 +1538,7 @@ function WSAudioPlayer(props: IProps) {
       deleteRecording: handleClear,
       confirmedDelete: confirmedDelete,
       getProgress: () => progressRef.current,
+      getPlaybackRate: () => playbackRateRef.current,
       getDuration: () => durationRef.current,
       isReady: () => readyRef.current,
       isPlaying: () => playingRef.current,
@@ -2053,6 +2071,7 @@ function WSAudioPlayer(props: IProps) {
       onClick={handleRecorder}
       disabled={
         playing ||
+        Boolean(recordBlocked) ||
         processingRecording ||
         waitingForAI ||
         Boolean(loading) ||
@@ -2083,6 +2102,7 @@ function WSAudioPlayer(props: IProps) {
       allowRecord,
       recording,
       showDockedRecordButton,
+      recordBlocked,
       processingRecording,
       waitingForAI,
       loading,
