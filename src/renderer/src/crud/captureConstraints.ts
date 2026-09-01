@@ -113,6 +113,18 @@ export function isUnusableCaptureStream(stream?: MediaStream | null): boolean {
   );
 }
 
+/** True when a cached stream should be replaced: gone, or still muted after the short retry. */
+export async function waitOutTransientCaptureMute(
+  stream: MediaStream | undefined | null,
+  wait: (ms: number) => Promise<void> = delay
+): Promise<boolean> {
+  if (isUnusableCaptureStream(stream)) return true;
+  const track = stream!.getAudioTracks()[0];
+  if (!track?.muted) return false;
+  await wait(CAPTURE_DEVICE_LOSS_RETRY_MS);
+  return isUnusableCaptureStream(stream) || Boolean(track.muted);
+}
+
 function errorText(error: unknown): string {
   if (!error || typeof error !== 'object') return String(error ?? '');
   const e = error as { name?: string; message?: string; error?: string };
@@ -194,7 +206,7 @@ export function captureTrackIsLost(track?: MediaStreamTrack | null): boolean {
   return track.readyState !== 'live' || Boolean(track.muted);
 }
 
-/** Fires when the capture device is unplugged (ended) or mutes after it had audio. */
+/** Fires when the capture device is unplugged (`ended`) or stays muted during a take. */
 export function listenForCaptureDeviceLoss(
   stream: MediaStream,
   onLost: () => void,
@@ -203,17 +215,38 @@ export function listenForCaptureDeviceLoss(
   if (typeof stream.getAudioTracks !== 'function') return () => undefined;
   const tracks = stream.getAudioTracks();
   const heardAudio = new WeakSet<MediaStreamTrack>();
-  const onEnded = () => onLost();
+  let muteConfirmTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const clearMuteConfirm = () => {
+    if (muteConfirmTimer === undefined) return;
+    clearTimeout(muteConfirmTimer);
+    muteConfirmTimer = undefined;
+  };
+
+  const confirmLost = () => {
+    clearMuteConfirm();
+    onLost();
+  };
+
+  const onEnded = () => confirmLost();
   const onUnmute = (event: Event) => {
     const track = event.target as MediaStreamTrack | null;
     if (track) heardAudio.add(track);
+    clearMuteConfirm();
   };
   const onMute = (event: Event) => {
     const track = event.target as MediaStreamTrack | null;
     if (!track) return;
     // Windows often mutes on unplug without a prior unmute. Idle muted-at-open
-    // is handled by ensureCaptureStreamUsable; once a take is running, mute is loss.
-    if (heardAudio.has(track) || isCapturing?.()) onLost();
+    // is handled by ensureCaptureStreamUsable; mute during a take may be
+    // transient (AEC / Bluetooth) and is confirmed after a short wait.
+    if (!(heardAudio.has(track) || isCapturing?.())) return;
+    if (muteConfirmTimer !== undefined) return;
+    muteConfirmTimer = setTimeout(() => {
+      muteConfirmTimer = undefined;
+      if (!(heardAudio.has(track) || isCapturing?.())) return;
+      if (track.readyState !== 'live' || track.muted) onLost();
+    }, CAPTURE_DEVICE_LOSS_RETRY_MS);
   };
   tracks.forEach((track) => {
     track.addEventListener('ended', onEnded);
@@ -224,8 +257,8 @@ export function listenForCaptureDeviceLoss(
   const onDeviceChange = () => {
     if (!isCapturing?.()) return;
     const track = stream.getAudioTracks()[0];
-    if (captureTrackIsLost(track)) {
-      onLost();
+    if (!track || track.readyState !== 'live') {
+      confirmLost();
       return;
     }
     const captureId = track.getSettings?.().deviceId;
@@ -238,13 +271,14 @@ export function listenForCaptureDeviceLoss(
           captureId
         ) !== undefined
       ) {
-        onLost();
+        confirmLost();
       }
     });
   };
   navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange);
 
   return () => {
+    clearMuteConfirm();
     tracks.forEach((track) => {
       track.removeEventListener('ended', onEnded);
       track.removeEventListener('unmute', onUnmute);

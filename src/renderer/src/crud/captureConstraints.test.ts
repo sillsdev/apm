@@ -9,6 +9,7 @@ import {
   isDeviceLossError,
   isUnusableCaptureStream,
   listenForCaptureDeviceLoss,
+  waitOutTransientCaptureMute,
 } from './captureConstraints';
 
 describe('buildCaptureConstraints', () => {
@@ -104,6 +105,15 @@ describe('isUnusableCaptureStream', () => {
       isUnusableCaptureStream({
         active: true,
         getAudioTracks: () => [{ readyState: 'live' }],
+      } as unknown as MediaStream)
+    ).toBe(false);
+  });
+
+  it('does not treat a live muted track as unusable', () => {
+    expect(
+      isUnusableCaptureStream({
+        active: true,
+        getAudioTracks: () => [{ readyState: 'live', muted: true }],
       } as unknown as MediaStream)
     ).toBe(false);
   });
@@ -358,10 +368,59 @@ describe('captureTrackIsLost', () => {
   });
 });
 
+describe('waitOutTransientCaptureMute', () => {
+  it('does not wait when the stream is live and unmuted', async () => {
+    const wait = jest.fn();
+    await expect(
+      waitOutTransientCaptureMute(
+        {
+          active: true,
+          getAudioTracks: () => [{ readyState: 'live', muted: false }],
+        } as unknown as MediaStream,
+        wait
+      )
+    ).resolves.toBe(false);
+    expect(wait).not.toHaveBeenCalled();
+  });
+
+  it('replaces a stream that stays muted after the short retry', async () => {
+    const wait = jest.fn().mockResolvedValue(undefined);
+    await expect(
+      waitOutTransientCaptureMute(
+        {
+          active: true,
+          getAudioTracks: () => [{ readyState: 'live', muted: true }],
+        } as unknown as MediaStream,
+        wait
+      )
+    ).resolves.toBe(true);
+    expect(wait).toHaveBeenCalledWith(CAPTURE_DEVICE_LOSS_RETRY_MS);
+  });
+
+  it('keeps a stream that unmutes during the wait', async () => {
+    const track = { readyState: 'live', muted: true };
+    const wait = jest.fn().mockImplementation(async () => {
+      track.muted = false;
+    });
+    await expect(
+      waitOutTransientCaptureMute(
+        {
+          active: true,
+          getAudioTracks: () => [track],
+        } as unknown as MediaStream,
+        wait
+      )
+    ).resolves.toBe(false);
+  });
+});
+
 describe('listenForCaptureDeviceLoss', () => {
   function trackWithListeners() {
     const listeners: Record<string, (event?: Event) => void> = {};
     const track = {
+      muted: false,
+      readyState: 'live',
+      getSettings: () => ({ deviceId: 'headset' }),
       addEventListener: (type: string, fn: (event?: Event) => void) => {
         listeners[type] = fn;
       },
@@ -370,7 +429,15 @@ describe('listenForCaptureDeviceLoss', () => {
     return { track, listeners };
   }
 
-  it('reports when the capture track ends', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('reports when the capture track ends immediately', () => {
     const { track, listeners } = trackWithListeners();
     const onLost = jest.fn();
     const stop = listenForCaptureDeviceLoss(
@@ -379,13 +446,10 @@ describe('listenForCaptureDeviceLoss', () => {
     );
     listeners.ended();
     expect(onLost).toHaveBeenCalledTimes(1);
-    listeners.unmute?.({ target: track } as unknown as Event);
-    listeners.mute?.({ target: track } as unknown as Event);
-    expect(onLost).toHaveBeenCalledTimes(2);
     stop();
   });
 
-  it('reports mute during a take even if the track never unmuted', () => {
+  it('cancels mute confirmation when the track unmutes', () => {
     const { track, listeners } = trackWithListeners();
     const onLost = jest.fn();
     listenForCaptureDeviceLoss(
@@ -393,7 +457,26 @@ describe('listenForCaptureDeviceLoss', () => {
       onLost,
       () => true
     );
+    track.muted = true;
     listeners.mute?.({ target: track } as unknown as Event);
+    track.muted = false;
+    listeners.unmute?.({ target: track } as unknown as Event);
+    jest.advanceTimersByTime(CAPTURE_DEVICE_LOSS_RETRY_MS);
+    expect(onLost).not.toHaveBeenCalled();
+  });
+
+  it('reports sustained mute during a take after the confirmation wait', () => {
+    const { track, listeners } = trackWithListeners();
+    const onLost = jest.fn();
+    listenForCaptureDeviceLoss(
+      { getAudioTracks: () => [track] } as unknown as MediaStream,
+      onLost,
+      () => true
+    );
+    track.muted = true;
+    listeners.mute?.({ target: track } as unknown as Event);
+    expect(onLost).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(CAPTURE_DEVICE_LOSS_RETRY_MS);
     expect(onLost).toHaveBeenCalledTimes(1);
   });
 
@@ -405,7 +488,45 @@ describe('listenForCaptureDeviceLoss', () => {
       onLost,
       () => false
     );
+    track.muted = true;
     listeners.mute?.({ target: track } as unknown as Event);
+    jest.advanceTimersByTime(CAPTURE_DEVICE_LOSS_RETRY_MS);
     expect(onLost).not.toHaveBeenCalled();
+  });
+
+  it('reports immediately when enumeration shows the capture device is gone', async () => {
+    const { track } = trackWithListeners();
+    const onLost = jest.fn();
+    const previous = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        enumerateDevices: jest
+          .fn()
+          .mockResolvedValue([{ kind: 'audioinput', deviceId: 'laptop' }]),
+      },
+    });
+    try {
+      listenForCaptureDeviceLoss(
+        { getAudioTracks: () => [track] } as unknown as MediaStream,
+        onLost,
+        () => true
+      );
+      const onDeviceChange = (
+        navigator.mediaDevices.addEventListener as jest.Mock
+      ).mock.calls.find((call) => call[0] === 'devicechange')?.[1] as
+        | (() => void)
+        | undefined;
+      onDeviceChange?.();
+      await Promise.resolve();
+      expect(onLost).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: previous,
+      });
+    }
   });
 });
