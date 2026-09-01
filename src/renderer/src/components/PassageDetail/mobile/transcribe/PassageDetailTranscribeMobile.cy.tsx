@@ -82,6 +82,10 @@ const createMockMemory = (
     },
   }) as unknown as Memory;
 
+/** Avoid cy.stub().rejects() — Cypress treats those as unhandled test-code rejections on CI. */
+const createRejectingStub = (message = 'Save failed') =>
+  cy.stub().callsFake(() => Promise.reject(new Error(message)));
+
 const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
   return {
@@ -582,10 +586,7 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.on('uncaught:exception', () => false);
     const onSetStepComplete = cy.stub().as('setStepComplete');
     const onGotoNextStep = cy.stub().as('gotoNextStep');
-    const memoryUpdate = cy
-      .stub()
-      .as('memoryUpdate')
-      .rejects(new Error('Save failed'));
+    const memoryUpdate = createRejectingStub('Save failed').as('memoryUpdate');
     mountTranscribeMobile({
       onSetStepComplete,
       onGotoNextStep,
@@ -601,10 +602,7 @@ describe('PassageDetailTranscribeMobile', () => {
     cy.on('uncaught:exception', () => false);
     const onSetStepComplete = cy.stub().as('setStepComplete');
     const onGotoNextStep = cy.stub().as('gotoNextStep');
-    const waitForSave = cy
-      .stub()
-      .as('waitForSave')
-      .rejects(new Error('Save failed'));
+    const waitForSave = createRejectingStub('Save failed').as('waitForSave');
     mountTranscribeMobile({
       onSetStepComplete,
       onGotoNextStep,
@@ -633,10 +631,7 @@ describe('PassageDetailTranscribeMobile', () => {
   it('forwards error to saveCompleted when save fails so unsaved state is not silently cleared', () => {
     cy.on('uncaught:exception', () => false);
     const onSaveCompleted = cy.stub().as('saveCompleted');
-    const memoryUpdate = cy
-      .stub()
-      .as('memoryUpdate')
-      .rejects(new Error('Save failed'));
+    const memoryUpdate = createRejectingStub('Save failed').as('memoryUpdate');
     mountTranscribeMobile({
       onSaveCompleted,
       memoryUpdate,
