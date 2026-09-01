@@ -33,6 +33,7 @@ import localizationReducer from '../store/localization/reducers';
 import bookReducer from '../store/book/reducers';
 import MediaRecord from './MediaRecord';
 import { RECORD_PREVIEW_TIMESLICE_MS } from '../../cypress/support/recordingMocks';
+import { CAPTURE_DEVICE_LOSS_RETRY_MS } from '../crud/captureConstraints';
 
 const mockStore = createStore(
   combineReducers({
@@ -339,17 +340,20 @@ const mountMediaRecord = (
 
 describe('MediaRecord recording integration', { tags: '@recording' }, () => {
   beforeEach(() => {
-    cy.clock();
+    // Oscillator tracks often start muted. Let that settle with real timers
+    // before cy.clock() freezes the 250ms acquire wait.
     cy.installRecordingMocks({
       forceMediaRecorderFallback: true,
       useMockMediaRecorder: true,
     });
+    cy.wait(CAPTURE_DEVICE_LOSS_RETRY_MS + 50);
+    cy.clock();
   });
 
   afterEach(() => {
-    cy.window({ log: false }).then((win) => {
-      const ctx = win.__recordingMock?.audioContext;
-      if (ctx && ctx.state !== 'closed') void ctx.close();
+    cy.mount(<></>);
+    cy.clock().then((clock) => {
+      clock.restore();
     });
   });
 
@@ -368,7 +372,7 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('shows Save after a long recording (~95 preview ticks) — TT-7384', () => {
     mountMediaRecord();
-
+    waitForRecordReady();
     startRecording();
 
     advanceRecordingTicks(95);

@@ -34,6 +34,13 @@ const { auth0Domain, webClientId, apiIdentifier } = JSON.parse(
 // Merge the base vite config with test-specific overrides
 const testViteConfig = {
   ...viteConfig,
+  // App `npm start` owns 3000. CT must not steal it or the spec URL
+  // (`/__cypress/src/...`) hits the app Vite and fails to load.
+  server: {
+    ...viteConfig.server,
+    port: 5174,
+    strictPort: false,
+  },
   // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies
   // changed, reloading" mid-run (which can flake the first assertion attempt).
   optimizeDeps: {

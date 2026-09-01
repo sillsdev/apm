@@ -154,6 +154,21 @@ export interface InstallRecordingMocksOptions {
   useMockMediaRecorder?: boolean;
 }
 
+function patchAudioContextResume(win: Window & typeof globalThis) {
+  const proto = win.AudioContext?.prototype as
+    | (AudioContext['prototype'] & { __apmResumePatched?: boolean })
+    | undefined;
+  if (!proto || proto.__apmResumePatched) return;
+  const originalResume = proto.resume;
+  // cy.clock() stubs timers Chrome uses to settle resume(); start() awaits it
+  // and Record never reaches PauseIcon on the 2nd+ AudioContext in a spec.
+  proto.resume = function (this: AudioContext) {
+    void originalResume.call(this);
+    return Promise.resolve();
+  };
+  proto.__apmResumePatched = true;
+}
+
 async function createOscillatorStream(
   win: Window & typeof globalThis
 ): Promise<{ stream: MediaStream; audioContext: AudioContext }> {
@@ -186,6 +201,7 @@ export async function installRecordingMocks(
 
   MockMediaRecorder.instances = [];
 
+  patchAudioContextResume(win);
   const { stream, audioContext } = await createOscillatorStream(win);
 
   win.navigator.mediaDevices.getUserMedia = async () => stream;

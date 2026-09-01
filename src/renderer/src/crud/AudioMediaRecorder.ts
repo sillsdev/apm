@@ -136,9 +136,11 @@ export function createAudioMediaRecorder(
         return;
       }
 
-      // Ensure audio context is running
+      // MediaRecorder captures the stream; this context is for preview/stop
+      // decode. Don't await resume() — under missing user-gesture / fake timers
+      // it may never settle, and Record would never start.
       if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+        void audioContext.resume();
       }
 
       // Set timeSlice if provided
