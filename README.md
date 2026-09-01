@@ -93,6 +93,36 @@ $ npm run lint
 $ npm run format
 ```
 
+### Generating Logo Assets
+
+All app logo assets are generated from a single source: `src/renderer/src/assets/apm-logo.svg`. To regenerate the assets, run this script from the root:
+
+```bash
+$ npm run logoassets
+```
+
+This rewrites:
+
+- `favicon.ico` in `src/renderer/public`, `src/renderer`, and `resources`
+- `src/renderer/public/favicon.svg`
+- PWA icons: `pwa-192x192.png`, `pwa-512x512.png`, `pwa-maskable-512x512.png`
+- `apple-touch-icon.png`
+- `resources/icon.png`, which electron-builder converts into the `.icns` and `.ico`
+- the Debian icon
+
+Only run this when the logo itself changes. Commit the regenerated files with the new logo, and never edit them by hand.
+
+Rasterizing requires Chrome or Chromium. The script defaults to the copy puppeteer downloaded. If that copy is missing or fails to launch, point it at an installed browser, for example (your path might be different):
+
+    # Windows (PowerShell)
+    $ $env:PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"; npm run logoassets
+
+    # macOS
+    $ PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run logoassets
+
+    # Linux
+    $ PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome npm run logoassets
+
 ### Build Desktop
 
 ```bash

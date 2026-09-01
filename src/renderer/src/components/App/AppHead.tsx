@@ -354,7 +354,7 @@ export function AppHead({
               onClick={handleLogoHome}
               sx={{ flexShrink: 0, p: 0 }}
             >
-              <ApmLogo sx={{ width: '40px', height: '40px' }} />
+              <ApmLogo size={40} />
             </IconButton>
           ) : (
             <IconButton

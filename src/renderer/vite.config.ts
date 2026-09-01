@@ -45,11 +45,13 @@ export default defineConfig({
         clientsClaim: false,
         skipWaiting: false,
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Audio Project Manager',
         short_name: 'APM',
         description: 'Audio Project Manager',
+        // Pin the install identity so it stays stable if start_url ever moves.
+        id: '/',
         start_url: '/',
         scope: '/',
         display: 'standalone',
@@ -70,7 +72,16 @@ export default defineConfig({
             src: 'pwa-maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            // Artwork sits inside the 80%-diameter safe circle, on an opaque
+            // plate, so Android can crop it to any shape without clipping ink.
             purpose: 'maskable',
+          },
+          {
+            // Preferred by installers that can rasterize at the exact size
+            // they need; ignored by those that cannot.
+            src: 'favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
           },
         ],
       },

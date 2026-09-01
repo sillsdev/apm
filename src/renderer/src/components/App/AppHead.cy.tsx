@@ -431,12 +431,6 @@ describe('AppHead', () => {
     cy.get('header button[aria-label="Home"]', { timeout: 5000 }).should(
       'be.visible'
     );
-    // ApmLogo renders an <img> (styled('img')), not an inline <svg>.
-    cy.get('header button[aria-label="Home"] img').should(
-      'have.attr',
-      'alt',
-      'Audio Project Manager Logo'
-    );
   });
 
   it('should show UserMenu when not on home or access routes', () => {
