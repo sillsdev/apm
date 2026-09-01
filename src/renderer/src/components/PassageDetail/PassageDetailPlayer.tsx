@@ -73,8 +73,7 @@ export interface DetailPlayerProps {
   canSetDefaultParams?: boolean;
   onSegment?: (segment: string, init: boolean) => void;
   onSegmentParamChange?:
-    | ((params: IRegionParams, teamDefault: boolean) => void)
-    | undefined;
+    ((params: IRegionParams, teamDefault: boolean) => void) | undefined;
   onStartRegion?: (position: number) => void;
   onDuration?: (duration: number) => void;
   onProgress?: (progress: number) => void;
@@ -123,6 +122,7 @@ export interface DetailPlayerProps {
    * Set false where the button isn't wanted (e.g. Mark Verses Mobile). */
   showTranscriptionButton?: boolean;
   hideZoom?: boolean;
+  layoutMode?: 'default' | 'mobileTranscribe';
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -169,6 +169,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     lockSegmentSelection,
     showTranscriptionButton = true,
     hideZoom,
+    layoutMode,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -458,6 +459,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         busy={pdBusy}
         allowSegment={allowSegment}
         allowAutoSegment={allowAutoSegment}
+        layoutMode={layoutMode}
         hideSegmentControls={hideSegmentControls}
         hideZoom={hideZoom}
         defaultRegionParams={defaultSegParams}

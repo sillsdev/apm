@@ -34,6 +34,7 @@ export default function PassageDetailMobileDetail({
     promptDockedRecordButton,
     promptDockedRecordFooterVersion,
     setDiscussOpen,
+    hideMobileHeader,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
@@ -84,12 +85,16 @@ export default function PassageDetailMobileDetail({
 
   return (
     <PassageDetailLayout
-      header={<MobileWorkflowSteps />}
-      headerSx={{
-        backgroundColor: 'custom.headerBackground',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-      }}
+      header={hideMobileHeader ? null : <MobileWorkflowSteps />}
+      headerSx={
+        hideMobileHeader
+          ? undefined
+          : {
+              backgroundColor: 'custom.headerBackground',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }
+      }
       footer={<PassageDetailMobileFooter />}
       footerSx={{
         backgroundColor: 'custom.headerBackground',
