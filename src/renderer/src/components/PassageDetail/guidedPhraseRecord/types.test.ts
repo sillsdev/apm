@@ -51,8 +51,12 @@ describe('guidedPhraseRecord config', () => {
       ArtifactTypeSlug.PhraseBackTranslation,
       NamedRegions.BackTranslation
     );
-    expect(config.buildFilenamePostfix(0, 2)).toBe('backtranslation1_v2');
-    expect(config.buildFilenamePostfix(1, 2)).toBe('backtranslation2_v2s1');
+    expect(
+      config.buildFilenamePostfix({ unitIndex: 0, sourceVersion: 2 })
+    ).toBe('backtranslation1_v2');
+    expect(
+      config.buildFilenamePostfix({ unitIndex: 1, sourceVersion: 2 })
+    ).toBe('backtranslation2_v2s1');
   });
 
   it('buildFilenamePostfix separates the languages of the same segment', () => {
@@ -66,16 +70,46 @@ describe('guidedPhraseRecord config', () => {
       ArtifactTypeSlug.PhraseBackTranslation,
       NamedRegions.BackTranslation
     );
-    expect(config.buildFilenamePostfix(0, 1, 'seh')).toBe(
-      'backtranslation1_v1_seh'
-    );
-    expect(config.buildFilenamePostfix(0, 1, 'he')).toBe(
+    const parts = { unitIndex: 0, sourceVersion: 1 };
+    expect(
+      config.buildFilenamePostfix({ ...parts, languageBcp47: 'seh' })
+    ).toBe('backtranslation1_v1_seh');
+    expect(config.buildFilenamePostfix({ ...parts, languageBcp47: 'he' })).toBe(
       'backtranslation1_v1_he'
     );
-    expect(config.buildFilenamePostfix(1, 1, 'he')).toBe(
-      'backtranslation2_v1s1_he'
-    );
+    expect(
+      config.buildFilenamePostfix({
+        unitIndex: 1,
+        sourceVersion: 1,
+        languageBcp47: 'he',
+      })
+    ).toBe('backtranslation2_v1s1_he');
     // Steps with no configured language keep the names they always had.
-    expect(config.buildFilenamePostfix(0, 1)).toBe('backtranslation1_v1');
+    expect(config.buildFilenamePostfix(parts)).toBe('backtranslation1_v1');
+  });
+
+  it('buildFilenamePostfix separates one attempt at a segment from the next', () => {
+    // Clearing a take deletes its mediafile but not the audio cached under
+    // its name, so a re-record that reused the name played the discarded take
+    // back (TT-7432).
+    const config = phraseBackTranslateConfig(
+      ArtifactTypeSlug.PhraseBackTranslation,
+      NamedRegions.BackTranslation
+    );
+    const parts = { unitIndex: 0, sourceVersion: 1, languageBcp47: 'seh' };
+    expect(config.buildFilenamePostfix({ ...parts, takeToken: 'aaa' })).toBe(
+      'backtranslation1_v1_seh_taaa'
+    );
+    expect(
+      config.buildFilenamePostfix({ ...parts, takeToken: 'aaa' })
+    ).not.toEqual(config.buildFilenamePostfix({ ...parts, takeToken: 'bbb' }));
+    // Careful Speech records per clause and needs the same separation.
+    expect(
+      CAREFUL_SPEECH_CONFIG.buildFilenamePostfix({
+        unitIndex: 1,
+        sourceVersion: 3,
+        takeToken: 'zzz',
+      })
+    ).toBe('carefulspeech2_v3_tzzz');
   });
 });

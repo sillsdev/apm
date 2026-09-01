@@ -104,6 +104,9 @@ interface IProps {
  */
 const SPURIOUS_STOP_WINDOW_MS = 250;
 
+/** When a take was made, short and filename-safe. */
+const takeStamp = (): string => Date.now().toString(36);
+
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
     (r) =>
@@ -220,6 +223,16 @@ export function PassageDetailGuidedPhraseRecord({
     localStorage.getItem(config.speakerLocalKey) ?? ''
   );
   const [showRecorder, setShowRecorder] = useState(false);
+  /**
+   * When this attempt at a segment was made, in the name the take uploads
+   * under. Clearing a take deletes its mediafile but not the audio cached
+   * under its name, and `dataPath` resolves a mediafile's audioUrl by that
+   * name - so a re-record that reused the name played back the take the user
+   * had just discarded (TT-7432). Renewed when capture starts, and held steady
+   * from there through the upload. Take *order* comes from `dateCreated`, not
+   * from this.
+   */
+  const [takeToken, setTakeToken] = useState(takeStamp);
   const [resetMedia, setResetMedia] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
@@ -520,11 +533,12 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const defaultFilename = useMemo(() => {
-    const postfix = config.buildFilenamePostfix(
-      currentIndex,
-      currentVersion,
-      stepLanguageBcp47
-    );
+    const postfix = config.buildFilenamePostfix({
+      unitIndex: currentIndex,
+      sourceVersion: currentVersion,
+      languageBcp47: stepLanguageBcp47,
+      takeToken,
+    });
     return passageDefaultFilename(
       passage,
       plan,
@@ -542,6 +556,7 @@ export function PassageDetailGuidedPhraseRecord({
     currentIndex,
     currentVersion,
     stepLanguageBcp47,
+    takeToken,
     config,
   ]);
 
@@ -1863,6 +1878,7 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              setTakeToken(takeStamp());
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
               setSaveRejected(false);

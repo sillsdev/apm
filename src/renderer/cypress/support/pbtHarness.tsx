@@ -80,6 +80,7 @@ export const PBT = {
   prevUnit: '#phrase-back-translate-prev-unit',
   nextUnit: '#phrase-back-translate-next-unit',
   speaker: '#phrase-back-translate-speaker',
+  clear: '#phrase-back-translate-clear',
   retrySave: '#phrase-back-translate-retry-save',
   dockedRecord: '[data-cy="phrase-back-translate-docked-record"]',
   /** The record control itself (RecordButton renders role=button + aria-disabled). */

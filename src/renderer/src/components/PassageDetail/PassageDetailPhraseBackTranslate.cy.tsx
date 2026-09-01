@@ -32,6 +32,7 @@ import {
   sourcePlay,
   startRecordingPass,
   recordAndSettle,
+  waitForRecorderIdle,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -329,6 +330,32 @@ describe('PBT language scoping', () => {
       // What the Sena step would have uploaded for this same segment.
       const senaName = (posted?.originalFile ?? '').replace('_he', '_seh');
       expect(posted?.originalFile).to.not.equal(senaName);
+    });
+  });
+
+  it('uploads a re-record under a name of its own', () => {
+    // Clearing a take deletes its mediafile but not the audio cached under
+    // its name, so a second attempt at the same segment that reuses the name
+    // reads back the take the user just discarded (TT-7643).
+    mountPbt({ segments: SEGMENTS, stepLanguage: 'Hebrew|he' });
+    waitForPbtReady();
+    startRecordingPass();
+    recordAndSettle(1);
+
+    cy.get(PBT.clear).click();
+    waitForRecorderIdle();
+    expectRecordEnabled();
+    recordAndSettle(2);
+
+    cy.then(() => {
+      const [first, second] = postedTakes();
+      expect(first?.parsedSegments, 'same segment both times').to.deep.equal(
+        second?.parsedSegments
+      );
+      expect(
+        second?.originalFile,
+        'the retake does not reuse the cleared take name'
+      ).to.not.equal(first?.originalFile);
     });
   });
 });

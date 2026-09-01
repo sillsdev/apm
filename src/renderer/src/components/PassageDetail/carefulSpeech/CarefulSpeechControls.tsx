@@ -364,6 +364,7 @@ export default function CarefulSpeechControls({
             />
             {phase === 'recorded' && !readOnly && (
               <IconButton
+                id={`${controlIdPrefix}-clear`}
                 aria-label={strings.clearRecording}
                 onClick={onClearRecording}
               >

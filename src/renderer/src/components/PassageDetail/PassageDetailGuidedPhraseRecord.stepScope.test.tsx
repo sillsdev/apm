@@ -279,6 +279,44 @@ describe('PassageDetailGuidedPhraseRecord - step scope (TT-7643)', () => {
     expect(controlsProps?.defaultFilename).toContain('he');
   });
 
+  it('names each attempt at a segment apart from the one it replaces', async () => {
+    // Clearing a take deletes its mediafile but not the audio cached under its
+    // name, and the next attempt at the same segment in the same language
+    // built the very same name - so `dataPath` handed the new take the old
+    // take's file and the recording the user had just discarded played back
+    // (TT-7643).
+    await mountAndSettle();
+    const firstAttempt = controlsProps?.defaultFilename as string;
+    expect(firstAttempt).toBeTruthy();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    await waitFor(() =>
+      expect(controlsProps?.defaultFilename).not.toEqual(firstAttempt)
+    );
+    // Still this segment, in this language - only the attempt is new.
+    expect(controlsProps?.defaultFilename).toContain('backtranslation1');
+    expect(controlsProps?.defaultFilename).toContain('seh');
+  });
+
+  it('holds a name steady for the length of one recording', async () => {
+    await mountAndSettle();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    const whileRecording = controlsProps?.defaultFilename as string;
+    // The name is chosen when recording starts and has to survive every
+    // re-render between there and the upload, or MediaRecord would save under
+    // a different name than the one the step showed.
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await waitFor(() => expect(controlsProps).toBeDefined());
+    expect(controlsProps?.defaultFilename).toEqual(whileRecording);
+  });
+
   it('records against the language of the step now showing', async () => {
     const { rerender } = await mountAndSettle();
     expect(controlsProps?.languagebcp47).toBe('Sena|seh');

@@ -23,6 +23,23 @@ export interface IGuidedPhraseRecordControlStrings {
   resetConfirmBoundaries?: string;
 }
 
+/** What distinguishes one guided-phrase take from another. */
+export interface GuidedPhraseFilenameParts {
+  /** 0-based segment/clause index. */
+  unitIndex: number;
+  /** Version of the vernacular being recorded against. */
+  sourceVersion: number;
+  /** Step language, for steps that can have a sibling step in another one. */
+  languageBcp47?: string;
+  /**
+   * When this attempt was made, distinguishing it from the ones it replaces.
+   * Clearing a take deletes its mediafile but not the audio cached under its
+   * name, so without this the next attempt at the same segment reads back the
+   * discarded one.
+   */
+  takeToken?: string;
+}
+
 export interface GuidedPhraseRecordConfig {
   namedRegion: NamedRegions;
   defaultArtifactSlug: ArtifactTypeSlug;
@@ -46,20 +63,15 @@ export interface GuidedPhraseRecordConfig {
   /** Persist segment map on vernacular named regions (false for Retell). */
   persistSegments: boolean;
   /**
-   * Filename postfix for a unit at `unitIndex` (0-based) on `sourceVersion`.
+   * Filename postfix for one take.
    *
    * The result has to be unique per take, not just pretty: the uploaded name
    * becomes the media object's name, and `dataPath` resolves a mediafile's
    * audioUrl to `<offlineData>/media/<basename>`. Two takes uploaded under one
    * name therefore share a single cached file, and whichever was cached first
-   * is what plays for both. `languageBcp47` is passed for the steps that can
-   * have a sibling step over the same audio in another language (TT-7643).
+   * is what plays for both (TT-7643).
    */
-  buildFilenamePostfix: (
-    unitIndex: number,
-    sourceVersion: number,
-    languageBcp47?: string
-  ) => string;
+  buildFilenamePostfix: (opts: GuidedPhraseFilenameParts) => string;
 }
 
 const carefulSpeechBoundaryDefaults = {
@@ -81,8 +93,10 @@ export const CAREFUL_SPEECH_CONFIG: GuidedPhraseRecordConfig = {
   containerId: 'careful-speech',
   requireBoldWorkflow: true,
   ...carefulSpeechBoundaryDefaults,
-  buildFilenamePostfix: (unitIndex, sourceVersion) =>
-    `carefulspeech${unitIndex + 1}_v${sourceVersion}`,
+  buildFilenamePostfix: ({ unitIndex, sourceVersion, takeToken }) =>
+    `carefulspeech${unitIndex + 1}_v${sourceVersion}${
+      takeToken ? `_t${takeToken}` : ''
+    }`,
 };
 
 export function phraseBackTranslateConfig(
@@ -106,13 +120,19 @@ export function phraseBackTranslateConfig(
     multiLevelSegmentUndo: phraseBoundaryTools,
     sequentialUnitNavAroundRecord: phraseBoundaryTools,
     persistSegments: phraseBoundaryTools,
-    buildFilenamePostfix: (unitIndex, sourceVersion, languageBcp47) => {
+    buildFilenamePostfix: ({
+      unitIndex,
+      sourceVersion,
+      languageBcp47,
+      takeToken,
+    }) => {
       const base = `${artifactSlug}${unitIndex + 1}_v${sourceVersion}`;
       const unit = unitIndex > 0 ? `${base}s${unitIndex}` : base;
       // A Phrase BT step per language records the same segment of the same
       // vernacular, so without the language every one of them uploads under
       // the same name. Takes made before this stay on their old names.
-      return languageBcp47 ? `${unit}_${languageBcp47}` : unit;
+      const lang = languageBcp47 ? `${unit}_${languageBcp47}` : unit;
+      return `${lang}${takeToken ? `_t${takeToken}` : ''}`;
     },
   };
 }
