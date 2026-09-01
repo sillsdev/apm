@@ -2385,8 +2385,8 @@
       </unit>
       <unit id="emailUnverified.emailUnverified">
          <segment>
-            <source>Your email is unverified.</source>
-            <target>Ваш адрес электронной почты не подтвержден.</target>
+            <source>Your email is unverified</source>
+            <target>Ваш адрес электронной почты не подтвержден</target>
          </segment>
       </unit>
       <unit id="emailUnverified.logout">
@@ -2397,20 +2397,38 @@
       </unit>
       <unit id="emailUnverified.resend">
          <segment>
-            <source>Resend the authorization email</source>
-            <target>Отправить повторно письмо для авторизации</target>
+            <source>Resend the verification link</source>
+            <target>Отправить повторно ссылку для подтверждения</target>
+         </segment>
+      </unit>
+      <unit id="emailUnverified.resendError">
+         <segment>
+            <source>We couldn't send the verification link. Please check your connection and try again.</source>
+            <target>Не удалось отправить ссылку для подтверждения. Пожалуйста, проверьте подключение и попробуйте снова.</target>
+         </segment>
+      </unit>
+      <unit id="emailUnverified.resendSuccess">
+         <segment>
+            <source>Sent! Please check your inbox for a new verification link. It may be in your spam folder.</source>
+            <target>Отправлено! Проверьте почту — там должна быть новая ссылка для подтверждения. Она может быть в папке со спамом.</target>
+         </segment>
+      </unit>
+      <unit id="emailUnverified.resendWait">
+         <segment>
+            <source>Resend again in {0}s</source>
+            <target>Отправить повторно через {0}с</target>
          </segment>
       </unit>
       <unit id="emailUnverified.verified">
          <segment>
-            <source>I'm verified! Carry on!</source>
-            <target>Я проверен! Переносите!</target>
+            <source>I've verified my email</source>
+            <target>Я подтвердил свою почту</target>
          </segment>
       </unit>
       <unit id="emailUnverified.verify">
          <segment>
-            <source>Please verify by clicking on the link in the authorization email sent to your account.</source>
-            <target>Пожалуйста, подтвердите, нажав на ссылку в письме авторизации, отправленном на ваш адрес.</target>
+            <source>Please check your email for a verification link from us to finish setting up your account</source>
+            <target>Проверьте почту — мы отправили ссылку для подтверждения, чтобы завершить настройку вашей учетной записи</target>
          </segment>
       </unit>
       <unit id="faithbridge.addContent">

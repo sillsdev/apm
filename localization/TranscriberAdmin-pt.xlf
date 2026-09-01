@@ -2385,8 +2385,8 @@
       </unit>
       <unit id="emailUnverified.emailUnverified">
          <segment>
-            <source>Your email is unverified.</source>
-            <target>Seu e-mail não foi confirmado.</target>
+            <source>Your email is unverified</source>
+            <target>Seu e-mail não foi confirmado</target>
          </segment>
       </unit>
       <unit id="emailUnverified.logout">
@@ -2397,20 +2397,38 @@
       </unit>
       <unit id="emailUnverified.resend">
          <segment>
-            <source>Resend the authorization email</source>
-            <target>Reenviar o e-mail de autorização</target>
+            <source>Resend the verification link</source>
+            <target>Reenviar o link de verificação</target>
+         </segment>
+      </unit>
+      <unit id="emailUnverified.resendError">
+         <segment>
+            <source>We couldn't send the verification link. Please check your connection and try again.</source>
+            <target>Não foi possível enviar o link de verificação. Verifique sua conexão e tente novamente.</target>
+         </segment>
+      </unit>
+      <unit id="emailUnverified.resendSuccess">
+         <segment>
+            <source>Sent! Please check your inbox for a new verification link. It may be in your spam folder.</source>
+            <target>Enviado! Verifique sua caixa de entrada para um novo link de verificação. Ele pode estar na pasta de spam.</target>
+         </segment>
+      </unit>
+      <unit id="emailUnverified.resendWait">
+         <segment>
+            <source>Resend again in {0}s</source>
+            <target>Reenviar novamente em {0}s</target>
          </segment>
       </unit>
       <unit id="emailUnverified.verified">
          <segment>
-            <source>I'm verified! Carry on!</source>
-            <target>Estou confirmado! Continue!</target>
+            <source>I've verified my email</source>
+            <target>Eu confirmei meu e-mail</target>
          </segment>
       </unit>
       <unit id="emailUnverified.verify">
          <segment>
-            <source>Please verify by clicking on the link in the authorization email sent to your account.</source>
-            <target>Por favor, confirme clicando no link do e-mail de autorização enviado para sua conta.</target>
+            <source>Please check your email for a verification link from us to finish setting up your account</source>
+            <target>Verifique seu e-mail para um link de verificação nosso para concluir a configuração da sua conta</target>
          </segment>
       </unit>
       <unit id="faithbridge.addContent">
