@@ -121,8 +121,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   } = usePassageDetailContext();
 
   const { setState } = useContext(PassageDetailContext);
-  const { waitForSave } = useContext(UnsavedContext).state;
   const {
+    waitForSave,
     toolChanged,
     isChanged,
     saveCompleted,
