@@ -507,6 +507,9 @@ export interface IEmailUnverifiedStrings extends Localize.LocalizedStringsMethod
     "emailUnverified": string;
     "logout": string;
     "resend": string;
+    "resendError": string;
+    "resendSuccess": string;
+    "resendWait": string;
     "verified": string;
     "verify": string;
 };

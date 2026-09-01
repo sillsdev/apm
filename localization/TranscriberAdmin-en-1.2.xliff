@@ -2909,7 +2909,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="emailUnverified.emailUnverified">
-            <source>Your email is unverified.</source>
+            <source>Your email is unverified</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">EmailUnverified.tsx</context>
@@ -2923,21 +2923,42 @@
             </context-group>
          </trans-unit>
          <trans-unit id="emailUnverified.resend">
-            <source>Resend the authorization email</source>
+            <source>Resend the verification link</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">EmailUnverified.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="emailUnverified.resendError">
+            <source>We couldn't send the verification link. Please check your connection and try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">EmailUnverified.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="emailUnverified.resendSuccess">
+            <source>Sent! Please check your inbox for a new verification link. It may be in your spam folder.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">EmailUnverified.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="emailUnverified.resendWait">
+            <source>Resend again in {0}s</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">EmailUnverified.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="emailUnverified.verified">
-            <source>I'm verified!  Carry on!</source>
+            <source>I've verified my email</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">EmailUnverified.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="emailUnverified.verify">
-            <source>Please verify by clicking on the link in the authorization email sent to your account.</source>
+            <source>Please check your email for a verification link from us to finish setting up your account</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">EmailUnverified.tsx</context>

@@ -539,11 +539,14 @@ const initialState = {
 	}),
 	"emailUnverified": new LocalizedStrings({
 		"en": {
-			"emailUnverified": "Your email is unverified.",
+			"emailUnverified": "Your email is unverified",
 			"logout": "Logout",
-			"resend": "Resend the authorization email",
-			"verified": "I'm verified!  Carry on!",
-			"verify": "Please verify by clicking on the link in the authorization email sent to your account.",
+			"resend": "Resend the verification link",
+			"resendError": "We couldn't send the verification link. Please check your connection and try again.",
+			"resendSuccess": "Sent! Please check your inbox for a new verification link. It may be in your spam folder.",
+			"resendWait": "Resend again in {0}s",
+			"verified": "I've verified my email",
+			"verify": "Please check your email for a verification link from us to finish setting up your account",
 		}
 	}),
 	"faithbridge": new LocalizedStrings({
