@@ -7,6 +7,7 @@
   "scripts": {
     "clean": "rimraf dist out src/renderer/dist src/renderer/coverage",
     "stamp": "node env-config/writeDate.cjs",
+    "logoassets": "node env-config/genLogoAssets.cjs",
     "format": "prettier --config .prettierrc.yaml --write .",
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
