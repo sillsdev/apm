@@ -317,6 +317,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
       artifactTypeId={artifactTypeId}
       curRole={curRole as string}
       stepLanguageBcp47={stepLanguageBcp47}
+      collapseSegmentTakes={Boolean(phraseArtifactSlug)}
     >
       <Grid
         container

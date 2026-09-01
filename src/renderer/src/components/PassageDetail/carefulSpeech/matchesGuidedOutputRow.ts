@@ -1,4 +1,5 @@
 import { related } from '../../../crud/related';
+import { isNewerTake } from '../../../crud/latestTakePerSourceSegment';
 import { IRow } from '../../../context/PassageDetailContext';
 import { mediaMatchesStepLanguage } from '../../../utils/mediaLanguage';
 
@@ -44,15 +45,13 @@ export function matchesGuidedOutputRow(
   return mediaMatchesStepLanguage(row.mediafile, opts.languageBcp47);
 }
 
+/** The take the step shows, by the same rule that prunes the ones it hides. */
 export function pickLatestGuidedOutputRow(matches: IRow[]): IRow | undefined {
-  if (matches.length === 0) return undefined;
-  if (matches.length === 1) return matches[0];
-  return [...matches].sort((a, b) => {
-    const da = a.mediafile?.attributes?.dateCreated ?? '';
-    const db = b.mediafile?.attributes?.dateCreated ?? '';
-    if (da !== db) return db.localeCompare(da);
-    return (b.mediafile?.id ?? '').localeCompare(a.mediafile?.id ?? '');
-  })[0];
+  return matches.reduce<IRow | undefined>(
+    (best, row) =>
+      !best || isNewerTake(row.mediafile, best.mediafile) ? row : best,
+    undefined
+  );
 }
 
 /** Named-region key for Phrase BT segment boundaries for a language. */

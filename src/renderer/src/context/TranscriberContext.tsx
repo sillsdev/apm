@@ -33,6 +33,7 @@ import {
 } from '../crud';
 import { mediaFileName } from '../crud/media';
 import { mediaMatchesStepLanguage } from '../utils/mediaLanguage';
+import { latestTakePerSourceSegment } from '../crud/latestTakePerSourceSegment';
 import StickyRedirect from '../components/StickyRedirect';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
@@ -133,9 +134,16 @@ interface IProps {
   curRole?: string;
   /** Step language. When set (and not `und`), only media tagged with it become tasks. */
   stepLanguageBcp47?: string;
+  /**
+   * Set for the phrase steps (Phrase BT, Careful Speech), whose takes are one
+   * per segment of the vernacular. Only the newest take of a segment becomes a
+   * task; see {@link latestTakePerSourceSegment}.
+   */
+  collapseSegmentTakes?: boolean;
 }
 const TranscriberProvider = (props: IProps) => {
-  const { artifactTypeId, curRole, stepLanguageBcp47 } = props;
+  const { artifactTypeId, curRole, stepLanguageBcp47, collapseSegmentTakes } =
+    props;
   const [isDetail] = useState(artifactTypeId !== undefined);
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
@@ -200,10 +208,19 @@ const TranscriberProvider = (props: IProps) => {
       return;
     }
     m = m.filter((mf) => mediaMatchesStepLanguage(mf, stepLanguageBcp47));
+    if (collapseSegmentTakes) m = latestTakePerSourceSegment(m);
     setPlanMedia(m);
     planMediaRef.current = m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles, devPlan, artifactId, stepLanguageBcp47, pasId, memory]);
+  }, [
+    mediafiles,
+    devPlan,
+    artifactId,
+    stepLanguageBcp47,
+    collapseSegmentTakes,
+    pasId,
+    memory,
+  ]);
 
   const setRows = (rowData: IRowData[]) => {
     setState((state: ICtxState) => {
