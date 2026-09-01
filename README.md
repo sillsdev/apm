@@ -114,16 +114,14 @@ Only run this when the logo itself changes. Commit the regenerated files with th
 
 Rasterizing requires Chrome or Chromium. The script defaults to the copy puppeteer downloaded. If that copy is missing or fails to launch, point it at an installed browser, for example (your path might be different):
 
-```bash
-# Windows
-$ set PUPPETEER_EXECUTABLE_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe && npm run logoassets
+    # Windows (PowerShell)
+    $ $env:PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"; npm run logoassets
 
-# macOS
-$ PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run logoassets
+    # macOS
+    $ PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run logoassets
 
-# Linux
-$ PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome npm run logoassets
-```
+    # Linux
+    $ PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome npm run logoassets
 
 ### Build Desktop
 
