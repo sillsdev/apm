@@ -1501,6 +1501,13 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.planNotFound">
+            <source>Bible Media Plan not found. Please contact APM Support.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PublishExpansion.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.process">
             <source>Default Workflow</source>
             <target/>

@@ -226,7 +226,10 @@ export function PublishExpansion(props: IProps) {
 
   const handleCanRecord = useCallback(async () => {
     const planId = mediaplanRef.current || (await loadBibleMediaPlan());
-    if (!planId) return false;
+    if (!planId) {
+      showMessage(t.planNotFound);
+      return false;
+    }
     const canRecord = projects.some(
       (p) => related(p, 'organization') === team?.id
     );
