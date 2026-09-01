@@ -397,11 +397,16 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       plan = plans[0];
 
       await remote.activated;
-      const checksums = (await remote.query((q) =>
-        q
-          .findRecords('vwchecksum')
-          .filter({ attribute: 'project-id', value: project.keys?.remoteId })
-      )) as VwChecksum[];
+      let checksums: VwChecksum[];
+      try {
+        checksums = (await remote.query((q) =>
+          q
+            .findRecords('vwchecksum')
+            .filter({ attribute: 'project-id', value: project.keys?.remoteId })
+        )) as VwChecksum[];
+      } catch {
+        return;
+      }
       //we have to do these one by one because if mediafiles isn't right, discussions won't be right etc.
       for (let ix = 0; ix < tables.length; ix++) {
         await compareChecksum(checksums, tables[ix]);
