@@ -181,7 +181,7 @@ export const AddCard = (props: IProps) => {
 
   return (
     <>
-      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Card
           id={`teamAdd-${team}`}
           sx={{

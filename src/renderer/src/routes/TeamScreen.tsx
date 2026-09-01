@@ -12,7 +12,7 @@ import { useGlobal } from '../context/useGlobal';
 import { findRecord, related, remoteId } from '../crud';
 import { PlanD } from '../model';
 import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
-import { flexibleSx } from '../control';
+import { flexibleSx, rigidSx } from '../control';
 import ProjectsScreen from './ProjectsScreen';
 
 export const TeamScreen = () => {
@@ -88,9 +88,8 @@ export const TeamScreen = () => {
         >
           <Box
             sx={[
-              flexibleSx,
+              rigidSx,
               {
-                maxWidth: 250,
                 py: theme.layout.gap,
                 pl: theme.layout.gap,
               },
