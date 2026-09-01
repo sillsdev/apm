@@ -18,7 +18,11 @@ export const EmailUnverified = () => {
   const isMounted = useMounted('unverfied');
   const navigate = useMyNavigate();
   const { getAccessTokenSilently, user } = useAuth0();
-  const { accessToken, setAuthSession } = useContext(TokenContext).state;
+  const { accessToken, profile, setAuthSession } =
+    useContext(TokenContext).state;
+  // Electron renders this route outside the Auth0Provider, so the signed-in
+  // identity only comes from the token context there; web has both.
+  const email = profile?.email ?? user?.email;
   const [view, setView] = useState('');
   const [status, setStatus] = useState<'' | 'sent' | 'error'>('');
   const [resending, setResending] = useState(false);
@@ -136,7 +140,7 @@ export const EmailUnverified = () => {
             {t.verify}
           </Typography>
         </Box>
-        {user?.email && (
+        {email && (
           <Box
             sx={{
               px: 2,
@@ -149,7 +153,7 @@ export const EmailUnverified = () => {
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {user.email}
+              {email}
             </Typography>
           </Box>
         )}
