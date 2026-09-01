@@ -5,6 +5,9 @@
 
 export const RECORD_PREVIEW_TIMESLICE_MS = 1000;
 
+/** enumerateDevices / getSettings id so `{ exact: deviceId }` acquire succeeds. */
+export const MOCK_CAPTURE_DEVICE_ID = 'apm-ct-mic';
+
 export interface RecordingMockHelpers {
   getInstances: () => MockMediaRecorder[];
   getLastInstance: () => MockMediaRecorder | undefined;
@@ -179,6 +182,54 @@ function patchAudioContextResume(win: Window & typeof globalThis): void {
   proto.__apmResumePatched = true;
 }
 
+function requestedExactDeviceId(
+  constraints?: MediaStreamConstraints
+): string | undefined {
+  const audio = constraints?.audio;
+  if (!audio || typeof audio === 'boolean') return undefined;
+  const id = audio.deviceId;
+  if (typeof id === 'string') return id || undefined;
+  if (id && typeof id === 'object' && 'exact' in id) {
+    const exact = (id as ConstrainDOMStringParameters).exact;
+    return typeof exact === 'string' && exact ? exact : undefined;
+  }
+  return undefined;
+}
+
+function mockAudioInputDevice(): MediaDeviceInfo {
+  return {
+    deviceId: MOCK_CAPTURE_DEVICE_ID,
+    groupId: 'apm-ct-group',
+    kind: 'audioinput',
+    label: 'Mock microphone',
+    toJSON() {
+      return {
+        deviceId: this.deviceId,
+        groupId: this.groupId,
+        kind: this.kind,
+        label: this.label,
+      };
+    },
+  } as MediaDeviceInfo;
+}
+
+function presentCaptureTrack(
+  track: MediaStreamTrack,
+  deviceId: () => string
+): MediaStreamTrack {
+  const view = Object.create(track) as MediaStreamTrack;
+  Object.defineProperty(view, 'muted', {
+    configurable: true,
+    get: () => false,
+  });
+  view.getSettings = () => ({ ...track.getSettings(), deviceId: deviceId() });
+  view.stop = () => track.stop();
+  view.addEventListener = track.addEventListener.bind(track);
+  view.removeEventListener = track.removeEventListener.bind(track);
+  view.dispatchEvent = track.dispatchEvent.bind(track);
+  return view;
+}
+
 async function createOscillatorStream(
   win: Window & typeof globalThis
 ): Promise<{ stream: MediaStream; audioContext: AudioContext }> {
@@ -215,7 +266,35 @@ export async function installRecordingMocks(
   patchAudioContextResume(win);
   const { stream, audioContext } = await createOscillatorStream(win);
 
-  win.navigator.mediaDevices.getUserMedia = async () => stream;
+  // Stale saved mics are `{ exact }` now; they must appear in enumerateDevices
+  // and on the track or acquire falls back and Record never reaches Pause/Stop.
+  Object.keys(win.localStorage)
+    .filter((key) => key.endsWith('microphone-id'))
+    .forEach((key) => win.localStorage.removeItem(key));
+
+  let reportedDeviceId = MOCK_CAPTURE_DEVICE_ID;
+  const nativeGetAudioTracks = stream.getAudioTracks.bind(stream);
+  const nativeGetTracks = stream.getTracks.bind(stream);
+  const trackViews = new WeakMap<MediaStreamTrack, MediaStreamTrack>();
+  const viewOf = (track: MediaStreamTrack) => {
+    let view = trackViews.get(track);
+    if (!view) {
+      view = presentCaptureTrack(track, () => reportedDeviceId);
+      trackViews.set(track, view);
+    }
+    return view;
+  };
+  stream.getAudioTracks = () => nativeGetAudioTracks().map(viewOf);
+  stream.getTracks = () => nativeGetTracks().map(viewOf);
+
+  win.navigator.mediaDevices.enumerateDevices = async () => [
+    mockAudioInputDevice(),
+  ];
+  win.navigator.mediaDevices.getUserMedia = async (constraints) => {
+    reportedDeviceId =
+      requestedExactDeviceId(constraints) ?? MOCK_CAPTURE_DEVICE_ID;
+    return stream;
+  };
 
   if (!win.navigator.mediaDevices.getSupportedConstraints) {
     win.navigator.mediaDevices.getSupportedConstraints = () =>
@@ -223,6 +302,7 @@ export async function installRecordingMocks(
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
+        deviceId: true,
       }) as MediaTrackSupportedConstraints;
   }
 

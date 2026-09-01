@@ -40,8 +40,19 @@ const testViteConfig = {
   // leftover Vite often occupies 5173.
   server: {
     ...viteServerRest,
+    // CT must stay on localhost. `host: true` (app vite) advertises a LAN
+    // HMR URL; Chrome then fails to fetch `/__cypress/src/...` modules.
+    host: 'localhost',
+    hmr: { host: 'localhost', protocol: 'ws' },
     port: 5188,
     strictPort: false,
+    warmup: {
+      clientFiles: [
+        './cypress/support/component.tsx',
+        './src/components/MediaRecord.recording.cy.tsx',
+        './cypress/support/pbtHarness.tsx',
+      ],
+    },
   },
   // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies
   // changed, reloading" mid-run (which can flake the first assertion attempt).
@@ -54,11 +65,28 @@ const testViteConfig = {
       'react',
       'react-dom',
       'react/jsx-runtime',
+      'cypress/react',
+      '@cypress/grep',
       '@mui/material',
       '@mui/material/styles',
       '@mui/icons-material/PlayArrowOutlined',
+      '@mui/icons-material/PlayArrow',
       '@mui/icons-material/Pause',
+      '@mui/icons-material/Stop',
       '@mui/icons-material/GetAppOutlined',
+      '@mui/icons-material/ChevronLeft',
+      '@mui/icons-material/Loop',
+      '@mui/icons-material/ArrowRightAlt',
+      '@mui/icons-material/AccessTime',
+      '@mui/icons-material/Undo',
+      '@mui/icons-material/SettingsVoice',
+      '@mui/icons-material/MoreVert',
+      '@mui/icons-material/Settings',
+      '@mui/icons-material/List',
+      '@mui/icons-material/DeleteOutline',
+      '@mui/icons-material/CloudUpload',
+      '@bugsnag/js',
+      '@bugsnag/plugin-react',
       // Deep-mount harnesses (e.g. cypress/support/pbtHarness.tsx) bring the
       // store and Orbit in. Without these, the first spec that imports one
       // triggers a mid-run re-optimize, and the reload that follows leaves the
