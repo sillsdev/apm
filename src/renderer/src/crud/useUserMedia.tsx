@@ -1,38 +1,82 @@
 import { useCallback, useEffect, useRef } from 'react';
+import {
+  getUserMediaWithDeviceFallback,
+  isUnusableCaptureStream,
+} from './captureConstraints';
+
+export class CaptureAcquireSupersededError extends Error {
+  constructor() {
+    super('capture acquire superseded');
+    this.name = 'CaptureAcquireSupersededError';
+  }
+}
+
+function stopStream(stream?: MediaStream) {
+  stream?.getTracks().forEach((track) => {
+    try {
+      track.stop();
+    } catch {
+      /* device already gone */
+    }
+  });
+}
 
 export function useUserMedia(requestedMedia: MediaStreamConstraints) {
   const mediaStreamRef = useRef<MediaStream | undefined>(undefined);
   const constraintsRef = useRef<MediaStreamConstraints>(requestedMedia);
+  const acquireGenerationRef = useRef(0);
 
   useEffect(() => {
     constraintsRef.current = requestedMedia;
   }, [requestedMedia]);
 
   const getStream = useCallback(
-    async (forceNew = false): Promise<MediaStream> => {
-      if (mediaStreamRef.current && !forceNew) {
-        return mediaStreamRef.current;
+    async (
+      forceNew = false
+    ): Promise<{
+      stream: MediaStream;
+      fellBack: boolean;
+    }> => {
+      if (
+        mediaStreamRef.current &&
+        !forceNew &&
+        !isUnusableCaptureStream(mediaStreamRef.current)
+      ) {
+        return { stream: mediaStreamRef.current, fellBack: false };
       }
 
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-        mediaStreamRef.current = undefined;
-      }
+      const generation = ++acquireGenerationRef.current;
+      stopStream(mediaStreamRef.current);
+      mediaStreamRef.current = undefined;
 
-      const stream = await navigator.mediaDevices.getUserMedia(
-        constraintsRef.current
-      );
-      mediaStreamRef.current = stream;
-      return stream;
+      const constraints = constraintsRef.current;
+      try {
+        const { stream, fellBack } = await getUserMediaWithDeviceFallback(
+          constraints,
+          (next) => navigator.mediaDevices.getUserMedia(next)
+        );
+        if (generation !== acquireGenerationRef.current) {
+          stopStream(stream);
+          throw new CaptureAcquireSupersededError();
+        }
+        mediaStreamRef.current = stream;
+        return { stream, fellBack };
+      } catch (error) {
+        if (generation !== acquireGenerationRef.current) {
+          throw error instanceof CaptureAcquireSupersededError
+            ? error
+            : new CaptureAcquireSupersededError();
+        }
+        throw error;
+      }
     },
     []
   );
 
   useEffect(() => {
     return function cleanup() {
-      mediaStreamRef.current?.getTracks().forEach((track) => {
-        track.stop();
-      });
+      acquireGenerationRef.current += 1;
+      stopStream(mediaStreamRef.current);
       mediaStreamRef.current = undefined;
     };
   }, []);

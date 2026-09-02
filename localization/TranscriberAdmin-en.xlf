@@ -11086,6 +11086,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.microphoneDisconnected">
+         <segment>
+            <source>The microphone was disconnected. Select another microphone to record.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.microphoneDisconnectedFallback">
+         <segment>
+            <source>The preferred microphone was disconnected. Default microphone selected.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.moreOptions">
          <segment>
             <source>More Options</source>

@@ -92,6 +92,7 @@ export function createAudioMediaRecorder(
   let recordingStartedAt = 0;
   let previewEmitInFlight = false;
   let previewNeedsRetry = false;
+  let inFlightStop: Promise<Blob> | undefined;
 
   const decodeAccumulatedOrLatest = async (): Promise<AudioBuffer | null> => {
     const mimeType = mediaRecorder?.mimeType || 'audio/webm';
@@ -135,9 +136,11 @@ export function createAudioMediaRecorder(
         return;
       }
 
-      // Ensure audio context is running
+      // MediaRecorder captures the stream; this context is for preview/stop
+      // decode. Don't await resume() — under missing user-gesture / fake timers
+      // it may never settle, and Record would never start.
       if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+        void audioContext.resume();
       }
 
       // Set timeSlice if provided
@@ -207,44 +210,37 @@ export function createAudioMediaRecorder(
       }
     },
 
-    async stop(): Promise<Blob> {
+    stop(): Promise<Blob> {
+      if (inFlightStop) return inFlightStop;
       if (!isRecording || !mediaRecorder) {
-        // Return empty blob
-        return new Blob([]);
+        return Promise.resolve(new Blob([]));
       }
 
-      return new Promise((resolve, reject) => {
-        if (!mediaRecorder) {
-          reject(new Error('AudioMediaRecorder not initialized'));
-          return;
-        }
-
-        // Request any remaining data before stopping
-        if (mediaRecorder.state === 'recording') {
-          mediaRecorder.requestData();
+      isRecording = false;
+      const recorder = mediaRecorder;
+      const pending = new Promise<Blob>((resolve, reject) => {
+        if (recorder.state === 'recording') {
+          recorder.requestData();
         }
 
         let stopTimeout: ReturnType<typeof setTimeout> | null = null;
 
-        mediaRecorder.onstop = async () => {
+        recorder.onstop = async () => {
           if (stopTimeout) {
             clearTimeout(stopTimeout);
             stopTimeout = null;
           }
 
-          isRecording = false;
-
           try {
             if (audioContext.state === 'suspended') {
               await audioContext.resume();
             }
-            // Wait a bit to ensure all chunks are collected
             await new Promise((r) => setTimeout(r, 100));
 
             if (recordedChunks.length === 0) {
               console.error(
                 'No chunks recorded - MediaRecorder state was:',
-                mediaRecorder?.state
+                recorder.state
               );
               reject(new Error('No audio data recorded'));
               return;
@@ -261,7 +257,7 @@ export function createAudioMediaRecorder(
               finalBlob = await audioBufferToWavBlob(decoded);
             } else {
               finalBlob = new Blob(recordedChunks, {
-                type: mediaRecorder?.mimeType || 'audio/webm',
+                type: recorder.mimeType || 'audio/webm',
               });
             }
 
@@ -280,10 +276,10 @@ export function createAudioMediaRecorder(
               chunkCount: recordedChunks.length,
               chunkSizes: recordedChunks.map((chunk) => chunk.size),
               mediaRecorder: {
-                mimeType: mediaRecorder?.mimeType,
-                audioBitsPerSecond: mediaRecorder?.audioBitsPerSecond,
-                videoBitsPerSecond: mediaRecorder?.videoBitsPerSecond,
-                state: mediaRecorder?.state,
+                mimeType: recorder.mimeType,
+                audioBitsPerSecond: recorder.audioBitsPerSecond,
+                videoBitsPerSecond: recorder.videoBitsPerSecond,
+                state: recorder.state,
               },
               tracks: getAudioTrackDiagnostics(mediaStream),
             });
@@ -293,25 +289,29 @@ export function createAudioMediaRecorder(
           }
         };
 
-        mediaRecorder.onerror = (event) => {
+        recorder.onerror = (event) => {
           if (stopTimeout) {
             clearTimeout(stopTimeout);
           }
           reject(new Error(`Browser MediaRecorder error: ${event}`));
         };
 
-        // Stop the recorder
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-          // Set a timeout in case onstop doesn't fire
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
           stopTimeout = setTimeout(() => {
             reject(new Error('MediaRecorder stop timeout'));
           }, 5000);
         } else {
-          // Already stopped, resolve with empty blob
           resolve(new Blob([]));
         }
       });
+      inFlightStop = pending;
+      void pending
+        .finally(() => {
+          if (inFlightStop === pending) inFlightStop = undefined;
+        })
+        .catch(() => undefined);
+      return pending;
     },
 
     /**
@@ -319,7 +319,16 @@ export function createAudioMediaRecorder(
      * Should be called when the AudioMediaRecorder is being destroyed.
      */
     cleanup(): void {
-      // Close audio context
+      isRecording = false;
+      previewNeedsRetry = false;
+      if (inFlightStop) return;
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        try {
+          mediaRecorder.stop();
+        } catch {
+          /* already stopping */
+        }
+      }
       if (audioContext && audioContext.state !== 'closed') {
         audioContext.close().catch((error) => {
           console.error('Error closing audio context:', error);

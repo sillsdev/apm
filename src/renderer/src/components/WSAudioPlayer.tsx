@@ -43,6 +43,7 @@ import { FaHandScissors } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 
 import { useWavRecorder } from '../crud/useWavRecorder';
+import { fallbackInputDeviceId } from '../crud/captureConstraints';
 import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
 import { Duration } from '../control/Duration';
 import { LightTooltip } from '../control/LightTooltip';
@@ -505,6 +506,28 @@ function WSAudioPlayer(props: IProps) {
   const [selectedMicrophoneId, setSelectedMicrophoneId] = useState(
     localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
   );
+  const selectedMicrophoneIdRef = useRef(selectedMicrophoneId);
+  selectedMicrophoneIdRef.current = selectedMicrophoneId;
+  const warnedMicLossRef = useRef(false);
+
+  function warnMicrophoneDisconnected(fallbackDeviceId?: string) {
+    if (
+      fallbackDeviceId &&
+      fallbackDeviceId !== selectedMicrophoneIdRef.current
+    ) {
+      setSelectedMicrophoneId(fallbackDeviceId);
+    }
+    if (warnedMicLossRef.current) return;
+    warnedMicLossRef.current = true;
+    showMessage(
+      fallbackDeviceId
+        ? t.microphoneDisconnectedFallback ||
+            'The preferred microphone was disconnected. Default microphone selected.'
+        : t.microphoneDisconnected ||
+            'The microphone was disconnected. Select another microphone to record.',
+      AlertSeverity.Warning
+    );
+  }
 
   const [micMenuAnchorEl, setMicMenuAnchorEl] = useState<null | HTMLElement>(
     null
@@ -581,6 +604,8 @@ function WSAudioPlayer(props: IProps) {
       const storageKey = localUserKey(LocalKey.microphoneId);
       if (selectedMicrophoneId) {
         localStorage.setItem(storageKey, selectedMicrophoneId);
+      } else {
+        localStorage.removeItem(storageKey);
       }
     } catch {
       // ignore storage errors
@@ -597,6 +622,7 @@ function WSAudioPlayer(props: IProps) {
   };
 
   const handleMicSelect = (deviceId: string) => {
+    warnedMicLossRef.current = false;
     setSelectedMicrophoneId(deviceId);
     handleMicMenuClose();
   };
@@ -864,7 +890,10 @@ function WSAudioPlayer(props: IProps) {
         // window). Consumers should treat onRecording(true) as "capture active".
         startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
           recordingStartPendingRef.current = false;
-          if (value) setRecording(true);
+          if (value) {
+            warnedMicLossRef.current = false;
+            setRecording(true);
+          }
         });
 
         insertingRef.current = durationRef.current > 0;
@@ -962,12 +991,14 @@ function WSAudioPlayer(props: IProps) {
         if (!active) return;
         const inputs = devices.filter((device) => device.kind === 'audioinput');
         setAudioInputDevices(inputs);
-        setSelectedMicrophoneId((current) => {
-          if (current && inputs.some((device) => device.deviceId === current)) {
-            return current;
-          }
-          return inputs[0]?.deviceId ?? '';
-        });
+        if (recordingRef.current) return;
+        const current = selectedMicrophoneIdRef.current;
+        const fallbackId = fallbackInputDeviceId(inputs, current);
+        if (fallbackId !== undefined) {
+          warnMicrophoneDisconnected(fallbackId);
+        } else if (!current && inputs[0]?.deviceId) {
+          setSelectedMicrophoneId(inputs[0].deviceId);
+        }
       } catch {
         if (active) {
           setAudioInputDevices([]);
@@ -1282,9 +1313,10 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSec(100);
   }
 
-  async function onRecordStop(blob: Blob) {
+  async function onRecordStop(blob?: Blob) {
     recordingStartPendingRef.current = false;
     try {
+      if (!blob) return;
       try {
         await wsInsertAudio(
           blob,
@@ -1328,30 +1360,47 @@ function WSAudioPlayer(props: IProps) {
     } finally {
       recordPreviewSuppressedRef.current = false;
       setProcessingRecording(false);
-      // Preview ticks may have already updated the waveform when adding to
-      // existing audio; always sync blob/duration/save even if the final insert
-      // threw (TT-7384).
-      try {
-        await handleChanged();
-      } catch (err) {
-        logError(
-          Severity.error,
-          errorReporter,
-          err instanceof Error ? err : new Error(String(err))
-        );
+      if (blob) {
+        // Preview ticks may have already updated the waveform when adding to
+        // existing audio; always sync blob/duration/save even if the final insert
+        // threw (TT-7384).
+        try {
+          await handleChanged();
+        } catch (err) {
+          logError(
+            Severity.error,
+            errorReporter,
+            err instanceof Error ? err : new Error(String(err))
+          );
+        }
       }
     }
   }
 
   function onRecordError(e: any) {
     recordingStartPendingRef.current = false;
-    recordPreviewSuppressedRef.current = false;
-    setProcessingRecording(false);
 
     if (autostartTimer.current && e.error === 'No mediaRecorder') {
+      recordPreviewSuppressedRef.current = false;
+      setProcessingRecording(false);
       cleanupAutoStart();
       launchTimer();
+    } else if (e.deviceLost) {
+      if (recordingRef.current) {
+        // Same as the user Stop path: keep controls/save/nav blocked until
+        // shared stop finalization → onRecordStop finishes (blob or none).
+        recordPreviewSuppressedRef.current = true;
+        setProcessingRecording(true);
+        wsStopRecord();
+        setRecording(false);
+      } else if (!processRecordRef.current) {
+        recordPreviewSuppressedRef.current = false;
+        setProcessingRecording(false);
+      }
+      warnMicrophoneDisconnected(e.deviceId || audioInputDevices[0]?.deviceId);
     } else {
+      recordPreviewSuppressedRef.current = false;
+      setProcessingRecording(false);
       showMessage(e.error || e.toString());
     }
   }
@@ -2286,7 +2335,10 @@ function WSAudioPlayer(props: IProps) {
   const isMobileTranscribe = layoutMode === 'mobileTranscribe';
 
   const loopNode = allowAutoSegment && (
-    <LightTooltip id="wsAudioLoopTip" title={looping ? (t.loopon ?? '') : (t.loopoff ?? '')}>
+    <LightTooltip
+      id="wsAudioLoopTip"
+      title={looping ? (t.loopon ?? '') : (t.loopoff ?? '')}
+    >
       <span>
         <ToggleButton
           id="wsAudioLoop"
@@ -2305,7 +2357,11 @@ function WSAudioPlayer(props: IProps) {
   const prevRegionNode = allowAutoSegment && (
     <LightTooltip
       id="wsPrevTip"
-      title={t.prevRegion ? t.prevRegion.replace('{0}', localizeHotKey(LEFT_KEY)) : ''}
+      title={
+        t.prevRegion
+          ? t.prevRegion.replace('{0}', localizeHotKey(LEFT_KEY))
+          : ''
+      }
     >
       <span>
         <IconButton
@@ -2322,7 +2378,11 @@ function WSAudioPlayer(props: IProps) {
   const nextRegionNode = allowAutoSegment && (
     <LightTooltip
       id="wsNextTip"
-      title={t.nextRegion ? t.nextRegion.replace('{0}', localizeHotKey(RIGHT_KEY)) : ''}
+      title={
+        t.nextRegion
+          ? t.nextRegion.replace('{0}', localizeHotKey(RIGHT_KEY))
+          : ''
+      }
     >
       <span>
         <IconButton

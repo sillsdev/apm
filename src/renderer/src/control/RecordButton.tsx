@@ -84,6 +84,7 @@ export const RecordButton = ({
     if (isRecordingRights) {
       return (
         <Box
+          id="wsAudioRecord"
           onClick={handleClick}
           role="button"
           tabIndex={disabled ? -1 : 0}
@@ -147,6 +148,7 @@ export const RecordButton = ({
         }}
       >
         <Box
+          id="wsAudioRecord"
           onClick={handleClick}
           role="button"
           tabIndex={disabled ? -1 : 0}

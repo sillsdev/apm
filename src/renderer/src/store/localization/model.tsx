@@ -2167,6 +2167,8 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "insertoverwrite": string;
     "loopoff": string;
     "loopon": string;
+    "microphoneDisconnected": string;
+    "microphoneDisconnectedFallback": string;
     "moreOptions": string;
     "nextRegion": string;
     "noiseremovalFailed": string;

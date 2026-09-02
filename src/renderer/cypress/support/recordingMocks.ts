@@ -5,10 +5,15 @@
 
 export const RECORD_PREVIEW_TIMESLICE_MS = 1000;
 
+/** enumerateDevices / getSettings id so `{ exact: deviceId }` acquire succeeds. */
+export const MOCK_CAPTURE_DEVICE_ID = 'apm-ct-mic';
+
 export interface RecordingMockHelpers {
   getInstances: () => MockMediaRecorder[];
   getLastInstance: () => MockMediaRecorder | undefined;
   audioContext?: AudioContext;
+  /** Fire `ended` on capture tracks so `listenForCaptureDeviceLoss` runs. */
+  unplugCapture: () => void;
 }
 
 declare global {
@@ -152,13 +157,118 @@ export interface InstallRecordingMocksOptions {
   useMockMediaRecorder?: boolean;
 }
 
-async function createOscillatorStream(
-  win: Window & typeof globalThis
-): Promise<{ stream: MediaStream; audioContext: AudioContext }> {
-  const audioContext = new win.AudioContext({ sampleRate: 48000 });
-  if (audioContext.state === 'suspended') {
-    await audioContext.resume();
+/**
+ * cy.clock() freezes timers; AudioContext.resume() on a later context in the
+ * same document often never settles. Resolve immediately so start/stop are not
+ * stuck waiting. Native resume still runs for the real hardware path.
+ */
+function patchAudioContextResume(win: Window & typeof globalThis): void {
+  // Window ∩ globalThis types AudioContext as the instance, not the ctor.
+  const proto = (
+    win.AudioContext as unknown as {
+      prototype: AudioContext & { __apmResumePatched?: boolean };
+    }
+  )?.prototype;
+  if (!proto || proto.__apmResumePatched) return;
+  const native = proto.resume;
+  proto.resume = function (this: AudioContext) {
+    try {
+      void native.call(this);
+    } catch {
+      /* closed / invalid state */
+    }
+    return Promise.resolve();
+  };
+  proto.__apmResumePatched = true;
+}
+
+function requestedExactDeviceId(
+  constraints?: MediaStreamConstraints
+): string | undefined {
+  const audio = constraints?.audio;
+  if (!audio || typeof audio === 'boolean') return undefined;
+  const id = audio.deviceId;
+  if (typeof id === 'string') return id || undefined;
+  if (id && typeof id === 'object' && 'exact' in id) {
+    const exact = (id as ConstrainDOMStringParameters).exact;
+    return typeof exact === 'string' && exact ? exact : undefined;
   }
+  return undefined;
+}
+
+function mockAudioInputDevice(): MediaDeviceInfo {
+  return {
+    deviceId: MOCK_CAPTURE_DEVICE_ID,
+    groupId: 'apm-ct-group',
+    kind: 'audioinput',
+    label: 'Mock microphone',
+    toJSON() {
+      return {
+        deviceId: this.deviceId,
+        groupId: this.groupId,
+        kind: this.kind,
+        label: this.label,
+      };
+    },
+  } as MediaDeviceInfo;
+}
+
+function presentCaptureTrack(
+  track: MediaStreamTrack,
+  deviceId: () => string
+): MediaStreamTrack {
+  // Patch the native track. Object.create views are dropped by MediaStream.addTrack
+  // / getAudioTracks, so ensureCaptureStreamUsable still sees muted oscillator tracks
+  // and Record never reaches Pause/Stop under cy.clock().
+  try {
+    Object.defineProperty(track, 'muted', {
+      configurable: true,
+      get: () => false,
+    });
+  } catch {
+    /* non-configurable */
+  }
+  let stopped = false;
+  const nativeStop = track.stop.bind(track);
+  track.stop = () => {
+    stopped = true;
+    nativeStop();
+  };
+  try {
+    Object.defineProperty(track, 'readyState', {
+      configurable: true,
+      get: () => (stopped ? 'ended' : ('live' as MediaStreamTrackState)),
+    });
+  } catch {
+    /* non-configurable */
+  }
+  const nativeGetSettings = track.getSettings.bind(track);
+  track.getSettings = () => ({ ...nativeGetSettings(), deviceId: deviceId() });
+  return track;
+}
+
+function decorateCaptureStream(
+  stream: MediaStream,
+  deviceId: () => string
+): MediaStream {
+  stream
+    .getAudioTracks()
+    .forEach((track) => presentCaptureTrack(track, deviceId));
+  try {
+    Object.defineProperty(stream, 'active', {
+      configurable: true,
+      get: () => true,
+    });
+  } catch {
+    /* keep native active */
+  }
+  return stream;
+}
+
+function addOscillatorCapture(
+  audioContext: AudioContext,
+  deviceId: () => string
+): MediaStream {
   const oscillator = audioContext.createOscillator();
   oscillator.frequency.value = 440;
   const gain = audioContext.createGain();
@@ -167,7 +277,18 @@ async function createOscillatorStream(
   const dest = audioContext.createMediaStreamDestination();
   gain.connect(dest);
   oscillator.start();
-  return { stream: dest.stream, audioContext };
+  return decorateCaptureStream(dest.stream, deviceId);
+}
+
+async function createCaptureAudioContext(
+  win: Window & typeof globalThis
+): Promise<AudioContext> {
+  patchAudioContextResume(win);
+  const audioContext = new win.AudioContext({ sampleRate: 48000 });
+  if (audioContext.state === 'suspended') {
+    await audioContext.resume();
+  }
+  return audioContext;
 }
 
 /**
@@ -184,9 +305,33 @@ export async function installRecordingMocks(
 
   MockMediaRecorder.instances = [];
 
-  const { stream, audioContext } = await createOscillatorStream(win);
+  patchAudioContextResume(win);
+  const audioContext = await createCaptureAudioContext(win);
 
-  win.navigator.mediaDevices.getUserMedia = async () => stream;
+  // Stale saved mics are `{ exact }` now; they must appear in enumerateDevices
+  // and on the track or acquire falls back and Record never reaches Pause/Stop.
+  Object.keys(win.localStorage)
+    .filter((key) => /microphone/i.test(key))
+    .forEach((key) => win.localStorage.removeItem(key));
+
+  let reportedDeviceId = MOCK_CAPTURE_DEVICE_ID;
+  const deviceId = () => reportedDeviceId;
+  const capture = {
+    stream: addOscillatorCapture(audioContext, deviceId),
+  };
+
+  win.navigator.mediaDevices.enumerateDevices = async () => [
+    mockAudioInputDevice(),
+  ];
+  // Fresh stream per call. useUserMedia stops the previous tracks before
+  // re-acquire; returning the same ended oscillator never reaches Pause/Stop.
+  // Do not call native getUserMedia — Chrome's fake device hangs under cy.clock().
+  win.navigator.mediaDevices.getUserMedia = async (constraints) => {
+    reportedDeviceId =
+      requestedExactDeviceId(constraints) ?? MOCK_CAPTURE_DEVICE_ID;
+    capture.stream = addOscillatorCapture(audioContext, deviceId);
+    return capture.stream;
+  };
 
   if (!win.navigator.mediaDevices.getSupportedConstraints) {
     win.navigator.mediaDevices.getSupportedConstraints = () =>
@@ -194,15 +339,38 @@ export async function installRecordingMocks(
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
+        deviceId: true,
       }) as MediaTrackSupportedConstraints;
   }
 
   if (forceMediaRecorderFallback) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (win as any).AudioWorklet = undefined;
+    // Assignment is a no-op in Chrome (non-writable). isAudioWorkletAvailable()
+    // checks `typeof AudioWorklet === 'undefined'` first; hide the global.
+    try {
+      Object.defineProperty(win, 'AudioWorklet', {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      });
+    } catch {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (win as any).AudioWorklet = undefined;
+      } catch {
+        /* keep native */
+      }
+    }
     if (useMockMediaRecorder) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (win as any).MediaRecorder = MockMediaRecorder;
+      try {
+        Object.defineProperty(win, 'MediaRecorder', {
+          configurable: true,
+          writable: true,
+          value: MockMediaRecorder,
+        });
+      } catch {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (win as any).MediaRecorder = MockMediaRecorder;
+      }
     }
   }
 
@@ -211,6 +379,16 @@ export async function installRecordingMocks(
     getLastInstance: () =>
       MockMediaRecorder.instances[MockMediaRecorder.instances.length - 1],
     audioContext,
+    unplugCapture: () => {
+      capture.stream.getAudioTracks().forEach((track) => {
+        track.dispatchEvent(new Event('ended'));
+        try {
+          track.stop();
+        } catch {
+          /* already gone */
+        }
+      });
+    },
   };
 
   win.__recordingMock = helpers;

@@ -3,6 +3,8 @@
  *
  * Exercises MediaRecord → WSAudioPlayer → useWaveSurfer → save gating with real
  * components and browser-level recording mocks (no WSAudioPlayer stub).
+ * Device-loss recovery uses the same stack through recorder shutdown, waveform
+ * insert, and Save (not the isolated finalizeRecordingOnDeviceLoss unit tests).
  *
  * Repro strategy: force the MediaRecorder fallback path (no AudioWorklet) with
  * MockMediaRecorder that emits one-second fragments each preview tick. Unfixed
@@ -31,6 +33,7 @@ import localizationReducer from '../store/localization/reducers';
 import bookReducer from '../store/book/reducers';
 import MediaRecord from './MediaRecord';
 import { RECORD_PREVIEW_TIMESLICE_MS } from '../../cypress/support/recordingMocks';
+import { CAPTURE_DEVICE_LOSS_RETRY_MS } from '../crud/captureConstraints';
 
 const mockStore = createStore(
   combineReducers({
@@ -148,45 +151,34 @@ const theme = createTheme({
   } as never,
 });
 
+const waitForRecordReady = () => {
+  cy.get('#wsAudioRecord', { timeout: 15000 }).should(
+    'not.have.attr',
+    'aria-disabled',
+    'true'
+  );
+};
+
+let clockArmed = false;
+
 const startRecording = () => {
+  waitForRecordReady();
+  cy.then(() => {
+    if (!clockArmed) {
+      clockArmed = true;
+      cy.clock();
+    }
+  });
   clickRecordButton();
+  cy.tick(CAPTURE_DEVICE_LOSS_RETRY_MS + 100);
   cy.get('svg[data-testid="PauseIcon"]', { timeout: 15000 }).should(
     'be.visible'
   );
-  // recorder.start() is async; under cy.clock() flush before preview ticks.
   cy.tick(100);
 };
 
 const clickRecordButton = () => {
-  cy.get('body').then(($body) => {
-    if ($body.find('svg[data-testid="PauseIcon"]').length > 0) {
-      cy.get('svg[data-testid="PauseIcon"]').closest('[role="button"]').click();
-      return;
-    }
-    if ($body.find('#wsAudioRecordTip').length > 0) {
-      cy.get('#wsAudioRecordTip').find('[role="button"]').click();
-      return;
-    }
-    // forceMobileView: record control is below the waveform stack
-    cy.get('#wsAudioWaveform')
-      .closest('.MuiStack-root')
-      .parent()
-      .children()
-      .last()
-      .find('[role="button"]')
-      .click();
-  });
-};
-
-const waitForRecordReady = () => {
-  cy.get('#wsAudioWaveform', { timeout: 15000 }).should('be.visible');
-  cy.get('#wsAudioWaveform')
-    .closest('.MuiStack-root')
-    .parent()
-    .children()
-    .last()
-    .find('[role="button"]')
-    .should('not.have.attr', 'aria-disabled', 'true');
+  cy.get('#wsAudioRecord').click();
 };
 
 const advanceRecordingTicks = (count: number) => {
@@ -205,7 +197,10 @@ const pauseRecording = () => {
 };
 
 const parseDurationText = (text: string): number => {
-  const parts = text.trim().split(':').map((p) => parseInt(p, 10));
+  const parts = text
+    .trim()
+    .split(':')
+    .map((p) => parseInt(p, 10));
   if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   return parts[0] ?? 0;
@@ -334,16 +329,26 @@ const mountMediaRecord = (
 
 describe('MediaRecord recording integration', { tags: '@recording' }, () => {
   beforeEach(() => {
-    cy.clock();
+    clockArmed = false;
     cy.installRecordingMocks({
       forceMediaRecorderFallback: true,
       useMockMediaRecorder: true,
     });
   });
 
+  afterEach(() => {
+    // Unmount before closing the oscillator so track `ended` does not land on
+    // a still-mounted take. Restore clock so the next test is not frozen.
+    cy.mount(<></>);
+    cy.clock().then((clock) => clock.restore());
+    cy.window({ log: false }).then((win) => {
+      const ctx = win.__recordingMock?.audioContext;
+      if (ctx && ctx.state !== 'closed') void ctx.close();
+    });
+  });
+
   it('shows Save after a short recording is paused (tracer bullet)', () => {
     mountMediaRecord();
-    cy.get('#wsAudioWaveform').should('exist');
 
     startRecording();
 
@@ -356,7 +361,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('shows Save after a long recording (~95 preview ticks) — TT-7384', () => {
     mountMediaRecord();
-
     startRecording();
 
     advanceRecordingTicks(95);
@@ -368,7 +372,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('advances duration and waveform during long recording — TT-7276', () => {
     mountMediaRecord();
-    waitForRecordReady();
     startRecording();
 
     cy.get('#wsAudioDuration').invoke('text').should('match', /0:0/);
@@ -387,7 +390,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('shows Save after overdub second recording — TT-7276 scenario 2 core path', () => {
     mountMediaRecord();
-    waitForRecordReady();
 
     // First take
     startRecording();
@@ -402,5 +404,24 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
     pauseRecording();
     assertSaveReady();
     assertWaveformDurationAtLeast(5);
+  });
+
+  it('recovers the take to Save when the microphone is unplugged mid-record', () => {
+    mountMediaRecord();
+    startRecording();
+    advanceRecordingTicks(3);
+
+    cy.window().then((win) => {
+      win.__recordingMock?.unplugCapture();
+    });
+
+    cy.get('svg[data-testid="PauseIcon"]').should('not.exist');
+    // Finalize is still in flight (clock frozen): Record/Save stay blocked.
+    cy.get('#wsAudioRecord').should('have.attr', 'aria-disabled', 'true');
+    cy.get('#rec-save').should('not.exist');
+
+    cy.tick(200);
+    assertSaveReady();
+    assertWaveformDurationAtLeast(2);
   });
 });
