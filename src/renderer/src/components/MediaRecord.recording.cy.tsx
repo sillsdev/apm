@@ -153,6 +153,8 @@ const theme = createTheme({
 
 const startRecording = () => {
   clickRecordButton();
+  // Mount acquire uses a 250ms mute retry; cy.clock() freezes it until we tick.
+  cy.tick(CAPTURE_DEVICE_LOSS_RETRY_MS + 100);
   cy.get('svg[data-testid="PauseIcon"]', { timeout: 15000 }).should(
     'be.visible'
   );
