@@ -1,3 +1,5 @@
+import { asrDebug, asrDebugPreview } from '../../../business/asr/asrDebug';
+
 function escapeVerseLabel(label: string): string {
   return label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -59,8 +61,20 @@ export function applyAsrTranscription(
   asrChunk: string
 ): string {
   const cleanTrans = cleanAsrTranscription(asrChunk);
-  if (!cleanTrans) return currentText;
-  if (currentText.includes(cleanTrans)) return currentText;
+  if (!cleanTrans) {
+    asrDebug('applyAsrTranscription noop', {
+      reason: 'empty chunk after clean',
+      chunkPreview: asrDebugPreview(asrChunk),
+    });
+    return currentText;
+  }
+  if (currentText.includes(cleanTrans)) {
+    asrDebug('applyAsrTranscription noop', {
+      reason: 'duplicate chunk in current text',
+      chunkPreview: asrDebugPreview(cleanTrans),
+    });
+    return currentText;
+  }
 
   const { verseLabel, text } = parseVerseFromAsrChunk(cleanTrans);
   const insertText = verseLabel
@@ -68,23 +82,40 @@ export function applyAsrTranscription(
     : cleanTrans.replace(/^\\v\s+[^\s\\]+\s*/, '').trim() || cleanTrans;
 
   if (verseLabel && verseHasTranscriptionContent(currentText, verseLabel)) {
+    asrDebug('applyAsrTranscription noop', {
+      reason: 'verse already has content',
+      verseLabel,
+      currentPreview: asrDebugPreview(currentText),
+    });
     return currentText;
   }
 
   if (verseLabel) {
     const insertAt = findEmptyVerseMarkerInsertIndex(currentText, verseLabel);
     if (insertAt !== null) {
+      asrDebug('applyAsrTranscription insert at marker', {
+        verseLabel,
+        insertAt,
+        insertPreview: asrDebugPreview(insertText),
+      });
       return (
         currentText.slice(0, insertAt) +
         insertText +
         currentText.slice(insertAt)
       );
     }
+    asrDebug('applyAsrTranscription append marker', {
+      verseLabel,
+      insertPreview: asrDebugPreview(insertText),
+    });
     const space =
       currentText && !/\s$/.test(currentText) ? ' ' : '';
     return currentText + space + `\\v ${verseLabel} ` + insertText;
   }
 
+  asrDebug('applyAsrTranscription legacy append', {
+    chunkPreview: asrDebugPreview(cleanTrans),
+  });
   const legacyMatch = /\\v (\d+)\s?/.exec(cleanTrans);
   const index =
     legacyMatch && currentText.includes(legacyMatch[0])

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
-import { axiosGet } from '../../utils/axios';
+import { axiosGet, axiosPost } from '../../utils/axios';
 import { findRecord } from '../../crud/tryFindRecord';
 import AsrProgress from './AsrProgress';
 import { MediaFileD, PassageD } from '../../model';
@@ -44,6 +44,10 @@ jest.mock(
     useProjectSegmentSave: () => jest.fn().mockResolvedValue(undefined),
   })
 );
+
+jest.mock('../../utils/useWaitForRemoteQueue', () => ({
+  useWaitForRemoteQueue: () => jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock('../../crud/tryFindRecord', () => ({
   findRecord: jest.fn(),
@@ -121,6 +125,7 @@ jest.mock('react-redux', () => ({
 }));
 
 const mockAxiosGet = axiosGet as jest.Mock;
+const mockAxiosPost = axiosPost as jest.Mock;
 const mockFindRecord = findRecord as jest.Mock;
 
 function makeTrTaskSegments(
@@ -134,6 +139,19 @@ function makeTrTaskSegments(
     })),
   });
   return JSON.stringify([{ name: 'TRTask', regionInfo }]);
+}
+
+function makeVerseSegments(
+  verses: Array<{ label: string; start: number; end: number }>
+): string {
+  const regionInfo = JSON.stringify({
+    regions: verses.map((v) => ({
+      label: v.label,
+      start: v.start,
+      end: v.end,
+    })),
+  });
+  return JSON.stringify([{ name: 'Verse', regionInfo }]);
 }
 
 const passage = {
@@ -190,12 +208,83 @@ describe('AsrProgress multi-verse polling', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockAxiosGet.mockReset();
+    mockAxiosPost.mockReset();
     mockFindRecord.mockReset();
   });
 
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  it('uses master transcription URL (no method) when Mark Verses has multiple regions', async () => {
+    const mediafile = {
+      id: 'media-1',
+      type: 'mediafile',
+      attributes: {
+        transcription: '',
+        segments: makeVerseSegments([
+          { label: '1:2', start: 0, end: 10 },
+          { label: '1:3', start: 10, end: 20 },
+          { label: '1:4', start: 20, end: 30 },
+        ]),
+      },
+    } as MediaFileD;
+    mockFindRecord.mockReturnValue(mediafile);
+    mockAxiosPost.mockResolvedValue({
+      data: {
+        data: {
+          ...mediafile,
+          attributes: {
+            ...mediafile.attributes,
+            segments: makeTrTaskSegments([
+              { taskId: 'task1', verse: '2' },
+              { taskId: 'task2', verse: '3' },
+              { taskId: 'task3', verse: '4' },
+            ]),
+          },
+        },
+      },
+    });
+    mockAxiosGet.mockResolvedValue({});
+
+    render(
+      <AsrProgress
+        mediaId="media-1"
+        phonetic={false}
+        force={true}
+        asrState={{
+          target: 'Alphabet',
+          asrIso: 'seh',
+          selectRoman: false,
+          method: 'omnilingual',
+          dialect: undefined,
+          language: {
+            bcp47: 'seh',
+            languageName: 'Sena',
+            font: 'charissil',
+            rtl: false,
+            spellCheck: false,
+          },
+        }}
+        contentVerses={[]}
+        passage={passage}
+        setTranscription={jest.fn()}
+        onPullTasks={jest.fn()}
+        onClose={jest.fn()}
+      />
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockAxiosPost).toHaveBeenCalledWith(
+      'mediafiles/media-1/transcription/seh/false',
+      undefined,
+      'test-token'
+    );
   });
 
   it('inserts verse 1 then verse 2 as polls complete', async () => {

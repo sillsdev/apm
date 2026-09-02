@@ -29,6 +29,7 @@ import {
   seedFirstVerseMarker,
 } from './transcribeVerseMarkers';
 import { IRegion } from '../../../crud/useWavesurferRegions';
+import { asrDebug, asrDebugPreview } from '../../../business/asr/asrDebug';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
@@ -118,13 +119,21 @@ export function useTranscribeAsr({
 
   const startAsr = useCallback(
     (asrOverrideState?: IAsrState) => {
+      asrDebug('startAsr', {
+        contentVerses,
+        verseLabels,
+        textPreview: asrDebugPreview(textValue),
+        force: asrOverrideState
+          ? !asrStatesEqual(asrOverrideState, asrSettings)
+          : false,
+      });
       setAsrOverride(asrOverrideState);
       setPhonetic(
         (asrOverrideState ?? asrSettings)?.target === AsrTarget.phonetic
       );
       setAsrProgressVisible(true);
     },
-    [asrSettings]
+    [asrSettings, contentVerses, verseLabels, textValue]
   );
 
   const openAsrLanguageSettings = useCallback(() => {
@@ -168,13 +177,22 @@ export function useTranscribeAsr({
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
+      asrDebug('handleAutoTranscribe', {
+        chunkPreview: asrDebugPreview(trans),
+        currentPreview: asrDebugPreview(textValue),
+        contentVerses,
+      });
       const updated = applyAsrTranscription(textValue, trans);
+      asrDebug('handleAutoTranscribe result', {
+        changed: updated !== textValue,
+        updatedPreview: asrDebugPreview(updated),
+      });
       if (updated !== textValue) {
         onTextReplace(updated);
         if (toolId && toolChanged) toolChanged(toolId, true);
       }
     },
-    [textValue, onTextReplace, toolId, toolChanged]
+    [textValue, onTextReplace, toolId, toolChanged, contentVerses]
   );
 
   const hasAiTasks = useMemo(() => {

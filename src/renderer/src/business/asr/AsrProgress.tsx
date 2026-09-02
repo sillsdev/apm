@@ -21,6 +21,7 @@ import {
 } from '../../model';
 import {
   getSegments,
+  getSortedRegions,
   NamedRegions,
   updateSegments,
 } from '../../utils/namedSegments';
@@ -47,6 +48,8 @@ import {
   PassageVerseSpanInput,
   passageVerseSpanFromPassage,
 } from '../../components/PassageDetail/transcribe/passageVerseSpan';
+import { asrDebug, asrDebugPreview } from './asrDebug';
+import { useWaitForRemoteQueue } from '../../utils/useWaitForRemoteQueue';
 
 export interface VerseTask {
   taskId: string;
@@ -81,7 +84,9 @@ export default function AsrProgress({
   const [working, setWorking] = React.useState(false);
   const { getAsrSettings } = useGetAsrSettings();
   const projectSegmentSave = useProjectSegmentSave();
+  const waitForRemoteQueue = useWaitForRemoteQueue();
   const [memory] = useGlobal('memory');
+  const [coordinator] = useGlobal('coordinator');
   const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
   const { showMessage } = useSnackBar();
   const [taskId, setTaskIdx] = React.useState('');
@@ -98,12 +103,53 @@ export default function AsrProgress({
   const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [errorReporter] = useGlobal('errorReporter');
 
+  const describeVerseRegions = (mediaRec: MediaFileD | undefined) => {
+    const verseJson = getSegments(
+      NamedRegions.Verse,
+      mediaRec?.attributes?.segments || '{}'
+    );
+    const regions = getSortedRegions(verseJson);
+    return {
+      verseRegionCount: regions.length,
+      verseLabels: regions.map((r) => r.label ?? ''),
+      verseRanges: regions.map((r) => ({
+        label: r.label ?? '',
+        start: r.start,
+        end: r.end,
+      })),
+      verseRegionPreview: asrDebugPreview(verseJson, 200),
+    };
+  };
+
+  const describeTrTaskRaw = (mediaRec: MediaFileD | undefined) => {
+    const regionstr = getSegments(
+      NamedRegions.TRTask,
+      mediaRec?.attributes?.segments || '{}'
+    );
+    let rawLabels: string[] = [];
+    try {
+      const segs = JSON.parse(regionstr ?? '{}');
+      if (Array.isArray(segs?.regions)) {
+        rawLabels = (segs.regions as Array<{ label?: string }>).map(
+          (r) => r.label ?? ''
+        );
+      }
+    } catch {
+      rawLabels = [];
+    }
+    return {
+      trTaskRawPreview: asrDebugPreview(regionstr, 300),
+      trTaskRawLabels: rawLabels,
+    };
+  };
+
   const passageSpan: PassageVerseSpanInput | undefined = React.useMemo(
     () => passageVerseSpanFromPassage(passage),
     [passage]
   );
 
   React.useEffect(() => {
+    asrDebug('contentVerses updated', { contentVerses });
     contentVersesRef.current = contentVerses;
   }, [contentVerses]);
 
@@ -129,8 +175,19 @@ export default function AsrProgress({
             false,
         });
       });
+      asrDebug('getTasks', {
+        mediaId,
+        taskCount: tsks.length,
+        contentVerses: contentVersesRef.current,
+        tasks: tsks.map((t) => ({
+          taskId: t.taskId,
+          verse: t.verse,
+          complete: t.complete,
+        })),
+      });
       return tsks;
     } else {
+      asrDebug('getTasks', { mediaId, taskCount: 0, reason: 'no TRTask regions' });
       return undefined;
     }
   };
@@ -148,7 +205,12 @@ export default function AsrProgress({
     return [tsks?.find((task) => !task.complete)?.taskId, tsks];
   };
 
-  const setTaskId = (nextTaskId: string) => {
+  const setTaskId = (nextTaskId: string, reason?: string) => {
+    asrDebug('setTaskId', {
+      from: taskIdRef.current,
+      to: nextTaskId,
+      reason,
+    });
     setTaskIdx(nextTaskId);
     taskIdRef.current = nextTaskId;
     if (nextTaskId === '') syncTasks(undefined);
@@ -168,6 +230,10 @@ export default function AsrProgress({
   };
 
   const showTaskFailure = async (message: string) => {
+    asrDebug('showTaskFailure', {
+      taskId: taskIdRef.current,
+      message,
+    });
     const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
     logError(Severity.error, errorReporter, new Error(message));
     await clearTrTasks();
@@ -180,7 +246,7 @@ export default function AsrProgress({
       AlertSeverity.Error,
       message
     );
-    setTaskId('');
+    setTaskId('', 'showTaskFailure');
   };
 
   const clearTrTasks = async () => {
@@ -202,11 +268,26 @@ export default function AsrProgress({
 
   const checkTask = React.useCallback(async () => {
     const current = taskIdRef.current;
-    if (!current || checkingRef.current) return;
+    if (!current || checkingRef.current) {
+      asrDebug('checkTask skipped', {
+        taskId: current,
+        checking: checkingRef.current,
+      });
+      return;
+    }
     checkingRef.current = true;
+    asrDebug('checkTask poll', { taskId: current });
     try {
       const response: any = await axiosGet(`aero/transcription/${current}`);
       const pollError = transcriptionPollError(response);
+      asrDebug('checkTask response', {
+        taskId: current,
+        pollError,
+        hasTranscription: Boolean(response?.transcription),
+        transcriptionEmpty: response?.transcription === '',
+        transcriptionPreview: asrDebugPreview(response?.transcription),
+        responseKeys: response ? Object.keys(response) : [],
+      });
       if (pollError) {
         await showTaskFailure(pollError);
         return;
@@ -230,22 +311,50 @@ export default function AsrProgress({
             const alreadyHasContent =
               taskVerse &&
               (contentVersesRef.current?.includes(taskVerse) ?? false);
+            asrDebug('checkTask verse complete', {
+              taskId: current,
+              taskIndex: ix,
+              taskVerse,
+              taskCount: activeTasks.length,
+              nextTask: nextTask || '(none — all tasks done)',
+              alreadyHasContent,
+              willApplyTranscription: !alreadyHasContent,
+              chunkPreview: asrDebugPreview(verse + response?.transcription),
+            });
             if (!alreadyHasContent) {
               setTranscription(verse + response?.transcription);
             }
+          } else {
+            asrDebug('checkTask task not in list', {
+              taskId: current,
+              activeTaskIds: activeTasks.map((t) => t.taskId),
+            });
           }
         } else {
+          asrDebug('checkTask no activeTasks', {
+            taskId: current,
+            chunkPreview: asrDebugPreview(verse + response?.transcription),
+          });
           setTranscription(verse + response?.transcription);
         }
-        setTaskId(nextTask);
+        setTaskId(
+          nextTask,
+          nextTask ? 'advance to next verse task' : 'all verse tasks complete'
+        );
       } else if (response?.transcription === '') {
+        asrDebug('checkTask empty transcription', { taskId: current });
         status(t.noAsrTranscription);
-        setTaskId('');
+        setTaskId('', 'empty transcription from API');
       } else {
         console.log(`${current} not done`, response);
+        asrDebug('checkTask pending', { taskId: current });
         setWorking(true);
       }
     } catch (errResult: unknown) {
+      asrDebug('checkTask error', {
+        taskId: current,
+        message: axiosErrorMessage(errResult),
+      });
       await showTaskFailure(axiosErrorMessage(errResult));
     } finally {
       checkingRef.current = false;
@@ -261,7 +370,16 @@ export default function AsrProgress({
     }, timerDelay);
   };
 
-  const closing = () => {
+  const closing = (reason: string, detail?: Record<string, unknown>) => {
+    asrDebug('closing dialog', {
+      reason,
+      taskId: taskIdRef.current,
+      taskCount: tasksRef.current?.length,
+      incompleteTasks: tasksRef.current
+        ?.filter((t) => !t.complete)
+        .map((t) => ({ taskId: t.taskId, verse: t.verse })),
+      ...detail,
+    });
     if (taskTimer.current) {
       clearInterval(taskTimer.current);
       taskTimer.current = undefined;
@@ -277,27 +395,82 @@ export default function AsrProgress({
     const asr = asrState ?? (getAsrSettings() as IAsrState | undefined);
     const iso = asr?.asrIso ?? 'eng';
     const romanize = asr?.selectRoman ?? false;
-    const method = asr?.method ?? 'mms';
     const phoneticParam = phonetic ? '?phonetic=true' : '';
+    const localMedia = findRecord(memory, 'mediafile', mediaId) as
+      | MediaFileD
+      | undefined;
+    const localVerses = describeVerseRegions(localMedia);
+    // Master posts `.../transcription/{iso}/{romanize}` (no method segment) and
+    // the API creates one TRTask per Mark Verses region (`uuid|26`, …). The
+    // develop path `.../{method}` (even `/mms`) currently returns a single
+    // unversed TRTask when Verse regions exist — match master for multi-verse.
+    const useMasterVerseTimedPath = localVerses.verseRegionCount > 1;
+    const method = useMasterVerseTimedPath
+      ? undefined
+      : (asr?.method ?? 'mms');
+    const remote = coordinator?.getSource?.('remote') as
+      | { requestQueue?: { length?: number } }
+      | undefined;
+    const queueLenBefore = remote?.requestQueue?.length ?? -1;
+    const postPath = useMasterVerseTimedPath
+      ? `mediafiles/${remId}/transcription/${iso}/${romanize}${phoneticParam}`
+      : `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}${phoneticParam}`;
+    asrDebug('postTranscribe start', {
+      mediaId,
+      remId,
+      iso,
+      romanize,
+      configuredMethod: asr?.method ?? 'mms',
+      method: method ?? '(omitted — master verse-timed path)',
+      useMasterVerseTimedPath,
+      postPath,
+      phonetic,
+      force,
+      contentVerses: contentVersesRef.current,
+      remoteQueueLength: queueLenBefore,
+      ...localVerses,
+    });
     try {
-      const response = (await axiosPost(
-        `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}${phoneticParam}`,
-        undefined,
-        token
-      )) as { data: { data: MediaFileD } };
+      // Mark Verses saves land in Orbit first; the transcription API reads
+      // server-side mediafile.segments. Wait so Verse regions are pushed.
+      await waitForRemoteQueue('asr before postTranscribe');
+      const queueLenAfterWait = remote?.requestQueue?.length ?? -1;
+      asrDebug('postTranscribe after remote queue wait', {
+        remId,
+        remoteQueueLength: queueLenAfterWait,
+        ...describeVerseRegions(
+          findRecord(memory, 'mediafile', mediaId) as MediaFileD | undefined
+        ),
+      });
+      const response = (await axiosPost(postPath, undefined, token)) as {
+        data: { data: MediaFileD };
+      };
       const mediaRec = response?.data.data as MediaFileD;
       const newTasks = getTasks(mediaRec);
+      asrDebug('postTranscribe response', {
+        remId,
+        taskCount: newTasks?.length ?? 0,
+        tasksMissingVerse: newTasks?.filter((t) => !t.verse).length ?? 0,
+        ...describeTrTaskRaw(mediaRec),
+        ...describeVerseRegions(mediaRec),
+        localVsApiMismatch:
+          (describeVerseRegions(localMedia).verseRegionCount > 1 &&
+            (newTasks?.length ?? 0) <= 1) ||
+          false,
+      });
       if (newTasks) {
         onPullTasks(remId);
         syncTasks(newTasks);
-        setTaskId(newTasks[0]?.taskId ?? '');
+        setTaskId(newTasks[0]?.taskId ?? '', 'postTranscribe first task');
       } else {
+        asrDebug('postTranscribe no tasks', { mediaId: remId });
         status(t.aiAsrFailed);
-        closing();
+        closing('postTranscribe returned no TRTask regions');
       }
     } catch (errResult: unknown) {
       const error = errResult as AxiosError;
       const message = axiosErrorMessage(errResult);
+      asrDebug('postTranscribe error', { mediaId: remId, message });
       const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
       logError(
         Severity.error,
@@ -314,21 +487,30 @@ export default function AsrProgress({
         AlertSeverity.Error,
         message
       );
-      closing();
+      closing('postTranscribe failed', { message });
     }
   };
 
   React.useEffect(() => {
     if (taskId) {
+      asrDebug('taskId effect: active', {
+        taskId,
+        hasTimer: Boolean(taskTimer.current),
+      });
       if (!taskTimer.current) {
         launchTimer();
       } else {
         void checkTask();
       }
     } else if (taskTimer.current) {
+      asrDebug('taskId effect: clearing timer (taskId empty)', {
+        incompleteTasks: tasksRef.current
+          ?.filter((t) => !t.complete)
+          .map((t) => ({ taskId: t.taskId, verse: t.verse })),
+      });
       clearInterval(taskTimer.current);
       taskTimer.current = undefined;
-      closing();
+      closing('taskId became empty while timer was running');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId]);
@@ -339,20 +521,45 @@ export default function AsrProgress({
     setWorking(false);
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
     const [resumeTaskId, resumeTasks] = getTaskId(mediaRec);
+    asrDebug('mount', {
+      mediaId,
+      force,
+      contentVerses: contentVersesRef.current,
+      resumeTaskId,
+      resumeTaskCount: resumeTasks?.length,
+      savedTranscriptionPreview: asrDebugPreview(
+        mediaRec?.attributes?.transcription ?? ''
+      ),
+    });
     if (
       (!resumeTasks || !resumeTaskId) &&
       ignoreVs((mediaRec?.attributes?.transcription ?? '').trim())
     ) {
+      asrDebug('mount: transcription exists, closing', { mediaId });
       status(t.transcriptionExists);
-      closing();
+      closing('saved transcription already exists (ignoreVs)');
     } else if (resumeTaskId && !force) {
+      asrDebug('mount: resume polling', {
+        resumeTaskId,
+        resumeTasks: resumeTasks?.map((t) => ({
+          taskId: t.taskId,
+          verse: t.verse,
+          complete: t.complete,
+        })),
+      });
       if (resumeTasks) syncTasks(resumeTasks);
-      setTaskId(resumeTaskId);
+      setTaskId(resumeTaskId, 'resume incomplete TRTask');
     } else {
+      asrDebug('mount: postTranscribe', { force, resumeTaskId });
       void postTranscribe();
     }
 
     return () => {
+      asrDebug('unmount', {
+        mediaId,
+        taskId: taskIdRef.current,
+        hadTimer: Boolean(taskTimer.current),
+      });
       if (taskTimer.current) {
         clearInterval(taskTimer.current);
         taskTimer.current = undefined;
@@ -390,7 +597,7 @@ export default function AsrProgress({
           </Typography>
         )}
         <ActionRow>
-          <Button onClick={closing}>{ts.close}</Button>
+          <Button onClick={() => closing('user clicked Close')}>{ts.close}</Button>
         </ActionRow>
       </Stack>
     </Box>
