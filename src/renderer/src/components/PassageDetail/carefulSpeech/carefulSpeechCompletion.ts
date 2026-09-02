@@ -5,10 +5,7 @@ import {
   matchesGuidedOutputRow,
   pickLatestGuidedOutputRow,
 } from './matchesGuidedOutputRow';
-import {
-  parseTakeSourceRegion,
-  takeMatchesRegion,
-} from '../../../crud/phraseTakes';
+import { parseTakeSourceRegion, regionsMatch } from '../../../crud/phraseTakes';
 
 function isEmptySourceSegments(seg: string | undefined): boolean {
   if (!seg) return true;
@@ -34,9 +31,8 @@ function regionMatchesClause(
   ) {
     return true;
   }
-  if (parseTakeSourceRegion(storedSeg)) {
-    return takeMatchesRegion(storedSeg, clauseRegion);
-  }
+  const stored = parseTakeSourceRegion(storedSeg);
+  if (stored) return regionsMatch(stored, clauseRegion);
   return prettySegment(storedSeg).trim() === prettySegment(clauseRegion).trim();
 }
 
