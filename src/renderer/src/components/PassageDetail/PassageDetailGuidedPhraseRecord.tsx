@@ -82,6 +82,7 @@ import {
   splitClauseAt,
 } from './carefulSpeech/carefulSpeechClauseSplit';
 import {
+  newTakeToken,
   type GuidedPhraseRecordConfig,
   type IGuidedPhraseRecordControlStrings,
 } from '../../components/PassageDetail/guidedPhraseRecord/types';
@@ -220,6 +221,11 @@ export function PassageDetailGuidedPhraseRecord({
     localStorage.getItem(config.speakerLocalKey) ?? ''
   );
   const [showRecorder, setShowRecorder] = useState(false);
+  // Names this take apart from any other take of the same segment in the same
+  // step - see buildFilenamePostfix for why a repeated name plays the wrong
+  // audio (TT-7432). A new one for every take, so it is minted where recording
+  // begins rather than derived from anything the takes have in common.
+  const [takeToken, setTakeToken] = useState(newTakeToken);
   const [resetMedia, setResetMedia] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
@@ -523,7 +529,8 @@ export function PassageDetailGuidedPhraseRecord({
     const postfix = config.buildFilenamePostfix(
       currentIndex,
       currentVersion,
-      stepLanguageBcp47
+      stepLanguageBcp47,
+      takeToken
     );
     return passageDefaultFilename(
       passage,
@@ -542,6 +549,7 @@ export function PassageDetailGuidedPhraseRecord({
     currentIndex,
     currentVersion,
     stepLanguageBcp47,
+    takeToken,
     config,
   ]);
 
@@ -1863,6 +1871,11 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // This take is its own file, even where an earlier take of this
+              // segment was deleted first (TT-7432). MediaRecord reads
+              // defaultFilename when the save runs, so a token minted here is
+              // the one the take uploads under.
+              setTakeToken(newTakeToken());
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
               setSaveRejected(false);

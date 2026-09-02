@@ -53,14 +53,42 @@ export interface GuidedPhraseRecordConfig {
    * audioUrl to `<offlineData>/media/<basename>`. Two takes uploaded under one
    * name therefore share a single cached file, and whichever was cached first
    * is what plays for both. `languageBcp47` is passed for the steps that can
-   * have a sibling step over the same audio in another language (TT-7643).
+   * have a sibling step over the same audio in another language (TT-7643), and
+   * `takeToken` tells apart the takes of one segment in one step - re-recording
+   * a segment, with or without deleting the old take first, matches on every
+   * other part of the name (TT-7432). Both are omitted for takes that predate
+   * them, which keep the names they were uploaded under.
    */
   buildFilenamePostfix: (
     unitIndex: number,
     sourceVersion: number,
-    languageBcp47?: string
+    languageBcp47?: string,
+    takeToken?: string
   ) => string;
 }
+
+let lastTokenMs = 0;
+let tokenSeq = 0;
+
+/**
+ * A token for one take, unique and ascending. The clock alone would do, but two
+ * calls can land in the same millisecond, so same-millisecond calls get a
+ * counter appended rather than the same token.
+ */
+export function newTakeToken(now: number = Date.now()): string {
+  if (now === lastTokenMs) {
+    tokenSeq += 1;
+  } else {
+    lastTokenMs = now;
+    tokenSeq = 0;
+  }
+  const stamp = now.toString(36);
+  return tokenSeq === 0 ? stamp : `${stamp}${tokenSeq.toString(36)}`;
+}
+
+/** `_`-joined name parts, skipping the ones this take has nothing for. */
+const withParts = (base: string, ...parts: (string | undefined)[]): string =>
+  [base, ...parts.filter((p) => p)].join('_');
 
 const carefulSpeechBoundaryDefaults = {
   constrainAutoSegmentWithVerses: false,
@@ -81,8 +109,8 @@ export const CAREFUL_SPEECH_CONFIG: GuidedPhraseRecordConfig = {
   containerId: 'careful-speech',
   requireBoldWorkflow: true,
   ...carefulSpeechBoundaryDefaults,
-  buildFilenamePostfix: (unitIndex, sourceVersion) =>
-    `carefulspeech${unitIndex + 1}_v${sourceVersion}`,
+  buildFilenamePostfix: (unitIndex, sourceVersion, _languageBcp47, takeToken) =>
+    withParts(`carefulspeech${unitIndex + 1}_v${sourceVersion}`, takeToken),
 };
 
 export function phraseBackTranslateConfig(
@@ -106,13 +134,18 @@ export function phraseBackTranslateConfig(
     multiLevelSegmentUndo: phraseBoundaryTools,
     sequentialUnitNavAroundRecord: phraseBoundaryTools,
     persistSegments: phraseBoundaryTools,
-    buildFilenamePostfix: (unitIndex, sourceVersion, languageBcp47) => {
+    buildFilenamePostfix: (
+      unitIndex,
+      sourceVersion,
+      languageBcp47,
+      takeToken
+    ) => {
       const base = `${artifactSlug}${unitIndex + 1}_v${sourceVersion}`;
       const unit = unitIndex > 0 ? `${base}s${unitIndex}` : base;
       // A Phrase BT step per language records the same segment of the same
       // vernacular, so without the language every one of them uploads under
       // the same name. Takes made before this stay on their old names.
-      return languageBcp47 ? `${unit}_${languageBcp47}` : unit;
+      return withParts(unit, languageBcp47, takeToken);
     },
   };
 }
