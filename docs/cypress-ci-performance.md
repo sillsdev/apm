@@ -65,6 +65,17 @@ why the subset is selected with `--spec` rather than filtered in-browser.
 > }
 > ```
 
+#### Make it permanent
+
+Your profile is `C:\Users\gtrih\OneDrive\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` and doesn't exist yet:
+
+```powershell
+New-Item -ItemType File -Path $PROFILE -Force
+notepad $PROFILE
+```
+
+Paste the function in, save, and open a new window. (`-Force` here creates the parent directory; it's safe because the file doesn't exist — avoid it on a profile you already have, since it truncates.)
+
 ### 3. Five specs are 75% of all test time
 
 | Spec                                                | Time     | Tests  |
@@ -95,7 +106,9 @@ That reload leaves **two copies of React** in the page, so the spec that
 triggers it fails with:
 
 ```
+
 Cannot read properties of null (reading 'useMemo')
+
 ```
 
 This is why the whole-suite warm-up existed: it forced discovery of all 161
