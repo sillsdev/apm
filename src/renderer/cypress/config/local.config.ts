@@ -78,9 +78,10 @@ const testViteConfig = {
         ws: { send: (...args: unknown[]) => unknown };
       }) {
         const send = server.ws.send.bind(server.ws);
-        server.ws.send = (payload: { type?: string }, ...args: unknown[]) => {
+        server.ws.send = (...args: unknown[]) => {
+          const payload = args[0] as { type?: string } | undefined;
           if (payload?.type === 'full-reload') return;
-          return send(payload, ...args);
+          return send(...args);
         };
       },
     },
