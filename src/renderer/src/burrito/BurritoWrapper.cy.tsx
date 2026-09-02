@@ -200,7 +200,7 @@ const mockStore = createStore(
   applyMiddleware(thunk as never)
 );
 
-describe('BurritoWrapper', () => {
+describe('BurritoWrapper', { tags: '@smoke' }, () => {
   const createInitialState = (
     memory: Memory,
     overrides: Record<string, unknown> = {}

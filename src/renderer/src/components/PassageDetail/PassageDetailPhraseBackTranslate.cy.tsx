@@ -50,7 +50,7 @@ const SEGMENTS_SHORT_LAST = [
 
 afterEach(() => pbtCleanup());
 
-describe('PBT listen pass', () => {
+describe('PBT listen pass', { tags: '@smoke' }, () => {
   beforeEach(() => {
     mountPbt({ segments: SEGMENTS });
     waitForPbtReady();
@@ -87,7 +87,7 @@ describe('PBT listen pass', () => {
   });
 });
 
-describe('PBT record enablement', () => {
+describe('PBT record enablement', { tags: '@smoke' }, () => {
   beforeEach(() => {
     mountPbt({ segments: SEGMENTS });
     waitForPbtReady();
