@@ -208,8 +208,7 @@ import { PassageDetailCarefulSpeech } from './PassageDetailCarefulSpeech';
 // Fire the player's region-out callback for a given clause.
 const firePlaybackEnd = async (idx: number) => {
   const cb = playerProps?.onSegmentPlaybackEnd as
-    | ((r: IRegion) => void)
-    | undefined;
+    ((r: IRegion) => void) | undefined;
   await act(async () => {
     cb?.(regions[idx]);
   });
@@ -317,8 +316,7 @@ describe('PassageDetailCarefulSpeech — review and clear recording', () => {
     await mountAndSettle();
 
     const onClearRecording = controlsProps?.onClearRecording as
-      | (() => void)
-      | undefined;
+      (() => void) | undefined;
     await act(async () => {
       onClearRecording?.();
     });
@@ -439,6 +437,85 @@ describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () =
   });
 });
 
+describe('PassageDetailCarefulSpeech — take belongs to the clause it started on (TT-7437)', () => {
+  // Record a take on clause 2 and hand back the sourceSegments value the
+  // recorder must file it under.
+  const startTakeOnClause2 = async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const utils = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    return utils;
+  };
+
+  it('keeps the take on its clause when the selection moves mid-record', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('keeps the take on its clause when the selection change lands after stop', async () => {
+    // The waveform click is dropped while locked, but the seek it caused makes
+    // the playhead enter the tapped clause; that region-in can arrive in the
+    // gap between the recorder stopping and the save starting. The take was
+    // already made — it still belongs to clause 2 (TT-7437).
+    const { rerender } = await startTakeOnClause2();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('keeps the take on its clause while the save is in flight', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('greens the clause it recorded, not the one the selection moved to', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    const colorOf = (index: number) =>
+      (
+        playerProps?.applyRegionColor as
+          ((role: string, index: number, count: number) => string) | undefined
+      )?.('base', index, 8);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await moveEngineToClause(6, rerender);
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(colorOf(2)).toBe(CAREFUL_SPEECH_COMPLETED_RGBA);
+    expect(colorOf(6)).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+  });
+});
+
 describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', () => {
   it('after saving a take, tapping the next clause advances and resets the recorder', async () => {
     mockCompleted = new Set([0, 1]); // auto-play clause 2
@@ -479,8 +556,7 @@ describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', (
     const applyRegionColor = () =>
       (
         playerProps?.applyRegionColor as
-          | ((role: string, index: number, count: number) => string)
-          | undefined
+          ((role: string, index: number, count: number) => string) | undefined
       )?.('base', 2, 8);
 
     expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
@@ -511,8 +587,7 @@ describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', (
     const applyRegionColor = () =>
       (
         playerProps?.applyRegionColor as
-          | ((role: string, index: number, count: number) => string)
-          | undefined
+          ((role: string, index: number, count: number) => string) | undefined
       )?.('base', 2, 8);
 
     expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
