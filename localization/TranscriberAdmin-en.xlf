@@ -8992,6 +8992,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.asrProgress">
+         <segment>
+            <source>Transcribing {0} (verse {1}) of {2} (ending at verse {3})</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.chooseSisterLang">
          <segment>
             <source>Choose a sister language</source>

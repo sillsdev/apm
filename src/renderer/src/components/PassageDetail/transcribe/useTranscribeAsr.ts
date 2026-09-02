@@ -1,23 +1,48 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   OrganizationD,
   IWsAudioPlayerStrings,
   ISharedStrings,
+  MediaFileD,
+  PassageD,
 } from '../../../model';
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
-import { IAsrState } from '../../../business/asr/asrState';
+import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
+import {
+  getSegments,
+  getSortedRegions,
+  NamedRegions,
+} from '../../../utils/namedSegments';
+import { useOrbitData } from '../../../hoc/useOrbitData';
+import { applyAsrTranscription } from './applyAsrTranscription';
+import {
+  deriveContentVerses,
+  verseLabelsFromMarkVersesRegions,
+} from './transcribeContentVerses';
+import {
+  applyVerseMarkerForRegionPosition,
+  insertVerseMarkerAtRegionPosition,
+  seedFirstVerseMarker,
+} from './transcribeVerseMarkers';
+import { IRegion } from '../../../crud/useWavesurferRegions';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
   sharedStr: ISharedStrings;
   tPlayer: IWsAudioPlayerStrings;
   showMessage: (msg: string) => void;
-  onTextAdd: (text: string, isAsr?: boolean) => void;
-  getCurrentText: () => string;
+  passage?: PassageD | undefined;
+  mediafile?: MediaFileD | undefined;
+  playerMediaId?: string | undefined;
+  textValue: string;
+  onTextReplace: (text: string) => void;
+  toolChanged?: (toolId: string, changed: boolean) => void;
+  toolId?: string;
+  transcriptionRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function useTranscribeAsr({
@@ -25,19 +50,56 @@ export function useTranscribeAsr({
   sharedStr,
   tPlayer,
   showMessage,
-  onTextAdd,
-  getCurrentText,
+  passage,
+  mediafile,
+  playerMediaId,
+  textValue,
+  onTextReplace,
+  toolChanged,
+  toolId,
+  transcriptionRef,
 }: UseTranscribeAsrProps) {
   const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
     useGetAsrSettings(team);
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
+  const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
 
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [phonetic, setPhonetic] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
+  );
+
+  const verseSegsRef = useRef<string>('');
+
+  const sortedVerseRegions = useMemo(() => {
+    const defaultSegments = mediafile?.attributes?.segments;
+    if (!defaultSegments) return [] as IRegion[];
+    return getSortedRegions(getSegments(NamedRegions.Verse, defaultSegments));
+  }, [mediafile?.attributes?.segments]);
+
+  const verseSegsJson = useMemo(() => {
+    if (sortedVerseRegions.length === 0) return undefined;
+    return JSON.stringify({ regions: JSON.stringify(sortedVerseRegions) });
+  }, [sortedVerseRegions]);
+
+  useEffect(() => {
+    if (verseSegsJson) verseSegsRef.current = verseSegsJson;
+  }, [verseSegsJson]);
+
+  const verseLabels = useMemo(
+    () =>
+      verseLabelsFromMarkVersesRegions(
+        sortedVerseRegions.map((r) => r.label ?? '').filter(Boolean)
+      ),
+    [sortedVerseRegions]
+  );
+
+  const contentVerses = useMemo(
+    () => deriveContentVerses(textValue, verseLabels),
+    [textValue, verseLabels]
   );
 
   const asrSettings = useMemo(() => getAsrSettings(), [getAsrSettings]);
@@ -56,9 +118,10 @@ export function useTranscribeAsr({
 
   const startAsr = useCallback(
     (asrOverrideState?: IAsrState) => {
-      const asr = asrOverrideState ?? asrSettings;
       setAsrOverride(asrOverrideState);
-      setPhonetic(asr?.target === AsrTarget.phonetic);
+      setPhonetic(
+        (asrOverrideState ?? asrSettings)?.target === AsrTarget.phonetic
+      );
       setAsrProgressVisible(true);
     },
     [asrSettings]
@@ -105,16 +168,63 @@ export function useTranscribeAsr({
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      const cleanTrans = trans.replace(/[0-9]+:[0-9]+.[0-9]+: /g, '').trim();
-      const curTrans = getCurrentText();
-      if (curTrans.includes(cleanTrans)) return;
-      const m = /\\v (\d+)\s?/.exec(cleanTrans);
-      const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
-      const space = /\s$/.test(curTrans) ? '' : ' ';
-      onTextAdd(space + cleanTrans.substring(index), true);
+      const updated = applyAsrTranscription(textValue, trans);
+      if (updated !== textValue) {
+        onTextReplace(updated);
+        if (toolId && toolChanged) toolChanged(toolId, true);
+      }
     },
-    [getCurrentText, onTextAdd]
+    [textValue, onTextReplace, toolId, toolChanged]
   );
+
+  const hasAiTasks = useMemo(() => {
+    const mediaId = playerMediaId ?? mediafile?.id;
+    const mediaRec = mediarecs.find((m) => m.id === mediaId);
+    return (
+      getSegments(
+        NamedRegions.TRTask,
+        mediaRec?.attributes?.segments || '{}'
+      ) !== '{}'
+    );
+  }, [playerMediaId, mediafile?.id, mediarecs]);
+
+  const hasTranscription = useMemo(
+    () => textValue !== '' && verseLabels.length <= contentVerses.length,
+    [textValue, verseLabels.length, contentVerses.length]
+  );
+
+  const seedVerseMarkersOnLoad = useCallback(() => {
+    if (!sortedVerseRegions.length) return;
+    const seeded = seedFirstVerseMarker(textValue, sortedVerseRegions);
+    if (seeded !== textValue) {
+      onTextReplace(seeded);
+    }
+  }, [sortedVerseRegions, textValue, onTextReplace]);
+
+  const handleStartRegion = useCallback(
+    (position: number) => {
+      if (transcriptionRef?.current?.firstChild) {
+        const textArea = transcriptionRef.current
+          .firstChild as HTMLTextAreaElement;
+        insertVerseMarkerAtRegionPosition(
+          textArea,
+          sortedVerseRegions,
+          position
+        );
+        onTextReplace(textArea.value ?? '');
+        return;
+      }
+      const updated = applyVerseMarkerForRegionPosition(
+        textValue,
+        sortedVerseRegions,
+        position
+      );
+      if (updated !== textValue) onTextReplace(updated);
+    },
+    [sortedVerseRegions, textValue, onTextReplace, transcriptionRef]
+  );
+
+  const asrForce = !asrStatesEqual(asrOverride, asrSettings);
 
   return {
     asrSettings,
@@ -125,8 +235,20 @@ export function useTranscribeAsr({
     setAsrLangVisible,
     asrOverride,
     phonetic,
+    asrForce,
+    contentVerses,
+    verseLabels,
+    verseSegs: verseSegsRef.current,
+    verseSegsJson,
+    hasAiTasks,
+    hasTranscription,
     handleTranscribe,
     handleAsrLanguageClose,
     handleAutoTranscribe,
+    handleStartRegion,
+    seedVerseMarkersOnLoad,
+    startAsr,
+    openAsrLanguageSettings,
+    passage,
   };
 }

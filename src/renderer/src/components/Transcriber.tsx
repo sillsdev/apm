@@ -68,7 +68,6 @@ import {
   resolvedProjectType,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
-import { useGetAsrSettings } from '../crud/useGetAsrSettings';
 import { parseStepLanguageField } from '../crud/transcribeStepAsrSettings';
 import {
   insertAtCursor,
@@ -82,7 +81,6 @@ import {
   NamedRegions,
   updateSegments,
   useWaitForRemoteQueue,
-  getSortedRegions,
   isLangSet,
 } from '../utils';
 import { isElectron } from '../../api-variable';
@@ -108,7 +106,6 @@ import {
 import {
   IWsAudioPlayerStrings,
   OrganizationD,
-  OrgWorkflowStepD,
 } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
@@ -124,13 +121,10 @@ import { BigDialogBp } from '../hoc/BigDialogBp';
 import AsrButton from '../control/ConfButton';
 import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
-import { AsrTarget } from '../business/asr/AsrTarget';
-import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
+import { useTranscribeAsr } from './PassageDetail/transcribe/useTranscribeAsr';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
-import { useCheckOnline } from '../utils/useCheckOnline';
 import { useMobile } from '../utils/useMobile';
-import { useLocLangName } from '../utils/useLocLangName';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -279,8 +273,6 @@ export function Transcriber(props: IProps) {
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const [suggestedSegs, setSuggestedSegs] = useState<string>();
   const verseSegs = useRef<string | undefined>(undefined);
-  const [verseLabels, setVerseLabels] = useState<string[]>([]);
-  const [contentVerses, setContentVerses] = useState<string[]>([]);
   const playedSecsRef = useRef<number>(0);
   const segmentsRef = useRef<string | undefined>(undefined);
   const stateRef = useRef<string>(state);
@@ -342,24 +334,12 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
-  const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
-  const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
     shallowEqual
   );
-  const [getName] = useLocLangName();
-  const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { isMobile } = useMobile();
   const [features, setFeatures] = useState<IFeatures>();
-  const [asrProgressVisible, setAsrProgressVisible] = useState(false);
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
-  const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
-    undefined
-  );
   const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -401,6 +381,34 @@ export function Transcriber(props: IProps) {
   });
   const ta: IActivityStateStrings = useSelector(activitySelector, shallowEqual);
   const toolId = 'transcriber';
+
+  const handleTextReplace = useCallback((text: string) => {
+    setTextValue(text);
+    if (transcriptionRef.current?.firstChild) {
+      (transcriptionRef.current.firstChild as HTMLTextAreaElement).value =
+        text;
+    }
+  }, []);
+
+  const asr = useTranscribeAsr({
+    team,
+    sharedStr,
+    tPlayer,
+    showMessage,
+    passage: passage as PassageD,
+    mediafile: mediafile as MediaFileD,
+    playerMediaId: playerMediafile?.id,
+    textValue,
+    onTextReplace: handleTextReplace,
+    toolChanged,
+    toolId,
+    transcriptionRef,
+  });
+
+  useEffect(() => {
+    if (asr.verseSegsJson) verseSegs.current = asr.verseSegsJson;
+  }, [asr.verseSegsJson]);
+
   /* debug what props are changing to force renders
   useRenderingTrace(
     'Transcriber',
@@ -622,35 +630,10 @@ export function Transcriber(props: IProps) {
       }
       const defaultSegments = mediafile?.attributes?.segments;
       if (defaultSegments) {
-        const segs = getSortedRegions(
-          getSegments(NamedRegions.Verse, defaultSegments)
-        );
-        const verseLabels: string[] = [];
-        segs.forEach((region) => {
-          const vnum = region?.label?.split(':')[1];
-          if (vnum) verseLabels.push(vnum);
-        });
-        setVerseLabels(verseLabels);
-        if (segs.length > 0) {
-          const textArea = transcriptionRef.current
-            .firstChild as HTMLTextAreaElement;
-          if (!textArea.value || textArea.value === 'undefined') {
-            let refText = segs.find(
-              (s) => s?.label && refMatch(s.label)
-            )?.label;
-            const vNum = refText?.split(':')[1];
-            if (vNum) {
-              refText = `\\v ${vNum} `;
-              if (textArea.value === 'undefined') textArea.value = '';
-              insertAtCursor(textArea, refText);
-              setTextValue(textArea.value ?? '');
-            }
-          }
-        }
-        verseSegs.current = JSON.stringify({ regions: JSON.stringify(segs) });
         setSuggestedSegs(
           getSegments(NamedRegions.Transcription, defaultSegments)
         );
+        asr.seedVerseMarkersOnLoad();
       }
     }
     mediaRef.current = mediafile;
@@ -1153,27 +1136,6 @@ export function Transcriber(props: IProps) {
     };
   };
 
-  useEffect(() => {
-    const transcription = textValue;
-    if (!transcription) return;
-    const newContentVerses: string[] = [];
-    verseLabels.forEach((label) => {
-      const pat = new RegExp(`\\\\v\\s+${label}\\s+[^\\\\]`);
-      if (pat.test(transcription as string)) {
-        newContentVerses.push(label);
-      }
-    });
-    if (newContentVerses.length === 0) {
-      if (!/\\v/.test(transcription as string)) {
-        newContentVerses.push('no-verses');
-      }
-    }
-    if (JSON.stringify(contentVerses) !== JSON.stringify(newContentVerses)) {
-      setContentVerses(newContentVerses);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textValue, verseLabels, playerMediafile]);
-
   const showTranscription = (val: ITrans) => {
     transcriptionIn.current = val.transcription;
     setTextValue(val.transcription ?? '');
@@ -1236,50 +1198,6 @@ export function Transcriber(props: IProps) {
     }
   };
 
-  const handleAutoTranscribe = (trans: string) => {
-    const cleanTrans = trans.replace(/[0-9]+:[0-9]+.[0-9]+: /g, '').trim();
-    const curTrans: string = transcriptionRef.current?.firstChild?.value ?? '';
-    if (curTrans.includes(cleanTrans)) return;
-    const m = /\\v (\d+)\s?/.exec(cleanTrans);
-    const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
-    const space = /\s$/.test(curTrans) ? '' : ' ';
-    addText(space + cleanTrans.substring(index), true);
-    toolChanged(toolId, true);
-  };
-
-  const hasAiTasks = useMemo(() => {
-    const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
-    return (
-      getSegments(
-        NamedRegions.TRTask,
-        mediaRec?.attributes?.segments || '{}'
-      ) !== '{}'
-    );
-  }, [playerMediafile, mediarecs]);
-
-  const hasTranscription = useMemo(
-    () => textValue !== '' && verseLabels.length <= contentVerses.length,
-    [textValue, verseLabels.length, contentVerses.length]
-  );
-  const asrSettings = useMemo(
-    () => getAsrSettings(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orgSteps, getAsrSettings]
-  );
-
-  const asrTip = useMemo(() => {
-    return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
-      '{0}',
-      asrSettings?.language?.languageName?.trim()
-        ? `\u2039 ${
-            getName(asrSettings?.language.bcp47) ||
-            asrSettings?.language?.languageName
-          } \u203A`
-        : ''
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asrSettings]);
-
   const onPullTasks = (remoteId: string) => {
     pullTableList(
       'mediafile',
@@ -1291,53 +1209,6 @@ export function Transcriber(props: IProps) {
     ).then(() => {
       if (forceRefresh) forceRefresh();
     });
-  };
-
-  const startAsr = (asrOverrideState?: IAsrState) => {
-    const asr = asrOverrideState ?? asrSettings;
-    setAsrOverride(asrOverrideState);
-    setPhonetic(asr?.target === AsrTarget.phonetic);
-    setAsrProgressVisible(true);
-  };
-
-  const openAsrLanguageSettings = () => {
-    setAsrLangVisible(true);
-  };
-
-  // Confirm step-resolved ASR settings; user may override for this run only.
-  // When the resolved settings are already usable (a valid ASR language is
-  // known from saved org/project settings), skip the dialog and start directly.
-  const handleTranscribe = () => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(sharedStr.mustBeOnline);
-        return;
-      }
-      if (isLangSet(asrSettings?.asrIso)) {
-        startAsr(asrSettings);
-        return;
-      }
-      openAsrLanguageSettings();
-    });
-  };
-
-  const handleAsrLanguageClose = (
-    cancel: boolean,
-    asrState?: IAsrState,
-    setAsTeamDefault?: boolean
-  ) => {
-    setAsrLangVisible(false);
-    if (cancel) return;
-    const asr = asrState ?? asrSettings;
-    if (isLangSet(asr?.asrIso)) {
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
-      startAsr(asr);
-    }
-  };
-
-  const handleAsrProgressVisible = (v: boolean) => {
-    setAsrProgressVisible(v);
   };
 
   const onSaveProgress = (progress: number) => {
@@ -1354,30 +1225,6 @@ export function Transcriber(props: IProps) {
           : ArtifactTypeSlug.Vernacular
     );
   }, [slug, artifactId, slugFromId]);
-
-  const handleStartRegion = (position: number) => {
-    const segs = getSortedRegions(verseSegs.current || '');
-    const ref = segs.find((s) => s.start === position)?.label;
-    const m = refMatch(ref || '');
-    if (ref && m) {
-      const vNum = ref.substring((m[1] as string).length + 1);
-      let refText = `\\v ${vNum} `;
-      const textArea = transcriptionRef.current
-        .firstChild as HTMLTextAreaElement;
-      const refPos = textArea.value.indexOf(refText);
-      // look for alternate verse markup format too
-      const refPos2 = textArea.value.indexOf(`\\v${vNum} `);
-      if (refPos === -1 && refPos2 === -1) {
-        // vNum is undefined for bad references
-        refText = vNum ? ' ' + refText : '';
-        if (parseInt(m[2] as string) === 1) {
-          refText = ` \\c ${m[1]} ` + refText;
-        }
-        insertAtCursor(textArea, refText);
-        setTextValue(textArea.value ?? '');
-      }
-    }
-  };
 
   return (
     <GrowingDiv>
@@ -1410,7 +1257,7 @@ export function Transcriber(props: IProps) {
                   onProgress={onProgress}
                   suggestedSegments={suggestedSegs}
                   verses={verseSegs.current}
-                  onStartRegion={handleStartRegion}
+                  onStartRegion={asr.handleStartRegion}
                   onSegment={onSegmentChange}
                   onSegmentParamChange={onSegmentParamChange}
                   onInteraction={onInteraction}
@@ -1451,20 +1298,20 @@ export function Transcriber(props: IProps) {
                         <LightTooltip
                           title={
                             <Badge badgeContent={sharedStr.ai}>
-                              {asrTip ?? ''}
+                              {asr.asrTip ?? ''}
                             </Badge>
                           }
                         >
                           <span>
                             <AsrButton
                               id="asrButton"
-                              onClick={handleTranscribe}
-                              onSettings={openAsrLanguageSettings}
+                              onClick={asr.handleTranscribe}
+                              onSettings={asr.openAsrLanguageSettings}
                               showSettings={false}
                               disabled={role !== 'transcriber'}
                             >
-                              {!hasTranscription &&
-                              hasAiTasks &&
+                              {!asr.hasTranscription &&
+                              asr.hasAiTasks &&
                               role === 'transcriber' ? (
                                 <Badge variant="dot" color="primary">
                                   <TranscriptionLogo
@@ -1643,21 +1490,21 @@ export function Transcriber(props: IProps) {
         </BigDialog>
         <BigDialog
           title={tPlayer.recognizeSpeechSettings}
-          isOpen={asrLangVisible}
-          onOpen={() => handleAsrLanguageClose(true)}
+          isOpen={asr.asrLangVisible}
+          onOpen={() => asr.handleAsrLanguageClose(true)}
           bp={BigDialogBp.sm}
         >
           <SelectAsrLanguage
-            key={asrLangVisible ? 'open' : 'closed'}
+            key={asr.asrLangVisible ? 'open' : 'closed'}
             team={team}
-            onClose={handleAsrLanguageClose}
+            onClose={asr.handleAsrLanguageClose}
           />
         </BigDialog>
-        {asrProgressVisible && (
+        {asr.asrProgressVisible && (
           <BigDialog
             title={tPlayer.recognizeProgress}
-            isOpen={asrProgressVisible}
-            onOpen={handleAsrProgressVisible}
+            isOpen={asr.asrProgressVisible}
+            onOpen={asr.setAsrProgressVisible}
             bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
             mobileNoHorizontalScroll={isMobile}
             mobilePaperWidth={
@@ -1667,13 +1514,14 @@ export function Transcriber(props: IProps) {
           >
             <AsrProgress
               mediaId={playerMediafile?.id ?? ''}
-              phonetic={phonetic}
-              asrState={asrOverride}
-              force={!asrStatesEqual(asrOverride, asrSettings)}
-              contentVerses={contentVerses}
-              setTranscription={handleAutoTranscribe}
+              phonetic={asr.phonetic}
+              asrState={asr.asrOverride}
+              force={asr.asrForce}
+              contentVerses={asr.contentVerses}
+              passage={passage as PassageD}
+              setTranscription={asr.handleAutoTranscribe}
               onPullTasks={onPullTasks}
-              onClose={() => handleAsrProgressVisible(false)}
+              onClose={() => asr.setAsrProgressVisible(false)}
             />
           </BigDialog>
         )}

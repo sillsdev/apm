@@ -192,6 +192,8 @@ describe('PassageDetailTranscribeMobile', () => {
       aiTranscribe?: boolean;
       offline?: boolean;
       projectAttributes?: Record<string, unknown>;
+      passageAttributes?: Record<string, unknown>;
+      segments?: string;
     } = {}
   ) => {
     const {
@@ -219,6 +221,8 @@ describe('PassageDetailTranscribeMobile', () => {
       aiTranscribe = true,
       offline = false,
       projectAttributes = {},
+      passageAttributes = {},
+      segments,
     } = options;
 
     const defaultMedia: MediaFileD = {
@@ -230,7 +234,7 @@ describe('PassageDetailTranscribeMobile', () => {
         transcriptionstate,
         duration: 20,
         position: 0,
-        segments: '{}',
+        segments: segments ?? '{}',
         dateCreated: '2026-01-01T00:00:00Z',
       },
       relationships: {
@@ -251,7 +255,12 @@ describe('PassageDetailTranscribeMobile', () => {
       type: 'passage',
       attributes: {
         sequencenum: 1,
-        reference: 'MAT 1:1',
+        reference: 'MAT 1:10-12',
+        startChapter: 1,
+        startVerse: 10,
+        endChapter: 1,
+        endVerse: 12,
+        ...passageAttributes,
       },
       relationships: {
         section: { data: { type: 'section', id: 'sec-1' } },
@@ -2161,6 +2170,77 @@ describe('PassageDetailTranscribeMobile', () => {
       cy.get('#transcriptionText')
         .invoke('css', 'font-family')
         .should('match', /Ezra/i);
+    });
+  });
+
+  describe('multi-verse Auto Transcribe', () => {
+    const buildPostSegments = () => {
+      const verseRegions = JSON.stringify({
+        regions: [
+          { label: '10', start: 0, end: 1 },
+          { label: '11', start: 1, end: 2 },
+          { label: '12', start: 2, end: 3 },
+        ],
+      });
+      const trTaskRegions = JSON.stringify({
+        regions: [
+          { label: 'task1|10', start: 0, end: 1 },
+          { label: 'task2|11', start: 1, end: 2 },
+        ],
+      });
+      return JSON.stringify([
+        { name: 'Verse', regionInfo: verseRegions },
+        { name: 'TRTask', regionInfo: trTaskRegions },
+      ]);
+    };
+
+    beforeEach(() => {
+      cy.clock();
+    });
+
+    it('accumulates multi-verse transcription from mocked Aero API polls', () => {
+      let task1Polls = 0;
+
+      cy.intercept('GET', '**/api/AmIOnline/**', { statusCode: 200, body: {} });
+
+      cy.intercept('GET', '**/api/aero/transcription/task1', (req) => {
+        if (task1Polls++ === 0) {
+          req.reply({ body: {} });
+        } else {
+          req.reply({ body: { transcription: 'Verse ten text' } });
+        }
+      }).as('pollTask1');
+
+      cy.intercept('GET', '**/api/aero/transcription/task2', (req) => {
+        req.reply({ body: { transcription: 'Verse eleven text' } });
+      }).as('pollTask2');
+
+      mountTranscribeMobile({
+        transcription: '\\v 10 \\v 11 \\v 12 ',
+        segments: buildPostSegments(),
+      });
+
+      cy.get('#transcriptionText').should('have.value', '\\v 10 \\v 11 \\v 12 ');
+
+      cy.get('#asrButton').click();
+
+      cy.contains('Transcribing 1 (verse 10) of 3 (ending at verse 12)').should(
+        'be.visible'
+      );
+
+      cy.tick(5000);
+      cy.tick(100);
+      cy.get('#transcriptionText').should(
+        'have.value',
+        '\\v 10 Verse ten text\\v 11 \\v 12 '
+      );
+
+      cy.tick(5000);
+      cy.tick(100);
+      cy.get('#transcriptionText', { timeout: 10000 }).should(
+        'have.value',
+        '\\v 10 Verse ten text\\v 11 Verse eleven text\\v 12 '
+      );
     });
   });
 });

@@ -84,7 +84,6 @@ import Confirm from '../../../AlertDialog';
 import SelectAsrLanguage from '../../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../../business/asr/AsrProgress';
 import TranscribeReject from '../../../TranscribeReject';
-import { asrStatesEqual } from '../../../../business/asr/asrState';
 import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
@@ -391,6 +390,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     mediafile?.attributes?.transcription ?? ''
   );
   const mediaRef = useRef<MediaFileD | undefined>(mediafile);
+  const transcriptionRef = useRef<HTMLDivElement | null>(null);
+  const verseSegsRef = useRef<string>('');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const getTextValue = useCallback(() => textValue, [textValue]);
@@ -571,16 +572,17 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     };
   }, [project, memory, artifactTypeId, stepSettings, artifactTypeSlug]);
 
-  const handleTextAdd = useCallback(
-    (newText: string) => {
-      if (isReadOnly || !hasPermission || !mediafile) return;
-      setTextValue((prev) => {
-        const updated = prev + newText;
-        toolChanged(currentstep, true);
-        return updated;
-      });
+  const asrPassage = selectedMediaRow?.passage?.id
+    ? (selectedMediaRow.passage as PassageD)
+    : passage;
+
+  const handleTextReplace = useCallback(
+    (text: string) => {
+      setTextValue(text);
+      if (textareaRef.current) textareaRef.current.value = text;
+      toolChanged(currentstep, true);
     },
-    [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
+    [toolChanged, currentstep]
   );
 
   const asr = useTranscribeAsr({
@@ -588,9 +590,27 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     sharedStr,
     tPlayer,
     showMessage,
-    onTextAdd: handleTextAdd,
-    getCurrentText: getTextValue,
+    passage: asrPassage,
+    mediafile,
+    playerMediaId: mediafile?.id,
+    textValue,
+    onTextReplace: handleTextReplace,
+    toolChanged,
+    toolId: currentstep,
+    transcriptionRef,
   });
+
+  useEffect(() => {
+    if (asr.verseSegsJson) verseSegsRef.current = asr.verseSegsJson;
+  }, [asr.verseSegsJson]);
+
+  const prevMediaIdForSeedRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (prevMediaIdForSeedRef.current === mediafile?.id) return;
+    prevMediaIdForSeedRef.current = mediafile?.id;
+    if (mediafile?.attributes?.segments) asr.seedVerseMarkersOnLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediafile?.id, mediafile?.attributes?.segments, textValue]);
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -779,6 +799,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         onSegmentParamChange={
           !isReadOnly && hasPermission ? onSegmentParamChange : undefined
         }
+        verses={verseSegsRef.current}
+        onStartRegion={!isReadOnly && hasPermission ? asr.handleStartRegion : undefined}
         parentToolId={currentstep}
       />
 
@@ -807,7 +829,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         </Box>
       )}
 
-      <Box sx={{ width: '100%', minWidth: 0 }}>
+      <Box ref={transcriptionRef} sx={{ width: '100%', minWidth: 0 }}>
         <StyledTextAreaAutosize
           id="transcriptionText"
           ref={textareaRef}
@@ -960,8 +982,9 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
             mediaId={mediafile?.id ?? ''}
             phonetic={asr.phonetic}
             asrState={asr.asrOverride}
-            force={!asrStatesEqual(asr.asrOverride, asr.asrSettings)}
-            contentVerses={[]}
+            force={asr.asrForce}
+            contentVerses={asr.contentVerses}
+            passage={asrPassage}
             setTranscription={asr.handleAutoTranscribe}
             onPullTasks={onPullTasks}
             onClose={() => asr.setAsrProgressVisible(false)}

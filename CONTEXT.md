@@ -384,6 +384,20 @@ _Avoid_: Artifact (type/category vs the file itself); Media (too vague)
 Text representing the spoken content of an audio file. Metadata on that audio file, not a separate audio product. The Transcribe step determines which artifact type's audio is shown for editing. When that artifact is **PBT** and multiple **Phrase Back Translation** languages exist, the Transcribe step’s **primary** language selects which language’s PBTs are in scope — it must match a Phrase BT step language on the process. **Sister language** (when present) is for ASR only and never selects the media set.
 _Avoid_: Artifact; treating transcription as its own recording; mixing French and English PBTs in one Transcribe step without a language binder; using sister language to choose which PBTs open
 
+**Phonetic ASR** (legacy Transcribe):
+Still posts with `?phonetic=true` when the step/org ASR target is phonetic, but polled text comes from the current API's `transcription` field — not master's separate `response.phonetic` path.
+
+**Verse marker seeding** (legacy Transcribe step):
+On load and on segment navigation, insert `\v` verse markers into the transcription when Mark Verses boundaries exist and the marker for that segment is not yet present. Desktop and mobile share the same helper — mobile must not diverge from desktop `Transcriber` behavior.
+_Avoid_: Mobile-only append-at-end ASR without markers; duplicating marker logic per surface
+
+**Auto Transcribe** (legacy Transcribe step):
+ASR on the full audio file in the legacy **Transcribe** step (desktop `Transcriber` and mobile transcribe route). The API receives the recording plus **Mark Verses** boundary timestamps; the app polls per-verse tasks and inserts each returned transcript into the transcription editor. One full-file ASR job per passage — not per segment. If the job is interrupted before every verse is transcribed, a later Auto Transcribe click **resumes** polling for missing verses rather than starting a new job (unless ASR language settings changed). **Verse insertion:** if `\v N ` already exists and that verse is empty, insert ASR text immediately after the marker; if the marker is missing, append `\v N ` + text at the end. **Never overwrite** existing verse text — if a verse already has content (even if ASR would differ), keep the user's text and skip insertion for that verse. **Progress dialog:** while polling, show structured status such as `Transcribing 2 (verse 11) of 10 (ending at verse 19)` — position within the passage span, current task's canonical verse label (use `verses` for a range such as `3-4`), total verses in the passage reference (inclusive, not segment/task count), and passage end. Cross-chapter: include chapter on labels (e.g. `Transcribing 2 (verse 1:80) of 15 (ending at verse 2:2)`). Same-chapter labels omit chapter when unambiguous. Range-marker position uses the range start verse. Keep an indeterminate progress bar in v1; a deterministic bar is optional future polish. Distinct from BOLD **Auto Translation**, which runs on one clause's LWC translation recording at a time and does not use verse boundaries.
+_Avoid_: Auto Translation (BOLD LWC Transcription); per-segment-only ASR in BOLD; treating Auto Transcribe as clause-scoped; re-posting a new full-file job when `TRTask` entries still exist and verses remain incomplete; overwriting manual verse text with ASR output; using segment count as the progress total
+
+**Auto Transcribe tests** (legacy Transcribe):
+Jest unit tests cover multi-verse insert, resume/skip-overwrite, progress message formatting (same-chapter, verse ranges, cross-chapter). At least one Cypress component test clicks Auto Transcribe, mocks the Aero post/poll API, and asserts polled verses accumulate in the transcription editor — guarding the regression that worked on master.
+
 **Resource**:
 Source material an admin prepares for the team before oral translation work — reference audio, text, links, and similar inputs. Not an output of the transcription process.
 _Avoid_: Artifact (when meaning outputs); General Resource / Shared Resource (qualifiers for scope, not separate concepts in conversation)

@@ -17,6 +17,7 @@ import {
   IMainStrings,
   ITranscriberStrings,
   MediaFileD,
+  PassageD,
 } from '../../model';
 import {
   getSegments,
@@ -41,6 +42,11 @@ import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
+import { formatAsrProgressMessage } from '../../components/PassageDetail/transcribe/asrProgressMessage';
+import {
+  PassageVerseSpanInput,
+  passageVerseSpanFromPassage,
+} from '../../components/PassageDetail/transcribe/passageVerseSpan';
 
 export interface VerseTask {
   taskId: string;
@@ -54,6 +60,7 @@ interface AsrProgressProps {
   asrState?: IAsrState | undefined;
   force?: boolean | undefined;
   contentVerses?: string[] | undefined;
+  passage?: PassageD | undefined;
   setTranscription: (transcription: string) => void;
   onPullTasks: (mediaId: string) => void;
   onClose: () => void;
@@ -65,6 +72,7 @@ export default function AsrProgress({
   asrState,
   force,
   contentVerses,
+  passage,
   setTranscription,
   onPullTasks,
   onClose,
@@ -79,6 +87,8 @@ export default function AsrProgress({
   const [taskId, setTaskIdx] = React.useState('');
   const taskIdRef = React.useRef('');
   const [tasks, setTasks] = React.useState<VerseTask[]>();
+  const tasksRef = React.useRef<VerseTask[] | undefined>(undefined);
+  const contentVersesRef = React.useRef(contentVerses);
   const taskTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const checkingRef = React.useRef(false);
   const timerDelay = 5000; //5 seconds
@@ -87,6 +97,19 @@ export default function AsrProgress({
   const tc: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [errorReporter] = useGlobal('errorReporter');
+
+  const passageSpan: PassageVerseSpanInput | undefined = React.useMemo(
+    () => passageVerseSpanFromPassage(passage),
+    [passage]
+  );
+
+  React.useEffect(() => {
+    contentVersesRef.current = contentVerses;
+  }, [contentVerses]);
+
+  React.useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
 
   const getTasks = (mediaRec: MediaFileD | undefined) => {
     const regionstr = getSegments(
@@ -101,7 +124,9 @@ export default function AsrProgress({
         tsks.push({
           taskId: part[0] ?? '',
           verse: part[1] ?? '', //undefined if no timing
-          complete: contentVerses?.includes(part[1] ?? 'no-verses') ?? false,
+          complete:
+            contentVersesRef.current?.includes(part[1] ?? 'no-verses') ??
+            false,
         });
       });
       return tsks;
@@ -110,19 +135,25 @@ export default function AsrProgress({
     }
   };
 
+  const syncTasks = (tsks: VerseTask[] | undefined) => {
+    tasksRef.current = tsks;
+    setTasks(tsks);
+  };
+
   const getTaskId = (
     mediaRec: MediaFileD | undefined
   ): [string | undefined, VerseTask[] | undefined] => {
     const tsks = getTasks(mediaRec);
-    if (tsks && !tasks) setTasks(tsks);
-    return [tsks?.find((tasks) => !tasks.complete)?.taskId, tsks];
+    if (tsks && !tasksRef.current) syncTasks(tsks);
+    return [tsks?.find((task) => !task.complete)?.taskId, tsks];
   };
 
-  const setTaskId = (taskId: string) => {
-    setTaskIdx(taskId);
-    taskIdRef.current = taskId;
-    if (taskId === '') setTasks(undefined);
+  const setTaskId = (nextTaskId: string) => {
+    setTaskIdx(nextTaskId);
+    taskIdRef.current = nextTaskId;
+    if (nextTaskId === '') syncTasks(undefined);
   };
+
   const setTranscribing = (adding: boolean) => {
     addingRef.current = adding;
   };
@@ -169,7 +200,7 @@ export default function AsrProgress({
     }
   };
 
-  const checkTask = async () => {
+  const checkTask = React.useCallback(async () => {
     const current = taskIdRef.current;
     if (!current || checkingRef.current) return;
     checkingRef.current = true;
@@ -183,17 +214,29 @@ export default function AsrProgress({
       if (response?.transcription) {
         let verse = '';
         let nextTask = '';
-        if (tasks) {
-          const ix = tasks.findIndex((t) => t.taskId === current);
+        const activeTasks = tasksRef.current;
+        if (activeTasks) {
+          const ix = activeTasks.findIndex((task) => task.taskId === current);
           if (ix >= 0) {
-            if (typeof tasks[ix]?.verse === 'string')
-              verse = ` \\v ${tasks[ix].verse} `;
-            tasks[ix].complete = true;
+            const taskVerse = activeTasks[ix]?.verse ?? '';
+            if (typeof taskVerse === 'string' && taskVerse)
+              verse = ` \\v ${taskVerse} `;
+            activeTasks[ix].complete = true;
+            syncTasks([...activeTasks]);
             nextTask =
-              ix < tasks.length - 1 ? (tasks[ix + 1]?.taskId ?? '') : '';
+              ix < activeTasks.length - 1
+                ? (activeTasks[ix + 1]?.taskId ?? '')
+                : '';
+            const alreadyHasContent =
+              taskVerse &&
+              (contentVersesRef.current?.includes(taskVerse) ?? false);
+            if (!alreadyHasContent) {
+              setTranscription(verse + response?.transcription);
+            }
           }
+        } else {
+          setTranscription(verse + response?.transcription);
         }
-        setTranscription(verse + response?.transcription);
         setTaskId(nextTask);
       } else if (response?.transcription === '') {
         status(t.noAsrTranscription);
@@ -207,17 +250,21 @@ export default function AsrProgress({
     } finally {
       checkingRef.current = false;
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setTranscription]);
 
   const launchTimer = () => {
+    if (taskTimer.current) return;
+    void checkTask();
     taskTimer.current = setInterval(() => {
-      checkTask();
+      void checkTask();
     }, timerDelay);
   };
 
   const closing = () => {
     if (taskTimer.current) {
       clearInterval(taskTimer.current);
+      taskTimer.current = undefined;
     }
     setTranscribing(false);
     setWorking(false);
@@ -239,11 +286,11 @@ export default function AsrProgress({
         token
       )) as { data: { data: MediaFileD } };
       const mediaRec = response?.data.data as MediaFileD;
-      const tasks = getTasks(mediaRec);
-      if (tasks) {
+      const newTasks = getTasks(mediaRec);
+      if (newTasks) {
         onPullTasks(remId);
-        if (tasks.length > 1) setTasks(tasks);
-        setTaskId(tasks[0]?.taskId ?? '');
+        syncTasks(newTasks);
+        setTaskId(newTasks[0]?.taskId ?? '');
       } else {
         status(t.aiAsrFailed);
         closing();
@@ -273,7 +320,11 @@ export default function AsrProgress({
 
   React.useEffect(() => {
     if (taskId) {
-      if (!taskTimer.current) launchTimer();
+      if (!taskTimer.current) {
+        launchTimer();
+      } else {
+        void checkTask();
+      }
     } else if (taskTimer.current) {
       clearInterval(taskTimer.current);
       taskTimer.current = undefined;
@@ -287,26 +338,34 @@ export default function AsrProgress({
     setTranscribing(true);
     setWorking(false);
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
-    const [taskId, tasks] = getTaskId(mediaRec);
+    const [resumeTaskId, resumeTasks] = getTaskId(mediaRec);
     if (
-      (!tasks || !taskId) &&
+      (!resumeTasks || !resumeTaskId) &&
       ignoreVs((mediaRec?.attributes?.transcription ?? '').trim())
     ) {
       status(t.transcriptionExists);
       closing();
-    } else if (taskId && !force) {
-      setTaskId(taskId);
+    } else if (resumeTaskId && !force) {
+      if (resumeTasks) syncTasks(resumeTasks);
+      setTaskId(resumeTaskId);
     } else {
-      postTranscribe();
+      void postTranscribe();
     }
 
     return () => {
       if (taskTimer.current) {
         clearInterval(taskTimer.current);
+        taskTimer.current = undefined;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const currentTaskVerse = tasks?.find((task) => task.taskId === taskId)?.verse;
+  const progressMessage =
+    passageSpan && currentTaskVerse
+      ? formatAsrProgressMessage(t.asrProgress, passageSpan, currentTaskVerse)
+      : t.aiWillContinue.replace(/\{0\}/g, tc.recognizeSpeech);
 
   return (
     <Box
@@ -327,7 +386,7 @@ export default function AsrProgress({
               overflowWrap: 'break-word',
             }}
           >
-            {t.aiWillContinue.replace(/\{0\}/g, tc.recognizeSpeech)}
+            {progressMessage}
           </Typography>
         )}
         <ActionRow>
