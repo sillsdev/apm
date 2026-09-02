@@ -15,7 +15,17 @@ import { IRegion } from './useWavesurferRegions';
  * component subtree for it.
  */
 
-/** Seconds of slack allowed between a take's stored region and a segment. */
+/**
+ * Seconds of slack allowed between a take's stored region and a segment.
+ *
+ * Half of the 0.1s grid `prettySegment` rounds to, so a take is never judged
+ * stale over a difference the UI cannot show - a take labelled `0.0-5.9` always
+ * matches the segment labelled `0.0-5.9`. Boundaries are stored to five
+ * decimals (`roundToFiveDecimals` in useWavesurferRegions), so anything wider
+ * than this is a boundary someone actually moved, which is what we mean to call
+ * stale. Compared with `<=` because a value rounded to tenths lands exactly on
+ * the tolerance, and hiding a recording is worse than keeping a duplicate row.
+ */
 export const PHRASE_REGION_TOLERANCE = 0.05;
 
 /** The region a take names, or undefined when it names none. */
@@ -32,17 +42,24 @@ export function parseTakeSourceRegion(
   return undefined;
 }
 
-/** True when a take's stored region is the given segment. */
+/** True when two regions name the same slice, within the tolerance. */
+export function regionsMatch(a: IRegion, b: IRegion): boolean {
+  return (
+    Math.abs(a.start - b.start) <= PHRASE_REGION_TOLERANCE &&
+    Math.abs(a.end - b.end) <= PHRASE_REGION_TOLERANCE
+  );
+}
+
+/**
+ * True when a take's stored region is the given segment. Callers that already
+ * hold the parsed region compare with `regionsMatch` instead of parsing again.
+ */
 export function takeMatchesRegion(
   sourceSegments: string | undefined,
   region: IRegion
 ): boolean {
   const stored = parseTakeSourceRegion(sourceSegments);
-  if (!stored) return false;
-  return (
-    Math.abs(stored.start - region.start) < PHRASE_REGION_TOLERANCE &&
-    Math.abs(stored.end - region.end) < PHRASE_REGION_TOLERANCE
-  );
+  return stored ? regionsMatch(stored, region) : false;
 }
 
 /**
@@ -77,15 +94,22 @@ export function selectCurrentPhraseTakes<T extends MediaFile>(
   regions: IRegion[]
 ): T[] {
   if (regions.length === 0 || takes.length === 0) return takes;
+  // Parse each take once (not once per take-region pair). A passage can hold
+  // one take per segment per pass, so parsing inside the region loop would
+  // repeatedly parse the same take for every region.
+  const named = takes.map((take) => ({
+    take,
+    region: parseTakeSourceRegion(take.attributes?.sourceSegments),
+  }));
   const current = new Set<T>();
   regions.forEach((region) => {
-    const newest = takes
-      .filter((t) => takeMatchesRegion(t.attributes?.sourceSegments, region))
+    const newest = named
+      .filter((n) => n.region && regionsMatch(n.region, region))
+      .map((n) => n.take)
       .sort(compareTakesNewestFirst)[0];
     if (newest) current.add(newest);
   });
-  return takes.filter(
-    (t) =>
-      current.has(t) || !parseTakeSourceRegion(t.attributes?.sourceSegments)
-  );
+  return named
+    .filter((n) => current.has(n.take) || !n.region)
+    .map((n) => n.take);
 }

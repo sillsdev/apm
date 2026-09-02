@@ -78,6 +78,20 @@ describe('selectCurrentPhraseTakes', () => {
     ]);
   });
 
+  it('matches a boundary that drifted by exactly the tolerance', () => {
+    // A legacy value rounded to tenths lands exactly on the tolerance; a strict
+    // comparison would hide the recording.
+    const takes = [take('tenths', { start: 0.05, end: 5.95 })];
+    expect(ids(selectCurrentPhraseTakes(takes, [region(0, 6)]))).toEqual([
+      'tenths',
+    ]);
+  });
+
+  it('drops a take whose boundary moved past the tolerance', () => {
+    const takes = [take('moved', { start: 0.06, end: 6 })];
+    expect(ids(selectCurrentPhraseTakes(takes, [region(0, 6)]))).toEqual([]);
+  });
+
   it('returns the takes untouched when the current segments are unknown', () => {
     // No boundaries to compare against (vernacular unreadable, or an artifact
     // that records no segment map) - nothing can be called stale, so nothing
