@@ -33,6 +33,8 @@ import {
 } from '../crud';
 import { mediaFileName } from '../crud/media';
 import { mediaMatchesStepLanguage } from '../utils/mediaLanguage';
+import { selectCurrentPhraseTakes } from '../crud/phraseTakes';
+import { IRegion } from '../crud/useWavesurferRegions';
 import StickyRedirect from '../components/StickyRedirect';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
@@ -133,9 +135,15 @@ interface IProps {
   curRole?: string;
   /** Step language. When set (and not `und`), only media tagged with it become tasks. */
   stepLanguageBcp47?: string;
+  /**
+   * Phrase-segment boundaries the step is reading. When given, a segment
+   * contributes its newest take and the takes left behind by a boundary
+   * adjustment are not tasks (TT-7666).
+   */
+  phraseRegions?: IRegion[];
 }
 const TranscriberProvider = (props: IProps) => {
-  const { artifactTypeId, curRole, stepLanguageBcp47 } = props;
+  const { artifactTypeId, curRole, stepLanguageBcp47, phraseRegions } = props;
   const [isDetail] = useState(artifactTypeId !== undefined);
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
@@ -200,10 +208,19 @@ const TranscriberProvider = (props: IProps) => {
       return;
     }
     m = m.filter((mf) => mediaMatchesStepLanguage(mf, stepLanguageBcp47));
+    m = selectCurrentPhraseTakes(m, phraseRegions ?? []);
     setPlanMedia(m);
     planMediaRef.current = m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles, devPlan, artifactId, stepLanguageBcp47, pasId, memory]);
+  }, [
+    mediafiles,
+    devPlan,
+    artifactId,
+    stepLanguageBcp47,
+    phraseRegions,
+    pasId,
+    memory,
+  ]);
 
   const setRows = (rowData: IRowData[]) => {
     setState((state: ICtxState) => {

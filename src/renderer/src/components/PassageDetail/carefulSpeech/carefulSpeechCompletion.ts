@@ -5,8 +5,10 @@ import {
   matchesGuidedOutputRow,
   pickLatestGuidedOutputRow,
 } from './matchesGuidedOutputRow';
-
-const REGION_TOLERANCE = 0.05;
+import {
+  parseTakeSourceRegion,
+  takeMatchesRegion,
+} from '../../../crud/phraseTakes';
 
 function isEmptySourceSegments(seg: string | undefined): boolean {
   if (!seg) return true;
@@ -18,19 +20,6 @@ function isEmptySourceSegments(seg: string | undefined): boolean {
   } catch {
     return false;
   }
-}
-
-function parseStoredRegion(seg: string | undefined): IRegion | undefined {
-  if (!seg) return undefined;
-  try {
-    const parsed = JSON.parse(seg) as IRegion;
-    if (parsed?.start !== undefined && parsed?.end !== undefined) {
-      return parsed;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
 }
 
 function regionMatchesClause(
@@ -45,12 +34,8 @@ function regionMatchesClause(
   ) {
     return true;
   }
-  const stored = parseStoredRegion(storedSeg);
-  if (stored) {
-    return (
-      Math.abs(stored.start - clauseRegion.start) < REGION_TOLERANCE &&
-      Math.abs(stored.end - clauseRegion.end) < REGION_TOLERANCE
-    );
+  if (parseTakeSourceRegion(storedSeg)) {
+    return takeMatchesRegion(storedSeg, clauseRegion);
   }
   return prettySegment(storedSeg).trim() === prettySegment(clauseRegion).trim();
 }
