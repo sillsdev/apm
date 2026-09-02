@@ -9,7 +9,10 @@ import { related } from './related';
  * as happened in the Transcribe task list before TT-7666.
  *
  * Takes whose `sourceSegments` cannot be read are left alone: they are not
- * per-segment takes, so there is nothing to collapse them against.
+ * per-segment takes, so there is nothing to collapse them against. So are takes
+ * with no readable `sourceMedia`: without knowing which vernacular a take was
+ * cut from, boundaries alone do not say two takes are of the same segment, and
+ * collapsing on them would drop a task that is really someone else's work.
  */
 
 /** `start|end` at 2dp, or undefined when this is not a per-segment take. */
@@ -50,8 +53,10 @@ export function latestTakePerSourceSegment<T extends MediaFile>(
   for (const m of media) {
     const seg = segmentKey(m.attributes?.sourceSegments);
     if (seg === undefined) continue;
+    const source = related(m, 'sourceMedia');
+    if (!source) continue;
     perSegment.add(m);
-    const key = `${related(m, 'sourceMedia') ?? ''}|${seg}`;
+    const key = `${source}|${seg}`;
     const held = winners.get(key);
     if (!held || isNewerTake(m, held)) winners.set(key, m);
   }

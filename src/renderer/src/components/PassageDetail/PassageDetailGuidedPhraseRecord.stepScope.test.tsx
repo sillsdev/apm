@@ -284,7 +284,7 @@ describe('PassageDetailGuidedPhraseRecord - step scope (TT-7643)', () => {
     // name, and the next attempt at the same segment in the same language
     // built the very same name - so `dataPath` handed the new take the old
     // take's file and the recording the user had just discarded played back
-    // (TT-7643).
+    // (TT-7432).
     await mountAndSettle();
     const firstAttempt = controlsProps?.defaultFilename as string;
     expect(firstAttempt).toBeTruthy();

@@ -195,12 +195,12 @@ describe('PassageDetailTranscribe linked note (TT-5873)', () => {
 });
 
 /**
- * TT-7643 - a phrase step records one take per segment and shows only the
+ * TT-7666 - a phrase step records one take per segment and shows only the
  * newest, but nothing prunes the ones it replaced. The task list was built
  * from artifact type and step language alone, so every superseded take
  * arrived as its own transcribe task.
  */
-describe('PassageDetailTranscribe segment takes (TT-7643)', () => {
+describe('PassageDetailTranscribe segment takes (TT-7666)', () => {
   beforeEach(() => {
     captured = {};
     artifactSlug = 'vernacular';

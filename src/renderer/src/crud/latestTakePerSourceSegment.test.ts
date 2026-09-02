@@ -26,9 +26,9 @@ const take = (
             ? seg
             : JSON.stringify({ ...seg, label: '' }),
     },
-    relationships: {
-      sourceMedia: { data: { type: 'mediafile', id: sourceMedia } },
-    },
+    relationships: sourceMedia
+      ? { sourceMedia: { data: { type: 'mediafile', id: sourceMedia } } }
+      : {},
   }) as unknown as MediaFileD;
 
 const ids = (media: MediaFileD[]) => media.map((m) => m.id);
@@ -92,6 +92,20 @@ describe('latestTakePerSourceSegment', () => {
       'vernacular',
       'whole-bt',
       'unparseable',
+    ]);
+  });
+
+  it('leaves a take whose vernacular cannot be read alone', () => {
+    // Boundaries alone do not make two takes the same segment - without a
+    // sourceMedia they could be cut from different vernaculars, and collapsing
+    // them would drop a task that is really someone else's work.
+    const media = [
+      take('no-source-old', { start: 0, end: 3 }, '2026-08-01T10:00:00Z', ''),
+      take('no-source-new', { start: 0, end: 3 }, '2026-08-02T10:00:00Z', ''),
+    ];
+    expect(ids(latestTakePerSourceSegment(media))).toEqual([
+      'no-source-old',
+      'no-source-new',
     ]);
   });
 
