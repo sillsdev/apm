@@ -51,6 +51,7 @@ import LwcTranslationControls, {
   LwcTranslationPhase,
 } from './lwcTranslation/LwcTranslationControls';
 import { LocalKey } from '../../utils/localUserKey';
+import { newTakeToken } from './guidedPhraseRecord/types';
 import { Button } from '../../control/Button';
 
 const toolId = 'LwcTranslationTool';
@@ -106,6 +107,9 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     return stored ?? '';
   });
   const [showRecorder, setShowRecorder] = useState(false);
+  // Names this take apart from any other take of the same clause - see
+  // defaultFilename for why a repeated name plays the wrong audio (TT-7432).
+  const [takeToken, setTakeToken] = useState(newTakeToken);
   const [resetMedia, setResetMedia] = useState(false);
   const [canSave, setCanSave] = useState(false);
   const [savingRecording, setSavingRecording] = useState(false);
@@ -228,7 +232,12 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   );
 
   const defaultFilename = useMemo(() => {
-    const postfix = `lwctranslation${currentIndex + 1}_v${currentVersion}`;
+    // The token is what tells two takes of this clause apart: the uploaded name
+    // becomes the media object's name, and `dataPath` resolves a mediafile's
+    // audioUrl to `<offlineData>/media/<basename>`, so without it a re-recorded
+    // clause resolves to the cached file of the take it replaced (TT-7432).
+    const clause = `lwctranslation${currentIndex + 1}_v${currentVersion}`;
+    const postfix = `${clause}_${takeToken}`;
     return passageDefaultFilename(
       passage,
       plan,
@@ -245,6 +254,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     offline,
     currentIndex,
     currentVersion,
+    takeToken,
   ]);
 
   // TT-7583: this step auto-saves on every rising edge of canSave. A failed
@@ -520,6 +530,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     (active: boolean) => {
       if (active) {
         recordingActiveRef.current = true;
+        // This take is its own file, even where the clause's earlier take was
+        // cleared first (TT-7432). MediaRecord reads defaultFilename when the
+        // save runs, so a token minted here is the one the take uploads under.
+        setTakeToken(newTakeToken());
         // A new take supersedes any earlier rejected save (TT-7583).
         saveRejectedRef.current = false;
         setSaveRejected(false);
