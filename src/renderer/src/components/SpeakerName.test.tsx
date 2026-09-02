@@ -25,13 +25,6 @@ jest.mock('../crud', () => ({
   related: () => 'org1',
 }));
 
-jest.mock('../utils/index', () => ({
-  useMobile: () => ({
-    isMobile: true,
-    isMobileView: true,
-    isMobileWidth: true,
-  }),
-}));
 
 jest.mock('react-redux', () => ({
   useSelector: () => ({
