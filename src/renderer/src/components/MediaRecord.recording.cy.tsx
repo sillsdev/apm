@@ -151,47 +151,34 @@ const theme = createTheme({
   } as never,
 });
 
+const waitForRecordReady = () => {
+  cy.get('#wsAudioRecord', { timeout: 15000 }).should(
+    'not.have.attr',
+    'aria-disabled',
+    'true'
+  );
+};
+
+let clockArmed = false;
+
 const startRecording = () => {
+  waitForRecordReady();
+  cy.then(() => {
+    if (!clockArmed) {
+      clockArmed = true;
+      cy.clock();
+    }
+  });
   clickRecordButton();
-  // Mount acquire uses a 250ms mute retry; cy.clock() freezes it until we tick.
   cy.tick(CAPTURE_DEVICE_LOSS_RETRY_MS + 100);
   cy.get('svg[data-testid="PauseIcon"]', { timeout: 15000 }).should(
     'be.visible'
   );
-  // recorder.start() is async; under cy.clock() flush before preview ticks.
   cy.tick(100);
 };
 
 const clickRecordButton = () => {
-  cy.get('body').then(($body) => {
-    if ($body.find('svg[data-testid="PauseIcon"]').length > 0) {
-      cy.get('svg[data-testid="PauseIcon"]').closest('[role="button"]').click();
-      return;
-    }
-    if ($body.find('#wsAudioRecordTip').length > 0) {
-      cy.get('#wsAudioRecordTip').find('[role="button"]').click();
-      return;
-    }
-    // forceMobileView: record control is below the waveform stack
-    cy.get('#wsAudioWaveform')
-      .closest('.MuiStack-root')
-      .parent()
-      .children()
-      .last()
-      .find('[role="button"]')
-      .click();
-  });
-};
-
-const waitForRecordReady = () => {
-  cy.get('#wsAudioWaveform', { timeout: 15000 }).should('be.visible');
-  cy.get('#wsAudioWaveform')
-    .closest('.MuiStack-root')
-    .parent()
-    .children()
-    .last()
-    .find('[role="button"]')
-    .should('not.have.attr', 'aria-disabled', 'true');
+  cy.get('#wsAudioRecord').click();
 };
 
 const advanceRecordingTicks = (count: number) => {
@@ -342,14 +329,11 @@ const mountMediaRecord = (
 
 describe('MediaRecord recording integration', { tags: '@recording' }, () => {
   beforeEach(() => {
-    // Oscillator tracks often start muted. Let that settle with real timers
-    // before cy.clock() freezes the 250ms acquire wait.
+    clockArmed = false;
     cy.installRecordingMocks({
       forceMediaRecorderFallback: true,
       useMockMediaRecorder: true,
     });
-    cy.wait(CAPTURE_DEVICE_LOSS_RETRY_MS + 50);
-    cy.clock();
   });
 
   afterEach(() => {
@@ -365,7 +349,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('shows Save after a short recording is paused (tracer bullet)', () => {
     mountMediaRecord();
-    cy.get('#wsAudioWaveform').should('exist');
 
     startRecording();
 
@@ -378,7 +361,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('shows Save after a long recording (~95 preview ticks) — TT-7384', () => {
     mountMediaRecord();
-    waitForRecordReady();
     startRecording();
 
     advanceRecordingTicks(95);
@@ -390,7 +372,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('advances duration and waveform during long recording — TT-7276', () => {
     mountMediaRecord();
-    waitForRecordReady();
     startRecording();
 
     cy.get('#wsAudioDuration').invoke('text').should('match', /0:0/);
@@ -409,7 +390,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('shows Save after overdub second recording — TT-7276 scenario 2 core path', () => {
     mountMediaRecord();
-    waitForRecordReady();
 
     // First take
     startRecording();
@@ -428,7 +408,6 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
   it('recovers the take to Save when the microphone is unplugged mid-record', () => {
     mountMediaRecord();
-    waitForRecordReady();
     startRecording();
     advanceRecordingTicks(3);
 
@@ -438,13 +417,7 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
 
     cy.get('svg[data-testid="PauseIcon"]').should('not.exist');
     // Finalize is still in flight (clock frozen): Record/Save stay blocked.
-    cy.get('#wsAudioWaveform')
-      .closest('.MuiStack-root')
-      .parent()
-      .children()
-      .last()
-      .find('[role="button"]')
-      .should('have.attr', 'aria-disabled', 'true');
+    cy.get('#wsAudioRecord').should('have.attr', 'aria-disabled', 'true');
     cy.get('#rec-save').should('not.exist');
 
     cy.tick(200);

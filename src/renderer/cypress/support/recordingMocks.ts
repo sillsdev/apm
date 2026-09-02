@@ -217,84 +217,58 @@ function presentCaptureTrack(
   track: MediaStreamTrack,
   deviceId: () => string
 ): MediaStreamTrack {
-  const view = Object.create(track) as MediaStreamTrack;
-  Object.defineProperty(view, 'muted', {
-    configurable: true,
-    get: () => false,
-  });
-  Object.defineProperty(view, 'readyState', {
-    configurable: true,
-    get: () =>
-      track.readyState === 'ended'
-        ? 'ended'
-        : ('live' as MediaStreamTrackState),
-  });
-  view.getSettings = () => ({ ...track.getSettings(), deviceId: deviceId() });
-  view.stop = () => track.stop();
-  view.addEventListener = track.addEventListener.bind(track);
-  view.removeEventListener = track.removeEventListener.bind(track);
-  view.dispatchEvent = track.dispatchEvent.bind(track);
-  return view;
-}
-
-function captureStreamHasLiveAudio(stream: MediaStream): boolean {
+  // Patch the native track. Object.create views are dropped by MediaStream.addTrack
+  // / getAudioTracks, so ensureCaptureStreamUsable still sees muted oscillator tracks
+  // and Record never reaches Pause/Stop under cy.clock().
   try {
-    return (
-      stream.active &&
-      stream.getAudioTracks().some((t) => t.readyState === 'live')
-    );
+    Object.defineProperty(track, 'muted', {
+      configurable: true,
+      get: () => false,
+    });
   } catch {
-    return false;
+    /* non-configurable */
   }
+  let stopped = false;
+  const nativeStop = track.stop.bind(track);
+  track.stop = () => {
+    stopped = true;
+    nativeStop();
+  };
+  try {
+    Object.defineProperty(track, 'readyState', {
+      configurable: true,
+      get: () => (stopped ? 'ended' : ('live' as MediaStreamTrackState)),
+    });
+  } catch {
+    /* non-configurable */
+  }
+  const nativeGetSettings = track.getSettings.bind(track);
+  track.getSettings = () => ({ ...nativeGetSettings(), deviceId: deviceId() });
+  return track;
 }
 
 function decorateCaptureStream(
   stream: MediaStream,
   deviceId: () => string
 ): MediaStream {
-  const nativeGetAudioTracks = stream.getAudioTracks.bind(stream);
-  const nativeGetTracks = stream.getTracks.bind(stream);
-  const views = new WeakMap<MediaStreamTrack, MediaStreamTrack>();
-  const viewOf = (track: MediaStreamTrack) => {
-    let view = views.get(track);
-    if (!view) {
-      view = presentCaptureTrack(track, deviceId);
-      views.set(track, view);
-    }
-    return view;
-  };
-  const getAudioTracks = () => nativeGetAudioTracks().map(viewOf);
-  const getTracks = () => nativeGetTracks().map(viewOf);
+  stream
+    .getAudioTracks()
+    .forEach((track) => presentCaptureTrack(track, deviceId));
   try {
     Object.defineProperty(stream, 'active', {
       configurable: true,
       get: () => true,
     });
-    Object.defineProperty(stream, 'getAudioTracks', {
-      configurable: true,
-      writable: true,
-      value: getAudioTracks,
-    });
-    Object.defineProperty(stream, 'getTracks', {
-      configurable: true,
-      writable: true,
-      value: getTracks,
-    });
   } catch {
-    stream.getAudioTracks = getAudioTracks;
-    stream.getTracks = getTracks;
+    /* keep native active */
   }
   return stream;
 }
 
-async function createOscillatorStream(
-  win: Window & typeof globalThis
-): Promise<{ stream: MediaStream; audioContext: AudioContext }> {
-  patchAudioContextResume(win);
-  const audioContext = new win.AudioContext({ sampleRate: 48000 });
-  if (audioContext.state === 'suspended') {
-    await audioContext.resume();
-  }
+function addOscillatorCapture(
+  audioContext: AudioContext,
+  deviceId: () => string
+): MediaStream {
   const oscillator = audioContext.createOscillator();
   oscillator.frequency.value = 440;
   const gain = audioContext.createGain();
@@ -303,7 +277,18 @@ async function createOscillatorStream(
   const dest = audioContext.createMediaStreamDestination();
   gain.connect(dest);
   oscillator.start();
-  return { stream: dest.stream, audioContext };
+  return decorateCaptureStream(dest.stream, deviceId);
+}
+
+async function createCaptureAudioContext(
+  win: Window & typeof globalThis
+): Promise<AudioContext> {
+  patchAudioContextResume(win);
+  const audioContext = new win.AudioContext({ sampleRate: 48000 });
+  if (audioContext.state === 'suspended') {
+    await audioContext.resume();
+  }
+  return audioContext;
 }
 
 /**
@@ -321,41 +306,30 @@ export async function installRecordingMocks(
   MockMediaRecorder.instances = [];
 
   patchAudioContextResume(win);
-  const { stream: oscillatorStream, audioContext } =
-    await createOscillatorStream(win);
+  const audioContext = await createCaptureAudioContext(win);
 
   // Stale saved mics are `{ exact }` now; they must appear in enumerateDevices
   // and on the track or acquire falls back and Record never reaches Pause/Stop.
   Object.keys(win.localStorage)
-    .filter((key) => key.endsWith('microphone-id'))
+    .filter((key) => /microphone/i.test(key))
     .forEach((key) => win.localStorage.removeItem(key));
 
   let reportedDeviceId = MOCK_CAPTURE_DEVICE_ID;
   const deviceId = () => reportedDeviceId;
   const capture = {
-    stream: decorateCaptureStream(oscillatorStream, deviceId),
+    stream: addOscillatorCapture(audioContext, deviceId),
   };
-
-  const nativeGetUserMedia = win.navigator.mediaDevices.getUserMedia.bind(
-    win.navigator.mediaDevices
-  );
 
   win.navigator.mediaDevices.enumerateDevices = async () => [
     mockAudioInputDevice(),
   ];
+  // Fresh stream per call. useUserMedia stops the previous tracks before
+  // re-acquire; returning the same ended oscillator never reaches Pause/Stop.
+  // Do not call native getUserMedia — Chrome's fake device hangs under cy.clock().
   win.navigator.mediaDevices.getUserMedia = async (constraints) => {
     reportedDeviceId =
       requestedExactDeviceId(constraints) ?? MOCK_CAPTURE_DEVICE_ID;
-    try {
-      // Ignore `{ exact }` — Chrome's fake device id is not apm-ct-mic.
-      // Stamp the requested id on getSettings so TT-6917's check passes.
-      const native = await nativeGetUserMedia({ audio: true, video: false });
-      if (captureStreamHasLiveAudio(native)) {
-        capture.stream = decorateCaptureStream(native, deviceId);
-      }
-    } catch {
-      /* oscillator fallback already on capture.stream */
-    }
+    capture.stream = addOscillatorCapture(audioContext, deviceId);
     return capture.stream;
   };
 
@@ -370,11 +344,33 @@ export async function installRecordingMocks(
   }
 
   if (forceMediaRecorderFallback) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (win as any).AudioWorklet = undefined;
+    // Assignment is a no-op in Chrome (non-writable). isAudioWorkletAvailable()
+    // checks `typeof AudioWorklet === 'undefined'` first; hide the global.
+    try {
+      Object.defineProperty(win, 'AudioWorklet', {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      });
+    } catch {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (win as any).AudioWorklet = undefined;
+      } catch {
+        /* keep native */
+      }
+    }
     if (useMockMediaRecorder) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (win as any).MediaRecorder = MockMediaRecorder;
+      try {
+        Object.defineProperty(win, 'MediaRecorder', {
+          configurable: true,
+          writable: true,
+          value: MockMediaRecorder,
+        });
+      } catch {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (win as any).MediaRecorder = MockMediaRecorder;
+      }
     }
   }
 

@@ -35,29 +35,70 @@ const { auth0Domain, webClientId, apiIdentifier } = JSON.parse(
 const { port: _appPort, ...viteServerRest } = viteConfig.server ?? {};
 const testViteConfig = {
   ...viteConfig,
-  // App `npm start` owns 3000. CT must not steal it or the spec URL
-  // (`/__cypress/src/...`) hits the app Vite and fails to load.
-  // leftover Vite often occupies 5173.
+  // App `npm start` owns 3000. Prefer 5199 so we are not Vite's 5173 (a
+  // leftover CT often stays on [::1]:5173). strictPort is off so a TIME_WAIT
+  // on 5199 makes Vite take 5200; Cypress uses the port listen() actually bound.
   server: {
     ...viteServerRest,
-    // CT must stay on localhost. `host: true` (app vite) advertises a LAN
-    // HMR URL; Chrome then fails to fetch `/__cypress/src/...` modules.
-    host: 'localhost',
-    hmr: { host: 'localhost', protocol: 'ws' },
-    port: 5188,
+    port: 5199,
     strictPort: false,
     warmup: {
       clientFiles: [
-        './cypress/support/component.tsx',
-        './src/components/MediaRecord.recording.cy.tsx',
-        './cypress/support/pbtHarness.tsx',
+        path.resolve(__dirname, '../support/component.tsx'),
+        path.resolve(__dirname, '../support/pbtHarness.tsx'),
+        path.resolve(
+          __dirname,
+          '../../src/components/MediaRecord.recording.cy.tsx'
+        ),
+        path.resolve(
+          __dirname,
+          '../../src/components/PassageDetail/PassageDetailPhraseBackTranslate.cy.tsx'
+        ),
+        path.resolve(
+          __dirname,
+          '../../src/components/PassageDetail/PassageDetailPhraseBackTranslate.playback.cy.tsx'
+        ),
       ],
     },
   },
+  plugins: [
+    ...(Array.isArray(viteConfig.plugins) ? viteConfig.plugins : []),
+    {
+      name: 'apm-ct-listen-all-interfaces',
+      // Cypress mergeConfig forces host 127.0.0.1 (IPv4 only). Chrome loads
+      // `http://localhost:...` which is ::1 on Windows, so the spec import
+      // fails with Failed to fetch. Listen on IPv6 (dual-stack) as well.
+      config() {
+        return { server: { host: '::' } };
+      },
+    },
+    {
+      name: 'apm-ct-no-full-reload',
+      configureServer(server: {
+        ws: { send: (...args: unknown[]) => unknown };
+      }) {
+        const send = server.ws.send.bind(server.ws);
+        server.ws.send = (payload: { type?: string }, ...args: unknown[]) => {
+          if (payload?.type === 'full-reload') return;
+          return send(payload, ...args);
+        };
+      },
+    },
+  ],
   // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies
   // changed, reloading" mid-run (which can flake the first assertion attempt).
   optimizeDeps: {
     ...viteConfig.optimizeDeps,
+    // Do not hold the first spec import until crawl-end — Chrome times out
+    // ("Failed to fetch dynamically imported module"). Allow discovery so CJS
+    // packages (lodash, react-is, …) still get pre-bundled; swallow outdated
+    // requests so a mid-run optimize does not abort the next spec import.
+    holdUntilCrawlEnd: false,
+    ignoreOutdatedRequests: true,
+    entries: [
+      path.resolve(__dirname, '../support/component.tsx'),
+      path.resolve(__dirname, '../support/pbtHarness.tsx'),
+    ],
     include: [
       ...(Array.isArray(viteConfig.optimizeDeps?.include)
         ? viteConfig.optimizeDeps.include
@@ -95,6 +136,8 @@ const testViteConfig = {
       'react-redux',
       'redux',
       'redux-thunk',
+      'lodash',
+      'react-is',
       '@orbit/memory',
       '@orbit/records',
       '@orbit/coordinator',
@@ -105,6 +148,81 @@ const testViteConfig = {
       'wavesurfer.js/dist/plugins/timeline',
       'wavesurfer.js/dist/plugins/zoom',
       '@wavesurfer/react',
+      // Captured from a CT run: "new dependencies optimized" during the first
+      // spec import. If these are only discovered then, Vite reloads and Chrome
+      // reports Failed to fetch dynamically imported module.
+      'react-router-dom',
+      'react-localization',
+      '@redux-devtools/extension',
+      '@mui/icons-material/Replay',
+      '@mui/icons-material/SkipPrevious',
+      '@mui/icons-material/Close',
+      '@mui/material/Alert',
+      '@mui/material/DialogActions',
+      'luxon',
+      'path-browserify',
+      'react-icons/fa',
+      '@orbit/core',
+      '@mui/x-data-grid/locales',
+      'mui-language-picker',
+      'axios',
+      '@mui/icons-material/CheckBoxOutlineBlank',
+      '@mui/icons-material/CheckBoxOutlined',
+      '@mui/icons-material/Delete',
+      '@mui/icons-material/Edit',
+      '@fingerprintjs/fingerprintjs',
+      'react-icons/io',
+      '@mui/icons-material/Remove',
+      '@mui/icons-material/Add',
+      '@mui/icons-material/ZoomIn',
+      '@mui/icons-material/ZoomOut',
+      '@mui/icons-material/Pageview',
+      'url-parse',
+      'process',
+      '@mui/icons-material/Visibility',
+      '@auth0/auth0-react',
+      'jwt-decode',
+      '@mui/material/Paper',
+      'react-draggable',
+      '@mui/icons-material/ArrowDropDown',
+      '@mui/material/TextField',
+      '@mui/material/Autocomplete',
+      '@mui/icons-material/SupportAgent',
+      '@mui/material/Dialog',
+      '@mui/material/DialogTitle',
+      '@mui/material/DialogContent',
+      '@mui/icons-material/Info',
+      '@orbit/indexeddb-bucket',
+      '@mui/icons-material/NavigateBefore',
+      '@mui/icons-material/NavigateNext',
+      '@mui/x-data-grid',
+      '@orbit/serializers',
+      '@mui/icons-material/ExpandMore',
+      '@mui/icons-material/Sync',
+      '@mui/icons-material/Check',
+      'browser-image-compression',
+      '@mui/material/Box',
+      '@fortawesome/free-solid-svg-icons',
+      '@fortawesome/free-regular-svg-icons',
+      '@fortawesome/react-fontawesome',
+      '@mui/icons-material/VisibilityOff',
+      'array-move',
+      'react-file-drop',
+      '@xmldom/xmldom',
+      'xpath',
+      '@hello-pangea/dnd',
+      '@mui/icons-material/DragIndicator',
+      '@mui/icons-material/ChevronRight',
+      '@mui/icons-material/ExpandLess',
+      'jszip',
+      '@mui/x-tree-view',
+      '@mui/icons-material/RemoveRedEye',
+      '@mui/icons-material/CheckBoxOutlineBlankOutlined',
+      '@mui/icons-material/ContentCopy',
+      '@mui/icons-material/Link',
+      'react-markdown',
+      'remark-gfm',
+      'usfm-grammar-web/dist/bundle.mjs',
     ],
   },
   // Component tests and the app dev server run different vite configs. Sharing
