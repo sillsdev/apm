@@ -278,11 +278,29 @@ jobs:
           done
           echo "App is ready!"
 
-      - name: Warm up Vite for Cypress tests
-        working-directory: src/renderer
-        run: npm run cy:run-ct-fast || true
+      # The --spec list in cy:run-ct-smoke is generated from the @smoke tags.
+      # Fail early if someone tagged a spec without regenerating it, otherwise
+      # the new spec silently never runs on PRs.
+      - name: Check smoke spec list matches @smoke tags
+        run: node env-config/smokeSpecs.cjs
 
-      - name: Run Cypress tests
+      # No Vite warm-up step: cypress/config/ct-optimize-deps.json declares
+      # every dep the suite touches, so Vite pre-bundles them all at dev-server
+      # start and never re-optimizes (and reloads the AUT) mid-run. This step
+      # used to run the entire suite to force that discovery, which doubled the
+      # job. If reload-related flake reappears, regenerate the list rather than
+      # reinstating a warm-up run — see env-config/ctOptimizeDeps.cjs.
+
+      # Pull requests run the @smoke subset (10 specs, ~2.5 min). Merges to
+      # develop/main and manual runs run everything (~14 min), so nothing loses
+      # coverage before it lands.
+      - name: Run Cypress smoke tests
+        if: github.event_name == 'pull_request'
+        working-directory: src/renderer
+        run: npm run cy:run-ct-smoke
+
+      - name: Run full Cypress suite
+        if: github.event_name != 'pull_request'
         working-directory: src/renderer
         run: npm run cy:run-ct
 

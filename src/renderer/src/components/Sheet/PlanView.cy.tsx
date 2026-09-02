@@ -126,7 +126,7 @@ const mockStore = createStore(
   })
 );
 
-describe('PlanView', () => {
+describe('PlanView', { tags: '@smoke' }, () => {
   let mockHandlePublish: ReturnType<typeof cy.stub>;
   let mockHandleGraphic: ReturnType<typeof cy.stub>;
 

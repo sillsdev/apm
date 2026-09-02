@@ -36,7 +36,7 @@ const mountRecordButton = (
   );
 };
 
-describe('RecordButton', () => {
+describe('RecordButton', { tags: '@smoke' }, () => {
   it('renders the default icon button when not recording', () => {
     mountRecordButton({
       recording: false,

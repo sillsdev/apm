@@ -187,7 +187,7 @@ const mockStore = createStore(
   })
 );
 
-describe('OrgHead', () => {
+describe('OrgHead', { tags: '@smoke' }, () => {
   let mockTeamDelete: ReturnType<typeof cy.stub>;
 
   beforeEach(() => {

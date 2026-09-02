@@ -195,7 +195,7 @@ const mountStepEditor = (memory: Memory) => {
   );
 };
 
-describe('StepEditor (Edit Workflow)', () => {
+describe('StepEditor (Edit Workflow)', { tags: '@smoke' }, () => {
   it('loads org workflow steps and shows the top Add control', () => {
     const memory = createWorkflowStepMemory(TEST_ORG_ID, [
       { id: 'wfs-1', name: 'Alpha Stage', sequencenum: 0 },

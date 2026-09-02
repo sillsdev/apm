@@ -83,7 +83,7 @@ const mockStore = createStore(
   })
 );
 
-describe('PassageCard', () => {
+describe('PassageCard', { tags: '@smoke' }, () => {
   let mockHandleViewStep: ReturnType<typeof cy.stub>;
   let mockOnPlayStatus: ReturnType<typeof cy.stub>;
 
