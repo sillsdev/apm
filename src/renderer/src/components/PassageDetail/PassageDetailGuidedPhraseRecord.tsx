@@ -261,6 +261,31 @@ export function PassageDetailGuidedPhraseRecord({
   /** Indices saved this session whose rowData may not have caught up yet (TT-7552). */
   const optimisticCompletedRef = useRef<Set<number>>(new Set());
   const currentIndexRef = useRef(0);
+  /**
+   * The clause a take was started on, latched when capture begins and held
+   * until the take is stored or discarded (TT-7437).
+   *
+   * Everything that files a take — sourceSegments, the filename postfix, the
+   * green completion mark — used to read the *live* selection at save time, so
+   * any path that moved the selection between Record and the upload misfiled
+   * the audio. The engine-side lock stops the known routes, but a take belongs
+   * to the clause it was recorded on whatever slips through, so that clause is
+   * captured once and read back from here.
+   */
+  const [recordingTarget, setRecordingTarget] = useState<
+    { index: number; region: IRegion } | undefined
+  >(undefined);
+  // Mirror for the upload callbacks, which fire outside a render.
+  const recordingTargetRef = useRef<
+    { index: number; region: IRegion } | undefined
+  >(undefined);
+  const latchRecordingTarget = useCallback(
+    (target: { index: number; region: IRegion } | undefined) => {
+      recordingTargetRef.current = target;
+      setRecordingTarget(target);
+    },
+    []
+  );
   const [heardIndices, setHeardIndices] = useState<number[]>([]);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
   const [combineUndo, setCombineUndo] = useState<string | null>(null);
@@ -531,8 +556,13 @@ export function PassageDetailGuidedPhraseRecord({
     [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
+  /** The clause a pending take is filed under: latched at Record if there is
+   *  one, otherwise wherever the user is now. */
+  const takeIndex = recordingTarget?.index ?? currentIndex;
+  const takeRegion = recordingTarget?.region ?? currentRegion;
+
   const defaultFilename = useMemo(() => {
-    const postfix = config.buildFilenamePostfix(currentIndex, currentVersion);
+    const postfix = config.buildFilenamePostfix(takeIndex, currentVersion);
     return passageDefaultFilename(
       passage,
       plan,
@@ -547,7 +577,7 @@ export function PassageDetailGuidedPhraseRecord({
     memory,
     artifactTypeId,
     offline,
-    currentIndex,
+    takeIndex,
     currentVersion,
     config,
   ]);
@@ -678,8 +708,14 @@ export function PassageDetailGuidedPhraseRecord({
   // Keyed on the index rather than the navigation handlers because every clause
   // move funnels through it.
   useEffect(() => {
+    // Navigating away from a failed take abandons it, so it gives up its
+    // latched clause with the message (TT-7437). Only that case: a take that
+    // is recording, uploading, or waiting to upload keeps its clause however
+    // the selection moves — that is the whole point of the latch.
+    if (saveRejectedRef.current) latchRecordingTarget(undefined);
     saveRejectedRef.current = false;
     setSaveRejected(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
   useEffect(() => {
@@ -1713,10 +1749,19 @@ export function PassageDetailGuidedPhraseRecord({
       // (TT-7552). Only on a real upload though — a terminal failure still calls
       // us, with no mediaId, and painting that green tells the user their take
       // was stored when it was not (TT-7583).
+      // The clause the take was recorded on, not wherever the selection has
+      // since ended up — the green mark has to land where the audio went
+      // (TT-7437).
+      const takenIndex =
+        recordingTargetRef.current?.index ?? currentIndexRef.current;
       if (mediaId) {
-        optimisticCompletedRef.current.add(currentIndexRef.current);
+        optimisticCompletedRef.current.add(takenIndex);
+        // Stored: the take is no longer pending, so release the clause.
+        latchRecordingTarget(undefined);
       } else {
-        optimisticCompletedRef.current.delete(currentIndexRef.current);
+        optimisticCompletedRef.current.delete(takenIndex);
+        // Keep the latch on a failed upload: Retry must file the take on the
+        // same clause, however far the user has wandered (TT-7583).
       }
       // Stays 'recorded' either way: the take still exists, it just is not
       // stored. That keeps Record disabled and the clear button available, so
@@ -1728,7 +1773,7 @@ export function PassageDetailGuidedPhraseRecord({
       setResetMedia(false);
       applyColors();
     },
-    [forceRefresh, applyColors]
+    [forceRefresh, applyColors, latchRecordingTarget]
   );
 
   const handleClearRecording = useCallback(async () => {
@@ -1749,7 +1794,11 @@ export function PassageDetailGuidedPhraseRecord({
         await setStepComplete(currentstep, false);
       }
     }
-    optimisticCompletedRef.current.delete(currentIndexRef.current);
+    optimisticCompletedRef.current.delete(
+      recordingTargetRef.current?.index ?? currentIndexRef.current
+    );
+    // The take is gone, so the clause it was held against is released too.
+    latchRecordingTarget(undefined);
     setPhase('recordReady');
     setCurrentClausePlayed(true);
     setResetMedia(true);
@@ -1944,7 +1993,7 @@ export function PassageDetailGuidedPhraseRecord({
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
           artifactId={artifactTypeId}
           sourceMediaId={mediafileId}
-          sourceSegments={JSON.stringify(currentRegion ?? {})}
+          sourceSegments={JSON.stringify(takeRegion ?? {})}
           languagebcp47={stepLanguageField}
           defaultFilename={defaultFilename}
           recordingMediaId={recordingRow?.mediafile?.id}
@@ -1952,6 +2001,16 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // Latch the clause this take belongs to. Everything that files
+              // the take reads it from here, so the audio lands where it was
+              // recorded no matter what moves the selection afterwards
+              // (TT-7437).
+              if (currentRegion) {
+                latchRecordingTarget({
+                  index: currentIndex,
+                  region: currentRegion,
+                });
+              }
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
               setSaveRejected(false);
@@ -1983,8 +2042,11 @@ export function PassageDetailGuidedPhraseRecord({
             setSavingRecording(false);
             // Upload failures route through afterUploadCb('') as well, but
             // MediaRecord's save-requested-with-no-audio branch only lands here,
-            // so undo the optimistic green from this path too (TT-7583).
-            optimisticCompletedRef.current.delete(currentIndexRef.current);
+            // so undo the optimistic green from this path too (TT-7583). The
+            // latch stays up so a Retry still files the take on its own clause.
+            optimisticCompletedRef.current.delete(
+              recordingTargetRef.current?.index ?? currentIndexRef.current
+            );
             applyColors();
           }}
           setStatusText={setStatusText}

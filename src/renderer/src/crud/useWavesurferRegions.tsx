@@ -161,6 +161,11 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
+  /** Regions whose drag/resize were taken away by the lock, with the flags to
+   *  give back when it lifts. */
+  const dragLockedRegionsRef = useRef<
+    { region: Region; resize: boolean; drag: boolean }[]
+  >([]);
   // setupRegions runs from a once-registered 'ready' handler, so it can only
   // reach this prop through a ref (like singleRegionRef).
   const disableDragSelectionRef = useRef(disableDragSelection ?? false);
@@ -194,7 +199,33 @@ export function useWaveSurferRegions(
   }, [applyRegionColor]);
 
   useEffect(() => {
-    lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
+    const locked = lockSegmentSelection ?? false;
+    lockSegmentSelectionRef.current = locked;
+    // Freeze the segment map itself while the lock is up. Blocking the events
+    // keeps the *selection* still, but a take also belongs to a fixed pair of
+    // boundaries, so the segment it is being recorded into must not be
+    // reshaped under it either (TT-7437). Taking wavesurfer's own drag/resize
+    // flags away is what stops the drag rather than undoing it afterwards, and
+    // it removes the resize handles, which is the user's cue that the segments
+    // are held. Each region's own flags are restored on unlock: some are
+    // deliberately fixed (the split preview) and must not come back resizable.
+    if (locked) {
+      dragLockedRegionsRef.current = regions().map((r) => ({
+        region: r,
+        resize: r.resize,
+        drag: r.drag,
+      }));
+      dragLockedRegionsRef.current.forEach(({ region: r }) =>
+        r.setOptions({ resize: false, drag: false })
+      );
+    } else {
+      dragLockedRegionsRef.current.forEach(({ region: r, resize, drag }) =>
+        r.setOptions({ resize, drag })
+      );
+      dragLockedRegionsRef.current = [];
+    }
+    // regions() reads a ref, so it needs no dep of its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lockSegmentSelection]);
 
   useEffect(() => {
@@ -562,6 +593,7 @@ export function useWaveSurferRegions(
       regionsPlugin.on(
         'region-update',
         function (r: Region, side?: UpdateSide) {
+          if (lockSegmentSelectionRef.current) return;
           resizingRef.current = r.resize;
           // Live-clamp the boundary as the user drags so regions never visually
           // overlap: the dragged boundary stops at the neighbor's edge and the
@@ -574,6 +606,12 @@ export function useWaveSurferRegions(
       regionsPlugin.on(
         'region-updated',
         function (r: Region, side?: UpdateSide) {
+          // Dragging a boundary reports the resized region as the current one,
+          // which moved the selection mid-record just as a click did — and the
+          // clamp below would drag the neighbour's shared boundary with it
+          // (TT-7437). The lock takes drag/resize away, so this is the backstop
+          // for a gesture already in flight when it went up.
+          if (lockSegmentSelectionRef.current) return;
           if (singleRegionRef.current) {
             if (!loadingRef.current) {
               waitForIt(
@@ -614,8 +652,14 @@ export function useWaveSurferRegions(
         // Ignore region-in for any region other than the one we're targeting so
         // the adjacent segment isn't spuriously selected.
         if (playRegionRef.current && r.id !== playRegionRef.current.id) return;
-        // lockSegmentSelection does not apply here — playhead-driven updates must
-        // still flow so playback/overshoot logic works; consumers guard effects.
+        // The lock applies here too. A click on the waveform is both a click
+        // and a seek: region-clicked is dropped below, but the seek still walks
+        // the playhead into the clicked segment and region-in fires behind the
+        // lock's back. That is how the selection kept moving mid-record even
+        // with the click blocked (TT-7437). Nothing legitimate is lost —
+        // recording forces playback off, so there is no playback or overshoot
+        // to track while the lock is up.
+        if (lockSegmentSelectionRef.current) return;
         if (!loopingRef.current) setCurrentRegion(r);
       });
       regionsPlugin.on('region-out', function (r: Region) {
