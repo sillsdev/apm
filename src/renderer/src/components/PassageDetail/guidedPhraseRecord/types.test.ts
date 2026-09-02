@@ -2,7 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 import { NamedRegions } from '../../../utils/namedSegments';
 import { LocalKey } from '../../../utils/localUserKey';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
-import { CAREFUL_SPEECH_CONFIG, phraseBackTranslateConfig } from './types';
+import {
+  CAREFUL_SPEECH_CONFIG,
+  newTakeToken,
+  phraseBackTranslateConfig,
+} from './types';
 
 describe('guidedPhraseRecord config', () => {
   it('Careful Speech uses clause regions and boundary tools', () => {
@@ -77,5 +81,45 @@ describe('guidedPhraseRecord config', () => {
     );
     // Steps with no configured language keep the names they always had.
     expect(config.buildFilenamePostfix(0, 1)).toBe('backtranslation1_v1');
+  });
+
+  it('buildFilenamePostfix separates the takes of one segment (TT-7432)', () => {
+    // Segment index, source version and step language are all the same for two
+    // takes of the same segment in the same step, so deleting a recording and
+    // recording it again uploaded the replacement under the name the deleted
+    // take is cached on, and the deleted audio is what played back. Each take
+    // has to bring its own token.
+    const config = phraseBackTranslateConfig(
+      ArtifactTypeSlug.PhraseBackTranslation,
+      NamedRegions.BackTranslation
+    );
+    expect(
+      CAREFUL_SPEECH_CONFIG.buildFilenamePostfix(0, 1, undefined, 't1')
+    ).toBe('carefulspeech1_v1_t1');
+    expect(
+      CAREFUL_SPEECH_CONFIG.buildFilenamePostfix(0, 1, undefined, 't2')
+    ).not.toBe(
+      CAREFUL_SPEECH_CONFIG.buildFilenamePostfix(0, 1, undefined, 't1')
+    );
+    expect(config.buildFilenamePostfix(1, 1, 'he', 't1')).toBe(
+      'backtranslation2_v1s1_he_t1'
+    );
+    // Takes made before this stay on the names they were uploaded under.
+    expect(CAREFUL_SPEECH_CONFIG.buildFilenamePostfix(0, 1)).toBe(
+      'carefulspeech1_v1'
+    );
+  });
+});
+
+describe('newTakeToken', () => {
+  it('never repeats a token, even inside one millisecond', () => {
+    const now = 1767225600000;
+    expect(newTakeToken(now)).not.toEqual(newTakeToken(now));
+  });
+
+  it('grows with the clock so a later take sorts after an earlier one', () => {
+    expect(newTakeToken(1767225600000) < newTakeToken(1767225700000)).toBe(
+      true
+    );
   });
 });

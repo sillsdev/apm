@@ -279,6 +279,41 @@ describe('PassageDetailGuidedPhraseRecord - step scope (TT-7643)', () => {
     expect(controlsProps?.defaultFilename).toContain('he');
   });
 
+  /**
+   * TT-7432 - deleting a recording and recording the segment again produced a
+   * second take whose name was identical to the first: segment index, source
+   * version and step language are all unchanged. `dataPath` resolves a
+   * mediafile's audioUrl to `<offlineData>/media/<basename>`, so the new take
+   * resolved to the file already cached for the deleted one and playback kept
+   * playing the deleted recording.
+   */
+  it('names each take of a segment separately (TT-7432)', async () => {
+    mockCompleted = new Set<number>();
+    mockRecordingRow = { mediafile: { id: 'take-1' } };
+    await mountAndSettle();
+    const onRecording = controlsProps?.onRecording as (a: boolean) => void;
+
+    // First take of segment 1.
+    await act(async () => {
+      onRecording(true);
+    });
+    const firstTake = controlsProps?.defaultFilename as string;
+    await act(async () => {
+      onRecording(false);
+    });
+    // It still says which segment and which source version it belongs to.
+    expect(firstTake).toContain('backtranslation1_v1');
+
+    // Delete it and record the same segment again.
+    await act(async () => {
+      await (controlsProps?.onClearRecording as () => Promise<void>)();
+    });
+    await act(async () => {
+      (controlsProps?.onRecording as (a: boolean) => void)(true);
+    });
+    expect(controlsProps?.defaultFilename).not.toEqual(firstTake);
+  });
+
   it('records against the language of the step now showing', async () => {
     const { rerender } = await mountAndSettle();
     expect(controlsProps?.languagebcp47).toBe('Sena|seh');
