@@ -57,6 +57,7 @@ const uploadExtensions = [
   '', // Link
   '', // MarkDown
   '', // FaithbridgeLink
+  '', // Burrito
 ];
 
 const uploadMimeTypes = [
@@ -71,6 +72,7 @@ const uploadMimeTypes = [
   '', // Link
   '', // MarkDown
   '', // FaithbridgeLink
+  '', // Burrito
 ];
 
 const audioOnlyType = UploadType.Media;
