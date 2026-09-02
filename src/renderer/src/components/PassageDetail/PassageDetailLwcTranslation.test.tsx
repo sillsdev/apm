@@ -153,11 +153,24 @@ jest.mock('./lwcTranslation/LwcTranslationControls', () => ({
   },
 }));
 
+// Echo the postfix the step built, so a spec can see what the take would be
+// named. Real signature: (passage, plan, memory, artifactType, offline, postfix).
 jest.mock('../../utils/passageDefaultFilename', () => ({
-  passageDefaultFilename: () => 'file.ogg',
+  passageDefaultFilename: (...args: unknown[]) =>
+    `GEN001_014-019${args[5]}_plan`,
 }));
 
 import { PassageDetailLwcTranslation } from './PassageDetailLwcTranslation';
+
+/** Play the reference clause through, which is what reveals the recorder. */
+const openRecorder = async () => {
+  render(<PassageDetailLwcTranslation width={400} />);
+  await waitFor(() => expect(referenceProps).toBeDefined());
+  await act(async () => {
+    (referenceProps?.onPlaybackComplete as () => void)();
+  });
+  await waitFor(() => expect(controlsProps?.showRecorder).toBe(true));
+};
 
 describe('PassageDetailLwcTranslation', () => {
   beforeEach(() => {
@@ -206,16 +219,6 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
     referenceProps = undefined;
     mockStartSave.mockClear();
   });
-
-  // Play the reference clause through, which is what reveals the recorder.
-  const openRecorder = async () => {
-    render(<PassageDetailLwcTranslation width={400} />);
-    await waitFor(() => expect(referenceProps).toBeDefined());
-    await act(async () => {
-      (referenceProps?.onPlaybackComplete as () => void)();
-    });
-    await waitFor(() => expect(controlsProps?.showRecorder).toBe(true));
-  };
 
   // Record a take and request its auto-save, then have MediaRecord reject it.
   const recordAndRejectSave = async () => {
@@ -372,5 +375,49 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
 
     expect(controlsProps?.allClausesComplete).toBe(true);
     expect(controlsProps?.phase).toBe('recorded');
+  });
+});
+
+/**
+ * TT-7432 - clause index and source version were the whole of a take's name,
+ * and they do not change when the clause is recorded again. `dataPath` resolves
+ * a mediafile's audioUrl to `<offlineData>/media/<basename>`, so clearing a
+ * recording and recording it again uploaded the replacement under the name the
+ * deleted take is already cached on, and the deleted audio is what played.
+ * Same defect the Careful Speech / Phrase BT steps had.
+ */
+describe('PassageDetailLwcTranslation - take names (TT-7432)', () => {
+  beforeEach(() => {
+    mockCarefulSpeechComplete = new Set([0]);
+    mockLwcComplete = new Set<number>();
+    mockClauseRegions = [{ start: 0, end: 5, label: '' }];
+    controlsProps = undefined;
+    referenceProps = undefined;
+    mockStartSave.mockClear();
+  });
+
+  it('names each take of a clause separately', async () => {
+    await openRecorder();
+    const record = (active: boolean) =>
+      (controlsProps?.onRecording as (a: boolean) => void)(active);
+
+    await act(async () => {
+      record(true);
+    });
+    const firstTake = controlsProps?.defaultFilename as string;
+    await act(async () => {
+      record(false);
+    });
+    // It still says which clause and which source version it belongs to.
+    expect(firstTake).toContain('lwctranslation1_v1');
+
+    // Clear it and record the same clause again.
+    await act(async () => {
+      await (controlsProps?.onClearRecording as () => Promise<void>)();
+    });
+    await act(async () => {
+      record(true);
+    });
+    expect(controlsProps?.defaultFilename).not.toEqual(firstTake);
   });
 });
