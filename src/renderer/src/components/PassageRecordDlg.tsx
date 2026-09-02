@@ -88,11 +88,11 @@ interface IProps {
   team?: string | undefined;
   uploadType: UploadType;
   uploadMethod:
-    | ((files: File[]) => void | boolean | Promise<void | boolean>)
-    | undefined;
+    ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
   multiple?: boolean | undefined;
   inValue?: string | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  audioOnly?: boolean | undefined;
 }
 
 function PassageRecordDlg(props: IProps) {
@@ -117,6 +117,7 @@ function PassageRecordDlg(props: IProps) {
     multiple,
     inValue,
     onNonAudio,
+    audioOnly,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -328,6 +329,7 @@ function PassageRecordDlg(props: IProps) {
           team={team}
           inValue={inValue}
           onNonAudio={onNonAudio}
+          audioOnly={audioOnly}
         />
       )}
     </RecordDialog>

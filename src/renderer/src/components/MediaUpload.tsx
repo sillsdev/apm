@@ -19,8 +19,7 @@ interface IProps {
   bp?: BigDialogBp;
   uploadType: UploadType;
   uploadMethod?:
-    | ((files: File[]) => void | boolean | Promise<void | boolean>)
-    | undefined;
+    ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -33,6 +32,7 @@ interface IProps {
   inValue?: string | undefined;
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  audioOnly?: boolean | undefined;
 }
 
 function MediaUpload(props: IProps) {
@@ -54,6 +54,7 @@ function MediaUpload(props: IProps) {
     inValue,
     onValue,
     onNonAudio,
+    audioOnly,
   } = props;
   const { isMobile } = useMobile();
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
@@ -100,6 +101,7 @@ function MediaUpload(props: IProps) {
         inValue={inValue}
         onValue={onValue}
         onNonAudio={onNonAudio}
+        audioOnly={audioOnly}
       />
     </BigDialog>
   );

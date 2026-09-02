@@ -1090,6 +1090,7 @@ const initialState = {
 			"githubSupport": "Github markdown syntax supported",
 			"graphicTask": "Drag and drop a file here, or click here to browse for the file. Formats accepted are .png, .jpg (or .jpeg) and .webp.",
 			"graphicTitle": "Upload Graphic",
+			"intellectualPropertyAudioTask": "Upload a speaker rights release for {0} in audio format. Formats accepted are .mp3, .m4a, .wav or .ogg.",
 			"intellectualPropertyTask": "Upload a speaker rights release for {0} in audio or visual format. Audio formats accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or .jpg.",
 			"intellectualPropertyTitle": "Upload Speaker Rights Release",
 			"invalidFile": "Not valid for this operation: {0} ",
