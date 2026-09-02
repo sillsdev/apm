@@ -1,6 +1,7 @@
 import { related } from '../../../crud/related';
 import { IRow } from '../../../context/PassageDetailContext';
 import { mediaMatchesStepLanguage } from '../../../utils/mediaLanguage';
+import { compareTakesNewestFirst } from '../../../crud/phraseTakes';
 
 // Language-field helpers live in utils/mediaLanguage so context-layer callers
 // don't have to import from this component subtree. Re-exported here because
@@ -47,12 +48,9 @@ export function matchesGuidedOutputRow(
 export function pickLatestGuidedOutputRow(matches: IRow[]): IRow | undefined {
   if (matches.length === 0) return undefined;
   if (matches.length === 1) return matches[0];
-  return [...matches].sort((a, b) => {
-    const da = a.mediafile?.attributes?.dateCreated ?? '';
-    const db = b.mediafile?.attributes?.dateCreated ?? '';
-    if (da !== db) return db.localeCompare(da);
-    return (b.mediafile?.id ?? '').localeCompare(a.mediafile?.id ?? '');
-  })[0];
+  return [...matches].sort((a, b) =>
+    compareTakesNewestFirst(a.mediafile, b.mediafile)
+  )[0];
 }
 
 /** Named-region key for Phrase BT segment boundaries for a language. */
