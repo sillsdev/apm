@@ -44,6 +44,35 @@ const HiddenInput = styled('input')(() => ({
   display: 'none',
 }));
 
+// Accepted file formats, indexed by UploadType
+const uploadExtensions = [
+  '.mp3, .m4a, .wav, .ogg', // Media
+  '.mp3, .m4a, .wav, .ogg, .pdf', // Resource
+  '.itf', // ITF
+  '.ptf', // PTF
+  '.jpg, .jpeg, .svg, .png', // LOGO
+  '.mp3, .m4a, .wav, .ogg, .pdf', // ProjectResource
+  '.mp3, .m4a, .wav, .ogg, .pdf, .png, .jpg, .jpeg', // IntellectualProperty
+  '.png, .jpg, .jpeg, .webp', // Graphic
+  '', // Link
+  '', // MarkDown
+  '', // FaithbridgeLink
+];
+
+const uploadMimeTypes = [
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg', // Media
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf', // Resource
+  'application/itf', // ITF
+  'application/ptf', // PTF
+  'image/jpeg, image/jpeg, image/svg+xml, image/png', // LOGO
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf', // ProjectResource
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf, image/png, image/jpeg, image/jpeg', // IntellectualProperty
+  'image/png, image/jpeg, image/jpeg, image/webp', // Graphic
+  '', // Link
+  '', // MarkDown
+  '', // FaithbridgeLink
+];
+
 interface ITargetProps {
   name: string;
   acceptextension: string;
@@ -336,30 +365,8 @@ function MediaUploadContent(props: IProps) {
   }, [inValue]);
 
   useEffect(() => {
-    setAcceptExtension(
-      [
-        '.mp3, .m4a, .wav, .ogg',
-        '.mp3, .m4a, .wav, .ogg, .pdf',
-        '.itf',
-        '.ptf',
-        '.jpg, .jpeg, .svg, .png',
-        '.mp3, .m4a, .wav, .ogg, .pdf',
-        '.mp3, .m4a, .wav, .ogg, .pdf, .png, .jpg, .jpeg',
-        '.png, .jpg, .jpeg, .webp',
-      ].map((s) => s)[uploadType] as string
-    );
-    setAcceptMime(
-      [
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg',
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf',
-        'application/itf',
-        'application/ptf',
-        'image/jpeg, image/jpeg, image/svg+xml, image/png',
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf',
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf, image/png, image/jpeg, image/jpeg',
-        'image/png, image/jpeg, image/jpeg, image/webp',
-      ].map((s) => s)[uploadType] as string
-    );
+    setAcceptExtension(uploadExtensions[uploadType] ?? '');
+    setAcceptMime(uploadMimeTypes[uploadType] ?? '');
     const size = typeLimit(uploadType);
     clearFileInput();
     if (filesRef.current.length > 0) {
