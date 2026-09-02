@@ -73,6 +73,8 @@ const uploadMimeTypes = [
   '', // FaithbridgeLink
 ];
 
+const audioOnlyType = UploadType.Media;
+
 interface ITargetProps {
   name: string;
   acceptextension: string;
@@ -160,6 +162,7 @@ interface IProps {
   inValue?: string | undefined;
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  audioOnly?: boolean | undefined;
   saveText?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
@@ -189,6 +192,7 @@ function MediaUploadContent(props: IProps) {
     inValue,
     onValue,
     onNonAudio,
+    audioOnly,
     saveText,
     controlsRef,
     onSaveDisabled,
@@ -211,7 +215,7 @@ function MediaUploadContent(props: IProps) {
     t.PTFtask,
     'FUTURE TODO',
     t.projectResourceTask,
-    t.intellectualPropertyTask,
+    audioOnly ? t.intellectualPropertyAudioTask : t.intellectualPropertyTask,
     t.graphicTask,
     t.linkTask,
     t.markdownTask,
@@ -365,8 +369,9 @@ function MediaUploadContent(props: IProps) {
   }, [inValue]);
 
   useEffect(() => {
-    setAcceptExtension(uploadExtensions[uploadType] ?? '');
-    setAcceptMime(uploadMimeTypes[uploadType] ?? '');
+    const formatType = audioOnly ? audioOnlyType : uploadType;
+    setAcceptExtension(uploadExtensions[formatType] ?? '');
+    setAcceptMime(uploadMimeTypes[formatType] ?? '');
     const size = typeLimit(uploadType);
     clearFileInput();
     if (filesRef.current.length > 0) {
@@ -375,7 +380,7 @@ function MediaUploadContent(props: IProps) {
       setFiles(goodFiles);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uploadType]);
+  }, [uploadType, audioOnly]);
 
   const body = (
     <>

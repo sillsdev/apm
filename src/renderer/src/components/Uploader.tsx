@@ -77,6 +77,7 @@ interface IProps {
   inValue?: string | undefined; // used when adding Aquifer markdown
   team?: string | undefined; // used when adding a card to check speakers
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  audioOnly?: boolean | undefined;
   uploadDialogBp?: BigDialogBp;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
@@ -109,6 +110,7 @@ export const Uploader = (props: IProps) => {
     inValue,
     team,
     onNonAudio,
+    audioOnly,
     finish,
     uploadDialogBp,
     pendingRestore,
@@ -507,6 +509,7 @@ export const Uploader = (props: IProps) => {
           multiple={multiple}
           inValue={inValue}
           onNonAudio={onNonAudio}
+          audioOnly={audioOnly}
         />
       )}
       {!audioUploadOrRecord && !hasImport && (
@@ -530,6 +533,7 @@ export const Uploader = (props: IProps) => {
           inValue={inValue}
           team={team}
           onNonAudio={onNonAudio}
+          audioOnly={audioOnly}
         />
       )}
     </Box>

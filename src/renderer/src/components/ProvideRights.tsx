@@ -353,6 +353,7 @@ export function ProvideRights(props: IProps) {
         performedBy={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}
+        audioOnly={aiip}
         pendingRestore={pendingRestore}
       />
     </div>
