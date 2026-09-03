@@ -238,6 +238,10 @@ export function useWaveSurferRegions(
         r.setOptions({ resize, drag })
       );
       dragLockedRegionsRef.current = [];
+      // The snapshot restores the flags as they were at lock time; now re-derive
+      // the recorded/unrecorded resting state, since a take may have been made
+      // during the lock (TT-7666). No-op while locked, so it is safe here only.
+      applyRecordedResizeLocks();
     }
     // regions() reads a ref, so it needs no dep of its own.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -299,17 +303,25 @@ export function useWaveSurferRegions(
   const applyRecordedResizeLocks = () => {
     const recorded = isSegmentRecordedRef.current;
     if (!recorded) return;
+    // While the recording-in-progress lock holds it owns every region's resize
+    // flag (all off); re-enabling any here would hand back a handle the lock
+    // took away. The lock's release path re-runs this to restore the resting
+    // recorded/unrecorded state (TT-7437 / TT-7666).
+    if (lockSegmentSelectionRef.current) return;
     const sorted = sortedRegions();
+    const last = sorted.length - 1;
     sorted.forEach((r, i) => {
       if (recorded(i)) {
         // Both edges frozen — the whole segment is locked.
         r.setOptions({ resize: false });
       } else {
-        // Draggable, except a side shared with a recorded neighbour.
+        // Draggable, except a side shared with a recorded neighbour. The outer
+        // edges (first start, last end) have no neighbour, so stay free — and
+        // the predicate is never asked about an out-of-range index.
         r.setOptions({
           resize: true,
-          resizeStart: !recorded(i - 1),
-          resizeEnd: !recorded(i + 1),
+          resizeStart: i === 0 ? true : !recorded(i - 1),
+          resizeEnd: i === last ? true : !recorded(i + 1),
         });
       }
     });
@@ -327,9 +339,12 @@ export function useWaveSurferRegions(
     if (idx < 0) return false;
     if (recorded(idx)) return true;
     // 'start' shares with the previous segment, 'end' with the next; an
-    // unknown side means check both.
-    if (side !== 'end' && recorded(idx - 1)) return true;
-    if (side !== 'start' && recorded(idx + 1)) return true;
+    // unknown side means check both. Guard the ends so the predicate is only
+    // ever asked about a real sorted index.
+    if (side !== 'end' && idx > 0 && recorded(idx - 1)) return true;
+    if (side !== 'start' && idx < numRegions() - 1 && recorded(idx + 1)) {
+      return true;
+    }
     return false;
   };
 

@@ -106,12 +106,16 @@ interface IHarnessOpts {
   /** Sorted indices of segments that already have a recording. A boundary
    *  between a recorded segment and its neighbor may not be dragged (TT-7666). */
   recordedIndices?: number[];
+  /** Supply a color function so `applyRegionColors` runs its body (it is a
+   *  no-op without one) — needed to exercise the recorded-resize pass. */
+  withColors?: boolean;
 }
 
 const renderRegions = ({
   lockSegmentSelection,
   progressAt = 0,
   recordedIndices = [],
+  withColors = false,
 }: IHarnessOpts) => {
   const plugin = newPlugin();
   // three contiguous segments, linked the way setPrevNext links them
@@ -162,7 +166,7 @@ const renderRegions = ({
       undefined, // onMarkerClick
       undefined, // verses
       undefined, // hasSegmentUndo
-      undefined, // applyRegionColor
+      withColors ? () => 'rgba(1, 2, 3, 0.5)' : undefined, // applyRegionColor
       lockSegmentSelection,
       undefined, // getDecodedBuffer
       true, // disableDragSelection
@@ -420,6 +424,28 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
 
     expect(segs[1].setOptions).toHaveBeenCalledWith(
       expect.objectContaining({ resize: false })
+    );
+  });
+
+  it('does not re-enable handles on a color pass while recording is locked', () => {
+    // The recording-in-progress lock (TT-7437) takes every region's handles
+    // away. The recorded-resize pass runs on every color update and must not
+    // hand a handle back to an unrecorded segment while that lock holds, or the
+    // user could resize mid-record.
+    const { result, segs } = renderRegions({
+      lockSegmentSelection: true,
+      recordedIndices: [1],
+      withColors: true,
+    });
+    segs.forEach((s) => s.setOptions.mockClear());
+
+    act(() => {
+      result.current.applyRegionColors();
+    });
+
+    // segment 0 is unrecorded, but the lock is up: it must not be re-enabled.
+    expect(segs[0].setOptions).not.toHaveBeenCalledWith(
+      expect.objectContaining({ resize: true })
     );
   });
 });
