@@ -323,14 +323,19 @@ export async function electronExport(
     const AddSupportingProjects = async (project: ProjectD) => {
       let recs = supportingProjects(project);
       const ret = { Added: 0, Filtered: 0 };
-      if (recs.length > 0) {
+      if (needsRemoteIds) {
+        const n = recs.length;
         recs = recs.filter((r) => Boolean(r.keys?.remoteId));
-        ret.Added = recs?.length || 0;
+        ret.Filtered += n - recs.length;
       }
+      ret.Added = recs.length;
       await AddJsonEntry('supportingprojects', recs, 'Z');
-      const orgs = supportingOrgs(project).filter((o) =>
-        Boolean(o.keys?.remoteId)
-      );
+      let orgs = supportingOrgs(project);
+      if (needsRemoteIds) {
+        const n = orgs.length;
+        orgs = orgs.filter((o) => Boolean(o.keys?.remoteId));
+        ret.Filtered += n - orgs.length;
+      }
       if (orgs.length > 0) {
         await AddJsonEntry('supportingorgs', orgs, 'Z');
         ret.Added += orgs.length;

@@ -53,6 +53,8 @@ function memoryStub(store: Record<string, unknown[]>): Memory {
     schema: {},
     keyMap: {
       idToKey: (table: string, _key: string, localId: string) => {
+        if (localId == null)
+          throw new Error(`idToKey called without localId (${table})`);
         const rec = (
           (store[table] ?? []) as { id: string; keys?: { remoteId?: string } }[]
         ).find((r) => r.id === localId);
@@ -173,6 +175,27 @@ describe('getProjectDataFiles project scoping', () => {
       orgScoped('orgkeyterm', 'okt-other', 'org-other'),
       orgScoped('orgkeyterm', 'okt-local', 'org-local', false),
     ],
+    artifactcategory: [
+      {
+        type: 'artifactcategory',
+        id: 'cat-global',
+        keys: { remoteId: 'cat-global' },
+        attributes: {
+          dateCreated: '2020-01-01T00:00:00.000Z',
+          dateUpdated: '2020-01-01T00:00:00.000Z',
+        },
+        relationships: {},
+      },
+      {
+        type: 'artifactcategory',
+        id: 'cat-global-local',
+        attributes: {
+          dateCreated: '2020-01-01T00:00:00.000Z',
+          dateUpdated: '2020-01-01T00:00:00.000Z',
+        },
+        relationships: { organization: { data: null } },
+      },
+    ],
   };
 
   it('omits other-org and unkeyed rows from an online project export', async () => {
@@ -186,6 +209,9 @@ describe('getProjectDataFiles project scoping', () => {
     expect(idsIn(files, 'data/C_orgworkflowsteps.json')).toEqual(['ows-mine']);
     expect(idsIn(files, 'data/J_organizationbibles.json')).toEqual(['ob-mine']);
     expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-mine']);
+    expect(idsIn(files, 'data/C_artifactcategorys.json')).toEqual([
+      'cat-global',
+    ]);
     expect(idsIn(files, 'data/D_projects.json')).toEqual(['proj-mine']);
   });
 
@@ -201,6 +227,9 @@ describe('getProjectDataFiles project scoping', () => {
       'ob-local',
     ]);
     expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-local']);
+    expect(idsIn(files, 'data/C_artifactcategorys.json')).toEqual([
+      'cat-global-local',
+    ]);
     expect(idsIn(files, 'data/D_projects.json')).toEqual(['proj-local']);
   });
 
@@ -407,6 +436,46 @@ describe('supportingOrgs from supporting projects', () => {
     const files = await getProjectDataFiles(memory, project);
     expect(idsIn(files, 'data/C_artifactcategorys.json')).toContain('cat-src');
     expect(idsIn(files, 'data/H_mediafiles.json')).toContain('media-title');
+  });
+
+  it('exports only the highest version of shared-note source media', () => {
+    const withVersions = {
+      ...store,
+      mediafile: [
+        {
+          type: 'mediafile',
+          id: 'media-v1',
+          keys: { remoteId: 'media-v1' },
+          attributes: { ...dates, versionNumber: 1 },
+          relationships: { passage: rel('passage', 'pas-src') },
+        },
+        {
+          type: 'mediafile',
+          id: 'media-v3',
+          keys: { remoteId: 'media-v3' },
+          attributes: { ...dates, versionNumber: 3 },
+          relationships: { passage: rel('passage', 'pas-src') },
+        },
+        {
+          type: 'mediafile',
+          id: 'media-v2',
+          keys: { remoteId: 'media-v2' },
+          attributes: { ...dates, versionNumber: 2 },
+          relationships: { passage: rel('passage', 'pas-src') },
+        },
+      ],
+    };
+    const { getTableRecs } = createExportCollector(
+      memoryStub(withVersions),
+      true,
+      { projRec: project, organizationId: 'org-mine' }
+    );
+    const media = getTableRecs(
+      { table: 'mediafile', sort: 'H' },
+      project,
+      true
+    );
+    expect(media.map((m) => m.id)).toEqual(['media-v3']);
   });
 });
 

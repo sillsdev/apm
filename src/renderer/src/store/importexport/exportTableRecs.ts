@@ -127,9 +127,7 @@ export function createExportCollector(
     mediafiles
       .sort((a, b) =>
         related(a, 'passage') === related(b, 'passage')
-          ? a.attributes.versionNumber > b.attributes.versionNumber
-            ? 1
-            : -1
+          ? b.attributes.versionNumber - a.attributes.versionNumber
           : related(a, 'passage') > related(b, 'passage')
             ? 1
             : -1
@@ -245,13 +243,15 @@ export function createExportCollector(
       memory.cache.query((q) =>
         q.findRecords('artifactcategory')
       ) as ArtifactCategoryD[]
-    ).filter(
-      (a) =>
+    ).filter((a) => {
+      const org = related(a, 'organization');
+      return (
         foreignCatIds.includes(a.id) &&
-        related(a, 'organization') !== projOrgId &&
-        Boolean(remoteId('organization', related(a, 'organization'), km)) ===
-          needsRemoteIds
-    );
+        Boolean(org) &&
+        org !== projOrgId &&
+        Boolean(remoteId('organization', org, km)) === needsRemoteIds
+      );
+    });
   };
 
   const supportingOrgs = (project: ProjectD) => {
@@ -294,9 +294,10 @@ export function createExportCollector(
           (project ? related(project, 'organization') : undefined));
     let recs = (
       memory.cache.query((q) => q.findRecords(table)) as BaseModelD[]
-    ).filter(
-      (r) => Boolean(remoteId(rel, related(r, rel), km)) === needsRemoteIds
-    );
+    ).filter((r) => {
+      const id = related(r, rel);
+      return Boolean(id) && Boolean(remoteId(rel, id, km)) === needsRemoteIds;
+    });
     if (scopeId) recs = recs.filter((rec) => related(rec, rel) === scopeId);
     if (remoteIds) {
       recs.forEach((r) => {
