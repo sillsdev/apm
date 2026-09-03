@@ -92,7 +92,11 @@ export function createExportCollector(
   ) => {
     const recs = (
       memory.cache.query((q) => q.findRecords(table)) as BaseModelD[]
-    ).filter((r) => !ids || ids.includes(related(r, rel)));
+    ).filter(
+      (r) =>
+        (!ids || ids.includes(related(r, rel))) &&
+        Boolean(r?.keys?.remoteId) === needsRemoteIds
+    );
     if (remoteIds) {
       recs.forEach((r) => {
         if (!remoteId(table, r.id, km) && r.attributes)

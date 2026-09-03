@@ -327,12 +327,12 @@ export async function electronExport(
         recs = recs.filter((r) => Boolean(r.keys?.remoteId));
         ret.Added = recs?.length || 0;
       }
-      AddJsonEntry('supportingprojects', recs, 'Z');
+      await AddJsonEntry('supportingprojects', recs, 'Z');
       const orgs = supportingOrgs(project).filter((o) =>
         Boolean(o.keys?.remoteId)
       );
       if (orgs.length > 0) {
-        AddJsonEntry('supportingorgs', orgs, 'Z');
+        await AddJsonEntry('supportingorgs', orgs, 'Z');
         ret.Added += orgs.length;
       }
       return ret;
@@ -354,7 +354,7 @@ export async function electronExport(
           ret.Filtered = len - ret.Added;
         }
         if (!scripturePackage) {
-          AddJsonEntry(info.table + 's', recs, info.sort);
+          await AddJsonEntry(info.table + 's', recs, info.sort);
         }
         switch (info.table) {
           case 'organization':
