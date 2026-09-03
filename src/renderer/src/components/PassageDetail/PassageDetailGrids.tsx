@@ -187,62 +187,32 @@ const PassageDetailGrids = () => {
   );
   const headerContent = (
     <>
-      {boldDesktopCenteredHeader ? (
-        // Equal-basis side items keep the tool label centered on the pane
-        // regardless of how wide the passage reference or step-complete get.
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
-        >
-          <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
-            <PassageDetailSectionPassage />
-          </Box>
-          <Box
-            id="tool"
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', textAlign: 'center' }}
-          >
-            {headerToolLabel}
-          </Box>
-          <Box
-            id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
-            sx={{
-              display: 'flex',
-              flex: '1 1 0',
-              minWidth: 0,
-              justifyContent: 'flex-end',
-            }}
-          >
-            {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
-          </Box>
-        </Stack>
-      ) : (
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
+      >
+        <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
+          <PassageDetailSectionPassage />
+        </Box>
         <Box
+          id="tool"
+          sx={{ flexShrink: 0, whiteSpace: 'nowrap', textAlign: 'center' }}
+        >
+          {headerToolLabel}
+        </Box>
+        <Box
+          id="stepcomplete"
           sx={{
             display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 1,
+            flex: '1 1 0',
             minWidth: 0,
-            width: '100%',
+            justifyContent: 'flex-end',
           }}
         >
-          <Box sx={{ ...clipProps, minWidth: 0, whiteSpace: 'nowrap' }}>
-            <PassageDetailSectionPassage />
-          </Box>
-          <Box id="tool" sx={{ minWidth: 0, whiteSpace: 'nowrap', ml: 'auto' }}>
-            {headerToolLabel}
-          </Box>
-          {!isBoldWorkflow && (
-            <Box
-              id="stepcomplete"
-              sx={{ display: 'flex', flexShrink: 0, ml: 'auto' }}
-            >
-              <PassageDetailStepComplete />
-            </Box>
-          )}
+          <PassageDetailStepComplete />
         </Box>
-      )}
+      </Stack>
       <Box sx={{ ...clipProps, width: '100%' }}>
         <WorkflowSteps />
       </Box>
