@@ -182,13 +182,13 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
   describe('Resource — sectionresource secondary link', () => {
     it('creates sectionresource linked to section, mediafile, and org workflow step', async () => {
-      const restore = {
+      const restore: PendingUploadRestore = {
         kind: 'sectionresource',
         sectionId: 'sec-1',
         description: 'My resource recording',
         sequenceNum: 1,
         orgWorkflowStepId: 'ows-1',
-      } as unknown as PendingUploadRestore;
+      };
 
       await restoreAfterPendingUpload({
         mediaId: 'resource-media-1',
@@ -212,14 +212,14 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
     });
 
     it('links passage when restore meta includes passageId', async () => {
-      const restore = {
+      const restore: PendingUploadRestore = {
         kind: 'sectionresource',
         sectionId: 'sec-1',
         description: 'Passage resource',
         sequenceNum: 2,
         orgWorkflowStepId: 'ows-1',
         passageId: 'pas-1',
-      } as unknown as PendingUploadRestore;
+      };
 
       await restoreAfterPendingUpload({
         mediaId: 'resource-media-1',
@@ -238,10 +238,10 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
   describe('LWC Audio Translation — sourceMedia secondary link', () => {
     it('relinks sourceMedia on the pulled mediafile from pending restore meta', async () => {
-      const restore = {
+      const restore: PendingUploadRestore = {
         kind: 'sourceMedia',
         sourceMediaId: 'vern-1',
-      } as unknown as PendingUploadRestore;
+      };
 
       await restoreAfterPendingUpload({
         mediaId: 'lwc-media-1',
@@ -258,10 +258,10 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
     });
 
     it('shows the LWC clause as recorded after sourceMedia is restored', async () => {
-      const restore = {
+      const restore: PendingUploadRestore = {
         kind: 'sourceMedia',
         sourceMediaId: 'vern-1',
-      } as unknown as PendingUploadRestore;
+      };
 
       await restoreAfterPendingUpload({
         mediaId: 'lwc-media-1',

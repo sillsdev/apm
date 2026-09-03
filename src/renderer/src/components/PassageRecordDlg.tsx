@@ -93,6 +93,7 @@ interface IProps {
   inValue?: string | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
+  pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
 }
 
 function PassageRecordDlg(props: IProps) {
@@ -118,6 +119,7 @@ function PassageRecordDlg(props: IProps) {
     inValue,
     onNonAudio,
     audioOnly,
+    pendingRestore,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -286,6 +288,7 @@ function PassageRecordDlg(props: IProps) {
                 allowNoNoise={true}
                 allowDeltaVoice={true}
                 onRecording={setRecording}
+                pendingRestore={pendingRestore}
               />
             </Box>
             {metaData}
