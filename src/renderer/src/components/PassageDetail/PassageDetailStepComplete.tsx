@@ -161,17 +161,7 @@ export const PassageDetailStepComplete = () => {
     <Box
       sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flexShrink: 1 }}
     >
-      <Typography
-        sx={{
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          flexShrink: 1,
-          minWidth: 0,
-        }}
-      >
-        {t.title}
-      </Typography>
+      <Typography noWrap>{t.title}</Typography>
       <IconButton
         id="complete"
         sx={{ color: 'primary.light' }}

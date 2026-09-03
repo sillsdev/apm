@@ -213,7 +213,7 @@ const PassageDetailGrids = () => {
         sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
       >
         <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
-          <Typography noWrap variant="h6" id="sectionpassagetitle">
+          <Typography noWrap id="sectionpassagetitle">
             {sectionDescription(section, sectionMap, passNum)}
             {sectionPassageRefDelim}
             <PassageReference
@@ -221,14 +221,12 @@ const PassageDetailGrids = () => {
               bookData={allBookData}
               flat={isFlat}
               sharedResource={sharedResource}
+              fontSize="inherit"
             />
           </Typography>
         </Box>
-        <Box
-          id="tool"
-          sx={{ flexShrink: 0, whiteSpace: 'nowrap', textAlign: 'center' }}
-        >
-          {headerToolLabel}
+        <Box id="tool" sx={{ flexShrink: 0 }}>
+          <Typography noWrap>{headerToolLabel}</Typography>
         </Box>
         <Box
           id="stepcomplete"
