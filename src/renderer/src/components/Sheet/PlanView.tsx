@@ -67,6 +67,20 @@ export function PlanView(props: IProps) {
     [teamId, teams]
   );
 
+  const currentPassageId = useMemo(() => {
+    if (!rowInfo.length) return undefined;
+    const lastPasId = localStorage.getItem(localUserKey(LocalKey.passage));
+    if (!lastPasId) return undefined;
+    const pasGuid =
+      remoteIdGuid(
+        'passage',
+        lastPasId,
+        memory?.keyMap as RecordKeyMap
+      ) || lastPasId;
+    const row = rowInfo.findIndex((r) => r.passage?.id === pasGuid);
+    return row >= 0 ? pasGuid : undefined;
+  }, [rowInfo, memory]);
+
   const onPlayStatus = (mediaId: string) => {
     setSrcMediaId(mediaId);
   };
@@ -81,24 +95,14 @@ export function PlanView(props: IProps) {
   };
 
   useEffect(() => {
-    if (restoredRef.current || !rowInfo.length) return;
-    const lastPasId = localStorage.getItem(localUserKey(LocalKey.passage));
-    if (!lastPasId) return;
-    const pasGuid =
-      remoteIdGuid(
-        'passage',
-        lastPasId,
-        memory?.keyMap as RecordKeyMap
-      ) || lastPasId;
-    const row = rowInfo.findIndex((r) => r.passage?.id === pasGuid);
-    if (row < 0) return;
+    if (restoredRef.current || !currentPassageId) return;
     const el = document.querySelector(
-      `[data-cy="passage-card-${pasGuid}"]`
+      `[data-cy="passage-card-${currentPassageId}"]`
     ) as HTMLElement | null;
     if (!el) return;
     restoredRef.current = true;
     el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-  }, [rowInfo, memory]);
+  }, [currentPassageId, rowInfo]);
 
   const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
     setConfirmPublish(false);
@@ -201,6 +205,9 @@ export function PlanView(props: IProps) {
               }
               isPlaying={mediaId === srcMediaId}
               isPersonal={isPersonal}
+              isCurrent={
+                !!currentPassageId && row.passage?.id === currentPassageId
+              }
             />
           );
         } else {

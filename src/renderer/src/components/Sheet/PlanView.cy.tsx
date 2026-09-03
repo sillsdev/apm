@@ -1046,7 +1046,7 @@ describe('PlanView', { tags: '@smoke' }, () => {
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
   });
 
-  it('restores scroll so the Current Passage card is in view', () => {
+  it('restores highlight and scroll so the Current Passage card is in view', () => {
     const rowInfo = createManyPassages(12);
     const bookMap = createMockBookNameMap();
     const keyMap = createPassageKeyMap(keyPairsFromPassages(rowInfo));
@@ -1072,9 +1072,17 @@ describe('PlanView', { tags: '@smoke' }, () => {
       { scrollHeight: 280, keyMap }
     );
 
-    cy.get('[data-cy="passage-card-passage-10"]', { timeout: 5000 }).should(
-      'exist'
+    cy.get('[data-cy="passage-card-passage-10"]', { timeout: 5000 })
+      .should('exist')
+      .and('have.attr', 'aria-current', 'true');
+    cy.get('[data-cy="passage-card-passage-1"]').should(
+      'not.have.attr',
+      'aria-current'
     );
+    cy.get('[data-cy="plan-view-scroller"]').should(($scroller) => {
+      expect($scroller[0].scrollTop, 'scroller moved to Current Passage').to.be
+        .greaterThan(0);
+    });
     assertCardInScrollerViewport('passage-10');
   });
 
