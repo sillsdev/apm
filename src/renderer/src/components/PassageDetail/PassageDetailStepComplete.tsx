@@ -124,17 +124,19 @@ export const PassageDetailStepComplete = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-const artifactSlug = useMemo(() => {
-  const parsed =
-    typeof settings === 'string'
-      ? (() => {
-          try {
-            return JSON.parse(settings || '{}') as { artifactTypeId?: string };
-          } catch {
-            return {} as { artifactTypeId?: string };
-          }
-        })()
-      : ((settings as { artifactTypeId?: string }) ?? {});
+  const artifactSlug = useMemo(() => {
+    const parsed =
+      typeof settings === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(settings || '{}') as {
+                artifactTypeId?: string;
+              };
+            } catch {
+              return {} as { artifactTypeId?: string };
+            }
+          })()
+        : ((settings as { artifactTypeId?: string }) ?? {});
     const id = parsed?.artifactTypeId;
     if (!id) return null;
     const resolved =
