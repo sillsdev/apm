@@ -50,6 +50,7 @@ export const refilterSheet = ({
     if (isSectionRow(s)) {
       if (sectionIndex >= 0) {
         if (!hasOnePassage && filterState.assignedToMe && !flat) {
+          if (!(sheet[sectionIndex] as ISheet).filtered) changed = true;
           (newWork[sectionIndex] as ISheet).filtered = true;
         }
       }
