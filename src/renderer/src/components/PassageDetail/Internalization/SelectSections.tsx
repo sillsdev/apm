@@ -9,35 +9,25 @@ import {
   Plan,
   IPassageDetailArtifactsStrings,
   ISharedStrings,
-  SectionArray,
 } from '../../../model';
 import {
   Box,
+  Checkbox,
   debounce,
+  IconButton,
   Paper,
   PaperProps,
   styled,
-  Typography,
 } from '@mui/material';
-import { useOrganizedBy, findRecord, usePlanType } from '../../../crud';
+import { findRecord, useOrganizedBy, usePlanType } from '../../../crud';
 import { sharedSelector } from '../../../selector';
-import { eqSet } from '../../../utils';
 import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
-import {
-  projDefSectionMap,
-  useProjectDefaults,
-} from '../../../crud/useProjectDefaults';
-import {
-  GridColDef,
-  GridColumnVisibilityModel,
-  GridRowSelectionModel,
-  GridSortModel,
-} from '@mui/x-data-grid';
-import { TreeDataGrid } from '../../../components/TreeDataGrid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import { ActionRow, GrowingSpacer } from '../../../control';
 import {
   buildSelectSectionRows,
-  selectSectionRowType,
   SelectSectionRow,
 } from './buildSelectSectionRows';
 import { Button } from '../../../control/Button';
@@ -55,19 +45,21 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
 type IRow = SelectSectionRow;
 
 interface IProps {
-  title: string;
-  visual?: boolean;
+  initialItems?: RecordIdentity[];
   onSelect?: (items: RecordIdentity[]) => void;
+  onCancel?: () => void;
 }
 
 export function SelectSections(props: IProps) {
-  const { visual, title, onSelect } = props;
+  const { initialItems, onSelect, onCancel } = props;
+  const initialSelectionKey = (initialItems ?? [])
+    .map((item) => `${item.type}:${item.id}`)
+    .join('|');
   const passages = useOrbitData<PassageD[]>('passage');
   const sections = useOrbitData<SectionD[]>('section');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [data, setData] = useState(Array<IRow>());
-  const [openSections, setOpenSections] = useState<string[]>([]);
   const [heightStyle, setHeightStyle] = useState({
     maxHeight: `${window.innerHeight - 200}px`,
   });
@@ -79,32 +71,16 @@ export function SelectSections(props: IProps) {
     passageDetailArtifactsSelector,
     shallowEqual
   );
-  const [buttonText, setButtonText] = useState(ta.projectResourceConfigure);
   const allBookData = useSelector((state: IState) => state.books.bookData);
-  const [columns, setColumns] = useState<GridColDef[]>([]);
-  const [checks, setChecks] = useState<Array<string | number>>([]);
-  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  });
-  const { getProjectDefault } = useProjectDefaults();
-  const sectionMap = new Map<number, string>(
-    (getProjectDefault(projDefSectionMap) ?? []) as SectionArray
-  );
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const setDimensions = () => {
     setHeightStyle({
       maxHeight: `${window.innerHeight - 200}px`,
     });
   };
   const planType = usePlanType();
-  const columnVisibilityModel: GridColumnVisibilityModel = { expand: false };
   const boxRef = useRef<HTMLDivElement>(null);
   const [tableHeight, setTableHeight] = useState<number>(300);
-
-  useEffect(() => {
-    setButtonText(visual ? ta.createResources : ta.projectResourceConfigure);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visual]);
 
   useEffect(() => {
     setDimensions();
@@ -129,93 +105,125 @@ export function SelectSections(props: IProps) {
   }, [plan]);
 
   useEffect(() => {
-    const newColumns: GridColDef[] = [
-      {
-        field: 'name',
-        headerName: getOrganizedBy(true),
-        width: 300,
-        cellClassName: 'word-wrap',
-      },
-    ];
-    if (!isFlat) {
-      newColumns.push({
-        field: 'passages',
-        headerName: ts.passages,
-        width: 120,
-        align: 'right',
-      });
-    }
-    setColumns([...newColumns]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFlat]);
-
-  const getSections = (
-    passages: PassageD[],
-    sections: SectionD[],
-    bookData: typeof allBookData
-  ) => {
-    return buildSelectSectionRows({
-      passages,
-      sections,
-      bookData,
-      planId: planRec?.id,
-      isFlat: Boolean(isFlat),
-      sectionMap,
-    });
-  };
-
-  useEffect(() => {
-    setData(getSections(passages, sections, allBookData));
+    setData(
+      buildSelectSectionRows({
+        passages,
+        sections,
+        bookData: allBookData,
+        planId: planRec?.id,
+        isFlat: Boolean(isFlat),
+        organizedBy: getOrganizedBy(true),
+      })
+    );
     if (boxRef.current) {
       const height =
         boxRef.current.parentNode?.parentNode?.parentElement?.clientHeight;
       setTableHeight((height ?? 300) - 250);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, passages, sections, allBookData, openSections, isFlat]);
+  }, [plan, passages, sections, allBookData, isFlat]);
 
-  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    let chks = Array.from(newSelection.ids).map(
-      (c) => parseInt(c as string) - 1
+  useEffect(() => {
+    setSelected(
+      new Set(initialSelectionKey ? initialSelectionKey.split('|') : [])
     );
-    if (newSelection.type === 'exclude') {
-      chks = [];
-      data.forEach((_r, i) => {
-        if (!newSelection.ids.has(i)) chks.push(i);
-      });
-    }
-    if (!eqSet(new Set(chks), new Set(checks))) {
-      for (const c of chks) {
-        let n = c;
-        if (data[n]?.parentId === '' && !checks.includes(n)) {
-          while (++n < data.length && data[n].parentId !== '') {
-            if (!chks.includes(n)) chks.push(n);
-          }
-        }
+  }, [initialSelectionKey]);
+
+  const toggleSection = (sectionId: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      const sectionKey = `section:${sectionId}`;
+      const passageKeys = data
+        .filter((row) => row.parentId === sectionId)
+        .map((row) => `passage:${row.recId}`);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
+        passageKeys.forEach((key) => next.delete(key));
+      } else {
+        next.add(sectionKey);
+        passageKeys.forEach((key) => next.add(key));
       }
-      setChecks(chks);
-    }
-    setSelectedRows({
-      ...newSelection,
-      type: 'include',
-      ids: new Set(chks.map((c) => c + 1)),
+      return next;
+    });
+  };
+
+  const togglePassage = (passageId: string, sectionId: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      const passageKey = `passage:${passageId}`;
+      if (next.has(passageKey)) next.delete(passageKey);
+      else next.add(passageKey);
+
+      const passageKeys = data
+        .filter((row) => row.parentId === sectionId)
+        .map((row) => `passage:${row.recId}`);
+      const sectionKey = `section:${sectionId}`;
+      if (passageKeys.length > 0 && passageKeys.every((key) => next.has(key))) {
+        next.add(sectionKey);
+      } else {
+        next.delete(sectionKey);
+      }
+      return next;
     });
   };
 
   const handleSelected = () => {
-    const results = checks
-      .sort((i, j) => parseInt(i as string) - parseInt(j as string))
-      .map((c) => {
-        const n = parseInt(c as string);
-        return {
-          type: selectSectionRowType(data[n], Boolean(isFlat)),
-          id: data[n].recId,
-        };
-      }) as RecordIdentity[];
-    onSelect && onSelect(results);
+    const results = data
+      .filter((row) => selected.has(`${row.kind}:${row.recId}`))
+      .map((row) => ({ type: row.kind, id: row.recId })) as RecordIdentity[];
+    onSelect?.(results);
   };
 
-  const sortModel: GridSortModel = [{ field: 'name', sort: 'asc' }];
+  const columns: GridColDef<IRow>[] = [
+    {
+      field: 'selected',
+      headerName: '',
+      width: 52,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      display: 'flex',
+      align: 'center',
+      cellClassName: 'select-cell',
+      renderCell: ({ row }) => {
+        if (row.kind === 'section') {
+          const isSelected = selected.has(`section:${row.recId}`);
+          return (
+            <IconButton
+              aria-label={`Select all passages in ${row.name}`}
+              aria-pressed={isSelected}
+              onClick={() => toggleSection(row.recId)}
+              size="small"
+              sx={{ p: 0.5, color: 'text.primary' }}
+            >
+              <DoneAllIcon fontSize="small" />
+            </IconButton>
+          );
+        }
+        return (
+          <Checkbox
+            aria-label={row.name}
+            checked={selected.has(`passage:${row.recId}`)}
+            onChange={() => togglePassage(row.recId, row.parentId)}
+            size="small"
+            sx={{
+              p: 0.5,
+              color: 'text.primary',
+              '&.Mui-checked': { color: 'text.primary' },
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'name',
+      headerName: '',
+      flex: 1,
+      minWidth: 240,
+      sortable: false,
+      cellClassName: ({ row }) => (row.kind === 'passage' ? 'passage-row' : ''),
+    },
+  ];
 
   return (
     <Box
@@ -223,41 +231,51 @@ export function SelectSections(props: IProps) {
       ref={boxRef}
       sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
     >
-      <Typography variant="h6">{title}</Typography>
       <StyledPaper
         id="PassageList"
         style={heightStyle}
         sx={{ flex: 1, minHeight: 0 }}
       >
-        <TreeDataGrid
+        <DataGrid
           columns={columns}
           rows={data}
-          checkboxSelection
+          disableColumnResize
           disableRowSelectionOnClick
-          rowSelectionModel={selectedRows}
-          onRowSelectionModelChange={handleRowSelectionChange}
-          recIdName="recId"
-          expanded={setOpenSections}
-          initialState={{
-            sorting: { sortModel },
-            columns: { columnVisibilityModel },
-          }}
+          hideFooter
+          columnHeaderHeight={0}
+          rowHeight={40}
+          getRowClassName={({ indexRelativeToCurrentPage }) =>
+            indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row'
+          }
           sx={{
-            '& .word-wrap': { wordWrap: 'break-spaces' },
+            border: 0,
             maxHeight: tableHeight,
+            '& .MuiDataGrid-cell': { borderBottom: 0 },
+            '& .select-cell': {
+              px: 0.5,
+              borderRight: 1,
+              borderColor: 'divider',
+            },
+            '& .even-row': { backgroundColor: 'background.paper' },
+            '& .odd-row': { backgroundColor: 'action.hover' },
+            '& .passage-row': { pl: 1 },
           }}
         />
       </StyledPaper>
-      <div>
-        <Button
-          onClick={handleSelected}
-          variant="contained"
-          color="primary"
-          disabled={checks.length === 0}
-        >
-          {buttonText}
+      <ActionRow>
+        <GrowingSpacer />
+        <Button id="select-sections-cancel" onClick={onCancel}>
+          {ts.cancel}
         </Button>
-      </div>
+        <Button
+          id="select-sections-next"
+          color="primary"
+          onClick={handleSelected}
+          disabled={selected.size === 0}
+        >
+          {ta.next}
+        </Button>
+      </ActionRow>
     </Box>
   );
 }
