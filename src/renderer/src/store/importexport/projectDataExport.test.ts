@@ -25,10 +25,10 @@ import { createExportCollector } from './exportTableRecs';
 
 const rel = (type: string, id: string) => ({ data: { type, id } });
 
-const orgRec = (id: string, name: string) => ({
+const orgRec = (id: string, name: string, keyed = true) => ({
   type: 'organization',
   id,
-  keys: { remoteId: id },
+  ...(keyed ? { keys: { remoteId: id } } : {}),
   attributes: {
     name,
     dateCreated: '2020-01-01T00:00:00.000Z',
@@ -37,10 +37,15 @@ const orgRec = (id: string, name: string) => ({
   relationships: {},
 });
 
-const orgScoped = (type: string, id: string, orgId: string) => ({
+const orgScoped = (
+  type: string,
+  id: string,
+  orgId: string,
+  keyed = true
+) => ({
   type,
   id,
-  keys: { remoteId: id },
+  ...(keyed ? { keys: { remoteId: id } } : {}),
   attributes: {
     dateCreated: '2020-01-01T00:00:00.000Z',
     dateUpdated: '2020-01-01T00:00:00.000Z',
@@ -52,8 +57,12 @@ function memoryStub(store: Record<string, unknown[]>): Memory {
   return {
     schema: {},
     keyMap: {
-      idToKey: (_table: string, _key: string, localId: string) =>
-        localId ? `rid-${localId}` : undefined,
+      idToKey: (table: string, _key: string, localId: string) => {
+        const rec = (
+          (store[table] ?? []) as { id: string; keys?: { remoteId?: string } }[]
+        ).find((r) => r.id === localId);
+        return rec?.keys?.remoteId;
+      },
     },
     cache: {
       query: (cb: (q: unknown) => unknown) => {
@@ -111,10 +120,25 @@ describe('getProjectDataFiles project scoping', () => {
     },
   } as unknown as ProjectD;
 
+  const offlineProject = {
+    type: 'project',
+    id: 'proj-local',
+    attributes: {
+      name: 'Local',
+      dateCreated: '2020-01-01T00:00:00.000Z',
+      dateUpdated: '2020-01-01T00:00:00.000Z',
+    },
+    relationships: {
+      organization: rel('organization', 'org-local'),
+      group: rel('group', 'group-mine'),
+    },
+  } as unknown as ProjectD;
+
   const store: Record<string, unknown[]> = {
     organization: [
       orgRec('org-mine', 'Mine Org'),
       orgRec('org-other', 'Other Org'),
+      orgRec('org-local', 'Local Org', false),
     ],
     group: [
       {
@@ -129,28 +153,34 @@ describe('getProjectDataFiles project scoping', () => {
         relationships: {},
       },
     ],
-    project: [project],
+    project: [project, offlineProject],
     groupmembership: [],
     user: [],
     intellectualproperty: [
       orgScoped('intellectualproperty', 'ip-mine', 'org-mine'),
+      orgScoped('intellectualproperty', 'ip-mine-local', 'org-mine', false),
       orgScoped('intellectualproperty', 'ip-other', 'org-other'),
+      orgScoped('intellectualproperty', 'ip-local', 'org-local', false),
     ],
     orgworkflowstep: [
       orgScoped('orgworkflowstep', 'ows-mine', 'org-mine'),
       orgScoped('orgworkflowstep', 'ows-other', 'org-other'),
+      orgScoped('orgworkflowstep', 'ows-local', 'org-local', false),
     ],
     organizationbible: [
       orgScoped('organizationbible', 'ob-mine', 'org-mine'),
       orgScoped('organizationbible', 'ob-other', 'org-other'),
+      orgScoped('organizationbible', 'ob-local', 'org-local', false),
     ],
     orgkeyterm: [
       orgScoped('orgkeyterm', 'okt-mine', 'org-mine'),
+      orgScoped('orgkeyterm', 'okt-mine-local', 'org-mine', false),
       orgScoped('orgkeyterm', 'okt-other', 'org-other'),
+      orgScoped('orgkeyterm', 'okt-local', 'org-local', false),
     ],
   };
 
-  it('omits other-org records when memory has only the selected project', async () => {
+  it('omits other-org and unkeyed rows from an online project export', async () => {
     const memory = memoryStub(store);
     const files = await getProjectDataFiles(memory, project);
 
@@ -164,15 +194,39 @@ describe('getProjectDataFiles project scoping', () => {
     expect(idsIn(files, 'data/D_projects.json')).toEqual(['proj-mine']);
   });
 
-  it('still returns all org-scoped rows when getTableRecs is unscoped', () => {
+  it('keeps unkeyed org-scoped rows in an offline project export', async () => {
+    const files = await getProjectDataFiles(memoryStub(store), offlineProject);
+
+    expect(idsIn(files, 'data/B_organizations.json')).toEqual(['org-local']);
+    expect(idsIn(files, 'data/I_intellectualpropertys.json')).toEqual([
+      'ip-local',
+    ]);
+    expect(idsIn(files, 'data/C_orgworkflowsteps.json')).toEqual(['ows-local']);
+    expect(idsIn(files, 'data/J_organizationbibles.json')).toEqual(['ob-local']);
+    expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-local']);
+    expect(idsIn(files, 'data/D_projects.json')).toEqual(['proj-local']);
+  });
+
+  it('unscoped getTableRecs follows the related-org remote cohort', () => {
     const memory = memoryStub(store);
-    const { getTableRecs } = createExportCollector(memory, true);
-    const ips = getTableRecs(
-      { table: 'intellectualproperty', sort: 'I' },
-      undefined,
-      true
-    );
-    expect(ips.map((r) => r.id).sort()).toEqual(['ip-mine', 'ip-other']);
+    const online = createExportCollector(memory, true);
+    expect(
+      online
+        .getTableRecs({ table: 'intellectualproperty', sort: 'I' }, undefined, true)
+        .map((r) => r.id)
+        .sort()
+    ).toEqual(['ip-mine', 'ip-mine-local', 'ip-other']);
+
+    const offline = createExportCollector(memory, false);
+    expect(
+      offline
+        .getTableRecs(
+          { table: 'intellectualproperty', sort: 'I' },
+          undefined,
+          false
+        )
+        .map((r) => r.id)
+    ).toEqual(['ip-local']);
   });
 });
 
@@ -352,5 +406,114 @@ describe('supportingOrgs from supporting projects', () => {
     const files = await getProjectDataFiles(memory, project);
     expect(idsIn(files, 'data/C_artifactcategorys.json')).toContain('cat-src');
     expect(idsIn(files, 'data/H_mediafiles.json')).toContain('media-title');
+  });
+});
+
+describe('fromIds remote identity cohort', () => {
+  const dates = {
+    dateCreated: '2020-01-01T00:00:00.000Z',
+    dateUpdated: '2020-01-01T00:00:00.000Z',
+  };
+
+  const onlineProject = {
+    type: 'project',
+    id: 'proj-mine',
+    keys: { remoteId: 'proj-mine' },
+    attributes: { name: 'Mine', ...dates },
+    relationships: {
+      organization: rel('organization', 'org-mine'),
+      group: rel('group', 'group-mine'),
+    },
+  } as unknown as ProjectD;
+
+  const offlineProject = {
+    ...onlineProject,
+    keys: undefined,
+  } as unknown as ProjectD;
+
+  const store: Record<string, unknown[]> = {
+    organization: [orgRec('org-mine', 'Mine Org')],
+    group: [
+      {
+        type: 'group',
+        id: 'group-mine',
+        keys: { remoteId: 'group-mine' },
+        attributes: { name: 'G', ...dates },
+        relationships: {},
+      },
+    ],
+    project: [onlineProject],
+    plan: [
+      {
+        type: 'plan',
+        id: 'plan-mine',
+        keys: { remoteId: 'plan-mine' },
+        attributes: dates,
+        relationships: { project: rel('project', 'proj-mine') },
+      },
+    ],
+    section: [
+      {
+        type: 'section',
+        id: 'sec-mine',
+        keys: { remoteId: 'sec-mine' },
+        attributes: dates,
+        relationships: { plan: rel('plan', 'plan-mine') },
+      },
+    ],
+    passage: [
+      {
+        type: 'passage',
+        id: 'pas-mine',
+        keys: { remoteId: 'pas-mine' },
+        attributes: dates,
+        relationships: { section: rel('section', 'sec-mine') },
+      },
+    ],
+    sectionresource: [
+      {
+        type: 'sectionresource',
+        id: 'sr-remote',
+        keys: { remoteId: 'sr-remote' },
+        attributes: dates,
+        relationships: { section: rel('section', 'sec-mine') },
+      },
+      {
+        type: 'sectionresource',
+        id: 'sr-local',
+        attributes: dates,
+        relationships: { section: rel('section', 'sec-mine') },
+      },
+    ],
+    sharedresource: [
+      {
+        type: 'sharedresource',
+        id: 'shr-remote',
+        keys: { remoteId: 'shr-remote' },
+        attributes: dates,
+        relationships: { passage: rel('passage', 'pas-mine') },
+      },
+      {
+        type: 'sharedresource',
+        id: 'shr-local',
+        attributes: dates,
+        relationships: { passage: rel('passage', 'pas-mine') },
+      },
+    ],
+  };
+
+  it('omits local-only static rows from an online project export', async () => {
+    const files = await getProjectDataFiles(memoryStub(store), onlineProject);
+    expect(idsIn(files, 'data/I_sectionresources.json')).toEqual(['sr-remote']);
+    expect(idsIn(files, 'data/I_sharedresources.json')).toEqual(['shr-remote']);
+  });
+
+  it('keeps local-only static rows in an offline project export', async () => {
+    const files = await getProjectDataFiles(
+      memoryStub({ ...store, project: [offlineProject] }),
+      offlineProject
+    );
+    expect(idsIn(files, 'data/I_sectionresources.json')).toEqual(['sr-local']);
+    expect(idsIn(files, 'data/I_sharedresources.json')).toEqual(['shr-local']);
   });
 });
