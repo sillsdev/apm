@@ -2,7 +2,6 @@ import { ExportType, FileResponse } from './types';
 import path from 'path-browserify';
 import { DateTime } from 'luxon';
 import {
-  Project,
   Organization,
   Plan,
   OfflineProject,
@@ -10,18 +9,7 @@ import {
   OrgWorkflowStep,
   ProjectD,
   UserD,
-  DiscussionD,
-  IntellectualPropertyD,
   MediaFileD,
-  OrganizationD,
-  GroupD,
-  GroupMembershipD,
-  PlanD,
-  SectionD,
-  PassageD,
-  ArtifactCategoryD,
-  SharedResourceD,
-  GraphicD,
 } from '../../model';
 import Memory from '@orbit/memory';
 import { getSerializer } from '../../serializers/getSerializer';
@@ -34,9 +22,7 @@ import {
   getBurritoMeta,
   scriptureFullPath,
   IBurritoMeta,
-  IExportArtifacts,
   IExportScripturePath,
-  mediaArtifacts,
   fileInfo,
   updateableFiles,
   staticFiles,
@@ -53,9 +39,9 @@ import {
   createPathFolder,
 } from '../../utils';
 import IndexedDBSource from '@orbit/indexeddb';
-import { BaseModel, BaseModelD } from '../../model/baseModel';
 import { backupToMemory } from '../../crud/syncToMemory';
 import { MainAPI } from '@model/main-api';
+import { createExportCollector } from './exportTableRecs';
 const ipc = window?.api as MainAPI;
 
 export async function electronExport(
@@ -286,637 +272,18 @@ export async function electronExport(
           await ipc?.zipAddLocal(zip, fontfile, PathType.FONTS, items[i]);
       }
     };
-    const GroupMemberships = (project: Project) => {
-      const groupid = related(project, 'group');
-      return memory.cache.query((q) =>
-        q.findRecords('groupmembership').filter({
-          relation: 'group',
-          record: { type: 'group', id: groupid },
-        })
-      ) as GroupMembershipD[];
-    };
+    const needsRemoteIds = Boolean(projRec?.keys?.remoteId);
+    const {
+      getTableRecs: GetTableRecs,
+      supportingProjects,
+      supportingOrgs,
+    } = createExportCollector(memory, needsRemoteIds, {
+      artifactType,
+      target,
+      orgWorkflowSteps,
+      projRec,
+    });
 
-    const Plans = (project: ProjectD) =>
-      memory.cache.query((q) =>
-        q.findRecords('plan').filter({
-          relation: 'project',
-          record: { type: 'project', id: project.id },
-        })
-      ) as PlanD[];
-
-    const Sections = (project: ProjectD) => {
-      //can't get this to work...
-      //let plans = Plans(project).map((pl) => {
-      //  return { type: 'plan', id: pl.id };
-      //});
-      //let sections = memory.cache.query((q) =>
-      //  q.findRecords('section').filter({ relation: 'plan', records: plans })
-      //) as Section[];
-      const plans = Plans(project).map((pl) => pl.id);
-      const allsections = memory.cache.query((q) =>
-        q.findRecords('section')
-      ) as SectionD[];
-      return allsections.filter((s) => plans.includes(related(s, 'plan')));
-    };
-
-    const Passages = (project: ProjectD) => {
-      const sections = Sections(project).map((s) => s.id);
-      const passages = memory.cache.query((q) =>
-        q.findRecords('passage')
-      ) as PassageD[];
-      return passages.filter((p) => sections.includes(related(p, 'section')));
-    };
-    const fromIds = (
-      table: string,
-      rel: string,
-      ids?: string[],
-      remoteIds?: boolean
-    ) => {
-      const km = memory?.keyMap as RecordKeyMap;
-      const recs = (
-        memory.cache.query((q) => q.findRecords(table)) as BaseModelD[]
-      ).filter((r) => !ids || ids.includes(related(r, rel)));
-      if (remoteIds) {
-        recs.forEach((r) => {
-          if (!remoteId(table, r.id, km) && r.attributes)
-            Object.assign(r.attributes, { offlineId: r.id });
-        });
-      }
-      return recs;
-    };
-    const SectionResources = (project?: ProjectD, _remoteIds?: boolean) =>
-      fromIds(
-        'sectionresource',
-        'section',
-        project ? Sections(project).map((s) => s.id) : undefined
-      );
-    const SectionResourceUsers = (project?: ProjectD, remoteIds?: boolean) =>
-      fromIds(
-        'sectionresourceuser',
-        'sectionresource',
-        SectionResources(project).map((r) => r.id),
-        remoteIds
-      );
-
-    const HighestByPassage = (media: MediaFileD[]) => {
-      const highest: MediaFileD[] = [];
-      let psg = '';
-      media
-        .sort((a, b) =>
-          related(a, 'passage') === related(b, 'passage')
-            ? a.attributes.versionNumber > b.attributes.versionNumber
-              ? 1
-              : -1
-            : related(a, 'passage') > related(b, 'passage')
-              ? 1
-              : -1
-        )
-        .forEach((m) => {
-          if (related(m, 'passage') !== psg) {
-            highest.push(m);
-            psg = related(m, 'passage');
-          }
-        });
-      return highest;
-    };
-    const SourceMedia = (project: ProjectD) => {
-      const sectionresourcemedia = SectionResources(project).map(
-        (r) => related(r, 'mediafile') as string
-      );
-      const media = memory.cache.query((q) =>
-        q.findRecords('mediafile')
-      ) as MediaFileD[];
-
-      //get the mediafiles associated with section resources
-      const resourcemediafiles = media.filter((m) =>
-        sectionresourcemedia.includes(m.id)
-      );
-
-      //now get any shared resource mediafiles associated with those mediafiles
-      const sourcemediafiles = media.filter(
-        (m) =>
-          m.attributes?.readyToShare &&
-          resourcemediafiles
-            .map((r) => related(r, 'resourcePassage'))
-            .includes(related(m, 'passage'))
-      );
-      return HighestByPassage(sourcemediafiles);
-    };
-    const sharedNotePassageIds = (project: ProjectD) => {
-      const psgs = Passages(project).filter(
-        (p) => related(p, 'sharedResource') !== null
-      );
-      const sharednotesids = psgs.map(
-        (p) => related(p, 'sharedResource') as string
-      );
-      const supportingNotes = (
-        memory.cache.query((q) =>
-          q.findRecords('sharedresource')
-        ) as SharedResourceD[]
-      )
-        .filter((r) => sharednotesids.includes(r.id))
-        .map((r) => related(r, 'passage') as string);
-      return supportingNotes;
-    };
-    const sharedNotePassages = (project: ProjectD) => {
-      const ids = sharedNotePassageIds(project);
-      return (
-        memory.cache.query((q) => q.findRecords('passage')) as PassageD[]
-      ).filter((p) => ids.includes(p.id));
-    };
-    const SharedResources = (project?: ProjectD, _remoteIds?: boolean) =>
-      fromIds(
-        'sharedresource',
-        'passage',
-        project
-          ? Passages(project)
-              .concat(sharedNotePassages(project))
-              .map((p) => p.id)
-          : undefined
-      );
-    const SharedResourceReferences = (
-      project?: ProjectD,
-      _remoteIds?: boolean
-    ) =>
-      fromIds(
-        'sharedresourcereference',
-        'sharedResource',
-        SharedResources(project).map((r) => r.id)
-      );
-    const sharedNoteSections = (project: ProjectD) => {
-      const sectids = sharedNotePassages(project).map((p) =>
-        related(p, 'section')
-      );
-      return (
-        memory.cache.query((q) => q.findRecords('section')) as SectionD[]
-      ).filter((s) => sectids.includes(s.id));
-    };
-    const sharedNotePlans = (project: ProjectD) => {
-      const planids = sharedNoteSections(project).map((p) =>
-        related(p, 'plan')
-      );
-      return (
-        memory.cache.query((q) => q.findRecords('plan')) as PlanD[]
-      ).filter((s) => planids.includes(s.id));
-    };
-    const sharedNoteProjects = (project: ProjectD) => {
-      const projids = sharedNotePlans(project).map((p) =>
-        related(p, 'project')
-      );
-      return (
-        memory.cache.query((q) => q.findRecords('project')) as ProjectD[]
-      ).filter((s) => projids.includes(s.id));
-    };
-    const AllMediafiles = (project: ProjectD) => {
-      const media = memory.cache.query((q) =>
-        q.findRecords('mediafile')
-      ) as MediaFileD[];
-      const plans = Plans(project).map((pl) => pl.id);
-      const planmedia = media.filter((m) => plans.includes(related(m, 'plan')));
-
-      //get IP media
-      const ip = IntellectualProperties(project, needsRemoteIds).map((i) =>
-        related(i, 'releaseMediafile')
-      );
-      const ipmedia = media.filter((m) => ip.includes(m.id));
-
-      const cats = (
-        memory.cache.query((q) =>
-          q.findRecords('artifactcategory')
-        ) as ArtifactCategoryD[]
-      ).filter(
-        (a) =>
-          related(a, 'organization') === related(project, 'organization') ||
-          related(a, 'organization') === undefined
-      );
-      const categorymediafiles = media.filter((m) =>
-        cats.map((c) => related(c, 'titleMediafile') as string).includes(m.id)
-      );
-      const orgkeytermtargets = orgTable(
-        'orgkeytermtarget',
-        project,
-        needsRemoteIds,
-        { media: 'mediafile' }
-      ).map((i) => related(i, 'mediafile'));
-      const okttmedia = media.filter((m) => orgkeytermtargets.includes(m.id));
-
-      const graphicmedia = Graphics(project, needsRemoteIds).map((g) =>
-        related(g, 'mediafile')
-      );
-      const grmedia = media.filter((m) => graphicmedia.includes(m.id));
-
-      const sourcemediafiles = SourceMedia(project);
-
-      const supportingNotePassages = sharedNotePassageIds(project);
-
-      const sharedmedia = HighestByPassage(
-        media.filter((m) =>
-          supportingNotePassages.includes(related(m, 'passage'))
-        )
-      );
-      const unique = new Set(
-        planmedia
-          .concat(ipmedia)
-          .concat(okttmedia)
-          .concat(categorymediafiles)
-          .concat(sourcemediafiles)
-          .concat(sharedmedia)
-          .concat(grmedia)
-      );
-      return FromMedia(Array.from(unique), needsRemoteIds);
-    };
-    const FromPassages = (
-      table: string,
-      project: ProjectD | undefined,
-      remoteIds: boolean
-    ) => {
-      //passagestatechange or media
-      let recs = memory.cache.query((q) => q.findRecords(table)) as (BaseModel &
-        InitializedRecord)[];
-      if (project) {
-        const passages = Passages(project).map((p) => p.id);
-        recs = recs.filter((rec) => passages.includes(related(rec, 'passage')));
-      }
-      if (remoteIds) {
-        recs.forEach((r) => {
-          if (
-            !remoteId(table, r.id, memory?.keyMap as RecordKeyMap) &&
-            r.attributes
-          )
-            r.attributes.offlineId = r.id;
-          if (
-            table === 'mediafile' &&
-            !remoteId(
-              'mediafile',
-              related(r, 'sourceMedia'),
-              memory?.keyMap as RecordKeyMap
-            )
-          ) {
-            (r as MediaFileD).attributes.sourceMediaOfflineId = related(
-              r,
-              'sourceMedia'
-            );
-          }
-        });
-      }
-      return recs;
-    };
-    const Discussions = (project: ProjectD | undefined, remoteIds: boolean) => {
-      let ds = memory.cache.query((q) =>
-        q.findRecords('discussion')
-      ) as DiscussionD[];
-      if (project) {
-        const mediafiles = FromPassages('mediafile', project, remoteIds).map(
-          (m) => m.id
-        );
-        ds = ds.filter((rec) => mediafiles.includes(related(rec, 'mediafile')));
-      }
-      if (remoteIds) {
-        ds.forEach((d) => {
-          if (
-            !remoteId('discussion', d.id, memory?.keyMap as RecordKeyMap) &&
-            d.attributes
-          )
-            d.attributes.offlineId = d.id;
-          if (
-            !remoteId(
-              'mediafile',
-              related(d, 'mediafile'),
-              memory?.keyMap as RecordKeyMap
-            )
-          )
-            d.attributes.offlineMediafileId = related(d, 'mediafile');
-        });
-      }
-      return ds;
-    };
-    const orgTable = (
-      table: string,
-      project: ProjectD | undefined,
-      remoteIds: boolean,
-      {
-        rel = 'organization',
-        media,
-      }: { rel?: string; media?: string; offlineId?: string } = {}
-    ) => {
-      const km = memory?.keyMap as RecordKeyMap;
-      const scopeId = !project
-        ? undefined
-        : rel === 'project'
-          ? project.id
-          : related(project, 'organization');
-      let recs = (
-        memory.cache.query((q) => q.findRecords(table)) as BaseModelD[]
-      ).filter(
-        (r) => Boolean(remoteId(rel, related(r, rel), km)) === needsRemoteIds
-      );
-      if (scopeId) recs = recs.filter((rec) => related(rec, rel) === scopeId);
-      if (remoteIds) {
-        recs.forEach((r) => {
-          if (!remoteId(table, r.id, km) && r.attributes)
-            Object.assign(r.attributes, { offlineId: r.id });
-          const mid = media ? related(r, media) : '';
-          if (mid && !remoteId('mediafile', mid, km) && r.attributes)
-            Object.assign(r.attributes, { offlineMediafileId: mid });
-        });
-      }
-      return recs;
-    };
-    const Graphics = (project: ProjectD | undefined, remoteIds: boolean) => {
-      const recs = orgTable('graphic', project, remoteIds) as GraphicD[];
-      const sections = project
-        ? Sections(project).concat(sharedNoteSections(project))
-        : (memory.cache.query((q) => q.findRecords('section')) as SectionD[]);
-      const passages = project
-        ? Passages(project).concat(sharedNotePassages(project))
-        : (memory.cache.query((q) => q.findRecords('passage')) as PassageD[]);
-      const km = memory?.keyMap as RecordKeyMap;
-      const remoteNums = (kind: string, rows: { id: string }[]) =>
-        new Set(
-          rows
-            .map((r) => parseInt(remoteId(kind, r.id, km) ?? '', 10))
-            .filter((n) => !Number.isNaN(n))
-        );
-      const sectionIds = remoteNums('section', sections);
-      const passageIds = remoteNums('passage', passages);
-      return recs.filter((g) => {
-        const t = g.attributes?.resourceType;
-        const id = g.attributes?.resourceId;
-        return (
-          t === 'category' ||
-          (t === 'section' && sectionIds.has(id)) ||
-          (t === 'passage' && passageIds.has(id))
-        );
-      });
-    };
-    const OrganizationSchemeSteps = (
-      project: ProjectD | undefined,
-      remoteIds: boolean
-    ) =>
-      fromIds(
-        'organizationschemestep',
-        'organizationscheme',
-        orgTable('organizationscheme', project, remoteIds).map((s) => s.id)
-      );
-
-    const IntellectualProperties = (
-      project: Project | undefined,
-      remoteIds: boolean
-    ) => {
-      let ips = memory.cache.query((q) =>
-        q.findRecords('intellectualproperty')
-      ) as IntellectualPropertyD[];
-      if (project) {
-        ips = ips.filter(
-          (rec) =>
-            related(rec, 'organization') === related(project, 'organization')
-        );
-      }
-      if (remoteIds) {
-        ips.forEach((ip) => {
-          if (
-            !remoteId(
-              'intellectualproperty',
-              ip.id,
-              memory?.keyMap as RecordKeyMap
-            )
-          )
-            ip.attributes.offlineId = ip.id;
-          if (
-            !remoteId(
-              'mediafile',
-              related(ip, 'releaseMediafile'),
-              memory?.keyMap as RecordKeyMap
-            )
-          )
-            ip.attributes.offlineMediafileId = related(ip, 'releaseMediafile');
-        });
-      }
-      return ips;
-    };
-
-    const FromMedia = (media: MediaFileD[], remoteIds: boolean) => {
-      if (remoteIds) {
-        media.forEach((m) => {
-          if (
-            !remoteId('mediafile', m.id, memory?.keyMap as RecordKeyMap) &&
-            m.attributes
-          ) {
-            m.attributes.offlineId = m.id;
-          }
-          const src = related(m, 'sourceMedia');
-          if (
-            src &&
-            !remoteId('mediafile', src, memory?.keyMap as RecordKeyMap) &&
-            m.attributes
-          ) {
-            m.attributes.sourceMediaOfflineId = src;
-          }
-          delete m.attributes.planId;
-          delete m.attributes.artifactTypeId;
-          delete m.attributes.passageId;
-          delete m.attributes.userId;
-          delete m.attributes.recordedbyUserId;
-          delete m.attributes.recordedByUserId;
-          delete m.attributes.sourceMediaId;
-        });
-      }
-      return media;
-    };
-    const Comments = (project: ProjectD | undefined, remoteIds: boolean) => {
-      let comments = memory.cache.query((q) =>
-        q.findRecords('comment')
-      ) as BaseModelD[];
-      if (project) {
-        const discussions = Discussions(project, remoteIds);
-        const discussionIds = discussions.map((d) => d.id);
-        comments = comments.filter((rec) =>
-          discussionIds.includes(related(rec, 'discussion'))
-        );
-      }
-      if (remoteIds) {
-        comments.forEach((c) => {
-          if (
-            !remoteId('comment', c.id, memory?.keyMap as RecordKeyMap) &&
-            c.attributes
-          ) {
-            c.attributes.offlineId = c.id;
-            c.attributes.offlineDiscussionId = related(c, 'discussion');
-          }
-          if (
-            !remoteId(
-              'mediafile',
-              related(c, 'mediafile'),
-              memory?.keyMap as RecordKeyMap
-            ) &&
-            c.attributes
-          ) {
-            c.attributes.offlineMediafileId = related(c, 'mediafile');
-          }
-        });
-      }
-      return comments;
-    };
-
-    const GetTableRecs = (
-      info: fileInfo,
-      project: ProjectD | undefined,
-      needsRemoteIds: boolean
-    ): BaseModelD[] => {
-      const defaultQuery = (table: string) => {
-        return memory.cache.query((q) => q.findRecords(table)) as (BaseModel &
-          InitializedRecord)[];
-      };
-      switch (info.table) {
-        case 'organization':
-          if (project)
-            return [
-              memory.cache.query((q) =>
-                q.findRecord({
-                  type: 'organization',
-                  id: related(project, 'organization'),
-                })
-              ) as OrganizationD,
-            ];
-          return defaultQuery(info.table);
-
-        case 'project':
-          if (project) return [project];
-          return defaultQuery(info.table);
-
-        case 'group':
-          if (project)
-            return [
-              memory.cache.query((q) =>
-                q.findRecord({ type: 'group', id: related(project, 'group') })
-              ) as GroupD,
-            ];
-          return defaultQuery(info.table);
-
-        case 'groupmembership':
-          if (project) return GroupMemberships(project);
-          return defaultQuery(info.table);
-
-        case 'user':
-          if (project) {
-            const projusers = GroupMemberships(project).map((gm) =>
-              related(gm, 'user')
-            );
-            const users = memory.cache.query((q) =>
-              q.findRecords(info.table)
-            ) as UserD[];
-
-            return users.filter(
-              (u) => projusers.find((p) => p === u.id) !== undefined
-            );
-          }
-          return defaultQuery(info.table);
-
-        case 'plan':
-          if (project) return Plans(project).concat(sharedNotePlans(project));
-          return defaultQuery(info.table);
-
-        case 'section':
-          if (project)
-            return Sections(project).concat(sharedNoteSections(project));
-          return defaultQuery(info.table);
-
-        case 'passage':
-          if (project)
-            return Passages(project).concat(sharedNotePassages(project));
-          return defaultQuery(info.table);
-
-        case 'mediafile':
-          if (artifactType !== undefined) {
-            const media = mediaArtifacts({
-              memory,
-              projRec,
-              artifactType,
-              target,
-              orgWorkflowSteps,
-            } as IExportArtifacts);
-            if (media) return FromMedia(media, needsRemoteIds);
-          }
-          if (project) return AllMediafiles(project);
-          return FromMedia(
-            defaultQuery(info.table) as MediaFileD[],
-            needsRemoteIds
-          );
-
-        case 'passagestatechange':
-          return FromPassages(info.table, project, needsRemoteIds);
-
-        case 'discussion':
-          return Discussions(project, needsRemoteIds);
-
-        case 'comment':
-          return Comments(project, needsRemoteIds);
-
-        case 'projectintegration':
-          if (project)
-            return memory.cache.query((q) =>
-              q.findRecords(info.table).filter({
-                relation: 'project',
-                record: { type: 'project', id: project.id },
-              })
-            ) as BaseModelD[];
-          return defaultQuery(info.table);
-
-        case 'intellectualproperty':
-          return IntellectualProperties(project, needsRemoteIds);
-
-        case 'orgkeyterm':
-          return orgTable('orgkeyterm', project, needsRemoteIds);
-
-        case 'orgkeytermtarget':
-          return orgTable('orgkeytermtarget', project, needsRemoteIds, {
-            media: 'mediafile',
-          });
-        case 'orgkeytermreference':
-          return orgTable('orgkeytermreference', project, needsRemoteIds, {
-            rel: 'project',
-          });
-        case 'sectionresourceuser':
-          return SectionResourceUsers(project, needsRemoteIds);
-        case 'organizationscheme':
-          return orgTable('organizationscheme', project, needsRemoteIds);
-        case 'organizationschemestep':
-          return OrganizationSchemeSteps(project, needsRemoteIds);
-        case 'graphic':
-          return Graphics(project, needsRemoteIds);
-        case 'organizationmembership':
-          return orgTable('organizationmembership', project, needsRemoteIds);
-        case 'orgworkflowstep':
-          return orgTable('orgworkflowstep', project, needsRemoteIds);
-        case 'sectionresource':
-          return SectionResources(project, needsRemoteIds);
-        case 'sharedresource':
-          return SharedResources(project, needsRemoteIds);
-        case 'sharedresourcereference':
-          return SharedResourceReferences(project, needsRemoteIds);
-        case 'artifactcategory':
-          return orgTable('artifactcategory', project, needsRemoteIds);
-
-        case 'activitystate':
-        case 'artifacttype':
-        case 'bible':
-        case 'integration':
-        case 'organizationbible':
-        case 'passagetype':
-        case 'plantype':
-        case 'projecttype':
-        case 'role':
-        case 'workflowstep':
-          return defaultQuery(info.table).filter(
-            (r) => Boolean(r?.keys?.remoteId) === needsRemoteIds
-          );
-        case 'invitation':
-          //do nothing
-          return [];
-        default:
-          throw new Error(`GetTableRecs: unhandled table '${info.table}'`);
-      }
-    };
     const AddChanged = async (
       info: fileInfo,
       project: ProjectD | undefined,
@@ -953,13 +320,20 @@ export async function electronExport(
       return 0;
     };
     const AddSupportingProjects = async (project: ProjectD) => {
-      let recs = sharedNoteProjects(project);
+      let recs = supportingProjects(project);
       const ret = { Added: 0, Filtered: 0 };
       if (recs.length > 0) {
         recs = recs.filter((r) => Boolean(r.keys?.remoteId));
         ret.Added = recs?.length || 0;
       }
       AddJsonEntry('supportingprojects', recs, 'Z');
+      const orgs = supportingOrgs(project).filter((o) =>
+        Boolean(o.keys?.remoteId)
+      );
+      if (orgs.length > 0) {
+        AddJsonEntry('supportingorgs', orgs, 'Z');
+        ret.Added += orgs.length;
+      }
       return ret;
     };
     const AddAll = async (
@@ -1047,7 +421,6 @@ export async function electronExport(
       } as IBurritoMeta);
       await ipc?.zipAddFile(zip, 'metadata.json', burritoMetaStr, 'metadata');
     }
-    const needsRemoteIds = Boolean(projRec?.keys?.remoteId);
     if (!needsRemoteIds) await AddOfflineEntry();
     const limit = onlyOneProject() ? undefined : projRec;
     let numRecs = 0;

@@ -1517,7 +1517,8 @@ export const importProjectToElectron =
             true,
             true,
             file.includes('D_projects.json'), //not z_supportingprojects
-            dataDate
+            dataDate,
+            file.includes('B_organizations.json') //not z_supportingorgs
           )) || project;
       }
 
