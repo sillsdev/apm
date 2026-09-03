@@ -1,11 +1,19 @@
 import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { Paper, Box, SxProps, Stack } from '@mui/material';
+import {
+  Paper,
+  Box,
+  SxProps,
+  Stack,
+  Grid,
+  GridProps,
+  styled,
+  Typography,
+} from '@mui/material';
 
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
 import PassageDetailLayout from './PassageDetailLayout';
-import PassageDetailSectionPassage from './PassageDetailSectionPassage';
 import PassageDetailStepComplete from './PassageDetailStepComplete';
 import PassageDetailArtifacts from './Internalization/PassageDetailArtifacts';
 import PassageDetailPrompt from './Prompt/PassageDetailPrompt';
@@ -24,9 +32,14 @@ import ConsultantCheck from './ConsultantCheck';
 import TranscriptionTab from '../TranscriptionTab';
 import {
   ArtifactTypeSlug,
+  passageRefText,
+  PassageReference,
   remoteIdGuid,
+  sectionDescription,
   ToolSlug,
   useArtifactType,
+  usePlanType,
+  useSharedResRead,
   useStepTool,
 } from '../../crud';
 import { Plan, IToolStrings } from '../../model';
@@ -59,6 +72,11 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
 }
 
 const clipProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
+
+const GridRoot = styled(Grid)<GridProps>(({ theme }) => ({
+  display: 'flex',
+  margin: theme.spacing(1),
+}));
 
 // Tools whose step content renders inside the shared Paper alongside the
 // discussion panel.
@@ -97,9 +115,25 @@ const PassageDetailGrids = () => {
     sectionArr,
     isBoldWorkflow,
     discussOpen,
+    section,
+    passage,
+    allBookData,
   } = ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
+  const { getSharedResource } = useSharedResRead();
+  const sharedResource = getSharedResource(passage);
+  const sectionMap = new Map<number, string>(sectionArr);
+  const planType = usePlanType();
+  const isFlat = useMemo(
+    () => planType(plan)?.flat,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plan]
+  );
+  const passNum = !isFlat ? passage : undefined;
+  const sectionPassageRef = passageRefText(passage, allBookData);
+  const sectionPassageRefDelim =
+    sectionPassageRef !== '' ? `\u00A0-\u00A0` : '';
   const { slugFromId } = useArtifactType();
   const stepSettingsParsed = useMemo(
     () => parseStepSettings(settings),
@@ -193,7 +227,24 @@ const PassageDetailGrids = () => {
         sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
       >
         <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
-          <PassageDetailSectionPassage />
+          <GridRoot container direction="row">
+            <Grid size={{ xs: 12 }}>
+              <Typography
+                variant="h6"
+                id="sectionpassagetitle"
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {sectionDescription(section, sectionMap, passNum)}
+                {sectionPassageRefDelim}
+                <PassageReference
+                  passage={passage}
+                  bookData={allBookData}
+                  flat={isFlat}
+                  sharedResource={sharedResource}
+                />
+              </Typography>
+            </Grid>
+          </GridRoot>
         </Box>
         <Box
           id="tool"
