@@ -251,13 +251,27 @@ export function createExportCollector(
   };
 
   const supportingOrgs = (project: ProjectD) => {
+    const projOrgId = related(project, 'organization');
     const cats = sharedNoteArtifactCategories(project, needsRemoteIds);
-    const orgIds = [...new Set(cats.map((c) => related(c, 'organization')))];
+    const orgIds = [
+      ...new Set(
+        cats
+          .map((c) => related(c, 'organization'))
+          .concat(
+            supportingProjects(project).map((p) => related(p, 'organization'))
+          )
+          .filter((id) => id && id !== projOrgId)
+      ),
+    ];
     return (
       memory.cache.query((q) =>
         q.findRecords('organization')
       ) as OrganizationD[]
-    ).filter((o) => orgIds.includes(o.id));
+    ).filter(
+      (o) =>
+        orgIds.includes(o.id) &&
+        Boolean(remoteId('organization', o.id, km)) === needsRemoteIds
+    );
   };
 
   const orgTable = (
@@ -398,17 +412,11 @@ export function createExportCollector(
       mediafile: 'releaseMediafile',
     }).map((i) => related(i, 'releaseMediafile'));
     const ipmedia = mediafiles.filter((m) => ip.includes(m.id));
-    const cats = (
-      memory.cache.query((q) =>
-        q.findRecords('artifactcategory')
-      ) as ArtifactCategoryD[]
-    ).filter(
-      (a) =>
-        related(a, 'organization') === related(project, 'organization') ||
-        related(a, 'organization') === undefined
+    const catTitleIds = ArtifactCategories(project, needsRemoteIds).map(
+      (c) => related(c, 'titleMediafile') as string
     );
     const categorymediafiles = mediafiles.filter((m) =>
-      cats.map((c) => related(c, 'titleMediafile') as string).includes(m.id)
+      catTitleIds.includes(m.id)
     );
     const orgkeytermtargets = orgTable(
       'orgkeytermtarget',

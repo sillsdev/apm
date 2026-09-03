@@ -5,7 +5,7 @@
 import Memory from '@orbit/memory';
 import { getSerializer } from '../../serializers/getSerializer';
 import { InitializedRecord } from '@orbit/records';
-import { updateableFiles, staticFiles } from '../../crud';
+import { related, updateableFiles, staticFiles } from '../../crud';
 import { ProjectD, MediaFileD, OrganizationD } from '../../model';
 import { createExportCollector } from './exportTableRecs';
 
@@ -31,12 +31,6 @@ function serializeRecords(
       });
 }
 
-const onlyOneProject = (memory: Memory): boolean => {
-  const p = memory.cache.query((q) => q.findRecords('project'));
-  if (p && Array.isArray(p)) return p.length === 1;
-  return true;
-};
-
 export async function getProjectDataFiles(
   memory: Memory,
   project: ProjectD
@@ -44,9 +38,11 @@ export async function getProjectDataFiles(
   const ser = getSerializer(memory);
   const needsRemoteIds = Boolean(project?.keys?.remoteId);
   const { getTableRecs, supportingProjects, supportingOrgs } =
-    createExportCollector(memory, needsRemoteIds);
+    createExportCollector(memory, needsRemoteIds, {
+      projRec: project,
+      organizationId: related(project, 'organization') || undefined,
+    });
   const files: ProjectDataFiles = {};
-  const limit = onlyOneProject(memory) ? undefined : project;
 
   const addJsonFile = (
     table: string,
@@ -62,7 +58,7 @@ export async function getProjectDataFiles(
     info: (typeof updateableFiles)[number],
     excludeNew: boolean
   ) => {
-    let recs = getTableRecs(info, limit, needsRemoteIds);
+    let recs = getTableRecs(info, project, needsRemoteIds);
     if (!recs?.length) return;
     if (needsRemoteIds && excludeNew)
       recs = recs.filter((r) => Boolean(r.keys?.remoteId));
@@ -72,14 +68,12 @@ export async function getProjectDataFiles(
   for (const info of updateableFiles) addAll(info, true);
   for (const info of staticFiles) addAll(info, false);
 
-  if (limit) {
-    const projects = supportingProjects(limit).filter((r) =>
-      Boolean(r.keys?.remoteId)
-    );
-    if (projects.length > 0) addJsonFile('supportingprojects', projects, 'Z');
-    const orgs = supportingOrgs(limit).filter((o) => Boolean(o.keys?.remoteId));
-    if (orgs.length > 0) addJsonFile('supportingorgs', orgs, 'Z');
-  }
+  const projects = supportingProjects(project).filter((r) =>
+    Boolean(r.keys?.remoteId)
+  );
+  if (projects.length > 0) addJsonFile('supportingprojects', projects, 'Z');
+  const orgs = supportingOrgs(project).filter((o) => Boolean(o.keys?.remoteId));
+  if (orgs.length > 0) addJsonFile('supportingorgs', orgs, 'Z');
 
   return files;
 }
