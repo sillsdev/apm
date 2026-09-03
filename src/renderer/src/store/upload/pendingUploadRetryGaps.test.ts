@@ -234,6 +234,78 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'passage')).toBe('pas-1');
     });
+
+    /**
+     * Stale sequenceNum: pending meta freezes rowData.length+n at stage time,
+     * while successful siblings (batch compact or later adds) already occupy it.
+     * Restore must pick a free sequence for the section.
+     */
+    it('avoids duplicate sequenceNum when section already has that sequence', async () => {
+      await memory.update((t) => [
+        t.addRecord({
+          type: 'mediafile',
+          id: 'resource-media-existing',
+          attributes: {
+            originalFile: 'existing.mp3',
+            versionNumber: 1,
+          },
+          relationships: {
+            artifactType: { data: { type: 'artifacttype', id: 'res-art' } },
+          },
+        }),
+        t.addRecord({
+          type: 'sectionresource',
+          id: 'sr-existing',
+          attributes: {
+            sequenceNum: 1,
+            description: 'Already linked after compact upload',
+          },
+          relationships: {
+            section: { data: { type: 'section', id: 'sec-1' } },
+            mediafile: {
+              data: { type: 'mediafile', id: 'resource-media-existing' },
+            },
+            orgWorkflowStep: {
+              data: { type: 'orgworkflowstep', id: 'ows-1' },
+            },
+          },
+        }),
+      ]);
+
+      const restore: PendingUploadRestore = {
+        kind: 'sectionresource',
+        sectionId: 'sec-1',
+        description: 'Retried pending resource',
+        // Stale: captured when rowData was empty / first in failed batch
+        sequenceNum: 1,
+        orgWorkflowStepId: 'ows-1',
+      };
+
+      await restoreAfterPendingUpload({
+        mediaId: 'resource-media-1',
+        restore,
+        memory,
+        user,
+      });
+
+      const sectionResources = (
+        memory.cache.query((q) => q.findRecords('sectionresource')) as Array<{
+          id: string;
+          attributes?: { sequenceNum?: number; description?: string };
+        }>
+      ).filter((r) => related(r, 'section') === 'sec-1');
+
+      expect(sectionResources).toHaveLength(2);
+      const seqs = sectionResources.map((r) => r.attributes?.sequenceNum);
+      expect(new Set(seqs).size).toBe(2);
+      const restored = sectionResources.find(
+        (r) => related(r, 'mediafile') === 'resource-media-1'
+      );
+      expect(restored?.attributes?.sequenceNum).toBe(2);
+      expect(restored?.attributes?.description).toBe(
+        'Retried pending resource'
+      );
+    });
   });
 
   describe('LWC Audio Translation — sourceMedia secondary link', () => {

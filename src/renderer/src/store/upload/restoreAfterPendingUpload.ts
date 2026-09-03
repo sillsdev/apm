@@ -299,10 +299,23 @@ async function restoreSectionResource({
     ]);
   }
 
+  // Pending meta freezes sequence at stage time; successful siblings or later
+  // adds may already occupy it (batch compact / delayed retry). Prefer the
+  // captured value when free; otherwise take max+1 for this section.
+  const existingForSection = (
+    memory.cache.query((q) => q.findRecords('sectionresource')) as SectionResource[]
+  ).filter((r) => related(r, 'section') === restore.sectionId);
+  const usedSeqs = existingForSection.map(
+    (r) => r.attributes?.sequenceNum ?? 0
+  );
+  const sequenceNum = usedSeqs.includes(restore.sequenceNum)
+    ? Math.max(...usedSeqs, 0) + 1
+    : restore.sequenceNum;
+
   const secRes = {
     type: 'sectionresource',
     attributes: {
-      sequenceNum: restore.sequenceNum,
+      sequenceNum,
       description: restore.description ?? '',
     },
   } as SectionResource & UninitializedRecord;
