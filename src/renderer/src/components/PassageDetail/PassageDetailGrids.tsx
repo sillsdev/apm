@@ -204,17 +204,15 @@ const PassageDetailGrids = () => {
       boldClauseTranscription)
   );
   const headerContent = (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Stack
         direction="row"
         spacing={1}
-        sx={(theme) => ({
+        sx={{
           alignItems: 'center',
           minWidth: 0,
           width: '100%',
-          p: theme.layout.gap,
-          pt: 0,
-        })}
+        }}
       >
         <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
           <Typography noWrap id="sectionpassagetitle">
@@ -244,10 +242,10 @@ const PassageDetailGrids = () => {
           <PassageDetailStepComplete />
         </Box>
       </Stack>
-      <Box sx={{ width: '100%' }}>
+      <Box>
         <WorkflowSteps />
       </Box>
-    </>
+    </Box>
   );
 
   return (
@@ -256,6 +254,8 @@ const PassageDetailGrids = () => {
       headerSx={
         showHeader
           ? {
+              py: 1,
+              px: 1.5,
               backgroundColor: 'background.default',
               borderBottom: '1px solid',
               borderColor: 'divider',
