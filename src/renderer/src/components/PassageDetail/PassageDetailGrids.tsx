@@ -44,7 +44,6 @@ import { PassageDetailDiscuss } from './PassageDetailDiscuss';
 import { addPt } from '../../utils/addPt';
 import DiscussionPanel from '../Discussions/DiscussionPanel';
 import { usePaneWidth } from '../usePaneWidth';
-import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
@@ -155,12 +154,6 @@ const PassageDetailGrids = () => {
     artifactSlug
   );
 
-  const showBoldDesktopStepComplete = showsBoldDesktopStepComplete(
-    tool ?? '',
-    isBoldWorkflow,
-    artifactSlug
-  );
-
   const plans = useMemo(() => {
     const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
     return plans.filter((p) => p.id === plan);
@@ -170,7 +163,6 @@ const PassageDetailGrids = () => {
     tool && Object.prototype.hasOwnProperty.call(t, tool)
       ? addPt(t.getString(tool))
       : tool;
-  const boldDesktopCenteredHeader = isBoldWorkflow && !isMobile;
   // The step content sits in a Paper of `calc(100% - 32px)`; a player sized to
   // the full pane would spill past that Paper (the outer Box clips it, cutting
   // off the waveform's right edge and the controls below). Match the `- 40`
