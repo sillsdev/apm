@@ -51,7 +51,17 @@ jest.mock('wavesurfer.js/dist/plugins/regions', () => {
     getRegions() {
       return this.regionList;
     }
-    addRegion(r: any) {
+    addRegion(params: any) {
+      // wavesurfer hands back a Region, not the params object — the hook
+      // immediately calls setOptions on it.
+      const r: any = {
+        id: `added-${this.regionList.length}`,
+        attributes: {},
+        ...params,
+        setOptions: jest.fn((o: any) => Object.assign(r, o)),
+        play: jest.fn(),
+        remove: jest.fn(),
+      };
       this.regionList.push(r);
       return r;
     }
@@ -90,9 +100,15 @@ const DURATION = 30;
 
 interface IHarnessOpts {
   lockSegmentSelection: boolean;
+  /** Playhead position. A split happens at the playhead, so the double-click
+   *  tests need one that is inside a segment rather than on its edge. */
+  progressAt?: number;
 }
 
-const renderRegions = ({ lockSegmentSelection }: IHarnessOpts) => {
+const renderRegions = ({
+  lockSegmentSelection,
+  progressAt = 0,
+}: IHarnessOpts) => {
   const plugin = newPlugin();
   // three contiguous segments, linked the way setPrevNext links them
   const segs = [
@@ -130,7 +146,7 @@ const renderRegions = ({ lockSegmentSelection }: IHarnessOpts) => {
       () => DURATION,
       () => false,
       goto,
-      () => 0,
+      () => progressAt,
       () => false,
       setPlaying,
       onCurrentRegion,
@@ -225,6 +241,22 @@ describe('useWaveSurferRegions — segment selection unlocked', () => {
       1
     );
   });
+
+  it('double-clicking splits the segment', () => {
+    const { plugin, segs } = renderRegions({
+      lockSegmentSelection: false,
+      progressAt: 15,
+    });
+    const before = plugin.regionList.length;
+
+    act(() => {
+      plugin.emit('region-double-clicked', segs[1], {
+        stopPropagation: jest.fn(),
+      });
+    });
+
+    expect(plugin.regionList.length).toBeGreaterThan(before);
+  });
 });
 
 describe('useWaveSurferRegions — segment selection locked while recording (TT-7437)', () => {
@@ -274,6 +306,24 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
     expect(segs[1].setOptions).not.toHaveBeenCalledWith(
       expect.objectContaining({ end: expect.anything() })
     );
+  });
+
+  it('does not split a segment on double-click', () => {
+    // Double-click splits, which reshapes the segment map exactly as a boundary
+    // drag does — the take's own boundaries would move under it.
+    const { plugin, segs } = renderRegions({
+      lockSegmentSelection: true,
+      progressAt: 15,
+    });
+    const before = plugin.regionList.length;
+
+    act(() => {
+      plugin.emit('region-double-clicked', segs[1], {
+        stopPropagation: jest.fn(),
+      });
+    });
+
+    expect(plugin.regionList).toHaveLength(before);
   });
 
   it('refuses prev/next segment navigation', () => {

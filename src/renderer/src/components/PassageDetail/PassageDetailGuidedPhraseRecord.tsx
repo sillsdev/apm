@@ -958,6 +958,10 @@ export function PassageDetailGuidedPhraseRecord({
     saveRejectedRef.current = false;
     setSaveRejected(false);
     pendingOvershootSwallowRef.current = false;
+    // A latched clause belongs to the mediafile it was recorded against; a new
+    // source has different clauses, so carrying it over would file the next
+    // take on a region from the old waveform (TT-7437).
+    latchRecordingTarget(undefined);
     optimisticCompletedRef.current.clear();
     setHeardIndices([]);
     setCurrentClausePlayed(false);

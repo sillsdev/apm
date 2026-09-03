@@ -198,6 +198,18 @@ export function useWaveSurferRegions(
     applyRegionColorRef.current = applyRegionColor;
   }, [applyRegionColor]);
 
+  /** Take a region's drag/resize away for the duration of the lock, remembering
+   *  the flags it had so unlock gives back exactly those. */
+  const freezeRegionDrag = (r: Region) => {
+    if (dragLockedRegionsRef.current.some((e) => e.region === r)) return;
+    dragLockedRegionsRef.current.push({
+      region: r,
+      resize: r.resize,
+      drag: r.drag,
+    });
+    r.setOptions({ resize: false, drag: false });
+  };
+
   useEffect(() => {
     const locked = lockSegmentSelection ?? false;
     lockSegmentSelectionRef.current = locked;
@@ -210,14 +222,7 @@ export function useWaveSurferRegions(
     // are held. Each region's own flags are restored on unlock: some are
     // deliberately fixed (the split preview) and must not come back resizable.
     if (locked) {
-      dragLockedRegionsRef.current = regions().map((r) => ({
-        region: r,
-        resize: r.resize,
-        drag: r.drag,
-      }));
-      dragLockedRegionsRef.current.forEach(({ region: r }) =>
-        r.setOptions({ resize: false, drag: false })
-      );
+      regions().forEach(freezeRegionDrag);
     } else {
       dragLockedRegionsRef.current.forEach(({ region: r, resize, drag }) =>
         r.setOptions({ resize, drag })
@@ -353,6 +358,10 @@ export function useWaveSurferRegions(
   // handle region double-clicks with deduplication
   // This is an event handler, not a render function, so Date.now() is safe here
   const handleRegionDoubleClick = (r: Region) => {
+    // Double-click splits the segment. That reshapes the segment map under a
+    // take in progress just as a boundary drag would, so it is locked with the
+    // rest of them (TT-7437).
+    if (lockSegmentSelectionRef.current) return;
     const currentTime = getCurrentTime();
     const timeSinceLastDoubleClick =
       currentTime - lastDoubleClickTimeRef.current;
@@ -527,6 +536,11 @@ export function useWaveSurferRegions(
       regionsPlugin.on('region-created', function (r: Region) {
         if (isMarker(r)) return;
         r.drag = singleRegionRef.current;
+        // A region born while the lock is up — the waveform loading with the
+        // lock already on, or a reload during it — never went through the
+        // freeze in the lock effect, so it would arrive draggable. Freeze it
+        // here instead, where every region passes exactly once (TT-7437).
+        if (lockSegmentSelectionRef.current) freezeRegionDrag(r);
 
         // Round region start and end to 5 decimal places because the seek uses 5 decimal places
         r.start = roundToFiveDecimals(r.start);
@@ -606,11 +620,14 @@ export function useWaveSurferRegions(
       regionsPlugin.on(
         'region-updated',
         function (r: Region, side?: UpdateSide) {
-          // Dragging a boundary reports the resized region as the current one,
-          // which moved the selection mid-record just as a click did — and the
-          // clamp below would drag the neighbour's shared boundary with it
-          // (TT-7437). The lock takes drag/resize away, so this is the backstop
-          // for a gesture already in flight when it went up.
+          // When the user finishes dragging a segment edge, this selects the
+          // segment they dragged and moves the neighbor's edge to match. Both
+          // are things a recording in progress must not have happen to it: the
+          // take belongs to one segment, at the size it was when recording
+          // started (TT-7437).
+          //
+          // While locked, the segments can't be dragged at all, so we only get
+          // here if the user was already dragging when recording began.
           if (lockSegmentSelectionRef.current) return;
           if (singleRegionRef.current) {
             if (!loadingRef.current) {
