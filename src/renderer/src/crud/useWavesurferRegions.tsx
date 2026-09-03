@@ -137,7 +137,15 @@ export function useWaveSurferRegions(
    * A region was clicked. Distinct from onCurrentRegion, which also fires for
    * playhead-driven selection: only a deliberate user click reaches this.
    */
-  onRegionClicked?: (region: IRegion) => void
+  onRegionClicked?: (region: IRegion) => void,
+  /**
+   * Whether the segment at the given sorted index already has a recording. A
+   * recording is tied to a segment's exact time range, so a boundary shared
+   * with a recorded segment may not be dragged — regardless of the
+   * recording-in-progress lock (TT-7666). Keyed on sorted index, like
+   * applyRegionColor, because that is how consumers track completion.
+   */
+  isSegmentRecorded?: (sortedIndex: number) => boolean
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -169,6 +177,8 @@ export function useWaveSurferRegions(
   // setupRegions runs from a once-registered 'ready' handler, so it can only
   // reach this prop through a ref (like singleRegionRef).
   const disableDragSelectionRef = useRef(disableDragSelection ?? false);
+  const isSegmentRecordedRef = useRef(isSegmentRecorded);
+  isSegmentRecordedRef.current = isSegmentRecorded;
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */

@@ -103,11 +103,15 @@ interface IHarnessOpts {
   /** Playhead position. A split happens at the playhead, so the double-click
    *  tests need one that is inside a segment rather than on its edge. */
   progressAt?: number;
+  /** Sorted indices of segments that already have a recording. A boundary
+   *  between a recorded segment and its neighbor may not be dragged (TT-7666). */
+  recordedIndices?: number[];
 }
 
 const renderRegions = ({
   lockSegmentSelection,
   progressAt = 0,
+  recordedIndices = [],
 }: IHarnessOpts) => {
   const plugin = newPlugin();
   // three contiguous segments, linked the way setPrevNext links them
@@ -135,6 +139,9 @@ const renderRegions = ({
   const goto = jest.fn();
   const onRegion = jest.fn();
   const setPlaying = jest.fn();
+  const isSegmentRecorded = jest.fn((index: number) =>
+    recordedIndices.includes(index)
+  );
 
   const { result } = renderHook(() =>
     useWaveSurferRegions(
@@ -159,7 +166,8 @@ const renderRegions = ({
       lockSegmentSelection,
       undefined, // getDecodedBuffer
       true, // disableDragSelection
-      onRegionClicked
+      onRegionClicked,
+      isSegmentRecorded
     )
   );
 
@@ -175,6 +183,7 @@ const renderRegions = ({
     onRegionClicked,
     goto,
     setPlaying,
+    isSegmentRecorded,
   };
 };
 
@@ -331,5 +340,86 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
 
     expect(result.current.wsPrevRegion()).toBe(false);
     expect(result.current.wsNextRegion()).toBe(false);
+  });
+});
+
+describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)', () => {
+  // A recording is tied to a segment's exact time range, so once a segment has
+  // a Phrase BT (or Careful Speech) recording its boundaries are frozen. A
+  // boundary is shared by two segments, so a drag is refused when *either*
+  // side of it is recorded — this is separate from the recording-in-progress
+  // lock: it holds whenever the neighbouring recording exists, recording or
+  // not.
+
+  it('refuses to move a recorded segment via its own boundary', () => {
+    // Segment 1 is recorded. Dragging its end would resize it.
+    const { plugin, segs, onCurrentRegion } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [1],
+    });
+
+    dragBoundary(plugin, segs[1], 'end', 22);
+
+    // The shared neighbour was not pulled along, and nothing downstream heard a
+    // boundary change.
+    expect(segs[2].start).toBe(20);
+    expect(onCurrentRegion).not.toHaveBeenCalled();
+  });
+
+  it('refuses to move a recorded neighbour via the shared boundary', () => {
+    // Segment 1 is unrecorded but segment 2 is recorded; dragging segment 1's
+    // end drags segment 2's start with it, which would reshape the recording.
+    const { plugin, segs, onCurrentRegion } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [2],
+    });
+
+    dragBoundary(plugin, segs[1], 'end', 22);
+
+    expect(segs[2].start).toBe(20);
+    expect(onCurrentRegion).not.toHaveBeenCalled();
+  });
+
+  it('refuses a start-side drag that would reshape a recorded neighbour', () => {
+    // Segment 0 is recorded; segment 1's start is its shared boundary.
+    const { plugin, segs, onCurrentRegion } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [0],
+    });
+
+    dragBoundary(plugin, segs[1], 'start', 8);
+
+    expect(segs[0].end).toBe(10);
+    expect(onCurrentRegion).not.toHaveBeenCalled();
+  });
+
+  it('still allows dragging a boundary between two unrecorded segments', () => {
+    // Segment 2 is recorded, but segment 1's *start* boundary is shared with
+    // segment 0 — both unrecorded — so it must stay draggable. The lock is
+    // per-boundary, not "any recording nearby freezes everything".
+    const { plugin, segs, onCurrentRegion } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [2],
+    });
+
+    dragBoundary(plugin, segs[1], 'start', 8);
+
+    expect(onCurrentRegion).toHaveBeenCalledWith(
+      expect.objectContaining({ start: 8 }),
+      1
+    );
+  });
+
+  it('removes the resize handles from a recorded segment', () => {
+    // The user should not be offered a handle they cannot use — same cue as the
+    // recording-in-progress lock.
+    const { segs } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [1],
+    });
+
+    expect(segs[1].setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ resize: false })
+    );
   });
 });
