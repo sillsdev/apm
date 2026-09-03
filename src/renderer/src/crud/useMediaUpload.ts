@@ -42,9 +42,9 @@ interface IProps {
   pendingRestore?: PendingRestoreInput;
   /**
    * Commit deferred metadata (e.g. a newly typed artifact category) before
-   * staging the upload and evaluating `pendingRestore`. Required on the
-   * recorded-audio path: `Uploader.afterUploadCb` only runs `beforeUpload`
-   * after a successful recording (TT-7363 Copilot r3918081583).
+   * staging the upload and evaluating `pendingRestore`. Uploader's recorded
+   * path forwards this here and does not await it again in afterUploadCb
+   * (TT-7363 Copilot r3919030521).
    */
   beforeUpload?: () => Promise<void>;
 }
