@@ -208,7 +208,13 @@ const PassageDetailGrids = () => {
       <Stack
         direction="row"
         spacing={1}
-        sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
+        sx={(theme) => ({
+          alignItems: 'center',
+          minWidth: 0,
+          width: '100%',
+          p: theme.layout.gap,
+          pt: 0,
+        })}
       >
         <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
           <Typography noWrap id="sectionpassagetitle">
