@@ -106,7 +106,7 @@ export function WorkflowSteps() {
     else setFirstStepIndex(Math.max(0, firstStepIndex - 1));
   };
   return (
-    <Box sx={{ display: 'flex', m: 1, alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
       {shownWorkflow.map((w) => (
         <Stage
           key={w.id}
