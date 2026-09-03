@@ -13,6 +13,7 @@
 import {
   mountPbt,
   waitForPbtReady,
+  fileurlRequestedIds,
   postedTakes,
   waitForUploads,
   expectSegmentColors,
@@ -289,6 +290,120 @@ describe('PBT out-of-order recording', () => {
       const segs = postedTakes().map((t) => t.parsedSegments);
       expect(segs[0]).to.deep.include({ start: 6, end: 9 });
       expect(segs[1]).to.deep.include({ start: 3, end: 6 });
+    });
+  });
+});
+
+/**
+ * A team can configure one PBT step per language, so the same passage carries
+ * takes from several of them, recorded against the very same segment. A step
+ * must only ever see - and play - its own language's takes (TT-7643).
+ */
+describe('PBT language scoping', () => {
+  it('loads this step language take when another language has one too', () => {
+    mountPbt({
+      segments: SEGMENTS,
+      stepLanguage: 'Hebrew|he',
+      existingTakeRows: [
+        // Higher remote id than the Hebrew take, so a chooser that ignores
+        // language would land on the Sena one.
+        {
+          segmentIndex: 0,
+          languagebcp47: 'Sena|seh',
+          remoteId: '999',
+          performedBy: 'Sena Speaker',
+        },
+        {
+          segmentIndex: 0,
+          languagebcp47: 'Hebrew|he',
+          remoteId: '101',
+          performedBy: 'Hebrew Speaker',
+        },
+        // Hebrew is finished, so the step opens in review mode on segment 1
+        // with its take mounted in the recorder - the moment the wrong take
+        // would become audible.
+        {
+          segmentIndex: 1,
+          languagebcp47: 'Hebrew|he',
+          remoteId: '102',
+          performedBy: 'Hebrew Speaker',
+        },
+        {
+          segmentIndex: 2,
+          languagebcp47: 'Hebrew|he',
+          remoteId: '103',
+          performedBy: 'Hebrew Speaker',
+        },
+      ],
+    });
+    waitForPbtReady();
+
+    cy.wrap(null, { timeout: 20000 }).should(() => {
+      expect(
+        fileurlRequestedIds().length,
+        'a take was loaded'
+      ).to.be.greaterThan(0);
+    });
+    cy.then(() => {
+      expect(
+        fileurlRequestedIds(),
+        'only this step language was ever fetched'
+      ).to.not.include('999');
+      expect(fileurlRequestedIds()[0]).to.equal('101');
+    });
+  });
+
+  it('treats another language take as no take at all', () => {
+    mountPbt({
+      segments: SEGMENTS,
+      stepLanguage: 'Hebrew|he',
+      existingTakeRows: [
+        {
+          segmentIndex: 0,
+          languagebcp47: 'Sena|seh',
+          remoteId: '999',
+          performedBy: 'Sena Speaker',
+        },
+      ],
+    });
+    waitForPbtReady();
+
+    // Nothing recorded in Hebrew yet: the listen pass, not review mode.
+    cy.get(PBT.start).should('be.visible');
+    expectSegmentColors([
+      SEGMENT_COLOR.current,
+      SEGMENT_COLOR.pending,
+      SEGMENT_COLOR.pending,
+    ]);
+    cy.then(() =>
+      expect(fileurlRequestedIds(), 'no foreign take fetched').to.not.include(
+        '999'
+      )
+    );
+  });
+
+  it('uploads a take under a name no other language can take', () => {
+    // The name a take uploads under is the name its audio is cached under on
+    // disk: dataPath resolves a mediafile's audioUrl to
+    // `<offlineData>/media/<basename>` and hands back whatever file is already
+    // sitting there. The name carried the segment index and the source version
+    // but not the language, so the Hebrew step's segment 1 uploaded as exactly
+    // the name the Sena step's segment 1 had already cached - and Sena is what
+    // played (TT-7643).
+    mountPbt({ segments: SEGMENTS, stepLanguage: 'Hebrew|he' });
+    waitForPbtReady();
+    startRecordingPass();
+    recordAndSettle(1);
+
+    cy.then(() => {
+      const posted = postedTakes()[0];
+      expect(posted?.languagebcp47, 'take is stamped').to.equal('Hebrew|he');
+      expect(posted?.originalFile, 'name carries the language').to.contain(
+        '_he'
+      );
+      // What the Sena step would have uploaded for this same segment.
+      const senaName = (posted?.originalFile ?? '').replace('_he', '_seh');
+      expect(posted?.originalFile).to.not.equal(senaName);
     });
   });
 });

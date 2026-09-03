@@ -50,7 +50,7 @@ export function useGuidedPhraseSegments(
   const [phraseSegString, setPhraseSegString] = useState('{}');
   const [bootstrapped, setBootstrapped] = useState(false);
   const bootstrapInProgress = useRef(false);
-  const mediafileIdRef = useRef<string | undefined>(undefined);
+  const scopeRef = useRef<string | undefined>(undefined);
 
   const persistSegmentBucket = useCallback(
     async (
@@ -88,16 +88,27 @@ export function useGuidedPhraseSegments(
     if (hasPhraseRegions(regionJson)) setPhraseSegString(regionJson);
   }, [mediafile, persistSegments, singleSegmentMode, readRegionJson]);
 
-  const resetForMediafile = useCallback(
+  /**
+   * Re-read boundaries for the scope now showing, unless it is the one already
+   * loaded.
+   *
+   * The bucket is part of that scope, not just the audio: a team can configure
+   * a Phrase BT step per language, and each reads its own `BT:<bcp47>`
+   * boundaries off the same vernacular. Keyed on the mediafile alone, a step
+   * change was rejected as a no-op and the next language opened on the previous
+   * language's phrase boundaries (TT-7643).
+   */
+  const resetForScope = useCallback(
     (mediafileId: string | undefined) => {
-      if (mediafileIdRef.current === mediafileId) return;
-      mediafileIdRef.current = mediafileId;
+      const scope = `${mediafileId ?? ''}|${namedRegion}`;
+      if (scopeRef.current === scope) return;
+      scopeRef.current = scope;
       bootstrapInProgress.current = false;
       setBootstrapped(false);
       setPhraseSegString('{}');
       if (mediafileId) hydrateFromMediafile();
     },
-    [hydrateFromMediafile]
+    [hydrateFromMediafile, namedRegion]
   );
 
   const loadRegionsOnPlayer = useCallback(
@@ -283,7 +294,7 @@ export function useGuidedPhraseSegments(
     setPhraseSegString,
     bootstrapped,
     ensureSegments,
-    resetForMediafile,
+    resetForScope,
     resegmentWithParams,
     resetToDefaultSegments,
     persistPhraseSegments: (regionJson: string) =>

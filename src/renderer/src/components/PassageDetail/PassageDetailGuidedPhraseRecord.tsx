@@ -202,7 +202,7 @@ export function PassageDetailGuidedPhraseRecord({
   );
   const bootstrapPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bootstrapCompletedRef = useRef(false);
-  const lastResetMediafileRef = useRef<string | undefined>(undefined);
+  const lastResetScopeRef = useRef<string | undefined>(undefined);
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
@@ -400,7 +400,7 @@ export function PassageDetailGuidedPhraseRecord({
     setPhraseSegString: setClauseSegString,
     bootstrapped,
     ensureSegments,
-    resetForMediafile,
+    resetForScope,
     resegmentWithParams,
     resetToDefaultSegments,
     persistPhraseSegments: persistClauseSegments,
@@ -532,7 +532,11 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const defaultFilename = useMemo(() => {
-    const postfix = config.buildFilenamePostfix(currentIndex, currentVersion);
+    const postfix = config.buildFilenamePostfix(
+      currentIndex,
+      currentVersion,
+      stepLanguageBcp47
+    );
     return passageDefaultFilename(
       passage,
       plan,
@@ -549,6 +553,7 @@ export function PassageDetailGuidedPhraseRecord({
     offline,
     currentIndex,
     currentVersion,
+    stepLanguageBcp47,
     config,
   ]);
 
@@ -908,9 +913,22 @@ export function PassageDetailGuidedPhraseRecord({
     // mid-entry, clobbering an already-started recording pass and dropping the
     // user back into the listen pass (TT-7360). Only reset once per actual
     // mediafile change.
-    if (lastResetMediafileRef.current === mediafileId) return;
-    lastResetMediafileRef.current = mediafileId;
-    resetForMediafile(mediafileId);
+    //
+    // The step is part of that identity, not just the mediafile: a team can
+    // configure a Phrase BT step per language, and every one of them renders
+    // this same component against the same vernacular. Where the route does not
+    // remount it between steps, keying the reset on the mediafile alone carried
+    // the previous language's recording pass - its clause index, its baseline
+    // boundaries, its optimistic greens, and the take showing in the recorder -
+    // into the next language's step (TT-7643).
+    if (!currentstep) return;
+    const stepScope = `${mediafileId ?? ''}|${currentstep}`;
+    if (lastResetScopeRef.current === stepScope) return;
+    lastResetScopeRef.current = stepScope;
+    resetForScope(mediafileId);
+    // The legacy claim is per step language, so a reused instance has to be
+    // allowed to run it again for the step just moved to.
+    claimRanRef.current = false;
     bootstrapCompletedRef.current = false;
     setPhase('bootstrapping');
     setCurrentIndex(0);
@@ -935,12 +953,13 @@ export function PassageDetailGuidedPhraseRecord({
     setEntryPositioned(false);
     suppressClauseAutoPlayRef.current = 0;
     setHighlightPlayButton(false);
-    // Gate only on the stable mediafileId string. resetForMediafile's identity
-    // changes whenever the mediafile record is updated (e.g. persisting combined
-    // clause segments), which would otherwise re-fire this reset and drop the
-    // user from the recording pass back into the listen pass (TT-7360).
+    // Gate only on the stable mediafileId / currentstep strings.
+    // resetForScope's identity changes whenever the mediafile record is
+    // updated (e.g. persisting combined clause segments), which would otherwise
+    // re-fire this reset and drop the user from the recording pass back into
+    // the listen pass (TT-7360).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafileId]);
+  }, [mediafileId, currentstep]);
 
   useEffect(() => {
     if (!mediafileId || !stepEnabled) return;
