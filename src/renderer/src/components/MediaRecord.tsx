@@ -53,6 +53,11 @@ interface IProps {
    * Domain restore metadata for pending-upload Retry (TT-7363).
    */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
+  /**
+   * Commit deferred metadata before the recorded upload is staged so
+   * `pendingRestore` can include newly created category ids.
+   */
+  beforeUpload?: () => Promise<void>;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -141,6 +146,7 @@ function MediaRecord(props: IProps) {
     languagebcp47,
     afterUploadCb,
     pendingRestore,
+    beforeUpload,
     setCanSave,
     setCanCancel,
     setStatusText,
@@ -360,6 +366,7 @@ function MediaRecord(props: IProps) {
     languagebcp47,
     afterUploadCb: myAfterUploadCb,
     pendingRestore,
+    beforeUpload,
   });
 
   useEffect(() => {
