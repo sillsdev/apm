@@ -1137,24 +1137,25 @@ export function PassageDetailGuidedPhraseRecord({
       if (recordingActiveRef.current || savingRecording) return;
       const regions = getSortedRegions(seg);
       if (regions.length === 0) return;
-      // Backstop, not the primary guard. This reverts a segment-map change that
-      // would move a recorded segment's exact bounds. It was the original
-      // protection for TT-7666, but in the app a boundary *drag* on a recorded
-      // segment stuck anyway — the revert did not fire for that path and the
-      // root cause was never pinned down (by code reading a drag reaches here
-      // and should revert; it did not). Rather than chase that, TT-7666 blocks
-      // the offending gestures at their source in useWavesurferRegions:
-      //   - recorded boundaries render but are frozen (resizeStart/resizeEnd off)
-      //     with a default cursor, and region-update/region-updated refuse a
-      //     drag touching a recorded segment;
-      //   - wsAddRegion / wsRemoveSplitRegion refuse to split inside or merge
-      //     across a recorded segment;
-      //   - the +/- buttons are disabled over a recorded boundary.
-      // Those never produce a violating change, so this line no longer fires for
-      // drag or +/-. It is kept as defense-in-depth for any *other* writer that
-      // still reaches handleSegment during the recording pass (resegmentation,
-      // future paths); it is cheap and harmless when it does not trigger. Remove
-      // it only once every such path is proven blocked at the source.
+      // Safety backstop, not the main guard. If a segment update would move the
+      // exact boundaries of a recorded segment, this code reverts that update.
+      //
+      // Future work to harden:
+      // In TT-7666 we discovered this was not reverting segment boundary drags, but
+      // never finished investigating why not.
+      //
+      // Instead we now block those edits where they start, in
+      // useWavesurferRegions:
+      //   - recorded boundaries are shown but locked (no resize handles) and
+      //     drag events that touch recorded segments are rejected;
+      //   - wsAddRegion / wsRemoveSplitRegion reject splitting inside or
+      //     merging across a recorded segment;
+      //   - the +/- buttons are disabled on recorded boundaries.
+      //
+      // Because those paths are blocked earlier, this check usually does not
+      // fire for drag or +/-. Keep it as defense-in-depth for any other path
+      // that might still call handleSegment during recording (for example,
+      // resegmentation or future code changes).
       if (
         recordingPassStarted &&
         !preservesRecordedBoundaries(clauseRegions, regions, completedIndices)
