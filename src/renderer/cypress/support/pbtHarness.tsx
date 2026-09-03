@@ -251,6 +251,11 @@ export function installPbtServer() {
     const take = serverState.takes.find((t) => t.remoteId === remoteId);
     // The real pull-after-upload is what makes the take visible; model it
     // (optionally late) so rowData-lag behaviour is reproducible.
+    //
+    // Timed from when the PUT *completes*, not when it starts: the audio is not
+    // stored until then. Adding it up front made putDelayMs lie - the take
+    // appeared in rowData while the upload was still in flight, so a test about
+    // what happens during an upload was really testing what happens after one.
     if (take) {
       const gen = serverState.generation;
       const add = () => {
@@ -258,10 +263,9 @@ export function installPbtServer() {
         if (serverState.generation !== gen) return;
         serverState.addTakeToMemory?.(take);
       };
-      if (serverState.rowDataLagMs > 0) {
-        serverState.pendingTimers.push(
-          setTimeout(add, serverState.rowDataLagMs)
-        );
+      const storedAfterMs = serverState.putDelayMs + serverState.rowDataLagMs;
+      if (storedAfterMs > 0) {
+        serverState.pendingTimers.push(setTimeout(add, storedAfterMs));
       } else add();
     }
     req.reply({ statusCode: 200, body: '', delay: serverState.putDelayMs });

@@ -260,6 +260,20 @@ export function PassageDetailGuidedPhraseRecord({
   const pendingOvershootSwallowRef = useRef(false);
   /** Indices saved this session whose rowData may not have caught up yet (TT-7552). */
   const optimisticCompletedRef = useRef<Set<number>>(new Set());
+  /**
+   * The user discarded a take while its upload was still in flight. The upload
+   * still completes, so both the recorder state it reports and the mediafile it
+   * creates have to be undone - otherwise the take the user deleted comes back,
+   * and the segment counts as recorded with audio they rejected.
+   */
+  const discardedDuringSaveRef = useRef<number | undefined>(undefined);
+  /**
+   * A save has been requested and its outcome has not arrived yet. Tracked
+   * separately from savingRecording, which other paths clear early - by the time
+   * the user can click the delete icon it is already false, so it cannot answer
+   * "is an upload still in flight".
+   */
+  const uploadInFlightRef = useRef(false);
   const currentIndexRef = useRef(0);
   const [heardIndices, setHeardIndices] = useState<number[]>([]);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
@@ -656,6 +670,7 @@ export function PassageDetailGuidedPhraseRecord({
     if (canSave && !saveRejectedRef.current) {
       savingRecordingRef.current = true;
       setSavingRecording(true);
+      uploadInFlightRef.current = true;
       startSave(toolId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -668,6 +683,7 @@ export function PassageDetailGuidedPhraseRecord({
     setSaveRejected(false);
     savingRecordingRef.current = true;
     setSavingRecording(true);
+    uploadInFlightRef.current = true;
     startSave(toolId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolId]);
@@ -1709,6 +1725,23 @@ export function PassageDetailGuidedPhraseRecord({
 
   const afterUploadCb = useCallback(
     async (mediaId: string | undefined) => {
+      uploadInFlightRef.current = false;
+      // Deliberately does not clear the marker: the mediafile this upload
+      // created may not have arrived yet, and the effect below still has to
+      // remove it. Whichever of the two happens first, both must see it.
+      if (discardedDuringSaveRef.current === currentIndexRef.current) {
+        // Discarded while this upload was in flight. Leave the flag set: the
+        // mediafile it created has not reached rowData yet, and the effect below
+        // removes it once it does.
+        optimisticCompletedRef.current.delete(currentIndexRef.current);
+        savingRecordingRef.current = false;
+        setSavingRecording(false);
+        setPhase('recordReady');
+        setResetMedia(true);
+        forceRefresh();
+        applyColors();
+        return;
+      }
       // Color green immediately; rowData/forceRefresh often lag the upload
       // (TT-7552). Only on a real upload though — a terminal failure still calls
       // us, with no mediaId, and painting that green tells the user their take
@@ -1732,6 +1765,12 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const handleClearRecording = useCallback(async () => {
+    // A save still in flight will finish and report a stored take. Remember that
+    // the user has discarded it so afterUploadCb, and the effect that watches
+    // for the mediafile arriving, can undo both halves.
+    if (uploadInFlightRef.current) {
+      discardedDuringSaveRef.current = currentIndexRef.current;
+    }
     // Deleting the take retires the failed save with it, so the message and the
     // latch must both go (TT-7583).
     saveRejectedRef.current = false;
@@ -1763,6 +1802,37 @@ export function PassageDetailGuidedPhraseRecord({
     stepComplete,
     setStepComplete,
   ]);
+
+  /**
+   * Remove the take an in-flight upload stored after the user had already
+   * discarded it. It cannot be removed in afterUploadCb: the mediafile has not
+   * reached rowData at that point, so there is nothing to address yet. Waiting
+   * for it to appear also means this works whether the upload finishes before or
+   * after the local sync.
+   */
+  useEffect(() => {
+    const discardedUnit = discardedDuringSaveRef.current;
+    if (discardedUnit === undefined) return;
+    if (discardedUnit !== currentIndexRef.current) return;
+    const mediaId = recordingRow?.mediafile?.id;
+    if (!mediaId) return;
+    discardedDuringSaveRef.current = undefined;
+    void (async () => {
+      await memory.update((t) =>
+        t.removeRecord({ type: 'mediafile', id: mediaId })
+      );
+      optimisticCompletedRef.current.delete(currentIndexRef.current);
+      if (stepComplete(currentstep)) {
+        await setStepComplete(currentstep, false);
+      }
+      forceRefresh();
+      setPhase('recordReady');
+      setResetMedia(true);
+      applyColors();
+    })();
+    // stepComplete reads psgCompleted internally; only the row matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordingRow, memory, forceRefresh, applyColors, currentstep]);
 
   const allowRecord =
     recordingPassStarted &&
@@ -1838,6 +1908,13 @@ export function PassageDetailGuidedPhraseRecord({
   return (
     <Box
       id={config.containerId}
+      // The listen/record state machine drives most of this step's behaviour and
+      // is otherwise invisible from outside, which makes a wrong Record state
+      // guesswork to diagnose. Exposing it costs nothing and makes it assertable.
+      data-phase={phase}
+      data-allow-record={String(allowRecord)}
+      data-unit-index={String(currentIndex)}
+      data-discard-pending={String(discardedDuringSaveRef.current ?? '')}
       data-segment-selection-locked={String(segmentSelectionLocked)}
       sx={{
         display: 'flex',
@@ -1952,6 +2029,9 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // A fresh take on this segment is wanted, so stop treating an
+              // arriving upload for it as the discarded one.
+              discardedDuringSaveRef.current = undefined;
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
               setSaveRejected(false);
@@ -1977,6 +2057,7 @@ export function PassageDetailGuidedPhraseRecord({
           setResetMedia={setResetMedia}
           setCanSave={setCanSave}
           onSaveRejected={() => {
+            uploadInFlightRef.current = false;
             saveRejectedRef.current = true;
             setSaveRejected(true);
             savingRecordingRef.current = false;
