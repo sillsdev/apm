@@ -213,11 +213,7 @@ const PassageDetailGrids = () => {
         sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
       >
         <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
-          <Typography
-            variant="h6"
-            id="sectionpassagetitle"
-            sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-          >
+          <Typography noWrap variant="h6" id="sectionpassagetitle">
             {sectionDescription(section, sectionMap, passNum)}
             {sectionPassageRefDelim}
             <PassageReference
