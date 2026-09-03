@@ -262,15 +262,11 @@ export function PassageDetailGuidedPhraseRecord({
   const optimisticCompletedRef = useRef<Set<number>>(new Set());
   const currentIndexRef = useRef(0);
   /**
-   * The clause a take was started on, latched when capture begins and held
-   * until the take is stored or discarded (TT-7437).
+   * Clause and region for the active take (TT-7437).
    *
-   * Everything that files a take — sourceSegments, the filename postfix, the
-   * green completion mark — used to read the *live* selection at save time, so
-   * any path that moved the selection between Record and the upload misfiled
-   * the audio. The engine-side lock stops the known routes, but a take belongs
-   * to the clause it was recorded on whatever slips through, so that clause is
-   * captured once and read back from here.
+   * We lock this when recording starts and keep it until the take is saved or
+   * discarded. Save-time values (sourceSegments, filename postfix, completion
+   * color) must come from this latched target, not from live selection.
    */
   const [recordingTarget, setRecordingTarget] = useState<
     { index: number; region: IRegion } | undefined
@@ -483,10 +479,9 @@ export function PassageDetailGuidedPhraseRecord({
     ]
   );
 
-  // A segment counts as recorded — its boundaries frozen (TT-7666) — once it
-  // has a stored take, or a just-saved one rowData has not caught up to yet
-  // (the same optimistic set the green coloring uses). Only in the recording
-  // pass: during the listen pass there are no takes, so boundaries stay free.
+  // A segment is treated as recorded (boundary locked, TT-7666) when it has a
+  // saved take, or a newly saved take that rowData has not shown yet.
+  // This only applies during the recording pass.
   const isSegmentRecorded = useCallback(
     (index: number) =>
       recordingPassStarted &&
@@ -720,10 +715,9 @@ export function PassageDetailGuidedPhraseRecord({
   // Keyed on the index rather than the navigation handlers because every clause
   // move funnels through it.
   useEffect(() => {
-    // Navigating away from a failed take abandons it, so it gives up its
-    // latched clause with the message (TT-7437). Only that case: a take that
-    // is recording, uploading, or waiting to upload keeps its clause however
-    // the selection moves — that is the whole point of the latch.
+    // The latch keeps a take tied to its original clause (TT-7437).
+    // If upload failed and the user navigates away, that take is abandoned,
+    // so clear the latch here.
     if (saveRejectedRef.current) latchRecordingTarget(undefined);
     saveRejectedRef.current = false;
     setSaveRejected(false);
@@ -970,9 +964,8 @@ export function PassageDetailGuidedPhraseRecord({
     saveRejectedRef.current = false;
     setSaveRejected(false);
     pendingOvershootSwallowRef.current = false;
-    // A latched clause belongs to the mediafile it was recorded against; a new
-    // source has different clauses, so carrying it over would file the next
-    // take on a region from the old waveform (TT-7437).
+    // The latch is mediafile-specific. Clear it when source media changes,
+    // so the next take cannot reuse a clause from the old waveform (TT-7437).
     latchRecordingTarget(undefined);
     optimisticCompletedRef.current.clear();
     setHeardIndices([]);
@@ -1137,25 +1130,9 @@ export function PassageDetailGuidedPhraseRecord({
       if (recordingActiveRef.current || savingRecording) return;
       const regions = getSortedRegions(seg);
       if (regions.length === 0) return;
-      // Safety backstop, not the main guard. If a segment update would move the
-      // exact boundaries of a recorded segment, this code reverts that update.
-      //
-      // Future work to harden:
-      // In TT-7666 we discovered this was not reverting segment boundary drags, but
-      // never finished investigating why not.
-      //
-      // Instead we now block those edits where they start, in
-      // useWavesurferRegions:
-      //   - recorded boundaries are shown but locked (no resize handles) and
-      //     drag events that touch recorded segments are rejected;
-      //   - wsAddRegion / wsRemoveSplitRegion reject splitting inside or
-      //     merging across a recorded segment;
-      //   - the +/- buttons are disabled on recorded boundaries.
-      //
-      // Because those paths are blocked earlier, this check usually does not
-      // fire for drag or +/-. Keep it as defense-in-depth for any other path
-      // that might still call handleSegment during recording (for example,
-      // resegmentation or future code changes).
+      // Defense-in-depth only: if an update still changes recorded boundaries,
+      // reload the previous regions. Main blocking now happens earlier in
+      // useWavesurferRegions (drag, split/merge, and +/- controls; TT-7666).
       if (
         recordingPassStarted &&
         !preservesRecordedBoundaries(clauseRegions, regions, completedIndices)
@@ -1784,9 +1761,8 @@ export function PassageDetailGuidedPhraseRecord({
       // (TT-7552). Only on a real upload though — a terminal failure still calls
       // us, with no mediaId, and painting that green tells the user their take
       // was stored when it was not (TT-7583).
-      // The clause the take was recorded on, not wherever the selection has
-      // since ended up — the green mark has to land where the audio went
-      // (TT-7437).
+      // Mark completion on the clause where recording started (TT-7437),
+      // not on the current live selection.
       const takenIndex =
         recordingTargetRef.current?.index ?? currentIndexRef.current;
       if (mediaId) {
@@ -1795,8 +1771,8 @@ export function PassageDetailGuidedPhraseRecord({
         latchRecordingTarget(undefined);
       } else {
         optimisticCompletedRef.current.delete(takenIndex);
-        // Keep the latch on a failed upload: Retry must file the take on the
-        // same clause, however far the user has wandered (TT-7583).
+        // Keep the latch on failed upload so Retry files to the same clause
+        // even if selection moved (TT-7583).
       }
       // Stays 'recorded' either way: the take still exists, it just is not
       // stored. That keeps Record disabled and the clear button available, so
@@ -2037,10 +2013,8 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
-              // Latch the clause this take belongs to. Everything that files
-              // the take reads it from here, so the audio lands where it was
-              // recorded no matter what moves the selection afterwards
-              // (TT-7437).
+              // Latch the take target at record start so later selection
+              // changes do not move where this take is filed (TT-7437).
               if (currentRegion) {
                 latchRecordingTarget({
                   index: currentIndex,
@@ -2078,8 +2052,8 @@ export function PassageDetailGuidedPhraseRecord({
             setSavingRecording(false);
             // Upload failures route through afterUploadCb('') as well, but
             // MediaRecord's save-requested-with-no-audio branch only lands here,
-            // so undo the optimistic green from this path too (TT-7583). The
-            // latch stays up so a Retry still files the take on its own clause.
+            // Also clear optimistic green on this failure path (TT-7583).
+            // Keep the latch so Retry still files to the same clause.
             optimisticCompletedRef.current.delete(
               recordingTargetRef.current?.index ?? currentIndexRef.current
             );

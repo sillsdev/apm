@@ -1,14 +1,11 @@
 import { IRegion } from '../crud/useWavesurferRegions';
 
 /**
- * Pure helpers deciding when the player's +/- segment controls must be disabled
- * because a recording depends on the boundary (TT-7666). Kept out of
- * WSAudioPlayer so they can be unit-tested without the component's app-wide
- * import tree.
+ * Helpers for disabling +/- when a recorded segment would be changed
+ * (TT-7666). Kept separate for easier unit testing.
  */
 
-/** Sorted index of the segment the playhead sits in, or -1. The last segment
- *  includes its end so the very end of the track still resolves. */
+/** Sorted index of the segment at the playhead, or -1. */
 export function segmentIndexAtProgress(
   progressSec: number,
   regions: IRegion[]
@@ -26,8 +23,7 @@ export function segmentIndexAtProgress(
   return -1;
 }
 
-/** Add (+) would split the segment under the playhead; block it when that
- *  segment is recorded (TT-7666). */
+/** Block Add when it would split a recorded segment (TT-7666). */
 export function isAddBlockedByRecording(
   progressSec: number,
   regions: IRegion[],
@@ -38,8 +34,7 @@ export function isAddBlockedByRecording(
   return idx >= 0 && isSegmentRecorded(idx);
 }
 
-/** Remove (−) merges the two segments flanking the internal join near the
- *  playhead; block it when either is recorded (TT-7666). */
+/** Block Remove when either side of the merged boundary is recorded (TT-7666). */
 export function isRemoveBlockedByRecording(
   progressSec: number,
   regions: IRegion[],

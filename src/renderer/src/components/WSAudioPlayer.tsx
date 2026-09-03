@@ -2098,8 +2098,8 @@ function WSAudioPlayer(props: IProps) {
       ),
     [progress, regionBounds]
   );
-  // A recorded segment's boundaries are frozen, so +/- that would reshape it are
-  // disabled too — not merely inert (TT-7666).
+  // If a segment is recorded, disable +/- when they would change its boundary
+  // (TT-7666).
   const addBlockedByRecording = useMemo(
     () => isAddBlockedByRecording(progress, regionBounds, isSegmentRecorded),
     [progress, regionBounds, isSegmentRecorded]

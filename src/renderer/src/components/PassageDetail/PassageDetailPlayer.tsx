@@ -118,8 +118,7 @@ export interface DetailPlayerProps {
   beforePlay?: () => void | Promise<void | boolean>;
   /** When true, waveform region clicks cannot change the selected segment. */
   lockSegmentSelection?: boolean;
-  /** Whether the segment at a sorted index already has a recording; freezes its
-   *  boundaries and disables the +/- controls that would reshape it (TT-7666). */
+  /** Whether a sorted segment already has a recording (TT-7666). */
   isSegmentRecorded?: (sortedIndex: number) => boolean;
   /** Show the "view transcription" button when a transcription exists. Default true.
    * Set false where the button isn't wanted (e.g. Mark Verses Mobile). */

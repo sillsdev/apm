@@ -1,21 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 
 /**
- * Segment-selection lock spec (TT-7437).
+ * Segment lock spec (TT-7437).
  *
- * While a take is being recorded the selected segment must not move: the take
- * belongs to the segment recording started on. Three engine events can move it
- * and each one is a separate route the user can take from the waveform:
- *
- *   - `region-clicked`  — tapping another segment,
- *   - `region-in`       — the playhead entering another segment after the tap
- *                         seeks it (the click also seeks, so this fires even
- *                         when the click itself was dropped),
- *   - `region-updated`  — dragging a segment boundary.
- *
- * All three land on `onCurrentRegion`, which is what drives
- * PassageDetailContext's currentSegment. So the lock is asserted there rather
- * than on any one handler's internals.
+ * While recording, selection must stay on the start segment.
+ * We verify all paths that can change selection: click, region-in, and drag.
  */
 
 // ---- fake wavesurfer regions plugin -----------------------------------------
@@ -32,8 +21,8 @@ interface IFakePlugin {
   enableDragSelection(): void;
 }
 
-// The hook picks its plugin out of ws.getActivePlugins() with
-// `instanceof RegionsPlugin`, so the fake has to *be* the mocked class.
+// The hook finds plugins with `instanceof RegionsPlugin`, so this fake must be
+// that mocked class.
 jest.mock('wavesurfer.js/dist/plugins/regions', () => {
   class FakeRegionsPlugin {
     handlers: Record<string, Handler[]> = {};
@@ -52,8 +41,7 @@ jest.mock('wavesurfer.js/dist/plugins/regions', () => {
       return this.regionList;
     }
     addRegion(params: any) {
-      // wavesurfer hands back a Region, not the params object — the hook
-      // immediately calls setOptions on it.
+      // wavesurfer returns a Region object and the hook calls setOptions on it.
       const r: any = {
         id: `added-${this.regionList.length}`,
         attributes: {},
@@ -100,14 +88,11 @@ const DURATION = 30;
 
 interface IHarnessOpts {
   lockSegmentSelection: boolean;
-  /** Playhead position. A split happens at the playhead, so the double-click
-   *  tests need one that is inside a segment rather than on its edge. */
+  /** Playhead position used by split tests. */
   progressAt?: number;
-  /** Sorted indices of segments that already have a recording. A boundary
-   *  between a recorded segment and its neighbor may not be dragged (TT-7666). */
+  /** Sorted indices of recorded segments (TT-7666). */
   recordedIndices?: number[];
-  /** Supply a color function so `applyRegionColors` runs its body (it is a
-   *  no-op without one) — needed to exercise the recorded-resize pass. */
+  /** Provide a color function so applyRegionColors runs. */
   withColors?: boolean;
 }
 
@@ -197,14 +182,13 @@ const clickSegment = (plugin: IFakePlugin, r: any) =>
     plugin.emit('region-clicked', r, { stopPropagation: jest.fn() });
   });
 
-// The playhead crosses into a segment (what the tap's seek causes next).
+// Playhead enters a segment (for example, after a tap seeks).
 const playheadEnters = (plugin: IFakePlugin, r: any) =>
   act(() => {
     plugin.emit('region-in', r);
   });
 
-// The user drags a segment boundary and lets go. 'region-update' is what tells
-// the hook a resize (rather than a whole-region move) is underway.
+// Drag a segment boundary and finish the drag.
 const dragBoundary = (
   plugin: IFakePlugin,
   r: any,
@@ -286,9 +270,7 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
   });
 
   it('does not follow the playhead into another segment', () => {
-    // The click above is dropped, but a tap on the waveform also seeks. If the
-    // seek lands in another segment, region-in fires with the lock none the
-    // wiser — this is the route that kept moving the selection mid-record.
+    // A tap can still seek and emit region-in. Lock must block that path too.
     const { plugin, segs, onCurrentRegion } = renderRegions({
       lockSegmentSelection: true,
     });
@@ -309,8 +291,7 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
   });
 
   it('leaves the segment bounds alone when a boundary is dragged', () => {
-    // Dragging must not silently reshape the segment the take is being
-    // recorded into either — the take's start/end are what identify it.
+    // Dragging must not reshape the active take's segment.
     const { plugin, segs } = renderRegions({ lockSegmentSelection: true });
 
     dragBoundary(plugin, segs[1], 'end', 22);
@@ -322,8 +303,7 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
   });
 
   it('does not split a segment on double-click', () => {
-    // Double-click splits, which reshapes the segment map exactly as a boundary
-    // drag does — the take's own boundaries would move under it.
+    // Double-click split also changes boundaries, so it must be blocked.
     const { plugin, segs } = renderRegions({
       lockSegmentSelection: true,
       progressAt: 15,
@@ -348,12 +328,8 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
 });
 
 describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)', () => {
-  // A recording is tied to a segment's exact time range, so once a segment has
-  // a Phrase BT (or Careful Speech) recording its boundaries are frozen. A
-  // boundary is shared by two segments, so a drag is refused when *either*
-  // side of it is recorded — this is separate from the recording-in-progress
-  // lock: it holds whenever the neighbouring recording exists, recording or
-  // not.
+  // Recorded boundaries are frozen (TT-7666). Since a boundary is shared,
+  // drag is blocked when either neighboring segment is recorded.
 
   it('refuses to move a recorded segment via its own boundary', () => {
     // Segment 1 is recorded. Dragging its end would resize it.
@@ -364,15 +340,13 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
 
     dragBoundary(plugin, segs[1], 'end', 22);
 
-    // The shared neighbour was not pulled along, and nothing downstream heard a
-    // boundary change.
+    // Neighbor stays unchanged and no update is emitted.
     expect(segs[2].start).toBe(20);
     expect(onCurrentRegion).not.toHaveBeenCalled();
   });
 
   it('refuses to move a recorded neighbour via the shared boundary', () => {
-    // Segment 1 is unrecorded but segment 2 is recorded; dragging segment 1's
-    // end drags segment 2's start with it, which would reshape the recording.
+    // Dragging this edge would also move recorded segment 2, so block it.
     const { plugin, segs, onCurrentRegion } = renderRegions({
       lockSegmentSelection: false,
       recordedIndices: [2],
@@ -398,9 +372,7 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
   });
 
   it('still allows dragging a boundary between two unrecorded segments', () => {
-    // Segment 2 is recorded, but segment 1's *start* boundary is shared with
-    // segment 0 — both unrecorded — so it must stay draggable. The lock is
-    // per-boundary, not "any recording nearby freezes everything".
+    // This boundary is between unrecorded segments, so it stays draggable.
     const { plugin, segs, onCurrentRegion } = renderRegions({
       lockSegmentSelection: false,
       recordedIndices: [2],
@@ -415,9 +387,7 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
   });
 
   it('freezes a recorded segment but keeps its boundary handles visible', () => {
-    // The handle is the only clear marker of where a segment ends, so it stays
-    // rendered (resize: true) — but both edges are turned off so it cannot be
-    // dragged (TT-7666).
+    // Keep the handle visible, but disable dragging on both sides (TT-7666).
     const { segs } = renderRegions({
       lockSegmentSelection: false,
       recordedIndices: [1],
@@ -451,10 +421,7 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
   });
 
   it('does not re-enable handles on a color pass while recording is locked', () => {
-    // The recording-in-progress lock (TT-7437) takes every region's handles
-    // away. The recorded-resize pass runs on every color update and must not
-    // hand a handle back to an unrecorded segment while that lock holds, or the
-    // user could resize mid-record.
+    // While lock is active, color updates must not re-enable drag handles.
     const { result, segs } = renderRegions({
       lockSegmentSelection: true,
       recordedIndices: [1],
@@ -466,7 +433,7 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
       result.current.applyRegionColors();
     });
 
-    // segment 0 is unrecorded, but the lock is up: it must not be re-enabled.
+    // Segment 0 is unrecorded, but lock still forbids re-enable.
     expect(segs[0].setOptions).not.toHaveBeenCalledWith(
       expect.objectContaining({ resize: true })
     );
@@ -474,10 +441,8 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
 });
 
 describe('useWaveSurferRegions — the +/- controls on a recorded segment (TT-7666)', () => {
-  // The Add (+) button splits the segment under the playhead; Remove (-) merges
-  // the current segment with a neighbour. Neither may touch a recorded segment,
-  // and a refused click must be inert — no divider added or removed, and the
-  // playhead left where it was.
+  // Add splits and Remove merges. Neither may modify recorded segments.
+  // Blocked actions should do nothing.
 
   it('adds a divider inside an unrecorded segment (control)', () => {
     const { result, plugin, goto } = renderRegions({

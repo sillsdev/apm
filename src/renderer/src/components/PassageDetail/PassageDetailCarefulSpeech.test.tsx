@@ -438,8 +438,7 @@ describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () =
 });
 
 describe('PassageDetailCarefulSpeech — take belongs to the clause it started on (TT-7437)', () => {
-  // Record a take on clause 2 and hand back the sourceSegments value the
-  // recorder must file it under.
+  // Start recording on clause 2 and return the resulting sourceSegments value.
   const startTakeOnClause2 = async () => {
     mockCompleted = new Set([0, 1]); // auto-play clause 2
     const utils = await mountAndSettle();
@@ -462,10 +461,8 @@ describe('PassageDetailCarefulSpeech — take belongs to the clause it started o
   });
 
   it('keeps the take on its clause when the selection change lands after stop', async () => {
-    // The waveform click is dropped while locked, but the seek it caused makes
-    // the playhead enter the tapped clause; that region-in can arrive in the
-    // gap between the recorder stopping and the save starting. The take was
-    // already made — it still belongs to clause 2 (TT-7437).
+    // Even if the tap seek causes a later region-in, the take still belongs to
+    // clause 2 because recording already happened there (TT-7437).
     const { rerender } = await startTakeOnClause2();
 
     await act(async () => {
