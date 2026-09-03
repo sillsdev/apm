@@ -37,12 +37,7 @@ const orgRec = (id: string, name: string, keyed = true) => ({
   relationships: {},
 });
 
-const orgScoped = (
-  type: string,
-  id: string,
-  orgId: string,
-  keyed = true
-) => ({
+const orgScoped = (type: string, id: string, orgId: string, keyed = true) => ({
   type,
   id,
   ...(keyed ? { keys: { remoteId: id } } : {}),
@@ -202,7 +197,9 @@ describe('getProjectDataFiles project scoping', () => {
       'ip-local',
     ]);
     expect(idsIn(files, 'data/C_orgworkflowsteps.json')).toEqual(['ows-local']);
-    expect(idsIn(files, 'data/J_organizationbibles.json')).toEqual(['ob-local']);
+    expect(idsIn(files, 'data/J_organizationbibles.json')).toEqual([
+      'ob-local',
+    ]);
     expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-local']);
     expect(idsIn(files, 'data/D_projects.json')).toEqual(['proj-local']);
   });
@@ -212,7 +209,11 @@ describe('getProjectDataFiles project scoping', () => {
     const online = createExportCollector(memory, true);
     expect(
       online
-        .getTableRecs({ table: 'intellectualproperty', sort: 'I' }, undefined, true)
+        .getTableRecs(
+          { table: 'intellectualproperty', sort: 'I' },
+          undefined,
+          true
+        )
         .map((r) => r.id)
         .sort()
     ).toEqual(['ip-mine', 'ip-mine-local', 'ip-other']);
