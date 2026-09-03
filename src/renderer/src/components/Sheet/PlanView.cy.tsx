@@ -20,6 +20,8 @@ import {
 } from '../../model';
 import { RecordIdentity } from '@orbit/records';
 import { PublishDestinationEnum } from '../../crud/usePublishDestination';
+import { Box } from '@mui/material';
+import { LocalKey, localUserKey } from '../../utils/localUserKey';
 
 // Mock dependencies
 const createMockLiveQuery = (data: any[] = []) => ({
@@ -30,10 +32,20 @@ const createMockLiveQuery = (data: any[] = []) => ({
   query: () => data,
 });
 
+type PassageKeyPair = { localId: string; remoteId: string };
+
+const createPassageKeyMap = (passages: PassageKeyPair[]) => ({
+  keyToId: (_table: string, _key: string, remoteId: string) =>
+    passages.find((p) => p.remoteId === remoteId)?.localId,
+  idToKey: (_table: string, _key: string, localId: string) =>
+    passages.find((p) => p.localId === localId)?.remoteId,
+});
+
 // Create mock memory that can return section and organization records
 const createMockMemory = (
   sections: SectionD[] = [],
-  organizations: any[] = []
+  organizations: any[] = [],
+  keyMap?: ReturnType<typeof createPassageKeyMap>
 ): Memory => {
   return {
     cache: {
@@ -78,6 +90,7 @@ const createMockMemory = (
       patch: () => {}, // Add a simple patch method
     },
     update: () => {},
+    keyMap,
   } as unknown as Memory;
 };
 
@@ -277,7 +290,11 @@ describe('PlanView', { tags: '@smoke' }, () => {
     globalStateOverrides = {},
     initialEntries: string[] = ['/project/test-prj'],
     sections: SectionD[] = [],
-    organizationName: string = 'Test Organization'
+    organizationName: string = 'Test Organization',
+    options: {
+      scrollHeight?: number;
+      keyMap?: ReturnType<typeof createPassageKeyMap>;
+    } = {}
   ) => {
     const initialState = createInitialState(globalStateOverrides);
     const planContextState = createMockPlanContextState(planContextOverrides);
@@ -300,7 +317,11 @@ describe('PlanView', { tags: '@smoke' }, () => {
       },
     ];
 
-    const memory = createMockMemory(sections, mockOrganizations);
+    const memory = createMockMemory(
+      sections,
+      mockOrganizations,
+      options.keyMap
+    );
 
     // Mock the cache to return organizations
     memory.cache.query = (queryFn: (q: any) => any) => {
@@ -327,6 +348,8 @@ describe('PlanView', { tags: '@smoke' }, () => {
       return queryFn(mockQueryBuilder);
     };
 
+    const planView = <PlanView {...props} />;
+
     cy.mount(
       <MemoryRouter initialEntries={initialEntries}>
         <Provider store={mockStore}>
@@ -338,13 +361,82 @@ describe('PlanView', { tags: '@smoke' }, () => {
                   setState: cy.stub(),
                 }}
               >
-                <PlanView {...props} />
+                {options.scrollHeight ? (
+                  <Box
+                    data-cy="plan-view-scroller"
+                    sx={{
+                      height: options.scrollHeight,
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                    }}
+                  >
+                    {planView}
+                  </Box>
+                ) : (
+                  planView
+                )}
               </PlanContext.Provider>
             </DataProvider>
           </GlobalProvider>
         </Provider>
       </MemoryRouter>
     );
+  };
+
+  const createManyPassages = (count: number): ISheet[] =>
+    Array.from({ length: count }, (_, i) => {
+      const n = i + 1;
+      return createMockPassage({
+        sectionSeq: n,
+        passageSeq: 1,
+        reference: `${n}:1`,
+        step: `Step ${n}`,
+        passage: {
+          id: `passage-${n}`,
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: `${n}:1`,
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+          keys: {
+            remoteId: String(n),
+          },
+        },
+      });
+    });
+
+  const keyPairsFromPassages = (rowInfo: ISheet[]): PassageKeyPair[] =>
+    rowInfo
+      .filter((r) => r.passage?.id)
+      .map((r) => ({
+        localId: r.passage!.id,
+        remoteId: String(r.passage!.keys?.remoteId ?? r.passage!.id),
+      }));
+
+  const assertCardInScrollerViewport = (passageLocalId: string) => {
+    cy.get('[data-cy="plan-view-scroller"]').then(($scroller) => {
+      cy.get(`[data-cy="passage-card-${passageLocalId}"]`).then(($card) => {
+        const scrollerRect = $scroller[0].getBoundingClientRect();
+        const cardRect = $card[0].getBoundingClientRect();
+        expect(
+          cardRect.bottom,
+          'card bottom should be below scroller top'
+        ).to.be.gte(scrollerRect.top);
+        expect(
+          cardRect.top,
+          'card top should be above scroller bottom'
+        ).to.be.lte(scrollerRect.bottom);
+      });
+    });
   };
 
   it('should render Grid container', () => {
@@ -954,4 +1046,114 @@ describe('PlanView', { tags: '@smoke' }, () => {
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
   });
 
+  it('restores highlight and scroll so the Current Passage card is in view', () => {
+    const rowInfo = createManyPassages(12);
+    const bookMap = createMockBookNameMap();
+    const keyMap = createPassageKeyMap(keyPairsFromPassages(rowInfo));
+
+    cy.window().then((win) => {
+      win.localStorage.setItem(LocalKey.userId, 'test-user-id');
+      win.localStorage.setItem(localUserKey(LocalKey.passage), '10');
+    });
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: false,
+        handlePublish: mockHandlePublish,
+        handleGraphic: mockHandleGraphic,
+      },
+      {},
+      {},
+      ['/project/test-prj'],
+      [],
+      'Test Organization',
+      { scrollHeight: 280, keyMap }
+    );
+
+    cy.get('[data-cy="passage-card-passage-10"]', { timeout: 5000 })
+      .should('exist')
+      .and('have.attr', 'aria-current', 'true');
+    cy.get('[data-cy="passage-card-passage-1"]').should(
+      'not.have.attr',
+      'aria-current'
+    );
+    cy.get('[data-cy="plan-view-scroller"]').should(($scroller) => {
+      expect($scroller[0].scrollTop, 'scroller moved to Current Passage').to.be
+        .greaterThan(0);
+    });
+    assertCardInScrollerViewport('passage-10');
+  });
+
+  it('remembers Current Passage when the step button is clicked', () => {
+    const rowInfo = createManyPassages(4);
+    const bookMap = createMockBookNameMap();
+    const keyMap = createPassageKeyMap(keyPairsFromPassages(rowInfo));
+
+    cy.window().then((win) => {
+      win.localStorage.setItem(LocalKey.userId, 'test-user-id');
+      win.localStorage.removeItem(localUserKey(LocalKey.passage));
+    });
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: false,
+        handlePublish: mockHandlePublish,
+        handleGraphic: mockHandleGraphic,
+      },
+      {},
+      {},
+      ['/project/test-prj'],
+      [],
+      'Test Organization',
+      { keyMap }
+    );
+
+    cy.get('[data-cy="passage-card-passage-3"]', { timeout: 5000 })
+      .find('[data-cy="passage-card-step"]')
+      .click();
+
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem(localUserKey(LocalKey.passage))).to.equal(
+        '3'
+      );
+    });
+  });
+
+  it('does not scroll when Current Passage is missing from rowInfo', () => {
+    const rowInfo = createManyPassages(12);
+    const bookMap = createMockBookNameMap();
+    const keyMap = createPassageKeyMap(keyPairsFromPassages(rowInfo));
+
+    cy.window().then((win) => {
+      win.localStorage.setItem(LocalKey.userId, 'test-user-id');
+      win.localStorage.setItem(localUserKey(LocalKey.passage), '999');
+    });
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: false,
+        handlePublish: mockHandlePublish,
+        handleGraphic: mockHandleGraphic,
+      },
+      {},
+      {},
+      ['/project/test-prj'],
+      [],
+      'Test Organization',
+      { scrollHeight: 280, keyMap }
+    );
+
+    cy.get('[data-cy="passage-card-passage-1"]', { timeout: 5000 }).should(
+      'be.visible'
+    );
+    cy.get('[data-cy="plan-view-scroller"]').should(($scroller) => {
+      expect($scroller[0].scrollTop).to.eq(0);
+    });
+  });
 });

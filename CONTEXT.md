@@ -70,6 +70,18 @@ _Avoid_: Hierarchical; calling flat rows "passages"
 Project structure with sections containing numbered passages.
 _Avoid_: Flat
 
+**Sections & Passages**:
+The project page that lists sections and passages — desktop sheet or mobile cards.
+_Avoid_: PlanSheet; PlanView (implementation names)
+
+**Passage Card**:
+A mobile card for a passage (or section+passage) on Sections & Passages.
+_Avoid_: Sheet row; table cell
+
+**Current Passage**:
+The last passage the user opened for work, stored per user in local storage so Sections & Passages can restore focus.
+_Avoid_: Last row (desktop-sheet wording); selected row
+
 ## Publishing & Akuo
 
 Publishing in APM normally means releasing **oral content** to listeners — not transferring transcriptions. Text content follows the Paratext sync path instead.
