@@ -146,10 +146,17 @@ export async function insertData(
   checkExisting: boolean,
   isImport: boolean,
   isProject: boolean,
-  snapshotDate?: string
+  snapshotDate?: string,
+  isOrganization = true
 ) {
   let rec: InitializedRecord | InitializedRecord[] | null = null;
   let project: ProjectD | undefined = undefined;
+  const isPrimary = (record: InitializedRecord) =>
+    record.type === 'project'
+      ? isProject
+      : record.type === 'organization'
+        ? isOrganization
+        : false;
   try {
     if (item.keys && checkExisting) {
       const id = remoteIdGuid(
@@ -172,13 +179,13 @@ export async function insertData(
       rec.attributes = { ...item.attributes };
       oparray.push(tb.updateRecord(rec).toOperation());
       if (rec.type === 'project') {
-        if (isProject) project = rec as ProjectD;
+        if (isPrimary(rec)) project = rec as ProjectD;
         await saveOfflineProject(
           rec as ProjectD,
           memory,
           backup,
-          isProject ? snapshotDate : undefined,
-          isImport && isProject
+          isPrimary(rec) ? snapshotDate : undefined,
+          isImport && isPrimary(rec)
         );
       }
       for (const rel in item.relationships) {
@@ -206,14 +213,15 @@ export async function insertData(
       try {
         if (typeof item.id === 'number') item = rn.normalizeRecord(item);
         oparray.push(tb.addRecord(item).toOperation());
-        if (item.type === 'project') {
-          if (isProject) project = item as ProjectD;
+        //don't mess with any offline project data for supporting projects
+        if (item.type === 'project' && isPrimary(item)) {
+          project = item as ProjectD;
           await saveOfflineProject(
             item as ProjectD,
             memory,
             backup,
-            isProject ? snapshotDate : undefined,
-            isImport && isProject
+            snapshotDate,
+            isImport
           );
         }
       } catch (errResult: unknown) {
