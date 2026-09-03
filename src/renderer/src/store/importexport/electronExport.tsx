@@ -282,6 +282,7 @@ export async function electronExport(
       target,
       orgWorkflowSteps,
       projRec,
+      organizationId: related(projRec, 'organization') || undefined,
     });
 
     const AddChanged = async (
@@ -374,11 +375,6 @@ export async function electronExport(
       return ret;
     };
 
-    const onlyOneProject = (): boolean => {
-      const p = memory.cache.query((q) => q.findRecords('project'));
-      if (p && Array.isArray(p)) return p.length === 1;
-      return true; //should never get here
-    };
     let imported: DateTime = DateTime.utc();
     let op: OfflineProject | undefined;
     if (importedDate) {
@@ -422,7 +418,6 @@ export async function electronExport(
       await ipc?.zipAddFile(zip, 'metadata.json', burritoMetaStr, 'metadata');
     }
     if (!needsRemoteIds) await AddOfflineEntry();
-    const limit = onlyOneProject() ? undefined : projRec;
     let numRecs = 0;
     let numFiltered = 0;
     switch (expType) {
@@ -431,7 +426,7 @@ export async function electronExport(
       case ExportType.ITFSYNC:
         const exported = await AddCheckEntry();
         for (const info of updateableFiles) {
-          numRecs += await AddChanged(info, limit, needsRemoteIds);
+          numRecs += await AddChanged(info, projRec, needsRemoteIds);
         }
         if (expType !== ExportType.ITFBACKUP && backup) {
           if (!op) op = getOfflineProject(projRec.id);
@@ -448,28 +443,28 @@ export async function electronExport(
         numRecs += (
           await AddAll(
             { table: 'mediafile', sort: 'H' },
-            limit,
+            projRec,
             needsRemoteIds,
             false,
             [ExportType.AUDIO, ExportType.ELAN].includes(expType)
           )
         ).Added;
         break;
-      default:
+      default: {
         for (const info of updateableFiles) {
-          const result = await AddAll(info, limit, needsRemoteIds, true);
+          const result = await AddAll(info, projRec, needsRemoteIds, true);
           numRecs += result.Added;
           numFiltered += result.Filtered;
         }
         for (const info of staticFiles) {
-          await AddAll(info, limit, needsRemoteIds);
+          await AddAll(info, projRec, needsRemoteIds);
         }
         await AddFonts();
-        if (limit) {
-          const result = await AddSupportingProjects(limit);
-          numRecs += result.Added;
-          numFiltered += result.Filtered;
-        }
+        const support = await AddSupportingProjects(projRec);
+        numRecs += support.Added;
+        numFiltered += support.Filtered;
+        break;
+      }
     }
     return { zip, numRecs, numFiltered };
   };
