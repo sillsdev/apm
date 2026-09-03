@@ -1,15 +1,6 @@
 import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import {
-  Paper,
-  Box,
-  SxProps,
-  Stack,
-  Grid,
-  GridProps,
-  styled,
-  Typography,
-} from '@mui/material';
+import { Paper, Box, SxProps, Stack, Typography } from '@mui/material';
 
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
@@ -72,11 +63,6 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
 }
 
 const clipProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
-
-const GridRoot = styled(Grid)<GridProps>(({ theme }) => ({
-  display: 'flex',
-  margin: theme.spacing(1),
-}));
 
 // Tools whose step content renders inside the shared Paper alongside the
 // discussion panel.
@@ -227,24 +213,20 @@ const PassageDetailGrids = () => {
         sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
       >
         <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
-          <GridRoot container direction="row">
-            <Grid size={{ xs: 12 }}>
-              <Typography
-                variant="h6"
-                id="sectionpassagetitle"
-                sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {sectionDescription(section, sectionMap, passNum)}
-                {sectionPassageRefDelim}
-                <PassageReference
-                  passage={passage}
-                  bookData={allBookData}
-                  flat={isFlat}
-                  sharedResource={sharedResource}
-                />
-              </Typography>
-            </Grid>
-          </GridRoot>
+          <Typography
+            variant="h6"
+            id="sectionpassagetitle"
+            sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+          >
+            {sectionDescription(section, sectionMap, passNum)}
+            {sectionPassageRefDelim}
+            <PassageReference
+              passage={passage}
+              bookData={allBookData}
+              flat={isFlat}
+              sharedResource={sharedResource}
+            />
+          </Typography>
         </Box>
         <Box
           id="tool"
