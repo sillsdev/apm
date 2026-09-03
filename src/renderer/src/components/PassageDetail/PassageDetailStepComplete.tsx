@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { IconButton, Box, Typography } from '@mui/material';
+import { Checkbox, IconButton, Box, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import ChecklistIcon from '@mui/icons-material/Checklist';
@@ -158,31 +158,29 @@ export const PassageDetailStepComplete = () => {
   }
 
   return (
-    <Box
-      sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flexShrink: 1 }}
-    >
-      <Typography noWrap>{t.title}</Typography>
-      <IconButton
+    <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+      <Typography noWrap sx={{ minWidth: 0 }}>
+        {t.title}
+      </Typography>
+      <Checkbox
         id="complete"
-        sx={{ color: 'primary.light' }}
+        sx={{ color: 'primary.light', flexShrink: 0 }}
         title={t.title}
-        onClick={handleToggleComplete}
+        slotProps={{ input: { title: t.title, 'aria-label': t.title } }}
+        checked={complete}
+        onChange={handleToggleComplete}
+        icon={<NotCompleteIcon id="step-no" />}
+        checkedIcon={<CompleteIcon id="step-yes" />}
         disabled={
           !hasPermission ||
           view !== '' ||
           recording ||
           boldRecordCheckboxDisabled
         }
-      >
-        {complete ? (
-          <CompleteIcon id="step-yes" />
-        ) : (
-          <NotCompleteIcon id="step-no" />
-        )}
-      </IconButton>
+      />
       <IconButton
         id="setnetxt"
-        sx={{ color: 'primary.light' }}
+        sx={{ color: 'primary.light', flexShrink: 0 }}
         title={t.setNext}
         onClick={handleSetCompleteTo}
         disabled={!canAlwaysDoStep() || view !== ''}

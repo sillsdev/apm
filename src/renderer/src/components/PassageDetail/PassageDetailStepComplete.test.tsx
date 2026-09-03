@@ -101,13 +101,13 @@ describe('PassageDetailStepComplete BOLD Record', () => {
   it('renders on BOLD desktop Record step', () => {
     render(<PassageDetailStepComplete />);
     expect(
-      screen.getByRole('button', { name: 'Complete' })
+      screen.getByRole('checkbox', { name: 'Complete' })
     ).toBeInTheDocument();
   });
 
   it('disables complete checkbox when no saved mediafileId', () => {
     render(<PassageDetailStepComplete />);
-    expect(screen.getByRole('button', { name: 'Complete' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Complete' })).toBeDisabled();
   });
 });
 
@@ -121,7 +121,7 @@ describe('PassageDetailStepComplete BOLD Careful Speech', () => {
   it('renders step complete and bulk-complete controls on BOLD desktop', () => {
     render(<PassageDetailStepComplete />);
     expect(
-      screen.getByRole('button', { name: 'Complete' })
+      screen.getByRole('checkbox', { name: 'Complete' })
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Set next' })
@@ -137,6 +137,6 @@ describe('PassageDetailStepComplete BOLD Careful Speech', () => {
       },
     };
     render(<PassageDetailStepComplete />);
-    expect(screen.getByRole('button', { name: 'Complete' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Complete' })).toBeDisabled();
   });
 });
