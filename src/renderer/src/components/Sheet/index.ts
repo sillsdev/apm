@@ -1,4 +1,5 @@
 export * from './getSheet';
+export * from './refilterSheet';
 export * from './isSectionPassage';
 export * from './isSectionPassageUpdated';
 export * from './PlanPublishActions';
