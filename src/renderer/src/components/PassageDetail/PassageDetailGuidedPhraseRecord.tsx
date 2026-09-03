@@ -483,6 +483,18 @@ export function PassageDetailGuidedPhraseRecord({
     ]
   );
 
+  // A segment counts as recorded — its boundaries frozen (TT-7666) — once it
+  // has a stored take, or a just-saved one rowData has not caught up to yet
+  // (the same optimistic set the green coloring uses). Only in the recording
+  // pass: during the listen pass there are no takes, so boundaries stay free.
+  const isSegmentRecorded = useCallback(
+    (index: number) =>
+      recordingPassStarted &&
+      (completedIndices.has(index) ||
+        optimisticCompletedRef.current.has(index)),
+    [recordingPassStarted, completedIndices]
+  );
+
   const allClausesComplete = useMemo(
     () =>
       clauseRegions.length > 0 && completedIndices.size >= clauseRegions.length,
@@ -1945,6 +1957,7 @@ export function PassageDetailGuidedPhraseRecord({
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
           lockSegmentSelection={segmentSelectionLocked}
+          isSegmentRecorded={isSegmentRecorded}
           allowZoom={true}
         />
       )}

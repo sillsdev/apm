@@ -284,6 +284,53 @@ export function useWaveSurferRegions(
         r.setOptions({ color: base });
       }
     });
+    applyRecordedResizeLocks();
+  };
+
+  /**
+   * Take the resize handles off any boundary a recording depends on (TT-7666).
+   * A recording is tied to a segment's exact time range, so once a segment is
+   * recorded its edges are frozen — and a boundary is shared by two segments,
+   * so both regions touching it lose the handle on that side. Recomputed on
+   * every color pass (the same trigger as green/pending), so deleting a take
+   * gives the handles straight back. Idempotent: each region's full desired
+   * state is set every time, so it self-corrects as recordings come and go.
+   */
+  const applyRecordedResizeLocks = () => {
+    const recorded = isSegmentRecordedRef.current;
+    if (!recorded) return;
+    const sorted = sortedRegions();
+    sorted.forEach((r, i) => {
+      if (recorded(i)) {
+        // Both edges frozen — the whole segment is locked.
+        r.setOptions({ resize: false });
+      } else {
+        // Draggable, except a side shared with a recorded neighbour.
+        r.setOptions({
+          resize: true,
+          resizeStart: !recorded(i - 1),
+          resizeEnd: !recorded(i + 1),
+        });
+      }
+    });
+  };
+
+  /**
+   * Whether the boundary the user is dragging on region `r` (its `side` edge,
+   * or either edge when the side is unknown) is shared with a recorded segment
+   * — in which case the drag must be refused (TT-7666).
+   */
+  const isRecordedBoundary = (r: Region, side?: UpdateSide) => {
+    const recorded = isSegmentRecordedRef.current;
+    if (!recorded) return false;
+    const idx = regionIndexInSorted(r);
+    if (idx < 0) return false;
+    if (recorded(idx)) return true;
+    // 'start' shares with the previous segment, 'end' with the next; an
+    // unknown side means check both.
+    if (side !== 'end' && recorded(idx - 1)) return true;
+    if (side !== 'start' && recorded(idx + 1)) return true;
+    return false;
   };
 
   const Regions = () => regionsRef.current;
@@ -618,6 +665,9 @@ export function useWaveSurferRegions(
         'region-update',
         function (r: Region, side?: UpdateSide) {
           if (lockSegmentSelectionRef.current) return;
+          // A recorded segment's boundary is frozen; the handle is gone, so
+          // this is the backstop for a gesture already in flight (TT-7666).
+          if (isRecordedBoundary(r, side)) return;
           resizingRef.current = r.resize;
           // Live-clamp the boundary as the user drags so regions never visually
           // overlap: the dragged boundary stops at the neighbor's edge and the
@@ -639,6 +689,9 @@ export function useWaveSurferRegions(
           // While locked, the segments can't be dragged at all, so we only get
           // here if the user was already dragging when recording began.
           if (lockSegmentSelectionRef.current) return;
+          // Same for a boundary a recording depends on (TT-7666): its handle is
+          // gone, so reaching here means a drag was already under way.
+          if (isRecordedBoundary(r, side)) return;
           if (singleRegionRef.current) {
             if (!loadingRef.current) {
               waitForIt(
@@ -756,6 +809,8 @@ export function useWaveSurferRegions(
           color: 'rgba(255, 0, 0, 0.1)',
         });
       }
+      // Freeze the handles of any already-recorded segment (TT-7666).
+      applyRecordedResizeLocks();
     }
   };
 
@@ -1045,6 +1100,8 @@ export function useWaveSurferRegions(
       region.id = r?.id;
     });
     setPrevNext(regarray.map((r: any) => r.id));
+    // Freeze the handles of recorded segments in the freshly loaded map (TT-7666).
+    applyRecordedResizeLocks();
     onRegion(regarray.length, newRegions);
     onRegionGoTo(regarray[defaultRegionIndex]?.start ?? 0);
     loadingRef.current = false;
@@ -1146,6 +1203,22 @@ export function useWaveSurferRegions(
       clearRegions();
       return;
     }
+    // Removing a boundary merges two segments; refuse if either is recorded —
+    // it would reshape the recording's segment (TT-7666). Same neighbour choice
+    // as the merge below (playhead near the start merges with prev, else next).
+    const recorded = isSegmentRecordedRef.current;
+    if (recorded) {
+      const mergePrev = findPrevRegion(r);
+      const other =
+        isNear(r.start) && mergePrev ? mergePrev : findNextRegion(r, false);
+      const otherIdx = other ? regionIndexInSorted(other) : -1;
+      if (
+        recorded(regionIndexInSorted(r)) ||
+        (otherIdx >= 0 && recorded(otherIdx))
+      ) {
+        return undefined;
+      }
+    }
     const ret: IRegionChange = {
       start: r.start,
       end: r.end,
@@ -1193,7 +1266,13 @@ export function useWaveSurferRegions(
   };
 
   const wsAddRegion = () => {
-    return wsSplitRegion(findRegion(progress(), true), progress());
+    const target = findRegion(progress(), true);
+    // No new boundary inside a recorded segment — that would split its audio in
+    // two (TT-7666). Return without splitting or moving the playhead.
+    if (target && isSegmentRecordedRef.current?.(regionIndexInSorted(target))) {
+      return undefined;
+    }
+    return wsSplitRegion(target, progress());
   };
 
   const wsRemoveCurrentRegion = () => {

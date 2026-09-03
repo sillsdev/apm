@@ -120,6 +120,11 @@ function WSAudioPlayerSegment(props: IProps) {
   const handleShowSettings = () => {
     setShowSettings(!showSettings);
   };
+  // Add is off when it isn't ready, mid-operation, or the playhead sits on a
+  // boundary / inside a recorded segment (disableSplit carries both). Kept as
+  // one value so the button's disabled state and its styling can't drift apart.
+  const splitDisabled = !ready || busyRef.current || !!disableSplit;
+
   const handleSplit = () => {
     if (!readyRef.current) return false;
     if (setBusy) setBusy(true);
@@ -199,8 +204,10 @@ function WSAudioPlayerSegment(props: IProps) {
               <IconButton
                 id="wsSplit"
                 onClick={handleSplit}
-                disabled={!ready || busyRef.current || disableSplit}
-                variant="primary"
+                disabled={splitDisabled}
+                // Primary (solid) only when it can be used — a disabled Add
+                // must not draw attention to an action it will refuse (TT-7666).
+                variant={splitDisabled ? undefined : 'primary'}
               >
                 <AddIcon />
               </IconButton>

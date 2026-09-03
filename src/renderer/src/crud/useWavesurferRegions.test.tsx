@@ -423,3 +423,97 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
     );
   });
 });
+
+describe('useWaveSurferRegions — the +/- controls on a recorded segment (TT-7666)', () => {
+  // The Add (+) button splits the segment under the playhead; Remove (-) merges
+  // the current segment with a neighbour. Neither may touch a recorded segment,
+  // and a refused click must be inert — no divider added or removed, and the
+  // playhead left where it was.
+
+  it('adds a divider inside an unrecorded segment (control)', () => {
+    const { result, plugin, goto } = renderRegions({
+      lockSegmentSelection: false,
+      progressAt: 15, // inside segment 1
+    });
+    const before = plugin.regionList.length;
+
+    let ret: unknown;
+    act(() => {
+      ret = result.current.wsAddRegion();
+    });
+
+    expect(ret).toBeDefined();
+    expect(plugin.regionList.length).toBe(before + 1);
+    expect(goto).toHaveBeenCalled();
+  });
+
+  it('Add does nothing inside a recorded segment', () => {
+    const { result, plugin, goto } = renderRegions({
+      lockSegmentSelection: false,
+      progressAt: 15, // inside segment 1, which is recorded
+      recordedIndices: [1],
+    });
+    const before = plugin.regionList.length;
+
+    let ret: unknown;
+    act(() => {
+      ret = result.current.wsAddRegion();
+    });
+
+    expect(ret).toBeUndefined();
+    expect(plugin.regionList.length).toBe(before); // no divider added
+    expect(goto).not.toHaveBeenCalled(); // playhead not moved
+  });
+
+  it('Remove merges two unrecorded segments (control)', () => {
+    const { result, plugin, segs } = renderRegions({
+      lockSegmentSelection: false,
+      progressAt: 10,
+    });
+    playheadEnters(plugin, segs[1]); // current segment = 1
+
+    let ret: unknown;
+    act(() => {
+      ret = result.current.wsRemoveSplitRegion();
+    });
+
+    expect(ret).toBeDefined();
+    expect(segs[2].remove).toHaveBeenCalled(); // merged the next segment away
+  });
+
+  it('Remove does nothing when the current segment is recorded', () => {
+    const { result, plugin, segs, goto } = renderRegions({
+      lockSegmentSelection: false,
+      progressAt: 10,
+      recordedIndices: [1],
+    });
+    playheadEnters(plugin, segs[1]);
+    goto.mockClear();
+
+    let ret: unknown;
+    act(() => {
+      ret = result.current.wsRemoveSplitRegion();
+    });
+
+    expect(ret).toBeUndefined();
+    expect(segs[2].remove).not.toHaveBeenCalled(); // no divider removed
+    expect(goto).not.toHaveBeenCalled(); // playhead not moved
+  });
+
+  it('Remove does nothing when the neighbour it would merge is recorded', () => {
+    const { result, plugin, segs } = renderRegions({
+      lockSegmentSelection: false,
+      progressAt: 10,
+      recordedIndices: [2], // the next segment carries the recording
+    });
+    playheadEnters(plugin, segs[1]);
+
+    let ret: unknown;
+    act(() => {
+      ret = result.current.wsRemoveSplitRegion();
+    });
+
+    expect(ret).toBeUndefined();
+    expect(segs[2].remove).not.toHaveBeenCalled();
+  });
+});
