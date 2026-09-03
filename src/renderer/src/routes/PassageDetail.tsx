@@ -48,6 +48,7 @@ const MobileStep = () => {
   const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
   const { paneWidth } = usePaneWidth();
+  const [isDeveloper] = useGlobal('developer');
 
   const artifactSlug = useMemo(() => {
     const parsed =
@@ -102,7 +103,7 @@ const MobileStep = () => {
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (
     <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Transcribe ? (
+  ) : tool === ToolSlug.Transcribe && isDeveloper ? (
     <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <NotImplemented />
