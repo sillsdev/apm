@@ -52,9 +52,13 @@ export function PassageCard(props: IProps) {
     }
   };
 
+  const passageId = cardInfo.passage?.id;
+
   return (
     <Card
       elevation={3}
+      id={passageId ? `passage-card-${passageId}` : undefined}
+      data-cy={passageId ? `passage-card-${passageId}` : undefined}
       sx={{ minWidth: isMobileWidth ? '100%' : 275, maxWidth: 400 }}
     >
       <CardContent>
@@ -118,6 +122,7 @@ export function PassageCard(props: IProps) {
               </Box>
             )}
             <Button
+              data-cy="passage-card-step"
               sx={{
                 width: '100%',
                 position: 'relative',

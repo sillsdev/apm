@@ -1,4 +1,4 @@
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ISheet,
@@ -18,6 +18,7 @@ import { Button, GrowingSpacer } from '../../control';
 import {
   isPersonalTeam,
   PublishDestinationEnum,
+  remoteIdGuid,
   usePublishDestination,
 } from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
@@ -27,6 +28,12 @@ import { useSectionIdDescription } from './useSectionIdDescription';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
 import { rowTypes } from './rowTypes';
 import { PlanContext } from '../../context/PlanContext';
+import {
+  LocalKey,
+  localUserKey,
+  rememberCurrentPassage,
+} from '../../utils';
+import { RecordKeyMap } from '@orbit/records';
 
 interface IProps {
   rowInfo: ISheet[];
@@ -47,11 +54,13 @@ export function PlanView(props: IProps) {
   const [view, setView] = useState('');
   const [confirmPublish, setConfirmPublish] = useState(false);
   const publishRow = useRef<number>(-1);
+  const restoredRef = useRef(false);
   const { isMovement } = rowTypes(rowInfo);
   const teams = useOrbitData<OrganizationD[]>('organization');
   const getDescription = useSectionIdDescription();
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const [teamId] = useGlobal('organization');
+  const [memory] = useGlobal('memory');
   const { isPublished } = usePublishDestination();
   const isPersonal = useMemo(
     () => isPersonalTeam(teamId, teams),
@@ -63,10 +72,33 @@ export function PlanView(props: IProps) {
   };
 
   const handleViewStep = (passageIndex: number) => {
-    const passageRemoteId = rowInfo[passageIndex].passage?.keys?.remoteId;
-
+    const passage = rowInfo[passageIndex].passage;
+    const passageRemoteId = passage?.keys?.remoteId;
+    if (passage?.id) {
+      void rememberCurrentPassage(memory, passage.id);
+    }
     setView(`/detail/${prjId}/${passageRemoteId}`);
   };
+
+  useEffect(() => {
+    if (restoredRef.current || !rowInfo.length) return;
+    const lastPasId = localStorage.getItem(localUserKey(LocalKey.passage));
+    if (!lastPasId) return;
+    const pasGuid =
+      remoteIdGuid(
+        'passage',
+        lastPasId,
+        memory?.keyMap as RecordKeyMap
+      ) || lastPasId;
+    const row = rowInfo.findIndex((r) => r.passage?.id === pasGuid);
+    if (row < 0) return;
+    const el = document.querySelector(
+      `[data-cy="passage-card-${pasGuid}"]`
+    ) as HTMLElement | null;
+    if (!el) return;
+    restoredRef.current = true;
+    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+  }, [rowInfo, memory]);
 
   const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
     setConfirmPublish(false);
