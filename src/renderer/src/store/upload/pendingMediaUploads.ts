@@ -54,6 +54,16 @@ export type PendingUploadRestore =
   | {
       kind: 'sourceMedia';
       sourceMediaId: string;
+    }
+  | {
+      /**
+       * General (project) resource: afterUpload opens the configure wizard
+       * instead of creating a sectionresource. Home Retry applies topic/category
+       * and queues the media id so Internalization can resume configuration.
+       */
+      kind: 'projectresource';
+      topic?: string;
+      artifactCategoryId?: string;
     };
 
 export type PendingRestoreInput =

@@ -24,6 +24,7 @@ import {
   SectionResource,
 } from '../../model';
 import type { PendingUploadRestore } from './pendingMediaUploads';
+import { appendPendingProjectResourceConfig } from './pendingProjectResourceConfig';
 
 export interface RestoreAfterPendingUploadArgs {
   mediaId: string;
@@ -82,6 +83,14 @@ export async function restoreAfterPendingUpload({
       return;
     case 'sourceMedia':
       await restoreSourceMedia({
+        mediaId: localMediaId,
+        restore,
+        memory,
+        user,
+      });
+      return;
+    case 'projectresource':
+      await restoreProjectResource({
         mediaId: localMediaId,
         restore,
         memory,
@@ -259,8 +268,7 @@ async function restoreSectionResource({
 }): Promise<void> {
   const mediaRecId = { type: 'mediafile', id: mediaId };
   const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-    | MediaFileD
-    | undefined;
+    MediaFileD | undefined;
 
   if (restore.topic && mediaRec) {
     await memory.update((t) =>
@@ -303,7 +311,9 @@ async function restoreSectionResource({
   // adds may already occupy it (batch compact / delayed retry). Prefer the
   // captured value when free; otherwise take max+1 for this section.
   const existingForSection = (
-    memory.cache.query((q) => q.findRecords('sectionresource')) as SectionResource[]
+    memory.cache.query((q) =>
+      q.findRecords('sectionresource')
+    ) as SectionResource[]
   ).filter((r) => related(r, 'section') === restore.sectionId);
   const usedSeqs = existingForSection.map(
     (r) => r.attributes?.sequenceNum ?? 0
@@ -371,8 +381,7 @@ async function restoreSourceMedia({
   user: string;
 }): Promise<void> {
   const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-    | MediaFileD
-    | undefined;
+    MediaFileD | undefined;
   if (!mediaRec) return;
 
   const localSourceId =
@@ -395,4 +404,51 @@ async function restoreSourceMedia({
       user
     )
   );
+}
+
+/**
+ * Mirrors PassageDetailArtifacts.afterUpload for project resources: apply
+ * topic/category only, then queue configure-wizard resume (no sectionresource).
+ */
+async function restoreProjectResource({
+  mediaId,
+  restore,
+  memory,
+  user,
+}: {
+  mediaId: string;
+  restore: Extract<PendingUploadRestore, { kind: 'projectresource' }>;
+  memory: Memory;
+  user: string;
+}): Promise<void> {
+  const mediaRecId = { type: 'mediafile', id: mediaId };
+  const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+    MediaFileD | undefined;
+
+  if (restore.topic && mediaRec) {
+    await memory.update((t) =>
+      UpdateRecord(
+        t,
+        {
+          ...mediaRec,
+          attributes: { ...mediaRec.attributes, topic: restore.topic },
+        } as MediaFileD,
+        user
+      )
+    );
+  }
+  if (restore.artifactCategoryId) {
+    const t = new RecordTransformBuilder();
+    await memory.update([
+      ...ReplaceRelatedRecord(
+        t,
+        mediaRecId,
+        'artifactCategory',
+        'artifactcategory',
+        restore.artifactCategoryId
+      ),
+    ]);
+  }
+
+  appendPendingProjectResourceConfig(mediaId);
 }
