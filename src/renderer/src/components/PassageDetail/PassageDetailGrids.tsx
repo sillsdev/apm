@@ -1,6 +1,6 @@
 import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { Paper, Box, SxProps, Stack, Typography } from '@mui/material';
+import { Paper, Box, Stack, Typography } from '@mui/material';
 
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
@@ -61,8 +61,6 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   if (typeof settings === 'object') return settings as Record<string, unknown>;
   return null;
 }
-
-const clipProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
 
 // Tools whose step content renders inside the shared Paper alongside the
 // discussion panel.
@@ -212,7 +210,7 @@ const PassageDetailGrids = () => {
         spacing={1}
         sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
       >
-        <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
+        <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
           <Typography noWrap id="sectionpassagetitle">
             {sectionDescription(section, sectionMap, passNum)}
             {sectionPassageRefDelim}
@@ -240,7 +238,7 @@ const PassageDetailGrids = () => {
           <PassageDetailStepComplete />
         </Box>
       </Stack>
-      <Box sx={{ ...clipProps, width: '100%' }}>
+      <Box sx={{ width: '100%' }}>
         <WorkflowSteps />
       </Box>
     </>
@@ -285,10 +283,10 @@ const PassageDetailGrids = () => {
           <Stack direction="row" spacing={1}>
             <Stack
               sx={{
-                ...(clipsStepContent ? clipProps : {}),
                 width: '100%',
                 maxWidth: paneWidth,
                 minWidth: 0,
+                ...(clipsStepContent ? { overflow: 'hidden' } : {}),
               }}
             >
               <PassageDetailChooser width={paneWidth} />
