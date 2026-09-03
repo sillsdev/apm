@@ -52,6 +52,7 @@ interface Props {
   setCanSave: (v: boolean) => void;
   /** Passed through to MediaRecord; see its prop docs (TT-7583). */
   onSaveRejected?: () => void;
+  pendingRestore?: import('../../../store/upload/pendingMediaUploads').PendingRestoreInput;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
 }
@@ -82,6 +83,7 @@ export default function LwcTranslationControls({
   setResetMedia,
   setCanSave,
   onSaveRejected,
+  pendingRestore,
   setStatusText,
   showRecorder,
 }: Props) {
@@ -147,6 +149,7 @@ export default function LwcTranslationControls({
             onReady={onSaveSettled}
             setCanSave={setCanSave}
             onSaveRejected={onSaveRejected}
+            pendingRestore={pendingRestore}
             setStatusText={setStatusText}
             doReset={resetMedia}
             setDoReset={setResetMedia}

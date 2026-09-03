@@ -21,8 +21,10 @@ import {
   IntellectualProperty,
   MediaFileD,
   SectionD,
+  SectionResource,
 } from '../../model';
 import type { PendingUploadRestore } from './pendingMediaUploads';
+import { appendPendingProjectResourceConfig } from './pendingProjectResourceConfig';
 
 export interface RestoreAfterPendingUploadArgs {
   mediaId: string;
@@ -65,6 +67,30 @@ export async function restoreAfterPendingUpload({
       return;
     case 'title':
       await restoreTitle({
+        mediaId: localMediaId,
+        restore,
+        memory,
+        user,
+      });
+      return;
+    case 'sectionresource':
+      await restoreSectionResource({
+        mediaId: localMediaId,
+        restore,
+        memory,
+        user,
+      });
+      return;
+    case 'sourceMedia':
+      await restoreSourceMedia({
+        mediaId: localMediaId,
+        restore,
+        memory,
+        user,
+      });
+      return;
+    case 'projectresource':
+      await restoreProjectResource({
         mediaId: localMediaId,
         restore,
         memory,
@@ -227,4 +253,202 @@ async function restoreTitle({
   await memory.update(
     UpdateRelatedRecord(t, secRec, 'titleMediafile', 'mediafile', mediaId, user)
   );
+}
+
+async function restoreSectionResource({
+  mediaId,
+  restore,
+  memory,
+  user,
+}: {
+  mediaId: string;
+  restore: Extract<PendingUploadRestore, { kind: 'sectionresource' }>;
+  memory: Memory;
+  user: string;
+}): Promise<void> {
+  const mediaRecId = { type: 'mediafile', id: mediaId };
+  const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+    MediaFileD | undefined;
+
+  if (restore.topic && mediaRec) {
+    await memory.update((t) =>
+      UpdateRecord(
+        t,
+        {
+          ...mediaRec,
+          attributes: { ...mediaRec.attributes, topic: restore.topic },
+        } as MediaFileD,
+        user
+      )
+    );
+  }
+  if (restore.artifactCategoryId) {
+    const t = new RecordTransformBuilder();
+    await memory.update([
+      ...ReplaceRelatedRecord(
+        t,
+        mediaRecId,
+        'artifactCategory',
+        'artifactcategory',
+        restore.artifactCategoryId
+      ),
+    ]);
+  }
+  if (restore.passageId) {
+    const t = new RecordTransformBuilder();
+    await memory.update([
+      ...ReplaceRelatedRecord(
+        t,
+        mediaRecId,
+        'passage',
+        'passage',
+        restore.passageId
+      ),
+    ]);
+  }
+
+  // Pending meta freezes sequence at stage time; successful siblings or later
+  // adds may already occupy it (batch compact / delayed retry). Prefer the
+  // captured value when free; otherwise take max+1 for this section.
+  const existingForSection = (
+    memory.cache.query((q) =>
+      q.findRecords('sectionresource')
+    ) as SectionResource[]
+  ).filter((r) => related(r, 'section') === restore.sectionId);
+  const usedSeqs = existingForSection.map(
+    (r) => r.attributes?.sequenceNum ?? 0
+  );
+  const sequenceNum = usedSeqs.includes(restore.sequenceNum)
+    ? Math.max(...usedSeqs, 0) + 1
+    : restore.sequenceNum;
+
+  const secRes = {
+    type: 'sectionresource',
+    attributes: {
+      sequenceNum,
+      description: restore.description ?? '',
+    },
+  } as SectionResource & UninitializedRecord;
+
+  const t = new RecordTransformBuilder();
+  const ops = [
+    ...AddRecord(t, secRes, user, memory),
+    ...ReplaceRelatedRecord(
+      t,
+      secRes as RecordIdentity,
+      'section',
+      'section',
+      restore.sectionId
+    ),
+    ...ReplaceRelatedRecord(
+      t,
+      secRes as RecordIdentity,
+      'mediafile',
+      'mediafile',
+      mediaId
+    ),
+    ...ReplaceRelatedRecord(
+      t,
+      secRes as RecordIdentity,
+      'orgWorkflowStep',
+      'orgworkflowstep',
+      restore.orgWorkflowStepId
+    ),
+  ];
+  if (restore.passageId) {
+    ops.push(
+      ...ReplaceRelatedRecord(
+        t,
+        secRes as RecordIdentity,
+        'passage',
+        'passage',
+        restore.passageId
+      )
+    );
+  }
+  await memory.update(ops);
+}
+
+async function restoreSourceMedia({
+  mediaId,
+  restore,
+  memory,
+  user,
+}: {
+  mediaId: string;
+  restore: Extract<PendingUploadRestore, { kind: 'sourceMedia' }>;
+  memory: Memory;
+  user: string;
+}): Promise<void> {
+  const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+    MediaFileD | undefined;
+  if (!mediaRec) return;
+
+  const localSourceId =
+    (memory?.keyMap
+      ? remoteIdGuid(
+          'mediafile',
+          restore.sourceMediaId,
+          memory.keyMap as RecordKeyMap
+        )
+      : undefined) ?? restore.sourceMediaId;
+
+  const t = new RecordTransformBuilder();
+  await memory.update(
+    UpdateRelatedRecord(
+      t,
+      mediaRec,
+      'sourceMedia',
+      'mediafile',
+      localSourceId,
+      user
+    )
+  );
+}
+
+/**
+ * Mirrors PassageDetailArtifacts.afterUpload for project resources: apply
+ * topic/category only, then queue configure-wizard resume (no sectionresource).
+ */
+async function restoreProjectResource({
+  mediaId,
+  restore,
+  memory,
+  user,
+}: {
+  mediaId: string;
+  restore: Extract<PendingUploadRestore, { kind: 'projectresource' }>;
+  memory: Memory;
+  user: string;
+}): Promise<void> {
+  const mediaRecId = { type: 'mediafile', id: mediaId };
+  const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+    MediaFileD | undefined;
+
+  if (restore.topic && mediaRec) {
+    await memory.update((t) =>
+      UpdateRecord(
+        t,
+        {
+          ...mediaRec,
+          attributes: { ...mediaRec.attributes, topic: restore.topic },
+        } as MediaFileD,
+        user
+      )
+    );
+  }
+  if (restore.artifactCategoryId) {
+    const t = new RecordTransformBuilder();
+    await memory.update([
+      ...ReplaceRelatedRecord(
+        t,
+        mediaRecId,
+        'artifactCategory',
+        'artifactcategory',
+        restore.artifactCategoryId
+      ),
+    ]);
+  }
+
+  appendPendingProjectResourceConfig(mediaId);
 }
