@@ -11,8 +11,6 @@ import {
   ProjectD,
   UserD,
   DiscussionD,
-  OrgKeytermD,
-  OrgKeytermTargetD,
   IntellectualPropertyD,
   MediaFileD,
   OrganizationD,
@@ -21,9 +19,9 @@ import {
   PlanD,
   SectionD,
   PassageD,
-  SectionResourceD,
   ArtifactCategoryD,
   SharedResourceD,
+  GraphicD,
 } from '../../model';
 import Memory from '@orbit/memory';
 import { getSerializer } from '../../serializers/getSerializer';
@@ -328,15 +326,37 @@ export async function electronExport(
       ) as PassageD[];
       return passages.filter((p) => sections.includes(related(p, 'section')));
     };
-    const SectionResources = (project: ProjectD) => {
-      const sections = Sections(project).map((s) => s.id);
-      const sectionresources = (
-        memory.cache.query((q) =>
-          q.findRecords('sectionresource')
-        ) as SectionResourceD[]
-      ).filter((r) => sections.includes(related(r, 'section')));
-      return sectionresources;
+    const fromIds = (
+      table: string,
+      rel: string,
+      ids?: string[],
+      remoteIds?: boolean
+    ) => {
+      const km = memory?.keyMap as RecordKeyMap;
+      const recs = (
+        memory.cache.query((q) => q.findRecords(table)) as BaseModelD[]
+      ).filter((r) => !ids || ids.includes(related(r, rel)));
+      if (remoteIds) {
+        recs.forEach((r) => {
+          if (!remoteId(table, r.id, km) && r.attributes)
+            Object.assign(r.attributes, { offlineId: r.id });
+        });
+      }
+      return recs;
     };
+    const SectionResources = (project?: ProjectD, _remoteIds?: boolean) =>
+      fromIds(
+        'sectionresource',
+        'section',
+        project ? Sections(project).map((s) => s.id) : undefined
+      );
+    const SectionResourceUsers = (project?: ProjectD, remoteIds?: boolean) =>
+      fromIds(
+        'sectionresourceuser',
+        'sectionresource',
+        SectionResources(project).map((r) => r.id),
+        remoteIds
+      );
 
     const HighestByPassage = (media: MediaFileD[]) => {
       const highest: MediaFileD[] = [];
@@ -404,6 +424,25 @@ export async function electronExport(
         memory.cache.query((q) => q.findRecords('passage')) as PassageD[]
       ).filter((p) => ids.includes(p.id));
     };
+    const SharedResources = (project?: ProjectD, _remoteIds?: boolean) =>
+      fromIds(
+        'sharedresource',
+        'passage',
+        project
+          ? Passages(project)
+              .concat(sharedNotePassages(project))
+              .map((p) => p.id)
+          : undefined
+      );
+    const SharedResourceReferences = (
+      project?: ProjectD,
+      _remoteIds?: boolean
+    ) =>
+      fromIds(
+        'sharedresourcereference',
+        'sharedResource',
+        SharedResources(project).map((r) => r.id)
+      );
     const sharedNoteSections = (project: ProjectD) => {
       const sectids = sharedNotePassages(project).map((p) =>
         related(p, 'section')
@@ -453,10 +492,18 @@ export async function electronExport(
       const categorymediafiles = media.filter((m) =>
         cats.map((c) => related(c, 'titleMediafile') as string).includes(m.id)
       );
-      const orgkeytermtargets = OrgKeyTermTargets(project, needsRemoteIds).map(
-        (i) => related(i, 'mediafile')
-      );
+      const orgkeytermtargets = orgTable(
+        'orgkeytermtarget',
+        project,
+        needsRemoteIds,
+        { media: 'mediafile' }
+      ).map((i) => related(i, 'mediafile'));
       const okttmedia = media.filter((m) => orgkeytermtargets.includes(m.id));
+
+      const graphicmedia = Graphics(project, needsRemoteIds).map((g) =>
+        related(g, 'mediafile')
+      );
+      const grmedia = media.filter((m) => graphicmedia.includes(m.id));
 
       const sourcemediafiles = SourceMedia(project);
 
@@ -474,6 +521,7 @@ export async function electronExport(
           .concat(categorymediafiles)
           .concat(sourcemediafiles)
           .concat(sharedmedia)
+          .concat(grmedia)
       );
       return FromMedia(Array.from(unique), needsRemoteIds);
     };
@@ -542,85 +590,75 @@ export async function electronExport(
       }
       return ds;
     };
-    const OrgKeyTerms = (project: ProjectD | undefined, remoteIds: boolean) => {
-      let kts = (
-        memory.cache.query((q) => q.findRecords('orgkeyterm')) as OrgKeytermD[]
+    const orgTable = (
+      table: string,
+      project: ProjectD | undefined,
+      remoteIds: boolean,
+      {
+        rel = 'organization',
+        media,
+      }: { rel?: string; media?: string; offlineId?: string } = {}
+    ) => {
+      const km = memory?.keyMap as RecordKeyMap;
+      const scopeId = !project
+        ? undefined
+        : rel === 'project'
+          ? project.id
+          : related(project, 'organization');
+      let recs = (
+        memory.cache.query((q) => q.findRecords(table)) as BaseModelD[]
       ).filter(
-        (r) =>
-          Boolean(
-            remoteId(
-              'organization',
-              related(r, 'organization'),
-              memory?.keyMap as RecordKeyMap
-            )
-          ) === needsRemoteIds
+        (r) => Boolean(remoteId(rel, related(r, rel), km)) === needsRemoteIds
       );
-      if (project) {
-        kts = kts.filter(
-          (rec) =>
-            related(rec, 'organization') === related(project, 'organization')
-        );
-      }
+      if (scopeId) recs = recs.filter((rec) => related(rec, rel) === scopeId);
       if (remoteIds) {
-        kts.forEach((kt) => {
-          if (
-            !remoteId('orgkeyterm', kt.id, memory?.keyMap as RecordKeyMap) &&
-            kt.attributes
-          )
-            kt.attributes.offlineid = kt.id;
+        recs.forEach((r) => {
+          if (!remoteId(table, r.id, km) && r.attributes)
+            Object.assign(r.attributes, { offlineId: r.id });
+          const mid = media ? related(r, media) : '';
+          if (mid && !remoteId('mediafile', mid, km) && r.attributes)
+            Object.assign(r.attributes, { offlineMediafileId: mid });
         });
       }
-      return kts;
+      return recs;
     };
-
-    const OrgKeyTermTargets = (
+    const Graphics = (project: ProjectD | undefined, remoteIds: boolean) => {
+      const recs = orgTable('graphic', project, remoteIds) as GraphicD[];
+      const sections = project
+        ? Sections(project).concat(sharedNoteSections(project))
+        : (memory.cache.query((q) => q.findRecords('section')) as SectionD[]);
+      const passages = project
+        ? Passages(project).concat(sharedNotePassages(project))
+        : (memory.cache.query((q) => q.findRecords('passage')) as PassageD[]);
+      const km = memory?.keyMap as RecordKeyMap;
+      const remoteNums = (kind: string, rows: { id: string }[]) =>
+        new Set(
+          rows
+            .map((r) => parseInt(remoteId(kind, r.id, km) ?? '', 10))
+            .filter((n) => !Number.isNaN(n))
+        );
+      const sectionIds = remoteNums('section', sections);
+      const passageIds = remoteNums('passage', passages);
+      return recs.filter((g) => {
+        const t = g.attributes?.resourceType;
+        const id = g.attributes?.resourceId;
+        return (
+          t === 'category' ||
+          (t === 'section' && sectionIds.has(id)) ||
+          (t === 'passage' && passageIds.has(id))
+        );
+      });
+    };
+    const OrganizationSchemeSteps = (
       project: ProjectD | undefined,
       remoteIds: boolean
-    ) => {
-      let ktts = (
-        memory.cache.query((q) =>
-          q.findRecords('orgkeytermtarget')
-        ) as OrgKeytermTargetD[]
-      ).filter(
-        (r) =>
-          Boolean(
-            remoteId(
-              'organization',
-              related(r, 'organization'),
-              memory?.keyMap as RecordKeyMap
-            )
-          ) === needsRemoteIds
+    ) =>
+      fromIds(
+        'organizationschemestep',
+        'organizationscheme',
+        orgTable('organizationscheme', project, remoteIds).map((s) => s.id)
       );
-      if (project) {
-        ktts = ktts.filter(
-          (rec) =>
-            related(rec, 'organization') === related(project, 'organization')
-        );
-      }
-      if (remoteIds) {
-        ktts.forEach((ktt) => {
-          if (
-            !remoteId(
-              'orgkeytermtarget',
-              ktt.id,
-              memory?.keyMap as RecordKeyMap
-            ) &&
-            ktt.attributes
-          )
-            ktt.attributes.offlineId = ktt.id;
-          if (
-            related(ktt, 'mediafile') &&
-            !remoteId(
-              'mediafile',
-              related(ktt, 'mediafile'),
-              memory?.keyMap as RecordKeyMap
-            )
-          )
-            ktt.attributes.offlineMediafileId = related(ktt, 'mediafile');
-        });
-      }
-      return ktts;
-    };
+
     const IntellectualProperties = (
       project: Project | undefined,
       remoteIds: boolean
@@ -784,7 +822,8 @@ export async function electronExport(
           return defaultQuery(info.table);
 
         case 'passage':
-          if (project) Passages(project).concat(sharedNotePassages(project));
+          if (project)
+            return Passages(project).concat(sharedNotePassages(project));
           return defaultQuery(info.table);
 
         case 'mediafile':
@@ -827,15 +866,55 @@ export async function electronExport(
           return IntellectualProperties(project, needsRemoteIds);
 
         case 'orgkeyterm':
-          return OrgKeyTerms(project, needsRemoteIds);
+          return orgTable('orgkeyterm', project, needsRemoteIds);
 
         case 'orgkeytermtarget':
-          return OrgKeyTermTargets(project, needsRemoteIds);
-        default:
-          //activitystate,integration,plantype,projecttype,role
+          return orgTable('orgkeytermtarget', project, needsRemoteIds, {
+            media: 'mediafile',
+          });
+        case 'orgkeytermreference':
+          return orgTable('orgkeytermreference', project, needsRemoteIds, {
+            rel: 'project',
+          });
+        case 'sectionresourceuser':
+          return SectionResourceUsers(project, needsRemoteIds);
+        case 'organizationscheme':
+          return orgTable('organizationscheme', project, needsRemoteIds);
+        case 'organizationschemestep':
+          return OrganizationSchemeSteps(project, needsRemoteIds);
+        case 'graphic':
+          return Graphics(project, needsRemoteIds);
+        case 'organizationmembership':
+          return orgTable('organizationmembership', project, needsRemoteIds);
+        case 'orgworkflowstep':
+          return orgTable('orgworkflowstep', project, needsRemoteIds);
+        case 'sectionresource':
+          return SectionResources(project, needsRemoteIds);
+        case 'sharedresource':
+          return SharedResources(project, needsRemoteIds);
+        case 'sharedresourcereference':
+          return SharedResourceReferences(project, needsRemoteIds);
+        case 'artifactcategory':
+          return orgTable('artifactcategory', project, needsRemoteIds);
+
+        case 'activitystate':
+        case 'artifacttype':
+        case 'bible':
+        case 'integration':
+        case 'organizationbible':
+        case 'passagetype':
+        case 'plantype':
+        case 'projecttype':
+        case 'role':
+        case 'workflowstep':
           return defaultQuery(info.table).filter(
             (r) => Boolean(r?.keys?.remoteId) === needsRemoteIds
           );
+        case 'invitation':
+          //do nothing
+          return [];
+        default:
+          throw new Error(`GetTableRecs: unhandled table '${info.table}'`);
       }
     };
     const AddChanged = async (

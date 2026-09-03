@@ -6,7 +6,7 @@ export interface OrgKeyterm extends BaseModel {
     domain: string;
     definition: string;
     category: string;
-    offlineid: string;
+    offlineId: string;
     dateCreated: string;
     dateUpdated: string;
     lastModifiedBy: number;

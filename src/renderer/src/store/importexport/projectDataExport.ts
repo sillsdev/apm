@@ -304,7 +304,7 @@ export async function getProjectDataFiles(
     if (remoteIds) {
       kts.forEach((kt) => {
         if (!remoteId('orgkeyterm', kt.id, keyMap) && kt.attributes)
-          kt.attributes.offlineid = kt.id;
+          kt.attributes.offlineId = kt.id;
       });
     }
     return kts;
