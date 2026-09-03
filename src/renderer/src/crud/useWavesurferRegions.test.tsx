@@ -414,16 +414,39 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
     );
   });
 
-  it('removes the resize handles from a recorded segment', () => {
-    // The user should not be offered a handle they cannot use — same cue as the
-    // recording-in-progress lock.
+  it('freezes a recorded segment but keeps its boundary handles visible', () => {
+    // The handle is the only clear marker of where a segment ends, so it stays
+    // rendered (resize: true) — but both edges are turned off so it cannot be
+    // dragged (TT-7666).
     const { segs } = renderRegions({
       lockSegmentSelection: false,
       recordedIndices: [1],
     });
 
     expect(segs[1].setOptions).toHaveBeenCalledWith(
-      expect.objectContaining({ resize: false })
+      expect.objectContaining({
+        resize: true,
+        resizeStart: false,
+        resizeEnd: false,
+      })
+    );
+  });
+
+  it('freezes only the shared side of an unrecorded neighbour', () => {
+    // Segment 1 is recorded; its neighbours keep their far edge draggable but
+    // freeze the edge shared with it.
+    const { segs } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [1],
+    });
+
+    // segment 0: start is the track edge (free), end is shared with 1 (frozen)
+    expect(segs[0].setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ resizeStart: true, resizeEnd: false })
+    );
+    // segment 2: start shared with 1 (frozen), end is the track edge (free)
+    expect(segs[2].setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ resizeStart: false, resizeEnd: true })
     );
   });
 

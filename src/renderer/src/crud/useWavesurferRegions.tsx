@@ -292,38 +292,55 @@ export function useWaveSurferRegions(
   };
 
   /**
-   * Take the resize handles off any boundary a recording depends on (TT-7666).
-   * A recording is tied to a segment's exact time range, so once a segment is
-   * recorded its edges are frozen — and a boundary is shared by two segments,
-   * so both regions touching it lose the handle on that side. Recomputed on
-   * every color pass (the same trigger as green/pending), so deleting a take
-   * gives the handles straight back. Idempotent: each region's full desired
-   * state is set every time, so it self-corrects as recordings come and go.
+   * The ew-resize cursor wavesurfer puts on a resize handle. Overridden to the
+   * default cursor on a frozen boundary so it doesn't invite a drag it refuses.
+   */
+  const setHandleCursor = (
+    r: Region,
+    side: 'left' | 'right',
+    active: boolean
+  ) => {
+    const handle = r.element?.querySelector(
+      `[part*="region-handle-${side}"]`
+    ) as HTMLElement | null;
+    if (handle) handle.style.cursor = active ? 'ew-resize' : 'default';
+  };
+
+  /**
+   * Freeze any boundary a recording depends on (TT-7666). A recording is tied to
+   * a segment's exact time range, so once a segment is recorded its edges can't
+   * move — and a boundary is shared by two segments, so both sides of it are
+   * frozen. The handle stays *visible* (it is the only clear marker of where a
+   * segment ends), but its resize is turned off and its cursor reverts to the
+   * default so it does not look draggable. Recomputed on every color pass (the
+   * same trigger as green/pending), so deleting a take unfreezes it. Idempotent:
+   * each region's full desired state is set every time.
    */
   const applyRecordedResizeLocks = () => {
     const recorded = isSegmentRecordedRef.current;
     if (!recorded) return;
     // While the recording-in-progress lock holds it owns every region's resize
-    // flag (all off); re-enabling any here would hand back a handle the lock
-    // took away. The lock's release path re-runs this to restore the resting
-    // recorded/unrecorded state (TT-7437 / TT-7666).
+    // flag; re-enabling any here would fight it. The lock's release path re-runs
+    // this to restore the resting recorded/unrecorded state (TT-7437 / TT-7666).
     if (lockSegmentSelectionRef.current) return;
     const sorted = sortedRegions();
     const last = sorted.length - 1;
     sorted.forEach((r, i) => {
-      if (recorded(i)) {
-        // Both edges frozen — the whole segment is locked.
-        r.setOptions({ resize: false });
-      } else {
-        // Draggable, except a side shared with a recorded neighbour. The outer
-        // edges (first start, last end) have no neighbour, so stay free — and
-        // the predicate is never asked about an out-of-range index.
-        r.setOptions({
-          resize: true,
-          resizeStart: i === 0 ? true : !recorded(i - 1),
-          resizeEnd: i === last ? true : !recorded(i + 1),
-        });
-      }
+      // A side is draggable only when neither the segment nor the neighbour
+      // across that side is recorded. The outer edges (first start, last end)
+      // have no neighbour, so the predicate is never asked an out-of-range index.
+      const self = recorded(i);
+      const startActive = !self && (i === 0 || !recorded(i - 1));
+      const endActive = !self && (i === last || !recorded(i + 1));
+      // resize stays true so the handles (and thus the boundary lines) render;
+      // resizeStart/resizeEnd gate the actual drag per side.
+      r.setOptions({
+        resize: true,
+        resizeStart: startActive,
+        resizeEnd: endActive,
+      });
+      setHandleCursor(r, 'left', startActive);
+      setHandleCursor(r, 'right', endActive);
     });
   };
 
