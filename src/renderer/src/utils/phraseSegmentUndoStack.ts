@@ -5,6 +5,8 @@ export const PHRASE_SEGMENT_UNDO_MAX_DEPTH = 20;
 export interface PhraseSegmentUndoStack {
   push: (segmentsJson: string) => void;
   pop: () => string | undefined;
+  /** Most recently pushed snapshot without removing it (for dedupe). */
+  peek: () => string | undefined;
   canUndo: () => boolean;
   clear: () => void;
 }
@@ -21,6 +23,7 @@ export const createPhraseSegmentUndoStack = (): PhraseSegmentUndoStack => {
     pop() {
       return stack.pop();
     },
+    peek: () => stack[stack.length - 1],
     canUndo: () => stack.length > 0,
     clear: () => {
       stack.length = 0;
