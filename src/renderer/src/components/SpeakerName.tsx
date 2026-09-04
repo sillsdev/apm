@@ -16,7 +16,6 @@ import { ArtifactTypeSlug, findRecord, related } from '../crud';
 import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
-import { useMobile } from '../utils/index';
 import { Button } from '../control/Button';
 
 interface NameOptionType {
@@ -187,54 +186,6 @@ export function SpeakerName({
     }
   };
 
-  const handleChoiceMobile = (newValue: string | NameOptionType | null) => {
-    if (newValue === null) {
-      nameReset();
-      setHasNoRights(false);
-    } else if (typeof newValue === 'string') {
-      const n = normalizedSpeakerName(newValue);
-      if (!n) {
-        nameReset();
-        setHasNoRights(false);
-        return;
-      }
-      valueRef.current = n;
-      setValue({ name: n });
-      onChange && onChange(n);
-      if (inList(n)) {
-        setHasNoRights(false);
-        setShowSelectDialog(false);
-      } else {
-        setHasNoRights(true);
-      }
-    } else if (newValue && newValue.inputValue) {
-      const n = normalizedSpeakerName(newValue.inputValue);
-      if (!n) {
-        nameReset();
-        setHasNoRights(false);
-        return;
-      }
-      valueRef.current = n;
-      setValue({ name: n });
-      onChange && onChange(n);
-      setHasNoRights(true);
-    } else {
-      setValue(newValue);
-      if (newValue) {
-        const n = normalizedSpeakerName(newValue.name);
-        if (!n) {
-          nameReset();
-          setHasNoRights(false);
-          return;
-        }
-        valueRef.current = n;
-        onChange && onChange(n);
-        setHasNoRights(false);
-        setShowSelectDialog(false);
-      }
-    }
-  };
-
   const handleLeave = (event: any, reason: string) => {
     if (
       reason === 'blur' &&
@@ -265,8 +216,8 @@ export function SpeakerName({
   };
 
   const handleSelectAndClose = (newValue: string | NameOptionType | null) => {
-    // Desktop: keep the dialog open when the user is adding a new speaker
-    // so we can show ProvideRights inline.
+    // Keep the dialog open when adding a new speaker so ProvideRights can
+    // show inline. Existing speakers confirm rights and close.
     if (newValue === null) {
       nameReset();
       return;
@@ -303,8 +254,6 @@ export function SpeakerName({
 
   const buttonText = name?.trim() === '' ? t.selectSpeaker + '...' : name;
 
-  const { isMobile: isMobileView } = useMobile();
-
   return (
     <>
       <Button
@@ -330,11 +279,7 @@ export function SpeakerName({
         <DialogContent>
           <Autocomplete
             value={value}
-            onChange={(event, newValue) =>
-              isMobileView
-                ? handleChoiceMobile(newValue)
-                : handleSelectAndClose(newValue)
-            }
+            onChange={(_event, newValue) => handleSelectAndClose(newValue)}
             onClose={handleLeave}
             filterOptions={(options, params) => {
               const filtered = filter(options, params);

@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { IconButton, Box, Typography } from '@mui/material';
+import { Checkbox, IconButton, Box, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import ChecklistIcon from '@mui/icons-material/Checklist';
@@ -124,17 +124,19 @@ export const PassageDetailStepComplete = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-const artifactSlug = useMemo(() => {
-  const parsed =
-    typeof settings === 'string'
-      ? (() => {
-          try {
-            return JSON.parse(settings || '{}') as { artifactTypeId?: string };
-          } catch {
-            return {} as { artifactTypeId?: string };
-          }
-        })()
-      : ((settings as { artifactTypeId?: string }) ?? {});
+  const artifactSlug = useMemo(() => {
+    const parsed =
+      typeof settings === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(settings || '{}') as {
+                artifactTypeId?: string;
+              };
+            } catch {
+              return {} as { artifactTypeId?: string };
+            }
+          })()
+        : ((settings as { artifactTypeId?: string }) ?? {});
     const id = parsed?.artifactTypeId;
     if (!id) return null;
     const resolved =
@@ -156,41 +158,29 @@ const artifactSlug = useMemo(() => {
   }
 
   return (
-    <Box
-      sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flexShrink: 1 }}
-    >
-      <Typography
-        sx={{
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          flexShrink: 1,
-          minWidth: 0,
-        }}
-      >
+    <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+      <Typography noWrap sx={{ minWidth: 0 }}>
         {t.title}
       </Typography>
-      <IconButton
+      <Checkbox
         id="complete"
-        sx={{ color: 'primary.light' }}
+        sx={{ color: 'primary.light', flexShrink: 0 }}
         title={t.title}
-        onClick={handleToggleComplete}
+        slotProps={{ input: { title: t.title, 'aria-label': t.title } }}
+        checked={complete}
+        onChange={handleToggleComplete}
+        icon={<NotCompleteIcon id="step-no" />}
+        checkedIcon={<CompleteIcon id="step-yes" />}
         disabled={
           !hasPermission ||
           view !== '' ||
           recording ||
           boldRecordCheckboxDisabled
         }
-      >
-        {complete ? (
-          <CompleteIcon id="step-yes" />
-        ) : (
-          <NotCompleteIcon id="step-no" />
-        )}
-      </IconButton>
+      />
       <IconButton
         id="setnetxt"
-        sx={{ color: 'primary.light' }}
+        sx={{ color: 'primary.light', flexShrink: 0 }}
         title={t.setNext}
         onClick={handleSetCompleteTo}
         disabled={!canAlwaysDoStep() || view !== ''}

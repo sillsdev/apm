@@ -54,6 +54,73 @@ describe('planLegacyPhraseBtClaim', () => {
     expect(segs).toContain(phraseBtBoundaryRegionName('fr'));
   });
 
+  it('leaves untagged takes alone once a second language has boundaries', () => {
+    // Sena has already been back-translated on this passage, so an untagged
+    // take may be Sena's. The Hebrew step must not adopt it (TT-7643).
+    const multiLang = {
+      ...vern,
+      attributes: {
+        segments: updateSegments(
+          phraseBtBoundaryRegionName('seh'),
+          vern.attributes.segments,
+          JSON.stringify({ params: {}, regions: [{ start: 0, end: 4 }] })
+        ),
+      },
+    };
+    const result = planLegacyPhraseBtClaim({
+      languageName: 'Hebrew',
+      languageBcp47: 'he',
+      artifactTypeId: 'art1',
+      vernacularMedia: [multiLang],
+      outputMedia: [untagged, tagged],
+    });
+    expect(result.languageUpdates.size).toBe(0);
+    // The step still gets its own boundaries seeded from the legacy bucket.
+    expect(result.segmentUpdates.has('v1')).toBe(true);
+  });
+
+  it('still claims when only this language has boundaries', () => {
+    const mine = {
+      ...vern,
+      attributes: {
+        segments: updateSegments(
+          phraseBtBoundaryRegionName('he'),
+          vern.attributes.segments,
+          JSON.stringify({ params: {}, regions: [{ start: 0, end: 4 }] })
+        ),
+      },
+    };
+    const result = planLegacyPhraseBtClaim({
+      languageName: 'Hebrew',
+      languageBcp47: 'he',
+      artifactTypeId: 'art1',
+      vernacularMedia: [mine],
+      outputMedia: [untagged],
+    });
+    expect(result.languageUpdates.get('p1')).toBe('Hebrew|he');
+  });
+
+  it('ignores an empty bucket for another language', () => {
+    const emptyOther = {
+      ...vern,
+      attributes: {
+        segments: updateSegments(
+          phraseBtBoundaryRegionName('seh'),
+          vern.attributes.segments,
+          JSON.stringify({ params: {}, regions: [] })
+        ),
+      },
+    };
+    const result = planLegacyPhraseBtClaim({
+      languageName: 'Hebrew',
+      languageBcp47: 'he',
+      artifactTypeId: 'art1',
+      vernacularMedia: [emptyOther],
+      outputMedia: [untagged],
+    });
+    expect(result.languageUpdates.get('p1')).toBe('Hebrew|he');
+  });
+
   it('does not overwrite an existing language bucket', () => {
     const already = {
       ...vern,

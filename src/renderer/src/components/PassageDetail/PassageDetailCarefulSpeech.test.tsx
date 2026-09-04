@@ -102,7 +102,7 @@ jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => ({
     setPhraseSegString: jest.fn(),
     bootstrapped: true,
     ensureSegments: jest.fn().mockResolvedValue(true),
-    resetForMediafile: jest.fn(),
+    resetForScope: jest.fn(),
     resegmentWithParams: jest.fn().mockResolvedValue(false),
     resetToDefaultSegments: jest.fn().mockResolvedValue(false),
     persistPhraseSegments: jest.fn().mockResolvedValue(undefined),

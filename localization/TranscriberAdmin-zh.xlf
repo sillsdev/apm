@@ -5167,6 +5167,12 @@
             <target>上传图片</target>
          </segment>
       </unit>
+      <unit id="mediaUpload.intellectualPropertyAudioTask">
+         <segment>
+            <source>Upload a speaker rights release for {0} in audio format. Formats accepted are .mp3, .m4a, .wav or .ogg.</source>
+            <target>上传音频格式的 {0} 演讲者权利声明。可接受的格式有 .mp3、.m4a、.wav 或 .ogg。</target>
+         </segment>
+      </unit>
       <unit id="mediaUpload.intellectualPropertyTask">
          <segment>
             <source>Upload a speaker rights release for {0} in audio or visual format. Audio formats accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or .jpg.</source>

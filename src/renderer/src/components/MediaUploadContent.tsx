@@ -44,6 +44,39 @@ const HiddenInput = styled('input')(() => ({
   display: 'none',
 }));
 
+// Accepted file formats, indexed by UploadType
+const uploadExtensions = [
+  '.mp3, .m4a, .wav, .ogg', // Media
+  '.mp3, .m4a, .wav, .ogg, .pdf', // Resource
+  '.itf', // ITF
+  '.ptf', // PTF
+  '.jpg, .jpeg, .svg, .png', // LOGO
+  '.mp3, .m4a, .wav, .ogg, .pdf', // ProjectResource
+  '.mp3, .m4a, .wav, .ogg, .pdf, .png, .jpg, .jpeg', // IntellectualProperty
+  '.png, .jpg, .jpeg, .webp', // Graphic
+  '', // Link
+  '', // MarkDown
+  '', // FaithbridgeLink
+  '', // Burrito
+];
+
+const uploadMimeTypes = [
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg', // Media
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf', // Resource
+  'application/itf', // ITF
+  'application/ptf', // PTF
+  'image/jpeg, image/jpeg, image/svg+xml, image/png', // LOGO
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf', // ProjectResource
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf, image/png, image/jpeg, image/jpeg', // IntellectualProperty
+  'image/png, image/jpeg, image/jpeg, image/webp', // Graphic
+  '', // Link
+  '', // MarkDown
+  '', // FaithbridgeLink
+  '', // Burrito
+];
+
+const audioOnlyType = UploadType.Media;
+
 interface ITargetProps {
   name: string;
   acceptextension: string;
@@ -118,8 +151,7 @@ interface IProps {
   onVisible: (v: boolean) => void;
   uploadType: UploadType;
   uploadMethod?:
-    | ((files: File[]) => void | boolean | Promise<void | boolean>)
-    | undefined;
+    ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -132,6 +164,7 @@ interface IProps {
   inValue?: string | undefined;
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  audioOnly?: boolean | undefined;
   saveText?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
@@ -161,6 +194,7 @@ function MediaUploadContent(props: IProps) {
     inValue,
     onValue,
     onNonAudio,
+    audioOnly,
     saveText,
     controlsRef,
     onSaveDisabled,
@@ -183,7 +217,7 @@ function MediaUploadContent(props: IProps) {
     t.PTFtask,
     'FUTURE TODO',
     t.projectResourceTask,
-    t.intellectualPropertyTask,
+    audioOnly ? t.intellectualPropertyAudioTask : t.intellectualPropertyTask,
     t.graphicTask,
     t.linkTask,
     t.markdownTask,
@@ -337,30 +371,9 @@ function MediaUploadContent(props: IProps) {
   }, [inValue]);
 
   useEffect(() => {
-    setAcceptExtension(
-      [
-        '.mp3, .m4a, .wav, .ogg',
-        '.mp3, .m4a, .wav, .ogg, .pdf',
-        '.itf',
-        '.ptf',
-        '.jpg, .jpeg, .svg, .png',
-        '.mp3, .m4a, .wav, .ogg, .pdf',
-        '.mp3, .m4a, .wav, .ogg, .pdf, .png, .jpg, .jpeg',
-        '.png, .jpg, .jpeg, .webp',
-      ].map((s) => s)[uploadType] as string
-    );
-    setAcceptMime(
-      [
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg',
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf',
-        'application/itf',
-        'application/ptf',
-        'image/jpeg, image/jpeg, image/svg+xml, image/png',
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf',
-        'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf, image/png, image/jpeg, image/jpeg',
-        'image/png, image/jpeg, image/jpeg, image/webp',
-      ].map((s) => s)[uploadType] as string
-    );
+    const formatType = audioOnly ? audioOnlyType : uploadType;
+    setAcceptExtension(uploadExtensions[formatType] ?? '');
+    setAcceptMime(uploadMimeTypes[formatType] ?? '');
     const size = typeLimit(uploadType);
     clearFileInput();
     if (filesRef.current.length > 0) {
@@ -369,7 +382,7 @@ function MediaUploadContent(props: IProps) {
       setFiles(goodFiles);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uploadType]);
+  }, [uploadType, audioOnly]);
 
   const body = (
     <>

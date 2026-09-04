@@ -5167,6 +5167,12 @@
             <target>Subir gráfico</target>
          </segment>
       </unit>
+      <unit id="mediaUpload.intellectualPropertyAudioTask">
+         <segment>
+            <source>Upload a speaker rights release for {0} in audio format. Formats accepted are .mp3, .m4a, .wav or .ogg.</source>
+            <target>Sube un comunicado de derechos de orador para {0} en formato de audio. Los formatos aceptados son .mp3, .m4a, .wav u .ogg.</target>
+         </segment>
+      </unit>
       <unit id="mediaUpload.intellectualPropertyTask">
          <segment>
             <source>Upload a speaker rights release for {0} in audio or visual format. Audio formats accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or .jpg.</source>

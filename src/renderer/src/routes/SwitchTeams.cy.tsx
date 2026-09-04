@@ -313,7 +313,7 @@ beforeEach(() => {
   });
 });
 
-describe('SwitchTeams sections and cards', () => {
+describe('SwitchTeams sections and cards', { tags: '@smoke' }, () => {
   it('renders the picker inside the app chrome', () => {
     mountSwitchTeams();
 
@@ -380,7 +380,7 @@ describe('SwitchTeams sections and cards', () => {
   });
 });
 
-describe('SwitchTeams header actions', () => {
+describe('SwitchTeams header actions', { tags: '@smoke' }, () => {
   it('shows Add Team when online and connected', () => {
     mountSwitchTeams();
 
@@ -457,7 +457,7 @@ describe('SwitchTeams header actions', () => {
   });
 });
 
-describe('SwitchTeams add team dialog', () => {
+describe('SwitchTeams add team dialog', { tags: '@smoke' }, () => {
   it('opens the Add Team dialog and closes it again on cancel', () => {
     mountSwitchTeams();
 
@@ -493,7 +493,7 @@ describe('SwitchTeams add team dialog', () => {
   });
 });
 
-describe('SwitchTeams shared content creator dialog', () => {
+describe('SwitchTeams shared content creator dialog', { tags: '@smoke' }, () => {
   const openDialog = () => {
     mountSwitchTeams({ global: { offline: false }, sharedContentAdmin: true });
     cy.get('#contentCreator').click();
@@ -532,7 +532,7 @@ describe('SwitchTeams shared content creator dialog', () => {
   });
 });
 
-describe('SwitchTeams import dialog', () => {
+describe('SwitchTeams import dialog', { tags: '@smoke' }, () => {
   it('opens the import dialog from the Import button', () => {
     // Online keeps offerPtf true so ImportTab only shows type selection; offline +
     // browser runs electron import in useEffect, gets invalid data, and closes
@@ -545,7 +545,7 @@ describe('SwitchTeams import dialog', () => {
   });
 });
 
-describe('SwitchTeams settings button visibility', () => {
+describe('SwitchTeams settings button visibility', { tags: '@smoke' }, () => {
   const teams = [createTeam('team-a', 'Alpha Team')];
 
   it('shows the settings button on the personal card and on an administered team', () => {
@@ -585,7 +585,7 @@ describe('SwitchTeams settings button visibility', () => {
   });
 });
 
-describe('SwitchTeams settings dialog', () => {
+describe('SwitchTeams settings dialog', { tags: '@smoke' }, () => {
   const teams = [createTeam('team-a', 'Alpha Team')];
 
   it('opens personal settings without a name field or delete section', () => {
@@ -658,7 +658,7 @@ describe('SwitchTeams settings dialog', () => {
   });
 });
 
-describe('SwitchTeams PAP-like guard', () => {
+describe('SwitchTeams PAP-like guard', { tags: '@smoke' }, () => {
   const papLike = {
     teams: [],
     personalTeam: PERSONAL_TEAM,

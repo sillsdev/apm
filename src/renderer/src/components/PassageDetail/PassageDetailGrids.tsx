@@ -1,11 +1,10 @@
 import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { Paper, Box, SxProps, Stack } from '@mui/material';
+import { Paper, Box, Stack, Typography } from '@mui/material';
 
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
 import PassageDetailLayout from './PassageDetailLayout';
-import PassageDetailSectionPassage from './PassageDetailSectionPassage';
 import PassageDetailStepComplete from './PassageDetailStepComplete';
 import PassageDetailArtifacts from './Internalization/PassageDetailArtifacts';
 import PassageDetailPrompt from './Prompt/PassageDetailPrompt';
@@ -24,9 +23,14 @@ import ConsultantCheck from './ConsultantCheck';
 import TranscriptionTab from '../TranscriptionTab';
 import {
   ArtifactTypeSlug,
+  passageRefText,
+  PassageReference,
   remoteIdGuid,
+  sectionDescription,
   ToolSlug,
   useArtifactType,
+  usePlanType,
+  useSharedResRead,
   useStepTool,
 } from '../../crud';
 import { Plan, IToolStrings } from '../../model';
@@ -40,7 +44,6 @@ import { PassageDetailDiscuss } from './PassageDetailDiscuss';
 import { addPt } from '../../utils/addPt';
 import DiscussionPanel from '../Discussions/DiscussionPanel';
 import { usePaneWidth } from '../usePaneWidth';
-import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
@@ -57,8 +60,6 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   if (typeof settings === 'object') return settings as Record<string, unknown>;
   return null;
 }
-
-const clipProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
 
 // Tools whose step content renders inside the shared Paper alongside the
 // discussion panel.
@@ -97,9 +98,25 @@ const PassageDetailGrids = () => {
     sectionArr,
     isBoldWorkflow,
     discussOpen,
+    section,
+    passage,
+    allBookData,
   } = ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
+  const { getSharedResource } = useSharedResRead();
+  const sharedResource = getSharedResource(passage);
+  const sectionMap = new Map<number, string>(sectionArr);
+  const planType = usePlanType();
+  const isFlat = useMemo(
+    () => planType(plan)?.flat,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plan]
+  );
+  const passNum = !isFlat ? passage : undefined;
+  const sectionPassageRef = passageRefText(passage, allBookData);
+  const sectionPassageRefDelim =
+    sectionPassageRef !== '' ? `\u00A0-\u00A0` : '';
   const { slugFromId } = useArtifactType();
   const stepSettingsParsed = useMemo(
     () => parseStepSettings(settings),
@@ -137,12 +154,6 @@ const PassageDetailGrids = () => {
     artifactSlug
   );
 
-  const showBoldDesktopStepComplete = showsBoldDesktopStepComplete(
-    tool ?? '',
-    isBoldWorkflow,
-    artifactSlug
-  );
-
   const plans = useMemo(() => {
     const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
     return plans.filter((p) => p.id === plan);
@@ -152,7 +163,6 @@ const PassageDetailGrids = () => {
     tool && Object.prototype.hasOwnProperty.call(t, tool)
       ? addPt(t.getString(tool))
       : tool;
-  const boldDesktopCenteredHeader = isBoldWorkflow && !isMobile;
   // The step content sits in a Paper of `calc(100% - 32px)`; a player sized to
   // the full pane would spill past that Paper (the outer Box clips it, cutting
   // off the waveform's right edge and the controls below). Match the `- 40`
@@ -186,67 +196,48 @@ const PassageDetailGrids = () => {
       boldClauseTranscription)
   );
   const headerContent = (
-    <>
-      {boldDesktopCenteredHeader ? (
-        // Equal-basis side items keep the tool label centered on the pane
-        // regardless of how wide the passage reference or step-complete get.
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
-        >
-          <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
-            <PassageDetailSectionPassage />
-          </Box>
-          <Box
-            id="tool"
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', textAlign: 'center' }}
-          >
-            {headerToolLabel}
-          </Box>
-          <Box
-            id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
-            sx={{
-              display: 'flex',
-              flex: '1 1 0',
-              minWidth: 0,
-              justifyContent: 'flex-end',
-            }}
-          >
-            {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
-          </Box>
-        </Stack>
-      ) : (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          minWidth: 0,
+          width: '100%',
+        }}
+      >
+        <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+          <Typography noWrap id="sectionpassagetitle">
+            {sectionDescription(section, sectionMap, passNum)}
+            {sectionPassageRefDelim}
+            <PassageReference
+              passage={passage}
+              bookData={allBookData}
+              flat={isFlat}
+              sharedResource={sharedResource}
+              fontSize="inherit"
+            />
+          </Typography>
+        </Box>
+        <Box id="tool" sx={{ flexShrink: 0 }}>
+          <Typography noWrap>{headerToolLabel}</Typography>
+        </Box>
         <Box
+          id="stepcomplete"
           sx={{
             display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 1,
+            flex: '1 1 0',
             minWidth: 0,
-            width: '100%',
+            justifyContent: 'flex-end',
           }}
         >
-          <Box sx={{ ...clipProps, minWidth: 0, whiteSpace: 'nowrap' }}>
-            <PassageDetailSectionPassage />
-          </Box>
-          <Box id="tool" sx={{ minWidth: 0, whiteSpace: 'nowrap', ml: 'auto' }}>
-            {headerToolLabel}
-          </Box>
-          {!isBoldWorkflow && (
-            <Box
-              id="stepcomplete"
-              sx={{ display: 'flex', flexShrink: 0, ml: 'auto' }}
-            >
-              <PassageDetailStepComplete />
-            </Box>
-          )}
+          <PassageDetailStepComplete />
         </Box>
-      )}
-      <Box sx={{ ...clipProps, width: '100%' }}>
+      </Stack>
+      <Box>
         <WorkflowSteps />
       </Box>
-    </>
+    </Box>
   );
 
   return (
@@ -255,6 +246,8 @@ const PassageDetailGrids = () => {
       headerSx={
         showHeader
           ? {
+              py: 1,
+              px: 1.5,
               backgroundColor: 'background.default',
               borderBottom: '1px solid',
               borderColor: 'divider',
@@ -288,10 +281,10 @@ const PassageDetailGrids = () => {
           <Stack direction="row" spacing={1}>
             <Stack
               sx={{
-                ...(clipsStepContent ? clipProps : {}),
                 width: '100%',
                 maxWidth: paneWidth,
                 minWidth: 0,
+                ...(clipsStepContent ? { overflow: 'hidden' } : {}),
               }}
             >
               <PassageDetailChooser width={paneWidth} />

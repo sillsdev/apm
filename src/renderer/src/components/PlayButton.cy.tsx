@@ -8,7 +8,7 @@ import bugsnagClient from '../auth/bugsnagClient';
 import Memory from '@orbit/memory';
 import Coordinator from '@orbit/coordinator';
 
-describe('PlayButton', () => {
+describe('PlayButton', { tags: '@smoke' }, () => {
   let mockOnPlayStatus: ReturnType<typeof cy.stub>;
   let mockOnPlayEnd: ReturnType<typeof cy.stub>;
 

@@ -327,7 +327,7 @@ const mountMobileWorkflowSteps = ({
   );
 };
 
-describe('MobileWorkflowSteps', () => {
+describe('MobileWorkflowSteps', { tags: '@smoke' }, () => {
   describe('step progression mode', () => {
     it('renders workflow step parallelograms and current step label', () => {
       mountMobileWorkflowSteps({ isStepProgression: true });

@@ -3,6 +3,8 @@ import { devServer } from '@cypress/vite-dev-server';
 import { baseConfig } from './base.config';
 import tasks from '../support/tasks';
 import muteBrowserAudio from '../support/muteBrowserAudio';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const cypressGrepPlugin = require('@cypress/grep/src/plugin');
 import viteConfig from '../../vite.config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -88,6 +90,20 @@ const testViteConfig = {
   ],
   // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies
   // changed, reloading" mid-run (which can flake the first assertion attempt).
+  // Pre-bundle CT deps so no spec hits "optimized dependencies changed,
+  // reloading" mid-run. That reload is not just slow: it leaves the AUT with
+  // two copies of React ("Cannot read properties of null (reading 'useMemo')"
+  // inside ThemeProvider), so the spec that triggers it fails outright.
+  //
+  // This list has to cover every dep the *whole* run touches, not just the
+  // common ones — Vite discovers the rest lazily, one spec at a time, and each
+  // discovery is another reload. A hand-written list of the obvious ones is
+  // what made a separate whole-suite warm-up run necessary.
+  //
+  // ct-optimize-deps.json is generated from a completed run's dep cache:
+  //   node env-config/ctOptimizeDeps.cjs --write
+  // Regenerate it if flaky "reloading"-related failures reappear after adding
+  // a dependency. See env-config/ctOptimizeDeps.cjs.
   optimizeDeps: {
     ...viteConfig.optimizeDeps,
     // Do not hold the first spec import until crawl-end — Chrome times out
@@ -104,126 +120,12 @@ const testViteConfig = {
       ...(Array.isArray(viteConfig.optimizeDeps?.include)
         ? viteConfig.optimizeDeps.include
         : []),
-      'react',
-      'react-dom',
-      'react/jsx-runtime',
-      'cypress/react',
-      '@cypress/grep',
-      '@mui/material',
-      '@mui/material/styles',
-      '@mui/icons-material/PlayArrowOutlined',
-      '@mui/icons-material/PlayArrow',
-      '@mui/icons-material/Pause',
-      '@mui/icons-material/Stop',
-      '@mui/icons-material/GetAppOutlined',
-      '@mui/icons-material/ChevronLeft',
-      '@mui/icons-material/Loop',
-      '@mui/icons-material/ArrowRightAlt',
-      '@mui/icons-material/AccessTime',
-      '@mui/icons-material/Undo',
-      '@mui/icons-material/SettingsVoice',
-      '@mui/icons-material/MoreVert',
-      '@mui/icons-material/Settings',
-      '@mui/icons-material/List',
-      '@mui/icons-material/DeleteOutline',
-      '@mui/icons-material/CloudUpload',
-      '@bugsnag/js',
-      '@bugsnag/plugin-react',
-      // Deep-mount harnesses (e.g. cypress/support/pbtHarness.tsx) bring the
-      // store and Orbit in. Without these, the first spec that imports one
-      // triggers a mid-run re-optimize, and the reload that follows leaves the
-      // AUT with two copies of React ("Cannot read properties of null
-      // (reading 'useMemo')" inside ThemeProvider).
-      'react-redux',
-      'redux',
-      'redux-thunk',
-      'lodash',
-      'react-is',
-      '@orbit/memory',
-      '@orbit/records',
-      '@orbit/coordinator',
-      '@orbit/indexeddb',
-      '@orbit/jsonapi',
-      'wavesurfer.js',
-      'wavesurfer.js/dist/plugins/regions',
-      'wavesurfer.js/dist/plugins/timeline',
-      'wavesurfer.js/dist/plugins/zoom',
-      '@wavesurfer/react',
-      // Captured from a CT run: "new dependencies optimized" during the first
-      // spec import. If these are only discovered then, Vite reloads and Chrome
-      // reports Failed to fetch dynamically imported module.
-      'react-router-dom',
-      'react-localization',
-      '@redux-devtools/extension',
-      '@mui/icons-material/Replay',
-      '@mui/icons-material/SkipPrevious',
-      '@mui/icons-material/Close',
-      '@mui/material/Alert',
-      '@mui/material/DialogActions',
-      'luxon',
-      'path-browserify',
-      'react-icons/fa',
-      '@orbit/core',
-      '@mui/x-data-grid/locales',
-      'mui-language-picker',
-      'axios',
-      '@mui/icons-material/CheckBoxOutlineBlank',
-      '@mui/icons-material/CheckBoxOutlined',
-      '@mui/icons-material/Delete',
-      '@mui/icons-material/Edit',
-      '@fingerprintjs/fingerprintjs',
-      'react-icons/io',
-      '@mui/icons-material/Remove',
-      '@mui/icons-material/Add',
-      '@mui/icons-material/ZoomIn',
-      '@mui/icons-material/ZoomOut',
-      '@mui/icons-material/Pageview',
-      'url-parse',
-      'process',
-      '@mui/icons-material/Visibility',
-      '@auth0/auth0-react',
-      'jwt-decode',
-      '@mui/material/Paper',
-      'react-draggable',
-      '@mui/icons-material/ArrowDropDown',
-      '@mui/material/TextField',
-      '@mui/material/Autocomplete',
-      '@mui/icons-material/SupportAgent',
-      '@mui/material/Dialog',
-      '@mui/material/DialogTitle',
-      '@mui/material/DialogContent',
-      '@mui/icons-material/Info',
-      '@orbit/indexeddb-bucket',
-      '@mui/icons-material/NavigateBefore',
-      '@mui/icons-material/NavigateNext',
-      '@mui/x-data-grid',
-      '@orbit/serializers',
-      '@mui/icons-material/ExpandMore',
-      '@mui/icons-material/Sync',
-      '@mui/icons-material/Check',
-      'browser-image-compression',
-      '@mui/material/Box',
-      '@fortawesome/free-solid-svg-icons',
-      '@fortawesome/free-regular-svg-icons',
-      '@fortawesome/react-fontawesome',
-      '@mui/icons-material/VisibilityOff',
-      'array-move',
-      'react-file-drop',
-      '@xmldom/xmldom',
-      'xpath',
-      '@hello-pangea/dnd',
-      '@mui/icons-material/DragIndicator',
-      '@mui/icons-material/ChevronRight',
-      '@mui/icons-material/ExpandLess',
-      'jszip',
-      '@mui/x-tree-view',
-      '@mui/icons-material/RemoveRedEye',
-      '@mui/icons-material/CheckBoxOutlineBlankOutlined',
-      '@mui/icons-material/ContentCopy',
-      '@mui/icons-material/Link',
-      'react-markdown',
-      'remark-gfm',
-      'usfm-grammar-web/dist/bundle.mjs',
+      ...(JSON.parse(
+        fs.readFileSync(
+          path.resolve(__dirname, 'ct-optimize-deps.json'),
+          'utf-8'
+        )
+      ) as string[]),
     ],
   },
   // Component tests and the app dev server run different vite configs. Sharing
@@ -278,7 +180,17 @@ const config = {
       tasks(on);
       // Recording specs play real audio; keep the run silent.
       muteBrowserAudio(on);
-      return config;
+      // @cypress/grep's browser side is registered in support/commands.ts; this
+      // is its plugin half, which implements `grepFilterSpecs`.
+      //
+      // Note: in Cypress 15 component mode the rewritten specPattern this
+      // returns is ignored — the runner has already resolved the spec list by
+      // the time setupNodeEvents runs, so all specs load even when none of
+      // their tests match. That costs ~9s of fixed per-spec overhead each
+      // (browser + bundle), which is why cy:run-ct-smoke selects files with
+      // --spec instead and leaves grepTags to filter *within* those files.
+      // Left registered because it does work for --e2e.
+      return cypressGrepPlugin(config);
     },
     devServer(devServerConfig: Cypress.DevServerConfig) {
       return devServer({

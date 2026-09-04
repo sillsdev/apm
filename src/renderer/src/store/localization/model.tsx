@@ -1035,6 +1035,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "githubSupport": string;
     "graphicTask": string;
     "graphicTitle": string;
+    "intellectualPropertyAudioTask": string;
     "intellectualPropertyTask": string;
     "intellectualPropertyTitle": string;
     "invalidFile": string;

@@ -19,6 +19,7 @@ interface IProps {
   onGraphicClick?: () => void;
   isPlaying: boolean;
   isPersonal?: boolean;
+  isCurrent?: boolean;
 }
 
 export function PassageCard(props: IProps) {
@@ -30,6 +31,7 @@ export function PassageCard(props: IProps) {
     onGraphicClick,
     isPlaying,
     isPersonal,
+    isCurrent,
   } = props;
   const getDescription = useSectionIdDescription();
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
@@ -52,10 +54,23 @@ export function PassageCard(props: IProps) {
     }
   };
 
+  const passageId = cardInfo.passage?.id;
+
   return (
     <Card
       elevation={3}
-      sx={{ minWidth: isMobileWidth ? '100%' : 275, maxWidth: 400 }}
+      id={passageId ? `passage-card-${passageId}` : undefined}
+      data-cy={passageId ? `passage-card-${passageId}` : undefined}
+      aria-current={isCurrent ? 'true' : undefined}
+      sx={{
+        minWidth: isMobileWidth ? '100%' : 275,
+        maxWidth: 400,
+        ...(isCurrent && {
+          outline: '2px solid',
+          outlineColor: 'primary.light',
+          outlineOffset: 2,
+        }),
+      }}
     >
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -118,6 +133,7 @@ export function PassageCard(props: IProps) {
               </Box>
             )}
             <Button
+              data-cy="passage-card-step"
               sx={{
                 width: '100%',
                 position: 'relative',

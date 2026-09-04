@@ -54,4 +54,28 @@ describe('guidedPhraseRecord config', () => {
     expect(config.buildFilenamePostfix(0, 2)).toBe('backtranslation1_v2');
     expect(config.buildFilenamePostfix(1, 2)).toBe('backtranslation2_v2s1');
   });
+
+  it('buildFilenamePostfix separates the languages of the same segment', () => {
+    // Media is cached on disk under the uploaded file's name (dataPath maps a
+    // mediafile's audioUrl to `<offlineData>/media/<basename>`), so a name
+    // shared by two takes means one cached file for both, and the first one
+    // cached is what plays. A Phrase BT step per language records the same
+    // segment of the same vernacular, so the language has to be in the name
+    // (TT-7643).
+    const config = phraseBackTranslateConfig(
+      ArtifactTypeSlug.PhraseBackTranslation,
+      NamedRegions.BackTranslation
+    );
+    expect(config.buildFilenamePostfix(0, 1, 'seh')).toBe(
+      'backtranslation1_v1_seh'
+    );
+    expect(config.buildFilenamePostfix(0, 1, 'he')).toBe(
+      'backtranslation1_v1_he'
+    );
+    expect(config.buildFilenamePostfix(1, 1, 'he')).toBe(
+      'backtranslation2_v1s1_he'
+    );
+    // Steps with no configured language keep the names they always had.
+    expect(config.buildFilenamePostfix(0, 1)).toBe('backtranslation1_v1');
+  });
 });

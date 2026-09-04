@@ -48,6 +48,7 @@ const MobileStep = () => {
   const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
   const { paneWidth } = usePaneWidth();
+  const [isDeveloper] = useGlobal('developer');
 
   const artifactSlug = useMemo(() => {
     const parsed =
@@ -82,11 +83,27 @@ const MobileStep = () => {
   ) : tool === ToolSlug.Verses ? (
     <PassageDetailMarkVerses width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.CarefulSpeech ? (
-    <PassageDetailCarefulSpeech width={Math.max(0, paneWidth - 40)} />
+    // Keyed for the same reason as the transcription steps below: a team can
+    // configure several guided-record steps in a row, and they all render the
+    // one PassageDetailGuidedPhraseRecord component. (TT-7643)
+    <PassageDetailCarefulSpeech
+      key={currentstep}
+      width={Math.max(0, paneWidth - 40)}
+    />
   ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
-    <PassageDetailLwcTranslation width={Math.max(0, paneWidth - 40)} />
+    <PassageDetailLwcTranslation
+      key={currentstep}
+      width={Math.max(0, paneWidth - 40)}
+    />
   ) : tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow ? (
-    <PassageDetailPhraseBackTranslate width={Math.max(0, paneWidth - 40)} />
+    // A team can have one Phrase Back Translation step per language. Without a
+    // key the reused instance carries the previous step's recording pass -
+    // including the take loaded in its recorder - into the next language's
+    // step, so the other language's audio plays there. (TT-7643)
+    <PassageDetailPhraseBackTranslate
+      key={currentstep}
+      width={Math.max(0, paneWidth - 40)}
+    />
   ) : boldClauseTranscription ? (
     // Key on currentstep so the shared transcription component remounts when
     // moving between the adjacent Careful- and LWC-Transcription steps. Desktop
@@ -102,7 +119,7 @@ const MobileStep = () => {
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (
     <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Transcribe ? (
+  ) : tool === ToolSlug.Transcribe && isDeveloper ? (
     <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <NotImplemented />
