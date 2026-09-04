@@ -126,11 +126,8 @@ export function useWaveSurferRegions(
   lockSegmentSelection?: boolean,
   getDecodedBuffer?: () => AudioBuffer | undefined,
   /**
-   * Suppress drag-to-create-region (the red loop region) even in single-region
-   * mode. Read once, where setupRegions configures the regions plugin on the
-   * WaveSurfer 'ready' event — it is not reactive, so toggling it afterwards has
-   * no effect until the next load. Pass a value that is constant for the
-   * lifetime of the player.
+   * Disable drag-to-create-region (red loop region) in single-region mode.
+   * Read once during setupRegions on WaveSurfer ready; not reactive.
    */
   disableDragSelection?: boolean,
   /**
@@ -200,12 +197,8 @@ export function useWaveSurferRegions(
     applyRegionColorRef.current = applyRegionColor;
   }, [applyRegionColor]);
 
-  // One reactive pass owns which boundaries can be dragged. It re-runs whenever
-  // the recording lock (TT-7437) or the recorded-segment set (TT-7666) changes,
-  // so freezing and un-freezing — e.g. a boundary coming back after its
-  // recording is deleted — happen the same way, on the same signal, as the
-  // Split/Combine and +/- guards that read the same state. Handles are never
-  // removed; only their per-side drag is toggled (see applyBoundaryEditability).
+  // Recompute boundary dragability whenever lock state or recorded-set changes
+  // so all boundary guards react on the same signal (TT-7437, TT-7666).
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
     applyBoundaryEditability();
@@ -270,18 +263,14 @@ export function useWaveSurferRegions(
   };
 
   /**
-   * The single source of truth for which boundaries can be dragged. A side is
-   * draggable unless the recording lock is up (TT-7437) or the segment — or its
-   * neighbour across that side — is recorded (TT-7666). Handles are always left
-   * visible (resize: true); only the per-side drag (resizeStart/resizeEnd) and
-   * the cursor change, so a boundary marker never disappears. Idempotent, so it
-   * is safe to run on every color pass, region load, and lock/recorded change.
+   * Source of truth for boundary dragability.
+   * Drag is blocked by recording lock (TT-7437) and by recorded boundaries
+   * (TT-7666). Handles stay visible; only side drag flags/cursor change.
    */
   const applyBoundaryEditability = () => {
     const locked = lockSegmentSelectionRef.current;
     const recorded = isSegmentRecordedRef.current;
-    // Nothing to manage for players that neither lock nor track recordings
-    // (Mark Verses, Transcribe, the generic player) — leave their regions alone.
+    // Players without lock/recorded checks keep default region behavior.
     if (!locked && !recorded) return;
     const sorted = sortedRegions();
     const last = sorted.length - 1;
@@ -293,13 +282,13 @@ export function useWaveSurferRegions(
         startActive = false;
         endActive = false;
       } else {
-        // A side is draggable only when neither this segment nor the neighbour
-        // on that side is recorded. Outer edges have no neighbour.
+        // Side drag is allowed only if neither this segment nor that side's
+        // neighbor is recorded. Outer edges have no neighbor.
         const self = recorded!(i);
         startActive = !self && (i === 0 || !recorded!(i - 1));
         endActive = !self && (i === last || !recorded!(i + 1));
       }
-      // Keep the handle rendered; gate drag by side with resizeStart/resizeEnd.
+      // Keep handles visible; gate side drag via resizeStart/resizeEnd.
       r.setOptions({
         resize: true,
         resizeStart: startActive,
@@ -507,11 +496,8 @@ export function useWaveSurferRegions(
     }
   };
   const wsPlayRegion = (r: IRegion, startAtCurrent: boolean = false) => {
-    // updatingRef suppresses the shared-boundary clamp while *we* are moving
-    // region bounds; it must be released on every exit path. Players with
-    // forceRegionOnly (Phrase Back Translate, Careful Speech) route every play
-    // through here, so a latched flag left the clamp off for the rest of the
-    // session and dragged boundaries overlapped or disconnected (TT-7625).
+    // While we move bounds programmatically, suppress boundary clamp and always
+    // release the flag on exit to avoid persistent clamp-off state (TT-7625).
     updatingRef.current = true;
     try {
       let reg = findRegion(r.start, true);
@@ -583,9 +569,8 @@ export function useWaveSurferRegions(
       regionsPlugin.on('region-created', function (r: Region) {
         if (isMarker(r)) return;
         r.drag = singleRegionRef.current;
-        // A region born while the recording lock is up must not be draggable
-        // even for a moment; freeze both sides now (handle stays visible). The
-        // reactive pass / next load sets the full recorded-aware state.
+        // New region during recording lock: freeze both sides immediately.
+        // Reactive pass/load will apply full recorded-aware state.
         if (lockSegmentSelectionRef.current) {
           r.setOptions({ resize: true, resizeStart: false, resizeEnd: false });
         }
@@ -723,10 +708,8 @@ export function useWaveSurferRegions(
       });
       regionsPlugin.on('region-out', function (r: Region) {
         if (isMarker(r)) return;
-        // If this region was just truncated by a split (matched by id, or by
-        // end-time within the autosave-replacement window), ignore region-out
-        // so playback continues into the new right-side region without
-        // stopping or seeking back to the start.
+        // Ignore region-out for just-truncated split region (id or end-time
+        // match) so playback continues into the new right region.
         const matchesTruncatedId = r.id === splitTruncatedIdRef.current;
         const matchesTruncatedEnd =
           splitTruncatedEndRef.current !== undefined &&
@@ -875,17 +858,8 @@ export function useWaveSurferRegions(
   };
 
   /**
-   * Keep resized regions non-overlapping. In multi-region (Mark Verses,
-   * Careful Speech, Phrase Back Translate) mode the end of one region is
-   * always the start of the next, so a boundary is shared by two regions.
-   * When the user drags one boundary we:
-   *   - clamp it so it can't cross the neighbor's far boundary (no overlap) —
-   *     the first/last region's outer edge stays pinned to 0 / duration; and
-   *   - shift the single adjacent neighbor's shared boundary to follow, so the
-   *     two regions stay flush.
-   * `side` is provided by the regions plugin ('start' | 'end') and tells us
-   * which boundary is moving; when absent (defensive) we constrain both.
-   * Returns the boundary time the drag settled on for playhead follow.
+   * Keep resized regions non-overlapping and contiguous by clamping the moved
+   * boundary and updating the adjacent shared boundary. Returns final boundary.
    */
   const constrainResizedRegion = (r: Region, side?: 'start' | 'end') => {
     const prev = findPrevRegion(r) as Region | undefined;
