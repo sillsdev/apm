@@ -744,6 +744,7 @@ if (requestedSchema > 3 && schemaDefinition.models) {
       dateCreated: { type: 'string' }, // datetime
       dateUpdated: { type: 'string' }, // datetime
       lastModifiedBy: { type: 'number' }, //bkwd compat only
+      offlineId: { type: 'string' },
     },
     relationships: {
       sectionresource: {
