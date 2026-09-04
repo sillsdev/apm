@@ -1183,6 +1183,10 @@ export function useWaveSurferRegions(
   };
 
   const wsRemoveSplitRegion = () => {
+    // No boundary edits while a take is being recorded or saved (TT-7437). The
+    // in-progress segment is not yet in the recorded set, so the isSegmentRecorded
+    // check below would not catch it — the lock is what covers the active take.
+    if (lockSegmentSelectionRef.current) return undefined;
     const r = currentRegion();
     if (!r) return undefined;
     if (numRegions() === 1) {
@@ -1251,6 +1255,9 @@ export function useWaveSurferRegions(
   };
 
   const wsAddRegion = () => {
+    // No boundary edits while a take is being recorded or saved (TT-7437) — the
+    // in-progress segment is not yet in the recorded set the check below reads.
+    if (lockSegmentSelectionRef.current) return undefined;
     const target = findRegion(progress(), true);
     // Do not split inside a recorded segment (TT-7666).
     if (target && isSegmentRecordedRef.current?.(regionIndexInSorted(target))) {

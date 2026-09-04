@@ -325,6 +325,25 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
     expect(result.current.wsPrevRegion()).toBe(false);
     expect(result.current.wsNextRegion()).toBe(false);
   });
+
+  it('refuses Add while recording, before the take is saved', () => {
+    // The in-progress segment is not yet in the recorded set, so only the lock
+    // stops +/- from splitting the take mid-record (TT-7437).
+    const { result, plugin, goto } = renderRegions({
+      lockSegmentSelection: true,
+      progressAt: 15, // inside segment 1
+    });
+    const before = plugin.regionList.length;
+
+    let ret: unknown;
+    act(() => {
+      ret = result.current.wsAddRegion();
+    });
+
+    expect(ret).toBeUndefined();
+    expect(plugin.regionList.length).toBe(before); // no divider added
+    expect(goto).not.toHaveBeenCalled(); // playhead not moved
+  });
 });
 
 describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)', () => {
