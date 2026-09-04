@@ -10,7 +10,7 @@ import { IRegion } from '../crud/useWavesurferRegions';
  */
 
 /** Sorted index of the segment at the playhead, or -1. Assumes sorted input. */
-export function segmentIndexAtProgress(
+export function segmentIndexAtPlayhead(
   progressSec: number,
   regions: IRegion[]
 ): number {
@@ -33,7 +33,7 @@ export function isAddBlockedByRecording(
   isSegmentRecorded?: (index: number) => boolean
 ): boolean {
   if (!isSegmentRecorded) return false;
-  const idx = segmentIndexAtProgress(progressSec, regions);
+  const idx = segmentIndexAtPlayhead(progressSec, regions);
   return idx >= 0 && isSegmentRecorded(idx);
 }
 
