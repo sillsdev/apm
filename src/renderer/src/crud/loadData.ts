@@ -146,17 +146,10 @@ export async function insertData(
   checkExisting: boolean,
   isImport: boolean,
   isProject: boolean,
-  snapshotDate?: string,
-  isOrganization = true
+  snapshotDate?: string
 ) {
   let rec: InitializedRecord | InitializedRecord[] | null = null;
   let project: ProjectD | undefined = undefined;
-  const isPrimary = (record: InitializedRecord) =>
-    record.type === 'project'
-      ? isProject
-      : record.type === 'organization'
-        ? isOrganization
-        : false;
   try {
     if (item.keys && checkExisting) {
       const id = remoteIdGuid(
@@ -178,7 +171,7 @@ export async function insertData(
       if (Array.isArray(rec)) rec = rec[0] as InitializedRecord; //won't be...
       rec.attributes = { ...item.attributes };
       oparray.push(tb.updateRecord(rec).toOperation());
-      if (rec.type === 'project' && isPrimary(rec)) {
+      if (rec.type === 'project' && isProject) {
         project = rec as ProjectD;
         await saveOfflineProject(
           rec as ProjectD,
@@ -214,7 +207,7 @@ export async function insertData(
         if (typeof item.id === 'number') item = rn.normalizeRecord(item);
         oparray.push(tb.addRecord(item).toOperation());
         //don't mess with any offline project data for supporting projects
-        if (item.type === 'project' && isPrimary(item)) {
+        if (item.type === 'project' && isProject) {
           project = item as ProjectD;
           await saveOfflineProject(
             item as ProjectD,
