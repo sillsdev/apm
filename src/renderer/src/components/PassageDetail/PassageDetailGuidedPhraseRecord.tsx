@@ -486,8 +486,7 @@ export function PassageDetailGuidedPhraseRecord({
   // A take that finished recording but has not saved yet — its upload failed
   // and it is held for Retry — is still playable and stays latched to the
   // clause it was recorded on. Treat that clause as recorded so its boundaries
-  // lock like a saved take's: if the user can listen to the take, they must not
-  // reshape the segment under it, or a Retry would file it against the altered
+  // lock like a saved take's, otherwise a Retry would file it against the altered
   // boundaries (TT-7437). A successful save clears the latch (and the optimistic
   // set then covers the clause), so this only fires for an unsaved take.
   const pendingTakeIndex =
