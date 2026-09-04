@@ -329,7 +329,7 @@ export async function electronExport(
         ret.Filtered += n - recs.length;
       }
       ret.Added = recs.length;
-      await AddJsonEntry('supportingprojects', recs, 'Z');
+      if (recs.length > 0) await AddJsonEntry('supportingprojects', recs, 'Z');
       let orgs = supportingOrgs(project);
       if (needsRemoteIds) {
         const n = orgs.length;
