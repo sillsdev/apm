@@ -49,7 +49,33 @@ const cropped = (svg) =>
 const TARGETS = [
   // Full-bleed favicon frames: at 16px every spare pixel counts, so the mark's
   // own padding is cropped away rather than shrinking it further.
-  { out: null, sizes: [16, 32, 48, 64], pad: 1, bg: null, ico: true },
+  {
+    sizes: [16, 32, 48, 64],
+    pad: 1,
+    bg: null,
+    ico: true,
+    // favicon.ico is read from three places: the web root, the Electron auth
+    // window, and the packaged resources.
+    icoOutputs: [
+      'src/renderer/public/favicon.ico',
+      'src/renderer/favicon.ico',
+      'resources/favicon.ico',
+    ],
+  },
+
+  // The Windows app/installer icon. Pre-generated and committed rather than
+  // left for electron-builder to derive from resources/icon.png at build
+  // time: that derivation shells out to a tool it downloads from GitHub on
+  // every build, which is one more thing that can go wrong (or differ) on a
+  // given build agent. Rendered directly from the vector source per size,
+  // same as the favicon, rather than downscaled from a raster.
+  {
+    sizes: [16, 24, 32, 48, 64, 128, 256],
+    pad: ART.size / VIEWBOX,
+    bg: null,
+    ico: true,
+    icoOutputs: ['resources/icon.ico'],
+  },
 
   // iOS draws its own rounded-rect mask and never adds padding, and it
   // composites any alpha over black — so this one must be opaque.
@@ -81,8 +107,9 @@ const TARGETS = [
     bg: WHITE,
   },
 
-  // electron-builder derives .icns/.ico from this; 1024 gives macOS a real
-  // retina source instead of upscaling 512.
+  // electron-builder derives macOS's .icns from this (and it's the mac build
+  // icon directly); 1024 gives it a real retina source instead of upscaling
+  // 512. Windows uses the pre-generated resources/icon.ico above instead.
   {
     out: 'resources/icon.png',
     sizes: [1024],
@@ -95,14 +122,6 @@ const TARGETS = [
     pad: ART.size / VIEWBOX,
     bg: null,
   },
-];
-
-// favicon.ico is read from three places: the web root, the Electron auth
-// window, and the packaged resources.
-const ICO_OUTPUTS = [
-  'src/renderer/public/favicon.ico',
-  'src/renderer/favicon.ico',
-  'resources/favicon.ico',
 ];
 
 /** Pack PNG buffers into an ICO. PNG-compressed entries are read by every
@@ -230,7 +249,7 @@ async function main() {
 
     if (target.ico) {
       const ico = buildIco(rendered);
-      for (const out of ICO_OUTPUTS) {
+      for (const out of target.icoOutputs) {
         fs.writeFileSync(path.join(root, out), ico);
         written.push([out, ico.length]);
       }
