@@ -483,28 +483,44 @@ export function PassageDetailGuidedPhraseRecord({
     ]
   );
 
+  // A take that finished recording but has not saved yet — its upload failed
+  // and it is held for Retry — is still playable and stays latched to the
+  // clause it was recorded on. Treat that clause as recorded so its boundaries
+  // lock like a saved take's: if the user can listen to the take, they must not
+  // reshape the segment under it, or a Retry would file it against the altered
+  // boundaries (TT-7437). A successful save clears the latch (and the optimistic
+  // set then covers the clause), so this only fires for an unsaved take.
+  const pendingTakeIndex =
+    phase === 'recorded' ? recordingTarget?.index : undefined;
+
   // A segment is treated as recorded (boundary locked, TT-7666) when it has a
-  // saved take, or a newly saved take that rowData has not shown yet.
+  // saved take, a newly saved take that rowData has not shown yet, or a
+  // recorded-but-unsaved take latched to it (see pendingTakeIndex above).
   // This only applies during the recording pass.
   const isSegmentRecorded = useCallback(
     (index: number) =>
       recordingPassStarted &&
       (completedIndices.has(index) ||
-        optimisticCompletedRef.current.has(index)),
+        optimisticCompletedRef.current.has(index) ||
+        index === pendingTakeIndex),
     // optimisticVersion makes optimistic-set changes reactive so every guard
     // that reads this predicate (drag, +/-, Split/Combine) recomputes together.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recordingPassStarted, completedIndices, optimisticVersion]
+    [recordingPassStarted, completedIndices, optimisticVersion, pendingTakeIndex]
   );
 
-  /** completedIndices plus the optimistic just-saved set — the single recorded
-   *  view every boundary-editing guard uses, so they agree in the window before
-   *  rowData catches up (TT-7666). */
-  const recordedClauseIndicesForTools = useMemo(
-    () => new Set([...completedIndices, ...optimisticCompletedRef.current]),
+  /** completedIndices plus the optimistic just-saved set and any latched
+   *  unsaved take — the single recorded view every boundary-editing guard uses,
+   *  so they agree in the window before rowData catches up (TT-7666, TT-7437). */
+  const recordedClauseIndicesForTools = useMemo(() => {
+    const recorded = new Set([
+      ...completedIndices,
+      ...optimisticCompletedRef.current,
+    ]);
+    if (pendingTakeIndex !== undefined) recorded.add(pendingTakeIndex);
+    return recorded;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [completedIndices, optimisticVersion]
-  );
+  }, [completedIndices, optimisticVersion, pendingTakeIndex]);
 
   const allClausesComplete = useMemo(
     () =>

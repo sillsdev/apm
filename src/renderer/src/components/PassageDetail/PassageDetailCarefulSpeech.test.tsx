@@ -706,6 +706,32 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     expect(controlsProps?.allowRecord).toBe(false);
   });
 
+  it('locks the failed take’s clause across every boundary guard (TT-7437)', async () => {
+    await recordAndRejectSave();
+
+    // The upload failed but the take is still playable and latched to clause 2,
+    // so every boundary-editing guard must treat that clause as recorded — if
+    // the user can listen to the take, they must not reshape the segment under
+    // it, or a Retry would file the take against the altered boundaries.
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    expect(isRecorded(2)).toBe(true); // drag / +- guard
+    expect(controlsProps?.canCombineWithNext).toBe(false); // Split/Combine agree
+  });
+
+  it('re-opens the clause for editing once the failed take is cleared (TT-7437)', async () => {
+    mockRecordingRow = undefined; // nothing persisted; clearing drops the take
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    // Take gone: the same guards let clause 2 be edited again, in step.
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    expect(isRecorded(2)).toBe(false);
+    expect(controlsProps?.canCombineWithNext).toBe(true);
+  });
+
   it('clearing a failed take resets the recorder even with no mediafile', async () => {
     mockRecordingRow = undefined; // nothing was stored, so nothing to remove
     await recordAndRejectSave();
