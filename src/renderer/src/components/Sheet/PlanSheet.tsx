@@ -116,7 +116,9 @@ const SheetRow = ({
   );
 };
 
-const ContentDiv = styled('div')(({ theme }) => ({
+const headerRule = '#DDD';
+
+export const ContentDiv = styled('div')(({ theme }) => ({
   // Growing topPad must not scroll-anchor into a curTop feedback loop.
   overflowAnchor: 'none',
   '& .data-grid-container .data-grid .cell': {
@@ -124,6 +126,15 @@ const ContentDiv = styled('div')(({ theme }) => ({
     textAlign: 'left',
     paddingLeft: theme.spacing(0.5),
     paddingRight: theme.spacing(0.5),
+  },
+  '& .data-grid-container .data-grid tr:first-of-type .cell': {
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+    boxShadow: `inset 0 1px 0 ${headerRule}, inset 0 -1px 0 ${headerRule}`,
+  },
+  '& .data-grid-container .data-grid tr:first-of-type .cell.selected': {
+    boxShadow: `inset 0 1px 0 ${headerRule}, inset 0 -1px 0 ${headerRule}, inset 0 -100px 0 rgba(33, 133, 208, 0.15)`,
   },
   '& .data-grid-container .data-grid .cell.set': {
     backgroundColor: theme.palette.background.default,
@@ -605,6 +616,14 @@ export function PlanSheet(props: IProps) {
     return edge;
   };
 
+  /** Height of the sticky header row, which overlays the top of the scroller. */
+  const headerHeight = () => {
+    const table = sheetRef.current?.querySelector(
+      'table.data-grid'
+    ) as HTMLTableElement | null;
+    return (table?.rows?.[0] as HTMLElement | undefined)?.offsetHeight ?? 0;
+  };
+
   /** Scroll the scroller only if the row is clipped. `force` after a remount. */
   const alignRowInScroller = (
     scroller: HTMLElement,
@@ -613,8 +632,10 @@ export function PlanSheet(props: IProps) {
   ) => {
     const er = el.getBoundingClientRect();
     const sr = scroller.getBoundingClientRect();
-    if (force === 'start' || er.top < sr.top) {
-      scroller.scrollTop += er.top - sr.top;
+    // Rows pass under the sticky header, so the usable top starts below it.
+    const top = sr.top + headerHeight();
+    if (force === 'start' || er.top < top) {
+      scroller.scrollTop += er.top - top;
     } else if (force === 'end' || er.bottom > sr.bottom) {
       scroller.scrollTop += er.bottom - sr.bottom;
     }
