@@ -166,10 +166,6 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
-  /** Regions frozen by the lock, plus the drag/resize flags to restore later. */
-  const dragLockedRegionsRef = useRef<
-    { region: Region; resize: boolean; drag: boolean }[]
-  >([]);
   // setupRegions runs from a once-registered 'ready' handler, so it can only
   // reach this prop through a ref (like singleRegionRef).
   const disableDragSelectionRef = useRef(disableDragSelection ?? false);
@@ -204,37 +200,18 @@ export function useWaveSurferRegions(
     applyRegionColorRef.current = applyRegionColor;
   }, [applyRegionColor]);
 
-  /** Disable drag/resize for this region and remember prior flags for unlock. */
-  const freezeRegionDrag = (r: Region) => {
-    if (dragLockedRegionsRef.current.some((e) => e.region === r)) return;
-    dragLockedRegionsRef.current.push({
-      region: r,
-      resize: r.resize,
-      drag: r.drag,
-    });
-    r.setOptions({ resize: false, drag: false });
-  };
-
+  // One reactive pass owns which boundaries can be dragged. It re-runs whenever
+  // the recording lock (TT-7437) or the recorded-segment set (TT-7666) changes,
+  // so freezing and un-freezing — e.g. a boundary coming back after its
+  // recording is deleted — happen the same way, on the same signal, as the
+  // Split/Combine and +/- guards that read the same state. Handles are never
+  // removed; only their per-side drag is toggled (see applyBoundaryEditability).
   useEffect(() => {
-    const locked = lockSegmentSelection ?? false;
-    lockSegmentSelectionRef.current = locked;
-    // While recording lock is on, freeze drag/resize for every region.
-    // This keeps both selection and boundaries stable for the active take
-    // (TT-7437). On unlock, restore each region's original flags.
-    if (locked) {
-      regions().forEach(freezeRegionDrag);
-    } else {
-      dragLockedRegionsRef.current.forEach(({ region: r, resize, drag }) =>
-        r.setOptions({ resize, drag })
-      );
-      dragLockedRegionsRef.current = [];
-      // Reapply recorded boundary locks because recording state may have
-      // changed while the lock was active (TT-7666).
-      applyRecordedResizeLocks();
-    }
-    // regions() reads a ref, so it needs no dep of its own.
+    lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
+    applyBoundaryEditability();
+    // applyBoundaryEditability reads refs; deps are the two reactive inputs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lockSegmentSelection]);
+  }, [lockSegmentSelection, isSegmentRecorded]);
 
   useEffect(() => {
     disableDragSelectionRef.current = disableDragSelection ?? false;
@@ -277,7 +254,7 @@ export function useWaveSurferRegions(
         r.setOptions({ color: base });
       }
     });
-    applyRecordedResizeLocks();
+    applyBoundaryEditability();
   };
 
   /** Show ew-resize only on draggable handles; otherwise show default cursor. */
@@ -293,24 +270,36 @@ export function useWaveSurferRegions(
   };
 
   /**
-   * Freeze boundaries that touch recorded segments (TT-7666).
-   * Handles stay visible, but non-draggable sides are disabled.
+   * The single source of truth for which boundaries can be dragged. A side is
+   * draggable unless the recording lock is up (TT-7437) or the segment — or its
+   * neighbour across that side — is recorded (TT-7666). Handles are always left
+   * visible (resize: true); only the per-side drag (resizeStart/resizeEnd) and
+   * the cursor change, so a boundary marker never disappears. Idempotent, so it
+   * is safe to run on every color pass, region load, and lock/recorded change.
    */
-  const applyRecordedResizeLocks = () => {
+  const applyBoundaryEditability = () => {
+    const locked = lockSegmentSelectionRef.current;
     const recorded = isSegmentRecordedRef.current;
-    if (!recorded) return;
-    // Do not re-enable handles while recording lock owns region flags.
-    // The unlock path reruns this and restores final state.
-    if (lockSegmentSelectionRef.current) return;
+    // Nothing to manage for players that neither lock nor track recordings
+    // (Mark Verses, Transcribe, the generic player) — leave their regions alone.
+    if (!locked && !recorded) return;
     const sorted = sortedRegions();
     const last = sorted.length - 1;
     sorted.forEach((r, i) => {
-      // A side is draggable only when neither this segment nor the neighbor on
-      // that side is recorded.
-      const self = recorded(i);
-      const startActive = !self && (i === 0 || !recorded(i - 1));
-      const endActive = !self && (i === last || !recorded(i + 1));
-      // Keep handles visible; gate drag by side with resizeStart/resizeEnd.
+      let startActive: boolean;
+      let endActive: boolean;
+      if (locked) {
+        // Recording in progress: nothing moves.
+        startActive = false;
+        endActive = false;
+      } else {
+        // A side is draggable only when neither this segment nor the neighbour
+        // on that side is recorded. Outer edges have no neighbour.
+        const self = recorded!(i);
+        startActive = !self && (i === 0 || !recorded!(i - 1));
+        endActive = !self && (i === last || !recorded!(i + 1));
+      }
+      // Keep the handle rendered; gate drag by side with resizeStart/resizeEnd.
       r.setOptions({
         resize: true,
         resizeStart: startActive,
@@ -594,8 +583,12 @@ export function useWaveSurferRegions(
       regionsPlugin.on('region-created', function (r: Region) {
         if (isMarker(r)) return;
         r.drag = singleRegionRef.current;
-        // If region is created while lock is active, freeze it immediately.
-        if (lockSegmentSelectionRef.current) freezeRegionDrag(r);
+        // A region born while the recording lock is up must not be draggable
+        // even for a moment; freeze both sides now (handle stays visible). The
+        // reactive pass / next load sets the full recorded-aware state.
+        if (lockSegmentSelectionRef.current) {
+          r.setOptions({ resize: true, resizeStart: false, resizeEnd: false });
+        }
 
         // Round region start and end to 5 decimal places because the seek uses 5 decimal places
         r.start = roundToFiveDecimals(r.start);
@@ -796,7 +789,7 @@ export function useWaveSurferRegions(
         });
       }
       // Apply recorded-boundary locks for existing segments (TT-7666).
-      applyRecordedResizeLocks();
+      applyBoundaryEditability();
     }
   };
 
@@ -1087,7 +1080,7 @@ export function useWaveSurferRegions(
     });
     setPrevNext(regarray.map((r: any) => r.id));
     // Re-apply recorded-boundary locks after loading regions (TT-7666).
-    applyRecordedResizeLocks();
+    applyBoundaryEditability();
     onRegion(regarray.length, newRegions);
     onRegionGoTo(regarray[defaultRegionIndex]?.start ?? 0);
     loadingRef.current = false;

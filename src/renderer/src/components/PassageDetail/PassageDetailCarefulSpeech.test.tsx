@@ -751,3 +751,50 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 });
+
+describe('PassageDetailCarefulSpeech — recorded-state consistency across guards (TT-7666)', () => {
+  // Every boundary-editing guard must read the same recorded view: the drag /
+  // +- guards (via isSegmentRecorded on the player) and Split/Combine (via their
+  // can* props) agree, including the optimistic window right after a save, and
+  // all re-enable together when the take is removed.
+  const recordClause2 = async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+  };
+
+  it('treats a just-saved clause as recorded for drag and for Combine alike', async () => {
+    await recordClause2();
+
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    // drag / +- guard sees clause 2 recorded (optimistic, rowData still lagging)
+    expect(isRecorded(2)).toBe(true);
+    // ...and Combine agrees — it is disabled on the same clause.
+    expect(controlsProps?.canCombineWithNext).toBe(false);
+  });
+
+  it('re-enables drag and Combine together when the take is cleared', async () => {
+    await recordClause2();
+    mockRecordingRow = undefined; // nothing persisted; clearing drops the take
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    // Both guards let go of clause 2 at once — no asymmetry (the reported bug).
+    expect(isRecorded(2)).toBe(false);
+    expect(controlsProps?.canCombineWithNext).toBe(true);
+  });
+});

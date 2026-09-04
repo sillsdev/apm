@@ -258,8 +258,33 @@ export function PassageDetailGuidedPhraseRecord({
   // clause; this lets the recording effect swallow that single +1 advance while
   // still treating any non-adjacent jump as a genuine user tap (TT-7360).
   const pendingOvershootSwallowRef = useRef(false);
-  /** Indices saved this session whose rowData may not have caught up yet (TT-7552). */
+  /** Indices saved this session whose rowData may not have caught up yet (TT-7552).
+   *  Read synchronously (coloring) via the ref; the version below makes changes
+   *  to it reactive so the recorded-aware guards recompute (TT-7666). */
   const optimisticCompletedRef = useRef<Set<number>>(new Set());
+  const [optimisticVersion, setOptimisticVersion] = useState(0);
+  const bumpOptimistic = useCallback(
+    () => setOptimisticVersion((v) => v + 1),
+    []
+  );
+  const addOptimistic = useCallback(
+    (index: number) => {
+      optimisticCompletedRef.current.add(index);
+      bumpOptimistic();
+    },
+    [bumpOptimistic]
+  );
+  const removeOptimistic = useCallback(
+    (index: number) => {
+      if (optimisticCompletedRef.current.delete(index)) bumpOptimistic();
+    },
+    [bumpOptimistic]
+  );
+  const clearOptimistic = useCallback(() => {
+    if (optimisticCompletedRef.current.size === 0) return;
+    optimisticCompletedRef.current.clear();
+    bumpOptimistic();
+  }, [bumpOptimistic]);
   const currentIndexRef = useRef(0);
   /**
    * Clause and region for the active take (TT-7437).
@@ -487,7 +512,19 @@ export function PassageDetailGuidedPhraseRecord({
       recordingPassStarted &&
       (completedIndices.has(index) ||
         optimisticCompletedRef.current.has(index)),
-    [recordingPassStarted, completedIndices]
+    // optimisticVersion makes optimistic-set changes reactive so every guard
+    // that reads this predicate (drag, +/-, Split/Combine) recomputes together.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recordingPassStarted, completedIndices, optimisticVersion]
+  );
+
+  /** completedIndices plus the optimistic just-saved set — the single recorded
+   *  view every boundary-editing guard uses, so they agree in the window before
+   *  rowData catches up (TT-7666). */
+  const recordedForTools = useMemo(
+    () => new Set([...completedIndices, ...optimisticCompletedRef.current]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [completedIndices, optimisticVersion]
   );
 
   const allClausesComplete = useMemo(
@@ -611,8 +648,11 @@ export function PassageDetailGuidedPhraseRecord({
         changed = true;
       }
     }
-    if (changed) applyColors();
-  }, [completedIndices, applyColors]);
+    if (changed) {
+      bumpOptimistic();
+      applyColors();
+    }
+  }, [completedIndices, applyColors, bumpOptimistic]);
 
   const bumpSuppressClauseAutoPlay = useCallback((count = 1) => {
     suppressClauseAutoPlayRef.current += count;
@@ -967,7 +1007,7 @@ export function PassageDetailGuidedPhraseRecord({
     // The latch is mediafile-specific. Clear it when source media changes,
     // so the next take cannot reuse a clause from the old waveform (TT-7437).
     latchRecordingTarget(undefined);
-    optimisticCompletedRef.current.clear();
+    clearOptimistic();
     setHeardIndices([]);
     setCurrentClausePlayed(false);
     setCombineUndo(null);
@@ -1432,7 +1472,7 @@ export function PassageDetailGuidedPhraseRecord({
     playerControlsRef.current?.loadRegionsJson?.(baseline);
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
-    optimisticCompletedRef.current.clear();
+    clearOptimistic();
     setShowRecorder(false);
     setHeardIndices([]);
     setCurrentClausePlayed(false);
@@ -1467,6 +1507,7 @@ export function PassageDetailGuidedPhraseRecord({
     setStepComplete,
     forceRefresh,
     applyColors,
+    clearOptimistic,
   ]);
 
   const handleClearSegments = useCallback(async () => {
@@ -1513,7 +1554,7 @@ export function PassageDetailGuidedPhraseRecord({
       phraseSegParams
     );
     if (
-      !canSplitClause(currentIndex, clauseRegions, completedIndices, splitPoint)
+      !canSplitClause(currentIndex, clauseRegions, recordedForTools, splitPoint)
     ) {
       return;
     }
@@ -1537,7 +1578,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     currentIndex,
     clauseRegions,
-    completedIndices,
+    recordedForTools,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,
@@ -1551,7 +1592,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleCombineWithNext = useCallback(async () => {
     if (savingRecordingRef.current) return;
-    if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
+    if (!canCombineWithNext(currentIndex, clauseRegions, recordedForTools)) {
       return;
     }
     const updated = mergeClauseWithNext(clauseRegions, currentIndex);
@@ -1570,7 +1611,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     currentIndex,
     clauseRegions,
-    completedIndices,
+    recordedForTools,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,
@@ -1766,11 +1807,11 @@ export function PassageDetailGuidedPhraseRecord({
       const takenIndex =
         recordingTargetRef.current?.index ?? currentIndexRef.current;
       if (mediaId) {
-        optimisticCompletedRef.current.add(takenIndex);
+        addOptimistic(takenIndex);
         // Stored: the take is no longer pending, so release the clause.
         latchRecordingTarget(undefined);
       } else {
-        optimisticCompletedRef.current.delete(takenIndex);
+        removeOptimistic(takenIndex);
         // Keep the latch on failed upload so Retry files to the same clause
         // even if selection moved (TT-7583).
       }
@@ -1784,7 +1825,13 @@ export function PassageDetailGuidedPhraseRecord({
       setResetMedia(false);
       applyColors();
     },
-    [forceRefresh, applyColors, latchRecordingTarget]
+    [
+      forceRefresh,
+      applyColors,
+      latchRecordingTarget,
+      addOptimistic,
+      removeOptimistic,
+    ]
   );
 
   const handleClearRecording = useCallback(async () => {
@@ -1805,7 +1852,7 @@ export function PassageDetailGuidedPhraseRecord({
         await setStepComplete(currentstep, false);
       }
     }
-    optimisticCompletedRef.current.delete(
+    removeOptimistic(
       recordingTargetRef.current?.index ?? currentIndexRef.current
     );
     // The take is gone, so the clause it was held against is released too.
@@ -1973,13 +2020,13 @@ export function PassageDetailGuidedPhraseRecord({
           canSplitClause={canSplitClause(
             currentIndex,
             clauseRegions,
-            completedIndices,
+            recordedForTools,
             currentClauseSplitPoint
           )}
           canCombineWithNext={canCombineWithNext(
             currentIndex,
             clauseRegions,
-            completedIndices
+            recordedForTools
           )}
           showUndoCombine={
             combineUndo !== null && !config.multiLevelSegmentUndo
@@ -2054,7 +2101,7 @@ export function PassageDetailGuidedPhraseRecord({
             // MediaRecord's save-requested-with-no-audio branch only lands here,
             // Also clear optimistic green on this failure path (TT-7583).
             // Keep the latch so Retry still files to the same clause.
-            optimisticCompletedRef.current.delete(
+            removeOptimistic(
               recordingTargetRef.current?.index ?? currentIndexRef.current
             );
             applyColors();

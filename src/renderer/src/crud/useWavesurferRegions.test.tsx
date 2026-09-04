@@ -128,41 +128,57 @@ const renderRegions = ({
   const goto = jest.fn();
   const onRegion = jest.fn();
   const setPlaying = jest.fn();
-  const isSegmentRecorded = jest.fn((index: number) =>
-    recordedIndices.includes(index)
-  );
 
-  const { result } = renderHook(() =>
-    useWaveSurferRegions(
-      false, // singleRegionOnly — Careful Speech is multi-region
-      0,
-      ws,
-      { current: undefined },
-      onRegion,
-      () => DURATION,
-      () => false,
-      goto,
-      () => progressAt,
-      () => false,
-      setPlaying,
-      onCurrentRegion,
-      undefined, // onStartRegion
-      undefined, // onRegionPlayEnd
-      undefined, // onMarkerClick
-      undefined, // verses
-      undefined, // hasSegmentUndo
-      withColors ? () => 'rgba(1, 2, 3, 0.5)' : undefined, // applyRegionColor
-      lockSegmentSelection,
-      undefined, // getDecodedBuffer
-      true, // disableDragSelection
-      onRegionClicked,
-      isSegmentRecorded
-    )
+  // Props threaded through renderHook so a rerender models the real reactivity:
+  // a fresh isSegmentRecorded identity (when recordings change) and a new lock
+  // value both re-run the hook's effects.
+  const { result, rerender } = renderHook(
+    ({ lock, recorded }: { lock: boolean; recorded: number[] }) =>
+      useWaveSurferRegions(
+        false, // singleRegionOnly — Careful Speech is multi-region
+        0,
+        ws,
+        { current: undefined },
+        onRegion,
+        () => DURATION,
+        () => false,
+        goto,
+        () => progressAt,
+        () => false,
+        setPlaying,
+        onCurrentRegion,
+        undefined, // onStartRegion
+        undefined, // onRegionPlayEnd
+        undefined, // onMarkerClick
+        undefined, // verses
+        undefined, // hasSegmentUndo
+        withColors ? () => 'rgba(1, 2, 3, 0.5)' : undefined, // applyRegionColor
+        lock,
+        undefined, // getDecodedBuffer
+        true, // disableDragSelection
+        onRegionClicked,
+        (index: number) => recorded.includes(index)
+      ),
+    {
+      initialProps: {
+        lock: lockSegmentSelection,
+        recorded: recordedIndices,
+      },
+    }
   );
 
   act(() => {
     result.current.setupRegions(ws);
   });
+
+  /** Re-run the hook with a changed lock and/or recorded set. */
+  const update = (next: { lock?: boolean; recorded?: number[] }) =>
+    act(() => {
+      rerender({
+        lock: next.lock ?? lockSegmentSelection,
+        recorded: next.recorded ?? recordedIndices,
+      });
+    });
 
   return {
     result,
@@ -172,7 +188,7 @@ const renderRegions = ({
     onRegionClicked,
     goto,
     setPlaying,
-    isSegmentRecorded,
+    update,
   };
 };
 
@@ -344,6 +360,33 @@ describe('useWaveSurferRegions — segment selection locked while recording (TT-
     expect(plugin.regionList.length).toBe(before); // no divider added
     expect(goto).not.toHaveBeenCalled(); // playhead not moved
   });
+
+  it('keeps the boundary handles visible while locked', () => {
+    // Handles are the only marker of where a segment ends; the lock must never
+    // remove them (it disables the drag per side instead).
+    const { segs } = renderRegions({
+      lockSegmentSelection: true,
+      withColors: true,
+    });
+
+    segs.forEach((s) => {
+      expect(s.setOptions).not.toHaveBeenCalledWith(
+        expect.objectContaining({ resize: false })
+      );
+    });
+  });
+
+  it('freezes both sides of every segment while locked', () => {
+    const { segs } = renderRegions({
+      lockSegmentSelection: true,
+      withColors: true,
+    });
+
+    // A middle segment: both edges inert during the lock.
+    expect(segs[1].setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ resizeStart: false, resizeEnd: false })
+    );
+  });
 });
 
 describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)', () => {
@@ -439,8 +482,9 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
     );
   });
 
-  it('does not re-enable handles on a color pass while recording is locked', () => {
-    // While lock is active, color updates must not re-enable drag handles.
+  it('does not make an unrecorded segment draggable on a color pass while locked', () => {
+    // The lock forbids dragging every segment. A color update must not re-arm a
+    // side — but it must still leave the handles visible (resize stays true).
     const { result, segs } = renderRegions({
       lockSegmentSelection: true,
       recordedIndices: [1],
@@ -452,9 +496,33 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
       result.current.applyRegionColors();
     });
 
-    // Segment 0 is unrecorded, but lock still forbids re-enable.
+    // Segment 0 is unrecorded, but the lock keeps both its edges inert.
     expect(segs[0].setOptions).not.toHaveBeenCalledWith(
-      expect.objectContaining({ resize: true })
+      expect.objectContaining({ resizeStart: true })
+    );
+    expect(segs[0].setOptions).not.toHaveBeenCalledWith(
+      expect.objectContaining({ resizeEnd: true })
+    );
+    // ...and never removes the handle.
+    expect(segs[0].setOptions).not.toHaveBeenCalledWith(
+      expect.objectContaining({ resize: false })
+    );
+  });
+
+  it('re-enables a boundary when its recording is removed', () => {
+    // Consistency + the delete case: once the take is gone, the segment's edges
+    // come back — the same way Combine/Split re-enable.
+    const { segs, update } = renderRegions({
+      lockSegmentSelection: false,
+      recordedIndices: [1],
+      withColors: true,
+    });
+    segs.forEach((s) => s.setOptions.mockClear());
+
+    update({ recorded: [] }); // recording deleted
+
+    expect(segs[1].setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ resizeStart: true, resizeEnd: true })
     );
   });
 });
