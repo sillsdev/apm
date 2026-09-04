@@ -91,6 +91,24 @@ export default function DiscussionPanel() {
     [passage.id, currentstep, getDiscussionCount]
   );
 
+  const discussionFab = (
+    <LightTooltip title={t.open}>
+      <Fab
+        sx={{
+          p: 3.5,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          color: 'custom.black',
+        }}
+        onClick={() => setDiscussOpen(true)}
+      >
+        <ForumIcon />
+      </Fab>
+    </LightTooltip>
+  );
+
   return (
     Boolean(mediafileId) &&
     (discussOpen ? (
@@ -130,18 +148,10 @@ export default function DiscussionPanel() {
       >
         {discussionCount > 0 ? (
           <Badge badgeContent={discussionCount} color="primary">
-            <LightTooltip title={t.open}>
-              <Fab size="small" onClick={() => setDiscussOpen(true)}>
-                <ForumIcon />
-              </Fab>
-            </LightTooltip>
+            {discussionFab}
           </Badge>
         ) : (
-          <LightTooltip title={t.open}>
-            <Fab size="small" onClick={() => setDiscussOpen(true)}>
-              <ForumIcon />
-            </Fab>
-          </LightTooltip>
+          discussionFab
         )}
       </Box>
     ))
