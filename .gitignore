@@ -14,6 +14,7 @@ localization/packages
 localization/*.lnk
 localization/*.zip
 buildDate.json
+electron-builder.yml
 env-config/env-files*.zip
 src/renderer/index.html
 *.log*
