@@ -252,7 +252,8 @@ const currentSegments = () =>
 // The waveform registers its region listener ONCE and keeps calling that same
 // (stale) callback afterwards — so capture it a single time and reuse it,
 // rather than re-reading the freshest handler each edit.
-const captureWaveformCallback = (): SegmentCb => playerProps?.onSegment as SegmentCb;
+const captureWaveformCallback = (): SegmentCb =>
+  playerProps?.onSegment as SegmentCb;
 
 // Model one user "add a boundary": the waveform fires the (stale) callback twice
 // for the one gesture (the split emits an event per affected region).

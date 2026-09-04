@@ -1141,7 +1141,9 @@ export function PassageDetailGuidedPhraseRecord({
         recordingPassStarted &&
         !preservesRecordedBoundaries(clauseRegions, regions, completedIndices)
       ) {
-        playerControlsRef.current?.loadRegionsJson?.(clauseSegStringRef.current);
+        playerControlsRef.current?.loadRegionsJson?.(
+          clauseSegStringRef.current
+        );
         return;
       }
       const json = regionsJsonFromList(regions, phraseSegParams);
@@ -1489,7 +1491,12 @@ export function PassageDetailGuidedPhraseRecord({
       phraseSegParams
     );
     if (
-      !canSplitClause(currentIndex, clauseRegions, recordedClauseIndicesForTools, splitPoint)
+      !canSplitClause(
+        currentIndex,
+        clauseRegions,
+        recordedClauseIndicesForTools,
+        splitPoint
+      )
     ) {
       return;
     }
@@ -1527,7 +1534,13 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleCombineWithNext = useCallback(async () => {
     if (savingRecordingRef.current) return;
-    if (!canCombineWithNext(currentIndex, clauseRegions, recordedClauseIndicesForTools)) {
+    if (
+      !canCombineWithNext(
+        currentIndex,
+        clauseRegions,
+        recordedClauseIndicesForTools
+      )
+    ) {
       return;
     }
     const updated = mergeClauseWithNext(clauseRegions, currentIndex);
