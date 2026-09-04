@@ -798,3 +798,24 @@ describe('PassageDetailCarefulSpeech — recorded-state consistency across guard
     expect(controlsProps?.canCombineWithNext).toBe(true);
   });
 });
+
+describe('PassageDetailCarefulSpeech — undo history cleared at record start (TT-7666)', () => {
+  it('drops the segment-edit undo once a take is recorded', async () => {
+    mockCompleted = new Set([0, 1]); // clause 2 is the current unrecorded one
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    // Arm undo with a boundary edit (Combine).
+    await act(async () => {
+      await (controlsProps?.onCombineWithNext as () => Promise<void>)();
+    });
+    expect(controlsProps?.showUndoCombine).toBe(true);
+
+    // Recording fixes the boundaries; the undo history must be gone so it can
+    // never restore boundaries the take no longer matches.
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    expect(controlsProps?.showUndoCombine).toBe(false);
+  });
+});

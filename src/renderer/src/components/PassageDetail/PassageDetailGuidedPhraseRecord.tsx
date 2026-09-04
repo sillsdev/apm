@@ -2074,6 +2074,11 @@ export function PassageDetailGuidedPhraseRecord({
               // TT-7552: a deliberate take cancels the post-park overshoot swallow
               // so tapping the next segment is treated as real navigation.
               pendingOvershootSwallowRef.current = false;
+              // Recording a take fixes the boundaries around it, so drop the
+              // segment-edit undo history — undoing a prior split/combine after a
+              // take would restore boundaries the take no longer matches (TT-7666).
+              clearSegmentUndo();
+              setCombineUndo(null);
               setRecording(true);
               setPhase('recording');
               return;
