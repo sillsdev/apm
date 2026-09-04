@@ -130,7 +130,9 @@ function WSAudioPlayerSegment(props: IProps) {
     const result = wsAddRegion();
     if (result && onSplit) onSplit(result);
     if (setBusy) setBusy(false);
-    return true;
+    // Report handled only when a divider was actually added — a refused split
+    // (recorded segment, or recording in progress) did nothing (TT-7666).
+    return !!result;
   };
   const handleRemoveNextSplit = () => {
     if (!readyRef.current) return false;
@@ -139,7 +141,8 @@ function WSAudioPlayerSegment(props: IProps) {
     const result = wsRemoveSplitRegion();
     if (result && onSplit) onSplit(result);
     if (setBusy) setBusy(false);
-    return true;
+    // Report handled only when a boundary was actually removed (TT-7666).
+    return !!result;
   };
   const handleSegParamChange = (
     params: IRegionParams,
