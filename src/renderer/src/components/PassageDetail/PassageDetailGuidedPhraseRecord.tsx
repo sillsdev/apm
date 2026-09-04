@@ -206,12 +206,7 @@ export function PassageDetailGuidedPhraseRecord({
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
-  /**
-   * When playback of the current clause last began - whether this component
-   * started it or the user pressed Play. See SPURIOUS_STOP_WINDOW_MS: a stale
-   * timestamp would make the seek-suppression window compare against an old
-   * time and mark a clause played before it had been.
-   */
+  /** Last clause-play start time, used by SPURIOUS_STOP_WINDOW_MS filtering. */
   const clausePlaybackStartedAtRef = useRef(0);
   const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
@@ -238,29 +233,59 @@ export function PassageDetailGuidedPhraseRecord({
   const [savingRecording, setSavingRecording] = useState(false);
   // Mirrors saveRejectedRef for render: shows the failure message + Retry.
   const [saveRejected, setSaveRejected] = useState(false);
-  // Mirror of savingRecording, set synchronously wherever the state is toggled.
-  // The clause-boundary guards read this ref rather than the state value so a
-  // save that begins before React commits the disabling render is still seen by
-  // an in-flight callback closure (state would be captured stale). See the
-  // savingRecording toggles below (TT-7427).
+  // Sync mirror for callbacks so boundary guards see save-start immediately,
+  // even before React commits the render update (TT-7427).
   const savingRecordingRef = useRef(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
-  // Mirror of recordingPassStarted set synchronously at the call sites below.
-  // region-out can fire before React commits the state-update render, leaving
-  // the handler's closure (and handleRegionPlayEndRef) on the stale false
-  // value; reading this ref makes the recording/listen branch decision reflect
-  // intent immediately rather than waiting for a render (TT-7360).
+  // Sync mirror for region-out callbacks so pass-branching does not read stale
+  // state during render lag (TT-7360).
   const recordingPassStartedRef = useRef(false);
   /** Mirrors context recording for segment-lock checks once capture is active. */
   const recordingActiveRef = useRef(false);
-  // Set true when we park after an auto-play. The playback overshoot into the
-  // next clause (or a recorder-mount-induced region-in) advances by exactly one
-  // clause; this lets the recording effect swallow that single +1 advance while
-  // still treating any non-adjacent jump as a genuine user tap (TT-7360).
+  // Armed after auto-play park to ignore one spurious +1 clause jump
+  // (overshoot/region-in) while still allowing real navigation (TT-7360).
   const pendingOvershootSwallowRef = useRef(false);
-  /** Indices saved this session whose rowData may not have caught up yet (TT-7552). */
+  /** Session-local saved indices before rowData catches up (TT-7552, TT-7666). */
   const optimisticCompletedRef = useRef<Set<number>>(new Set());
+  const [optimisticVersion, setOptimisticVersion] = useState(0);
+  const bumpOptimistic = useCallback(
+    () => setOptimisticVersion((v) => v + 1),
+    []
+  );
+  const addOptimistic = useCallback(
+    (index: number) => {
+      optimisticCompletedRef.current.add(index);
+      bumpOptimistic();
+    },
+    [bumpOptimistic]
+  );
+  const removeOptimistic = useCallback(
+    (index: number) => {
+      if (optimisticCompletedRef.current.delete(index)) bumpOptimistic();
+    },
+    [bumpOptimistic]
+  );
+  const clearOptimistic = useCallback(() => {
+    if (optimisticCompletedRef.current.size === 0) return;
+    optimisticCompletedRef.current.clear();
+    bumpOptimistic();
+  }, [bumpOptimistic]);
   const currentIndexRef = useRef(0);
+  /** Latched clause/region for the active take until save or discard (TT-7437). */
+  const [recordingTarget, setRecordingTarget] = useState<
+    { index: number; region: IRegion } | undefined
+  >(undefined);
+  // Mirror for the upload callbacks, which fire outside a render.
+  const recordingTargetRef = useRef<
+    { index: number; region: IRegion } | undefined
+  >(undefined);
+  const latchRecordingTarget = useCallback(
+    (target: { index: number; region: IRegion } | undefined) => {
+      recordingTargetRef.current = target;
+      setRecordingTarget(target);
+    },
+    []
+  );
   const [heardIndices, setHeardIndices] = useState<number[]>([]);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
   const [combineUndo, setCombineUndo] = useState<string | null>(null);
@@ -458,6 +483,45 @@ export function PassageDetailGuidedPhraseRecord({
     ]
   );
 
+  // A take that finished recording but has not saved yet — its upload failed
+  // and it is held for Retry — is still playable and stays latched to the
+  // clause it was recorded on. Treat that clause as recorded so its boundaries
+  // lock like a saved take's: if the user can listen to the take, they must not
+  // reshape the segment under it, or a Retry would file it against the altered
+  // boundaries (TT-7437). A successful save clears the latch (and the optimistic
+  // set then covers the clause), so this only fires for an unsaved take.
+  const pendingTakeIndex =
+    phase === 'recorded' ? recordingTarget?.index : undefined;
+
+  // A segment is treated as recorded (boundary locked, TT-7666) when it has a
+  // saved take, a newly saved take that rowData has not shown yet, or a
+  // recorded-but-unsaved take latched to it (see pendingTakeIndex above).
+  // This only applies during the recording pass.
+  const isSegmentRecorded = useCallback(
+    (index: number) =>
+      recordingPassStarted &&
+      (completedIndices.has(index) ||
+        optimisticCompletedRef.current.has(index) ||
+        index === pendingTakeIndex),
+    // optimisticVersion makes optimistic-set changes reactive so every guard
+    // that reads this predicate (drag, +/-, Split/Combine) recomputes together.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recordingPassStarted, completedIndices, optimisticVersion, pendingTakeIndex]
+  );
+
+  /** completedIndices plus the optimistic just-saved set and any latched
+   *  unsaved take — the single recorded view every boundary-editing guard uses,
+   *  so they agree in the window before rowData catches up (TT-7666, TT-7437). */
+  const recordedClauseIndicesForTools = useMemo(() => {
+    const recorded = new Set([
+      ...completedIndices,
+      ...optimisticCompletedRef.current,
+    ]);
+    if (pendingTakeIndex !== undefined) recorded.add(pendingTakeIndex);
+    return recorded;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedIndices, optimisticVersion, pendingTakeIndex]);
+
   const allClausesComplete = useMemo(
     () =>
       clauseRegions.length > 0 && completedIndices.size >= clauseRegions.length,
@@ -531,9 +595,14 @@ export function PassageDetailGuidedPhraseRecord({
     [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
+  /** The clause a pending take is filed under: latched at Record if there is
+   *  one, otherwise wherever the user is now. */
+  const takeIndex = recordingTarget?.index ?? currentIndex;
+  const takeRegion = recordingTarget?.region ?? currentRegion;
+
   const defaultFilename = useMemo(() => {
     const postfix = config.buildFilenamePostfix(
-      currentIndex,
+      takeIndex,
       currentVersion,
       stepLanguageBcp47
     );
@@ -551,7 +620,7 @@ export function PassageDetailGuidedPhraseRecord({
     memory,
     artifactTypeId,
     offline,
-    currentIndex,
+    takeIndex,
     currentVersion,
     stepLanguageBcp47,
     config,
@@ -579,8 +648,11 @@ export function PassageDetailGuidedPhraseRecord({
         changed = true;
       }
     }
-    if (changed) applyColors();
-  }, [completedIndices, applyColors]);
+    if (changed) {
+      bumpOptimistic();
+      applyColors();
+    }
+  }, [completedIndices, applyColors, bumpOptimistic]);
 
   const bumpSuppressClauseAutoPlay = useCallback((count = 1) => {
     suppressClauseAutoPlayRef.current += count;
@@ -683,8 +755,13 @@ export function PassageDetailGuidedPhraseRecord({
   // Keyed on the index rather than the navigation handlers because every clause
   // move funnels through it.
   useEffect(() => {
+    // The latch keeps a take tied to its original clause (TT-7437).
+    // If upload failed and the user navigates away, that take is abandoned,
+    // so clear the latch here.
+    if (saveRejectedRef.current) latchRecordingTarget(undefined);
     saveRejectedRef.current = false;
     setSaveRejected(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
   useEffect(() => {
@@ -719,17 +796,8 @@ export function PassageDetailGuidedPhraseRecord({
         setPhase('playing');
         const seek =
           region.start > 0 ? region.start + CLAUSE_BOUNDARY_THRESHOLD_SEC : 0;
-        // How long this clause will take, so Record can be withheld for exactly
-        // that long. See recordBlocked for why this is timed rather than driven
-        // by an event.
-        // Always 1 as things stand: the speed control is only rendered when
-        // PassageDetailPlayer is given allowSpeed or allowZoomAndSpeed, and this
-        // step passes neither, so nothing here can change the rate. Dividing by
-        // it is for whenever that is turned on - at 0.25x a clause takes four
-        // times as long, and withholding Record for the unscaled span would
-        // release it three quarters of the way through the audio. Untested at
-        // any rate other than 1 for the same reason: there is no way to reach
-        // one from this step yet.
+        // Compute expected playback span so Record stays disabled for the full
+        // clause duration. Use rate for future speed-enabled flows.
         const rate = ctrl.getPlaybackRate?.() || 1;
         setRecordBlockedUntil(
           Date.now() +
@@ -799,21 +867,10 @@ export function PassageDetailGuidedPhraseRecord({
     (playingNow: boolean) => {
       if (playingNow) {
         setHighlightPlayButton(false);
-        // Playback began, whatever started it. Time the window from here, so a
-        // stop that this start provokes is discarded below instead of being read
-        // as the clause having finished.
+        // Reset stop-filter timing at every playback start.
         clausePlaybackStartedAtRef.current = Date.now();
-        // Withhold Record for what is left of the clause. playCurrentClause sets
-        // this too, for the step's own playback, but a user replaying a clause
-        // they have already heard never goes through it - and by then the clause
-        // counts as heard, so Record is operable and could be pressed over the
-        // reference audio, which is the very thing withholding it prevents
-        // (Devin). Measured from the playhead, since a replay can start part way
-        // in.
-        //
-        // Set here rather than in beforePlay: the player awaits that hook, and
-        // setting state inside it re-renders mid-start and the play never
-        // happens at all. Here the audio is already running.
+        // Also gate Record for user-triggered replays from current playhead.
+        // Set here (not beforePlay) so playback start is not interrupted.
         const region = clauseRegions[currentIndex];
         const ctrl = playerControlsRef.current;
         if (region && ctrl) {
@@ -838,32 +895,16 @@ export function PassageDetailGuidedPhraseRecord({
       // Capturing or saving a take stops the source audio, and that stop is not
       // the clause being heard. Defensive:
       if (recordingActiveRef.current || savingRecordingRef.current) return;
-      // Starting a clause seeks the playhead to its start, and that seek reports
-      // a stop of its own before anything has been heard. This can be
-      // differentiated from a real stop (user pause) by how long playback had
-      // been running. If under SPURIOUS_STOP_WINDOW_MS it is the seek, ignore it.
+      // Ignore synthetic stop from start seek if it lands inside the spurious
+      // stop window.
       if (
         Date.now() - clausePlaybackStartedAtRef.current <
         SPURIOUS_STOP_WINDOW_MS
       ) {
         return;
       }
-      // A real stop - the user pausing - means the rest of the clause is not
-      // coming, so stop withholding Record for it (#529's behaviour, kept).
-      //
-      // A pause inside the window above does not get here, so Record stays
-      // withheld for the remainder of the clause's span even though the audio
-      // has stopped (Devin). Deliberate: inside that window a stop cannot be
-      // told apart from the seek that starts the clause, and clearing on the
-      // seek would reinstate the defect this all exists to fix. The wait is
-      // bounded by the clause length, and it is the same limitation #529 already
-      // has for currentClausePlayed - a pause that quick does not mark the
-      // clause heard either.
-      //
-      // Reaching it means pausing within 250ms of a clause starting, which
-      // Noel's call is unlikely in practice and near enough impossible without a
-      // touchscreen: the step starts the clause itself, so it needs the pointer
-      // already over Play and a press inside that window.
+      // Real user pause: release Record block and mark clause as heard.
+      // Very-early pauses are treated like start-seek noise by design.
       setRecordBlockedUntil(0);
       setCurrentClausePlayed(true);
       setPhase((p) =>
@@ -940,7 +981,10 @@ export function PassageDetailGuidedPhraseRecord({
     saveRejectedRef.current = false;
     setSaveRejected(false);
     pendingOvershootSwallowRef.current = false;
-    optimisticCompletedRef.current.clear();
+    // The latch is mediafile-specific. Clear it when source media changes,
+    // so the next take cannot reuse a clause from the old waveform (TT-7437).
+    latchRecordingTarget(undefined);
+    clearOptimistic();
     setHeardIndices([]);
     setCurrentClausePlayed(false);
     setCombineUndo(null);
@@ -1024,9 +1068,7 @@ export function PassageDetailGuidedPhraseRecord({
       );
       const firstIdx = firstIncompleteClauseIndex(clauseRegions, completed);
       if (firstIdx >= clauseRegions.length) {
-        // All clauses are recorded. Enter recording (review) mode positioned on
-        // the first clause so the user can replay both the original and the
-        // careful-speech take per clause. Step completion syncs via effect.
+        // All clauses recorded: enter review mode on first clause.
         setRecordingPassStarted(true);
         recordingPassStartedRef.current = true;
         setShowRecorder(true);
@@ -1104,6 +1146,9 @@ export function PassageDetailGuidedPhraseRecord({
       if (recordingActiveRef.current || savingRecording) return;
       const regions = getSortedRegions(seg);
       if (regions.length === 0) return;
+      // Defense-in-depth only: if an update still changes recorded boundaries,
+      // reload the previous regions. Main blocking now happens earlier in
+      // useWavesurferRegions (drag, split/merge, and +/- controls; TT-7666).
       if (
         recordingPassStarted &&
         !preservesRecordedBoundaries(clauseRegions, regions, completedIndices)
@@ -1164,11 +1209,8 @@ export function PassageDetailGuidedPhraseRecord({
 
       setCurrentIndex(idx);
       setCurrentClausePlayed(true);
-      // Parking after an auto-play. A spurious +1 segment change usually
-      // follows — playback overshoot into the next clause, or the recorder
-      // mounting once allowRecord turns true — which the recording effect would
-      // otherwise read as a user tap and auto-play. Arm the overshoot swallow so
-      // that single adjacent advance is ignored while we stay parked (TT-7360).
+      // After auto-play park, ignore one spurious +1 region change caused by
+      // overshoot or recorder mount (TT-7360).
       pendingOvershootSwallowRef.current = true;
       if (phase === 'recording') return;
       setPhase('recordReady');
@@ -1185,23 +1227,15 @@ export function PassageDetailGuidedPhraseRecord({
     ]
   );
 
-  // WaveSurfer registers region-out once on audio ready, capturing a snapshot
-  // of this callback. Start Recording changes recordingPassStarted without
-  // reloading the audio, which would leave the listener on a stale listen-pass
-  // closure. Stable wrapper + ref keeps it current. See docs/adr/0006.
+  // region-out listener is registered once; route through ref to avoid stale
+  // closure when recording pass changes without audio reload (ADR 0006).
   const handleRegionPlayEndRef = useRef(handleRegionPlayEnd);
   handleRegionPlayEndRef.current = handleRegionPlayEnd;
   const onSegmentPlaybackEnd = useCallback((region: IRegion) => {
     handleRegionPlayEndRef.current(region);
   }, []);
 
-  /**
-   * A click on the waveform is a deliberate selection, so it can never be the
-   * playback overshoot the swallow exists to absorb. Disarm it here, before the
-   * segment change it produces reaches the navigation effect below — otherwise
-   * clicking the segment right after the current one is indistinguishable from
-   * overshoot and gets eaten, leaving the user's first click with no effect.
-   */
+  /** User click is intentional navigation, so never treat it as overshoot. */
   const handleSegmentClick = useCallback(() => {
     pendingOvershootSwallowRef.current = false;
   }, []);
@@ -1225,17 +1259,8 @@ export function PassageDetailGuidedPhraseRecord({
     const indexChanged = idx !== currentIndex;
 
     if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
-      // A +1 segment change arriving just after an auto-play park is not the
-      // user moving: either playback overshot into the next clause, or the
-      // recorder mounted and reported a region-in there. Stay on the parked
-      // clause and play nothing. A change further away than +1 is a real tap,
-      // and falls through to the branches below.
-      //
-      // This has to be decided before the completed-clause branch below.
-      // Otherwise, when the clause the overshoot lands on already has a take -
-      // record 1, arrow forward to 3, record 3, arrow back to 2 - that branch
-      // takes the overshoot for a move onto clause 3 and selects it, leaving
-      // clause 2 pending under a user who was waiting to record it (TT-7621).
+      // Swallow one adjacent +1 change right after auto-play park. It is
+      // usually overshoot/region-in noise, not user navigation (TT-7621).
       pendingOvershootSwallowRef.current = false;
       if (playerControlsRef.current?.isPlaying?.()) {
         playerControlsRef.current.setPlay(false);
@@ -1283,20 +1308,9 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase((p) => (p === 'recording' ? 'recording' : 'readyToRecord'));
     void playCurrentClause(idx);
-    // Neither dep is read in the body — the segment itself comes from the ref
-    // behind getCurrentSegment() — so both are here purely as change signals.
-    //
-    // currentSegmentSeq is the one that tells us the selection moved. The
-    // index's numbering is not agreed between writers (the waveform writes
-    // 1-based, this component 0-based), so a genuine move can arrive carrying
-    // the number the previous writer used. Clicking segment 2 right after
-    // recording segment 3 does exactly that (waveform 1+1 vs step 2) — the
-    // effect never re-ran, the step stayed on segment 3, and the next take was
-    // filed there.
-    //
-    // currentSegmentIndex stays because the seq does not fully cover it:
-    // selecting another row resets the index to 0 without going through
-    // setCurrentSegment, so no seq bump accompanies that one.
+    // Both deps are change signals for getCurrentSegment(). Keep
+    // currentSegmentSeq for reliable move detection across index conventions,
+    // and keep currentSegmentIndex for row-change resets that skip seq bumps.
   }, [
     currentSegmentIndex,
     currentSegmentSeq,
@@ -1403,7 +1417,7 @@ export function PassageDetailGuidedPhraseRecord({
     playerControlsRef.current?.loadRegionsJson?.(baseline);
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
-    optimisticCompletedRef.current.clear();
+    clearOptimistic();
     setShowRecorder(false);
     setHeardIndices([]);
     setCurrentClausePlayed(false);
@@ -1438,6 +1452,7 @@ export function PassageDetailGuidedPhraseRecord({
     setStepComplete,
     forceRefresh,
     applyColors,
+    clearOptimistic,
   ]);
 
   const handleClearSegments = useCallback(async () => {
@@ -1484,7 +1499,7 @@ export function PassageDetailGuidedPhraseRecord({
       phraseSegParams
     );
     if (
-      !canSplitClause(currentIndex, clauseRegions, completedIndices, splitPoint)
+      !canSplitClause(currentIndex, clauseRegions, recordedClauseIndicesForTools, splitPoint)
     ) {
       return;
     }
@@ -1508,7 +1523,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     currentIndex,
     clauseRegions,
-    completedIndices,
+    recordedClauseIndicesForTools,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,
@@ -1522,7 +1537,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleCombineWithNext = useCallback(async () => {
     if (savingRecordingRef.current) return;
-    if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
+    if (!canCombineWithNext(currentIndex, clauseRegions, recordedClauseIndicesForTools)) {
       return;
     }
     const updated = mergeClauseWithNext(clauseRegions, currentIndex);
@@ -1541,7 +1556,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     currentIndex,
     clauseRegions,
-    completedIndices,
+    recordedClauseIndicesForTools,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,
@@ -1709,12 +1724,8 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase('readyToRecord');
     setResetMedia(true);
-    // playCurrentClause plays clause `next` once. When it ends,
-    // handleRegionPlayEnd parks us on `next` (recordReady) and arms the
-    // overshoot swallow, so the region-in into next+1 is ignored by the
-    // recording effect rather than advancing the clause. This replaces the old
-    // duration-based setTimeout that re-asserted `next` after playback — see
-    // TT-7360.
+    // Play next once; region-end handler parks on it and arms overshoot swallow
+    // so next+1 region-in does not auto-advance (TT-7360).
     await playCurrentClause(next);
   }, [
     clauseRegions,
@@ -1728,18 +1739,22 @@ export function PassageDetailGuidedPhraseRecord({
 
   const afterUploadCb = useCallback(
     async (mediaId: string | undefined) => {
-      // Color green immediately; rowData/forceRefresh often lag the upload
-      // (TT-7552). Only on a real upload though — a terminal failure still calls
-      // us, with no mediaId, and painting that green tells the user their take
-      // was stored when it was not (TT-7583).
+      // Mark optimistic completion immediately after real upload (TT-7552),
+      // and always apply it to the latched recording-start clause (TT-7437).
+      // No mediaId means upload failed; do not show optimistic success (TT-7583).
+      const takenIndex =
+        recordingTargetRef.current?.index ?? currentIndexRef.current;
       if (mediaId) {
-        optimisticCompletedRef.current.add(currentIndexRef.current);
+        addOptimistic(takenIndex);
+        // Stored: the take is no longer pending, so release the clause.
+        latchRecordingTarget(undefined);
       } else {
-        optimisticCompletedRef.current.delete(currentIndexRef.current);
+        removeOptimistic(takenIndex);
+        // Keep the latch on failed upload so Retry files to the same clause
+        // even if selection moved (TT-7583).
       }
-      // Stays 'recorded' either way: the take still exists, it just is not
-      // stored. That keeps Record disabled and the clear button available, so
-      // discarding the take is the deliberate way back to recording (TT-7583).
+      // Keep 'recorded' on success or failure so user can clear/retry this take
+      // instead of starting a new one accidentally (TT-7583).
       setPhase('recorded');
       savingRecordingRef.current = false;
       setSavingRecording(false);
@@ -1747,17 +1762,21 @@ export function PassageDetailGuidedPhraseRecord({
       setResetMedia(false);
       applyColors();
     },
-    [forceRefresh, applyColors]
+    [
+      forceRefresh,
+      applyColors,
+      latchRecordingTarget,
+      addOptimistic,
+      removeOptimistic,
+    ]
   );
 
   const handleClearRecording = useCallback(async () => {
-    // Deleting the take retires the failed save with it, so the message and the
-    // latch must both go (TT-7583).
+    // Clearing the take also clears failed-save state and latch (TT-7583).
     saveRejectedRef.current = false;
     setSaveRejected(false);
-    // A take whose upload failed has no mediafile to remove, but it is still
-    // sitting unsaved in the recorder — discarding it is the whole point of the
-    // button in that state, so only the removal is conditional (TT-7583).
+    // Failed uploads may have no mediafile record, but Clear still discards the
+    // local take (TT-7583).
     const mediaId = recordingRow?.mediafile?.id;
     if (mediaId) {
       await memory.update((t) =>
@@ -1768,7 +1787,11 @@ export function PassageDetailGuidedPhraseRecord({
         await setStepComplete(currentstep, false);
       }
     }
-    optimisticCompletedRef.current.delete(currentIndexRef.current);
+    removeOptimistic(
+      recordingTargetRef.current?.index ?? currentIndexRef.current
+    );
+    // The take is gone, so the clause it was held against is released too.
+    latchRecordingTarget(undefined);
     setPhase('recordReady');
     setCurrentClausePlayed(true);
     setResetMedia(true);
@@ -1790,31 +1813,13 @@ export function PassageDetailGuidedPhraseRecord({
     !completedIndices.has(currentIndex);
 
   /**
-   * Withhold Record for as long as the clause will take to play.
+   * Disable only the Record button until expected clause playback time expires.
    *
-   * Recording over the reference audio is what the listen-then-record flow
-   * exists to prevent, and the step's phase flags do not enforce it: the seek
-   * that starts a clause emits a region-out indistinguishable from the one that
-   * ends it, so handleRegionPlayEnd parks and marks the clause heard about 60ms
-   * in, leaving Record operable for the rest of it.
+   * We use time-based gating because early region-out events from start seeks
+   * can look like real playback end and re-enable Record too soon (ADR 0011).
    *
-   * Two event-based fixes were tried and reverted. Withholding the park strands
-   * the step, because the navigation flows are built on it and the genuine end
-   * is not reliably reported. Gating on the player's own playing state flickers,
-   * because starting a clause pauses and resumes it - and that blip turns out to
-   * be load-bearing: it is what makes the end-of-region event arrive at all, so
-   * removing it strands the step too. See ADR 0011.
-   *
-   * So don't infer it from events. The clause span and the playback rate are
-   * both known when playback starts, so how long the audio will run is known
-   * too. This degrades safely in every direction: if playback is cut short
-   * Record returns a little late, if it is a sliver Record returns almost at
-   * once, and nothing can leave it withheld indefinitely.
-   *
-   * Deliberately not folded into allowRecord: that prop is capability, and
-   * useWavRecorder releases the capture stream when it goes false, so a take
-   * could not start until the microphone had been re-acquired. This disables the
-   * button only, and changes no step state.
+   * This is intentionally separate from allowRecord so recorder capability and
+   * mic lifecycle state are not toggled by this temporary UI gate.
    */
   useEffect(() => {
     const remaining = recordBlockedUntil - Date.now();
@@ -1911,6 +1916,7 @@ export function PassageDetailGuidedPhraseRecord({
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
           lockSegmentSelection={segmentSelectionLocked}
+          isSegmentRecorded={isSegmentRecorded}
           allowZoom={true}
         />
       )}
@@ -1931,13 +1937,13 @@ export function PassageDetailGuidedPhraseRecord({
           canSplitClause={canSplitClause(
             currentIndex,
             clauseRegions,
-            completedIndices,
+            recordedClauseIndicesForTools,
             currentClauseSplitPoint
           )}
           canCombineWithNext={canCombineWithNext(
             currentIndex,
             clauseRegions,
-            completedIndices
+            recordedClauseIndicesForTools
           )}
           showUndoCombine={
             combineUndo !== null && !config.multiLevelSegmentUndo
@@ -1963,7 +1969,7 @@ export function PassageDetailGuidedPhraseRecord({
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
           artifactId={artifactTypeId}
           sourceMediaId={mediafileId}
-          sourceSegments={JSON.stringify(currentRegion ?? {})}
+          sourceSegments={JSON.stringify(takeRegion ?? {})}
           languagebcp47={stepLanguageField}
           defaultFilename={defaultFilename}
           recordingMediaId={recordingRow?.mediafile?.id}
@@ -1971,12 +1977,25 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // Latch the take target at record start so later selection
+              // changes do not move where this take is filed (TT-7437).
+              if (currentRegion) {
+                latchRecordingTarget({
+                  index: currentIndex,
+                  region: currentRegion,
+                });
+              }
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
               setSaveRejected(false);
               // TT-7552: a deliberate take cancels the post-park overshoot swallow
               // so tapping the next segment is treated as real navigation.
               pendingOvershootSwallowRef.current = false;
+              // Recording a take fixes the boundaries around it, so drop the
+              // segment-edit undo history — undoing a prior split/combine after a
+              // take would restore boundaries the take no longer matches (TT-7666).
+              clearSegmentUndo();
+              setCombineUndo(null);
               setRecording(true);
               setPhase('recording');
               return;
@@ -2002,8 +2021,11 @@ export function PassageDetailGuidedPhraseRecord({
             setSavingRecording(false);
             // Upload failures route through afterUploadCb('') as well, but
             // MediaRecord's save-requested-with-no-audio branch only lands here,
-            // so undo the optimistic green from this path too (TT-7583).
-            optimisticCompletedRef.current.delete(currentIndexRef.current);
+            // Also clear optimistic green on this failure path (TT-7583).
+            // Keep the latch so Retry still files to the same clause.
+            removeOptimistic(
+              recordingTargetRef.current?.index ?? currentIndexRef.current
+            );
             applyColors();
           }}
           setStatusText={setStatusText}

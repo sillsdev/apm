@@ -208,8 +208,7 @@ import { PassageDetailCarefulSpeech } from './PassageDetailCarefulSpeech';
 // Fire the player's region-out callback for a given clause.
 const firePlaybackEnd = async (idx: number) => {
   const cb = playerProps?.onSegmentPlaybackEnd as
-    | ((r: IRegion) => void)
-    | undefined;
+    ((r: IRegion) => void) | undefined;
   await act(async () => {
     cb?.(regions[idx]);
   });
@@ -317,8 +316,7 @@ describe('PassageDetailCarefulSpeech — review and clear recording', () => {
     await mountAndSettle();
 
     const onClearRecording = controlsProps?.onClearRecording as
-      | (() => void)
-      | undefined;
+      (() => void) | undefined;
     await act(async () => {
       onClearRecording?.();
     });
@@ -439,6 +437,82 @@ describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () =
   });
 });
 
+describe('PassageDetailCarefulSpeech — take belongs to the clause it started on (TT-7437)', () => {
+  // Start recording on clause 2 and return the resulting sourceSegments value.
+  const startTakeOnClause2 = async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const utils = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    return utils;
+  };
+
+  it('keeps the take on its clause when the selection moves mid-record', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('keeps the take on its clause when the selection change lands after stop', async () => {
+    // Even if the tap seek causes a later region-in, the take still belongs to
+    // clause 2 because recording already happened there (TT-7437).
+    const { rerender } = await startTakeOnClause2();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('keeps the take on its clause while the save is in flight', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('greens the clause it recorded, not the one the selection moved to', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    const colorOf = (index: number) =>
+      (
+        playerProps?.applyRegionColor as
+          ((role: string, index: number, count: number) => string) | undefined
+      )?.('base', index, 8);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await moveEngineToClause(6, rerender);
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(colorOf(2)).toBe(CAREFUL_SPEECH_COMPLETED_RGBA);
+    expect(colorOf(6)).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+  });
+});
+
 describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', () => {
   it('after saving a take, tapping the next clause advances and resets the recorder', async () => {
     mockCompleted = new Set([0, 1]); // auto-play clause 2
@@ -479,8 +553,7 @@ describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', (
     const applyRegionColor = () =>
       (
         playerProps?.applyRegionColor as
-          | ((role: string, index: number, count: number) => string)
-          | undefined
+          ((role: string, index: number, count: number) => string) | undefined
       )?.('base', 2, 8);
 
     expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
@@ -511,8 +584,7 @@ describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', (
     const applyRegionColor = () =>
       (
         playerProps?.applyRegionColor as
-          | ((role: string, index: number, count: number) => string)
-          | undefined
+          ((role: string, index: number, count: number) => string) | undefined
       )?.('base', 2, 8);
 
     expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
@@ -634,6 +706,32 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     expect(controlsProps?.allowRecord).toBe(false);
   });
 
+  it('locks the failed take’s clause across every boundary guard (TT-7437)', async () => {
+    await recordAndRejectSave();
+
+    // The upload failed but the take is still playable and latched to clause 2,
+    // so every boundary-editing guard must treat that clause as recorded — if
+    // the user can listen to the take, they must not reshape the segment under
+    // it, or a Retry would file the take against the altered boundaries.
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    expect(isRecorded(2)).toBe(true); // drag / +- guard
+    expect(controlsProps?.canCombineWithNext).toBe(false); // Split/Combine agree
+  });
+
+  it('re-opens the clause for editing once the failed take is cleared (TT-7437)', async () => {
+    mockRecordingRow = undefined; // nothing persisted; clearing drops the take
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    // Take gone: the same guards let clause 2 be edited again, in step.
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    expect(isRecorded(2)).toBe(false);
+    expect(controlsProps?.canCombineWithNext).toBe(true);
+  });
+
   it('clearing a failed take resets the recorder even with no mediafile', async () => {
     mockRecordingRow = undefined; // nothing was stored, so nothing to remove
     await recordAndRejectSave();
@@ -677,5 +775,73 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     });
 
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+});
+
+describe('PassageDetailCarefulSpeech — recorded-state consistency across guards (TT-7666)', () => {
+  // Every boundary-editing guard must read the same recorded view: the drag /
+  // +- guards (via isSegmentRecorded on the player) and Split/Combine (via their
+  // can* props) agree, including the optimistic window right after a save, and
+  // all re-enable together when the take is removed.
+  const recordClause2 = async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+  };
+
+  it('treats a just-saved clause as recorded for drag and for Combine alike', async () => {
+    await recordClause2();
+
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    // drag / +- guard sees clause 2 recorded (optimistic, rowData still lagging)
+    expect(isRecorded(2)).toBe(true);
+    // ...and Combine agrees — it is disabled on the same clause.
+    expect(controlsProps?.canCombineWithNext).toBe(false);
+  });
+
+  it('re-enables drag and Combine together when the take is cleared', async () => {
+    await recordClause2();
+    mockRecordingRow = undefined; // nothing persisted; clearing drops the take
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    // Both guards let go of clause 2 at once — no asymmetry (the reported bug).
+    expect(isRecorded(2)).toBe(false);
+    expect(controlsProps?.canCombineWithNext).toBe(true);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — undo history cleared at record start (TT-7666)', () => {
+  it('drops the segment-edit undo once a take is recorded', async () => {
+    mockCompleted = new Set([0, 1]); // clause 2 is the current unrecorded one
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    // Arm undo with a boundary edit (Combine).
+    await act(async () => {
+      await (controlsProps?.onCombineWithNext as () => Promise<void>)();
+    });
+    expect(controlsProps?.showUndoCombine).toBe(true);
+
+    // Recording fixes the boundaries; the undo history must be gone so it can
+    // never restore boundaries the take no longer matches.
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    expect(controlsProps?.showUndoCombine).toBe(false);
   });
 });

@@ -126,18 +126,20 @@ export function useWaveSurferRegions(
   lockSegmentSelection?: boolean,
   getDecodedBuffer?: () => AudioBuffer | undefined,
   /**
-   * Suppress drag-to-create-region (the red loop region) even in single-region
-   * mode. Read once, where setupRegions configures the regions plugin on the
-   * WaveSurfer 'ready' event — it is not reactive, so toggling it afterwards has
-   * no effect until the next load. Pass a value that is constant for the
-   * lifetime of the player.
+   * Disable drag-to-create-region (red loop region) in single-region mode.
+   * Read once during setupRegions on WaveSurfer ready; not reactive.
    */
   disableDragSelection?: boolean,
   /**
    * A region was clicked. Distinct from onCurrentRegion, which also fires for
    * playhead-driven selection: only a deliberate user click reaches this.
    */
-  onRegionClicked?: (region: IRegion) => void
+  onRegionClicked?: (region: IRegion) => void,
+  /**
+   * Whether a sorted segment index already has a recording (TT-7666).
+   * Boundaries shared with recorded segments are not draggable.
+   */
+  isSegmentRecorded?: (sortedIndex: number) => boolean
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -164,6 +166,8 @@ export function useWaveSurferRegions(
   // setupRegions runs from a once-registered 'ready' handler, so it can only
   // reach this prop through a ref (like singleRegionRef).
   const disableDragSelectionRef = useRef(disableDragSelection ?? false);
+  const isSegmentRecordedRef = useRef(isSegmentRecorded);
+  isSegmentRecordedRef.current = isSegmentRecorded;
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -193,9 +197,14 @@ export function useWaveSurferRegions(
     applyRegionColorRef.current = applyRegionColor;
   }, [applyRegionColor]);
 
+  // Recompute boundary dragability whenever lock state or recorded-set changes
+  // so all boundary guards react on the same signal (TT-7437, TT-7666).
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
-  }, [lockSegmentSelection]);
+    applyBoundaryEditability();
+    // applyBoundaryEditability reads refs; deps are the two reactive inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockSegmentSelection, isSegmentRecorded]);
 
   useEffect(() => {
     disableDragSelectionRef.current = disableDragSelection ?? false;
@@ -238,6 +247,71 @@ export function useWaveSurferRegions(
         r.setOptions({ color: base });
       }
     });
+    applyBoundaryEditability();
+  };
+
+  /** Show ew-resize only on draggable handles; otherwise show default cursor. */
+  const setHandleCursor = (
+    r: Region,
+    side: 'left' | 'right',
+    active: boolean
+  ) => {
+    const handle = r.element?.querySelector(
+      `[part*="region-handle-${side}"]`
+    ) as HTMLElement | null;
+    if (handle) handle.style.cursor = active ? 'ew-resize' : 'default';
+  };
+
+  /**
+   * Source of truth for boundary dragability.
+   * Drag is blocked by recording lock (TT-7437) and by recorded boundaries
+   * (TT-7666). Handles stay visible; only side drag flags/cursor change.
+   */
+  const applyBoundaryEditability = () => {
+    const locked = lockSegmentSelectionRef.current;
+    const recorded = isSegmentRecordedRef.current;
+    // Players without lock/recorded checks keep default region behavior.
+    if (!locked && !recorded) return;
+    const sorted = sortedRegions();
+    const last = sorted.length - 1;
+    sorted.forEach((r, i) => {
+      let startActive: boolean;
+      let endActive: boolean;
+      if (locked) {
+        // Recording in progress: nothing moves.
+        startActive = false;
+        endActive = false;
+      } else {
+        // Side drag is allowed only if neither this segment nor that side's
+        // neighbor is recorded. Outer edges have no neighbor.
+        const self = recorded!(i);
+        startActive = !self && (i === 0 || !recorded!(i - 1));
+        endActive = !self && (i === last || !recorded!(i + 1));
+      }
+      // Keep handles visible; gate side drag via resizeStart/resizeEnd.
+      r.setOptions({
+        resize: true,
+        resizeStart: startActive,
+        resizeEnd: endActive,
+      });
+      setHandleCursor(r, 'left', startActive);
+      setHandleCursor(r, 'right', endActive);
+    });
+  };
+
+  /** True when the dragged boundary touches a recorded segment (TT-7666). */
+  const isRecordedBoundary = (r: Region, side?: UpdateSide) => {
+    const recorded = isSegmentRecordedRef.current;
+    if (!recorded) return false;
+    const idx = regionIndexInSorted(r);
+    if (idx < 0) return false;
+    if (recorded(idx)) return true;
+    // 'start' shares previous, 'end' shares next; unknown side checks both.
+    if (side !== 'end' && idx > 0 && recorded(idx - 1)) return true;
+    if (side !== 'start' && idx < numRegions() - 1 && recorded(idx + 1)) {
+      return true;
+    }
+    return false;
   };
 
   const Regions = () => regionsRef.current;
@@ -322,6 +396,8 @@ export function useWaveSurferRegions(
   // handle region double-clicks with deduplication
   // This is an event handler, not a render function, so Date.now() is safe here
   const handleRegionDoubleClick = (r: Region) => {
+    // Double-click split is blocked during recording lock (TT-7437).
+    if (lockSegmentSelectionRef.current) return;
     const currentTime = getCurrentTime();
     const timeSinceLastDoubleClick =
       currentTime - lastDoubleClickTimeRef.current;
@@ -420,11 +496,8 @@ export function useWaveSurferRegions(
     }
   };
   const wsPlayRegion = (r: IRegion, startAtCurrent: boolean = false) => {
-    // updatingRef suppresses the shared-boundary clamp while *we* are moving
-    // region bounds; it must be released on every exit path. Players with
-    // forceRegionOnly (Phrase Back Translate, Careful Speech) route every play
-    // through here, so a latched flag left the clamp off for the rest of the
-    // session and dragged boundaries overlapped or disconnected (TT-7625).
+    // While we move bounds programmatically, suppress boundary clamp and always
+    // release the flag on exit to avoid persistent clamp-off state (TT-7625).
     updatingRef.current = true;
     try {
       let reg = findRegion(r.start, true);
@@ -496,6 +569,11 @@ export function useWaveSurferRegions(
       regionsPlugin.on('region-created', function (r: Region) {
         if (isMarker(r)) return;
         r.drag = singleRegionRef.current;
+        // New region during recording lock: freeze both sides immediately.
+        // Reactive pass/load will apply full recorded-aware state.
+        if (lockSegmentSelectionRef.current) {
+          r.setOptions({ resize: true, resizeStart: false, resizeEnd: false });
+        }
 
         // Round region start and end to 5 decimal places because the seek uses 5 decimal places
         r.start = roundToFiveDecimals(r.start);
@@ -562,6 +640,10 @@ export function useWaveSurferRegions(
       regionsPlugin.on(
         'region-update',
         function (r: Region, side?: UpdateSide) {
+          if (lockSegmentSelectionRef.current) return;
+          // Backstop: if a drag was already in flight, still block recorded
+          // boundaries here (TT-7666).
+          if (isRecordedBoundary(r, side)) return;
           resizingRef.current = r.resize;
           // Live-clamp the boundary as the user drags so regions never visually
           // overlap: the dragged boundary stops at the neighbor's edge and the
@@ -574,6 +656,11 @@ export function useWaveSurferRegions(
       regionsPlugin.on(
         'region-updated',
         function (r: Region, side?: UpdateSide) {
+          // region-updated can change selection and boundaries, so block it
+          // while recording lock is active (TT-7437).
+          if (lockSegmentSelectionRef.current) return;
+          // Backstop for in-flight drags on recorded boundaries (TT-7666).
+          if (isRecordedBoundary(r, side)) return;
           if (singleRegionRef.current) {
             if (!loadingRef.current) {
               waitForIt(
@@ -614,16 +701,15 @@ export function useWaveSurferRegions(
         // Ignore region-in for any region other than the one we're targeting so
         // the adjacent segment isn't spuriously selected.
         if (playRegionRef.current && r.id !== playRegionRef.current.id) return;
-        // lockSegmentSelection does not apply here — playhead-driven updates must
-        // still flow so playback/overshoot logic works; consumers guard effects.
+        // A click also seeks, which can trigger region-in; block this too so
+        // selection cannot move during recording lock (TT-7437).
+        if (lockSegmentSelectionRef.current) return;
         if (!loopingRef.current) setCurrentRegion(r);
       });
       regionsPlugin.on('region-out', function (r: Region) {
         if (isMarker(r)) return;
-        // If this region was just truncated by a split (matched by id, or by
-        // end-time within the autosave-replacement window), ignore region-out
-        // so playback continues into the new right-side region without
-        // stopping or seeking back to the start.
+        // Ignore region-out for just-truncated split region (id or end-time
+        // match) so playback continues into the new right region.
         const matchesTruncatedId = r.id === splitTruncatedIdRef.current;
         const matchesTruncatedEnd =
           splitTruncatedEndRef.current !== undefined &&
@@ -685,6 +771,8 @@ export function useWaveSurferRegions(
           color: 'rgba(255, 0, 0, 0.1)',
         });
       }
+      // Apply recorded-boundary locks for existing segments (TT-7666).
+      applyBoundaryEditability();
     }
   };
 
@@ -770,17 +858,8 @@ export function useWaveSurferRegions(
   };
 
   /**
-   * Keep resized regions non-overlapping. In multi-region (Mark Verses,
-   * Careful Speech, Phrase Back Translate) mode the end of one region is
-   * always the start of the next, so a boundary is shared by two regions.
-   * When the user drags one boundary we:
-   *   - clamp it so it can't cross the neighbor's far boundary (no overlap) —
-   *     the first/last region's outer edge stays pinned to 0 / duration; and
-   *   - shift the single adjacent neighbor's shared boundary to follow, so the
-   *     two regions stay flush.
-   * `side` is provided by the regions plugin ('start' | 'end') and tells us
-   * which boundary is moving; when absent (defensive) we constrain both.
-   * Returns the boundary time the drag settled on for playhead follow.
+   * Keep resized regions non-overlapping and contiguous by clamping the moved
+   * boundary and updating the adjacent shared boundary. Returns final boundary.
    */
   const constrainResizedRegion = (r: Region, side?: 'start' | 'end') => {
     const prev = findPrevRegion(r) as Region | undefined;
@@ -974,6 +1053,8 @@ export function useWaveSurferRegions(
       region.id = r?.id;
     });
     setPrevNext(regarray.map((r: any) => r.id));
+    // Re-apply recorded-boundary locks after loading regions (TT-7666).
+    applyBoundaryEditability();
     onRegion(regarray.length, newRegions);
     onRegionGoTo(regarray[defaultRegionIndex]?.start ?? 0);
     loadingRef.current = false;
@@ -1069,11 +1150,30 @@ export function useWaveSurferRegions(
   };
 
   const wsRemoveSplitRegion = () => {
+    // No boundary edits while a take is being recorded or saved (TT-7437). The
+    // in-progress segment is not yet in the recorded set, so the isSegmentRecorded
+    // check below would not catch it — the lock is what covers the active take.
+    if (lockSegmentSelectionRef.current) return undefined;
     const r = currentRegion();
     if (!r) return undefined;
     if (numRegions() === 1) {
       clearRegions();
       return;
+    }
+    // Removing a boundary merges two segments. Block it if either side is
+    // recorded (TT-7666).
+    const recorded = isSegmentRecordedRef.current;
+    if (recorded) {
+      const mergePrev = findPrevRegion(r);
+      const other =
+        isNear(r.start) && mergePrev ? mergePrev : findNextRegion(r, false);
+      const otherIdx = other ? regionIndexInSorted(other) : -1;
+      if (
+        recorded(regionIndexInSorted(r)) ||
+        (otherIdx >= 0 && recorded(otherIdx))
+      ) {
+        return undefined;
+      }
     }
     const ret: IRegionChange = {
       start: r.start,
@@ -1122,7 +1222,15 @@ export function useWaveSurferRegions(
   };
 
   const wsAddRegion = () => {
-    return wsSplitRegion(findRegion(progress(), true), progress());
+    // No boundary edits while a take is being recorded or saved (TT-7437) — the
+    // in-progress segment is not yet in the recorded set the check below reads.
+    if (lockSegmentSelectionRef.current) return undefined;
+    const target = findRegion(progress(), true);
+    // Do not split inside a recorded segment (TT-7666).
+    if (target && isSegmentRecordedRef.current?.(regionIndexInSorted(target))) {
+      return undefined;
+    }
+    return wsSplitRegion(target, progress());
   };
 
   const wsRemoveCurrentRegion = () => {

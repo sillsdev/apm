@@ -120,13 +120,19 @@ function WSAudioPlayerSegment(props: IProps) {
   const handleShowSettings = () => {
     setShowSettings(!showSettings);
   };
+  // Keep Add disabled state and styling in sync.
+  // disableSplit covers boundary and recorded-segment cases.
+  const splitDisabled = !ready || busyRef.current || !!disableSplit;
+
   const handleSplit = () => {
     if (!readyRef.current) return false;
     if (setBusy) setBusy(true);
     const result = wsAddRegion();
     if (result && onSplit) onSplit(result);
     if (setBusy) setBusy(false);
-    return true;
+    // Report handled only when a divider was actually added — a refused split
+    // (recorded segment, or recording in progress) did nothing (TT-7666).
+    return !!result;
   };
   const handleRemoveNextSplit = () => {
     if (!readyRef.current) return false;
@@ -135,7 +141,8 @@ function WSAudioPlayerSegment(props: IProps) {
     const result = wsRemoveSplitRegion();
     if (result && onSplit) onSplit(result);
     if (setBusy) setBusy(false);
-    return true;
+    // Report handled only when a boundary was actually removed (TT-7666).
+    return !!result;
   };
   const handleSegParamChange = (
     params: IRegionParams,
@@ -199,8 +206,9 @@ function WSAudioPlayerSegment(props: IProps) {
               <IconButton
                 id="wsSplit"
                 onClick={handleSplit}
-                disabled={!ready || busyRef.current || disableSplit}
-                variant="primary"
+                disabled={splitDisabled}
+                // Use primary style only when Add is actionable.
+                variant={splitDisabled ? undefined : 'primary'}
               >
                 <AddIcon />
               </IconButton>

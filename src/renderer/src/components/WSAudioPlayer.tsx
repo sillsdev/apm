@@ -70,6 +70,10 @@ import {
   parseRegions,
 } from '../crud/useWavesurferRegions';
 import WSAudioPlayerSegment from './WSAudioPlayerSegment';
+import {
+  isAddBlockedByRecording,
+  isRemoveBlockedByRecording,
+} from './segmentBoundaryLocks';
 import Confirm from './AlertDialog';
 import { getSortedRegions, NamedRegions } from '../utils/namedSegments';
 import {
@@ -181,6 +185,9 @@ interface IProps {
   lockSegmentSelection?: boolean;
   /** When true, disable drag-to-create-region (the red loop region) even in single-region/record mode. */
   disableDragSelection?: boolean;
+  /** Whether the segment at a sorted index already has a recording. Freezes its
+   *  boundaries and disables the +/- controls that would reshape it (TT-7666). */
+  isSegmentRecorded?: (sortedIndex: number) => boolean;
   onMarkerClick?: (time: number) => void;
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
@@ -386,6 +393,7 @@ function WSAudioPlayer(props: IProps) {
     onSegmentClick,
     forceRegionOnly,
     lockSegmentSelection,
+    isSegmentRecorded,
     disableDragSelection,
     onMarkerClick,
     reload,
@@ -770,7 +778,8 @@ function WSAudioPlayer(props: IProps) {
     applyRegionColor,
     lockSegmentSelection,
     disableDragSelection,
-    onSegmentClick
+    onSegmentClick,
+    isSegmentRecorded
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -2089,6 +2098,22 @@ function WSAudioPlayer(props: IProps) {
       ),
     [progress, regionBounds]
   );
+  // If a segment is recorded, disable +/- when they would change its boundary
+  // (TT-7666).
+  const addBlockedByRecording = useMemo(
+    () => isAddBlockedByRecording(progress, regionBounds, isSegmentRecorded),
+    [progress, regionBounds, isSegmentRecorded]
+  );
+  const removeBlockedByRecording = useMemo(
+    () =>
+      isRemoveBlockedByRecording(
+        progress,
+        regionBounds,
+        SEGMENT_BOUNDARY_TOLERANCE_SEC,
+        isSegmentRecorded
+      ),
+    [progress, regionBounds, isSegmentRecorded]
+  );
 
   const renderSegmentControls = () => (
     <WSAudioPlayerSegment
@@ -2104,8 +2129,8 @@ function WSAudioPlayer(props: IProps) {
       wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
       wsRemoveSplitRegion={handleRemoveSplitRegion}
       wsAddRegion={handleAddRegion}
-      disableSplit={playheadNearBoundary}
-      removeEnabled={playheadNearInternalJoin}
+      disableSplit={playheadNearBoundary || addBlockedByRecording}
+      removeEnabled={playheadNearInternalJoin && !removeBlockedByRecording}
       setBusy={setBusy}
     />
   );
