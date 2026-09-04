@@ -500,7 +500,7 @@ export function PassageDetailGuidedPhraseRecord({
   /** completedIndices plus the optimistic just-saved set — the single recorded
    *  view every boundary-editing guard uses, so they agree in the window before
    *  rowData catches up (TT-7666). */
-  const recordedForTools = useMemo(
+  const recordedClauseIndicesForTools = useMemo(
     () => new Set([...completedIndices, ...optimisticCompletedRef.current]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [completedIndices, optimisticVersion]
@@ -1458,7 +1458,7 @@ export function PassageDetailGuidedPhraseRecord({
       phraseSegParams
     );
     if (
-      !canSplitClause(currentIndex, clauseRegions, recordedForTools, splitPoint)
+      !canSplitClause(currentIndex, clauseRegions, recordedClauseIndicesForTools, splitPoint)
     ) {
       return;
     }
@@ -1482,7 +1482,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     currentIndex,
     clauseRegions,
-    recordedForTools,
+    recordedClauseIndicesForTools,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,
@@ -1496,7 +1496,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleCombineWithNext = useCallback(async () => {
     if (savingRecordingRef.current) return;
-    if (!canCombineWithNext(currentIndex, clauseRegions, recordedForTools)) {
+    if (!canCombineWithNext(currentIndex, clauseRegions, recordedClauseIndicesForTools)) {
       return;
     }
     const updated = mergeClauseWithNext(clauseRegions, currentIndex);
@@ -1515,7 +1515,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     currentIndex,
     clauseRegions,
-    recordedForTools,
+    recordedClauseIndicesForTools,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,
@@ -1896,13 +1896,13 @@ export function PassageDetailGuidedPhraseRecord({
           canSplitClause={canSplitClause(
             currentIndex,
             clauseRegions,
-            recordedForTools,
+            recordedClauseIndicesForTools,
             currentClauseSplitPoint
           )}
           canCombineWithNext={canCombineWithNext(
             currentIndex,
             clauseRegions,
-            recordedForTools
+            recordedClauseIndicesForTools
           )}
           showUndoCombine={
             combineUndo !== null && !config.multiLevelSegmentUndo
