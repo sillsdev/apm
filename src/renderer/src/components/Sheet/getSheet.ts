@@ -193,9 +193,9 @@ export const isPassageFiltered = (
       (filterState.assignedToMe &&
         w.discussionCount === 0 &&
         sectionScheme !== undefined &&
-        (!assign ||
-          (assign.id !== user &&
-            myGroups.findIndex((g) => g.id === assign.id) < 0))))
+        !!assign &&
+        assign.id !== user &&
+        myGroups.findIndex((g) => g.id === assign.id) < 0))
   );
 };
 
@@ -470,7 +470,12 @@ export const getSheet = ({
     if (myWork[sectionIndex!]) {
       const rec = myWork[sectionIndex!];
       if (rec) {
-        if (!hasOnePassage && filterState.assignedToMe) {
+        // Book/AltBook headers have no passages by design — keep them visible.
+        if (
+          !hasOnePassage &&
+          filterState.assignedToMe &&
+          rec.level !== SheetLevel.Book
+        ) {
           rec.filtered = true;
         }
       }

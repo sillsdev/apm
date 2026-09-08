@@ -46,12 +46,19 @@ export const refilterSheet = ({
   let sectionScheme: RecordIdentity | undefined;
   let hasOnePassage = false;
 
+  const hideEmptySection = (index: number) => {
+    const row = newWork[index] as ISheet;
+    // Book/AltBook headers have no passages by design — keep them visible.
+    if (row.level === SheetLevel.Book) return;
+    if (!row.filtered) changed = true;
+    row.filtered = true;
+  };
+
   sheet.forEach((s, index) => {
     if (isSectionRow(s)) {
       if (sectionIndex >= 0) {
         if (!hasOnePassage && filterState.assignedToMe && !flat) {
-          if (!(sheet[sectionIndex] as ISheet).filtered) changed = true;
-          (newWork[sectionIndex] as ISheet).filtered = true;
+          hideEmptySection(sectionIndex);
         }
       }
       sectionIndex = index;
@@ -110,8 +117,7 @@ export const refilterSheet = ({
   });
   if (sectionIndex >= 0) {
     if (!hasOnePassage && filterState.assignedToMe && !flat) {
-      (newWork[sectionIndex] as ISheet).filtered = true;
-      if (!(sheet[sectionIndex] as ISheet).filtered) changed = true;
+      hideEmptySection(sectionIndex);
     }
   }
 
