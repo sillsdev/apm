@@ -2853,8 +2853,8 @@
       </unit>
       <unit id="findResource.showing">
          <segment>
-            <source>{0} to {1} of {2} {3} results</source>
-            <target>{0} - {1} из {2} {3} результатов</target>
+            <source>{0} to {1} of {2} results</source>
+            <target>{0} - {1} из {2} результатов</target>
          </segment>
       </unit>
       <unit id="findResource.source">

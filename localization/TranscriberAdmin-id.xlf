@@ -2835,8 +2835,8 @@
       </unit>
       <unit id="findResource.showing">
          <segment>
-            <source>{0} to {1} of {2} {3} results</source>
-            <target>{0} sampai {1} dari hasil {2} {3}</target>
+            <source>{0} to {1} of {2} results</source>
+            <target>{0} sampai {1} dari hasil {2}</target>
          </segment>
       </unit>
       <unit id="findResource.source">

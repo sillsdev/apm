@@ -1,25 +1,36 @@
 import {
   Autocomplete,
   Box,
-  Card,
-  CardContent,
   Checkbox,
-  Grid,
   IconButton,
   InputAdornment,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   OutlinedInput,
   Stack,
-  styled,
   TextField,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import PreviewIcon from '@mui/icons-material/Visibility';
 import LinkIcon from '@mui/icons-material/Link';
-import { useContext, useEffect, useRef, useState } from 'react';
+import SortIcon from '@mui/icons-material/Sort';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import {
+  memo,
+  MouseEvent,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import {
   parseRef,
@@ -31,7 +42,12 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { findResourceSelector, gridSelector } from '../../../selector';
 import { IFindResourceStrings, IGridStrings } from '../../../model';
-import { LightTooltip, Button } from '../../../control';
+import {
+  LightTooltip,
+  Button,
+  StyledMenu,
+  StyledMenuItem,
+} from '../../../control';
 import { OptionProps } from './FindTabs';
 import Markdown from 'react-markdown';
 import { LaunchLink } from '../../../control/LaunchLink';
@@ -44,35 +60,22 @@ import {
   logError,
   Severity,
   useDataChanges,
+  useMobile,
   useWaitForRemoteQueue,
 } from '../../../utils';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
+import Busy from '../../Busy';
 import { Aquifer } from '../../../assets/brands';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { AxiosError } from 'axios';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../../model/passageType';
-import {
-  DataGrid,
-  type GridRenderCellParams,
-  type GridColDef,
-  type GridRowSelectionModel,
-  type GridSortModel,
-} from '@mui/x-data-grid';
-
-type GridSortItem = GridSortModel[number];
 import ArrowLeftIcon from '@mui/icons-material/ArrowBack';
 import ArrowRightIcon from '@mui/icons-material/ArrowForward';
 
 // Regex to match passage references in the form "chapter:verse-chapter:verse"
 const PASSAGE_REF_REGEX = /(\d+):(\d+)-(\d+)?:?(\d+)?/g;
-
-const StyledStack = styled(Stack)(() => ({
-  '& .MuiDataGrid-footerContainer': {
-    display: 'none!important',
-  },
-}));
 
 interface AquiferSearch {
   id: number;
@@ -134,14 +137,90 @@ export interface AquiferContent {
   };
 }
 
-interface DataRow {
-  id: number;
-  select: boolean;
-  name: string;
-  mediaType: string;
-  group: string;
-  source: string;
+type SortKey = 'name' | 'mediaType' | 'groupingType' | 'groupingName';
+
+interface ISort {
+  key: SortKey;
+  asc: boolean;
 }
+
+const sortAccessor: Record<SortKey, (d: AquiferSearch) => string | undefined> = {
+  name: (d) => d.localizedName,
+  mediaType: (d) => d.mediaType,
+  groupingType: (d) => d.grouping?.type,
+  groupingName: (d) => d.grouping?.name,
+};
+
+const sortValue = (d: AquiferSearch, key: SortKey): string =>
+  sortAccessor[key](d) ?? '';
+
+const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
+
+interface IAquiferRowProps {
+  item: AquiferSearch;
+  checked: boolean;
+  previewLabel: string;
+  onToggle: (id: number) => void;
+  onPreview: (item: AquiferSearch) => void;
+}
+
+const AquiferRow = memo(function AquiferRow({
+  item,
+  checked,
+  previewLabel,
+  onToggle,
+  onPreview,
+}: IAquiferRowProps) {
+  return (
+    <ListItem
+      disablePadding
+      divider
+      secondaryAction={
+        <LightTooltip title={previewLabel}>
+          <IconButton
+            edge="end"
+            size="small"
+            aria-label={previewLabel}
+            onClick={() => onPreview(item)}
+          >
+            <PreviewIcon fontSize="small" />
+          </IconButton>
+        </LightTooltip>
+      }
+    >
+      <ListItemButton
+        dense
+        role={undefined}
+        onClick={() => onToggle(item.id)}
+        sx={{ py: 0.25, pr: 6 }}
+      >
+        <ListItemIcon sx={{ minWidth: 36 }}>
+          <Checkbox
+            edge="start"
+            size="small"
+            tabIndex={-1}
+            disableRipple
+            checked={checked}
+            aria-label={item.localizedName}
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary={item.localizedName}
+          secondary={[item.mediaType, item.grouping?.type, item.grouping?.name]
+            .filter(Boolean)
+            .join(' · ')}
+          slotProps={{
+            primary: {
+              variant: 'body2',
+              sx: { overflowWrap: 'anywhere' },
+            },
+            secondary: { variant: 'caption', noWrap: true },
+          }}
+        />
+      </ListItemButton>
+    </ListItem>
+  );
+});
 
 interface IProps {
   onClose?: (() => void) | undefined;
@@ -153,19 +232,19 @@ export default function FindAquifer({ onClose }: IProps) {
   const [isOffline] = useGlobal('offline');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [memory] = useGlobal('memory');
-  const [result, setResult] = useState<AquiferSearch[]>([]);
-  const [data, setData] = useState<DataRow[]>([]);
-  const [checks, setChecks] = useState<number[]>([]);
+  const [data, setData] = useState<AquiferSearch[]>([]);
+  const [checks, setChecks] = useState<Set<number>>(() => new Set());
   const [count, setCount] = useState(0);
   const [languages, setLanguages] = useState<AquiferLanguage[]>([]);
   const [langOpts, setLangOpts] = useState<OptionProps[]>([]);
   const [lang, setLang] = useState<OptionProps | null>(null);
   const [query, setQuery] = useState('');
   const [refresh, setRefresh] = useState(0);
-  const [previewItem, setPreviewItem] = useState<DataRow | null>(null);
+  const [previewItem, setPreviewItem] = useState<AquiferSearch | null>(null);
   const [content, setContent] = useState<AquiferContent | null>(null);
   const [link, setLink] = useState<string>();
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [adding, setAddingx] = useState(false);
   const addingRef = useRef(false);
   const t: IFindResourceStrings = useSelector(
@@ -179,54 +258,62 @@ export default function FindAquifer({ onClose }: IProps) {
   const forceDataChanges = useDataChanges();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
   const { userIsAdmin } = useRole();
-  const handlePreviewClick = (e: React.MouseEvent, row: DataRow) => {
-    e.stopPropagation();
-    setPreviewItem(row);
-  };
+  const handlePreviewClick = useCallback(
+    (item: AquiferSearch) => setPreviewItem(item),
+    []
+  );
   const { showMessage } = useSnackBar();
   const [errorReporter] = useGlobal('errorReporter');
   const { curNoteRef } = useNotes();
-  const theme = useTheme();
-  const isMobileLayout = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth } = useMobile();
 
-  const columns: GridColDef<DataRow>[] = [
-    {
-      field: 'name',
-      headerName: t.name,
-      width: 200,
-      cellClassName: 'wrap-text',
+  const [sort, setSort] = useState<ISort>({ key: 'name', asc: true });
+  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
+
+  const allChecked = data.length > 0 && checks.size === data.length;
+  const someChecked = checks.size > 0 && !allChecked;
+
+  const sorted = useMemo(() => {
+    if (!sort) return data;
+    const dir = sort.asc ? 1 : -1;
+    const { key } = sort;
+    return [...data].sort(
+      (a, b) => dir * collator.compare(sortValue(a, key), sortValue(b, key))
+    );
+  }, [data, sort]);
+
+  const handleSort = useCallback(
+    (key: SortKey) => (e: MouseEvent) => {
+      e.stopPropagation();
+      setSort((prev) =>
+        prev?.key === key ? { key, asc: !prev.asc } : { key, asc: true }
+      );
     },
-    { field: 'mediaType', headerName: t.mediaType, width: 100 },
-    {
-      field: 'group',
-      headerName: t.group,
-      width: 120,
-      cellClassName: 'wrap-text',
-    },
-    {
-      field: 'source',
-      headerName: t.source,
-      width: 200,
-      cellClassName: 'wrap-text',
-    },
-    {
-      field: 'preview',
-      headerName: t.preview,
-      width: 100,
-      filterable: false,
-      sortable: false,
-      renderCell: (params: GridRenderCellParams<DataRow>) => (
-        <IconButton onClick={(e) => handlePreviewClick(e, params.row)}>
-          <PreviewIcon />
-        </IconButton>
-      ),
-    },
-  ];
-  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  });
-  const sortModel: GridSortItem[] = [{ field: 'name', sort: 'asc' }];
+    []
+  );
+
+  const sortRows: { key: SortKey; label: string }[] = useMemo(
+    () => [
+      { key: 'name', label: t.sortName },
+      { key: 'mediaType', label: t.sortMediaType },
+      { key: 'groupingType', label: t.sortGroupingType },
+      { key: 'groupingName', label: t.sortGroupingName },
+    ],
+    [t]
+  );
+
+  const toggleRow = useCallback(
+    (id: number) =>
+      setChecks((prev) => {
+        const next = new Set(prev);
+        if (!next.delete(id)) next.add(id);
+        return next;
+      }),
+    []
+  );
+
+  const toggleAll = () =>
+    setChecks(allChecked ? new Set() : new Set(data.map((d) => d.id)));
 
   const setAdding = (adding: boolean) => {
     setAddingx(adding);
@@ -296,28 +383,27 @@ export default function FindAquifer({ onClose }: IProps) {
     }
     const searchParams = new URLSearchParams(paramArr);
 
-    axiosGet('aquifer/aquifer-search', searchParams, token).then((result) => {
-      const response = result as {
-        totalItemCount: number;
-        items: AquiferSearch[];
-      };
-      setCount(response?.totalItemCount ?? 0);
-      setResult(response?.items ?? []);
-    });
+    let cancelled = false;
+    setLoading(true);
+    axiosGet('aquifer/aquifer-search', searchParams, token)
+      .then((result) => {
+        if (cancelled) return;
+        const response = result as {
+          totalItemCount: number;
+          items: AquiferSearch[];
+        };
+        setCount(response?.totalItemCount ?? 0);
+        setData(response?.items ?? []);
+        setChecks(new Set());
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passage, lang, refresh, offset]);
-
-  useEffect(() => {
-    const dataRows = result.map((item: AquiferSearch) => ({
-      id: item.id,
-      select: false,
-      name: item.localizedName,
-      mediaType: item.mediaType,
-      group: item.grouping?.type,
-      source: item.grouping.name,
-    }));
-    setData(dataRows);
-  }, [result]);
 
   useEffect(() => {
     if (previewItem) {
@@ -341,42 +427,15 @@ export default function FindAquifer({ onClose }: IProps) {
     }
   }, [previewItem, token]);
 
-  const handleRowSelectionChange = (newRows: GridRowSelectionModel) => {
-    let chks = Array.from(newRows.ids)
-      .map((id) => parseInt(id as string, 10))
-      .sort((a, b) => a - b);
-    if (newRows.type === 'exclude') {
-      chks = [];
-      data.forEach((r) => {
-        if (!newRows.ids.has(r.id)) chks.push(r.id);
-      });
-    }
-    setChecks(chks);
-    setSelectedRows(newRows);
-  };
-
-  const handleMobileToggleRow = (rowId: number) => {
-    const next = checks.includes(rowId)
-      ? checks.filter((c) => c !== rowId)
-      : [...checks, rowId].sort((a, b) => a - b);
-    setChecks(next);
-    setSelectedRows({ type: 'include', ids: new Set(next) });
-  };
-
   const handleAdd = () => {
     if (addingRef.current) return;
     setAdding(true);
-    const add: { ContentId: string; ContentType: string }[] = [];
-    checks.forEach((c) => {
-      const item = data.find((d) => d.id === c);
-      if (item) {
-        add.push({
-          ContentId: item.id.toString(),
-          ContentType:
-            item.mediaType.toLowerCase() === 'text' ? 'Markdown' : '0',
-        });
-      }
-    });
+    const add = data
+      .filter((d) => checks.has(d.id))
+      .map((item) => ({
+        ContentId: item.id.toString(),
+        ContentType: item.mediaType.toLowerCase() === 'text' ? 'Markdown' : '0',
+      }));
     const postdata: {
       PassageId?: number;
       SectionId?: number;
@@ -421,8 +480,8 @@ export default function FindAquifer({ onClose }: IProps) {
     <BigDialog
       title={t.preview}
       description={
-        <Typography sx={{ pb: isMobileLayout ? 1 : 2 }}>
-          {previewItem?.name}
+        <Typography sx={{ pb: isMobileWidth ? 1 : 2 }}>
+          {previewItem?.localizedName}
         </Typography>
       }
       isOpen={previewOpen}
@@ -430,7 +489,7 @@ export default function FindAquifer({ onClose }: IProps) {
         setPreviewOpen(isOpen);
         if (!isOpen) setPreviewItem(null);
       }}
-      bp={isMobileLayout ? BigDialogBp.mobile : BigDialogBp.sm}
+      bp={isMobileWidth ? BigDialogBp.mobile : BigDialogBp.sm}
       mobileNoHorizontalScroll
       mobilePaperWidth="min(720px, calc(100vw - 4px))"
       dialogContentSx={{
@@ -440,7 +499,7 @@ export default function FindAquifer({ onClose }: IProps) {
         minHeight: 0,
         overflowY: 'auto',
         overflowX: 'hidden',
-        p: isMobileLayout ? 1 : 2,
+        p: isMobileWidth ? 1 : 2,
         '& img': {
           maxWidth: '100%',
           height: 'auto',
@@ -462,7 +521,10 @@ export default function FindAquifer({ onClose }: IProps) {
           </Box>
         ) : previewItem?.mediaType.toLowerCase() === 'image' ? (
           <Box sx={{ width: '100%' }}>
-            <img src={(content.content as any)?.url} alt={previewItem?.name} />
+            <img
+              src={(content.content as any)?.url}
+              alt={previewItem?.localizedName}
+            />
           </Box>
         ) : previewItem?.mediaType.toLowerCase() === 'audio' ? (
           <IconButton
@@ -479,371 +541,266 @@ export default function FindAquifer({ onClose }: IProps) {
     </BigDialog>
   );
 
-  if (isMobileLayout) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 1,
-          minHeight: 0,
-          height: '100%',
-          width: '100%',
-        }}
-      >
-        <Stack
-          direction="row"
-          flexWrap="wrap"
-          gap={1}
-          alignItems="center"
-          sx={{ flexShrink: 0, py: 1, px: 0.5 }}
-          useFlexGap
-        >
-          <Autocomplete
-            disablePortal
-            id="aquifer-lang"
-            options={langOpts}
-            value={lang}
-            onChange={(_event, value) => setLang(value)}
-            sx={{ flex: '1 1 220px', minWidth: 0, maxWidth: '100%' }}
-            renderInput={(params) => {
-              const { size, InputLabelProps, ...restParams } = params;
-              const { className, ...restInputLabelProps } =
-                InputLabelProps || {};
-              return (
-                <TextField
-                  {...restParams}
-                  {...(size && { size })}
-                  slotProps={{
-                    inputLabel: {
-                      ...restInputLabelProps,
-                      ...(className && { className }),
-                    },
-                  }}
-                  label={t.language.replace('{0}', Aquifer)}
-                />
-              );
-            }}
-          />
-          {offset === 0 && (
-            <LightTooltip title={t.aquiferSearchTip}>
-              <OutlinedInput
-                id="query"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                sx={{ flex: '1 1 200px', minWidth: 0 }}
-                endAdornment={
-                  <InputAdornment position="end">
-                    <IconButton
-                      type="submit"
-                      onClick={() => setRefresh(refresh + 1)}
-                    >
-                      <SearchIcon />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => {
-                        setQuery('');
-                        setRefresh(refresh + 1);
-                      }}
-                    >
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                }
-                inputProps={{
-                  'aria-label': 'query',
-                }}
-              />
-            </LightTooltip>
-          )}
-        </Stack>
-
-        <Box
-          sx={{
-            flex: '1 1 0px',
-            minHeight: 0,
-            overflowY: 'auto',
-            px: 0.5,
-          }}
-        >
-          {data.length > 0 ? (
-            <Stack spacing={1.5} sx={{ pb: 1 }}>
-              {data.map((row) => (
-                <Card key={row.id} variant="outlined">
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Stack spacing={1}>
-                      <Stack
-                        direction="row"
-                        flexWrap="wrap"
-                        alignItems="center"
-                        gap={1}
-                        useFlexGap
-                      >
-                        <Checkbox
-                          checked={checks.includes(row.id)}
-                          onChange={() => handleMobileToggleRow(row.id)}
-                          inputProps={{
-                            'aria-label': row.name,
-                          }}
-                        />
-                        <Box sx={{ flex: '1 1 160px', minWidth: 0 }}>
-                          <Typography variant="subtitle2" component="div">
-                            {row.name}
-                          </Typography>
-                        </Box>
-                        <LightTooltip title={t.preview}>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handlePreviewClick(e, row)}
-                            aria-label={t.preview}
-                          >
-                            <PreviewIcon />
-                          </IconButton>
-                        </LightTooltip>
-                      </Stack>
-                      <Typography variant="body2" color="text.secondary">
-                        {t.mediaType}: {row.mediaType}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {t.group}: {row.group}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {t.source}: {row.source}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                py: 4,
-              }}
-            >
-              <Typography variant="h6">{tg.noData}</Typography>
-            </Box>
-          )}
-        </Box>
-
-        <Stack
-          direction="row"
-          flexWrap="wrap"
-          gap={1}
-          alignItems="center"
-          sx={{
-            flexShrink: 0,
-            borderTop: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            py: 1,
-            px: 0.5,
-          }}
-          useFlexGap
-        >
-          {count > 0 ? (
-            <>
-              {offset > 0 ? (
-                <IconButton
-                  onClick={() => setOffset(offset - limit)}
-                  title={t.previous}
-                  aria-label={t.previous}
-                >
-                  <ArrowLeftIcon />
-                </IconButton>
-              ) : null}
-              <Typography
-                variant="body2"
-                component="span"
-                sx={{ flex: '1 1 200px', minWidth: 0 }}
-              >
-                {t.showing
-                  .replace('{0}', `${offset + 1}`)
-                  .replace('{1}', `${Math.min(offset + limit, count)}`)
-                  .replace('{2}', `${count}`)
-                  .replace('{3}', Aquifer)}
-              </Typography>
-              {offset + limit < count ? (
-                <IconButton
-                  onClick={() => setOffset(offset + limit)}
-                  title={t.next}
-                  aria-label={t.next}
-                >
-                  <ArrowRightIcon />
-                </IconButton>
-              ) : null}
-            </>
-          ) : null}
-          {userIsAdmin && (!isOffline || offlineOnly) && (
-            <Button
-              sx={{ flex: '0 1 auto' }}
-              color="primary"
-              disabled={checks.length === 0 || adding}
-              onClick={handleAdd}
-            >
-              {t.add}
-            </Button>
-          )}
-        </Stack>
-
-        {previewDialog}
-        <LaunchLink url={link} reset={() => setLink('')} />
-      </Box>
-    );
-  }
-
   return (
-    <Grid
-      container
-      spacing={2}
+    <Box
       sx={{
-        alignItems: 'center',
-        justifyContent: 'flex-start',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
         width: '100%',
-        overflowX: 'auto',
       }}
     >
-      <StyledStack sx={{ width: '100%', minWidth: 'max-content' }}>
-        <Grid
-          container
-          direction={'row'}
-          spacing={2}
-          sx={{ my: 1, alignItems: 'center' }}
+      {loading && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
         >
-          <Grid>
-            <Autocomplete
-              disablePortal
-              id="aquifer-lang"
-              options={langOpts}
-              value={lang}
-              onChange={(_event, value) => setLang(value)}
-              sx={{ width: 300 }}
-              renderInput={(params) => {
-                const { size, InputLabelProps, ...restParams } = params;
-                const { className, ...restInputLabelProps } =
-                  InputLabelProps || {};
-                return (
-                  <TextField
-                    {...restParams}
-                    {...(size && { size })}
-                    slotProps={{
-                      inputLabel: {
-                        ...restInputLabelProps,
-                        ...(className && { className }),
-                      },
+          <Busy />
+        </Box>
+      )}
+
+      <Stack
+        direction="row"
+        flexWrap="wrap"
+        gap={1}
+        alignItems="center"
+        sx={{ flexShrink: 0, py: 1, px: 0.5 }}
+        useFlexGap
+      >
+        <Autocomplete
+          disablePortal
+          id="aquifer-lang"
+          options={langOpts}
+          value={lang}
+          onChange={(_event, value) => setLang(value)}
+          sx={{ flex: '1 1 220px', minWidth: 0, maxWidth: '100%' }}
+          renderInput={(params) => {
+            const { size, InputLabelProps, ...restParams } = params;
+            const { className, ...restInputLabelProps } = InputLabelProps || {};
+            return (
+              <TextField
+                {...restParams}
+                {...(size && { size })}
+                slotProps={{
+                  inputLabel: {
+                    ...restInputLabelProps,
+                    ...(className && { className }),
+                  },
+                }}
+                label={t.language.replace('{0}', Aquifer)}
+              />
+            );
+          }}
+        />
+        {offset === 0 && (
+          <LightTooltip title={t.aquiferSearchTip}>
+            <OutlinedInput
+              id="query"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              sx={{ flex: '1 1 200px', minWidth: 0 }}
+              endAdornment={
+                <InputAdornment position="end">
+                  <IconButton
+                    type="submit"
+                    onClick={() => setRefresh(refresh + 1)}
+                  >
+                    <SearchIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      setQuery('');
+                      setRefresh(refresh + 1);
                     }}
-                    label={t.language.replace('{0}', Aquifer)}
-                  />
-                );
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              }
+              inputProps={{
+                'aria-label': 'query',
               }}
             />
-          </Grid>
-          <Grid>
-            {offset === 0 && (
-              <LightTooltip title={t.aquiferSearchTip}>
-                <OutlinedInput
-                  id="query"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  endAdornment={
-                    <InputAdornment position="end">
-                      <IconButton
-                        type="submit"
-                        onClick={() => setRefresh(refresh + 1)}
-                      >
-                        <SearchIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => {
-                          setQuery('');
-                          setRefresh(refresh + 1);
-                        }}
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  inputProps={{
-                    'aria-label': 'query',
-                  }}
-                />
-              </LightTooltip>
-            )}
-          </Grid>
-          {userIsAdmin && (!isOffline || offlineOnly) && (
-            <Grid>
-              <Button
-                color="primary"
-                disabled={checks.length === 0 || adding}
-                onClick={handleAdd}
-              >
-                {t.add}
-              </Button>
-            </Grid>
-          )}
-        </Grid>
-        {previewDialog}
-        {count > 0 && (
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-            {offset > 0 ? (
+          </LightTooltip>
+        )}
+      </Stack>
+
+      {data.length > 0 ? (
+        <>
+          <Stack
+            direction="row"
+            alignItems="center"
+            sx={{
+              flexShrink: 0,
+              px: 1,
+              py: 0.5,
+              borderBottom: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <Checkbox
+              size="small"
+              checked={allChecked}
+              indeterminate={someChecked}
+              onChange={toggleAll}
+              aria-label={tg.all}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {tg.all}
+            </Typography>
+            <LightTooltip title={t.sortMenu}>
               <IconButton
-                onClick={() => setOffset(offset - limit)}
-                title={t.previous}
+                id="aquifer-sort"
+                size="small"
+                aria-controls={sortAnchor ? 'aquifer-sort-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={sortAnchor ? 'true' : undefined}
+                aria-label={t.sortMenu}
+                onClick={(e) => setSortAnchor(e.currentTarget)}
+                sx={{ ml: 'auto' }}
               >
-                <ArrowLeftIcon />
+                <SortIcon fontSize="small" />
               </IconButton>
-            ) : (
-              <></>
-            )}
-            <Typography variant="h6" component="h6">
+            </LightTooltip>
+            <StyledMenu
+              id="aquifer-sort-menu"
+              anchorEl={sortAnchor}
+              open={Boolean(sortAnchor)}
+              onClose={() => setSortAnchor(null)}
+            >
+              {sortRows.map(({ key, label }) => (
+                <StyledMenuItem
+                  key={key}
+                  id={`aquifer-sort-${key}`}
+                  onClick={handleSort(key)}
+                  selected={sort?.key === key}
+                >
+                  <ListItemIcon>
+                    {sort?.key === key ? (
+                      sort.asc ? (
+                        <ArrowUpwardIcon fontSize="small" />
+                      ) : (
+                        <ArrowDownwardIcon fontSize="small" />
+                      )
+                    ) : null}
+                  </ListItemIcon>
+                  <ListItemText primary={label} />
+                </StyledMenuItem>
+              ))}
+            </StyledMenu>
+          </Stack>
+          <List
+            dense
+            disablePadding
+            sx={{
+              flex: '1 1 auto',
+              minHeight: 0,
+              overflowY: 'auto',
+              px: 0.5,
+              maxHeight: isMobileWidth ? 'none' : '55vh',
+            }}
+          >
+            {sorted.map((item) => (
+              <AquiferRow
+                key={item.id}
+                item={item}
+                checked={checks.has(item.id)}
+                previewLabel={t.preview}
+                onToggle={toggleRow}
+                onPreview={handlePreviewClick}
+              />
+            ))}
+          </List>
+        </>
+      ) : (
+        <Box
+          sx={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            py: 4,
+          }}
+        >
+          {!loading && <Typography variant="h6">{tg.noData}</Typography>}
+        </Box>
+      )}
+
+      <Stack
+        direction="row"
+        flexWrap="wrap"
+        gap={1}
+        alignItems="center"
+        sx={{
+          flexShrink: 0,
+          borderTop: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          py: 1,
+          px: 0.5,
+        }}
+        useFlexGap
+      >
+        {count > 0 ? (
+          <Stack
+            direction="row"
+            alignItems="center"
+            gap={1}
+            sx={{ minWidth: 0 }}
+            useFlexGap
+          >
+            <IconButton
+              size="small"
+              onClick={() => setOffset(offset - limit)}
+              disabled={offset === 0}
+              title={t.previous}
+              aria-label={t.previous}
+            >
+              <ArrowLeftIcon />
+            </IconButton>
+            <Typography
+              variant="body2"
+              component="span"
+              sx={{ whiteSpace: 'nowrap' }}
+            >
               {t.showing
                 .replace('{0}', `${offset + 1}`)
                 .replace('{1}', `${Math.min(offset + limit, count)}`)
-                .replace('{2}', `${count}`)
-                .replace('{3}', Aquifer)}
+                .replace('{2}', `${count}`)}
             </Typography>
-            {offset + limit < count ? (
-              <IconButton
-                onClick={() => setOffset(offset + limit)}
-                title={t.next}
-              >
-                <ArrowRightIcon />
-              </IconButton>
-            ) : (
-              <></>
-            )}
+            <IconButton
+              size="small"
+              onClick={() => setOffset(offset + limit)}
+              disabled={offset + limit >= count}
+              title={t.next}
+              aria-label={t.next}
+            >
+              <ArrowRightIcon />
+            </IconButton>
           </Stack>
-        )}
-        {data.length > 0 ? (
-          <Box sx={{ width: '100%', overflowX: 'auto' }}>
-            <DataGrid
-              columns={columns}
-              rows={data}
-              initialState={{
-                sorting: { sortModel },
-              }}
-              checkboxSelection
-              disableRowSelectionOnClick
-              onRowSelectionModelChange={handleRowSelectionChange}
-              rowSelectionModel={selectedRows}
-              sx={{ minWidth: 820 }}
-            />
-          </Box>
-        ) : (
-          <Grid
-            container
-            sx={{ my: 1, alignItems: 'center', justifyContent: 'center' }}
+        ) : null}
+        {userIsAdmin && (!isOffline || offlineOnly) && (
+          <Button
+            sx={{ flex: '0 1 auto', ml: 'auto' }}
+            color="primary"
+            disabled={checks.size === 0 || adding}
+            onClick={handleAdd}
           >
-            <Grid>
-              <Typography variant="h6">{tg.noData}</Typography>
-            </Grid>
-          </Grid>
+            {t.add}
+          </Button>
         )}
-      </StyledStack>
+      </Stack>
+
+      {previewDialog}
       <LaunchLink url={link} reset={() => setLink('')} />
-    </Grid>
+    </Box>
   );
 }

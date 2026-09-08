@@ -3286,13 +3286,6 @@
                <context context-type="sourcefile">findResource.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="findResource.group">
-            <source>Group</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">FindAquifer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="findResource.image">
             <source>image</source>
             <target/>
@@ -3335,25 +3328,11 @@
                <context context-type="sourcefile">findResource.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="findResource.mediaType">
-            <source>Media</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">FindAquifer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="findResource.movement">
             <source>movement</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">findResource.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="findResource.name">
-            <source>Name</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">FindAquifer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="findResource.next">
@@ -3455,14 +3434,42 @@
             </context-group>
          </trans-unit>
          <trans-unit id="findResource.showing">
-            <source>{0} to {1} of {2} {3} results</source>
+            <source>{0}-{1} of {2} results</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">FindAquifer.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="findResource.source">
+         <trans-unit id="findResource.sortGroupingName">
             <source>Source</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortGroupingType">
+            <source>Group</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortMediaType">
+            <source>Media</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortMenu">
+            <source>Sort results</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortName">
+            <source>Name</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">FindAquifer.tsx</context>

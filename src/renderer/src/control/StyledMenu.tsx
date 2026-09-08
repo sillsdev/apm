@@ -4,6 +4,7 @@ import {
   MenuItem,
   MenuItemProps,
   styled,
+  alpha,
 } from '@mui/material';
 
 const MenuWithStyles = styled(Menu)<MenuProps>(() => ({
@@ -34,6 +35,15 @@ export const StyledMenuItem = styled(MenuItem)<MenuItemProps>(({ theme }) => ({
     '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
       color: theme.palette.common.white,
     },
+  },
+  '&.Mui-focusVisible': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.16),
+    '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+      color: 'inherit',
+    },
+  },
+  '&.Mui-selected:hover, &:focus:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.8),
   },
   '& .MuiSvgIcon-root': {
     width: '24px',

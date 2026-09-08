@@ -250,11 +250,7 @@ export default function FindTabs({
                 display: 'flex',
                 flexDirection: 'column',
                 overflowY: fixedFooterTabOverflowHidden ? 'hidden' : 'auto',
-                overflowX: fixedFooterTabOverflowHidden
-                  ? 'hidden'
-                  : aquifer && value === aquiferTabIndex
-                    ? 'auto'
-                    : 'hidden',
+                overflowX: 'hidden',
               }
             : {}
         }
