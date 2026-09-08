@@ -1600,7 +1600,6 @@ export function Transcriber(props: IProps) {
                     {t.reopen}
                   </Button>
                 )}
-                <Box sx={{ width: '45px' }}>{'\u00A0'}</Box>
               </Box>
             </Stack>
           </Grid>

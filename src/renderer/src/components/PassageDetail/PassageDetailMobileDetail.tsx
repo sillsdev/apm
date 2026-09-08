@@ -109,7 +109,6 @@ export default function PassageDetailMobileDetail({
         backgroundColor: 'background.default',
         px: 1.5,
         pt: 1.5,
-        pb: 1.5,
         ...contentSx,
       }}
     >
