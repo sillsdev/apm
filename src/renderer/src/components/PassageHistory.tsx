@@ -68,7 +68,6 @@ export function PassageHistory(props: IProps) {
     } else {
       setCurStateChanges([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passageId, passagestatechanges]);
 
   useEffect(() => {
