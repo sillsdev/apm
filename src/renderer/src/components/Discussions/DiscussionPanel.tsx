@@ -90,6 +90,7 @@ export default function DiscussionPanel() {
   const discussionFab = (
     <LightTooltip title={t.open}>
       <Fab
+        aria-label={t.open}
         sx={{
           p: 3.5,
           borderRadius: 2,
