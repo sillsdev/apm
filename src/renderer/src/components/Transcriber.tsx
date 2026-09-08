@@ -1510,10 +1510,7 @@ export function Transcriber(props: IProps) {
               </Grid>
               {showHistory && (
                 <Grid size={{ xs: 6 }} container direction="column">
-                  <PassageHistory
-                    passageId={passage?.id || ''}
-                    boxHeight={boxHeight - 16}
-                  />
+                  <PassageHistory passageId={passage?.id || ''} />
                 </Grid>
               )}
             </Grid>
