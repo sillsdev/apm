@@ -3440,6 +3440,41 @@
                <context context-type="sourcefile">FindAquifer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="findResource.sortGroupingName">
+            <source>Source</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortGroupingType">
+            <source>Group</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortMediaType">
+            <source>Media</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortMenu">
+            <source>Sort results</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="findResource.sortName">
+            <source>Name</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">FindAquifer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="findResource.summary">
             <source>summary</source>
             <target/>

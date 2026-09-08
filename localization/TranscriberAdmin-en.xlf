@@ -2950,6 +2950,36 @@
             <target/>
          </segment>
       </unit>
+      <unit id="findResource.sortGroupingName">
+         <segment>
+            <source>Source</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="findResource.sortGroupingType">
+         <segment>
+            <source>Group</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="findResource.sortMediaType">
+         <segment>
+            <source>Media</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="findResource.sortMenu">
+         <segment>
+            <source>Sort results</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="findResource.sortName">
+         <segment>
+            <source>Name</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="findResource.summary">
          <segment>
             <source>summary</source>

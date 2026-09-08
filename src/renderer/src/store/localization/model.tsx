@@ -592,6 +592,11 @@ export interface IFindResourceStrings extends Localize.LocalizedStringsMethods {
     "scriptTpl": string;
     "section": string;
     "showing": string;
+    "sortGroupingName": string;
+    "sortGroupingType": string;
+    "sortMediaType": string;
+    "sortMenu": string;
+    "sortName": string;
     "summary": string;
     "summaryTpl": string;
     "type": string;

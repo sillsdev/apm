@@ -18,11 +18,16 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import PreviewIcon from '@mui/icons-material/Visibility';
 import LinkIcon from '@mui/icons-material/Link';
+import SortIcon from '@mui/icons-material/Sort';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import {
   memo,
+  MouseEvent,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -37,7 +42,12 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { findResourceSelector, gridSelector } from '../../../selector';
 import { IFindResourceStrings, IGridStrings } from '../../../model';
-import { LightTooltip, Button } from '../../../control';
+import {
+  LightTooltip,
+  Button,
+  StyledMenu,
+  StyledMenuItem,
+} from '../../../control';
 import { OptionProps } from './FindTabs';
 import Markdown from 'react-markdown';
 import { LaunchLink } from '../../../control/LaunchLink';
@@ -126,6 +136,25 @@ export interface AquiferContent {
     };
   };
 }
+
+type SortKey = 'name' | 'mediaType' | 'groupingType' | 'groupingName';
+
+interface ISort {
+  key: SortKey;
+  asc: boolean;
+}
+
+const sortAccessor: Record<SortKey, (d: AquiferSearch) => string | undefined> = {
+  name: (d) => d.localizedName,
+  mediaType: (d) => d.mediaType,
+  groupingType: (d) => d.grouping?.type,
+  groupingName: (d) => d.grouping?.name,
+};
+
+const sortValue = (d: AquiferSearch, key: SortKey): string =>
+  sortAccessor[key](d) ?? '';
+
+const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
 
 interface IAquiferRowProps {
   item: AquiferSearch;
@@ -238,8 +267,40 @@ export default function FindAquifer({ onClose }: IProps) {
   const { curNoteRef } = useNotes();
   const { isMobileWidth } = useMobile();
 
+  const [sort, setSort] = useState<ISort | null>(null);
+  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
+
   const allChecked = data.length > 0 && checks.size === data.length;
   const someChecked = checks.size > 0 && !allChecked;
+
+  const sorted = useMemo(() => {
+    if (!sort) return data;
+    const dir = sort.asc ? 1 : -1;
+    const { key } = sort;
+    return [...data].sort(
+      (a, b) => dir * collator.compare(sortValue(a, key), sortValue(b, key))
+    );
+  }, [data, sort]);
+
+  const handleSort = useCallback(
+    (key: SortKey) => (e: MouseEvent) => {
+      e.stopPropagation();
+      setSort((prev) =>
+        prev?.key === key ? { key, asc: !prev.asc } : { key, asc: true }
+      );
+    },
+    []
+  );
+
+  const sortRows: { key: SortKey; label: string }[] = useMemo(
+    () => [
+      { key: 'name', label: t.sortName },
+      { key: 'mediaType', label: t.sortMediaType },
+      { key: 'groupingType', label: t.sortGroupingType },
+      { key: 'groupingName', label: t.sortGroupingName },
+    ],
+    [t]
+  );
 
   const toggleRow = useCallback(
     (id: number) =>
@@ -587,6 +648,45 @@ export default function FindAquifer({ onClose }: IProps) {
             <Typography variant="body2" color="text.secondary">
               {tg.all}
             </Typography>
+            <LightTooltip title={t.sortMenu}>
+              <IconButton
+                id="aquifer-sort"
+                size="small"
+                aria-controls="aquifer-sort-menu"
+                aria-haspopup="true"
+                aria-label={t.sortMenu}
+                onClick={(e) => setSortAnchor(e.currentTarget)}
+                sx={{ ml: 'auto' }}
+              >
+                <SortIcon fontSize="small" />
+              </IconButton>
+            </LightTooltip>
+            <StyledMenu
+              id="aquifer-sort-menu"
+              anchorEl={sortAnchor}
+              open={Boolean(sortAnchor)}
+              onClose={() => setSortAnchor(null)}
+            >
+              {sortRows.map(({ key, label }) => (
+                <StyledMenuItem
+                  key={key}
+                  id={`aquifer-sort-${key}`}
+                  onClick={handleSort(key)}
+                  selected={sort?.key === key}
+                >
+                  <ListItemIcon>
+                    {sort?.key === key ? (
+                      sort.asc ? (
+                        <ArrowUpwardIcon fontSize="small" />
+                      ) : (
+                        <ArrowDownwardIcon fontSize="small" />
+                      )
+                    ) : null}
+                  </ListItemIcon>
+                  <ListItemText primary={label} />
+                </StyledMenuItem>
+              ))}
+            </StyledMenu>
           </Stack>
           <List
             dense
@@ -599,7 +699,7 @@ export default function FindAquifer({ onClose }: IProps) {
               maxHeight: isMobileWidth ? 'none' : '55vh',
             }}
           >
-            {data.map((item) => (
+            {sorted.map((item) => (
               <AquiferRow
                 key={item.id}
                 item={item}
