@@ -1,12 +1,23 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import PassageDetailLayout from './PassageDetailLayout';
+import { createPortal } from 'react-dom';
+import PassageDetailLayout, { useLayoutFabAnchor } from './PassageDetailLayout';
+
+/** Stands in for DiscussionPanel: portals a fab into the layout's corner anchor. */
+const AnchoredFab = () => {
+  const fabAnchor = useLayoutFabAnchor();
+  return fabAnchor
+    ? createPortal(<button data-cy="layout-fab">Fab</button>, fabAnchor)
+    : null;
+};
 
 const mountLayout = ({
   withFooterAbove = false,
+  withFab = false,
   contentSx,
 }: {
   withFooterAbove?: boolean;
+  withFab?: boolean;
   contentSx?: Record<string, unknown>;
 } = {}) => {
   const theme = createTheme();
@@ -23,6 +34,7 @@ const mountLayout = ({
         contentSx={contentSx}
       >
         <div>Content body</div>
+        {withFab && <AnchoredFab />}
       </PassageDetailLayout>
     </ThemeProvider>
   );
@@ -43,6 +55,40 @@ describe('PassageDetailLayout', () => {
     cy.get('[data-cy="layout-footer-above"]')
       .should('be.visible')
       .and('contain.text', 'Footer Above');
+  });
+
+  it('anchors a portalled fab in the bottom right, clear of the footers', () => {
+    mountLayout({ withFab: true, withFooterAbove: true });
+
+    cy.get('[data-cy="layout-fab"]').should('be.visible');
+    cy.get('[data-cy="layout-fab"]').then(($fab) => {
+      const fab = $fab[0].getBoundingClientRect();
+      cy.get('[data-cy="layout-footer-above"]').then(($footerAbove) => {
+        const footerAbove = $footerAbove[0].getBoundingClientRect();
+        expect(fab.bottom).to.be.at.most(footerAbove.top);
+      });
+      cy.get('[data-cy="layout-fab-anchor"]').then(($anchor) => {
+        const anchor = $anchor[0].getBoundingClientRect();
+        // Bottom right of the content region, inside its padding.
+        expect(fab.right).to.be.at.most(anchor.right);
+        expect(fab.right).to.be.greaterThan(anchor.left + anchor.width / 2);
+      });
+    });
+  });
+
+  it('leaves the content clickable under the fab anchor overlay', () => {
+    mountLayout({ withFab: true });
+
+    cy.get('[data-cy="layout-fab-anchor"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    );
+    cy.get('[data-cy="layout-fab"]').should(
+      'have.css',
+      'pointer-events',
+      'auto'
+    );
   });
 
   it('applies contentSx overrides', () => {
