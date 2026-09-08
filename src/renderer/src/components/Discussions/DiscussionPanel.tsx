@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   DiscussionD,
@@ -23,17 +23,14 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
 import { useMobile } from '../../utils/useMobile';
+import { useLayoutFabAnchor } from '../PassageDetail/PassageDetailLayout';
 import {
   documentHasVerticalScrollbar,
   measureScrollbarWidth,
 } from '../../utils/getScrollbarWidth';
 
-/** Sits just above PassageDetailLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
-const discussionFabBottomDetailMobile =
-  'calc(8px + 1px + 4px + 40px + 2px + env(safe-area-inset-bottom, 0px))';
-
 export default function DiscussionPanel() {
-  const { isMobile, isMobileWidth } = useMobile();
+  const { isMobileWidth } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -43,8 +40,7 @@ export default function DiscussionPanel() {
     currentstep,
     setDiscussOpen,
   } = ctx.state;
-  const { pathname } = useLocation();
-  const isDetail = pathname.startsWith('/detail');
+  const fabAnchor = useLayoutFabAnchor();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
@@ -109,6 +105,15 @@ export default function DiscussionPanel() {
     </LightTooltip>
   );
 
+  const fabContent =
+    discussionCount > 0 ? (
+      <Badge badgeContent={discussionCount} color="primary">
+        {discussionFab}
+      </Badge>
+    ) : (
+      discussionFab
+    );
+
   return (
     Boolean(mediafileId) &&
     (discussOpen ? (
@@ -133,26 +138,16 @@ export default function DiscussionPanel() {
           <DiscussionList onClose={() => setDiscussOpen(false)} />
         </Grid>
       </Grid>
+    ) : fabAnchor ? (
+      createPortal(fabContent, fabAnchor)
     ) : (
       <Box
         sx={{
           position: 'fixed',
-          bottom: isDetail
-            ? isMobile
-              ? discussionFabBottomDetailMobile
-              : 50
-            : 10,
-          right: 10,
-          zIndex: 1000,
+          zIndex: (theme) => theme.zIndex.fab,
         }}
       >
-        {discussionCount > 0 ? (
-          <Badge badgeContent={discussionCount} color="primary">
-            {discussionFab}
-          </Badge>
-        ) : (
-          discussionFab
-        )}
+        {fabContent}
       </Box>
     ))
   );
