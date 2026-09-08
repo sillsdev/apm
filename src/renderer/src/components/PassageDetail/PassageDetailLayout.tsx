@@ -50,8 +50,8 @@ export default function PassageDetailLayout({
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              ...contentSx,
               pb: 10,
+              ...contentSx,
             }}
           >
             {children}
