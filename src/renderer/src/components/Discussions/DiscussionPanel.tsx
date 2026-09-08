@@ -14,7 +14,7 @@ import {
   GroupMembership,
   IDiscussionListStrings,
 } from '../../model';
-import { Badge, Box, Fab, Grid } from '@mui/material';
+import { Badge, Fab, Grid } from '@mui/material';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import DiscussionList from './DiscussionList';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -139,17 +139,8 @@ export default function DiscussionPanel() {
           <DiscussionList onClose={() => setDiscussOpen(false)} />
         </Grid>
       </Grid>
-    ) : fabAnchor ? (
-      createPortal(fabContent, fabAnchor)
     ) : (
-      <Box
-        sx={{
-          position: 'fixed',
-          zIndex: (theme) => theme.zIndex.fab,
-        }}
-      >
-        {fabContent}
-      </Box>
+      fabAnchor && createPortal(fabContent, fabAnchor)
     ))
   );
 }
