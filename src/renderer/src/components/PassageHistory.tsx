@@ -228,7 +228,7 @@ export function PassageHistory(props: IProps) {
           flex: '1 1 0',
           minHeight: 0,
           overflow: 'auto',
-          bgColor: 'background.paper',
+          bgcolor: 'background.paper',
         }}
       >
         {historyContent}
