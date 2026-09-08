@@ -383,9 +383,11 @@ export default function FindAquifer({ onClose }: IProps) {
     }
     const searchParams = new URLSearchParams(paramArr);
 
+    let cancelled = false;
     setLoading(true);
     axiosGet('aquifer/aquifer-search', searchParams, token)
       .then((result) => {
+        if (cancelled) return;
         const response = result as {
           totalItemCount: number;
           items: AquiferSearch[];
@@ -394,7 +396,12 @@ export default function FindAquifer({ onClose }: IProps) {
         setData(response?.items ?? []);
         setChecks(new Set());
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passage, lang, refresh, offset]);
 
