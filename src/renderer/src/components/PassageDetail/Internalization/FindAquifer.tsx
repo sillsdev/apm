@@ -659,8 +659,9 @@ export default function FindAquifer({ onClose }: IProps) {
               <IconButton
                 id="aquifer-sort"
                 size="small"
-                aria-controls="aquifer-sort-menu"
+                aria-controls={sortAnchor ? 'aquifer-sort-menu' : undefined}
                 aria-haspopup="true"
+                aria-expanded={sortAnchor ? 'true' : undefined}
                 aria-label={t.sortMenu}
                 onClick={(e) => setSortAnchor(e.currentTarget)}
                 sx={{ ml: 'auto' }}
