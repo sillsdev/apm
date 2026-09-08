@@ -267,7 +267,7 @@ export default function FindAquifer({ onClose }: IProps) {
   const { curNoteRef } = useNotes();
   const { isMobileWidth } = useMobile();
 
-  const [sort, setSort] = useState<ISort | null>(null);
+  const [sort, setSort] = useState<ISort>({ key: 'name', asc: true });
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
 
   const allChecked = data.length > 0 && checks.size === data.length;
