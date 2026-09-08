@@ -101,19 +101,26 @@ export default function DiscussionPanel() {
         }}
         onClick={() => setDiscussOpen(true)}
       >
-        <ForumIcon />
+        <Badge
+          badgeContent={discussionCount}
+          color="primary"
+          // Make the badge pill smaller than the default size
+          sx={{
+            '& .MuiBadge-badge': {
+              fontSize: '0.7rem',
+              height: '1.5em',
+              minWidth: '1.5em',
+              lineHeight: '1.5em',
+              padding: '0 0.35em',
+              borderRadius: '1em',
+            },
+          }}
+        >
+          <ForumIcon />
+        </Badge>
       </Fab>
     </LightTooltip>
   );
-
-  const fabContent =
-    discussionCount > 0 ? (
-      <Badge badgeContent={discussionCount} color="primary">
-        {discussionFab}
-      </Badge>
-    ) : (
-      discussionFab
-    );
 
   return (
     Boolean(mediafileId) &&
@@ -140,7 +147,7 @@ export default function DiscussionPanel() {
         </Grid>
       </Grid>
     ) : (
-      fabAnchor && createPortal(fabContent, fabAnchor)
+      fabAnchor && createPortal(discussionFab, fabAnchor)
     ))
   );
 }
