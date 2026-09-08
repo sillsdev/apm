@@ -393,46 +393,6 @@ describe('useWaveSurferRegions — boundary drag on a recorded segment (TT-7666)
   // Recorded boundaries are frozen (TT-7666). Since a boundary is shared,
   // drag is blocked when either neighboring segment is recorded.
 
-  it('refuses to move a recorded segment via its own boundary', () => {
-    // Segment 1 is recorded. Dragging its end would resize it.
-    const { plugin, segs, onCurrentRegion } = renderRegions({
-      lockSegmentSelection: false,
-      recordedIndices: [1],
-    });
-
-    dragBoundary(plugin, segs[1], 'end', 22);
-
-    // Neighbor stays unchanged and no update is emitted.
-    expect(segs[2].start).toBe(20);
-    expect(onCurrentRegion).not.toHaveBeenCalled();
-  });
-
-  it('refuses to move a recorded neighbour via the shared boundary', () => {
-    // Dragging this edge would also move recorded segment 2, so block it.
-    const { plugin, segs, onCurrentRegion } = renderRegions({
-      lockSegmentSelection: false,
-      recordedIndices: [2],
-    });
-
-    dragBoundary(plugin, segs[1], 'end', 22);
-
-    expect(segs[2].start).toBe(20);
-    expect(onCurrentRegion).not.toHaveBeenCalled();
-  });
-
-  it('refuses a start-side drag that would reshape a recorded neighbour', () => {
-    // Segment 0 is recorded; segment 1's start is its shared boundary.
-    const { plugin, segs, onCurrentRegion } = renderRegions({
-      lockSegmentSelection: false,
-      recordedIndices: [0],
-    });
-
-    dragBoundary(plugin, segs[1], 'start', 8);
-
-    expect(segs[0].end).toBe(10);
-    expect(onCurrentRegion).not.toHaveBeenCalled();
-  });
-
   it('still allows dragging a boundary between two unrecorded segments', () => {
     // This boundary is between unrecorded segments, so it stays draggable.
     const { plugin, segs, onCurrentRegion } = renderRegions({

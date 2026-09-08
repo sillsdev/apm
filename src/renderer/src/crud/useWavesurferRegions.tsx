@@ -299,21 +299,6 @@ export function useWaveSurferRegions(
     });
   };
 
-  /** True when the dragged boundary touches a recorded segment (TT-7666). */
-  const isRecordedBoundary = (r: Region, side?: UpdateSide) => {
-    const recorded = isSegmentRecordedRef.current;
-    if (!recorded) return false;
-    const idx = regionIndexInSorted(r);
-    if (idx < 0) return false;
-    if (recorded(idx)) return true;
-    // 'start' shares previous, 'end' shares next; unknown side checks both.
-    if (side !== 'end' && idx > 0 && recorded(idx - 1)) return true;
-    if (side !== 'start' && idx < numRegions() - 1 && recorded(idx + 1)) {
-      return true;
-    }
-    return false;
-  };
-
   const Regions = () => regionsRef.current;
   const regions = () =>
     Regions()
@@ -641,9 +626,6 @@ export function useWaveSurferRegions(
         'region-update',
         function (r: Region, side?: UpdateSide) {
           if (lockSegmentSelectionRef.current) return;
-          // Backstop: if a drag was already in flight, still block recorded
-          // boundaries here (TT-7666).
-          if (isRecordedBoundary(r, side)) return;
           resizingRef.current = r.resize;
           // Live-clamp the boundary as the user drags so regions never visually
           // overlap: the dragged boundary stops at the neighbor's edge and the
@@ -659,8 +641,6 @@ export function useWaveSurferRegions(
           // region-updated can change selection and boundaries, so block it
           // while recording lock is active (TT-7437).
           if (lockSegmentSelectionRef.current) return;
-          // Backstop for in-flight drags on recorded boundaries (TT-7666).
-          if (isRecordedBoundary(r, side)) return;
           if (singleRegionRef.current) {
             if (!loadingRef.current) {
               waitForIt(
