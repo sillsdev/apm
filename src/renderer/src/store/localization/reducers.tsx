@@ -212,7 +212,7 @@ const initialState = {
 			"addTeam": "Add Team",
 			"bibleid": "Bible Id",
 			"bibleidexists": "Bible Id already exists. Please contact support if you need to work on this Bible.",
-			"bibleidformat": "Bible Id must begin with the language code and version (six letters).",
+			"bibleidformat": "Bible Id must begin with the language code and version (a total of at least six letters).",
 			"bibleidiso": "Bible Id should begin with the language code.",
 			"bibleIdExplain": "Explain Bible Id",
 			"bibleOwnerRights": "Team {0} is the owner of this Bible.",

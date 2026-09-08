@@ -990,7 +990,7 @@
       </unit>
       <unit id="cards.bibleidformat">
          <segment>
-            <source>Bible Id must begin with the language code and version (six letters).</source>
+            <source>Bible Id must begin with the language code and version (a total of at least six letters).</source>
             <target/>
          </segment>
       </unit>
