@@ -30,38 +30,28 @@ export default function PassageDetailLayout({
 
   return (
     <LayoutFabContext.Provider value={fabAnchor}>
-      <Box
-        sx={{
-          width: '100%',
-          minWidth: 0,
-          height: '100%',
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Box sx={{ flexShrink: 0, minWidth: 0, ...headerSx }}>{header}</Box>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flexShrink: 0, ...headerSx }}>{header}</Box>
         <Box
           sx={{
             position: 'relative',
             flex: 1,
-            minWidth: 0,
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
           }}
         >
           <Box
+            data-cy="layout-content"
             sx={{
               flex: 1,
-              minWidth: 0,
               minHeight: 0,
               overflowX: 'hidden',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'flex-start',
               ...contentSx,
+              pb: 10,
             }}
           >
             {children}
@@ -71,10 +61,8 @@ export default function PassageDetailLayout({
             data-cy="layout-fab-anchor"
             sx={{
               position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'flex-end',
+              right: 0,
+              bottom: 0,
               p: 1.5,
               pointerEvents: 'none',
               '& > *': { pointerEvents: 'auto' },
@@ -82,13 +70,9 @@ export default function PassageDetailLayout({
           />
         </Box>
         {footerAbove && (
-          <Box sx={{ flexShrink: 0, minWidth: 0, ...footerAboveSx }}>
-            {footerAbove}
-          </Box>
+          <Box sx={{ flexShrink: 0, ...footerAboveSx }}>{footerAbove}</Box>
         )}
-        {footer && (
-          <Box sx={{ flexShrink: 0, minWidth: 0, ...footerSx }}>{footer}</Box>
-        )}
+        {footer && <Box sx={{ flexShrink: 0, ...footerSx }}>{footer}</Box>}
       </Box>
     </LayoutFabContext.Provider>
   );

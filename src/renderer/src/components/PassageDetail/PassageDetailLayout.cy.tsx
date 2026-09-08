@@ -14,28 +14,40 @@ const AnchoredFab = () => {
 const mountLayout = ({
   withFooterAbove = false,
   withFab = false,
+  tallContent = false,
   contentSx,
 }: {
   withFooterAbove?: boolean;
   withFab?: boolean;
+  tallContent?: boolean;
   contentSx?: Record<string, unknown>;
 } = {}) => {
   const theme = createTheme();
   cy.mount(
     <ThemeProvider theme={theme}>
-      <PassageDetailLayout
-        header={<div data-cy="layout-header">Header</div>}
-        footer={<div data-cy="layout-footer">Footer</div>}
-        footerAbove={
-          withFooterAbove ? (
-            <div data-cy="layout-footer-above">Footer Above</div>
-          ) : undefined
-        }
-        contentSx={contentSx}
-      >
-        <div>Content body</div>
-        {withFab && <AnchoredFab />}
-      </PassageDetailLayout>
+      <div style={{ height: '300px' }}>
+        <PassageDetailLayout
+          header={<div data-cy="layout-header">Header</div>}
+          footer={<div data-cy="layout-footer">Footer</div>}
+          footerAbove={
+            withFooterAbove ? (
+              <div data-cy="layout-footer-above">Footer Above</div>
+            ) : undefined
+          }
+          contentSx={contentSx}
+        >
+          <div>Content body</div>
+          {tallContent && (
+            <>
+              <div style={{ height: '2000px', flexShrink: 0 }} />
+              <div data-cy="layout-last-item" style={{ flexShrink: 0 }}>
+                Last item
+              </div>
+            </>
+          )}
+          {withFab && <AnchoredFab />}
+        </PassageDetailLayout>
+      </div>
     </ThemeProvider>
   );
 };
@@ -89,6 +101,19 @@ describe('PassageDetailLayout', () => {
       'pointer-events',
       'auto'
     );
+  });
+
+  it('reserves scroll space so the last content clears the fab', () => {
+    mountLayout({ withFab: true, tallContent: true });
+
+    cy.get('[data-cy="layout-content"]').scrollTo('bottom');
+    cy.get('[data-cy="layout-last-item"]').then(($last) => {
+      const last = $last[0].getBoundingClientRect();
+      cy.get('[data-cy="layout-fab"]').then(($fab) => {
+        const fab = $fab[0].getBoundingClientRect();
+        expect(last.bottom).to.be.at.most(fab.top);
+      });
+    });
   });
 
   it('applies contentSx overrides', () => {
