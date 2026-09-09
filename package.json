@@ -1,7 +1,7 @@
 {
   "name": "audio-project-manager",
   "version": "4.5.1",
-  "description": "An Electron application with React and TypeScript",
+  "description": "A flexible audio-text orality solution",
   "main": "./out/main/index.js",
   "homepage": "./out",
   "scripts": {
@@ -177,8 +177,8 @@
           "Encoding": "UTF-8",
           "Name": "Audio Project Manager",
           "Name[fr]": "Audio Project Manager",
-          "Comment": "Flexible audio-text orality solution",
-          "Comment[fr]": "Solution flexible d'oralité audio-textuelle",
+          "Comment": "A flexible audio-text orality solution",
+          "Comment[fr]": "Une solution flexible d'oralité audio-textuelle",
           "Icon": "audio-project-manager",
           "Categories": "GTK;GNOME;Education;Utility;",
           "Keywords": "audio;obt;transcribe;ai",
