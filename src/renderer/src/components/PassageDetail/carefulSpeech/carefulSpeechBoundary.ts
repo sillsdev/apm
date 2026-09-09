@@ -75,5 +75,25 @@ export function preservesRecordedBoundaries(
   return true;
 }
 
+/**
+ * Index of the clause whose boundaries match `region`, or -1. Lets callers
+ * remember a recorded take by the boundaries it was cut against and re-derive
+ * its current clause index after the clauses are re-segmented — the same way
+ * getCompletedClauseIndices re-matches saved mediafiles to the live regions,
+ * so index tracking cannot drift when an earlier clause is split or combined
+ * (TT-7666).
+ */
+export function clauseIndexForRegion(
+  region: IRegion,
+  clauseRegions: IRegion[],
+  tolerance = REGION_EQ_TOLERANCE
+): number {
+  return clauseRegions.findIndex(
+    (c) =>
+      Math.abs(c.start - region.start) < tolerance &&
+      Math.abs(c.end - region.end) < tolerance
+  );
+}
+
 /** @deprecated Prefer hasPhraseRegions — kept for BOLD clause naming at call sites. */
 export const hasClauseRegions = hasPhraseRegions;

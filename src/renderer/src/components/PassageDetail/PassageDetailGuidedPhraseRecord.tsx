@@ -39,6 +39,7 @@ import { useGuidedPhraseSegments } from './carefulSpeech/useGuidedPhraseSegments
 import { resolveSegmentSpeaker } from './carefulSpeech/resolveSegmentSpeaker';
 import {
   CLAUSE_BOUNDARY_THRESHOLD_SEC,
+  clauseIndexForRegion,
   hasPhraseRegions,
   preservesRecordedBoundaries,
   regionBoundariesEqual,
@@ -245,32 +246,56 @@ export function PassageDetailGuidedPhraseRecord({
   // Armed after auto-play park to ignore one spurious +1 clause jump
   // (overshoot/region-in) while still allowing real navigation (TT-7360).
   const pendingOvershootSwallowRef = useRef(false);
-  /** Session-local saved indices before rowData catches up (TT-7552, TT-7666). */
-  const optimisticCompletedRef = useRef<Set<number>>(new Set());
+  // Takes saved this session but not yet shown by rowData (TT-7552, TT-7666).
+  // Held by the boundaries each take was cut against, not a raw index, so the
+  // clause is re-matched to the live layout every recompute and cannot drift
+  // when an earlier clause is split or combined (see clauseIndexForRegion).
+  const optimisticTakeRegionsRef = useRef<IRegion[]>([]);
   const [optimisticVersion, setOptimisticVersion] = useState(0);
   const bumpOptimistic = useCallback(
     () => setOptimisticVersion((v) => v + 1),
     []
   );
+  const sameRegion = useCallback(
+    (a: IRegion, b: IRegion) =>
+      Math.abs(a.start - b.start) < 0.05 && Math.abs(a.end - b.end) < 0.05,
+    []
+  );
   const addOptimistic = useCallback(
-    (index: number) => {
-      optimisticCompletedRef.current.add(index);
+    (region: IRegion | undefined) => {
+      if (!region) return;
+      if (optimisticTakeRegionsRef.current.some((r) => sameRegion(r, region))) {
+        return;
+      }
+      optimisticTakeRegionsRef.current = [
+        ...optimisticTakeRegionsRef.current,
+        { start: region.start, end: region.end },
+      ];
       bumpOptimistic();
     },
-    [bumpOptimistic]
+    [bumpOptimistic, sameRegion]
   );
   const removeOptimistic = useCallback(
-    (index: number) => {
-      if (optimisticCompletedRef.current.delete(index)) bumpOptimistic();
+    (region: IRegion | undefined) => {
+      if (!region) return;
+      const kept = optimisticTakeRegionsRef.current.filter(
+        (r) => !sameRegion(r, region)
+      );
+      if (kept.length !== optimisticTakeRegionsRef.current.length) {
+        optimisticTakeRegionsRef.current = kept;
+        bumpOptimistic();
+      }
     },
-    [bumpOptimistic]
+    [bumpOptimistic, sameRegion]
   );
   const clearOptimistic = useCallback(() => {
-    if (optimisticCompletedRef.current.size === 0) return;
-    optimisticCompletedRef.current.clear();
+    if (optimisticTakeRegionsRef.current.length === 0) return;
+    optimisticTakeRegionsRef.current = [];
     bumpOptimistic();
   }, [bumpOptimistic]);
   const currentIndexRef = useRef(0);
+  // Live current-clause region, for the upload callbacks (fire outside render).
+  const currentRegionRef = useRef<IRegion | undefined>(undefined);
   /** Latched clause/region for the active take until save or discard (TT-7437). */
   const [recordingTarget, setRecordingTarget] = useState<
     { index: number; region: IRegion } | undefined
@@ -483,14 +508,31 @@ export function PassageDetailGuidedPhraseRecord({
     ]
   );
 
+  // Current clause indices of the optimistically-saved takes, re-matched to the
+  // live layout by boundaries so they follow when an earlier clause is split or
+  // combined, exactly as completedIndices does (TT-7666).
+  const optimisticCompletedIndices = useMemo(() => {
+    const indices = new Set<number>();
+    for (const region of optimisticTakeRegionsRef.current) {
+      const index = clauseIndexForRegion(region, clauseRegions);
+      if (index >= 0) indices.add(index);
+    }
+    return indices;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clauseRegions, optimisticVersion]);
+
   // A take that finished recording but has not saved yet — its upload failed
   // and it is held for Retry — is still playable and stays latched to the
   // clause it was recorded on. Treat that clause as recorded so its boundaries
   // lock like a saved take's, otherwise a Retry would file it against the altered
   // boundaries (TT-7437). A successful save clears the latch (and the optimistic
-  // set then covers the clause), so this only fires for an unsaved take.
-  const pendingTakeIndex =
-    phase === 'recorded' ? recordingTarget?.index : undefined;
+  // set then covers the clause), so this only fires for an unsaved take. Matched
+  // by boundaries, like the optimistic set, so it tracks the live layout.
+  const pendingTakeIndex = useMemo(() => {
+    if (phase !== 'recorded' || !recordingTarget) return undefined;
+    const index = clauseIndexForRegion(recordingTarget.region, clauseRegions);
+    return index >= 0 ? index : undefined;
+  }, [phase, recordingTarget, clauseRegions]);
 
   // A segment is treated as recorded (boundary locked, TT-7666) when it has a
   // saved take, a newly saved take that rowData has not shown yet, or a
@@ -500,12 +542,14 @@ export function PassageDetailGuidedPhraseRecord({
     (index: number) =>
       recordingPassStarted &&
       (completedIndices.has(index) ||
-        optimisticCompletedRef.current.has(index) ||
+        optimisticCompletedIndices.has(index) ||
         index === pendingTakeIndex),
-    // optimisticVersion makes optimistic-set changes reactive so every guard
-    // that reads this predicate (drag, +/-, Split/Combine) recomputes together.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recordingPassStarted, completedIndices, optimisticVersion, pendingTakeIndex]
+    [
+      recordingPassStarted,
+      completedIndices,
+      optimisticCompletedIndices,
+      pendingTakeIndex,
+    ]
   );
 
   /** completedIndices plus the optimistic just-saved set and any latched
@@ -514,12 +558,11 @@ export function PassageDetailGuidedPhraseRecord({
   const recordedClauseIndicesForTools = useMemo(() => {
     const recorded = new Set([
       ...completedIndices,
-      ...optimisticCompletedRef.current,
+      ...optimisticCompletedIndices,
     ]);
     if (pendingTakeIndex !== undefined) recorded.add(pendingTakeIndex);
     return recorded;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completedIndices, optimisticVersion, pendingTakeIndex]);
+  }, [completedIndices, optimisticCompletedIndices, pendingTakeIndex]);
 
   const allClausesComplete = useMemo(
     () =>
@@ -629,29 +672,28 @@ export function PassageDetailGuidedPhraseRecord({
     currentIndex,
     isCompleted: (i) =>
       recordingPassStarted
-        ? completedIndices.has(i) || optimisticCompletedRef.current.has(i)
+        ? completedIndices.has(i) || optimisticCompletedIndices.has(i)
         : heardSet.has(i),
   };
   currentIndexRef.current = currentIndex;
+  currentRegionRef.current = currentRegion;
 
   const applyColors = useCallback(() => {
     playerControlsRef.current?.applyRegionColors?.();
   }, []);
 
-  // Drop optimistic flags once rowData confirms those clauses.
+  // Drop an optimistic take once rowData confirms the clause it now maps to.
   useEffect(() => {
-    let changed = false;
-    for (const i of [...optimisticCompletedRef.current]) {
-      if (completedIndices.has(i)) {
-        optimisticCompletedRef.current.delete(i);
-        changed = true;
-      }
-    }
-    if (changed) {
+    const kept = optimisticTakeRegionsRef.current.filter((region) => {
+      const index = clauseIndexForRegion(region, clauseRegions);
+      return !(index >= 0 && completedIndices.has(index));
+    });
+    if (kept.length !== optimisticTakeRegionsRef.current.length) {
+      optimisticTakeRegionsRef.current = kept;
       bumpOptimistic();
       applyColors();
     }
-  }, [completedIndices, applyColors, bumpOptimistic]);
+  }, [completedIndices, clauseRegions, applyColors, bumpOptimistic]);
 
   const bumpSuppressClauseAutoPlay = useCallback((count = 1) => {
     suppressClauseAutoPlayRef.current += count;
@@ -1741,14 +1783,13 @@ export function PassageDetailGuidedPhraseRecord({
       // Mark optimistic completion immediately after real upload (TT-7552),
       // and always apply it to the latched recording-start clause (TT-7437).
       // No mediaId means upload failed; do not show optimistic success (TT-7583).
-      const takenIndex =
-        recordingTargetRef.current?.index ?? currentIndexRef.current;
+      const takeRegion = recordingTargetRef.current?.region ?? currentRegionRef.current;
       if (mediaId) {
-        addOptimistic(takenIndex);
+        addOptimistic(takeRegion);
         // Stored: the take is no longer pending, so release the clause.
         latchRecordingTarget(undefined);
       } else {
-        removeOptimistic(takenIndex);
+        removeOptimistic(takeRegion);
         // Keep the latch on failed upload so Retry files to the same clause
         // even if selection moved (TT-7583).
       }
@@ -1787,7 +1828,7 @@ export function PassageDetailGuidedPhraseRecord({
       }
     }
     removeOptimistic(
-      recordingTargetRef.current?.index ?? currentIndexRef.current
+      recordingTargetRef.current?.region ?? currentRegionRef.current
     );
     // The take is gone, so the clause it was held against is released too.
     latchRecordingTarget(undefined);
@@ -2026,7 +2067,7 @@ export function PassageDetailGuidedPhraseRecord({
             // Also clear optimistic green on this failure path (TT-7583).
             // Keep the latch so Retry still files to the same clause.
             removeOptimistic(
-              recordingTargetRef.current?.index ?? currentIndexRef.current
+              recordingTargetRef.current?.region ?? currentRegionRef.current
             );
             applyColors();
           }}

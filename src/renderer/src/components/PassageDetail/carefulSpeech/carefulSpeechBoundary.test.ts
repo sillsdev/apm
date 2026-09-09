@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  clauseIndexForRegion,
   preservesRecordedBoundaries,
   regionBoundariesEqual,
 } from './carefulSpeechBoundary';
@@ -53,5 +54,34 @@ describe('preservesRecordedBoundaries', () => {
     expect(
       preservesRecordedBoundaries(oldRegions, newRegions, new Set([0]))
     ).toBe(false);
+  });
+});
+
+describe('clauseIndexForRegion', () => {
+  const regions = [
+    { start: 0, end: 10 },
+    { start: 10, end: 20 },
+    { start: 20, end: 30 },
+  ];
+
+  it('finds the clause whose boundaries match', () => {
+    expect(clauseIndexForRegion({ start: 10, end: 20 }, regions)).toBe(1);
+  });
+
+  it('tracks a take to its new index after an earlier clause splits', () => {
+    // A take was recorded on { 10, 20 } (index 1). Splitting clause 0 shifts it
+    // to index 2, but its boundaries are unchanged — the match follows.
+    const afterSplit = [
+      { start: 0, end: 5 },
+      { start: 5, end: 10 },
+      { start: 10, end: 20 },
+      { start: 20, end: 30 },
+    ];
+    expect(clauseIndexForRegion({ start: 10, end: 20 }, afterSplit)).toBe(2);
+  });
+
+  it('matches within tolerance and returns -1 when no clause lines up', () => {
+    expect(clauseIndexForRegion({ start: 10.02, end: 19.98 }, regions)).toBe(1);
+    expect(clauseIndexForRegion({ start: 12, end: 18 }, regions)).toBe(-1);
   });
 });
