@@ -64,7 +64,9 @@ export function useWaveSurfer(
   lockSegmentSelection?: boolean,
   disableDragSelection?: boolean,
   /** A region was clicked, as opposed to selected by the playhead. */
-  onSegmentClick?: (region: IRegion) => void
+  onSegmentClick?: (region: IRegion) => void,
+  /** Whether the segment at a sorted index already has a recording (TT-7666). */
+  isSegmentRecorded?: (sortedIndex: number) => boolean
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -313,7 +315,8 @@ export function useWaveSurfer(
     lockSegmentSelection,
     () => blobAudioRef.current,
     disableDragSelection,
-    onSegmentClick
+    onSegmentClick,
+    isSegmentRecorded
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {

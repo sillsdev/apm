@@ -155,3 +155,34 @@ adds, and it removes the failure mode that has produced the most defects. Piece
 2 touches the shared engine and affects every consumer of the waveform (Mark
 Verses, Transcribe, Discuss), so it deserves its own change and its own
 regression pass over prev/next segment playback.
+
+## Update — TT-7437 added a fifth workaround (2026-09-03)
+
+TT-7437 ("recording saved to the currently selected segment instead of the one
+played") was fixed without the source-tag refactor above. Two additions, on PR
+for TT-7437 / TT-7666:
+
+- **`recordingTarget` latch** in `PassageDetailGuidedPhraseRecord.tsx` — the
+  clause `{index, region}` is captured when recording starts and everything that
+  files the take (`sourceSegments`, filename postfix, the optimistic green mark)
+  reads the latch instead of the live `currentSegment`. Cleared on
+  save-complete, discard, and mediafile change.
+- **the selection lock extended to `region-in`** in `useWaveSurferRegions` — a
+  waveform click also seeks, so the playhead entered the clicked region and
+  `region-in` moved the selection behind the click-lock's back; the lock now
+  covers that path (and drag/resize, double-click).
+
+This is aligned with the ADR's thesis — the latch captures **intent explicitly**
+(the user pressed Record on _this_ segment) rather than inferring it from the
+channel, which is exactly "intent is what is missing." But it is a **fifth**
+entry in the "What guessing costs today" table rather than a consolidation: it
+does not remove `pendingOvershootSwallowRef`, `suppressClauseAutoPlayRef`,
+`currentSegmentSeq`, or `onSegmentClick`, and it adds one more piece of state a
+future reader has to hold.
+
+**When Piece 1 (source-tagged writes) lands, revisit the latch.** With a
+`'click'`-only navigation effect the take can no longer be re-filed by a
+playhead-driven change mid-record, so the latch may become redundant — or it may
+be kept as a deliberate save-time invariant ("a take belongs to the segment it
+started on") that is cheaper to prove than to re-derive. Decide it consciously
+then rather than leaving a fifth workaround in place by inertia.

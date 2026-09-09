@@ -118,6 +118,8 @@ export interface DetailPlayerProps {
   beforePlay?: () => void | Promise<void | boolean>;
   /** When true, waveform region clicks cannot change the selected segment. */
   lockSegmentSelection?: boolean;
+  /** Whether a sorted segment already has a recording (TT-7666). */
+  isSegmentRecorded?: (sortedIndex: number) => boolean;
   /** Show the "view transcription" button when a transcription exists. Default true.
    * Set false where the button isn't wanted (e.g. Mark Verses Mobile). */
   showTranscriptionButton?: boolean;
@@ -130,6 +132,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     allowSegment,
     allowAutoSegment,
     hideSegmentControls,
+    isSegmentRecorded,
     saveSegments,
     suggestedSegments,
     forceRegionOnly,
@@ -454,6 +457,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         regionOnly={requestPlay.regionOnly}
         forceRegionOnly={forceRegionOnly}
         lockSegmentSelection={lockSegmentSelection}
+        isSegmentRecorded={isSegmentRecorded}
         request={requestPlay.request}
         loading={loading}
         busy={pdBusy}
