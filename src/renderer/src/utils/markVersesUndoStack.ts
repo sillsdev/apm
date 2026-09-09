@@ -1,4 +1,16 @@
-/** Undo stack for Mark Verses mobile (table + segments + selection). */
+/** Undo stack for Mark Verses mobile (table + segments + selection).
+ *
+ * Plain LIFO, with no value-based dedupe. Mark Verses snapshots include boundary
+ * edits plus reference/table edits, so two snapshots with the same segments may
+ * still represent different user actions and must both be kept.
+ *
+ * TT-7437 multi-fire handling (one boundary gesture producing several onSegment
+ * events) is enforced in the consumer, which only pushes when region count
+ * changes. See prevRegionCountRef in PassageDetailMarkVerses.
+ *
+ * TT-7437 stale-closure handling also lives in the consumer, where snapshots
+ * are built from live refs.
+ */
 
 export const MARK_VERSES_UNDO_MAX_DEPTH = 20;
 

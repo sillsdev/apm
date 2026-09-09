@@ -9,6 +9,13 @@ export interface PhraseSegmentUndoStack {
   clear: () => void;
 }
 
+/**
+ * Plain LIFO stack.
+ * Multi-fire from one boundary gesture (TT-7437) is collapsed in the consumer
+ * before push: handleSegment compares incoming boundaries against the live
+ * segmentation ref and returns early when unchanged, so a second onSegment
+ * event never reaches push. See PassageDetailGuidedPhraseRecord.
+ */
 export const createPhraseSegmentUndoStack = (): PhraseSegmentUndoStack => {
   const stack: string[] = [];
   return {
