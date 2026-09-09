@@ -1212,6 +1212,20 @@ export function PassageDetailGuidedPhraseRecord({
       // Use the same recorded view every other guard reads (completed +
       // optimistic + pending), so a just-saved clause is protected here too
       // before rowData catches up.
+      //
+      // POSSIBLY STALE (TT-7437): handleSegment is the once-registered onSegment
+      // callback, so its closure freezes at audio-load time. `clauseRegions`
+      // (from clauseSegString) and `recordedClauseIndicesForTools` (completed +
+      // optimistic + pending) are read from that closure, so they can lag the
+      // real recorded picture until the next audio load. `regions` (the live
+      // event arg) is current, as is the recordingPassStartedRef gate.
+      // Why this is not expected to misbehave: the gate is live, so the check
+      // runs/skips correctly, and the real block is upstream in
+      // useWaveSurferRegions — this guard only fires when that already missed.
+      // Not hand-mirrored to refs here because a live recordedClauseIndicesForTools
+      // needs rowData/artifactType/version/mediafile/language refs too, and a
+      // partial fix would compare live regions against a stale recorded set.
+      // ADR 0012 Layer 2 makes the callback itself live, refreshing both reads.
       if (
         recordingPassStartedRef.current &&
         !preservesRecordedBoundaries(
