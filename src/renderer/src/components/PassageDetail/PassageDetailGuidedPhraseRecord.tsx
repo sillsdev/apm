@@ -1809,7 +1809,10 @@ export function PassageDetailGuidedPhraseRecord({
     recordingPassStarted &&
     currentClausePlayed &&
     (phase === 'recordReady' || phase === 'recording') &&
-    !completedIndices.has(currentIndex);
+    // Same recorded view the boundary guards use (completed + optimistic +
+    // pending), so a just-saved clause can't be re-recorded before rowData
+    // catches up (TT-7666).
+    !recordedClauseIndicesForTools.has(currentIndex);
 
   /**
    * Disable only the Record button until expected clause playback time expires.
