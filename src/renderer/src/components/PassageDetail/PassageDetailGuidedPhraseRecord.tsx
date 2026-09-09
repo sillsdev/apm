@@ -1186,9 +1186,16 @@ export function PassageDetailGuidedPhraseRecord({
       // Defense-in-depth only: if an update still changes recorded boundaries,
       // reload the previous regions. Main blocking now happens earlier in
       // useWavesurferRegions (drag, split/merge, and +/- controls; TT-7666).
+      // Use the same recorded view every other guard reads (completed +
+      // optimistic + pending), so a just-saved clause is protected here too
+      // before rowData catches up.
       if (
         recordingPassStarted &&
-        !preservesRecordedBoundaries(clauseRegions, regions, completedIndices)
+        !preservesRecordedBoundaries(
+          clauseRegions,
+          regions,
+          recordedClauseIndicesForTools
+        )
       ) {
         playerControlsRef.current?.loadRegionsJson?.(clauseSegString);
         return;
@@ -1208,7 +1215,7 @@ export function PassageDetailGuidedPhraseRecord({
       savingRecording,
       recordingPassStarted,
       clauseRegions,
-      completedIndices,
+      recordedClauseIndicesForTools,
       clauseSegString,
       pushSegmentUndo,
     ]
