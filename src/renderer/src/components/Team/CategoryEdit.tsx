@@ -150,12 +150,13 @@ export default function CategoryEdit({
     onChanged(category);
   };
   const handleUpload = () => {
+    if (offline) return;
     const gr = graphicRec ? apmGraphic(graphicRec) : undefined;
     graphicPicker.open({
       url: gr?.url ?? '',
       rights: gr?.graphicRights ?? '',
     });
-    if (!graphicRec || !remote || offline) return;
+    if (!graphicRec || !remote) return;
     recToMemory({ recId: graphicRec, memory, remote })
       .then((fresh) => {
         const rec = fresh as GraphicD;
@@ -168,6 +169,7 @@ export default function CategoryEdit({
         /* keep cached graphic */
       });
   };
+  const graphicClick = offline ? undefined : handleUpload;
   return (
     <RowDiv>
       <MediaTitle
@@ -214,13 +216,18 @@ export default function CategoryEdit({
           {category.id !== 'newcat' &&
             (graphicUri !== '' ? (
               <Avatar
-                sx={pointer}
+                sx={graphicClick ? pointer : undefined}
                 src={graphicUri}
                 variant="rounded"
-                onClick={handleUpload}
+                onClick={graphicClick}
               />
             ) : (
-              <IconButton id="cat-graphic" sx={pointer} onClick={handleUpload}>
+              <IconButton
+                id="cat-graphic"
+                sx={graphicClick ? pointer : undefined}
+                onClick={graphicClick}
+                disabled={offline}
+              >
                 <GraphicsIcon />
               </IconButton>
             ))}

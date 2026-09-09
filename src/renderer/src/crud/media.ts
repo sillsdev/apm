@@ -1,5 +1,4 @@
 import {
-  User,
   MediaFile,
   MediaFileD,
   Plan,
@@ -16,17 +15,12 @@ import Memory from '@orbit/memory';
 import { related } from './related';
 import { VernacularTag } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
-import { parseRef } from './passage';
 import { getMediaInPlans } from './getMediaInPlans';
 import { getStepComplete } from './getStepComplete';
 import { afterStep } from './getNextStep';
 import { cleanFileName } from '../utils/cleanFileName';
 import { updateXml } from '../utils/updateXml';
-import { burritoMetadata } from '../utils/burritoMetadata';
-import { FormatsType } from '../utils/burritoMetadata';
 import { removeExtension } from '../utils/removeExtension';
-import { mimeMap } from '../utils/loadBlob';
-import { dataPath, PathType } from '../utils/dataPath';
 import { DateTime } from 'luxon';
 import eaf from '../utils/transcriptionEaf';
 import path from 'path-browserify';
@@ -222,55 +216,14 @@ interface IExportCommon {
   projRec: ProjectD;
 }
 
-interface IExportScripture {
-  scripturePackage: boolean;
-}
-
 interface IExportFilter {
   artifactType: string | null | undefined;
   target: string;
   orgWorkflowSteps: OrgWorkflowStepD[];
 }
 
-export interface IExportScripturePath extends IExportCommon, IExportScripture {}
 export interface IExportArtifacts extends IExportCommon, IExportFilter {}
 
-export interface IBurritoMeta
-  extends IExportCommon, IExportScripture, IExportFilter {
-  userId: string;
-}
-
-export const scriptureFullPath = async (
-  mf: MediaFile,
-  { memory, scripturePackage, projRec }: IExportScripturePath
-) => {
-  let fullPath: string | null = null;
-  let book = '';
-  let ref = '';
-  if (scripturePackage) {
-    const mp = await dataPath(mf.attributes.audioUrl, PathType.MEDIA);
-    const passRec = findRecord(
-      memory,
-      'passage',
-      related(mf, 'passage')
-    ) as Passage;
-    parseRef(passRec);
-    ref = passRec?.attributes?.reference;
-    book = passRec.attributes?.book;
-    const lang = projRec?.attributes?.language;
-    const chap = pad3(passRec?.attributes?.startChapter || 1);
-    const start = pad3(passRec?.attributes?.startVerse || 1);
-    const end = pad3(
-      passRec?.attributes?.endVerse || passRec?.attributes?.startVerse || 1
-    );
-    const ver = mf.attributes?.versionNumber;
-    const { ext } = removeExtension(mp);
-    if (passRec) {
-      fullPath = `release/audio/${book}/${lang}-${book}-${chap}-${start}-${end}v${ver}.${ext}`;
-    }
-  }
-  return { fullPath, book, ref };
-};
 export const mediaFileName = (mf: MediaFile | undefined) =>
   mf?.attributes?.s3file || mf?.attributes?.originalFile || '';
 
@@ -358,45 +311,3 @@ export const mediaArtifacts = ({
     .sort((i, j) => ((key.get(i.id) || '') <= (key.get(j.id) || '') ? -1 : 1));
 };
 
-export const getBurritoMeta = async (props: IBurritoMeta) => {
-  const { memory, userId, projRec } = props;
-  const userRec = findRecord(memory, 'user', userId) as User;
-  const burritoMeta = burritoMetadata({ projRec, userRec });
-  const ingredients = mediaArtifacts(props);
-  const scopes = (burritoMeta as any)?.type?.flavorType?.currentScope;
-  const formats = {} as FormatsType;
-  if (ingredients) {
-    for (const mf of ingredients) {
-      const { fullPath, book, ref } = await scriptureFullPath(mf, props);
-      if (book && book.length > 0) {
-        if (Object.prototype.hasOwnProperty.call(scopes, book)) {
-          scopes[book].push(ref);
-        } else {
-          scopes[book] = [ref];
-        }
-      }
-      if (fullPath) {
-        const { ext } = removeExtension(fullPath);
-        if (!Object.prototype.hasOwnProperty.call(formats, ext)) {
-          formats[ext] = {
-            compression: ext,
-          };
-        }
-        (burritoMeta as any).ingredients[fullPath] = {
-          mimeType: mimeMap[ext],
-          size: mf.attributes.filesize,
-          scope: {
-            [book]: [ref],
-          },
-        };
-      }
-    }
-  }
-  let formatn = 1;
-  for (const val of Object.values(formats)) {
-    (burritoMeta as any).type.flavorType.flavor.formats[`format${formatn}`] =
-      val;
-    formatn += 1;
-  }
-  return JSON.stringify(burritoMeta, null, 2);
-};

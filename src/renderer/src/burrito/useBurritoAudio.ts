@@ -19,6 +19,7 @@ import {
   SectionD,
   SectionResourceD,
   SharedResourceD,
+  IntellectualPropertyD,
 } from '../model';
 import dataPath, { PathType } from '../utils/dataPath';
 import cleanFileName from '../utils/cleanFileName';
@@ -88,6 +89,9 @@ export const useBurritoAudio = (teamId: string) => {
   const sectionsAll = useOrbitData<SectionD[]>('section');
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const sharedResources = useOrbitData<SharedResourceD[]>('sharedresource');
+  const intellectualproperties = useOrbitData<IntellectualPropertyD[]>(
+    'intellectualproperty'
+  );
   const { slugFromId } = useArtifactType(teamId);
   const { getOrgDefault } = useOrgDefaults();
   const fetchUrl = useFetchUrlNow();
@@ -117,6 +121,7 @@ export const useBurritoAudio = (teamId: string) => {
     // const compressions = new Set<string>();
     const ingredients: BurritoIngredients = {};
     const chapters = new Set<string>();
+    const exportedSpeakers = new Set<string>();
     const alignmentGroups: AlignmentGroup[] = [];
     const alignPath = path.join(bookPath, 'alignment.json');
     const nType =
@@ -330,8 +335,13 @@ export const useBurritoAudio = (teamId: string) => {
       destPath: string,
       scopeRef: string,
       contextLabel: string,
-      buildAlignment: boolean
+      buildAlignment: boolean,
+      collectSpeaker = true
     ) => {
+      if (collectSpeaker) {
+        const speaker = (m.attributes.performedBy || '').trim();
+        if (speaker) exportedSpeakers.add(speaker);
+      }
       const attr = m.attributes;
       const ct = primaryContentType(m);
       if (ct === 'text/markdown') {
@@ -524,6 +534,26 @@ export const useBurritoAudio = (teamId: string) => {
       const destPath = path.join(bookPath, destName);
       await processExportableMedia(m, destPath, '', '', false);
     }
+
+    const addedIpMedia = new Set<string>();
+    const ipStems = new Map<string, number>();
+    for (const ip of intellectualproperties) {
+      if (related(ip, 'organization') !== teamId) continue;
+      const holder = (ip.attributes.rightsHolder || '').trim();
+      if (!holder || !exportedSpeakers.has(holder)) continue;
+      const mid = related(ip, 'releaseMediafile') as string;
+      if (!mid || addedIpMedia.has(mid)) continue;
+      const rm = mediafiles.find((x) => x.id === mid);
+      if (!rm) continue;
+      addedIpMedia.add(mid);
+      let stem = getBurritoMediaExportStem(rm);
+      const n = ipStems.get(stem) ?? 0;
+      ipStems.set(stem, n + 1);
+      if (n > 0) stem = `${stem}-${n}`;
+      const destPath = path.join(bookPath, 'ip', `${stem}.${getMediaExt(rm)}`);
+      await processExportableMedia(rm, destPath, '', holder, false, false);
+    }
+
     const alignment = new AlignmentBuilder()
       .withGroups(alignmentGroups)
       .build();

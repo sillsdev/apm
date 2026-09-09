@@ -15,7 +15,6 @@ import { RecordKeyMap } from '@orbit/records';
 import { useSelector } from 'react-redux';
 import { transcriptionTabSelector } from '../selector';
 import { useDispatch } from 'react-redux';
-import { useArtifactType } from './useArtifactType';
 
 interface IProps {
   message?: string;
@@ -34,7 +33,6 @@ export const useProjectExport = (props: IProps) => {
   const [userId] = useGlobal('user');
   const [, setBusy] = useGlobal('importexportBusy');
   const [errorReporter] = useGlobal('errorReporter');
-  const { localizedArtifactTypeFromId } = useArtifactType();
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const getOfflineProject = useOfflnProjRead();
 
@@ -67,7 +65,7 @@ export const useProjectExport = (props: IProps) => {
       pendingmsg: message || t.creatingDownloadFile,
       nodatamsg: t.noData.replace('{0}', ''),
       writingmsg: t.writingDownloadFile,
-      localizedArtifact: localizedArtifactTypeFromId(exportType),
+      localizedArtifact: '',
       getOfflineProject,
       isCancelled,
     });

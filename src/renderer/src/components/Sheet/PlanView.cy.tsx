@@ -588,6 +588,34 @@ describe('PlanView', { tags: '@smoke' }, () => {
     cy.get('div[class*="MuiAvatar-root"]', { timeout: 5000 }).click();
   });
 
+  it('should not make GraphicAvatar clickable when offline', () => {
+    const section = createMockSection({
+      graphicUri: 'https://example.com/image.png',
+      sectionSeq: 1,
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: true,
+        handlePublish: mockHandlePublish,
+        handleGraphic: mockHandleGraphic,
+      },
+      {},
+      { offline: true }
+    );
+
+    cy.wait(100);
+    cy.get('div[class*="MuiAvatar-root"]', { timeout: 5000 })
+      .should('be.visible')
+      .and('not.have.css', 'cursor', 'pointer');
+    cy.get('div[class*="MuiAvatar-root"]', { timeout: 5000 }).click();
+    cy.wrap(mockHandleGraphic).should('not.have.been.called');
+  });
+
   it('should render publish button when publishingView is true and passageType is PASS', () => {
     const section = createMockSection({
       passageType: PassageTypeEnum.PASSAGE as any, // PASS is string 'PASS'
@@ -1080,8 +1108,10 @@ describe('PlanView', { tags: '@smoke' }, () => {
       'aria-current'
     );
     cy.get('[data-cy="plan-view-scroller"]').should(($scroller) => {
-      expect($scroller[0].scrollTop, 'scroller moved to Current Passage').to.be
-        .greaterThan(0);
+      expect(
+        $scroller[0].scrollTop,
+        'scroller moved to Current Passage'
+      ).to.be.greaterThan(0);
     });
     assertCardInScrollerViewport('passage-10');
   });

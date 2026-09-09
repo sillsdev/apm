@@ -22,6 +22,7 @@ import {
   SharedResourceD,
   GraphicD,
   OrgWorkflowStep,
+  BibleD,
 } from '../../model';
 import { BaseModel, BaseModelD } from '../../model/baseModel';
 
@@ -50,14 +51,24 @@ export function createExportCollector(
 ): ExportCollector {
   const km = memory?.keyMap as RecordKeyMap;
 
+  const Groups = (project: ProjectD) => {
+    const orgId = related(project, 'organization');
+    return (
+      memory.cache.query((q) => q.findRecords('group')) as GroupD[]
+    ).filter(
+      (g) =>
+        related(g, 'owner') === orgId &&
+        Boolean(g?.keys?.remoteId) === needsRemoteIds
+    );
+  };
+
   const GroupMemberships = (project: ProjectD) => {
-    const groupid = related(project, 'group');
-    return memory.cache.query((q) =>
-      q.findRecords('groupmembership').filter({
-        relation: 'group',
-        record: { type: 'group', id: groupid },
-      })
-    ) as GroupMembershipD[];
+    const groupIds = Groups(project).map((g) => g.id);
+    return (
+      memory.cache.query((q) =>
+        q.findRecords('groupmembership')
+      ) as GroupMembershipD[]
+    ).filter((gm) => groupIds.includes(related(gm, 'group')));
   };
 
   const Plans = (project: ProjectD) =>
@@ -151,13 +162,20 @@ export function createExportCollector(
     const resourcemediafiles = mediafiles.filter((m) =>
       sectionresourcemedia.includes(m.id)
     );
-    const sourcemediafiles = mediafiles.filter(
-      (m) =>
-        m.attributes?.readyToShare &&
-        resourcemediafiles
-          .map((r) => related(r, 'resourcePassage'))
-          .includes(related(m, 'passage'))
+    const sourcePassageLocalIds = resourcemediafiles.map((r) =>
+      related(r, 'resourcePassage')
     );
+    const sourcePassageRemoteIds = resourcemediafiles
+      .map((r) => r.attributes?.resourcePassageId)
+      .filter((id): id is number => typeof id === 'number' && id > 0)
+      .map(String);
+    const sourcemediafiles = mediafiles.filter((m) => {
+      if (!m.attributes?.readyToShare) return false;
+      const psg = related(m, 'passage');
+      if (sourcePassageLocalIds.includes(psg)) return true;
+      const rem = remoteId('passage', psg, km);
+      return Boolean(rem) && sourcePassageRemoteIds.includes(String(rem));
+    });
     return HighestByPassage(sourcemediafiles);
   };
 
@@ -209,20 +227,6 @@ export function createExportCollector(
     return (
       memory.cache.query((q) => q.findRecords('section')) as SectionD[]
     ).filter((s) => sectids.includes(s.id));
-  };
-
-  const sharedNotePlans = (project: ProjectD) => {
-    const planids = sharedNoteSections(project).map((p) => related(p, 'plan'));
-    return (memory.cache.query((q) => q.findRecords('plan')) as PlanD[]).filter(
-      (s) => planids.includes(s.id)
-    );
-  };
-
-  const supportingProjects = (project: ProjectD) => {
-    const projids = sharedNotePlans(project).map((p) => related(p, 'project'));
-    return (
-      memory.cache.query((q) => q.findRecords('project')) as ProjectD[]
-    ).filter((s) => projids.includes(s.id));
   };
 
   const sharedNoteArtifactCategories = (
@@ -309,6 +313,20 @@ export function createExportCollector(
       });
     }
     return recs;
+  };
+
+  const Bibles = (project?: ProjectD) => {
+    const recs = memory.cache.query((q) => q.findRecords('bible')) as BibleD[];
+    const ids = project
+      ? orgTable('organizationbible', project, needsRemoteIds).map((ob) =>
+          related(ob, 'bible')
+        )
+      : undefined;
+    return recs.filter(
+      (b) =>
+        (!ids || ids.includes(b.id)) &&
+        Boolean(b?.keys?.remoteId) === needsRemoteIds
+    );
   };
 
   const ArtifactCategories = (
@@ -405,14 +423,18 @@ export function createExportCollector(
     return mediafiles;
   };
 
+  const PlanMedia = (project: ProjectD) => {
+    const plans = Plans(project).map((pl) => pl.id);
+    return (
+      memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
+    ).filter((m) => plans.includes(related(m, 'plan')));
+  };
+
   const AllMediafiles = (project: ProjectD) => {
     const mediafiles = memory.cache.query((q) =>
       q.findRecords('mediafile')
     ) as MediaFileD[];
-    const plans = Plans(project).map((pl) => pl.id);
-    const planmedia = mediafiles.filter((m) =>
-      plans.includes(related(m, 'plan'))
-    );
+    const planmedia = PlanMedia(project);
     const ip = orgTable('intellectualproperty', project, needsRemoteIds, {
       mediafile: 'releaseMediafile',
     }).map((i) => related(i, 'releaseMediafile'));
@@ -432,10 +454,18 @@ export function createExportCollector(
     const okttmedia = mediafiles.filter((m) =>
       orgkeytermtargets.includes(m.id)
     );
-    const graphicmedia = Graphics(project, needsRemoteIds).map((g) =>
-      related(g, 'mediafile')
+    const graphicMediaIds = new Set(
+      (memory.cache.query((q) => q.findRecords('graphic')) as GraphicD[])
+        .map((g) => related(g, 'mediafile') as string)
+        .filter(Boolean)
     );
-    const grmedia = mediafiles.filter((m) => graphicmedia.includes(m.id));
+    const bibleMediaIds = Bibles(project)
+      .flatMap((b) => [
+        related(b, 'bibleMediafile'),
+        related(b, 'isoMediafile'),
+      ])
+      .filter(Boolean);
+    const biblemedia = mediafiles.filter((m) => bibleMediaIds.includes(m.id));
     const sourcemediafiles = SourceMedia(project);
     const supportingNotePassages = sharedNotePassageIds(project);
     const sharedmedia = HighestByPassage(
@@ -450,9 +480,37 @@ export function createExportCollector(
         .concat(categorymediafiles)
         .concat(sourcemediafiles)
         .concat(sharedmedia)
-        .concat(grmedia)
+        .concat(biblemedia)
+        .filter((m) => !graphicMediaIds.has(m.id))
     );
     return FromMedia(Array.from(unique), needsRemoteIds);
+  };
+
+  const supportingPlans = (project: ProjectD) => {
+    const ownIds = new Set(Plans(project).map((p) => p.id));
+    const planIds = [
+      ...new Set(
+        AllMediafiles(project)
+          .map((m) => related(m, 'plan'))
+          .filter((id) => id && !ownIds.has(id))
+      ),
+    ];
+    return (memory.cache.query((q) => q.findRecords('plan')) as PlanD[]).filter(
+      (p) => planIds.includes(p.id)
+    );
+  };
+
+  const supportingProjects = (project: ProjectD) => {
+    const projids = [
+      ...new Set(
+        supportingPlans(project)
+          .map((p) => related(p, 'project'))
+          .filter((id) => id && id !== project.id)
+      ),
+    ];
+    return (
+      memory.cache.query((q) => q.findRecords('project')) as ProjectD[]
+    ).filter((s) => projids.includes(s.id));
   };
 
   const FromPassages = (
@@ -489,9 +547,7 @@ export function createExportCollector(
       q.findRecords('discussion')
     ) as DiscussionD[];
     if (project) {
-      const mediafiles = FromPassages('mediafile', project, remoteIds).map(
-        (m) => m.id
-      );
+      const mediafiles = PlanMedia(project).map((m) => m.id);
       ds = ds.filter((rec) => mediafiles.includes(related(rec, 'mediafile')));
     }
     if (remoteIds) {
@@ -556,12 +612,7 @@ export function createExportCollector(
         return defaultQuery(info.table);
 
       case 'group':
-        if (project)
-          return [
-            memory.cache.query((q) =>
-              q.findRecord({ type: 'group', id: related(project, 'group') })
-            ) as GroupD,
-          ];
+        if (project) return Groups(project);
         return defaultQuery(info.table);
 
       case 'groupmembership':
@@ -583,7 +634,7 @@ export function createExportCollector(
         return defaultQuery(info.table);
 
       case 'plan':
-        if (project) return Plans(project).concat(sharedNotePlans(project));
+        if (project) return Plans(project).concat(supportingPlans(project));
         return defaultQuery(info.table);
 
       case 'section':
@@ -651,9 +702,12 @@ export function createExportCollector(
           mediafile: 'mediafile',
         });
       case 'orgkeytermreference':
-        return orgTable('orgkeytermreference', project, remoteIds, {
-          rel: 'project',
-        });
+        return fromIds(
+          'orgkeytermreference',
+          'orgkeyterm',
+          orgTable('orgkeyterm', project, remoteIds).map((t) => t.id),
+          remoteIds
+        );
       case 'sectionresourceuser':
         return SectionResourceUsers(project, remoteIds);
       case 'organizationscheme':
@@ -679,21 +733,7 @@ export function createExportCollector(
         return orgTable('organizationbible', project, remoteIds);
 
       case 'bible':
-        if (project) {
-          const orgBibleIds = orgTable(
-            'organizationbible',
-            project,
-            remoteIds
-          ).map((ob) => related(ob, 'bible'));
-          return defaultQuery('bible').filter(
-            (b) =>
-              orgBibleIds.includes(b.id) &&
-              Boolean(b?.keys?.remoteId) === needsRemoteIds
-          );
-        }
-        return defaultQuery(info.table).filter(
-          (r) => Boolean(r?.keys?.remoteId) === needsRemoteIds
-        );
+        return Bibles(project);
 
       case 'activitystate':
       case 'artifacttype':

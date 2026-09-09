@@ -19,10 +19,6 @@ import {
   remoteId,
   getMediaEaf,
   remoteIdGuid,
-  getBurritoMeta,
-  scriptureFullPath,
-  IBurritoMeta,
-  IExportScripturePath,
   fileInfo,
   updateableFiles,
   staticFiles,
@@ -32,7 +28,7 @@ import {
 } from '../../crud';
 import {
   dataPath,
-  cleanFileName,
+  cleanExportFileName,
   currentDateTime,
   PathType,
   createFolder,
@@ -42,7 +38,14 @@ import IndexedDBSource from '@orbit/indexeddb';
 import { backupToMemory } from '../../crud/syncToMemory';
 import { MainAPI } from '@model/main-api';
 import { createExportCollector } from './exportTableRecs';
+import { isAttachedMediaFile } from './isAttachedMediaFile';
 const ipc = window?.api as MainAPI;
+
+// If burrito export needs to work offline again, do NOT rebuild it here.
+// useCreateBurrito already writes the package locally; it just takes its
+// inputs (books, contents, wrapper, format) from team-level org defaults
+// rather than arguments. Extract those steps into a plain
+// createBurritoPackage(params),  with params built from this one project. One writer, two callers.
 
 export async function electronExport(
   exportType: ExportType,
@@ -61,9 +64,6 @@ export async function electronExport(
   writingmsg?: string
 ): Promise<FileResponse | null> {
   const ser = getSerializer(memory);
-  const scripturePackage = [ExportType.DBL, ExportType.BURRITO].includes(
-    exportType
-  );
   const BuildFileResponse = (
     fullpath: string,
     fileName: string,
@@ -93,12 +93,11 @@ export async function electronExport(
     suffix: string,
     ext: string
   ) =>
-    `APM${idStr('user', userid)}_${idStr(
+    cleanExportFileName(`apm${idStr('user', userid)}_${idStr(
       'project',
       projRec.id
-    )}_${cleanFileName(
-      projRec.attributes.name + localizedArtifactType
-    )}${cleanFileName(suffix)}.${ext}`;
+    )}_${projRec.attributes.name + localizedArtifactType}
+    ${suffix}.${ext}`);
 
   const itfb_fileName = (projRec: ProjectD) =>
     new Date().getDate().toString() +
@@ -241,15 +240,10 @@ export async function electronExport(
       let newname = '';
       for (let mx = 0; mx < recs.length; mx++) {
         const mf = recs[mx] as MediaFileD;
-        if (mf.attributes?.audioUrl) {
+        if (mf.attributes?.audioUrl && isAttachedMediaFile(mf)) {
           const mp = await dataPath(mf.attributes.audioUrl, PathType.MEDIA);
-          const { fullPath } = await scriptureFullPath(mf, {
-            memory,
-            scripturePackage,
-            projRec,
-          } as IExportScripturePath);
           if (rename) newname = mediapath + nameFromTemplate(mf, memory, false);
-          else newname = fullPath || mediapath + path.basename(mp);
+          else newname = mediapath + path.basename(mp);
           await AddStreamEntry(mp, newname);
           if (sendProgress && mx % 50 === 0)
             sendProgress(Math.round((mx * 100) / recs.length));
@@ -358,9 +352,7 @@ export async function electronExport(
           ret.Added = recs?.length || 0;
           ret.Filtered = len - ret.Added;
         }
-        if (!scripturePackage) {
-          await AddJsonEntry(info.table + 's', recs, info.sort);
-        }
+        await AddJsonEntry(info.table + 's', recs, info.sort);
         switch (info.table) {
           case 'organization':
             await AddOrgLogos(recs);
@@ -401,27 +393,8 @@ export async function electronExport(
       importedDate = imported;
     }
 
-    if (!scripturePackage) {
-      await AddSourceEntry(imported.toISO() ?? '');
-      await AddVersionEntry((backup?.schema.version || 1).toString());
-    } else if (expType === ExportType.BURRITO) {
-      const userId =
-        remoteIdGuid(
-          'user',
-          userid.toString(),
-          memory?.keyMap as RecordKeyMap
-        ) || userid.toString();
-      const burritoMetaStr = await getBurritoMeta({
-        memory,
-        userId,
-        projRec,
-        scripturePackage,
-        artifactType,
-        target,
-        orgWorkflowSteps,
-      } as IBurritoMeta);
-      await ipc?.zipAddFile(zip, 'metadata.json', burritoMetaStr, 'metadata');
-    }
+    await AddSourceEntry(imported.toISO() ?? '');
+    await AddVersionEntry((backup?.schema.version || 11).toString());
     if (!needsRemoteIds) await AddOfflineEntry();
     let numRecs = 0;
     let numFiltered = 0;
@@ -441,8 +414,6 @@ export async function electronExport(
           }
         }
         break;
-      case ExportType.DBL:
-      case ExportType.BURRITO:
       case ExportType.AUDIO:
       case ExportType.ELAN:
         numRecs += (
@@ -527,9 +498,7 @@ export async function electronExport(
     const filename =
       exportType === ExportType.ITFBACKUP
         ? itfb_fileName(projects[ix])
-        : [ExportType.AUDIO, ExportType.BURRITO, ExportType.ELAN].includes(
-              exportType
-            )
+        : [ExportType.AUDIO, ExportType.ELAN].includes(exportType)
           ? fileName(
               projects[ix],
               `${localizedArtifact}_${exportType}`,
