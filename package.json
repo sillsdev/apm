@@ -166,7 +166,7 @@
     "productName": "Audio Project Manager",
     "copyright": "Copyright © 2020-2026 ${author}",
     "win": {
-      "icon": "resources/icon.png"
+      "icon": "resources/icon.ico"
     },
     "linux": {
       "icon": "debian/audio-project-manager.png",
