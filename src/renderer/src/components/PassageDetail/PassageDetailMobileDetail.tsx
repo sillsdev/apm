@@ -50,6 +50,13 @@ export default function PassageDetailMobileDetail({
             overflow: 'hidden',
             minHeight: 0,
             flex: 1,
+            // Let the Mark Verses table grow and scroll inside this flex column
+            '& > *': {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            },
           }
         : {}),
     }),
