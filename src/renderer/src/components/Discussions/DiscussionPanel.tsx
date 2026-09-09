@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   DiscussionD,
@@ -14,7 +13,7 @@ import {
   GroupMembership,
   IDiscussionListStrings,
 } from '../../model';
-import { Badge, Fab, Grid } from '@mui/material';
+import { Badge, Box, Fab, Grid } from '@mui/material';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import DiscussionList from './DiscussionList';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -23,7 +22,6 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
 import { useMobile } from '../../utils/useMobile';
-import { useLayoutFabAnchor } from '../PassageDetail/PassageDetailLayout';
 import {
   documentHasVerticalScrollbar,
   measureScrollbarWidth,
@@ -40,7 +38,6 @@ export default function DiscussionPanel() {
     currentstep,
     setDiscussOpen,
   } = ctx.state;
-  const fabAnchor = useLayoutFabAnchor();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
@@ -147,7 +144,18 @@ export default function DiscussionPanel() {
         </Grid>
       </Grid>
     ) : (
-      fabAnchor && createPortal(discussionFab, fabAnchor)
+      <Box
+        data-cy="discussion-fab"
+        sx={{
+          position: 'absolute',
+          right: 0,
+          bottom: 0,
+          p: 1.5,
+          zIndex: (theme) => theme.zIndex.fab,
+        }}
+      >
+        {discussionFab}
+      </Box>
     ))
   );
 }

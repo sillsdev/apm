@@ -1,15 +1,16 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { createPortal } from 'react-dom';
-import PassageDetailLayout, { useLayoutFabAnchor } from './PassageDetailLayout';
+import PassageDetailLayout from './PassageDetailLayout';
 
-/** Stands in for DiscussionPanel: portals a fab into the layout's corner anchor. */
-const AnchoredFab = () => {
-  const fabAnchor = useLayoutFabAnchor();
-  return fabAnchor
-    ? createPortal(<button data-cy="layout-fab">Fab</button>, fabAnchor)
-    : null;
-};
+/** Stands in for a collapsed DiscussionPanel: a fab pinned to the corner. */
+const PinnedFab = () => (
+  <button
+    data-cy="layout-fab"
+    style={{ position: 'absolute', right: 12, bottom: 12 }}
+  >
+    Fab
+  </button>
+);
 
 const mountLayout = ({
   withFooterAbove = false,
@@ -45,7 +46,7 @@ const mountLayout = ({
               </div>
             </>
           )}
-          {withFab && <AnchoredFab />}
+          {withFab && <PinnedFab />}
         </PassageDetailLayout>
       </div>
     </ThemeProvider>
@@ -69,7 +70,7 @@ describe('PassageDetailLayout', () => {
       .and('contain.text', 'Footer Above');
   });
 
-  it('anchors a portalled fab in the bottom right, clear of the footers', () => {
+  it('positions a pinned fab in the bottom right, clear of the footers', () => {
     mountLayout({ withFab: true, withFooterAbove: true });
 
     cy.get('[data-cy="layout-fab"]').should('be.visible');
@@ -79,31 +80,16 @@ describe('PassageDetailLayout', () => {
         const footerAbove = $footerAbove[0].getBoundingClientRect();
         expect(fab.bottom).to.be.at.most(footerAbove.top);
       });
-      cy.get('[data-cy="layout-fab-anchor"]').then(($anchor) => {
-        const anchor = $anchor[0].getBoundingClientRect();
-        // Bottom right of the content region, inside its padding.
-        expect(fab.right).to.be.at.most(anchor.right);
-        expect(fab.right).to.be.greaterThan(anchor.left + anchor.width / 2);
+      cy.get('[data-cy="layout-content"]').then(($content) => {
+        const content = $content[0].getBoundingClientRect();
+        // Bottom right of the content region.
+        expect(fab.right).to.be.at.most(content.right);
+        expect(fab.right).to.be.greaterThan(content.left + content.width / 2);
       });
     });
   });
 
-  it('leaves the content clickable under the fab anchor overlay', () => {
-    mountLayout({ withFab: true });
-
-    cy.get('[data-cy="layout-fab-anchor"]').should(
-      'have.css',
-      'pointer-events',
-      'none'
-    );
-    cy.get('[data-cy="layout-fab"]').should(
-      'have.css',
-      'pointer-events',
-      'auto'
-    );
-  });
-
-  it('reserves scroll space so the last content clears the fab', () => {
+  it('keeps the fab pinned and reserves scroll space so content clears it', () => {
     mountLayout({ withFab: true, tallContent: true });
 
     cy.get('[data-cy="layout-content"]').scrollTo('bottom');
