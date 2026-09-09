@@ -44,6 +44,7 @@ import {
   preservesRecordedBoundaries,
   regionBoundariesEqual,
   regionsJsonFromList,
+  regionsMatch,
 } from './carefulSpeech/carefulSpeechBoundary';
 import {
   firstIncompleteClauseIndex,
@@ -256,15 +257,10 @@ export function PassageDetailGuidedPhraseRecord({
     () => setOptimisticVersion((v) => v + 1),
     []
   );
-  const sameRegion = useCallback(
-    (a: IRegion, b: IRegion) =>
-      Math.abs(a.start - b.start) < 0.05 && Math.abs(a.end - b.end) < 0.05,
-    []
-  );
   const addOptimistic = useCallback(
     (region: IRegion | undefined) => {
       if (!region) return;
-      if (optimisticTakeRegionsRef.current.some((r) => sameRegion(r, region))) {
+      if (optimisticTakeRegionsRef.current.some((r) => regionsMatch(r, region))) {
         return;
       }
       optimisticTakeRegionsRef.current = [
@@ -273,20 +269,20 @@ export function PassageDetailGuidedPhraseRecord({
       ];
       bumpOptimistic();
     },
-    [bumpOptimistic, sameRegion]
+    [bumpOptimistic]
   );
   const removeOptimistic = useCallback(
     (region: IRegion | undefined) => {
       if (!region) return;
       const kept = optimisticTakeRegionsRef.current.filter(
-        (r) => !sameRegion(r, region)
+        (r) => !regionsMatch(r, region)
       );
       if (kept.length !== optimisticTakeRegionsRef.current.length) {
         optimisticTakeRegionsRef.current = kept;
         bumpOptimistic();
       }
     },
-    [bumpOptimistic, sameRegion]
+    [bumpOptimistic]
   );
   const clearOptimistic = useCallback(() => {
     if (optimisticTakeRegionsRef.current.length === 0) return;

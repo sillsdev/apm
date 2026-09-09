@@ -1,12 +1,11 @@
 import { IRegion } from '../../../crud/useWavesurferRegions';
 import { IRow } from '../../../context/PassageDetailContext';
 import { prettySegment } from '../../../utils/prettySegment';
+import { regionsMatch } from './carefulSpeechBoundary';
 import {
   matchesGuidedOutputRow,
   pickLatestGuidedOutputRow,
 } from './matchesGuidedOutputRow';
-
-const REGION_TOLERANCE = 0.05;
 
 function isEmptySourceSegments(seg: string | undefined): boolean {
   if (!seg) return true;
@@ -47,10 +46,7 @@ function regionMatchesClause(
   }
   const stored = parseStoredRegion(storedSeg);
   if (stored) {
-    return (
-      Math.abs(stored.start - clauseRegion.start) < REGION_TOLERANCE &&
-      Math.abs(stored.end - clauseRegion.end) < REGION_TOLERANCE
-    );
+    return regionsMatch(stored, clauseRegion);
   }
   return prettySegment(storedSeg).trim() === prettySegment(clauseRegion).trim();
 }
