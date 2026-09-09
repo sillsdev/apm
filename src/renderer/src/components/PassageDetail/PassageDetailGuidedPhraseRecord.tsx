@@ -533,19 +533,16 @@ export function PassageDetailGuidedPhraseRecord({
   // A segment is treated as recorded (boundary locked, TT-7666) when it has a
   // saved take, a newly saved take that rowData has not shown yet, or a
   // recorded-but-unsaved take latched to it (see pendingTakeIndex above).
-  // This only applies during the recording pass.
+  // Keyed on the recorded sets alone: a stored take must freeze its clause even
+  // at entry, before runInitialPosition flips recordingPassStarted — that flag
+  // lags completedIndices (derived synchronously from rowData), so gating on it
+  // left an already-recorded clause editable during the initial-load window.
   const isSegmentRecorded = useCallback(
     (index: number) =>
-      recordingPassStarted &&
-      (completedIndices.has(index) ||
-        optimisticCompletedIndices.has(index) ||
-        index === pendingTakeIndex),
-    [
-      recordingPassStarted,
-      completedIndices,
-      optimisticCompletedIndices,
-      pendingTakeIndex,
-    ]
+      completedIndices.has(index) ||
+      optimisticCompletedIndices.has(index) ||
+      index === pendingTakeIndex,
+    [completedIndices, optimisticCompletedIndices, pendingTakeIndex]
   );
 
   /** completedIndices plus the optimistic just-saved set and any latched
