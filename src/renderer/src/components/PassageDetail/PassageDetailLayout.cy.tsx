@@ -105,8 +105,10 @@ describe('PassageDetailLayout', () => {
   it('applies contentSx overrides', () => {
     mountLayout({ contentSx: { pt: 4 } });
 
-    cy.contains('Content body')
-      .parent()
-      .should('have.css', 'padding-top', '32px');
+    cy.get('[data-cy="layout-content"]').should(
+      'have.css',
+      'padding-top',
+      '32px'
+    );
   });
 });
