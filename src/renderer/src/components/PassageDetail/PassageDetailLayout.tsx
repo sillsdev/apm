@@ -45,7 +45,11 @@ export default function PassageDetailLayout({
             ...contentSx,
           }}
         >
-          <Box sx={{ pb: '70px' }}>{children}</Box>
+          <Box
+            sx={{ pb: '70px' /* Discussion fab clearance (see DiscussionPanel.tsx) */ }}
+          >
+            {children}
+          </Box>
         </Box>
       </Box>
       {footerAbove && (
