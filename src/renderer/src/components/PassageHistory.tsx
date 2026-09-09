@@ -34,11 +34,10 @@ import { RecordKeyMap } from '@orbit/records';
 
 interface IProps {
   passageId: string;
-  boxHeight: number;
 }
 
 export function PassageHistory(props: IProps) {
-  const { passageId, boxHeight } = props;
+  const { passageId } = props;
   const passagestatechanges =
     useOrbitData<PassageStateChangeD[]>('passagestatechange');
   const [memory] = useGlobal('memory');
@@ -50,7 +49,6 @@ export function PassageHistory(props: IProps) {
   const locale = useSelector((state: IState) => state.strings.lang);
   const { getUserRec } = useUser();
   const [editNoteVisible, setEditNoteVisible] = useState(false);
-  const historyStyle = { height: boxHeight };
   const [selectedId, setSelectedId] = React.useState('');
   const [hoveredId, setHoveredId] = React.useState('');
   const activityStateStr: IActivityStateStrings = useSelector(
@@ -70,7 +68,6 @@ export function PassageHistory(props: IProps) {
     } else {
       setCurStateChanges([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passageId, passagestatechanges]);
 
   useEffect(() => {
@@ -227,8 +224,12 @@ export function PassageHistory(props: IProps) {
   return (
     <>
       <List
-        style={historyStyle}
-        sx={{ overflow: 'auto', bgColor: 'background.paper' }}
+        sx={{
+          flex: '1 1 0',
+          minHeight: 0,
+          overflow: 'auto',
+          bgcolor: 'background.paper',
+        }}
       >
         {historyContent}
       </List>

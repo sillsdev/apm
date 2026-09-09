@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLocation } from 'react-router-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   DiscussionD,
@@ -17,7 +16,7 @@ import {
 import { Badge, Box, Fab, Grid } from '@mui/material';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import DiscussionList from './DiscussionList';
-import DiscussIcon from '../../control/DiscussIcon';
+import ForumIcon from '@mui/icons-material/Forum';
 import { LightTooltip } from '../../control/LightTooltip';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
@@ -28,12 +27,8 @@ import {
   measureScrollbarWidth,
 } from '../../utils/getScrollbarWidth';
 
-/** Sits just above PassageDetailLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
-const discussionFabBottomDetailMobile =
-  'calc(8px + 1px + 4px + 40px + 2px + env(safe-area-inset-bottom, 0px))';
-
 export default function DiscussionPanel() {
-  const { isMobile, isMobileWidth } = useMobile();
+  const { isMobileWidth } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -43,8 +38,6 @@ export default function DiscussionPanel() {
     currentstep,
     setDiscussOpen,
   } = ctx.state;
-  const { pathname } = useLocation();
-  const isDetail = pathname.startsWith('/detail');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
@@ -91,6 +84,41 @@ export default function DiscussionPanel() {
     [passage.id, currentstep, getDiscussionCount]
   );
 
+  const discussionFab = (
+    <LightTooltip title={t.open}>
+      <Fab
+        aria-label={t.open}
+        sx={{
+          p: 3.5,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          color: 'custom.black',
+        }}
+        onClick={() => setDiscussOpen(true)}
+      >
+        <Badge
+          badgeContent={discussionCount}
+          color="primary"
+          // Make the badge pill smaller than the default size
+          sx={{
+            '& .MuiBadge-badge': {
+              fontSize: '0.7rem',
+              height: '1.5em',
+              minWidth: '1.5em',
+              lineHeight: '1.5em',
+              padding: '0 0.35em',
+              borderRadius: '1em',
+            },
+          }}
+        >
+          <ForumIcon />
+        </Badge>
+      </Fab>
+    </LightTooltip>
+  );
+
   return (
     Boolean(mediafileId) &&
     (discussOpen ? (
@@ -117,32 +145,16 @@ export default function DiscussionPanel() {
       </Grid>
     ) : (
       <Box
+        data-cy="discussion-fab"
         sx={{
-          position: 'fixed',
-          bottom: isDetail
-            ? isMobile
-              ? discussionFabBottomDetailMobile
-              : 50
-            : 10,
-          right: 10,
-          zIndex: 1000,
+          position: 'absolute',
+          right: 0,
+          bottom: 0,
+          p: 1.5,
+          zIndex: (theme) => theme.zIndex.fab,
         }}
       >
-        {discussionCount > 0 ? (
-          <Badge badgeContent={discussionCount} color="primary">
-            <LightTooltip title={t.open}>
-              <Fab size="small" onClick={() => setDiscussOpen(true)}>
-                <DiscussIcon width={40} height={40} />
-              </Fab>
-            </LightTooltip>
-          </Badge>
-        ) : (
-          <LightTooltip title={t.open}>
-            <Fab size="small" onClick={() => setDiscussOpen(true)}>
-              <DiscussIcon width={40} height={40} />
-            </Fab>
-          </LightTooltip>
-        )}
+        {discussionFab}
       </Box>
     ))
   );
