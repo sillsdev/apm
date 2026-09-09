@@ -2835,8 +2835,8 @@
       </unit>
       <unit id="findResource.showing">
          <segment>
-            <source>{0} to {1} of {2} {3} results</source>
-            <target>{0}至{1}的{2｝ {3} 结果</target>
+            <source>{0} to {1} of {2} results</source>
+            <target>{0}至{1}的{2｝ 结果</target>
          </segment>
       </unit>
       <unit id="findResource.source">
