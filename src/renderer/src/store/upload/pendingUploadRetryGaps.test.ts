@@ -311,6 +311,66 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         'Retried pending resource'
       );
     });
+
+    /**
+     * Devin / nabalone (PR #565): restoreSectionResource used separate
+     * memory.update calls for topic, category, passage, then sectionresource.
+     * Orbit applies each update as its own transform
+     * (https://orbitjs.com/ — transforms are atomic collections of ops).
+     * Metadata and the sectionresource link must be one transform so a
+     * mid-restore failure cannot leave media attributes without the resource.
+     */
+    it('applies sectionresource restore as one Orbit transform', async () => {
+      await memory.update((t) =>
+        t.addRecord({
+          type: 'artifactcategory',
+          id: 'cat-1',
+          attributes: { categoryname: 'Scripture' },
+        })
+      );
+
+      const updateSpy = jest.spyOn(memory, 'update');
+
+      const restore: PendingUploadRestore = {
+        kind: 'sectionresource',
+        sectionId: 'sec-1',
+        description: 'Atomic restore',
+        sequenceNum: 1,
+        orgWorkflowStepId: 'ows-1',
+        passageId: 'pas-1',
+        artifactCategoryId: 'cat-1',
+        topic: 'Intro',
+      };
+
+      await restoreAfterPendingUpload({
+        mediaId: 'resource-media-1',
+        restore,
+        memory,
+        user,
+      });
+
+      // Setup addRecord above also used update; count only restore calls.
+      const restoreUpdateCalls = updateSpy.mock.calls.length;
+      expect(restoreUpdateCalls).toBe(1);
+
+      const media = memory.cache.query((q) =>
+        q.findRecord({ type: 'mediafile', id: 'resource-media-1' })
+      ) as { attributes?: { topic?: string } };
+      expect(media.attributes?.topic).toBe('Intro');
+      expect(related(media, 'artifactCategory')).toBe('cat-1');
+      expect(related(media, 'passage')).toBe('pas-1');
+
+      const sectionResources = memory.cache.query((q) =>
+        q.findRecords('sectionresource')
+      ) as unknown as Array<Record<string, unknown>>;
+      expect(sectionResources).toHaveLength(1);
+      expect(related(sectionResources[0], 'mediafile')).toBe(
+        'resource-media-1'
+      );
+      expect(related(sectionResources[0], 'section')).toBe('sec-1');
+      expect(related(sectionResources[0], 'orgWorkflowStep')).toBe('ows-1');
+      expect(related(sectionResources[0], 'passage')).toBe('pas-1');
+    });
   });
 
   describe('General Resource — projectresource configure resume', () => {

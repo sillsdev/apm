@@ -338,31 +338,39 @@ export const nextUpload =
       statusNum: number | undefined,
       statusText: string
     ): void => {
-      if (success) {
-        dispatch({ payload: n, type: UPLOAD_ITEM_SUCCEEDED });
-        if (pendingIdToClear) {
-          removePendingMediaUpload(pendingIdToClear);
+      void (async () => {
+        if (success) {
+          dispatch({ payload: n, type: UPLOAD_ITEM_SUCCEEDED });
+          // Await secondary restore / afterUpload before dropping the pending
+          // row so a restore failure leaves Retry available (TT-7363 / PR #565).
+          try {
+            if (cb) await Promise.resolve(cb(n, true, data));
+          } catch {
+            return;
+          }
+          if (pendingIdToClear) {
+            removePendingMediaUpload(pendingIdToClear);
+          }
+          const pendingRec = record as PendingUploadMediaRecord;
+          removeMatchingPendingUploads({
+            planId: pendingRec.planId,
+            passageId: pendingRec.passageId,
+            artifactTypeId: pendingRec.artifactTypeId,
+            originalFile: pendingRec.originalFile,
+          });
+        } else {
+          dispatch({
+            payload: {
+              current: n,
+              // statusNum is undefined when the request never reached the server,
+              // so don't render a literal "(undefined)" at the user (TT-7583).
+              error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
+            },
+            type: UPLOAD_ITEM_FAILED,
+          });
+          if (cb) cb(n, false, data);
         }
-        const pendingRec = record as PendingUploadMediaRecord;
-        removeMatchingPendingUploads({
-          planId: pendingRec.planId,
-          passageId: pendingRec.passageId,
-          artifactTypeId: pendingRec.artifactTypeId,
-          originalFile: pendingRec.originalFile,
-        });
-        if (cb) cb(n, true, data);
-      } else {
-        dispatch({
-          payload: {
-            current: n,
-            // statusNum is undefined when the request never reached the server,
-            // so don't render a literal "(undefined)" at the user (TT-7583).
-            error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
-          },
-          type: UPLOAD_ITEM_FAILED,
-        });
-        if (cb) cb(n, false, data);
-      }
+      })();
     };
 
     const toVnd = (record: unknown): MediaUpload => {

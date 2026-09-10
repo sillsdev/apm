@@ -270,43 +270,6 @@ async function restoreSectionResource({
   const mediaRec = findRecord(memory, 'mediafile', mediaId) as
     MediaFileD | undefined;
 
-  if (restore.topic && mediaRec) {
-    await memory.update((t) =>
-      UpdateRecord(
-        t,
-        {
-          ...mediaRec,
-          attributes: { ...mediaRec.attributes, topic: restore.topic },
-        } as MediaFileD,
-        user
-      )
-    );
-  }
-  if (restore.artifactCategoryId) {
-    const t = new RecordTransformBuilder();
-    await memory.update([
-      ...ReplaceRelatedRecord(
-        t,
-        mediaRecId,
-        'artifactCategory',
-        'artifactcategory',
-        restore.artifactCategoryId
-      ),
-    ]);
-  }
-  if (restore.passageId) {
-    const t = new RecordTransformBuilder();
-    await memory.update([
-      ...ReplaceRelatedRecord(
-        t,
-        mediaRecId,
-        'passage',
-        'passage',
-        restore.passageId
-      ),
-    ]);
-  }
-
   // Pending meta freezes sequence at stage time; successful siblings or later
   // adds may already occupy it (batch compact / delayed retry). Prefer the
   // captured value when free; otherwise take max+1 for this section.
@@ -330,8 +293,47 @@ async function restoreSectionResource({
     },
   } as SectionResource & UninitializedRecord;
 
+  // One Orbit transform: media metadata + sectionresource + links succeed or
+  // fail together (deterministic optimistic updates — TT-7363 / PR #565).
   const t = new RecordTransformBuilder();
-  const ops = [
+  const ops: RecordOperation[] = [];
+
+  if (restore.topic && mediaRec) {
+    ops.push(
+      ...UpdateRecord(
+        t,
+        {
+          ...mediaRec,
+          attributes: { ...mediaRec.attributes, topic: restore.topic },
+        } as MediaFileD,
+        user
+      )
+    );
+  }
+  if (restore.artifactCategoryId) {
+    ops.push(
+      ...ReplaceRelatedRecord(
+        t,
+        mediaRecId,
+        'artifactCategory',
+        'artifactcategory',
+        restore.artifactCategoryId
+      )
+    );
+  }
+  if (restore.passageId) {
+    ops.push(
+      ...ReplaceRelatedRecord(
+        t,
+        mediaRecId,
+        'passage',
+        'passage',
+        restore.passageId
+      )
+    );
+  }
+
+  ops.push(
     ...AddRecord(t, secRes, user, memory),
     ...ReplaceRelatedRecord(
       t,
@@ -353,8 +355,8 @@ async function restoreSectionResource({
       'orgWorkflowStep',
       'orgworkflowstep',
       restore.orgWorkflowStepId
-    ),
-  ];
+    )
+  );
   if (restore.passageId) {
     ops.push(
       ...ReplaceRelatedRecord(

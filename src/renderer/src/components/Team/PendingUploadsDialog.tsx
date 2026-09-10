@@ -32,6 +32,7 @@ import { MediaFileAttributes } from '../../model';
 import { Online } from '../../utils';
 import { Button } from '../../control/Button';
 import { completePendingUploadRetry } from '../../store/upload/completePendingUploadRetry';
+import { withPendingRetryBusyRelease } from '../../store/upload/withPendingRetryBusyRelease';
 
 const ipc = window?.api as MainAPI;
 
@@ -146,21 +147,21 @@ export function PendingUploadsDialog(props: IProps) {
             AlertSeverity.Warning
           );
         },
-        cb: async (_n, success, data) => {
-          const sid = (data as { stringId?: string } | undefined)?.stringId;
-          if (success && sid && memory && remote && backup) {
-            await completePendingUploadRetry({
-              stringId: sid,
-              restore: entry.restore,
-              memory,
-              remote,
-              backup,
-              reporter,
-              user,
-            });
-          }
-          finishOrContinue();
-        },
+        cb: async (_n, success, data) =>
+          withPendingRetryBusyRelease(async () => {
+            const sid = (data as { stringId?: string } | undefined)?.stringId;
+            if (success && sid && memory && remote && backup) {
+              await completePendingUploadRetry({
+                stringId: sid,
+                restore: entry.restore,
+                memory,
+                remote,
+                backup,
+                reporter,
+                user,
+              });
+            }
+          }, finishOrContinue),
       }) as never
     );
   }
