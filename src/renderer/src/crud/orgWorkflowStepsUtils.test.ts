@@ -1,5 +1,6 @@
 import { expect, describe, it } from '@jest/globals';
 import { WorkflowStepD } from '../model';
+import Memory from '@orbit/memory';
 import {
   filterWorkflowStepTemplates,
   readWorkflowStepTemplates,
@@ -37,7 +38,7 @@ describe('readWorkflowStepTemplates', () => {
               type === 'workflowstep' ? cached : [],
           }),
       },
-    };
+    } as Memory;
 
     expect(
       filterWorkflowStepTemplates(staleHookSnapshot, 'draft', true)
