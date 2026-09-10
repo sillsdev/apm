@@ -206,164 +206,168 @@ export default function MobileWorkflowSteps() {
   ]);
 
   return (
-    <Box sx={[columnSx, { alignItems: 'center' }]}>
-      <Box sx={[spreadSx, { alignItems: 'center' }]}>
-        <Box sx={{ flex: 1, minWidth: 'max-content' }}>
-          {hasMultipleOptions && (
-            <Button
-              data-cy="passage-dropdown"
-              startIcon={
-                !isStepProgression && currentTip ? (
-                  <InfoIcon
-                    data-cy="workflow-step-tip"
-                    aria-label={currentTip}
-                    sx={{ color: 'primary.light' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTipOpen(true);
-                    }}
-                  />
-                ) : undefined
-              }
-              endIcon={<ArrowDropDownIcon />}
-              onClick={(e) => {
-                if (!hasMultipleOptions) return;
-                if (recording || commentRecording) return;
-                if (getGlobal('remoteBusy')) {
-                  showMessage(ts.wait);
-                  return;
+    <>
+      <Box sx={[columnSx, { alignItems: 'center' }]}>
+        <Box sx={[spreadSx, { alignItems: 'center' }]}>
+          <Box sx={{ flex: 1, minWidth: 'max-content' }}>
+            {hasMultipleOptions && (
+              <Button
+                data-cy="passage-dropdown"
+                startIcon={
+                  !isStepProgression && currentTip ? (
+                    <InfoIcon
+                      data-cy="workflow-step-tip"
+                      aria-label={currentTip}
+                      sx={{ color: 'primary.light' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTipOpen(true);
+                      }}
+                    />
+                  ) : undefined
                 }
-                setPassageMenuAnchor(e.currentTarget);
-              }}
-            >
-              {isStepProgression
-                ? passageRef(passage)
-                : getWfLabel(currentLabel)}
-            </Button>
-          )}
-          <Menu
-            anchorEl={passageMenuAnchor}
-            open={Boolean(passageMenuAnchor)}
-            onClose={() => setPassageMenuAnchor(null)}
-          >
-            {isStepProgression
-              ? sectionPassages.map((p) => (
-                  <MenuItem
-                    key={p.id}
-                    sx={{
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                    selected={p.id === passage?.id}
-                    onClick={() => {
-                      navigateToPassage(p);
-                      setPassageMenuAnchor(null);
-                    }}
-                  >
-                    {passageRef(p)}
-                  </MenuItem>
-                ))
-              : workflow.map((step) => (
-                  <MenuItem
-                    key={step.id}
-                    sx={{
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                    selected={step.id === currentstep}
-                    onClick={() => {
-                      handleSelect(step.id)();
-                      setPassageMenuAnchor(null);
-                    }}
-                  >
-                    {getWfLabel(step.label)}
-                  </MenuItem>
-                ))}
-          </Menu>
-        </Box>
-        <Box sx={{ display: 'flex', overflowX: 'auto' }}>
-          {steps.map((step) => {
-            const color = step.isCurrent
-              ? 'custom.racetrackCurrent'
-              : step.isComplete
-                ? 'custom.racetrackComplete'
-                : 'custom.racetrackIncomplete';
-            const textColor = step.isCurrent ? 'common.white' : 'common.black';
-            const blocked = recording || commentRecording;
-            return (
-              <CardActionArea
-                key={step.id}
-                data-cy={step.dataCy}
-                ref={(el: HTMLElement | null) => {
-                  if (el) stepRefs.current.set(step.id, el);
-                  else stepRefs.current.delete(step.id);
+                endIcon={<ArrowDropDownIcon />}
+                onClick={(e) => {
+                  if (!hasMultipleOptions) return;
+                  if (recording || commentRecording) return;
+                  if (getGlobal('remoteBusy')) {
+                    showMessage(ts.wait);
+                    return;
+                  }
+                  setPassageMenuAnchor(e.currentTarget);
                 }}
-                disableRipple={blocked}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flex: `0 0 ${stepWidth ?? 80}px`,
-                  minWidth: 150,
-                  height: 30,
-                  // Horizontal padding clears the slanted edges so the label
-                  // isn't clipped by the parallelogram's angled corners
-                  px: 2.5,
-                  bgcolor: color,
-                  color: textColor,
-                  clipPath:
-                    'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
-                  cursor: blocked ? 'not-allowed' : 'pointer',
-                  // Suppress the hover highlight while steps can't be selected
-                  ...(blocked && {
-                    [`& .${cardActionAreaClasses.focusHighlight}`]: {
-                      display: 'none',
-                    },
-                  }),
-                }}
-                onClick={step.onClick}
               >
-                <Typography
-                  variant="body2"
-                  noWrap
+                {isStepProgression
+                  ? passageRef(passage)
+                  : getWfLabel(currentLabel)}
+              </Button>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', overflowX: 'auto' }}>
+            {steps.map((step) => {
+              const color = step.isCurrent
+                ? 'custom.racetrackCurrent'
+                : step.isComplete
+                  ? 'custom.racetrackComplete'
+                  : 'custom.racetrackIncomplete';
+              const textColor = step.isCurrent
+                ? 'common.white'
+                : 'common.black';
+              const blocked = recording || commentRecording;
+              return (
+                <CardActionArea
+                  key={step.id}
+                  data-cy={step.dataCy}
                   ref={(el: HTMLElement | null) => {
-                    if (el) labelRefs.current.set(step.id, el);
-                    else labelRefs.current.delete(step.id);
+                    if (el) stepRefs.current.set(step.id, el);
+                    else stepRefs.current.delete(step.id);
                   }}
+                  disableRipple={blocked}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flex: `0 0 ${stepWidth ?? 80}px`,
+                    minWidth: 150,
+                    height: 30,
+                    // Horizontal padding clears the slanted edges so the label
+                    // isn't clipped by the parallelogram's angled corners
+                    px: 2.5,
+                    bgcolor: color,
+                    color: textColor,
+                    clipPath:
+                      'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
+                    cursor: blocked ? 'not-allowed' : 'pointer',
+                    // Suppress the hover highlight while steps can't be selected
+                    ...(blocked && {
+                      [`& .${cardActionAreaClasses.focusHighlight}`]: {
+                        display: 'none',
+                      },
+                    }),
+                  }}
+                  onClick={step.onClick}
                 >
-                  {step.label}
-                </Typography>
-              </CardActionArea>
-            );
-          })}
+                  <Typography
+                    variant="body2"
+                    noWrap
+                    ref={(el: HTMLElement | null) => {
+                      if (el) labelRefs.current.set(step.id, el);
+                      else labelRefs.current.delete(step.id);
+                    }}
+                  >
+                    {step.label}
+                  </Typography>
+                </CardActionArea>
+              );
+            })}
+          </Box>
+          <Box sx={{ flex: 1 }} />
         </Box>
-        <Box sx={{ flex: 1 }} />
+        <Box
+          data-cy="workflow-step-label"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            maxWidth: '70%',
+          }}
+        >
+          <Typography noWrap>
+            {isStepProgression ? getWfLabel(currentLabel) : passageRef(passage)}
+          </Typography>
+          {isStepProgression && currentTip && (
+            <IconButton
+              data-cy="workflow-step-tip"
+              aria-label={currentTip}
+              sx={{ p: 0.5 }}
+              onClick={() => setTipOpen(true)}
+            >
+              <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
       </Box>
-      <Box
-        data-cy="workflow-step-label"
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          maxWidth: '70%',
-        }}
+      <Menu
+        anchorEl={passageMenuAnchor}
+        open={Boolean(passageMenuAnchor)}
+        onClose={() => setPassageMenuAnchor(null)}
       >
-        <Typography noWrap>
-          {isStepProgression ? getWfLabel(currentLabel) : passageRef(passage)}
-        </Typography>
-        {isStepProgression && currentTip && (
-          <IconButton
-            data-cy="workflow-step-tip"
-            aria-label={currentTip}
-            sx={{ p: 0.5 }}
-            onClick={() => setTipOpen(true)}
-          >
-            <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
-          </IconButton>
-        )}
-      </Box>
+        {isStepProgression
+          ? sectionPassages.map((p) => (
+              <MenuItem
+                key={p.id}
+                sx={{
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                selected={p.id === passage?.id}
+                onClick={() => {
+                  navigateToPassage(p);
+                  setPassageMenuAnchor(null);
+                }}
+              >
+                {passageRef(p)}
+              </MenuItem>
+            ))
+          : workflow.map((step) => (
+              <MenuItem
+                key={step.id}
+                sx={{
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                selected={step.id === currentstep}
+                onClick={() => {
+                  handleSelect(step.id)();
+                  setPassageMenuAnchor(null);
+                }}
+              >
+                {getWfLabel(step.label)}
+              </MenuItem>
+            ))}
+      </Menu>
       <Dialog open={tipOpen} onClose={() => setTipOpen(false)}>
         <DialogTitle>{getWfLabel(currentLabel)}</DialogTitle>
         <DialogContent>{currentTip}</DialogContent>
@@ -371,6 +375,6 @@ export default function MobileWorkflowSteps() {
           <Button onClick={() => setTipOpen(false)}>{ts.close}</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 }
