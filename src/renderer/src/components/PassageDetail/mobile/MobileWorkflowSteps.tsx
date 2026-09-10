@@ -204,10 +204,11 @@ const MobileWorkflowSteps = () => {
         {/* Dropdown button and racetrack */}
         <Box sx={[spreadSx, { alignItems: 'center' }]}>
           {/* Dropdown button */}
-          <Box sx={{ flex: 1, minWidth: 'max-content' }}>
+          <Box sx={{ flex: 1, maxWidth: '40%' }}>
             {hasMultipleOptions && (
               <Button
                 data-cy="passage-dropdown"
+                sx={{ maxWidth: '100%' }}
                 startIcon={
                   !isStepProgression && currentTip ? (
                     <InfoIcon
@@ -291,7 +292,7 @@ const MobileWorkflowSteps = () => {
             })}
           </Box>
           {/* Spacer to push the racetrack to the center */}
-          <Box sx={{ flex: 1 }} />
+          <Box sx={{ flex: 1, maxWidth: '40%' }} />
         </Box>
         {/* Label */}
         <Box
