@@ -259,6 +259,7 @@ const MobileWorkflowSteps = () => {
                     else stepRefs.current.delete(step.id);
                   }}
                   disableRipple={blocked}
+                  aria-disabled={blocked}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
