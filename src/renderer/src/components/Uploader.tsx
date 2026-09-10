@@ -511,6 +511,7 @@ export const Uploader = (props: IProps) => {
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           pendingRestore={pendingRestore}
+          beforeUpload={beforeUpload}
         />
       )}
       {!audioUploadOrRecord && !hasImport && (

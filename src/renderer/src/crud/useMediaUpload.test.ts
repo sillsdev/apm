@@ -162,6 +162,8 @@ describe('useMediaUpload', () => {
     passageId: string | undefined;
     planId?: string;
     afterUploadCb: jest.Mock;
+    beforeUpload?: () => Promise<void>;
+    pendingRestore?: () => unknown;
   }) {
     const { renderHook } = require('@testing-library/react');
     const { useMediaUpload } = require('./useMediaUpload');
@@ -171,8 +173,20 @@ describe('useMediaUpload', () => {
         passageId: props.passageId,
         planId: props.planId,
         afterUploadCb: props.afterUploadCb,
+        beforeUpload: props.beforeUpload,
+        pendingRestore: props.pendingRestore,
       })
     );
+  }
+
+  async function waitForNextUpload() {
+    const { nextUpload } = require('../store');
+    for (let i = 0; i < 50; i++) {
+      if ((nextUpload as jest.Mock).mock.calls.length > 0) return nextUpload;
+      await Promise.resolve();
+    }
+    expect(nextUpload).toHaveBeenCalled();
+    return nextUpload;
   }
 
   async function completeUpload(
@@ -181,8 +195,7 @@ describe('useMediaUpload', () => {
     ...cbArgs: [number, boolean, unknown?]
   ) {
     const uploadPromise = upload(files);
-    const { nextUpload } = require('../store');
-    expect(nextUpload).toHaveBeenCalled();
+    const nextUpload = await waitForNextUpload();
     const uploadProps = (nextUpload as jest.Mock).mock.calls.at(-1)![0];
     const cb = uploadProps.cb as (
       n: number,
@@ -445,8 +458,7 @@ describe('useMediaUpload', () => {
     });
 
     const uploadPromise = staleUpload([makeFile()]);
-    const { nextUpload } = require('../store');
-    expect(nextUpload).toHaveBeenCalled();
+    const nextUpload = await waitForNextUpload();
     const uploadProps = (nextUpload as jest.Mock).mock.calls.at(-1)![0];
     expect(uploadProps.record.performedBy).toBe('Dharma');
     expect(uploadProps.record.topic).toBe('Community Q1');
@@ -458,5 +470,57 @@ describe('useMediaUpload', () => {
     ) => void | Promise<void>;
     await cb(0, true, { stringId: 'media-1' });
     await expect(uploadPromise).resolves.toBe(true);
+  });
+
+  /**
+   * Recorded resource path (TT-7363 / Copilot r3918081583): SelectArtifactCategory
+   * defers creating a newly typed category until commit()/beforeUpload. If
+   * pendingRestore is snapshotted first, artifactCategoryId is omitted and Retry
+   * restores the resource without its category — even though afterUploadCb would
+   * later commit on success. Failure never reaches afterUploadCb's commit.
+   */
+  it('commits beforeUpload before capturing pendingRestore, even when upload fails', async () => {
+    let catId: string | undefined;
+    const beforeUpload = jest.fn(async () => {
+      catId = 'new-cat-1';
+    });
+    const pendingRestore = jest.fn(() => ({
+      kind: 'sectionresource' as const,
+      sectionId: 'sec-1',
+      description: 'Resource take',
+      sequenceNum: 1,
+      orgWorkflowStepId: 'ows-1',
+      ...(catId ? { artifactCategoryId: catId } : {}),
+    }));
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: 'res-art',
+      passageId: 'psg-1',
+      afterUploadCb,
+      beforeUpload,
+      pendingRestore,
+    });
+    const upload = result.current as (files: File[]) => Promise<boolean>;
+
+    const uploadPromise = upload([makeFile()]);
+    const nextUpload = await waitForNextUpload();
+    const uploadProps = (nextUpload as jest.Mock).mock.calls.at(-1)![0];
+    expect(beforeUpload).toHaveBeenCalled();
+    expect(pendingRestore).toHaveBeenCalled();
+    expect(beforeUpload.mock.invocationCallOrder[0]).toBeLessThan(
+      pendingRestore.mock.invocationCallOrder[0]
+    );
+    expect(uploadProps.pendingRestore).toEqual(
+      expect.objectContaining({ artifactCategoryId: 'new-cat-1' })
+    );
+
+    const cb = uploadProps.cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+    await cb(0, false, undefined);
+    await expect(uploadPromise).rejects.toThrow('Upload Failed!');
+    expect(afterUploadCb).toHaveBeenCalledWith('');
   });
 });
