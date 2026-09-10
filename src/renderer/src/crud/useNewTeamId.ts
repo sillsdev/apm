@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
-import { Organization, OrganizationD, ProjectD, User } from '../model';
+import { Organization, OrganizationD, User } from '../model';
 import { waitForIt } from '../utils';
 import { useTeamCreate, isPersonalTeam, defaultWorkflow } from '.';
 import related from './related';
@@ -30,16 +30,8 @@ export const useNewTeamId = () => {
     const orgs = (await memory.query((q) =>
       q.findRecords('organization')
     )) as OrganizationD[];
-    const projects = (await memory.query((q) =>
-      q.findRecords('project')
-    )) as ProjectD[];
-    const orgIdsWithProjects = [
-      ...new Set(
-        projects
-          .map((p) => related(p, 'organization'))
-          .filter((id): id is string => typeof id === 'string' && Boolean(id))
-      ),
-    ];
+    // Prefer the oldest owned personal org so duplicate ">… Personal<" teams
+    // resolve stably (TT-7397).
     const personalOrgs = orgs.filter(
       (o) => related(o, 'owner') === user && isPersonalTeam(o.id, orgs)
     );
@@ -47,7 +39,7 @@ export const useNewTeamId = () => {
       console.error(`${personalOrgs.length} personal teams!`);
       console.log(personalOrgs);
     }
-    return pickPersonalOrganizationId(personalOrgs, orgIdsWithProjects);
+    return pickPersonalOrganizationId(personalOrgs);
   };
 
   const newPersonal = async () => {
