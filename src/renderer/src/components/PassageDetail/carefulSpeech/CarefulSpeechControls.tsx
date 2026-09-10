@@ -374,6 +374,7 @@ export default function CarefulSpeechControls({
               <IconButton
                 aria-label={strings.clearRecording}
                 onClick={onClearRecording}
+                disabled={savingRecording}
               >
                 <DeleteIcon />
               </IconButton>
