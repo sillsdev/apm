@@ -354,11 +354,10 @@ export default function MobileWorkflowSteps() {
                 }}
                 onClick={step.onClick}
                 sx={{
-                  flex: stepWidth ? `0 0 ${stepWidth}px` : '0 0 80px',
+                  flex: `0 0 ${stepWidth ?? 80}px`,
                   minWidth: 0,
                   height: 30,
                   bgcolor: color,
-                  mr: -0.25,
                   clipPath:
                     'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
                   cursor:
@@ -373,6 +372,7 @@ export default function MobileWorkflowSteps() {
               >
                 <Typography
                   component="span"
+                  noWrap
                   ref={(el: HTMLElement | null) => {
                     if (el) labelRefs.current.set(step.id, el);
                     else labelRefs.current.delete(step.id);
@@ -380,13 +380,6 @@ export default function MobileWorkflowSteps() {
                   sx={{
                     color: textColor,
                     fontSize: '0.75rem',
-                    lineHeight: 1,
-                    textAlign: 'center',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                    maxWidth: '100%',
                     pointerEvents: 'none',
                   }}
                 >
