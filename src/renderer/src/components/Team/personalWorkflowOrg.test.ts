@@ -3,7 +3,8 @@ import { VProjectD } from '../../model';
 import { personalWorkflowOrg } from './personalWorkflowOrg';
 
 describe('personalWorkflowOrg', () => {
-  it('uses the personal project organization when it differs from personalTeam (TT-7397)', () => {
+  // ADR 0012: Edit Workflow always targets the canonical personalTeam.
+  it('uses canonical personalTeam even when a project org differs (ADR 0012)', () => {
     const project = {
       id: 'plan-1',
       type: 'plan',
@@ -13,8 +14,8 @@ describe('personalWorkflowOrg', () => {
         },
       },
     } as VProjectD;
-    expect(personalWorkflowOrg('orphan-personal-team', [project])).toBe(
-      'org-with-workflow'
+    expect(personalWorkflowOrg('canonical-personal-team', [project])).toBe(
+      'canonical-personal-team'
     );
   });
 

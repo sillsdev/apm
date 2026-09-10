@@ -8,13 +8,21 @@ An application for managing oral Bible translation workflows. APM is multi-modal
 A group of people who share projects and workflow configuration.
 _Avoid_: Organization (implementation name in the data model)
 
+**Work Alone** (mode):
+The access mode where the signed-in user has no cloud identity. In this mode the app resolves the **Work Alone Team** for personal workflow. Distinct from merely being **Offline** on a cloud account.
+_Avoid_: Offline (connectivity); Offline Available; Personal Team mode
+
 **Personal Team**:
-The cloud-backed team every user has for solo projects. Data syncs to and is backed up in the cloud. Some admin functions require an Internet connection because related configuration is not fully available offline — it cannot be edited without cloud authority.
-_Avoid_: Work Alone (different sync model); Organization
+The cloud-backed team every user has for solo projects. Data syncs to and is backed up in the cloud. Owns the single cloud-synced workflow configuration shared by all of that team's projects — including projects that still hang off a non-canonical personal-named duplicate; those projects still use this team's workflow for Edit Workflow and Workflow Navigation, while project ownership and other team context stay on the recorded team until a deliberate migration. If that workflow has never been created, it may be seeded from the team's process templates (the default step sequence for the process), not copied from a duplicate team — and only after load is complete, remote/backup queues are idle, a create lock is held, and a re-query is still empty, so an empty query during load does not create a second set of steps. Some admin functions require an Internet connection because related configuration is not fully available offline — it cannot be edited without cloud authority. When duplicate personal-named teams exist, the **Personal Team** is the oldest owned one that has a cloud identity. Resolved whenever the user is not in **Work Alone** mode.
+_Avoid_: Work Alone Team; Work Alone (different sync model); Organization; picking by project ownership alone; a separate workflow per personal project; silently remapping all team context to the canonical team; copying workflow steps from a duplicate personal-named team; seeding workflow steps while Orbit/backup/remote data is still loading
+
+**Work Alone Team**:
+The local-only personal-named team that owns Work Alone projects. It never syncs to the cloud and has no cloud identity. Owns the single local-only workflow configuration shared by all of that team's projects — including projects that still hang off a non-canonical personal-named duplicate; those projects still use this team's workflow for Edit Workflow and Workflow Navigation, while project ownership and other team context stay on the recorded team until a deliberate migration. If that workflow has never been created, it may be seeded from the team's process templates, not copied from a duplicate team — and only after load is complete, remote/backup queues are idle, a create lock is held, and a re-query is still empty, so an empty query during load does not create a second set of steps. Edit Workflow while working Work Alone changes this team’s workflow, not the cloud **Personal Team**. When duplicate personal-named teams exist, the **Work Alone Team** is the oldest owned one without a cloud identity. Resolved when the user is in **Work Alone** mode. Distinct from the cloud **Personal Team**, even though both may use a personal-style team name in data.
+_Avoid_: Personal Team; Offline Available; Organization; mixing cloud and local personal-named teams in one selection pool; a separate workflow per Work Alone project; silently remapping all team context to the canonical team; copying workflow steps from a duplicate personal-named team; seeding workflow steps while Orbit/backup/remote data is still loading
 
 **Work Alone Project**:
-A project that lives entirely on the local device and is never synced to the cloud. Used when a translator works solo without cloud backup. Because there is no cloud authority, the user can perform admin functions while offline.
-_Avoid_: Personal Team project; Offline Available project
+A project that lives entirely on the local device and is never synced to the cloud. Owned by the user's **Work Alone Team**. Used when a translator works solo without cloud backup. Because there is no cloud authority, the user can perform admin functions while offline.
+_Avoid_: Personal Team project; Personal Project; Offline Available project
 
 **Offline Available**:
 A cloud team project marked for download so transcribers and editors can work on it without a connection. Still syncs to the cloud when online — unlike a Work Alone project.
@@ -459,5 +467,5 @@ A project for non-Scripture oral content (stories, training materials, etc.) wit
 _Avoid_: Generic (code name); Scripture project
 
 **Personal Project**:
-A project on the user's Personal Team — about solo ownership and involvement, not a content type. A Personal project can be Scripture or General. Unusual for Scripture, but possible when a group shares one device while one person operates the app.
-_Avoid_: Work Alone project (different sync model); treating Personal as a third type alongside Scripture and General
+A project on the user's **Personal Team** or **Work Alone Team** — about solo ownership and involvement, not a content type. A Personal project can be Scripture or General. Unusual for Scripture, but possible when a group shares one device while one person operates the app. The Home personal-team pointer is always the canonical **Personal Team** or **Work Alone Team** for the current mode, so Edit Workflow targets that team's single shared workflow.
+_Avoid_: Work Alone project (when you mean the sync model rather than ownership); treating Personal as a third type alongside Scripture and General; preferring a project's recorded org over the canonical team for Edit Workflow
