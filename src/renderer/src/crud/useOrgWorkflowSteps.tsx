@@ -3,6 +3,7 @@ import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import {
   filterAndSortOrgWorkflowSteps,
   filterVisibleOrgWorkflowSteps,
+  readWorkflowStepTemplates,
 } from './orgWorkflowStepsUtils';
 import {
   IWorkflowStepsStrings,
@@ -21,7 +22,6 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { addPt } from '../utils/addPt';
-import { useOrbitData } from '../hoc/useOrbitData';
 import { useNewTime } from '../utils/useNewTime';
 
 export const defaultWorkflow = 'draft';
@@ -36,7 +36,6 @@ export const useOrgWorkflowSteps = () => {
   );
 
   const [memory] = useGlobal('memory');
-  const workflowsteps = useOrbitData<WorkflowStepD[]>('workflowstep');
   const [coordinator] = useGlobal('coordinator');
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [user] = useGlobal('user');
@@ -116,13 +115,13 @@ export const useOrgWorkflowSteps = () => {
     opArray: RecordOperation[]
   ) => {
     const offlineOnly = getGlobal('offlineOnly');
-    const processSteps = workflowsteps
-      .filter(
-        (s) =>
-          s.attributes.process === process &&
-          Boolean(s?.keys?.remoteId) !== offlineOnly
-      )
-      .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
+    // Read templates from cache at call time — useOrbitData can still be []
+    // when team create races ahead of the hook's catch-up after offlineSetup.
+    const processSteps = readWorkflowStepTemplates(
+      memory,
+      process,
+      offlineOnly
+    );
     setTime();
     for (let stepIndex = 0; stepIndex < processSteps.length; stepIndex++)
       AddOrgWFToOps(tb, processSteps[stepIndex] as WorkflowStepD, org, opArray);

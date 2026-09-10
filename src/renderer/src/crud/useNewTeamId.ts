@@ -1,10 +1,10 @@
 import React from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
-import { Organization, OrganizationD, User } from '../model';
+import { Organization, OrganizationD, ProjectD, User } from '../model';
 import { waitForIt } from '../utils';
-import { useTeamCreate, isPersonalTeam, remoteIdNum, defaultWorkflow } from '.';
+import { useTeamCreate, isPersonalTeam, defaultWorkflow } from '.';
 import related from './related';
-import { RecordKeyMap } from '@orbit/records';
+import { pickPersonalOrganizationId } from './pickPersonalOrganizationId';
 
 // Dedupe concurrent/remounted personal-team resolution+creation across
 // TeamProvider mounts. Without this, two mounts racing before the first-created
@@ -30,22 +30,24 @@ export const useNewTeamId = () => {
     const orgs = (await memory.query((q) =>
       q.findRecords('organization')
     )) as OrganizationD[];
-    //Ugh, there's more than one per person.  Always get the last one created
-    const orgRecs = orgs
-      .filter((o) => related(o, 'owner') === user && isPersonalTeam(o.id, orgs))
-      .sort((a, b) =>
-        Boolean(a.keys?.remoteId) && Boolean(b.keys?.remoteId)
-          ? remoteIdNum('organization', b.id, memory?.keyMap as RecordKeyMap) -
-            remoteIdNum('organization', a.id, memory?.keyMap as RecordKeyMap)
-          : b >= a
-            ? 1
-            : -1
-      );
-    if (orgRecs.length > 1) {
-      console.error(`${orgRecs.length} personal teams!`);
-      console.log(orgRecs);
+    const projects = (await memory.query((q) =>
+      q.findRecords('project')
+    )) as ProjectD[];
+    const orgIdsWithProjects = [
+      ...new Set(
+        projects
+          .map((p) => related(p, 'organization'))
+          .filter((id): id is string => typeof id === 'string' && Boolean(id))
+      ),
+    ];
+    const personalOrgs = orgs.filter(
+      (o) => related(o, 'owner') === user && isPersonalTeam(o.id, orgs)
+    );
+    if (personalOrgs.length > 1) {
+      console.error(`${personalOrgs.length} personal teams!`);
+      console.log(personalOrgs);
     }
-    return orgRecs.length > 0 ? orgRecs[0].id : undefined;
+    return pickPersonalOrganizationId(personalOrgs, orgIdsWithProjects);
   };
 
   const newPersonal = async () => {
