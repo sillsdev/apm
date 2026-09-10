@@ -211,12 +211,13 @@ export default function MobileWorkflowSteps() {
         <Box sx={{ flex: 1, minWidth: 'max-content' }}>
           {hasMultipleOptions && (
             <Button
+              data-cy="passage-dropdown"
               startIcon={
                 !isStepProgression && currentTip ? (
                   <InfoIcon
-                    sx={{ color: 'primary.light' }}
                     data-cy="workflow-step-tip"
                     aria-label={currentTip}
+                    sx={{ color: 'primary.light' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       setTipOpen(true);
@@ -234,7 +235,6 @@ export default function MobileWorkflowSteps() {
                 }
                 setPassageMenuAnchor(e.currentTarget);
               }}
-              data-cy="passage-dropdown"
             >
               {isStepProgression
                 ? passageRef(passage)
@@ -250,15 +250,15 @@ export default function MobileWorkflowSteps() {
               ? sectionPassages.map((p) => (
                   <MenuItem
                     key={p.id}
-                    selected={p.id === passage?.id}
-                    onClick={() => {
-                      navigateToPassage(p);
-                      setPassageMenuAnchor(null);
-                    }}
                     sx={{
                       display: 'block',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
+                    }}
+                    selected={p.id === passage?.id}
+                    onClick={() => {
+                      navigateToPassage(p);
+                      setPassageMenuAnchor(null);
                     }}
                   >
                     {passageRef(p)}
@@ -267,15 +267,15 @@ export default function MobileWorkflowSteps() {
               : workflow.map((step) => (
                   <MenuItem
                     key={step.id}
-                    selected={step.id === currentstep}
-                    onClick={() => {
-                      handleSelect(step.id)();
-                      setPassageMenuAnchor(null);
-                    }}
                     sx={{
                       display: 'block',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
+                    }}
+                    selected={step.id === currentstep}
+                    onClick={() => {
+                      handleSelect(step.id)();
+                      setPassageMenuAnchor(null);
                     }}
                   >
                     {getWfLabel(step.label)}
@@ -302,20 +302,20 @@ export default function MobileWorkflowSteps() {
                 }}
                 disableRipple={blocked}
                 sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   flex: `0 0 ${stepWidth ?? 80}px`,
                   minWidth: 150,
                   height: 30,
+                  // Horizontal padding clears the slanted edges so the label
+                  // isn't clipped by the parallelogram's angled corners
+                  px: 2.5,
                   bgcolor: color,
                   color: textColor,
                   clipPath:
                     'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
                   cursor: blocked ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  // Horizontal padding clears the slanted edges so the label
-                  // isn't clipped by the parallelogram's angled corners
-                  px: 2,
                   // Suppress the hover highlight while steps can't be selected
                   ...(blocked && {
                     [`& .${cardActionAreaClasses.focusHighlight}`]: {
