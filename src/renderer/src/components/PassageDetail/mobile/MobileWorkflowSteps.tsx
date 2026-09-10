@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import {
   Box,
   CardActionArea,
@@ -11,32 +13,30 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import usePassageDetailContext from '../../../context/usePassageDetailContext';
-import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
-import { useSnackBar } from '../../../hoc/SnackBar';
-import { sharedSelector, workflowStepsSelector } from '../../../selector';
-import { shallowEqual, useSelector } from 'react-redux';
-import { useWfLabel } from '../../../utils/useWfLabel';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import InfoIcon from '@mui/icons-material/Info';
 import { IWorkflowStepsStrings, PassageD } from '../../../model';
-import { toCamel } from '../../../utils/toCamel';
+import { sharedSelector, workflowStepsSelector } from '../../../selector';
+import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
+import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import { useSnackBar } from '../../../hoc/SnackBar';
+import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { passagesForSection } from '../../../crud/passagesForSection';
-import { rememberCurrentPassage } from '../../../utils';
-import { usePassageNavigate } from '../usePassageNavigate';
-import { isPublishingTitle } from '../../../control/passageTypeFromRef';
 import {
   orgDefaultWorkflowProgression,
   useOrgDefaults,
   WorkflowProgression,
 } from '../../../crud/useOrgDefaults';
-import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
-import { useStepPermissions } from '../../../utils/useStepPermission';
 import { Button, columnSx, spreadSx } from '../../../control';
+import { isPublishingTitle } from '../../../control/passageTypeFromRef';
+import { rememberCurrentPassage } from '../../../utils';
+import { toCamel } from '../../../utils/toCamel';
+import { useStepPermissions } from '../../../utils/useStepPermission';
+import { useWfLabel } from '../../../utils/useWfLabel';
+import { usePassageNavigate } from '../usePassageNavigate';
 
-export default function MobileWorkflowSteps() {
+const MobileWorkflowSteps = () => {
   const {
     workflow,
     currentstep,
@@ -49,30 +49,34 @@ export default function MobileWorkflowSteps() {
     prjId,
     isNavigationBlocked,
   } = usePassageDetailContext();
-  const { tool } = useStepTool(currentstep);
-  const { userIsAdmin } = useRole();
-  const { canDoSectionStep, permissionsOn } = useStepPermissions();
-  const showPromptAdmin =
-    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
-  const { getOrganizedBy } = useOrganizedBy();
-  const [organizedBy] = useState(getOrganizedBy(true));
   const [memory] = useGlobal('memory');
+  const getGlobal = useGetGlobal();
+  const t: IWorkflowStepsStrings = useSelector(
+    workflowStepsSelector,
+    shallowEqual
+  );
+  const ts = useSelector(sharedSelector, shallowEqual);
+  const { showMessage } = useSnackBar();
+  const getWfLabel = useWfLabel();
   const passageNavigate = usePassageNavigate(
     () => {},
     setCurrentStep,
     isNavigationBlocked
   );
-  const getGlobal = useGetGlobal();
-  const { showMessage } = useSnackBar();
-  const ts = useSelector(sharedSelector, shallowEqual);
-  const getWfLabel = useWfLabel();
   const { getOrgDefault } = useOrgDefaults();
   const isStepProgression =
     getOrgDefault(orgDefaultWorkflowProgression) === WorkflowProgression.Step;
-  const t: IWorkflowStepsStrings = useSelector(
-    workflowStepsSelector,
-    shallowEqual
-  );
+  const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
+  const { tool } = useStepTool(currentstep);
+  const { userIsAdmin } = useRole();
+  const { canDoSectionStep, permissionsOn } = useStepPermissions();
+  const showPromptAdmin =
+    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
+
+  const [tipOpen, setTipOpen] = useState(false);
+  const [passageMenuAnchor, setPassageMenuAnchor] =
+    useState<HTMLElement | null>(null);
 
   // Refs used to scroll the current step/passage into view
   const didMountRef = useRef(false);
@@ -86,10 +90,6 @@ export default function MobileWorkflowSteps() {
       )
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
   }, [section?.id, memory]);
-
-  const [tipOpen, setTipOpen] = useState(false);
-  const [passageMenuAnchor, setPassageMenuAnchor] =
-    useState<HTMLElement | null>(null);
 
   // The display label of the currently workflow step
   const currentLabel = useMemo(
@@ -109,6 +109,10 @@ export default function MobileWorkflowSteps() {
       : '';
   }, [currentLabel, t, tool, showPromptAdmin, organizedBy]);
 
+  // Check if the dropdown has more than one option to pick from
+  const dropdownOptions = isStepProgression ? sectionPassages : workflow;
+  const hasMultipleOptions = dropdownOptions.length > 1;
+
   const passageRef = (p?: PassageD) =>
     [p?.attributes?.book, p?.attributes?.reference].filter(Boolean).join(' ');
 
@@ -117,10 +121,6 @@ export default function MobileWorkflowSteps() {
     rememberCurrentPassage(memory, remId);
     passageNavigate(`/detail/${prjId}/${remId}`);
   };
-
-  // Check if the dropdown has more than one option to pick from
-  const dropdownOptions = isStepProgression ? sectionPassages : workflow;
-  const hasMultipleOptions = dropdownOptions.length > 1;
 
   const handleSelect = (id: string) => () => {
     if (getGlobal('remoteBusy')) {
@@ -189,6 +189,7 @@ export default function MobileWorkflowSteps() {
       <Box sx={[columnSx, { alignItems: 'center' }]}>
         {/* Dropdown button and racetrack */}
         <Box sx={[spreadSx, { alignItems: 'center' }]}>
+          {/* Dropdown button */}
           <Box sx={{ flex: 1, minWidth: 'max-content' }}>
             {hasMultipleOptions && (
               <Button
@@ -223,6 +224,7 @@ export default function MobileWorkflowSteps() {
               </Button>
             )}
           </Box>
+          {/* Racetrack parallelograms */}
           <Box sx={{ display: 'flex', overflowX: 'auto' }}>
             {steps.map((step) => {
               const color = step.isCurrent
@@ -273,6 +275,7 @@ export default function MobileWorkflowSteps() {
               );
             })}
           </Box>
+          {/* Spacer to push the racetrack to the center */}
           <Box sx={{ flex: 1 }} />
         </Box>
         {/* Label */}
@@ -350,4 +353,6 @@ export default function MobileWorkflowSteps() {
       </Dialog>
     </>
   );
-}
+};
+
+export default MobileWorkflowSteps;
