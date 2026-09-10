@@ -1,12 +1,12 @@
 import {
   Box,
-  ButtonBase,
   CardActionArea,
   cardActionAreaClasses,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Menu,
   MenuItem,
   Typography,
@@ -354,15 +354,14 @@ export default function MobileWorkflowSteps() {
           {isStepProgression ? getWfLabel(currentLabel) : passageRef(passage)}
         </Typography>
         {isStepProgression && currentTip && (
-          <ButtonBase
-            onClick={() => setTipOpen(true)}
+          <IconButton
             data-cy="workflow-step-tip"
-            centerRipple
-            sx={{ borderRadius: '50%', p: 0.5 }}
             aria-label={currentTip}
+            sx={{ p: 0.5 }}
+            onClick={() => setTipOpen(true)}
           >
             <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
-          </ButtonBase>
+          </IconButton>
         )}
       </Box>
       <Dialog open={tipOpen} onClose={() => setTipOpen(false)}>
