@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { jest, afterEach, expect, test } from '@jest/globals';
 import { cleanup } from '@testing-library/react';
 import {
   ISheet,
@@ -602,6 +603,33 @@ test('one flat section and with one passage gives output', () => {
       passageUpdated: '2021-09-15',
     },
   ]);
+});
+
+test('flat rebuild from hierarchical current does not keep passage rows (TT-7641)', () => {
+  const hierarchical = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: false,
+  } as any);
+  expect(hierarchical.map((r) => r.kind)).toEqual([
+    IwsKind.Section,
+    IwsKind.Passage,
+  ]);
+
+  const rebuilt = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+    current: hierarchical.map((r) => ({ ...r })),
+  } as any);
+
+  expect(rebuilt).toHaveLength(1);
+  expect(rebuilt[0].kind).toBe(IwsKind.SectionPassage);
+  expect(rebuilt.some((r) => r.kind === IwsKind.Passage)).toBe(false);
 });
 
 test('two flat sections and one from another plan gives output', () => {

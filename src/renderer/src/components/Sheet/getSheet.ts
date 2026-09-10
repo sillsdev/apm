@@ -267,7 +267,11 @@ export const getSheet = ({
   myGroups,
   isDeveloper = false,
 }: GetSheetProps) => {
-  const myWork = current || Array<ISheet>();
+  // Hierarchical current (standalone Section headers) cannot merge into a
+  // flat sheet: leftover Passage kinds and Section rows would stay (TT-7641).
+  const staleHierarchical =
+    Boolean(flat) && Boolean(current?.some((r) => r.kind === IwsKind.Section));
+  const myWork = current && !staleHierarchical ? current : Array<ISheet>();
   const plansections = sections
     .filter((s) => related(s, 'plan') === plan)
     .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum);

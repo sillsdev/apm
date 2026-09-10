@@ -83,11 +83,16 @@ const PlanProvider = (props: IProps) => {
   const canEditSheet =
     canEditSheetPerm || (addStoryOrPassage && !structuralOffline);
   const canEditAudio = canEditSheetBase || addStoryOrPassage;
-  const [state, setState] = useState({
-    ...initState,
-    mediafiles,
-    discussions,
-    groupmemberships,
+  const [state, setState] = useState(() => {
+    const { scripture, flat } = getPlanType(plan);
+    return {
+      ...initState,
+      mediafiles,
+      discussions,
+      groupmemberships,
+      scripture,
+      flat,
+    };
   });
   // Keep sectionArr in React state so consumers see a stable reference between
   // real updates (getProjectDefault JSON-parses a new array every call).
