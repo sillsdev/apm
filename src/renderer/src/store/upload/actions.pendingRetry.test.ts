@@ -1,12 +1,4 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import {
-  jest,
-  describe,
-  beforeEach,
-  afterEach,
-  it,
-  expect,
-} from '@jest/globals';
 import Axios from 'axios';
 import { UploadType } from '../../components/UploadType';
 import { type MediaFileAttributes } from '../../model';
@@ -50,7 +42,9 @@ jest.mock('../../utils', () => ({
 }));
 
 jest.mock('./uploadRetry', () => {
-  const actual = jest.requireActual('./uploadRetry');
+  const actual = jest.requireActual(
+    './uploadRetry'
+  ) as typeof import('./uploadRetry');
   return {
     ...actual,
     waitForImportExportIdle: jest.fn(async () => undefined),

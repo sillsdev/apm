@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from '@jest/globals';
+import { jest, describe, expect, it, beforeEach } from '@jest/globals';
 import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
