@@ -207,7 +207,7 @@ describe('getProjectDataFiles project scoping', () => {
       'ip-mine',
     ]);
     expect(idsIn(files, 'data/C_orgworkflowsteps.json')).toEqual(['ows-mine']);
-    expect(idsIn(files, 'data/J_organizationbibles.json')).toEqual(['ob-mine']);
+    expect(idsIn(files, 'data/I_organizationbibles.json')).toEqual(['ob-mine']);
     expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-mine']);
     expect(idsIn(files, 'data/C_artifactcategorys.json')).toEqual([
       'cat-global',
@@ -223,7 +223,7 @@ describe('getProjectDataFiles project scoping', () => {
       'ip-local',
     ]);
     expect(idsIn(files, 'data/C_orgworkflowsteps.json')).toEqual(['ows-local']);
-    expect(idsIn(files, 'data/J_organizationbibles.json')).toEqual([
+    expect(idsIn(files, 'data/I_organizationbibles.json')).toEqual([
       'ob-local',
     ]);
     expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-local']);
@@ -1006,7 +1006,7 @@ describe('orgkeytermreference org scope', () => {
   it('includes references for every project on the org key terms', async () => {
     const files = await getProjectDataFiles(memoryStub(store), project);
     expect(idsIn(files, 'data/C_orgkeyterms.json')).toEqual(['okt-mine']);
-    expect(idsIn(files, 'data/I_orgkeytermreferences.json').sort()).toEqual([
+    expect(idsIn(files, 'data/H_orgkeytermreferences.json').sort()).toEqual([
       'ref-mine',
       'ref-sibling',
     ]);
