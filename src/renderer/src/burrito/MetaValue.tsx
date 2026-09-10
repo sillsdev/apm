@@ -55,7 +55,7 @@ export default function MetaValue({
       slotProps={{
         paper: {
           component: 'form',
-          onSubmit: (event: React.SubmitEvent<HTMLDivElement>) => {
+          onSubmit: (event: React.FormEvent<HTMLDivElement>) => {
             event.preventDefault();
             onConfirm(idKey, newValue);
             handleClose();

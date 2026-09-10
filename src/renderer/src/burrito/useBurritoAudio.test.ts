@@ -175,12 +175,10 @@ function loadAudioForPhilippians(
   jest.resetModules();
   (window as unknown as { api?: unknown }).api = api;
 
-  jest.doMock(
-    '../components/PassageDetail/Internalization/useComputeRef',
-    () =>
-      jest.requireActual(
-        '../components/PassageDetail/Internalization/useComputeRef'
-      )
+  jest.doMock('../components/PassageDetail/Internalization/useComputeRef', () =>
+    jest.requireActual(
+      '../components/PassageDetail/Internalization/useComputeRef'
+    )
   );
 
   jest.doMock('../utils/dataPath', () => ({
@@ -529,6 +527,141 @@ describe('useBurritoAudio', () => {
       slugFromId: jest.fn(() => 'vernacular'),
       VernacularTag: null,
     }));
+  });
+
+  it('copies IP release media under ip/ for speakers used in the book', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
+
+    /* eslint-disable @typescript-eslint/no-require-imports -- resetModules pattern */
+    const { useOrbitData } = require('../hoc/useOrbitData');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+
+    const orbitMedia = [
+      {
+        id: 'm-vern',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-vern' },
+        attributes: {
+          audioUrl: 'https://example.test/vern.mp3',
+          originalFile: 'vern.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          performedBy: 'Greg',
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: { type: 'passage', id: 'p1' } },
+          artifactType: { data: null },
+        },
+      },
+      {
+        id: 'm-greg-ip',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-greg-ip' },
+        attributes: {
+          audioUrl: 'https://example.test/greg-rights.mp3',
+          originalFile: 'greg-rights.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {},
+      },
+      {
+        id: 'm-fred-ip',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-fred-ip' },
+        attributes: {
+          audioUrl: 'https://example.test/fred-rights.mp3',
+          originalFile: 'fred-rights.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {},
+      },
+    ];
+    const orbitPassages = [
+      {
+        id: 'p1',
+        type: 'passage',
+        attributes: {
+          book: 'GEN',
+          reference: 'GEN 1:1',
+          startChapter: 1,
+          sequencenum: 1,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          sharedResource: { data: null },
+        },
+      },
+    ];
+    const orbitIp = [
+      {
+        id: 'ip-greg',
+        type: 'intellectualproperty',
+        attributes: { rightsHolder: 'Greg' },
+        relationships: {
+          organization: { data: { type: 'organization', id: teamId } },
+          releaseMediafile: { data: { type: 'mediafile', id: 'm-greg-ip' } },
+        },
+      },
+      {
+        id: 'ip-fred',
+        type: 'intellectualproperty',
+        attributes: { rightsHolder: 'Fred' },
+        relationships: {
+          organization: { data: { type: 'organization', id: teamId } },
+          releaseMediafile: { data: { type: 'mediafile', id: 'm-fred-ip' } },
+        },
+      },
+    ];
+
+    useOrbitData.mockImplementation((type: string) => {
+      if (type === 'mediafile') return orbitMedia;
+      if (type === 'passage') return orbitPassages;
+      if (type === 'sectionresource') return [];
+      if (type === 'sharedresource') return [];
+      if (type === 'intellectualproperty') return orbitIp;
+      return [];
+    });
+
+    const metadata = burritoFixture();
+    const { result } = renderHook(() => useBurritoAudio(teamId));
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [
+          {
+            id: 's1',
+            type: 'section',
+            relationships: {
+              plan: { data: { type: 'plan', id: 'plan1' } },
+            },
+          } as SectionD,
+        ],
+      });
+    });
+
+    const ipIngredient = Object.entries(metadata.ingredients).find(
+      ([, ing]) => ing?.properties?.['x-apmId'] === 'remote-greg-ip'
+    );
+    expect(ipIngredient).toBeDefined();
+    expect(ipIngredient![0].replace(/\\/g, '/')).toContain('/ip/');
+    expect(ipIngredient![0]).toContain('greg-rights');
+    expect(
+      Object.values(metadata.ingredients).some(
+        (ing) => ing?.properties?.['x-apmId'] === 'remote-fred-ip'
+      )
+    ).toBe(false);
   });
 
   it('section resources with same version and extension use distinct paths per sequenceNum', async () => {

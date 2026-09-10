@@ -28,11 +28,7 @@ import { useSectionIdDescription } from './useSectionIdDescription';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
 import { rowTypes } from './rowTypes';
 import { PlanContext } from '../../context/PlanContext';
-import {
-  LocalKey,
-  localUserKey,
-  rememberCurrentPassage,
-} from '../../utils';
+import { LocalKey, localUserKey, rememberCurrentPassage } from '../../utils';
 import { RecordKeyMap } from '@orbit/records';
 
 interface IProps {
@@ -61,7 +57,9 @@ export function PlanView(props: IProps) {
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const [teamId] = useGlobal('organization');
   const [memory] = useGlobal('memory');
+  const [offline] = useGlobal('offline');
   const { isPublished } = usePublishDestination();
+  const editGraphic = !offline ? handleGraphic : undefined;
   const isPersonal = useMemo(
     () => isPersonalTeam(teamId, teams),
     [teamId, teams]
@@ -72,11 +70,8 @@ export function PlanView(props: IProps) {
     const lastPasId = localStorage.getItem(localUserKey(LocalKey.passage));
     if (!lastPasId) return undefined;
     const pasGuid =
-      remoteIdGuid(
-        'passage',
-        lastPasId,
-        memory?.keyMap as RecordKeyMap
-      ) || lastPasId;
+      remoteIdGuid('passage', lastPasId, memory?.keyMap as RecordKeyMap) ||
+      lastPasId;
     const row = rowInfo.findIndex((r) => r.passage?.id === pasGuid);
     return row >= 0 ? pasGuid : undefined;
   }, [rowInfo, memory]);
@@ -157,7 +152,7 @@ export function PlanView(props: IProps) {
                   sectionSeq={row.sectionSeq}
                   organizedBy="B"
                   style={indent ? { marginLeft: '2rem' } : undefined}
-                  onClick={handleGraphic ? () => handleGraphic(i) : undefined}
+                  onClick={editGraphic ? () => editGraphic(i) : undefined}
                 />
               )}
               {row.passageType === PassageTypeEnum.BOOK ? (
@@ -199,9 +194,7 @@ export function PlanView(props: IProps) {
               handleViewStep={() => handleViewStep(i)}
               onPlayStatus={mediaId ? () => onPlayStatus(mediaId) : undefined}
               onGraphicClick={
-                publishingView && handleGraphic
-                  ? () => handleGraphic(i)
-                  : undefined
+                publishingView && editGraphic ? () => editGraphic(i) : undefined
               }
               isPlaying={mediaId === srcMediaId}
               isPersonal={isPersonal}

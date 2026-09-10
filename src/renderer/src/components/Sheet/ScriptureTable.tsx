@@ -2220,7 +2220,7 @@ export function ScriptureTable(props: IProps) {
             ) => {
               setSectionPublish(i, destinations);
             }}
-            handleGraphic={canPublish ? handleGraphic : undefined}
+            handleGraphic={canPublish && !offline ? handleGraphic : undefined}
           />
         </ContentLayout>
       ) : (

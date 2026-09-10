@@ -53,7 +53,7 @@ describe('apmGraphic', () => {
     );
   });
 
-  it('prefers a usable full-size url over the thumbnail', () => {
+  it('keeps the UI thumbnail on the small ApmDim image, never the 1024 file', () => {
     const gr = apmGraphic(
       rec({
         '1024': png(full, 1024),
@@ -63,6 +63,7 @@ describe('apmGraphic', () => {
     );
     expect(gr?.url).toBe(full);
     expect(gr?.graphicUri).toBe(thumb);
+    expect(gr?.graphicUri).not.toBe(full);
   });
 
   it('encodes hash characters in the stored 1024 S3 key', () => {

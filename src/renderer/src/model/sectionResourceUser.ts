@@ -6,6 +6,7 @@ export interface SectionResourceUser extends BaseModel {
     dateCreated: string;
     dateUpdated: string;
     lastModifiedBy: number;
+    offlineId: string;
   };
   relationships?: {
     sectionresource: RecordRelationship;

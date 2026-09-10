@@ -254,7 +254,11 @@ export function TranscriptionTab(props: IProps) {
           : t.changed
       ),
       writingmsg: t.writingDownloadFile,
-      localizedArtifact,
+      localizedArtifact: [ExportType.ELAN, ExportType.AUDIO].includes(
+        exportType
+      )
+        ? localizedArtifact
+        : '',
       getOfflineProject,
       importedDate,
       target: step,

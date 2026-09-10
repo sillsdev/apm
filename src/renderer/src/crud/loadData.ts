@@ -171,14 +171,14 @@ export async function insertData(
       if (Array.isArray(rec)) rec = rec[0] as InitializedRecord; //won't be...
       rec.attributes = { ...item.attributes };
       oparray.push(tb.updateRecord(rec).toOperation());
-      if (rec.type === 'project') {
-        if (isProject) project = rec as ProjectD;
+      if (rec.type === 'project' && isProject) {
+        project = rec as ProjectD;
         await saveOfflineProject(
           rec as ProjectD,
           memory,
           backup,
-          isProject ? snapshotDate : undefined,
-          isImport && isProject
+          snapshotDate,
+          isImport
         );
       }
       for (const rel in item.relationships) {
@@ -206,14 +206,15 @@ export async function insertData(
       try {
         if (typeof item.id === 'number') item = rn.normalizeRecord(item);
         oparray.push(tb.addRecord(item).toOperation());
-        if (item.type === 'project') {
-          if (isProject) project = item as ProjectD;
+        //don't mess with any offline project data for supporting projects
+        if (item.type === 'project' && isProject) {
+          project = item as ProjectD;
           await saveOfflineProject(
             item as ProjectD,
             memory,
             backup,
-            isProject ? snapshotDate : undefined,
-            isImport && isProject
+            snapshotDate,
+            isImport
           );
         }
       } catch (errResult: unknown) {
