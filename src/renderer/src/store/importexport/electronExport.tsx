@@ -93,11 +93,9 @@ export async function electronExport(
     suffix: string,
     ext: string
   ) =>
-    cleanExportFileName(`apm${idStr('user', userid)}_${idStr(
-      'project',
-      projRec.id
-    )}_${projRec.attributes.name + localizedArtifactType}
-    ${suffix}.${ext}`);
+    cleanExportFileName(
+      `apm${idStr('user', userid)}_${idStr('project', projRec.id)}_${projRec.attributes.name}_${localizedArtifactType}${suffix}.${ext}`
+    );
 
   const itfb_fileName = (projRec: ProjectD) =>
     new Date().getDate().toString() +
