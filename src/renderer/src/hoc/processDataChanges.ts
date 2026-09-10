@@ -18,6 +18,7 @@ import {
   GetUser,
   IFetchNowProps,
   related,
+  remoteId,
   remoteIdGuid,
   SetUserLanguage,
 } from '../crud';
@@ -69,13 +70,40 @@ export const processDataChanges = async (pdc: {
     const orgmem = findRecord(memory, 'organizationmembership', localId);
     if (orgmem) {
       if (related(orgmem, 'user') === user && reloadTheOrgs) {
-        for (const table of [
+        await pullRemoteToMemory({ table: 'organization', memory, remote });
+
+        const orgRemoteId = remoteId(
           'organization',
-          'orgworkflowstep',
-          'organizationmembership',
-          'organizationbible',
-        ]) {
-          await pullRemoteToMemory({ table, memory, remote });
+          related(orgmem, 'organization'),
+          memory?.keyMap as RecordKeyMap
+        );
+        if (orgRemoteId) {
+          const orgFilter = [
+            { attribute: 'organization-id', value: orgRemoteId },
+          ];
+          for (const table of [
+            'orgworkflowstep',
+            'artifactcategory',
+            'graphic',
+            'organizationscheme',
+            'organizationbible',
+            'orgkeyterm',
+            'intellectualproperty',
+            'orgkeytermtarget',
+          ]) {
+            await pullRemoteToMemory({
+              table,
+              memory,
+              remote,
+              filter: orgFilter,
+            });
+          }
+          for (const table of [
+            'organizationschemestep',
+            'orgkeytermreference',
+          ]) {
+            await pullRemoteToMemory({ table, memory, remote });
+          }
         }
       }
       return true;
