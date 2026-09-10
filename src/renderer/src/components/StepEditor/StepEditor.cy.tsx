@@ -22,6 +22,8 @@ type MockOrgWfAttrs = {
   sequencenum: number;
   process?: string;
   tool?: string;
+  /** When false, omit keys.remoteId (Work Alone Offline shape). Default true. */
+  withRemoteId?: boolean;
 };
 
 const createWorkflowStepMemory = (
@@ -41,7 +43,9 @@ const createWorkflowStepMemory = (
     relationships: {
       organization: { data: { type: 'organization', id: orgId } },
     },
-    keys: { remoteId: `remote-${s.id}` },
+    ...(s.withRemoteId === false
+      ? {}
+      : { keys: { remoteId: `remote-${s.id}` } }),
   }));
 
   /** Orbit-style terminal: supports `.filter(fn)` and `.filter({ attribute, value })` (see useArtifactType getTypeId). */
@@ -129,7 +133,10 @@ const mockStore = createStore(
   })
 );
 
-const createInitialState = (memory: Memory): GlobalState => ({
+const createInitialState = (
+  memory: Memory,
+  overrides: Partial<GlobalState> = {}
+): GlobalState => ({
   coordinator: mockCoordinatorFor(memory),
   errorReporter: bugsnagClient,
   fingerprint: 'test-fingerprint',
@@ -164,6 +171,7 @@ const createInitialState = (memory: Memory): GlobalState => ({
   offline: false,
   mobileView: false,
   addStoryOrPassage: false,
+  ...overrides,
 });
 
 function StepEditorInDialog({ org }: { org: string }) {
@@ -180,14 +188,18 @@ function StepEditorInDialog({ org }: { org: string }) {
   );
 }
 
-const mountStepEditor = (memory: Memory) => {
-  const initialState = createInitialState(memory);
+const mountStepEditor = (
+  memory: Memory,
+  options: { org?: string; global?: Partial<GlobalState> } = {}
+) => {
+  const org = options.org ?? TEST_ORG_ID;
+  const initialState = createInitialState(memory, options.global);
   cy.mount(
     <Provider store={mockStore}>
       <GlobalProvider init={initialState}>
         <DataProvider dataStore={memory}>
           <UnsavedProvider>
-            <StepEditorInDialog org={TEST_ORG_ID} />
+            <StepEditorInDialog org={org} />
           </UnsavedProvider>
         </DataProvider>
       </GlobalProvider>
@@ -290,5 +302,32 @@ describe('StepEditor (Edit Workflow)', { tags: '@smoke' }, () => {
       .last()
       .should('have.value', 'Internalize 2')
       .should('have.focus');
+  });
+
+  // Offline filter regression: StepEditor lists steps without remoteId when
+  // offlineOnly. TT-7397 (wrong personalTeam org) is covered by personalWorkflowOrg.
+  it('shows draft workflow steps for Work Alone Offline (no remoteId)', () => {
+    const memory = createWorkflowStepMemory(TEST_ORG_ID, [
+      {
+        id: 'off-1',
+        name: 'Internalize',
+        sequencenum: 1,
+        withRemoteId: false,
+      },
+      { id: 'off-2', name: 'Record', sequencenum: 2, withRemoteId: false },
+      { id: 'off-3', name: 'MarkVerses', sequencenum: 3, withRemoteId: false },
+      { id: 'off-4', name: 'Done', sequencenum: 4, withRemoteId: false },
+    ]);
+    mountStepEditor(memory, {
+      global: { offline: true, offlineOnly: true, connected: false },
+    });
+    cy.get('#wk-step-add').should('be.visible').and('not.be.disabled');
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 4);
+    cy.get('.MuiDialogContent-root input#stepName')
+      .eq(0)
+      .should('have.value', 'Internalize');
+    cy.get('.MuiDialogContent-root input#stepName')
+      .eq(3)
+      .should('have.value', 'Done');
   });
 });
