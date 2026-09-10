@@ -1,3 +1,4 @@
+import { expect, describe, it } from '@jest/globals';
 import { WorkflowStepD } from '../model';
 import {
   filterWorkflowStepTemplates,
@@ -28,7 +29,9 @@ describe('readWorkflowStepTemplates', () => {
     const staleHookSnapshot: WorkflowStepD[] = [];
     const memory = {
       cache: {
-        query: (queryFn: (q: { findRecords: (t: string) => unknown }) => unknown) =>
+        query: (
+          queryFn: (q: { findRecords: (t: string) => unknown }) => unknown
+        ) =>
           queryFn({
             findRecords: (type: string) =>
               type === 'workflowstep' ? cached : [],
@@ -36,9 +39,9 @@ describe('readWorkflowStepTemplates', () => {
       },
     };
 
-    expect(filterWorkflowStepTemplates(staleHookSnapshot, 'draft', true)).toEqual(
-      []
-    );
+    expect(
+      filterWorkflowStepTemplates(staleHookSnapshot, 'draft', true)
+    ).toEqual([]);
     const fromCache = readWorkflowStepTemplates(memory, 'draft', true);
     expect(fromCache.map((s) => s.id)).toEqual([
       'ws-internalize',

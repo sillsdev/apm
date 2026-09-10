@@ -11,9 +11,7 @@ export function pickPersonalOrganizationId(
   orgIdsWithProjects: ReadonlyArray<string>
 ): string | undefined {
   if (personalOrgs.length === 0) return undefined;
-  const preferred = personalOrgs.find((o) =>
-    orgIdsWithProjects.includes(o.id)
-  );
+  const preferred = personalOrgs.find((o) => orgIdsWithProjects.includes(o.id));
   if (preferred) return preferred.id;
   const sorted = [...personalOrgs].sort((a, b) =>
     (b.attributes?.dateCreated ?? '').localeCompare(

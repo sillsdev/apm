@@ -1,10 +1,8 @@
+import { expect, describe, it } from '@jest/globals';
 import { OrganizationD } from '../model';
 import { pickPersonalOrganizationId } from './pickPersonalOrganizationId';
 
-const personalOrg = (
-  id: string,
-  dateCreated: string
-): OrganizationD =>
+const personalOrg = (id: string, dateCreated: string): OrganizationD =>
   ({
     id,
     type: 'organization',

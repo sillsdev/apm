@@ -1,5 +1,6 @@
 import { OrgWorkflowStepD, WorkflowStepD } from '../model';
 import { related } from './related';
+import Memory from '@orbit/memory';
 
 export const filterAndSortOrgWorkflowSteps = (
   orgworkflowsteps: OrgWorkflowStepD[],
@@ -37,21 +38,13 @@ export const filterWorkflowStepTemplates = (
     )
     .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
 
-type MemoryCacheQuery = {
-  cache: {
-    query: (
-      queryFn: (q: { findRecords: (type: string) => unknown }) => unknown
-    ) => unknown;
-  };
-};
-
 /**
  * Read workflowstep templates from Orbit cache at call time.
  * Avoids stale useOrbitData snapshots when CreateOrgWorkflowSteps runs
  * after offlineSetup has written templates (TT-7397 hardening).
  */
 export const readWorkflowStepTemplates = (
-  memory: MemoryCacheQuery,
+  memory: Memory,
   process: string,
   offlineOnly: boolean
 ): WorkflowStepD[] => {
