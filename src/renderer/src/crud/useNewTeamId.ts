@@ -4,7 +4,7 @@ import { Organization, OrganizationD, User } from '../model';
 import { waitForIt } from '../utils';
 import { useTeamCreate, isPersonalTeam, defaultWorkflow } from '.';
 import related from './related';
-import { pickPersonalOrganizationId } from './pickPersonalOrganizationId';
+import { resolveCanonicalPersonalTeamId } from './canonicalPersonalWorkflow';
 
 // Dedupe concurrent/remounted personal-team resolution+creation across
 // TeamProvider mounts. Without this, two mounts racing before the first-created
@@ -30,8 +30,7 @@ export const useNewTeamId = () => {
     const orgs = (await memory.query((q) =>
       q.findRecords('organization')
     )) as OrganizationD[];
-    // Prefer the oldest owned personal org so duplicate ">… Personal<" teams
-    // resolve stably (TT-7397).
+    // ADR 0012: Personal Team (cloud identity) vs Work Alone Team (no cloud identity).
     const personalOrgs = orgs.filter(
       (o) => related(o, 'owner') === user && isPersonalTeam(o.id, orgs)
     );
@@ -39,7 +38,9 @@ export const useNewTeamId = () => {
       console.error(`${personalOrgs.length} personal teams!`);
       console.log(personalOrgs);
     }
-    return pickPersonalOrganizationId(personalOrgs);
+    return resolveCanonicalPersonalTeamId(personalOrgs, {
+      offlineOnly: getGlobal('offlineOnly'),
+    });
   };
 
   const newPersonal = async () => {

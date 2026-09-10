@@ -4,10 +4,13 @@ export type PickPersonalOrganizationOptions = {
   /**
    * When true, only orgs with a cloud identity (keys.remoteId).
    * When false, only orgs without a cloud identity.
-   * When omitted, all personal orgs are considered (legacy — not ADR 0012).
+   * When omitted, all personal orgs are considered.
    */
   requireCloudIdentity?: boolean;
 };
+
+const hasCloudIdentity = (org: OrganizationD): boolean =>
+  Boolean(org.keys?.remoteId);
 
 /**
  * Choose which personal organization id to treat as personalTeam when
@@ -18,9 +21,14 @@ export function pickPersonalOrganizationId(
   personalOrgs: OrganizationD[],
   options?: PickPersonalOrganizationOptions
 ): string | undefined {
-  void options; // TODO ADR 0012: filter by requireCloudIdentity
-  if (personalOrgs.length === 0) return undefined;
-  const sorted = [...personalOrgs].sort((a, b) =>
+  const pool =
+    options?.requireCloudIdentity === undefined
+      ? personalOrgs
+      : personalOrgs.filter(
+          (o) => hasCloudIdentity(o) === options.requireCloudIdentity
+        );
+  if (pool.length === 0) return undefined;
+  const sorted = [...pool].sort((a, b) =>
     (a.attributes?.dateCreated ?? '').localeCompare(
       b.attributes?.dateCreated ?? ''
     )
