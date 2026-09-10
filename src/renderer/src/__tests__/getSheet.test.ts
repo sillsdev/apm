@@ -16,6 +16,7 @@ import { getSheet } from '../components/Sheet/getSheet';
 import { InitializedRecord } from '@orbit/records';
 import { ISTFilterState } from '../components/Sheet/filterMenu';
 import { PassageTypeEnum } from '../model/passageType';
+import { BookSeq } from '../model/section';
 import { PublishDestinationEnum } from '../crud/usePublishDestination';
 import { OrganizationSchemeStepD } from '../model/organizationSchemeStep';
 
@@ -630,6 +631,68 @@ test('flat rebuild from hierarchical current does not keep passage rows (TT-7641
   expect(rebuilt).toHaveLength(1);
   expect(rebuilt[0].kind).toBe(IwsKind.SectionPassage);
   expect(rebuilt.some((r) => r.kind === IwsKind.Passage)).toBe(false);
+});
+
+// Copilot PR#587 suggested not discarding Section-only current on flat
+// (publishing titles). Flat never emits IwsKind.Section; keeping those rows
+// would leave publishing headers stuck. Discarding any Section in current is
+// required — prove with a BOOK title as the only current row (no Passage).
+test('flat rebuild drops publishing-title Section rows from current', () => {
+  const bookRow = {
+    ...secResult,
+    level: SheetLevel.Book,
+    kind: IwsKind.Section,
+    sectionSeq: BookSeq,
+    sectionId: { type: 'section', id: 'bk1' },
+    title: 'Luke',
+    reference: PassageTypeEnum.BOOK,
+    passageType: PassageTypeEnum.BOOK,
+    sectionUpdated: '2021-09-15',
+  } as ISheet;
+  const rebuilt = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+    // Section-only current: Copilot's "require Passage too" check would keep
+    // this BOOK row forever because getSheet never removes current rows.
+    current: [bookRow],
+  } as any);
+
+  expect(rebuilt.some((r) => r.kind === IwsKind.Section)).toBe(false);
+  expect(rebuilt).toHaveLength(1);
+  expect(rebuilt[0].kind).toBe(IwsKind.SectionPassage);
+  expect(rebuilt[0].passage?.id).toBe('pa1');
+});
+
+// Valid flat current must still merge — detection must not treat
+// SectionPassage as stale hierarchical.
+test('flat refresh merges SectionPassage current without discarding it', () => {
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+  } as any);
+  expect(sheet).toHaveLength(1);
+  expect(sheet[0].kind).toBe(IwsKind.SectionPassage);
+  (sheet[0] as ISheet).graphicUri = 'kept.png';
+
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+    current: sheet.map((r) => ({ ...r })),
+    graphicFind: () => ({}),
+  } as any);
+
+  expect(merged).toHaveLength(1);
+  expect(merged[0].kind).toBe(IwsKind.SectionPassage);
+  expect(merged[0].graphicUri).toBe('kept.png');
 });
 
 test('two flat sections and one from another plan gives output', () => {
