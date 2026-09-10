@@ -71,6 +71,14 @@ export interface DetailPlayerProps {
   verses?: string;
   defaultSegParams?: IRegionParams;
   canSetDefaultParams?: boolean;
+  /**
+   * Fired when segment boundaries change.
+   *
+   * This callback is attached once to the waveform, so it can run with a stale
+   * render closure and can fire multiple times per gesture.
+   * Read mutable state from refs and dedupe accumulated values.
+   * See useWavesurferRegions.tsx and ADR 0012 (TT-7437).
+   */
   onSegment?: (segment: string, init: boolean) => void;
   onSegmentParamChange?:
     ((params: IRegionParams, teamDefault: boolean) => void) | undefined;

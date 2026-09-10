@@ -97,6 +97,22 @@ const withRegionColorAlpha = (color: string, alpha: number) => {
   if (!match) return color;
   return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${alpha})`;
 };
+// Stale callback hazard (TT-7437; ADR 0012 pending).
+// The region callbacks below (onRegion, onCurrentRegion, onRegionPlayEnd,
+// onMarkerClick, onRegionClicked, onStartRegion) are registered once in
+// setupRegions when WaveSurfer fires `ready`, so they keep the audio-load
+// render closure. State read inside can be stale, and one boundary gesture can
+// trigger multiple callback fires.
+//
+// Until ADR 0012 makes these callbacks live at the source (ref forwarding,
+// similar to onProgressRef in useWaveSurfer), each consumer must:
+// 1. Read state used in onSegment/onCurrentSegment/onSegmentPlaybackEnd from
+//    refs refreshed every render, not closure state.
+// 2. Dedupe accumulated values (for example undo entries) by value, because
+//    callbacks can fire multiple times per gesture.
+// See PassageDetailGuidedPhraseRecord (clauseSegStringRef + undo dedupe) and
+// PassageDetailMarkVerses (TT-7437 refs). See ADR 0006 for the earlier
+// single-callback version of this fix.
 export function useWaveSurferRegions(
   singleRegionOnly: boolean,
   defaultRegionIndex: number,

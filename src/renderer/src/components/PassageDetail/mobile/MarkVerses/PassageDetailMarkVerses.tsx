@@ -152,6 +152,19 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const [playerResetKey, setPlayerResetKey] = useState(0);
   /** Precise segment JSON from the waveform (table limits are rounded). */
   const [waveSegmentsJson, setWaveSegmentsJson] = useState('{}');
+  // TT-7437: pushUndoSnapshot runs from onSegment, which is registered once
+  // and can keep a stale render closure (ADR 0012/0006).
+  // Using closure state made Undo restore stale selection and pasted-segment
+  // values, so read from refs refreshed every render.
+  // Remove this when ADR 0012 Layer 2 makes callbacks live.
+  const pastedSegmentsRef = useRef(pastedSegments);
+  pastedSegmentsRef.current = pastedSegments;
+  const waveSegmentsJsonRef = useRef(waveSegmentsJson);
+  waveSegmentsJsonRef.current = waveSegmentsJson;
+  const currentSegmentRef = useRef(currentSegment);
+  currentSegmentRef.current = currentSegment;
+  const currentSegmentIndexRef = useRef(currentSegmentIndex);
+  currentSegmentIndexRef.current = currentSegmentIndex;
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const markVersesTailOpenRef = useRef(false);
   const applyRegionColor = useMemo(
@@ -553,25 +566,21 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   );
 
   const pushUndoSnapshot = useCallback(() => {
+    // Build from live refs. onSegment can run with stale closure state, which
+    // can otherwise restore incorrect Undo selection or pasted-segment values.
     const snapshot: MarkVersesSnapshot = {
       tableData: cloneTableData(
         dataRef.current
       ) as MarkVersesSnapshot['tableData'],
       segmentsJson: segmentsRef.current,
-      pastedSegments,
-      waveSegmentsJson,
-      currentSegment,
-      currentSegmentIndex,
+      pastedSegments: pastedSegmentsRef.current,
+      waveSegmentsJson: waveSegmentsJsonRef.current,
+      currentSegment: currentSegmentRef.current,
+      currentSegmentIndex: currentSegmentIndexRef.current,
     };
     undoStackRef.current.push(snapshot);
     setUndoAvailable(undoStackRef.current.canUndo());
-  }, [
-    cloneTableData,
-    pastedSegments,
-    waveSegmentsJson,
-    currentSegment,
-    currentSegmentIndex,
-  ]);
+  }, [cloneTableData]);
 
   const setActiveRowHighlight = useCallback(
     (tableData: ICell[][], rowIndex: number) => {
