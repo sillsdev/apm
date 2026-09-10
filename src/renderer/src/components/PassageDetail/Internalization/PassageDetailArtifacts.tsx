@@ -1,4 +1,11 @@
-import { useState, useContext, useMemo, useRef, useEffect, useCallback } from 'react';
+import {
+  useState,
+  useContext,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
@@ -105,6 +112,8 @@ import { usePassageRef } from './usePassageRef';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
+import { buildResourcePendingRestore } from './buildResourcePendingRestore';
+import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 
 const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -274,21 +283,36 @@ export function PassageDetailArtifacts() {
   }, [artifactTypes, offlineOnly]);
 
   const resourcePendingRestore = useCallback(() => {
-    if (isProjectResource()) return undefined;
+    if (resourceTypeRef.current === ResourceTypeEnum.projectResource) {
+      return buildResourcePendingRestore({
+        resourceType: ResourceTypeEnum.projectResource,
+        sectionId: section.id,
+        passageId: passage.id,
+        description: descriptionRef.current || null,
+        sequenceNum: 0,
+        ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
+      });
+    }
     const step = InternalizationStep();
     if (!step?.id) return undefined;
     pendingResourceSeqRef.current += 1;
-    return {
-      kind: 'sectionresource' as const,
+    return buildResourcePendingRestore({
+      resourceType: resourceTypeRef.current,
       sectionId: section.id,
+      passageId: passage.id,
       description: descriptionRef.current || null,
       sequenceNum: rowData.length + pendingResourceSeqRef.current,
       orgWorkflowStepId: step.id,
-      ...(isPassageResource() ? { passageId: passage.id } : {}),
       ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
-      ...(descriptionRef.current ? { topic: descriptionRef.current } : {}),
-    };
+    });
   }, [InternalizationStep, section.id, passage.id, rowData.length]);
+
+  useResumePendingProjectResourceConfig({
+    memory,
+    mediafiles,
+    setProjResSetup,
+    isAddingAudioResourceRef,
+  });
 
   const handlePlay = (id: string) => {
     if (id === playItem) {
@@ -411,8 +435,7 @@ export function PassageDetailArtifacts() {
       (r) => related(r, 'mediafile') === id
     ) as SectionResourceD;
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
-      | MediaFileD
-      | undefined;
+      MediaFileD | undefined;
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (mf && related(mf, 'artifactType') === projResourceType) {
@@ -726,8 +749,7 @@ export function PassageDetailArtifacts() {
     const results: number[] = [];
     sectionResources.forEach((sr) => {
       const rec = findRecord(memory, 'mediafile', related(sr, 'mediafile')) as
-        | MediaFileD
-        | undefined;
+        MediaFileD | undefined;
       if (rowData.find((r) => r.id === rec?.id)) {
         const passageId = rec?.attributes.resourcePassageId;
         if (passageId) results.push(passageId);
@@ -775,8 +797,7 @@ export function PassageDetailArtifacts() {
     const total = items.length;
     for (const i of items) {
       const rec = memory.cache.query((q) => q.findRecord(i)) as
-        | Passage
-        | Section;
+        Passage | Section;
       const secRec =
         rec?.type === 'section'
           ? (rec as Section)
