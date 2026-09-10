@@ -109,10 +109,6 @@ const MobileWorkflowSteps = () => {
       : '';
   }, [currentLabel, t, tool, showPromptAdmin, organizedBy]);
 
-  // Check if the dropdown has more than one option to pick from
-  const dropdownOptions = isStepProgression ? sectionPassages : workflow;
-  const hasMultipleOptions = dropdownOptions.length > 1;
-
   const passageRef = (p?: PassageD) =>
     [p?.attributes?.book, p?.attributes?.reference].filter(Boolean).join(' ');
 
@@ -164,6 +160,24 @@ const MobileWorkflowSteps = () => {
           navigateToPassage(p);
         },
       }));
+
+  // The step/passage data model for the dropdown menu
+  const menuOptions = isStepProgression
+    ? sectionPassages.map((p) => ({
+        id: p.id,
+        label: passageRef(p),
+        selected: p.id === passage?.id,
+        onSelect: () => navigateToPassage(p),
+      }))
+    : workflow.map((s) => ({
+        id: s.id,
+        label: getWfLabel(s.label),
+        selected: s.id === currentstep,
+        onSelect: handleSelect(s.id),
+      }));
+
+  // Check if the dropdown has more than one option to pick from
+  const hasMultipleOptions = menuOptions.length > 1;
 
   // Keep the current step/passage scrolled into view
   useEffect(() => {
@@ -308,41 +322,23 @@ const MobileWorkflowSteps = () => {
         open={Boolean(passageMenuAnchor)}
         onClose={() => setPassageMenuAnchor(null)}
       >
-        {isStepProgression
-          ? sectionPassages.map((p) => (
-              <MenuItem
-                key={p.id}
-                sx={{
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-                selected={p.id === passage?.id}
-                onClick={() => {
-                  navigateToPassage(p);
-                  setPassageMenuAnchor(null);
-                }}
-              >
-                {passageRef(p)}
-              </MenuItem>
-            ))
-          : workflow.map((step) => (
-              <MenuItem
-                key={step.id}
-                sx={{
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-                selected={step.id === currentstep}
-                onClick={() => {
-                  handleSelect(step.id)();
-                  setPassageMenuAnchor(null);
-                }}
-              >
-                {getWfLabel(step.label)}
-              </MenuItem>
-            ))}
+        {menuOptions.map((option) => (
+          <MenuItem
+            key={option.id}
+            sx={{
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            selected={option.selected}
+            onClick={() => {
+              option.onSelect();
+              setPassageMenuAnchor(null);
+            }}
+          >
+            {option.label}
+          </MenuItem>
+        ))}
       </Menu>
       <Dialog open={tipOpen} onClose={() => setTipOpen(false)}>
         <DialogTitle>{getWfLabel(currentLabel)}</DialogTitle>
