@@ -483,6 +483,14 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     [forceRefresh, currentIndex]
   );
 
+  const lwcPendingRestore = useCallback(
+    () =>
+      mediafileId
+        ? ({ kind: 'sourceMedia' as const, sourceMediaId: mediafileId })
+        : undefined,
+    [mediafileId]
+  );
+
   const handleClearRecording = useCallback(async () => {
     // Deleting the take retires the failed save with it, so the message and the
     // latch must both go (TT-7583).
@@ -652,6 +660,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
               return next;
             });
           }}
+          pendingRestore={lwcPendingRestore}
           setStatusText={() => {}}
           showRecorder={showRecorder}
         />

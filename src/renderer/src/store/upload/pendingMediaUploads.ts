@@ -40,6 +40,20 @@ export type PendingUploadRestore =
   | {
       kind: 'title';
       sectionId: string;
+    }
+  | {
+      kind: 'sectionresource';
+      sectionId: string;
+      description: string | null;
+      sequenceNum: number;
+      orgWorkflowStepId: string;
+      passageId?: string;
+      artifactCategoryId?: string;
+      topic?: string;
+    }
+  | {
+      kind: 'sourceMedia';
+      sourceMediaId: string;
     };
 
 export type PendingRestoreInput =
