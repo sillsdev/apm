@@ -1,6 +1,8 @@
 import {
   Box,
   ButtonBase,
+  CardActionArea,
+  cardActionAreaClasses,
   Dialog,
   DialogActions,
   DialogContent,
@@ -289,48 +291,51 @@ export default function MobileWorkflowSteps() {
                 ? 'custom.racetrackComplete'
                 : 'custom.racetrackIncomplete';
             const textColor = step.isCurrent ? 'common.white' : 'common.black';
+            const blocked = recording || commentRecording;
             return (
-              <Box
+              <CardActionArea
                 key={step.id}
                 data-cy={step.dataCy}
                 ref={(el: HTMLElement | null) => {
                   if (el) stepRefs.current.set(step.id, el);
                   else stepRefs.current.delete(step.id);
                 }}
-                onClick={step.onClick}
+                disableRipple={blocked}
                 sx={{
                   flex: `0 0 ${stepWidth ?? 80}px`,
-                  minWidth: 0,
+                  minWidth: 150,
                   height: 30,
                   bgcolor: color,
+                  color: textColor,
                   clipPath:
                     'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
-                  cursor:
-                    recording || commentRecording ? 'not-allowed' : 'pointer',
+                  cursor: blocked ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   // Horizontal padding clears the slanted edges so the label
                   // isn't clipped by the parallelogram's angled corners
                   px: 2,
+                  // Suppress the hover highlight while steps can't be selected
+                  ...(blocked && {
+                    [`& .${cardActionAreaClasses.focusHighlight}`]: {
+                      display: 'none',
+                    },
+                  }),
                 }}
+                onClick={step.onClick}
               >
                 <Typography
-                  component="span"
+                  variant="body2"
                   noWrap
                   ref={(el: HTMLElement | null) => {
                     if (el) labelRefs.current.set(step.id, el);
                     else labelRefs.current.delete(step.id);
                   }}
-                  sx={{
-                    color: textColor,
-                    fontSize: '0.75rem',
-                    pointerEvents: 'none',
-                  }}
                 >
                   {step.label}
                 </Typography>
-              </Box>
+              </CardActionArea>
             );
           })}
         </Box>
