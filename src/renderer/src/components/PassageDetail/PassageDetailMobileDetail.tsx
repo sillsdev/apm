@@ -97,6 +97,8 @@ export default function PassageDetailMobileDetail({
         hideMobileHeader
           ? undefined
           : {
+              px: 1.5,
+              pb: 1.5,
               backgroundColor: 'custom.headerBackground',
               borderBottom: '1px solid',
               borderColor: 'divider',

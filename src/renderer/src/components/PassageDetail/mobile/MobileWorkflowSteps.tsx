@@ -1,42 +1,42 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import {
   Box,
-  ButtonBase,
+  CardActionArea,
+  cardActionAreaClasses,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Menu,
   MenuItem,
   Typography,
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import usePassageDetailContext from '../../../context/usePassageDetailContext';
-import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
-import { useSnackBar } from '../../../hoc/SnackBar';
-import { sharedSelector, workflowStepsSelector } from '../../../selector';
-import { shallowEqual, useSelector } from 'react-redux';
-import { useWfLabel } from '../../../utils/useWfLabel';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import InfoIcon from '@mui/icons-material/Info';
 import { IWorkflowStepsStrings, PassageD } from '../../../model';
-import { toCamel } from '../../../utils/toCamel';
+import { sharedSelector, workflowStepsSelector } from '../../../selector';
+import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
+import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import { useSnackBar } from '../../../hoc/SnackBar';
+import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { passagesForSection } from '../../../crud/passagesForSection';
-import { rememberCurrentPassage } from '../../../utils';
-import { usePassageNavigate } from '../usePassageNavigate';
-import { isPublishingTitle } from '../../../control/passageTypeFromRef';
 import {
   orgDefaultWorkflowProgression,
   useOrgDefaults,
   WorkflowProgression,
 } from '../../../crud/useOrgDefaults';
-import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
+import { Button, columnSx, spreadSx } from '../../../control';
+import { isPublishingTitle } from '../../../control/passageTypeFromRef';
+import { rememberCurrentPassage } from '../../../utils';
+import { toCamel } from '../../../utils/toCamel';
 import { useStepPermissions } from '../../../utils/useStepPermission';
-import { Button } from '../../../control/Button';
+import { useWfLabel } from '../../../utils/useWfLabel';
+import { usePassageNavigate } from '../usePassageNavigate';
 
-const DESKTOP_BREAKPOINT = '@media (min-width:1401px)';
-
-export default function MobileWorkflowSteps() {
+const MobileWorkflowSteps = () => {
   const {
     workflow,
     currentstep,
@@ -49,38 +49,38 @@ export default function MobileWorkflowSteps() {
     prjId,
     isNavigationBlocked,
   } = usePassageDetailContext();
-  const { tool } = useStepTool(currentstep);
-  const { userIsAdmin } = useRole();
-  const { canDoSectionStep, permissionsOn } = useStepPermissions();
-  const showPromptAdmin =
-    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
-  const { getOrganizedBy } = useOrganizedBy();
-  const [organizedBy] = useState(getOrganizedBy(true));
   const [memory] = useGlobal('memory');
+  const getGlobal = useGetGlobal();
+  const t: IWorkflowStepsStrings = useSelector(
+    workflowStepsSelector,
+    shallowEqual
+  );
+  const ts = useSelector(sharedSelector, shallowEqual);
+  const { showMessage } = useSnackBar();
+  const getWfLabel = useWfLabel();
   const passageNavigate = usePassageNavigate(
     () => {},
     setCurrentStep,
     isNavigationBlocked
   );
-  const getGlobal = useGetGlobal();
-  const { showMessage } = useSnackBar();
-  const ts = useSelector(sharedSelector, shallowEqual);
-  const getWfLabel = useWfLabel();
   const { getOrgDefault } = useOrgDefaults();
   const isStepProgression =
     getOrgDefault(orgDefaultWorkflowProgression) === WorkflowProgression.Step;
-  const t: IWorkflowStepsStrings = useSelector(
-    workflowStepsSelector,
-    shallowEqual
-  );
+  const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
+  const { tool } = useStepTool(currentstep);
+  const { userIsAdmin } = useRole();
+  const { canDoSectionStep, permissionsOn } = useStepPermissions();
+  const showPromptAdmin =
+    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
+
+  const [tipOpen, setTipOpen] = useState(false);
+  const [passageMenuAnchor, setPassageMenuAnchor] =
+    useState<HTMLElement | null>(null);
 
   // Refs used to scroll the current step/passage into view
   const didMountRef = useRef(false);
   const stepRefs = useRef(new Map<string, HTMLElement>());
-
-  // Refs to each parallelogram's label, used to size every parallelogram to the width of the longest one
-  const labelRefs = useRef(new Map<string, HTMLElement>());
-  const [stepWidth, setStepWidth] = useState<number | undefined>(undefined);
 
   // Ordered list of passages in the current section, excluding publishing-title rows, sorted by sequence number
   const sectionPassages = useMemo<PassageD[]>(() => {
@@ -90,10 +90,6 @@ export default function MobileWorkflowSteps() {
       )
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
   }, [section?.id, memory]);
-
-  const [tipOpen, setTipOpen] = useState(false);
-  const [passageMenuAnchor, setPassageMenuAnchor] =
-    useState<HTMLElement | null>(null);
 
   // The display label of the currently workflow step
   const currentLabel = useMemo(
@@ -121,10 +117,6 @@ export default function MobileWorkflowSteps() {
     rememberCurrentPassage(memory, remId);
     passageNavigate(`/detail/${prjId}/${remId}`);
   };
-
-  // Check if the dropdown has more than one option to pick from
-  const dropdownOptions = isStepProgression ? sectionPassages : workflow;
-  const hasMultipleOptions = dropdownOptions.length > 1;
 
   const handleSelect = (id: string) => () => {
     if (getGlobal('remoteBusy')) {
@@ -169,21 +161,23 @@ export default function MobileWorkflowSteps() {
         },
       }));
 
-  // The labels joined together, used to re-measure when any label changes (e.g. localization)
-  const labelKey = steps.map((s) => s.label).join(' ');
+  // The step/passage data model for the dropdown menu
+  const menuOptions = isStepProgression
+    ? sectionPassages.map((p) => ({
+        id: p.id,
+        label: passageRef(p),
+        selected: p.id === passage?.id,
+        onSelect: () => navigateToPassage(p),
+      }))
+    : workflow.map((s) => ({
+        id: s.id,
+        label: getWfLabel(s.label),
+        selected: s.id === currentstep,
+        onSelect: handleSelect(s.id),
+      }));
 
-  // Measure every label and size all parallelograms to the widest one so they are all of equal length
-  useLayoutEffect(() => {
-    let max = 0;
-    labelRefs.current.forEach((el) => {
-      max = Math.max(max, el.scrollWidth);
-    });
-    if (max > 0) {
-      // Add 12 px horizontal padding to each side of the label
-      // Cap the maximum width of the parallelograms at 120 px
-      setStepWidth(Math.min(Math.ceil(max) + 12, 120));
-    }
-  }, [labelKey]);
+  // Check if the dropdown has more than one option to pick from
+  const hasMultipleOptions = menuOptions.length > 1;
 
   // Keep the current step/passage scrolled into view
   useEffect(() => {
@@ -202,252 +196,152 @@ export default function MobileWorkflowSteps() {
     workflow.length,
     sectionPassages.length,
     isStepProgression,
-    stepWidth,
   ]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        py: 1,
-        px: 1.5,
-      }}
-      data-cy="workflow-steps"
-    >
-      {/* Top row with the passage dropdown and parallelograms */}
-      <Box
-        sx={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-        }}
-      >
-        {/* Passage dropdown */}
-        {hasMultipleOptions && (
-          <Box
-            sx={{
-              flexShrink: 0,
-              position: 'relative',
-              zIndex: 1,
-              mr: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <Button
-              startIcon={
-                !isStepProgression && currentTip ? (
-                  <InfoIcon
-                    sx={{ color: 'primary.light' }}
-                    data-cy="workflow-step-tip"
-                    aria-label={currentTip}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTipOpen(true);
-                    }}
-                  />
-                ) : undefined
-              }
-              endIcon={<ArrowDropDownIcon />}
-              sx={{
-                minWidth: 'auto',
-                // These per-breakpoint widths are fine-tuned to constrain the dropdown so
-                // its label truncates before it can overlap the parallelograms
-                maxWidth: { xs: '45vw', md: '20vw', lg: '25vw' },
-              }}
-              onClick={(e) => {
-                if (!hasMultipleOptions) return;
-                if (recording || commentRecording) return;
-                if (getGlobal('remoteBusy')) {
-                  showMessage(ts.wait);
-                  return;
+    <>
+      <Box sx={[columnSx, { alignItems: 'center' }]}>
+        {/* Dropdown button and racetrack */}
+        <Box sx={[spreadSx, { alignItems: 'center' }]}>
+          {/* Dropdown button */}
+          <Box sx={{ flex: 1, maxWidth: '40%' }}>
+            {hasMultipleOptions && (
+              <Button
+                data-cy="passage-dropdown"
+                sx={{ maxWidth: '100%' }}
+                startIcon={
+                  !isStepProgression && currentTip ? (
+                    <InfoIcon
+                      data-cy="workflow-step-tip"
+                      aria-label={currentTip}
+                      sx={{ color: 'primary.light' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTipOpen(true);
+                      }}
+                    />
+                  ) : undefined
                 }
-                setPassageMenuAnchor(e.currentTarget);
-              }}
-              data-cy="passage-dropdown"
-            >
-              {isStepProgression
-                ? passageRef(passage)
-                : getWfLabel(currentLabel)}
-            </Button>
-            <Menu
-              anchorEl={passageMenuAnchor}
-              open={Boolean(passageMenuAnchor)}
-              onClose={() => setPassageMenuAnchor(null)}
-            >
-              {isStepProgression
-                ? sectionPassages.map((p) => (
-                    <MenuItem
-                      key={p.id}
-                      selected={p.id === passage?.id}
-                      onClick={() => {
-                        navigateToPassage(p);
-                        setPassageMenuAnchor(null);
-                      }}
-                      sx={{
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {passageRef(p)}
-                    </MenuItem>
-                  ))
-                : workflow.map((step) => (
-                    <MenuItem
-                      key={step.id}
-                      selected={step.id === currentstep}
-                      onClick={() => {
-                        handleSelect(step.id)();
-                        setPassageMenuAnchor(null);
-                      }}
-                      sx={{
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {getWfLabel(step.label)}
-                    </MenuItem>
-                  ))}
-            </Menu>
-          </Box>
-        )}
-
-        {/* Step/passage parallelograms */}
-        <Box
-          sx={{
-            overflowX: 'auto',
-            display: 'flex',
-            flex: 1,
-            [DESKTOP_BREAKPOINT]: {
-              flex: 'none',
-              position: 'absolute',
-              left: 0,
-              right: 0,
-            },
-            '&::before, &::after': {
-              content: '""',
-              margin: 'auto',
-            },
-          }}
-        >
-          {steps.map((step) => {
-            const color = step.isCurrent
-              ? 'custom.racetrackCurrent'
-              : step.isComplete
-                ? 'custom.racetrackComplete'
-                : 'custom.racetrackIncomplete';
-            const textColor = step.isCurrent ? 'common.white' : 'common.black';
-            return (
-              <Box
-                key={step.id}
-                data-cy={step.dataCy}
-                ref={(el: HTMLElement | null) => {
-                  if (el) stepRefs.current.set(step.id, el);
-                  else stepRefs.current.delete(step.id);
-                }}
-                onClick={step.onClick}
-                sx={{
-                  flex: stepWidth ? `0 0 ${stepWidth}px` : '0 0 80px',
-                  minWidth: 0,
-                  height: 30,
-                  bgcolor: color,
-                  mr: -0.25,
-                  clipPath:
-                    'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
-                  cursor:
-                    recording || commentRecording ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  // Horizontal padding clears the slanted edges so the label
-                  // isn't clipped by the parallelogram's angled corners
-                  px: 2,
+                endIcon={<ArrowDropDownIcon />}
+                onClick={(e) => {
+                  if (!hasMultipleOptions) return;
+                  if (recording || commentRecording) return;
+                  if (getGlobal('remoteBusy')) {
+                    showMessage(ts.wait);
+                    return;
+                  }
+                  setPassageMenuAnchor(e.currentTarget);
                 }}
               >
-                <Typography
-                  component="span"
+                {isStepProgression
+                  ? passageRef(passage)
+                  : getWfLabel(currentLabel)}
+              </Button>
+            )}
+          </Box>
+          {/* Racetrack parallelograms */}
+          <Box sx={{ display: 'flex', overflowX: 'auto' }}>
+            {steps.map((step) => {
+              const color = step.isCurrent
+                ? 'custom.racetrackCurrent'
+                : step.isComplete
+                  ? 'custom.racetrackComplete'
+                  : 'custom.racetrackIncomplete';
+              const textColor = step.isCurrent
+                ? 'common.white'
+                : 'common.black';
+              const blocked = recording || commentRecording;
+              return (
+                <CardActionArea
+                  key={step.id}
+                  data-cy={step.dataCy}
                   ref={(el: HTMLElement | null) => {
-                    if (el) labelRefs.current.set(step.id, el);
-                    else labelRefs.current.delete(step.id);
+                    if (el) stepRefs.current.set(step.id, el);
+                    else stepRefs.current.delete(step.id);
                   }}
+                  disableRipple={blocked}
+                  aria-disabled={blocked}
                   sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 150,
+                    height: 30,
+                    // Horizontal padding clears the slanted edges so the label
+                    // isn't clipped by the parallelogram's angled corners
+                    px: 2.5,
+                    bgcolor: color,
                     color: textColor,
-                    fontSize: '0.75rem',
-                    lineHeight: 1,
-                    textAlign: 'center',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    pointerEvents: 'none',
+                    clipPath:
+                      'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
+                    cursor: blocked ? 'not-allowed' : 'pointer',
+                    // Suppress the hover highlight while steps can't be selected
+                    ...(blocked && {
+                      [`& .${cardActionAreaClasses.focusHighlight}`]: {
+                        display: 'none',
+                      },
+                    }),
                   }}
+                  onClick={step.onClick}
                 >
-                  {step.label}
-                </Typography>
-              </Box>
-            );
-          })}
+                  <Typography variant="body2" noWrap>
+                    {step.label}
+                  </Typography>
+                </CardActionArea>
+              );
+            })}
+          </Box>
+          {/* Spacer to push the racetrack to the center */}
+          <Box sx={{ flex: 1, maxWidth: '40%' }} />
         </Box>
-
-        {/* Spacer to center the parallelograms in the top row on desktop screens */}
-        <Box
-          sx={{
-            height: 30,
-            flex: 1,
-            display: 'none',
-            [DESKTOP_BREAKPOINT]: { display: 'block' },
-          }}
-        />
-      </Box>
-
-      {/* Bottom row with label and tip button */}
-      <Typography
-        component="div"
-        sx={{
-          mt: 1,
-          maxWidth: '80vw',
-          display: 'flex',
-          alignItems: 'center',
-          minWidth: 0,
-        }}
-        data-cy="workflow-step-label"
-      >
         {/* Label */}
         <Box
-          component="span"
+          data-cy="workflow-step-label"
           sx={{
-            minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            maxWidth: '70%',
           }}
         >
-          {isStepProgression ? getWfLabel(currentLabel) : passageRef(passage)}
+          <Typography noWrap>
+            {isStepProgression ? getWfLabel(currentLabel) : passageRef(passage)}
+          </Typography>
+          {isStepProgression && currentTip && (
+            <IconButton
+              data-cy="workflow-step-tip"
+              aria-label={currentTip}
+              sx={{ p: 0.5 }}
+              onClick={() => setTipOpen(true)}
+            >
+              <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
+            </IconButton>
+          )}
         </Box>
-
-        {/* Tip button */}
-        {isStepProgression && currentTip && (
-          <ButtonBase
-            onClick={() => setTipOpen(true)}
-            data-cy="workflow-step-tip"
-            centerRipple
-            sx={{ borderRadius: '50%', p: 0.5, ml: 0.5, flexShrink: 0 }}
-            aria-label={currentTip}
+      </Box>
+      <Menu
+        anchorEl={passageMenuAnchor}
+        open={Boolean(passageMenuAnchor)}
+        onClose={() => setPassageMenuAnchor(null)}
+      >
+        {menuOptions.map((option) => (
+          <MenuItem
+            key={option.id}
+            sx={{
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            selected={option.selected}
+            onClick={() => {
+              option.onSelect();
+              setPassageMenuAnchor(null);
+            }}
           >
-            <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
-          </ButtonBase>
-        )}
-      </Typography>
-
-      {/* Tip dialog */}
+            {option.label}
+          </MenuItem>
+        ))}
+      </Menu>
       <Dialog open={tipOpen} onClose={() => setTipOpen(false)}>
         <DialogTitle>{getWfLabel(currentLabel)}</DialogTitle>
         <DialogContent>{currentTip}</DialogContent>
@@ -455,6 +349,8 @@ export default function MobileWorkflowSteps() {
           <Button onClick={() => setTipOpen(false)}>{ts.close}</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
-}
+};
+
+export default MobileWorkflowSteps;
