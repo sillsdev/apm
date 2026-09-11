@@ -1,4 +1,5 @@
 import React from 'react';
+import { describe, beforeEach, it, expect, jest } from '@jest/globals';
 import { fireEvent, render } from '@testing-library/react';
 import { ArtifactCategoryType, IArtifactCategory } from '../../crud';
 import CategoryEdit from './CategoryEdit';
@@ -20,7 +21,7 @@ jest.mock('../../crud', () => ({
   ArtifactCategoryType: { Note: 'note', Resource: 'resource' },
   remoteIdNum: () => 1,
   useArtifactCategory: () => ({
-    isDuplicateCategory: jest.fn().mockResolvedValue(false),
+    isDuplicateCategory: jest.fn(async () => false),
     localizedArtifactCategory: (c: string) => c,
     defaultMediaName: () => 'file',
   }),
@@ -142,7 +143,7 @@ describe('CategoryEdit graphic', () => {
     const btn = document.getElementById(
       `cat-graphic-${category.id}`
     ) as HTMLButtonElement;
-    expect(btn).toBeDisabled();
+    expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
     expect(mockOpen).not.toHaveBeenCalled();
   });
