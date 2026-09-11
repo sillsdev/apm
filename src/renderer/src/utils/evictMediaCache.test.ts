@@ -39,8 +39,7 @@ describe('evictMediaCache', () => {
 
   it('deletes the cached local file when it exists', async () => {
     const { mod, api } = load({ existsImpl: async () => true });
-    const url =
-      'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+    const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
     await mod.evictMediaCache(url);
 
@@ -51,8 +50,7 @@ describe('evictMediaCache', () => {
 
   it('does not delete when the cached file does not exist', async () => {
     const { mod, api } = load({ existsImpl: async () => false });
-    const url =
-      'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+    const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
     await mod.evictMediaCache(url);
 
@@ -61,8 +59,7 @@ describe('evictMediaCache', () => {
 
   it('does nothing when not running under Electron', async () => {
     const { mod, api } = load({ existsImpl: async () => true }, false);
-    const url =
-      'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+    const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
     await mod.evictMediaCache(url);
 
