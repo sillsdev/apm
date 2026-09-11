@@ -102,17 +102,18 @@ export default function PassageDetailMobileFooter() {
 
   const nextPassRec = isStepProgression
     ? undefined
-    : nextPassageRecord(section, passage.id, memory);
+    : nextPassageRecord(section, passage.id, memory, false);
   const prevPassRec = isStepProgression
     ? undefined
-    : prevPassageRecord(section, passage.id, memory);
+    : prevPassageRecord(section, passage.id, memory, false);
 
-  const prevNavEnabled = isStepProgression
+  const hasPrev = isStepProgression
     ? Boolean(prevStepRec)
     : Boolean(prevPassRec);
-  let nextNavEnabled = isStepProgression
+  const hasNext = isStepProgression
     ? Boolean(nextStepRec)
     : Boolean(nextPassRec);
+  let nextNavEnabled = hasNext;
   if (tool === ToolSlug.Prompt && isStepProgression && !showPromptAdmin) {
     nextNavEnabled = nextNavEnabled && hasPrompt;
   }
@@ -152,6 +153,8 @@ export default function PassageDetailMobileFooter() {
     maxWidth: 'clamp(110px, 30vw, 190px)',
   } as const;
 
+  // Hidden rather than unmounted at the ends so the step-complete control
+  // stays centered and the footer keeps its height.
   return (
     <Box
       sx={{
@@ -165,10 +168,11 @@ export default function PassageDetailMobileFooter() {
       <Button
         sx={{
           ...navButtonSx,
+          visibility: hasPrev ? 'visible' : 'hidden',
         }}
         variant="outlined"
         startIcon={<ChevronLeftIcon />}
-        disabled={!prevNavEnabled}
+        disabled={!hasPrev}
         onClick={() => handleNavigate(false)}
       >
         <NavButtonLabel
@@ -181,6 +185,7 @@ export default function PassageDetailMobileFooter() {
       <Button
         sx={{
           ...navButtonSx,
+          visibility: hasNext ? 'visible' : 'hidden',
         }}
         variant="outlined"
         endIcon={<ChevronRightIcon />}

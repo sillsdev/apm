@@ -129,6 +129,9 @@ const createPassage = (
       sequencenum,
       reference: `${sequencenum}:${sequencenum}`,
     },
+    relationships: {
+      section: { data: { type: 'section', id: 'section-1' } },
+    },
     keys: remoteId ? { remoteId } : undefined,
   }) as PassageD;
 
@@ -168,20 +171,21 @@ const mountFooter = ({
   passages,
   currentPassageId,
   prjId = 'project-1',
-  sectionPassages,
   workflowProgression,
   passageDetailOverrides,
   orgRole = RoleNames.Admin,
   permissions = true,
+  offlineSection = false,
 }: {
   passages: PassageD[];
   currentPassageId: string;
   prjId?: string;
-  sectionPassages?: { type: string; id: string }[];
   workflowProgression?: 'step';
   passageDetailOverrides?: Partial<PassageDetailState>;
   orgRole?: RoleNames;
   permissions?: boolean;
+  /** Omit the section's passages relationship, as offline records can. */
+  offlineSection?: boolean;
 }) => {
   const currentPassage = passages.find((p) => p.id === currentPassageId);
   const setCurrentStep = cy.stub().as('setCurrentStep');
@@ -198,8 +202,7 @@ const mountFooter = ({
     },
   };
   const overrideSteps = passageDetailOverrides?.orgWorkflowSteps as
-    | PassageDetailState['orgWorkflowSteps']
-    | undefined;
+    PassageDetailState['orgWorkflowSteps'] | undefined;
   const orgworkflowstep =
     overrideSteps && overrideSteps.length > 0
       ? overrideSteps.map((s) => ({
@@ -243,13 +246,13 @@ const mountFooter = ({
   const section: SectionD = {
     id: 'section-1',
     type: 'section',
-    relationships: {
-      passages: {
-        data:
-          sectionPassages ??
-          passages.map((p) => ({ type: 'passage', id: p.id })),
-      },
-    },
+    relationships: offlineSection
+      ? {}
+      : {
+          passages: {
+            data: passages.map((p) => ({ type: 'passage', id: p.id })),
+          },
+        },
   } as SectionD;
   const ctxState = createPassageDetailState({
     section,
@@ -315,17 +318,55 @@ describe('PassageDetailMobileFooter', () => {
     cy.get('#mobile-complete').should('exist');
   });
 
-  it('disables navigation buttons when no neighbors exist', () => {
+  it('hides navigation buttons in a single-passage section', () => {
     const passages = [createPassage('passage-1', 1, 'remote-1')];
+
+    mountFooter({ passages, currentPassageId: 'passage-1' });
+
+    cy.contains('Previous').closest('button').should('not.be.visible');
+    cy.contains('Next').closest('button').should('not.be.visible');
+    cy.get('#mobile-complete').should('be.visible');
+  });
+
+  it('hides previous on the first passage', () => {
+    const passages = [
+      createPassage('passage-1', 1, 'remote-1'),
+      createPassage('passage-2', 2, 'remote-2'),
+    ];
+
+    mountFooter({ passages, currentPassageId: 'passage-1' });
+
+    cy.contains('button', 'Previous').should('not.be.visible');
+    cy.contains('button', 'Next').should('be.visible');
+  });
+
+  it('hides next on the last passage', () => {
+    const passages = [
+      createPassage('passage-1', 1, 'remote-1'),
+      createPassage('passage-2', 2, 'remote-2'),
+    ];
+
+    mountFooter({ passages, currentPassageId: 'passage-2' });
+
+    cy.contains('button', 'Previous').should('be.visible');
+    cy.contains('button', 'Next').should('not.be.visible');
+  });
+
+  it('finds neighbors when the section has no passages relationship', () => {
+    const passages = [
+      createPassage('passage-1', 1, 'remote-1'),
+      createPassage('passage-2', 2, 'remote-2'),
+      createPassage('passage-3', 3, 'remote-3'),
+    ];
 
     mountFooter({
       passages,
-      currentPassageId: 'passage-1',
-      sectionPassages: [],
+      currentPassageId: 'passage-2',
+      offlineSection: true,
     });
 
-    cy.contains('Previous').closest('button').should('be.disabled');
-    cy.contains('Next').closest('button').should('be.disabled');
+    cy.contains('button', 'Previous').should('be.visible');
+    cy.contains('button', 'Next').should('be.visible');
   });
 
   it('navigates to the next passage and stores the passage id', () => {
@@ -383,11 +424,42 @@ describe('PassageDetailMobileFooter', () => {
       },
     });
 
-    cy.contains('button', 'Previous').closest('button').should('be.disabled');
+    cy.contains('button', 'Previous').should('not.be.visible');
     cy.contains('button', 'Next').should('be.visible');
     cy.get('span[title="Record"]').should('exist');
     cy.contains('button', 'Next').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
+  });
+
+  it('in step progression mode hides next on the last step', () => {
+    const passages = [createPassage('passage-1', 1, 'remote-1')];
+    const orgWorkflowSteps = [
+      {
+        id: 'step-1',
+        type: 'orgworkflowstep' as const,
+        attributes: { name: 'Discuss', tool: '{}', sequencenum: 1 },
+      },
+      {
+        id: 'step-2',
+        type: 'orgworkflowstep' as const,
+        attributes: { name: 'Record', tool: '{}', sequencenum: 2 },
+      },
+    ];
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      workflowProgression: 'step',
+      passageDetailOverrides: {
+        currentstep: 'step-2',
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+      },
+    });
+
+    cy.contains('button', 'Previous').should('be.visible');
+    cy.contains('button', 'Next').should('not.be.visible');
+    cy.get('span[title="Discuss"]').should('exist');
   });
 
   it('in BOLD workflow uses step progression and hides step complete', () => {
@@ -499,5 +571,47 @@ describe('PassageDetailMobileFooter', () => {
     cy.get('span[title="Record"]').should('exist');
     cy.contains('button', 'Next').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-record');
+  });
+
+  it('on Prompt step without a prompt keeps next visible but disabled', () => {
+    const passages = [createPassage('passage-1', 1, 'remote-1')];
+    const orgWorkflowSteps = [
+      {
+        id: 'step-prompt',
+        type: 'orgworkflowstep' as const,
+        attributes: {
+          name: 'Prompt',
+          tool: '{"tool":"prompt"}',
+          sequencenum: 1,
+          process: 'bold',
+        },
+      },
+      {
+        id: 'step-record',
+        type: 'orgworkflowstep' as const,
+        attributes: {
+          name: 'Record',
+          tool: '{"tool":"record"}',
+          sequencenum: 2,
+          process: 'bold',
+        },
+      },
+    ];
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      orgRole: RoleNames.Member,
+      permissions: false,
+      passageDetailOverrides: {
+        isBoldWorkflow: true,
+        currentstep: 'step-prompt',
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+        rowData: [],
+      },
+    });
+
+    cy.contains('button', 'Next').should('be.visible').and('be.disabled');
   });
 });

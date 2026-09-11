@@ -1,29 +1,25 @@
 import Memory from '@orbit/memory';
-import { RecordIdentity } from '@orbit/records';
-import { prevPasId } from './prevPasId';
-import { related } from './related';
-import { findRecord } from './tryFindRecord';
+import { prevPasId, prevPassageRecord } from './prevPasId';
+import { passagesForSection } from './passagesForSection';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
 import { PassageD, Section } from '../model';
 
-jest.mock('./related', () => ({
-  related: jest.fn(),
-}));
-jest.mock('./tryFindRecord', () => ({
-  findRecord: jest.fn(),
+jest.mock('./passagesForSection', () => ({
+  passagesForSection: jest.fn(),
 }));
 jest.mock('../control/passageTypeFromRef', () => ({
   isPublishingTitle: jest.fn(),
 }));
 
-const mockRelated = related as jest.MockedFunction<typeof related>;
-const mockFindRecord = findRecord as jest.MockedFunction<typeof findRecord>;
+const mockPassagesForSection = passagesForSection as jest.MockedFunction<
+  typeof passagesForSection
+>;
 const mockIsPublishingTitle = isPublishingTitle as jest.MockedFunction<
   typeof isPublishingTitle
 >;
 
 const memory = {} as Memory;
-const section = {} as Section;
+const section = { id: 'section-1' } as Section;
 
 const makePassage = (
   id: string,
@@ -42,17 +38,7 @@ const makePassage = (
   }) as PassageD;
 
 const setPassages = (passages: PassageD[]) => {
-  mockRelated.mockReturnValue(
-    passages.map(
-      (p) =>
-        ({
-          id: p.id,
-          type: 'passage',
-        }) as RecordIdentity
-    )
-  );
-  const byId = new Map(passages.map((p) => [p.id, p]));
-  mockFindRecord.mockImplementation((_mem, _type, id) => byId.get(id));
+  mockPassagesForSection.mockReturnValue(passages);
 };
 
 describe('prevPasId', () => {
@@ -61,9 +47,15 @@ describe('prevPasId', () => {
     mockIsPublishingTitle.mockReturnValue(false);
   });
 
-  test('returns empty string when related passages are missing', () => {
-    mockRelated.mockReturnValue(undefined as unknown as RecordIdentity[]);
+  test('returns empty string when the section has no passages', () => {
+    setPassages([]);
     expect(prevPasId(section, 'p1', memory)).toBe('');
+  });
+
+  test('looks up passages by section id so it works offline', () => {
+    setPassages([makePassage('p1', 1, 'ref-1'), makePassage('p2', 2, 'ref-2')]);
+    expect(prevPasId(section, 'p2', memory)).toBe('p1');
+    expect(mockPassagesForSection).toHaveBeenCalledWith(memory, 'section-1');
   });
 
   test('returns empty string when current passage not found', () => {
@@ -102,5 +94,11 @@ describe('prevPasId', () => {
       makePassage('p3', 3, 'ref-3', 'remote-3'),
     ]);
     expect(prevPasId(section, 'p1', memory)).toBe('remote-3');
+  });
+
+  test('does not wrap when wrap is false', () => {
+    setPassages([makePassage('p1', 1, 'ref-1'), makePassage('p2', 2, 'ref-2')]);
+    expect(prevPassageRecord(section, 'p1', memory, false)).toBeUndefined();
+    expect(prevPassageRecord(section, 'p2', memory, false)?.id).toBe('p1');
   });
 });
