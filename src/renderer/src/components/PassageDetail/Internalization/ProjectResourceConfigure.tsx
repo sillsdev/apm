@@ -18,6 +18,7 @@ import {
   debounce,
   styled,
 } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
 import DataSheet from 'react-datasheet';
 import 'react-datasheet/lib/react-datasheet.css';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
@@ -61,8 +62,29 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
 
 const StyledTable = styled('div')(({ theme }) => ({
   padding: theme.spacing(2),
+  // Let the sheet span the full dialog width; the Description column (no fixed
+  // width) absorbs the extra space.
+  '& .data-grid': {
+    width: '100%',
+  },
   '& .data-grid .cell': {
     height: '48px',
+  },
+  // Alternating striped rows, matching the way KeyTermTable stripes its rows
+  // (theme.palette.action.hover on every other row). react-datasheet tints
+  // read-only cells with their own grey background, so first clear that on the
+  // body rows to let each row stripe uniformly ('&&' doubles specificity to win
+  // over the library CSS).
+  '&& .data-grid tr:not(:first-of-type) td.cell': {
+    backgroundColor: 'transparent',
+  },
+  '&& .data-grid tr:nth-of-type(even) td.cell': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  // react-datasheet dims read-only cells to grey text; keep every cell (the
+  // header row and the read-only Reference column) at the normal text color.
+  '&& .data-grid td.cell.read-only': {
+    color: theme.palette.text.primary,
   },
   '& .cTitle': {
     fontWeight: 'bold',
@@ -154,7 +176,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const { showMessage } = useSnackBar();
 
   const readOnlys = [false, true, false];
-  const widths = [150, 200, 300];
+  // Description has no fixed width so it stretches to fill the full-width sheet.
+  const widths = [150, 200, undefined];
   const cClass = ['lim', 'ref', 'des'];
 
   enum ColName {
@@ -562,33 +585,42 @@ export const ProjectResourceConfigure = (props: IProps) => {
       />
       <StyledPaper id="proj-res-sheet" style={heightStyle}>
         <StyledTable id="proj-res-sheet">
-          <Stack direction="row" spacing={1} data-testid="proj-res-sheet">
+          <Box data-testid="proj-res-sheet">
             <DataSheet
               data={data}
               valueRenderer={handleValueRenderer}
               onCellsChanged={handleCellsChanged}
               parsePaste={handleParsePaste}
             />
+          </Box>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ mt: 2 }}
+          >
+            <TextField
+              label={t.suffix}
+              variant="outlined"
+              value={suffix}
+              onChange={handleSuffix}
+            />
             <LightTooltip title={t.suffixTip}>
-              <TextField
-                label={t.suffix}
-                variant="outlined"
-                value={suffix}
-                onChange={handleSuffix}
-              />
+              <InfoIcon color="info" fontSize="small" />
             </LightTooltip>
           </Stack>
         </StyledTable>
       </StyledPaper>
       <ActionRow>
+        <Button
+          id="copy-configure"
+          sx={{ mr: 'auto' }}
+          disabled={numSegments === 0}
+          onClick={handleCopy}
+        >
+          {ts.clipboardCopy}
+        </Button>
         <Box sx={rowSx}>
-          <Button
-            id="copy-configure"
-            disabled={numSegments === 0}
-            onClick={handleCopy}
-          >
-            {ts.clipboardCopy}
-          </Button>
           <Button
             id="res-create"
             color="primary"
