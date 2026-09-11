@@ -34,9 +34,9 @@ import {
 import { useSnackBar } from '../../hoc/SnackBar';
 import { NewArtifactCategory } from '../Sheet/NewArtifactCategory';
 import { useBibleMedia } from '../../crud/useBibleMedia';
-import CategoryEdit from './CategoryEdit';
+import CategoryEdit, { CategoryEditHandle } from './CategoryEdit';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface IProps {
   type: ArtifactCategoryType;
@@ -50,6 +50,8 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
   const [categories, setCategories] = useState<IArtifactCategory[]>([]);
   const [orgCategories, setOrgCategories] = useState<IArtifactCategory[]>([]);
   const [edited, setEdited] = useState<[string, IArtifactCategory][]>([]);
+  const [editingId, setEditingId] = useState('');
+  const [draft, setDraft] = useState<IArtifactCategory | null>(null);
   const [canSave, setCanSave] = useState(false);
   const [deleted, setDeleted] = useState<string[]>([]);
   const [builtIn, setBuiltIn] = useState<IArtifactCategory[]>([]);
@@ -59,6 +61,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
   const [mediaplan, setMediaplan] = useState('');
   const { getBibleMediaPlan } = useBibleMedia();
   const [recording, setRecording] = useState('');
+  const categoryEditRef = useRef<CategoryEditHandle>(null);
   const media = useOrbitData('mediafile') as MediaFileD[];
   const discussions = useOrbitData('discussion') as Discussion[];
   const sharedResources = useOrbitData('sharedresource') as SharedResource[];
@@ -90,17 +93,58 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
     return value ? value[1] : 0;
   };
 
-  //without useCallback edited was always empty
-  //even after useCallback edited was always one behind the ref value.
-  //so I took it back out and just used the ref
-  const handleChange = (c: IArtifactCategory) => {
-    const editMap = new Map(edited);
-    editMap.set(c.id, { ...c });
-    setEdited(Array.from(editMap));
-    setCanSave(!hasDuplicates());
+  const stagedCategory = (c: IArtifactCategory) =>
+    edited.find((e) => e[0] === c.id)?.[1] ?? c;
+
+  const hasDuplicates = (pending?: [string, IArtifactCategory][]) => {
+    const editMap = new Map(pending ?? edited);
+    deleted.forEach((id) => editMap.delete(id));
+    const unedited = orgCategories.filter(
+      (c) => !editMap.has(c.id) && !deleted.includes(c.id)
+    );
+    const recs = unedited.concat(Array.from(editMap.values()));
+    const items = new Set<string>(recs.map((r) => r.category));
+    return items.size < recs.length;
+  };
+
+  const handleStartEdit = (c: IArtifactCategory) => {
+    if (editingId !== '') return;
+    setDraft({ ...stagedCategory(c) });
+    setEditingId(c.id);
+  };
+
+  const handleDraftChange = (c: IArtifactCategory) => {
+    setDraft({ ...c });
+  };
+
+  const handleApply = async () => {
+    if (!draft || editingId === '') return;
+    const next: [string, IArtifactCategory][] = Array.from(
+      new Map(edited).set(editingId, { ...draft })
+    );
+    if (hasDuplicates(next)) {
+      showMessage(tc.duplicate);
+      return;
+    }
+    await categoryEditRef.current?.flushPendingGraphic();
+    setEdited(next);
+    setCanSave(true);
+    setEditingId('');
+    setDraft(null);
+  };
+
+  const handleCancelEdit = () => {
+    categoryEditRef.current?.discardPendingGraphic();
+    setEditingId('');
+    setDraft(null);
   };
 
   const handleDelete = (c: IArtifactCategory) => async () => {
+    if (editingId === c.id) {
+      categoryEditRef.current?.discardPendingGraphic();
+      setEditingId('');
+      setDraft(null);
+    }
     setDeleted((deleted) => deleted.concat(c.id));
     setCanSave(!hasDuplicates());
   };
@@ -112,14 +156,6 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, refresh]);
 
-  const hasDuplicates = () => {
-    const editMap = new Map(edited);
-    const unedited = orgCategories.filter((c) => !editMap.has(c.id));
-    const recs = unedited.concat(edited.map((e) => e[1]));
-    const items = new Set<string>(recs.map((r) => r.category));
-    return items.size < recs.length;
-  };
-
   const handleClose = () => onClose && onClose();
 
   const handleSave = async () => {
@@ -127,7 +163,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
     deleted.forEach((d) => {
       editMap.delete(d);
     });
-    const recs = edited.map((e) => e[1]);
+    const recs = Array.from(editMap.values());
     if (hasDuplicates()) {
       showMessage(tc.duplicate);
       return;
@@ -204,49 +240,97 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
       setRecording('');
     }
   };
+
+  const rowDisabled = (c: IArtifactCategory) => {
+    if (recording !== '' && c.id !== recording) return true;
+    return editingId !== c.id;
+  };
+
   return (
     <>
       <NewArtifactCategory type={type} onAdded={categoryAdded} />
       <List dense={true}>
         {categories
           .filter((c) => !deleted.includes(c.id))
-          .map((c) => (
-            <ListItem
-              key={c.slug}
-              secondaryAction={
-                <IconButton
-                  edge="end"
-                  aria-label="delete"
-                  onClick={handleDelete(c)}
-                  disabled={displayCount(c) > 0 || c.specialuse !== ''}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              }
-            >
-              <CategoryEdit
-                label={''}
-                onChanged={handleChange}
-                onDeleted={handleDelete}
-                onRecording={onRecording(c)}
-                mediaplan={mediaplan}
-                teamId={teamId}
-                disabled={recording !== '' && c.id !== recording}
-                type={type}
-                category={edited.find((e) => e[0] === c.id)?.[1] ?? c}
-              />
-            </ListItem>
-          ))}
+          .map((c) => {
+            const isEditing = editingId === c.id;
+            return (
+              <ListItem
+                key={c.slug}
+                secondaryAction={
+                  <IconButton
+                    id={`cat-delete-${c.id}`}
+                    edge="end"
+                    aria-label="delete"
+                    onClick={handleDelete(c)}
+                    disabled={
+                      displayCount(c) > 0 ||
+                      c.specialuse !== '' ||
+                      editingId !== ''
+                    }
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                }
+              >
+                <CategoryEdit
+                  ref={isEditing ? categoryEditRef : undefined}
+                  label={''}
+                  onChanged={handleDraftChange}
+                  onDeleted={handleDelete}
+                  onRecording={onRecording(c)}
+                  mediaplan={mediaplan}
+                  teamId={teamId}
+                  disabled={rowDisabled(c)}
+                  type={type}
+                  category={isEditing && draft ? draft : stagedCategory(c)}
+                />
+                {isEditing ? (
+                  <Box sx={{ display: 'flex', gap: 1, ml: 1 }}>
+                    <Button
+                      id={`cat-cancel-edit-${c.id}`}
+                      onClick={handleCancelEdit}
+                    >
+                      {ts.cancel}
+                    </Button>
+                    <Button
+                      id={`cat-apply-${c.id}`}
+                      color="primary"
+                      onClick={() => {
+                        void handleApply();
+                      }}
+                      disabled={!draft || /^\s*$/.test(draft.category)}
+                    >
+                      {t.apply}
+                    </Button>
+                  </Box>
+                ) : (
+                  <Button
+                    id={`cat-edit-${c.id}`}
+                    onClick={() => handleStartEdit(c)}
+                    disabled={editingId !== ''}
+                    sx={{ ml: 1 }}
+                  >
+                    {t.edit}
+                  </Button>
+                )}
+              </ListItem>
+            );
+          })}
       </List>
       <ActionRow>
         <Box sx={rowSx}>
-          <Button id="catCancel" onClick={handleClose}>
+          <Button
+            id="catCancel"
+            onClick={handleClose}
+            disabled={editingId !== ''}
+          >
             {ts.cancel}
           </Button>
           <Button
             id="catSave"
             color="primary"
-            disabled={!canSave}
+            disabled={!canSave || editingId !== ''}
             onClick={handleSave}
           >
             {ts.save}
