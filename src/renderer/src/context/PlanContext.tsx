@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { ProjectD, DiscussionD, MediaFileD, GroupMembershipD } from '../model';
+import {
+  ProjectD,
+  DiscussionD,
+  MediaFileD,
+  GroupMembershipD,
+  Plan,
+  PlanType,
+} from '../model';
 import { findRecord, usePlanType } from '../crud';
 import {
   projDefSectionMap,
@@ -57,6 +64,10 @@ const PlanProvider = (props: IProps) => {
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const groupmemberships = useOrbitData<GroupMembershipD[]>('groupmembership');
   const projects = useOrbitData<ProjectD[]>('project');
+  // Re-read flat/scripture when plan or plantype records arrive (TT-7641).
+  // Depending only on plan id left scripture=false until a full remount.
+  const plans = useOrbitData<Plan[]>('plan');
+  const planTypes = useOrbitData<PlanType[]>('plantype');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
@@ -83,11 +94,16 @@ const PlanProvider = (props: IProps) => {
   const canEditSheet =
     canEditSheetPerm || (addStoryOrPassage && !structuralOffline);
   const canEditAudio = canEditSheetBase || addStoryOrPassage;
-  const [state, setState] = useState({
-    ...initState,
-    mediafiles,
-    discussions,
-    groupmemberships,
+  const [state, setState] = useState(() => {
+    const { scripture, flat } = getPlanType(plan);
+    return {
+      ...initState,
+      mediafiles,
+      discussions,
+      groupmemberships,
+      scripture,
+      flat,
+    };
   });
   // Keep sectionArr in React state so consumers see a stable reference between
   // real updates (getProjectDefault JSON-parses a new array every call).
@@ -133,10 +149,14 @@ const PlanProvider = (props: IProps) => {
 
   useEffect(() => {
     const { scripture, flat } = getPlanType(plan);
-    if (flat !== state.flat || scripture !== state.scripture)
-      setState((state) => ({ ...state, flat, scripture }));
+    setState((prev) =>
+      flat === prev.flat && scripture === prev.scripture
+        ? prev
+        : { ...prev, flat, scripture }
+    );
+    // plans/planTypes: re-run when Orbit has the plan or plantype (Book column).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan]);
+  }, [plan, plans, planTypes]);
 
   useEffect(() => {
     const projRec = findRecord(memory, 'project', project) as ProjectD;
