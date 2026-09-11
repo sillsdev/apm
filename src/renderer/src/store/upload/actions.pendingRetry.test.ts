@@ -42,7 +42,9 @@ jest.mock('../../utils', () => ({
 }));
 
 jest.mock('./uploadRetry', () => {
-  const actual = jest.requireActual('./uploadRetry');
+  const actual = jest.requireActual(
+    './uploadRetry'
+  ) as typeof import('./uploadRetry');
   return {
     ...actual,
     waitForImportExportIdle: jest.fn(async () => undefined),
@@ -273,6 +275,164 @@ describe('nextUpload pending clear on success (TT-7347)', () => {
     expect(appendPendingMediaUpload).toHaveBeenCalled();
     expect(removePendingMediaUpload).toHaveBeenCalledWith('staged-success-1');
     expect(removeMatchingPendingUploads).toHaveBeenCalled();
+  });
+});
+
+describe('nextUpload pending clear after secondary restore (TT-7363)', () => {
+  let dispatch: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    dispatch = jest.fn();
+    mockedAxios.post.mockResolvedValue(vndResponse as never);
+
+    const xhrProto = XMLHttpRequest.prototype;
+    jest.spyOn(xhrProto, 'open').mockImplementation(function () {
+      return undefined;
+    });
+    jest.spyOn(xhrProto, 'send').mockImplementation(function (
+      this: XMLHttpRequest
+    ) {
+      Object.defineProperty(this, 'status', { value: 200, configurable: true });
+      if (this.onload) this.onload(new ProgressEvent('load'));
+    });
+    jest
+      .spyOn(xhrProto, 'setRequestHeader')
+      .mockImplementation(() => undefined);
+
+    appendPendingMediaUpload.mockImplementation((entry: unknown) => ({
+      id: 'staged-restore-1',
+      failedAt: '2026-01-01T00:00:00.000Z',
+      ...(entry as object),
+    }));
+    updatePendingMediaUpload.mockImplementation(
+      (id: string, patch: unknown) => ({
+        id,
+        failedAt: '2026-01-01T00:00:00.000Z',
+        localAbsolutePath: '/staged/test.mp3',
+        fileSize: 3,
+        uploadType: UploadType.Media,
+        record: baseRecord,
+        ...(patch as object),
+      })
+    );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  const flushPromises = async (times = 24) => {
+    for (let i = 0; i < times; i += 1) {
+      await Promise.resolve();
+    }
+  };
+
+  /**
+   * Devin / nabalone (PR #565): completeCB removed the pending row before the
+   * success cb finished secondary Orbit restore. A restore failure then left
+   * no retry entry. Clear only after the awaited cb resolves.
+   */
+  it('does not clear the pending entry before the success callback runs', async () => {
+    const file = Object.assign(makeFile(), { path: '/staged/test.mp3' });
+    let clearedBeforeCallback = false;
+    const cb = jest.fn(() => {
+      clearedBeforeCallback = removePendingMediaUpload.mock.calls.length > 0;
+    });
+
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      pendingUploadIdToClearOnSuccess: 'staged-restore-1',
+      pendingRestore: {
+        kind: 'sectionresource',
+        sectionId: 'sec-1',
+        description: 'Resource',
+        sequenceNum: 1,
+        orgWorkflowStepId: 'ows-1',
+      },
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(cb).toHaveBeenCalled();
+    expect(clearedBeforeCallback).toBe(false);
+    expect(removePendingMediaUpload).toHaveBeenCalledWith('staged-restore-1');
+  });
+
+  it('keeps the pending entry when the success callback rejects (restore failed)', async () => {
+    const file = Object.assign(makeFile(), { path: '/staged/test.mp3' });
+    const cb = jest.fn(() => {
+      const rejected = Promise.reject(
+        new Error('restore sectionresource failed')
+      );
+      // Prevent unhandled rejection under the pre-fix fire-and-forget cb path.
+      rejected.catch(() => undefined);
+      return rejected;
+    });
+
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      pendingUploadIdToClearOnSuccess: 'staged-restore-1',
+      pendingRestore: {
+        kind: 'sectionresource',
+        sectionId: 'sec-1',
+        description: 'Resource',
+        sequenceNum: 1,
+        orgWorkflowStepId: 'ows-1',
+      },
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(cb).toHaveBeenCalled();
+    expect(removePendingMediaUpload).not.toHaveBeenCalled();
+    expect(removeMatchingPendingUploads).not.toHaveBeenCalled();
+  });
+
+  it('clears the pending entry only after the success callback resolves', async () => {
+    const file = Object.assign(makeFile(), { path: '/staged/test.mp3' });
+    const order: string[] = [];
+    const cb = jest.fn(async () => {
+      order.push('restore');
+    });
+    removePendingMediaUpload.mockImplementation(() => {
+      order.push('clear');
+    });
+
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      pendingRestore: {
+        kind: 'title',
+        sectionId: 'sec-1',
+      },
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(cb).toHaveBeenCalled();
+    expect(removePendingMediaUpload).toHaveBeenCalledWith('staged-restore-1');
+    expect(order).toEqual(['restore', 'clear']);
   });
 });
 
@@ -516,4 +676,3 @@ describe('writeFileLocal disk write (TT-7348)', () => {
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 });
-
