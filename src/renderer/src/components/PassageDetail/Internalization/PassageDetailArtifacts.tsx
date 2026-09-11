@@ -1136,7 +1136,11 @@ export function PassageDetailArtifacts() {
         )}
       </BigDialog>
       <BigDialog
-        title={t.projectResourceConfigure}
+        title={
+          isAddingAudioResourceRef.current
+            ? t.addAudioResource
+            : t.editAudioResource
+        }
         isOpen={projResWizVisible}
         onOpen={handleProjResWizVisible}
         bp={BigDialogBp.md}
@@ -1144,7 +1148,9 @@ export function PassageDetailArtifacts() {
       >
         {projResWizVisible ? (
           <ProjectResourceConfigure
-            width={800}
+            // Exceeds the md dialog's inner width so the player's maxWidth:100%
+            // clamps it to fill, extending the waveform to the dialog's edge.
+            width={1000}
             media={projMediaRef.current}
             items={projIdentRef.current}
             onOpen={handleProjResWizVisible}
