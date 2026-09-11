@@ -201,6 +201,14 @@ describe('OrgHead', { tags: '@smoke' }, () => {
     });
   });
 
+  // Turns on the mobile view toggle that useMobile reads from localStorage;
+  // pair it with createInitialState({ mobileView: true }).
+  const enableMobileView = () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.mobileView), 'true');
+    });
+  };
+
   const createMockOrganization = (id: string, name: string): OrganizationD =>
     ({
       id,
@@ -442,9 +450,10 @@ describe('OrgHead', { tags: '@smoke' }, () => {
     cy.contains('Audio Project Manager').should('be.visible');
   });
 
-  it('should show settings and members buttons on mobile team screen when user is admin', () => {
+  it('should show only settings button (not members) on mobile width team screen when user is admin', () => {
     // showTeamActions = isTeamScreen && isMobile, so these buttons are a
     // mobile-only affordance; desktop gets them from TeamActions instead.
+    // The members button is additionally hidden at mobile width.
     cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
@@ -452,15 +461,12 @@ describe('OrgHead', { tags: '@smoke' }, () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
-    // Check for settings and members icon buttons (both should be visible for admin)
-    // MUI IconButtons contain SVG icons as children
-    cy.get('button').should('have.length.at.least', 2);
-    // Verify that buttons contain SVG elements (icon buttons should have SVG children)
-    cy.get('button').should('be.visible');
-    cy.get('button svg').should('have.length.at.least', 2);
+    cy.get('button').should('have.length', 1);
+    cy.get('svg[data-testid="SettingsIcon"]').should('be.visible');
+    cy.get('svg[data-testid="PeopleIcon"]').should('not.exist');
   });
 
-  it('should show only members button (not settings) on mobile team screen when user is not admin', () => {
+  it('should not show any buttons on mobile width team screen when user is not admin', () => {
     cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
@@ -468,10 +474,86 @@ describe('OrgHead', { tags: '@smoke' }, () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData, false);
 
-    // Should only have members button, not settings button
+    // No settings (not admin) and no members (mobile width)
+    cy.contains(orgName).should('be.visible');
+    cy.get('button').should('not.exist');
+  });
+
+  it('should show settings and members buttons on tablet width with mobile view when user is admin', () => {
+    cy.viewport(768, 1024);
+    enableMobileView();
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      true
+    );
+
+    cy.get('button').should('have.length', 2);
+    cy.get('svg[data-testid="SettingsIcon"]').should('be.visible');
+    cy.get('svg[data-testid="PeopleIcon"]').should('be.visible');
+  });
+
+  it('should show only members button (not settings) on tablet width with mobile view when user is not admin', () => {
+    cy.viewport(768, 1024);
+    enableMobileView();
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      false
+    );
+
     cy.get('button').should('have.length', 1);
-    cy.get('button').should('be.visible');
-    cy.get('button svg').should('have.length', 1);
+    cy.get('svg[data-testid="PeopleIcon"]').should('be.visible');
+    cy.get('svg[data-testid="SettingsIcon"]').should('not.exist');
+  });
+
+  it('should show members button on desktop width with mobile view', () => {
+    cy.viewport(1024, 768);
+    enableMobileView();
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      false
+    );
+
+    cy.get('svg[data-testid="PeopleIcon"]').should('be.visible');
+  });
+
+  it('should hide members button on mobile width even when mobile view is on', () => {
+    cy.viewport(375, 667);
+    enableMobileView();
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      true
+    );
+
+    cy.get('svg[data-testid="SettingsIcon"]').should('be.visible');
+    cy.get('svg[data-testid="PeopleIcon"]').should('not.exist');
   });
 
   it('should not show settings and members buttons when not on team screen', () => {
@@ -524,16 +606,23 @@ describe('OrgHead', { tags: '@smoke' }, () => {
   });
 
   it('should open members dialog when members button is clicked (admin)', () => {
-    cy.viewport(375, 667);
+    // Members button only renders at tablet/desktop width with mobile view on
+    cy.viewport(768, 1024);
+    enableMobileView();
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      true
+    );
 
-    // Find and click the second button (members button)
-    // The members button is the second IconButton rendered (when admin)
-    cy.get('button').eq(1).click();
+    // Admin also has the settings button, so select members by its icon
+    cy.get('svg[data-testid="PeopleIcon"]').closest('button').click();
 
     // BigDialog should be open with members title
     cy.contains('Members of Test Organization').should('be.visible');
@@ -541,15 +630,22 @@ describe('OrgHead', { tags: '@smoke' }, () => {
   });
 
   it('should open members dialog when members button is clicked (non-admin)', () => {
-    cy.viewport(375, 667);
+    cy.viewport(768, 1024);
+    enableMobileView();
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, false);
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      false
+    );
 
-    // Find and click the button (members button - only button for non-admin)
-    cy.get('button').first().click();
+    // Members button is the only button for non-admin
+    cy.get('svg[data-testid="PeopleIcon"]').closest('button').click();
 
     // BigDialog should be open with members title
     cy.contains('Members of Test Organization').should('be.visible');
@@ -706,13 +802,22 @@ describe('OrgHead', { tags: '@smoke' }, () => {
   });
 
   it('should not show members button for personal projects', () => {
-    cy.viewport(375, 667);
+    // Use tablet width with mobile view so only isPersonal can hide the button
+    cy.viewport(768, 1024);
+    enableMobileView();
     const orgId = 'test-org-id';
     const orgName = 'Personal Project';
     const orgData = createMockOrganization(orgId, orgName);
 
     // Set personalTeam to match orgId to make it a personal project
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, false, orgId);
+    mountOrgHead(
+      createInitialState({ mobileView: true }),
+      ['/team'],
+      orgId,
+      orgData,
+      false,
+      orgId
+    );
 
     // Members button should not be shown for personal projects
     // Even though orgRec exists and we're on team screen, isPersonal should prevent the button
@@ -721,7 +826,8 @@ describe('OrgHead', { tags: '@smoke' }, () => {
   });
 
   it('should show members button for non-personal projects', () => {
-    cy.viewport(375, 667);
+    cy.viewport(768, 1024);
+    enableMobileView();
     const orgId = 'test-org-id';
     const orgName = 'Team Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -729,7 +835,7 @@ describe('OrgHead', { tags: '@smoke' }, () => {
 
     // Set personalTeam to a different ID so this is NOT a personal project
     mountOrgHead(
-      createInitialState(),
+      createInitialState({ mobileView: true }),
       ['/team'],
       orgId,
       orgData,
@@ -968,7 +1074,8 @@ describe('OrgHead', { tags: '@smoke' }, () => {
       projectData
     );
 
-    cy.get('button').should('have.length', 1);
+    // No settings (offline) and no members (mobile width)
+    cy.get('button').should('not.exist');
     cy.contains('Team Settings').should('not.exist');
   });
 
@@ -987,9 +1094,10 @@ describe('OrgHead', { tags: '@smoke' }, () => {
       true
     );
 
-    // Team settings gear is hidden when offline (same as desktop TeamItem)
-    cy.get('button').should('have.length', 1); // Only members button should exist
-    cy.get('button svg').should('have.length', 1); // Only one icon (members)
+    // Team settings gear is hidden when offline (same as desktop TeamItem),
+    // and the members button is hidden at mobile width
+    cy.get('button').should('not.exist');
+    cy.get('svg[data-testid="SettingsIcon"]').should('not.exist');
   });
 
   it('should show settings button on mobile width when online admin even if showSort is false', () => {
@@ -1000,8 +1108,8 @@ describe('OrgHead', { tags: '@smoke' }, () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
-    cy.get('button').should('have.length', 2); // Settings + members
-    cy.get('button svg').should('have.length', 2);
+    cy.get('button').should('have.length', 1); // Settings only (members hidden at mobile width)
+    cy.get('svg[data-testid="SettingsIcon"]').should('be.visible');
   });
 
   it('should show settings button on mobile width when showSort is true', () => {
@@ -1025,9 +1133,10 @@ describe('OrgHead', { tags: '@smoke' }, () => {
       projectData
     );
 
-    // Settings button should exist because canModify is true (offlineOnly)
-    cy.get('button').should('have.length.at.least', 2); // Settings and members buttons
-    cy.get('button svg').should('have.length.at.least', 2); // At least two icons
+    // Settings button should exist because canModify is true (offlineOnly);
+    // members button is hidden at mobile width
+    cy.get('button').should('have.length', 1);
+    cy.get('svg[data-testid="SettingsIcon"]').should('be.visible');
 
     // Open the settings menu
     cy.get('button').first().click();

@@ -45,7 +45,7 @@ export const OrgHead = () => {
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
-  const { isMobile, isMobileView } = useMobile();
+  const { isMobile, isMobileView, isMobileWidth } = useMobile();
 
   const [user] = useGlobal('user');
   const [project] = useGlobal('project');
@@ -193,7 +193,7 @@ export const OrgHead = () => {
           <SettingsIcon />
         </IconButton>
       )}
-      {showTeamActions && orgRec && !isPersonal && (
+      {showTeamActions && !isMobileWidth && orgRec && !isPersonal && (
         <IconButton onClick={handleMembers(orgRec)} sx={{ flexShrink: 0 }}>
           <UsersIcon />
         </IconButton>
