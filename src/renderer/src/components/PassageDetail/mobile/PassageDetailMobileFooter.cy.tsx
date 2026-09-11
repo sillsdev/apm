@@ -315,7 +315,7 @@ describe('PassageDetailMobileFooter', () => {
     cy.get('#mobile-complete').should('exist');
   });
 
-  it('disables navigation buttons when no neighbors exist', () => {
+  it('hides navigation buttons when no neighbors exist', () => {
     const passages = [createPassage('passage-1', 1, 'remote-1')];
 
     mountFooter({
@@ -324,8 +324,33 @@ describe('PassageDetailMobileFooter', () => {
       sectionPassages: [],
     });
 
-    cy.contains('Previous').closest('button').should('be.disabled');
-    cy.contains('Next').closest('button').should('be.disabled');
+    cy.contains('Previous').closest('button').should('not.be.visible');
+    cy.contains('Next').closest('button').should('not.be.visible');
+    cy.get('#mobile-complete').should('be.visible');
+  });
+
+  it('hides previous on the first passage', () => {
+    const passages = [
+      createPassage('passage-1', 1, 'remote-1'),
+      createPassage('passage-2', 2, 'remote-2'),
+    ];
+
+    mountFooter({ passages, currentPassageId: 'passage-1' });
+
+    cy.contains('button', 'Previous').should('not.be.visible');
+    cy.contains('button', 'Next').should('be.visible');
+  });
+
+  it('hides next on the last passage', () => {
+    const passages = [
+      createPassage('passage-1', 1, 'remote-1'),
+      createPassage('passage-2', 2, 'remote-2'),
+    ];
+
+    mountFooter({ passages, currentPassageId: 'passage-2' });
+
+    cy.contains('button', 'Previous').should('be.visible');
+    cy.contains('button', 'Next').should('not.be.visible');
   });
 
   it('navigates to the next passage and stores the passage id', () => {
@@ -383,7 +408,7 @@ describe('PassageDetailMobileFooter', () => {
       },
     });
 
-    cy.contains('button', 'Previous').closest('button').should('be.disabled');
+    cy.contains('button', 'Previous').should('not.be.visible');
     cy.contains('button', 'Next').should('be.visible');
     cy.get('span[title="Record"]').should('exist');
     cy.contains('button', 'Next').click();
@@ -499,5 +524,47 @@ describe('PassageDetailMobileFooter', () => {
     cy.get('span[title="Record"]').should('exist');
     cy.contains('button', 'Next').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-record');
+  });
+
+  it('on Prompt step without a prompt keeps next visible but disabled', () => {
+    const passages = [createPassage('passage-1', 1, 'remote-1')];
+    const orgWorkflowSteps = [
+      {
+        id: 'step-prompt',
+        type: 'orgworkflowstep' as const,
+        attributes: {
+          name: 'Prompt',
+          tool: '{"tool":"prompt"}',
+          sequencenum: 1,
+          process: 'bold',
+        },
+      },
+      {
+        id: 'step-record',
+        type: 'orgworkflowstep' as const,
+        attributes: {
+          name: 'Record',
+          tool: '{"tool":"record"}',
+          sequencenum: 2,
+          process: 'bold',
+        },
+      },
+    ];
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      orgRole: RoleNames.Member,
+      permissions: false,
+      passageDetailOverrides: {
+        isBoldWorkflow: true,
+        currentstep: 'step-prompt',
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+        rowData: [],
+      },
+    });
+
+    cy.contains('button', 'Next').should('be.visible').and('be.disabled');
   });
 });
