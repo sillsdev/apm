@@ -696,6 +696,7 @@ export const ProjectCard = (props: IProps) => {
         title={tpb.exportTitle.replace('{0}', getPlanName(project.id))}
         isOpen={openExport}
         onOpen={setOpenExport}
+        dialogContentSx={{ display: 'flex', flexDirection: 'column' }}
       >
         <ExportTab
           {...props}

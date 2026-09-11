@@ -762,7 +762,11 @@ export function TranscriptionTab(props: IProps) {
         p: inDialog ? 0 : theme.layout.gap,
       })}
     >
-      <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
+      <Box
+        ref={boxRef}
+        id="TranscriptionTab"
+        sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+      >
         {alertOpen && (
           <Alert
             severity="warning"
