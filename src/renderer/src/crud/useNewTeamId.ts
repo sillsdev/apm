@@ -2,9 +2,9 @@ import React from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { Organization, OrganizationD, User } from '../model';
 import { waitForIt } from '../utils';
-import { useTeamCreate, isPersonalTeam, remoteIdNum, defaultWorkflow } from '.';
+import { useTeamCreate, isPersonalTeam, defaultWorkflow } from '.';
 import related from './related';
-import { RecordKeyMap } from '@orbit/records';
+import { resolveCanonicalPersonalTeamId } from './canonicalPersonalWorkflow';
 
 // Dedupe concurrent/remounted personal-team resolution+creation across
 // TeamProvider mounts. Without this, two mounts racing before the first-created
@@ -30,22 +30,17 @@ export const useNewTeamId = () => {
     const orgs = (await memory.query((q) =>
       q.findRecords('organization')
     )) as OrganizationD[];
-    //Ugh, there's more than one per person.  Always get the last one created
-    const orgRecs = orgs
-      .filter((o) => related(o, 'owner') === user && isPersonalTeam(o.id, orgs))
-      .sort((a, b) =>
-        Boolean(a.keys?.remoteId) && Boolean(b.keys?.remoteId)
-          ? remoteIdNum('organization', b.id, memory?.keyMap as RecordKeyMap) -
-            remoteIdNum('organization', a.id, memory?.keyMap as RecordKeyMap)
-          : b >= a
-            ? 1
-            : -1
-      );
-    if (orgRecs.length > 1) {
-      console.error(`${orgRecs.length} personal teams!`);
-      console.log(orgRecs);
+    // ADR 0012: Personal Team (cloud identity) vs Work Alone Team (no cloud identity).
+    const personalOrgs = orgs.filter(
+      (o) => related(o, 'owner') === user && isPersonalTeam(o.id, orgs)
+    );
+    if (personalOrgs.length > 1) {
+      console.error(`${personalOrgs.length} personal teams!`);
+      console.log(personalOrgs);
     }
-    return orgRecs.length > 0 ? orgRecs[0].id : undefined;
+    return resolveCanonicalPersonalTeamId(personalOrgs, {
+      offlineOnly: getGlobal('offlineOnly'),
+    });
   };
 
   const newPersonal = async () => {

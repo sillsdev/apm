@@ -17,10 +17,12 @@ import { StepEditor } from '../StepEditor';
 import { ProjectCard, AddCard, TeamDialog, ITeamDialog } from '.';
 import { ProjectSort } from './ProjectDialog/ProjectSort';
 import TeamPanel from './TeamPanel';
+import { personalWorkflowOrg } from './personalWorkflowOrg';
 
 export const PersonalItem = () => {
   const ctx = useContext(TeamContext);
   const { personalTeam, personalProjects, teamUpdate } = ctx.state;
+  const workflowOrg = personalWorkflowOrg(personalTeam, personalProjects);
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -123,7 +125,7 @@ export const PersonalItem = () => {
         isOpen={showWorkflow}
         onOpen={handleWorkflow}
       >
-        <StepEditor process={defaultWorkflow} org={personalTeam} />
+        <StepEditor process={defaultWorkflow} org={workflowOrg} />
       </BigDialog>
       <BigDialog
         title={t.sortProjects}
