@@ -1,9 +1,7 @@
 import { Section, PassageD } from '../model';
 import Memory from '@orbit/memory';
-import { related } from './related';
-import { findRecord } from './tryFindRecord';
+import { passagesForSection } from './passagesForSection';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
-import { RecordIdentity } from '@orbit/records';
 
 /**
  * Next passage in section order (same target as {@link nextPasId}).
@@ -16,11 +14,9 @@ export const nextPassageRecord = (
   memory: Memory,
   wrap = true
 ): PassageD | undefined => {
-  const passRecIds: RecordIdentity[] = related(section, 'passages');
-  if (!Array.isArray(passRecIds)) return undefined;
-  const passages: PassageD[] = passRecIds
-    .map((p) => findRecord(memory, 'passage', p.id) as PassageD)
-    .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
+  const passages = passagesForSection(memory, section?.id).sort(
+    (a, b) => a.attributes.sequencenum - b.attributes.sequencenum
+  );
   const curIndex = passages.findIndex((p) => p.id === curPass);
   if (curIndex === -1) return undefined;
   for (let i = curIndex + 1; i < passages.length; i++) {
