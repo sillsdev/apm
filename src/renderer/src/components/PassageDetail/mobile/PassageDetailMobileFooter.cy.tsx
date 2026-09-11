@@ -168,7 +168,6 @@ const mountFooter = ({
   passages,
   currentPassageId,
   prjId = 'project-1',
-  sectionPassages,
   workflowProgression,
   passageDetailOverrides,
   orgRole = RoleNames.Admin,
@@ -177,7 +176,6 @@ const mountFooter = ({
   passages: PassageD[];
   currentPassageId: string;
   prjId?: string;
-  sectionPassages?: { type: string; id: string }[];
   workflowProgression?: 'step';
   passageDetailOverrides?: Partial<PassageDetailState>;
   orgRole?: RoleNames;
@@ -245,9 +243,7 @@ const mountFooter = ({
     type: 'section',
     relationships: {
       passages: {
-        data:
-          sectionPassages ??
-          passages.map((p) => ({ type: 'passage', id: p.id })),
+        data: passages.map((p) => ({ type: 'passage', id: p.id })),
       },
     },
   } as SectionD;
@@ -315,14 +311,10 @@ describe('PassageDetailMobileFooter', () => {
     cy.get('#mobile-complete').should('exist');
   });
 
-  it('hides navigation buttons when no neighbors exist', () => {
+  it('hides navigation buttons in a single-passage section', () => {
     const passages = [createPassage('passage-1', 1, 'remote-1')];
 
-    mountFooter({
-      passages,
-      currentPassageId: 'passage-1',
-      sectionPassages: [],
-    });
+    mountFooter({ passages, currentPassageId: 'passage-1' });
 
     cy.contains('Previous').closest('button').should('not.be.visible');
     cy.contains('Next').closest('button').should('not.be.visible');
