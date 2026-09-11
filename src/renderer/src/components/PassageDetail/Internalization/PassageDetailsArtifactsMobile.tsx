@@ -37,7 +37,6 @@ import {
   useArtifactCategory,
   IArtifactCategory,
   ArtifactCategoryType,
-  mediaFileName,
   usePlanType,
   usePlan,
 } from '../../../crud';
@@ -85,6 +84,10 @@ import { VertListDnd } from '../../../hoc/VertListDnd';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { LaunchLink } from '../../../control/LaunchLink';
 import FindTabs from './FindTabs';
+import {
+  getProjectResourceAssignments,
+  removeUnselectedProjectResourceAssignments,
+} from './projectResourceAssignments';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
@@ -178,6 +181,8 @@ export function PassageDetailArtifactsMobile() {
     ResourceTypeEnum.sectionResource
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
+  /** Every passage/section the selection dialog offered; scopes cleanup. */
+  const projCandidateRef = useRef<RecordIdentity[]>([]);
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   // True when the general-resource wizard was entered by adding a new audio
   // resource (title "Add Audio Resource"); false when configuring/editing an
@@ -382,12 +387,22 @@ export function PassageDetailArtifactsMobile() {
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
       | MediaFileD
       | undefined;
+    const sourceMedia = mediafiles.find(
+      (m) => m.id === related(mf, 'sourceMedia')
+    );
+    const projectMedia =
+      mf && related(mf, 'artifactType') === projResourceType
+        ? mf
+        : sourceMedia &&
+            related(sourceMedia, 'artifactType') === projResourceType
+          ? sourceMedia
+          : undefined;
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
-    if (mf && related(mf, 'artifactType') === projResourceType) {
+    if (projectMedia) {
       resourceTypeRef.current = ResourceTypeEnum.projectResource;
       isAddingAudioResourceRef.current = false;
-      handleSelectProjectResource(mf);
+      handleSelectProjectResource(projectMedia);
       return;
     }
     setEditResource(secRes);
@@ -760,6 +775,15 @@ export function PassageDetailArtifactsMobile() {
       cnt += 1;
       setComplete(Math.min((cnt * 100) / total, 100));
     }
+    await removeUnselectedProjectResourceAssignments({
+      memory,
+      sourceMedia: projMediaRef.current,
+      selectedItems: items,
+      mediafiles,
+      sectionResources,
+      resourceTypeId: resourceType,
+      candidateItems: projCandidateRef.current,
+    });
     // Ensure setComplete(0) is always called after processing
     setComplete(0);
   };
@@ -791,8 +815,12 @@ export function PassageDetailArtifactsMobile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projResSetup]);
 
-  const handleSelectProjectResourcePassage = (items: RecordIdentity[]) => {
+  const handleSelectProjectResourcePassage = (
+    items: RecordIdentity[],
+    candidates: RecordIdentity[]
+  ) => {
     projIdentRef.current = items;
+    projCandidateRef.current = candidates;
     if (isVisual(projMediaRef.current)) {
       writeVisualResource(items).then(() => {
         setProjResPassageVisible(false);
@@ -1063,12 +1091,19 @@ export function PassageDetailArtifactsMobile() {
         isOpen={projResPassageVisible}
         onOpen={handleProjResPassageVisible}
         disableBackdropClose
+        showTopCloseButton={false}
       >
         {projResPassageVisible ? (
           <SelectSections
-            title={mediaFileName(projMediaRef.current) ?? ''}
+            initialItems={getProjectResourceAssignments(
+              projMediaRef.current,
+              mediafiles,
+              sectionResources,
+              resourceType
+            )}
             visual={visual}
             onSelect={handleSelectProjectResourcePassage}
+            onCancel={() => handleProjResPassageVisible(false)}
           />
         ) : (
           <></>
@@ -1086,6 +1121,8 @@ export function PassageDetailArtifactsMobile() {
             width={800}
             media={projMediaRef.current}
             items={projIdentRef.current}
+            candidateItems={projCandidateRef.current}
+            resourceTypeId={resourceType}
             onOpen={handleProjResWizVisible}
           />
         ) : (

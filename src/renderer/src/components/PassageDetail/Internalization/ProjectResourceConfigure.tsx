@@ -42,6 +42,7 @@ import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import Confirm from '../../AlertDialog';
+import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
 const NotTable = 420;
 
@@ -101,12 +102,16 @@ interface IProps {
   width: number;
   media: MediaFileD | undefined;
   items: RecordIdentity[];
+  /** Passages/sections the selection dialog offered; scopes cleanup. */
+  candidateItems?: RecordIdentity[];
+  /** Artifact type id of a derived resource copy (`resource` slug). */
+  resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
   bookData?: BookName[];
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { width, media, items, onOpen } = props;
+  const { width, media, items, candidateItems, resourceTypeId, onOpen } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -260,6 +265,19 @@ export const ProjectResourceConfigure = (props: IProps) => {
             });
           }
           setComplete(Math.min((ix * 100) / total, 100));
+        }
+        // A cancelled save never wrote the new assignments, so leave the
+        // existing ones alone rather than deleting the unselected ones.
+        if (!canceling.current) {
+          await removeUnselectedProjectResourceAssignments({
+            memory,
+            sourceMedia: media,
+            selectedItems: items,
+            mediafiles,
+            sectionResources,
+            resourceTypeId,
+            candidateItems,
+          });
         }
         projectSegmentSave({
           media,

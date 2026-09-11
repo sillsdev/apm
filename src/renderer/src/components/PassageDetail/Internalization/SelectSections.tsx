@@ -9,35 +9,25 @@ import {
   Plan,
   IPassageDetailArtifactsStrings,
   ISharedStrings,
-  SectionArray,
 } from '../../../model';
 import {
   Box,
+  Checkbox,
   debounce,
+  IconButton,
   Paper,
   PaperProps,
   styled,
-  Typography,
 } from '@mui/material';
-import { useOrganizedBy, findRecord, usePlanType } from '../../../crud';
+import { findRecord, useOrganizedBy, usePlanType } from '../../../crud';
 import { sharedSelector } from '../../../selector';
-import { eqSet } from '../../../utils';
 import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
-import {
-  projDefSectionMap,
-  useProjectDefaults,
-} from '../../../crud/useProjectDefaults';
-import {
-  GridColDef,
-  GridColumnVisibilityModel,
-  GridRowSelectionModel,
-  GridSortModel,
-} from '@mui/x-data-grid';
-import { TreeDataGrid } from '../../../components/TreeDataGrid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import { ActionRow, GrowingSpacer } from '../../../control';
 import {
   buildSelectSectionRows,
-  selectSectionRowType,
   SelectSectionRow,
 } from './buildSelectSectionRows';
 import { Button } from '../../../control/Button';
@@ -55,19 +45,27 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
 type IRow = SelectSectionRow;
 
 interface IProps {
-  title: string;
+  initialItems?: RecordIdentity[];
+  /** Visual resources are written immediately, so the button says so. */
   visual?: boolean;
-  onSelect?: (items: RecordIdentity[]) => void;
+  /**
+   * `candidates` is every identity offered by the dialog; the caller needs it to
+   * limit cleanup of unselected assignments to what the user could actually see.
+   */
+  onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
+  onCancel?: () => void;
 }
 
 export function SelectSections(props: IProps) {
-  const { visual, title, onSelect } = props;
+  const { initialItems, visual, onSelect, onCancel } = props;
+  const initialSelectionKey = (initialItems ?? [])
+    .map((item) => `${item.type}:${item.id}`)
+    .join('|');
   const passages = useOrbitData<PassageD[]>('passage');
   const sections = useOrbitData<SectionD[]>('section');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [data, setData] = useState(Array<IRow>());
-  const [openSections, setOpenSections] = useState<string[]>([]);
   const [heightStyle, setHeightStyle] = useState({
     maxHeight: `${window.innerHeight - 200}px`,
   });
@@ -79,32 +77,16 @@ export function SelectSections(props: IProps) {
     passageDetailArtifactsSelector,
     shallowEqual
   );
-  const [buttonText, setButtonText] = useState(ta.projectResourceConfigure);
   const allBookData = useSelector((state: IState) => state.books.bookData);
-  const [columns, setColumns] = useState<GridColDef[]>([]);
-  const [checks, setChecks] = useState<Array<string | number>>([]);
-  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  });
-  const { getProjectDefault } = useProjectDefaults();
-  const sectionMap = new Map<number, string>(
-    (getProjectDefault(projDefSectionMap) ?? []) as SectionArray
-  );
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const setDimensions = () => {
     setHeightStyle({
       maxHeight: `${window.innerHeight - 200}px`,
     });
   };
   const planType = usePlanType();
-  const columnVisibilityModel: GridColumnVisibilityModel = { expand: false };
   const boxRef = useRef<HTMLDivElement>(null);
   const [tableHeight, setTableHeight] = useState<number>(300);
-
-  useEffect(() => {
-    setButtonText(visual ? ta.createResources : ta.projectResourceConfigure);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visual]);
 
   useEffect(() => {
     setDimensions();
@@ -129,93 +111,152 @@ export function SelectSections(props: IProps) {
   }, [plan]);
 
   useEffect(() => {
-    const newColumns: GridColDef[] = [
-      {
-        field: 'name',
-        headerName: getOrganizedBy(true),
-        width: 300,
-        cellClassName: 'word-wrap',
-      },
-    ];
-    if (!isFlat) {
-      newColumns.push({
-        field: 'passages',
-        headerName: ts.passages,
-        width: 120,
-        align: 'right',
-      });
-    }
-    setColumns([...newColumns]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFlat]);
-
-  const getSections = (
-    passages: PassageD[],
-    sections: SectionD[],
-    bookData: typeof allBookData
-  ) => {
-    return buildSelectSectionRows({
-      passages,
-      sections,
-      bookData,
-      planId: planRec?.id,
-      isFlat: Boolean(isFlat),
-      sectionMap,
-    });
-  };
-
-  useEffect(() => {
-    setData(getSections(passages, sections, allBookData));
+    setData(
+      buildSelectSectionRows({
+        passages,
+        sections,
+        bookData: allBookData,
+        planId: planRec?.id,
+        isFlat: Boolean(isFlat),
+        organizedBy: getOrganizedBy(true),
+      })
+    );
     if (boxRef.current) {
       const height =
         boxRef.current.parentNode?.parentNode?.parentElement?.clientHeight;
       setTableHeight((height ?? 300) - 250);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, passages, sections, allBookData, openSections, isFlat]);
+  }, [plan, passages, sections, allBookData, isFlat]);
 
-  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    let chks = Array.from(newSelection.ids).map(
-      (c) => parseInt(c as string) - 1
+  useEffect(() => {
+    setSelected(
+      new Set(initialSelectionKey ? initialSelectionKey.split('|') : [])
     );
-    if (newSelection.type === 'exclude') {
-      chks = [];
-      data.forEach((_r, i) => {
-        if (!newSelection.ids.has(i)) chks.push(i);
-      });
-    }
-    if (!eqSet(new Set(chks), new Set(checks))) {
-      for (const c of chks) {
-        let n = c;
-        if (data[n]?.parentId === '' && !checks.includes(n)) {
-          while (++n < data.length && data[n].parentId !== '') {
-            if (!chks.includes(n)) chks.push(n);
-          }
-        }
+  }, [initialSelectionKey]);
+
+  /** `passage:<id>` keys of each section's passage rows, by section id. */
+  const passageKeysBySection = useMemo(() => {
+    const keys = new Map<string, string[]>();
+    data.forEach((row) => {
+      if (row.kind !== 'passage') return;
+      const sectionKeys = keys.get(row.parentId) ?? [];
+      sectionKeys.push(`passage:${row.recId}`);
+      keys.set(row.parentId, sectionKeys);
+    });
+    return keys;
+  }, [data]);
+
+  /**
+   * A section's own selection is independent of its passages: this button bulk
+   * toggles the passage rows (its label says so), and only stands in for the
+   * section itself when there are no passage rows (flat plans, TT-6936).
+   * A section-level assignment coming from `initialItems` is left alone so that
+   * ticking passages cannot silently delete it.
+   */
+  const toggleSection = (sectionId: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      const passageKeys = passageKeysBySection.get(sectionId) ?? [];
+      if (passageKeys.length === 0) {
+        const sectionKey = `section:${sectionId}`;
+        if (next.has(sectionKey)) next.delete(sectionKey);
+        else next.add(sectionKey);
+        return next;
       }
-      setChecks(chks);
-    }
-    setSelectedRows({
-      ...newSelection,
-      type: 'include',
-      ids: new Set(chks.map((c) => c + 1)),
+      const allSelected = passageKeys.every((key) => next.has(key));
+      passageKeys.forEach((key) =>
+        allSelected ? next.delete(key) : next.add(key)
+      );
+      return next;
     });
   };
 
-  const handleSelected = () => {
-    const results = checks
-      .sort((i, j) => parseInt(i as string) - parseInt(j as string))
-      .map((c) => {
-        const n = parseInt(c as string);
-        return {
-          type: selectSectionRowType(data[n], Boolean(isFlat)),
-          id: data[n].recId,
-        };
-      }) as RecordIdentity[];
-    onSelect && onSelect(results);
+  const togglePassage = (passageId: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      const passageKey = `passage:${passageId}`;
+      if (next.has(passageKey)) next.delete(passageKey);
+      else next.add(passageKey);
+      return next;
+    });
   };
 
-  const sortModel: GridSortModel = [{ field: 'name', sort: 'asc' }];
+  const isSectionSelected = (sectionId: string) => {
+    const passageKeys = passageKeysBySection.get(sectionId) ?? [];
+    return passageKeys.length === 0
+      ? selected.has(`section:${sectionId}`)
+      : passageKeys.every((key) => selected.has(key));
+  };
+
+  const handleSelected = () => {
+    const identities = (rows: IRow[]) =>
+      rows.map((row) => ({
+        type: row.kind,
+        id: row.recId,
+      })) as RecordIdentity[];
+    onSelect?.(
+      identities(
+        data.filter((row) => selected.has(`${row.kind}:${row.recId}`))
+      ),
+      identities(data)
+    );
+  };
+
+  const columns: GridColDef<IRow>[] = [
+    {
+      field: 'selected',
+      headerName: '',
+      width: 52,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      display: 'flex',
+      align: 'center',
+      cellClassName: 'select-cell',
+      renderCell: ({ row }) => {
+        if (row.kind === 'section') {
+          const isSelected = isSectionSelected(row.recId);
+          return (
+            <IconButton
+              aria-label={ta.selectAllPassages.replace('{0}', row.name)}
+              aria-pressed={isSelected}
+              onClick={() => toggleSection(row.recId)}
+              size="small"
+              sx={{
+                p: 0.5,
+                color: isSelected ? 'primary.main' : 'text.primary',
+              }}
+            >
+              <DoneAllIcon fontSize="small" />
+            </IconButton>
+          );
+        }
+        return (
+          <Checkbox
+            aria-label={row.name}
+            checked={selected.has(`passage:${row.recId}`)}
+            onChange={() => togglePassage(row.recId)}
+            size="small"
+            sx={{
+              p: 0.5,
+              color: 'text.primary',
+              '&.Mui-checked': { color: 'text.primary' },
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'name',
+      headerName: '',
+      flex: 1,
+      minWidth: 240,
+      sortable: false,
+      cellClassName: ({ row }) =>
+        row.kind === 'passage' ? 'passage-row' : '',
+    },
+  ];
 
   return (
     <Box
@@ -223,41 +264,51 @@ export function SelectSections(props: IProps) {
       ref={boxRef}
       sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
     >
-      <Typography variant="h6">{title}</Typography>
       <StyledPaper
         id="PassageList"
         style={heightStyle}
         sx={{ flex: 1, minHeight: 0 }}
       >
-        <TreeDataGrid
+        <DataGrid
           columns={columns}
           rows={data}
-          checkboxSelection
+          disableColumnResize
           disableRowSelectionOnClick
-          rowSelectionModel={selectedRows}
-          onRowSelectionModelChange={handleRowSelectionChange}
-          recIdName="recId"
-          expanded={setOpenSections}
-          initialState={{
-            sorting: { sortModel },
-            columns: { columnVisibilityModel },
-          }}
+          hideFooter
+          columnHeaderHeight={0}
+          rowHeight={40}
+          getRowClassName={({ indexRelativeToCurrentPage }) =>
+            indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row'
+          }
           sx={{
-            '& .word-wrap': { wordWrap: 'break-spaces' },
+            border: 0,
             maxHeight: tableHeight,
+            '& .MuiDataGrid-cell': { borderBottom: 0 },
+            '& .select-cell': {
+              px: 0.5,
+              borderRight: 1,
+              borderColor: 'divider',
+            },
+            '& .even-row': { backgroundColor: 'background.paper' },
+            '& .odd-row': { backgroundColor: 'action.hover' },
+            '& .passage-row': { pl: 1 },
           }}
         />
       </StyledPaper>
-      <div>
-        <Button
-          onClick={handleSelected}
-          variant="contained"
-          color="primary"
-          disabled={checks.length === 0}
-        >
-          {buttonText}
+      <ActionRow>
+        <GrowingSpacer />
+        <Button id="select-sections-cancel" onClick={onCancel}>
+          {ts.cancel}
         </Button>
-      </div>
+        <Button
+          id="select-sections-next"
+          color="primary"
+          onClick={handleSelected}
+          disabled={selected.size === 0}
+        >
+          {visual ? ta.createResources : ta.next}
+        </Button>
+      </ActionRow>
     </Box>
   );
 }
