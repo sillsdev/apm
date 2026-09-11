@@ -748,8 +748,19 @@ export function TranscriptionTab(props: IProps) {
           </Box>
         </Box>
       }
-      drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      headerSx={
+        inDialog
+          ? (theme) => ({
+              backgroundColor: 'background.paper',
+              pt: theme.layout.gap,
+              px: 0,
+            })
+          : undefined
+      }
+      drawBottomBorder={!inDialog}
+      contentSx={(theme) => ({
+        p: inDialog ? 0 : theme.layout.gap,
+      })}
     >
       <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (
