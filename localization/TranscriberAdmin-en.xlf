@@ -1456,6 +1456,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="category.apply">
+         <segment>
+            <source>Apply</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="category.builtIn">
          <segment>
             <source>System Categories</source>
@@ -1483,6 +1489,12 @@
       <unit id="category.discussions">
          <segment>
             <source>discussion(s)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="category.edit">
+         <segment>
+            <source>Edit</source>
             <target/>
          </segment>
       </unit>

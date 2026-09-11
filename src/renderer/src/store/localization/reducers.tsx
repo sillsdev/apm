@@ -294,11 +294,13 @@ const initialState = {
 	}),
 	"category": new LocalizedStrings({
 		"en": {
+			"apply": "Apply",
 			"builtIn": "System Categories",
 			"discussion": "Discussion",
 			"close": "Close",
 			"duplicate": "Duplicate Category",
 			"discussions": "discussion(s)",
+			"edit": "Edit",
 			"ignoreInvalid": "Ignoring invalid category change '{0}'.",
 			"inUseBy": "In use by {0} {1}",
 			"note": "Audio Note",

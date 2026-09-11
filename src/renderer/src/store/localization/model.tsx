@@ -277,11 +277,13 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface ICategoryStrings extends Localize.LocalizedStringsMethods {
+    "apply": string;
     "builtIn": string;
     "discussion": string;
     "close": string;
     "duplicate": string;
     "discussions": string;
+    "edit": string;
     "ignoreInvalid": string;
     "inUseBy": string;
     "note": string;

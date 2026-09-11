@@ -1697,6 +1697,13 @@
                <context context-type="sourcefile">AddCard.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="category.apply">
+      		<source>Apply</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">CategoryListEdit.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="category.builtIn">
       		<source>System Categories</source>
       		<target/>
@@ -1727,6 +1734,13 @@
       	</trans-unit>
          <trans-unit id="category.discussions">
       		<source>discussion(s)</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">CategoryListEdit.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="category.edit">
+      		<source>Edit</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">CategoryListEdit.tsx</context>
