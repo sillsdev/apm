@@ -158,6 +158,7 @@ export const ProjButtons = (props: IProps) => {
           {...props}
           projectPlans={projectPlans(project)}
           planColumn={true}
+          inDialog
           sectionArr={sectionArr}
         />
       </BigDialog>

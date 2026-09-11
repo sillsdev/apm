@@ -100,14 +100,22 @@ interface IProps {
   projectPlans: Plan[];
   planColumn?: boolean;
   floatTop?: boolean;
+  inDialog?: boolean;
   step?: string;
   orgSteps?: OrgWorkflowStepD[];
   sectionArr: SectionArray;
 }
 
 export function TranscriptionTab(props: IProps) {
-  const { projectPlans, planColumn, floatTop, step, orgSteps, sectionArr } =
-    props;
+  const {
+    projectPlans,
+    planColumn,
+    floatTop,
+    inDialog,
+    step,
+    orgSteps,
+    sectionArr,
+  } = props;
 
   const { pasId } = useParams();
   const t: ITranscriptionTabStrings = useSelector(transcriptionTabSelector);

@@ -701,6 +701,7 @@ export const ProjectCard = (props: IProps) => {
           {...props}
           projectPlans={projectPlans(projectId)}
           planColumn={true}
+          inDialog
           sectionArr={
             (getProjectDefault(projDefSectionMap) as SectionArray) ?? []
           }
