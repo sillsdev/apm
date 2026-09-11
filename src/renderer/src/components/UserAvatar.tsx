@@ -6,6 +6,12 @@ import { useAvatarSource } from '../crud';
 import { avatarSize } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 
+const emptyUser: UserD = {
+  id: '',
+  type: 'user',
+  attributes: { avatarUrl: null, name: '', familyName: '' },
+} as UserD;
+
 interface IProps {
   userRec?: UserD;
 }
@@ -19,15 +25,7 @@ export function UserAvatar(props: IProps) {
     ? []
     : users.filter((u) => u.id === user && u.attributes);
   const firstUser = curUserRec[0] as UserD;
-  const curUser = userRec
-    ? userRec
-    : firstUser
-      ? firstUser
-      : {
-          id: '',
-          type: 'user',
-          attributes: { avatarUrl: null, name: '', familyName: '' },
-        };
+  const curUser = userRec ? userRec : firstUser ? firstUser : emptyUser;
 
   const source = useAvatarSource(curUser.attributes?.familyName || '', curUser);
 
