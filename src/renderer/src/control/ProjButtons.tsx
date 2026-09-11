@@ -153,11 +153,13 @@ export const ProjButtons = (props: IProps) => {
         title={t.exportTitle.replace('{0}', planName)}
         isOpen={openExport}
         onOpen={setOpenExport}
+        dialogContentSx={{ display: 'flex', flexDirection: 'column' }}
       >
         <ExportTab
           {...props}
           projectPlans={projectPlans(project)}
           planColumn={true}
+          inDialog
           sectionArr={sectionArr}
         />
       </BigDialog>

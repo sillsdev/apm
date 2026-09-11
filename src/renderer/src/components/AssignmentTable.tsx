@@ -70,6 +70,9 @@ import { TreeDataGrid } from './TreeDataGrid';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  minHeight: 0,
   '& tr > td > div > span.MuiButtonBase-root:nth-of-type(3)': {
     visibility: 'hidden',
   },

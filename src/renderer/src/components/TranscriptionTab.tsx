@@ -100,14 +100,22 @@ interface IProps {
   projectPlans: Plan[];
   planColumn?: boolean;
   floatTop?: boolean;
+  inDialog?: boolean;
   step?: string;
   orgSteps?: OrgWorkflowStepD[];
   sectionArr: SectionArray;
 }
 
 export function TranscriptionTab(props: IProps) {
-  const { projectPlans, planColumn, floatTop, step, orgSteps, sectionArr } =
-    props;
+  const {
+    projectPlans,
+    planColumn,
+    floatTop,
+    inDialog,
+    step,
+    orgSteps,
+    sectionArr,
+  } = props;
 
   const { pasId } = useParams();
   const t: ITranscriptionTabStrings = useSelector(transcriptionTabSelector);
@@ -740,10 +748,25 @@ export function TranscriptionTab(props: IProps) {
           </Box>
         </Box>
       }
-      drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      headerSx={
+        inDialog
+          ? (theme) => ({
+              backgroundColor: 'background.paper',
+              pt: theme.layout.gap,
+              px: 0,
+            })
+          : undefined
+      }
+      drawBottomBorder={!inDialog}
+      contentSx={(theme) => ({
+        p: inDialog ? 0 : theme.layout.gap,
+      })}
     >
-      <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
+      <Box
+        ref={boxRef}
+        id="TranscriptionTab"
+        sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+      >
         {alertOpen && (
           <Alert
             severity="warning"
