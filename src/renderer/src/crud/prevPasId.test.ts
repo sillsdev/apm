@@ -1,6 +1,6 @@
 import Memory from '@orbit/memory';
 import { RecordIdentity } from '@orbit/records';
-import { prevPasId } from './prevPasId';
+import { prevPasId, prevPassageRecord } from './prevPasId';
 import { related } from './related';
 import { findRecord } from './tryFindRecord';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
@@ -102,5 +102,14 @@ describe('prevPasId', () => {
       makePassage('p3', 3, 'ref-3', 'remote-3'),
     ]);
     expect(prevPasId(section, 'p1', memory)).toBe('remote-3');
+  });
+
+  test('does not wrap when wrap is false', () => {
+    setPassages([
+      makePassage('p1', 1, 'ref-1'),
+      makePassage('p2', 2, 'ref-2'),
+    ]);
+    expect(prevPassageRecord(section, 'p1', memory, false)).toBeUndefined();
+    expect(prevPassageRecord(section, 'p2', memory, false)?.id).toBe('p1');
   });
 });

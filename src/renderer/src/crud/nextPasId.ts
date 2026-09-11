@@ -5,11 +5,16 @@ import { findRecord } from './tryFindRecord';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
 import { RecordIdentity } from '@orbit/records';
 
-/** Next passage in section order (same target as {@link nextPasId}). */
+/**
+ * Next passage in section order (same target as {@link nextPasId}).
+ * With `wrap` false, returns undefined past the last passage instead of
+ * wrapping to the first.
+ */
 export const nextPassageRecord = (
   section: Section,
   curPass: string,
-  memory: Memory
+  memory: Memory,
+  wrap = true
 ): PassageD | undefined => {
   const passRecIds: RecordIdentity[] = related(section, 'passages');
   if (!Array.isArray(passRecIds)) return undefined;
@@ -24,6 +29,7 @@ export const nextPassageRecord = (
       return passRec;
     }
   }
+  if (!wrap) return undefined;
   for (let i = 0; i < passages.length; i++) {
     const passRec = passages[i];
     if (!isPublishingTitle(passRec?.attributes?.reference, false)) {
