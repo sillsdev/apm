@@ -14,7 +14,9 @@ import {
 } from '../../context/UnsavedContext';
 import { ArtifactCategoryType } from '../../crud';
 import localizationReducer from '../../store/localization/reducers';
+import type { GraphicPickerProps } from '../GraphicPicker';
 import CategoryListEdit from './CategoryListEdit';
+import { CategoryGraphicPickerContext } from './CategoryEdit';
 
 const TEAM_ID = 'team-1';
 
@@ -234,6 +236,39 @@ const mockStore = createStore(
   })
 );
 
+/**
+ * CT GraphicPicker stand-in: finish still goes through useGraphicPicker
+ * (onSelectedRights → finish → stage), not CategoryEdit.stage directly.
+ */
+function CategoryGraphicPickerHarness({
+  isOpen,
+  finish,
+  onOpen,
+  onSelectedRights,
+}: GraphicPickerProps) {
+  if (!isOpen) return null;
+  return (
+    <button
+      type="button"
+      id="graphic-picker-finish"
+      onClick={() => {
+        onSelectedRights?.('test-rights');
+        finish([
+          {
+            name: 'staged-40.png',
+            content: 'data:image/png;base64,staged',
+            type: 'image/png',
+            dimension: 40,
+          },
+        ]);
+        onOpen(false);
+      }}
+    >
+      Finish
+    </button>
+  );
+}
+
 const mockUnsavedState = {
   checkSavedFn: (method: () => void) => method(),
   t: {} as any,
@@ -313,11 +348,15 @@ describe('CategoryListEdit (TT-7627)', () => {
               <UnsavedContext.Provider
                 value={{ state: mockUnsavedState, setState: cy.stub() }}
               >
-                <CategoryListEdit
-                  type={type}
-                  teamId={TEAM_ID}
-                  onClose={onClose}
-                />
+                <CategoryGraphicPickerContext.Provider
+                  value={CategoryGraphicPickerHarness}
+                >
+                  <CategoryListEdit
+                    type={type}
+                    teamId={TEAM_ID}
+                    onClose={onClose}
+                  />
+                </CategoryGraphicPickerContext.Provider>
               </UnsavedContext.Provider>
             </SnackBarProvider>
           </DataProvider>
@@ -449,7 +488,8 @@ describe('CategoryListEdit (TT-7627)', () => {
     // Icon button (no avatar) before staging
     cy.get('#cat-graphic-cat1').should('match', 'button');
 
-    cy.get('#cat-stage-graphic-cat1').click({ force: true });
+    cy.get('#cat-graphic-cat1').click();
+    cy.get('#graphic-picker-finish').should('be.visible').click();
     cy.get('#cat-graphic-cat1').should('match', 'div'); // Avatar after stage
 
     cy.get('#cat-cancel-edit-cat1').click();

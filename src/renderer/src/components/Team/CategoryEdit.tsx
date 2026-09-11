@@ -6,12 +6,20 @@ import {
   useGraphicCreate,
   useGraphicUpdate,
 } from '../../crud';
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useState,
+  type ComponentType,
+} from 'react';
 import GraphicsIcon from '@mui/icons-material/Image';
 import MediaTitle from '../../control/MediaTitle';
 import Colorful, { ColorfulProps } from '@uiw/react-color-colorful';
 import { useSelector, shallowEqual } from 'react-redux';
-import GraphicPicker from '../GraphicPicker';
+import GraphicPicker, { type GraphicPickerProps } from '../GraphicPicker';
 import { useGraphicPicker } from '../useGraphicPicker';
 import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -53,6 +61,10 @@ export type CategoryEditHandle = {
   flushPendingGraphic: () => Promise<void>;
   discardPendingGraphic: () => void;
 };
+
+/** CT can provide a picker stand-in; finish still goes through useGraphicPicker. */
+export const CategoryGraphicPickerContext =
+  createContext<ComponentType<GraphicPickerProps>>(GraphicPicker);
 
 const RowDiv = styled('div')(() => ({
   display: 'flex',
@@ -98,6 +110,7 @@ const CategoryEdit = forwardRef<CategoryEditHandle, IProps>(
     const t: ICategoryStrings = useSelector(categorySelector, shallowEqual);
     const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
+    const Picker = useContext(CategoryGraphicPickerContext);
     const { pending, stage, flush, discard } = useCategoryGraphicEdit({
       graphicRec,
       resourceType,
@@ -279,36 +292,11 @@ const CategoryEdit = forwardRef<CategoryEditHandle, IProps>(
                   <GraphicsIcon />
                 </IconButton>
               ))}
-            {/* Cypress CT: stage a graphic without mounting GraphicPicker */}
-            {typeof window !== 'undefined' &&
-              (window as Window & { Cypress?: unknown }).Cypress &&
-              !disabled &&
-              !offline && (
-                <button
-                  type="button"
-                  id={`cat-stage-graphic-${category.id}`}
-                  style={{ display: 'none' }}
-                  onClick={() => {
-                    stage(
-                      [
-                        {
-                          name: 'staged-40.png',
-                          content: 'data:image/png;base64,staged',
-                          type: 'image/png',
-                          dimension: 40,
-                        },
-                      ],
-                      'test-rights'
-                    );
-                    onChanged({ ...category });
-                  }}
-                />
-              )}
             {category.id !== 'newcat' &&
               graphicPicker.isOpen &&
               !disabled &&
               !offline && (
-                <GraphicPicker
+                <Picker
                   scripture={false}
                   teamId={teamId}
                   isOpen={graphicPicker.isOpen}

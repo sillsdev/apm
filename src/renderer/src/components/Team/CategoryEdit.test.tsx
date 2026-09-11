@@ -131,7 +131,7 @@ describe('CategoryEdit graphic', () => {
   it('opens the graphic picker when online', () => {
     renderEdit();
     fireEvent.click(
-      document.getElementById('cat-graphic') as HTMLButtonElement
+      document.getElementById(`cat-graphic-${category.id}`) as HTMLButtonElement
     );
     expect(mockOpen).toHaveBeenCalled();
   });
@@ -139,7 +139,9 @@ describe('CategoryEdit graphic', () => {
   it('does not open the graphic picker when offline', () => {
     mockOffline.current = true;
     renderEdit();
-    const btn = document.getElementById('cat-graphic') as HTMLButtonElement;
+    const btn = document.getElementById(
+      `cat-graphic-${category.id}`
+    ) as HTMLButtonElement;
     expect(btn).toBeDisabled();
     fireEvent.click(btn);
     expect(mockOpen).not.toHaveBeenCalled();
