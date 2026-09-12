@@ -215,6 +215,7 @@ function runBibleFetch<T>({
   setError,
   t,
   onSettled,
+  isCurrent = () => true,
 }: {
   getUrl: () => string | undefined;
   parse: (data: unknown) => T;
@@ -225,6 +226,15 @@ function runBibleFetch<T>({
   t: IGraphicStrings;
   /** Called when the request finishes (after loading is cleared), including on error. */
   onSettled?: () => void;
+  /**
+   * Checked before every state update that lands after an `await` (success,
+   * failure, and settled). Returns false once a newer request for the same
+   * endpoint has been issued, so a slow, superseded response can't overwrite
+   * state a faster, later request already applied. Defaults to always-current
+   * for call sites that don't need it (there is only ever one in-flight
+   * request for that state).
+   */
+  isCurrent?: () => boolean;
 }) {
   const url = getUrl();
   if (!url) {
@@ -250,14 +260,17 @@ function runBibleFetch<T>({
       }
     })
     .then((data: unknown) => {
+      if (!isCurrent()) return;
       const parsed = parse(data);
       onSuccess(parsed);
     })
     .catch((err) => {
+      if (!isCurrent()) return;
       setError(err instanceof Error ? err.message : t.loadFailure);
       onFailure();
     })
     .finally(() => {
+      if (!isCurrent()) return;
       setLoading(false);
       onSettled?.();
     });
@@ -467,8 +480,20 @@ export function GraphicPicker({
     }
   }, [isOpen, tabValue]);
 
+  // Bumped each time the style/keyword/search effects below (re)issue a
+  // request, so a stale response from a superseded request (e.g. the
+  // unfiltered search fired before `scripture` resolved true) can detect
+  // it's no longer current and skip overwriting a newer result. See PR #601
+  // discussion_r3994579140 follow-up: runBibleFetch has no built-in
+  // cancellation, so without this a slower earlier response can land after a
+  // faster later one and silently restore stale (e.g. unfiltered) results.
+  const styleRequestIdRef = useRef(0);
+  const keywordRequestIdRef = useRef(0);
+  const searchRequestIdRef = useRef(0);
+
   useEffect(() => {
     if (!isOpen || tabValue !== 0) return;
+    const requestId = ++styleRequestIdRef.current;
     runBibleFetch({
       getUrl: () => getStyleUrl({ page: 1, limit: 100 }),
       parse: parseStyleResponse,
@@ -480,6 +505,7 @@ export function GraphicPicker({
       setLoading: setBibleLoading,
       setError: setBibleError,
       t,
+      isCurrent: () => styleRequestIdRef.current === requestId,
     });
   }, [isOpen, tabValue, getStyleUrl, excludedStyles, t]);
 
@@ -487,6 +513,7 @@ export function GraphicPicker({
 
   useEffect(() => {
     if (!isOpen || tabValue !== 0) return;
+    const requestId = ++keywordRequestIdRef.current;
     runBibleFetch({
       getUrl: () => getKeywordUrl({ page: 1, limit: 100 }),
       parse: parseKeywordResponse,
@@ -495,6 +522,7 @@ export function GraphicPicker({
       setLoading: setBibleLoading,
       setError: setBibleError,
       t,
+      isCurrent: () => keywordRequestIdRef.current === requestId,
     });
   }, [isOpen, tabValue, getKeywordUrl, t]);
 
@@ -567,6 +595,7 @@ export function GraphicPicker({
 
   useEffect(() => {
     if (!isOpen || tabValue !== 0) return;
+    const requestId = ++searchRequestIdRef.current;
     runBibleFetch({
       getUrl: () =>
         getSearchUrl({
@@ -584,6 +613,7 @@ export function GraphicPicker({
       setError: setBibleError,
       t,
       onSettled: () => setLibrarySearchFetchCompleted(true),
+      isCurrent: () => searchRequestIdRef.current === requestId,
     });
   }, [
     isOpen,
