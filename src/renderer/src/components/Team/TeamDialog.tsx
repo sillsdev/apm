@@ -468,6 +468,7 @@ export function TeamDialog(props: IProps) {
               setValue={setValue}
               bibles={bibles}
               readonly={readonly}
+              foreignOwner={Boolean(owner && owner !== values?.team.id)}
               ownerName={
                 owner && owner !== values?.team.id
                   ? organizations.find((o) => o.id === owner)?.attributes?.name

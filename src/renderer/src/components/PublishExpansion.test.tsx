@@ -144,13 +144,21 @@ describe('PublishExpansion bibleId ownership validation (TT-7681)', () => {
     attributes: { bibleId: 'SEHICE', bibleName: '', description: '' },
   } as Bible;
 
-  const renderWithForeignBible = (setValue: jest.Mock) =>
+  const renderWithForeignBible = (
+    setValue: jest.Mock,
+    overrides: { foreignOwner?: boolean; ownerName?: string } = {}
+  ) =>
     render(
       <PublishExpansion
         t={t}
         team={team}
         bible={foreignBible}
-        ownerName="01 Test Team Desktop 03 Sep 2026"
+        foreignOwner={overrides.foreignOwner ?? true}
+        ownerName={
+          'ownerName' in overrides
+            ? overrides.ownerName
+            : '01 Test Team Desktop 03 Sep 2026'
+        }
         readonly
         setValue={setValue}
         onChanged={jest.fn()}
@@ -165,9 +173,7 @@ describe('PublishExpansion bibleId ownership validation (TT-7681)', () => {
       .map(([, value]) => value)
       .pop();
 
-  it('keeps the existing-bible error after deleting and retyping the last character', async () => {
-    const setValue = jest.fn();
-    renderWithForeignBible(setValue);
+  const deleteAndRetypeLastChar = async () => {
     await waitFor(() => expect(capturedCanRecord).toBeDefined());
 
     const input = document.getElementById('bibleid') as HTMLInputElement;
@@ -178,6 +184,31 @@ describe('PublishExpansion bibleId ownership validation (TT-7681)', () => {
     // still-foreign, Bible Id -- mirrors the steps in TT-7681.
     fireEvent.change(input, { target: { value: 'SEHIC' } });
     fireEvent.change(input, { target: { value: 'SEHICE' } });
+
+    return input;
+  };
+
+  it('keeps the existing-bible error after deleting and retyping the last character', async () => {
+    const setValue = jest.fn();
+    renderWithForeignBible(setValue);
+    const input = await deleteAndRetypeLastChar();
+
+    expect(lastBibleIdError(setValue)).toBe(t.bibleidexists);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  // Devin finding: `ownerName` is only a display-name lookup and can be
+  // undefined even when the bible is genuinely foreign-owned, e.g. the
+  // owning team's `organization` record hasn't loaded locally (only its
+  // Bible and organizationbible records are cached). Validation must not
+  // treat a missing name as proof of ownership.
+  it('keeps the existing-bible error when the foreign owner name has not loaded', async () => {
+    const setValue = jest.fn();
+    renderWithForeignBible(setValue, {
+      foreignOwner: true,
+      ownerName: undefined,
+    });
+    const input = await deleteAndRetypeLastChar();
 
     expect(lastBibleIdError(setValue)).toBe(t.bibleidexists);
     expect(input).toHaveAttribute('aria-invalid', 'true');
