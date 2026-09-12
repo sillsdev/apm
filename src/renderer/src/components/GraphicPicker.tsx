@@ -398,11 +398,24 @@ export function GraphicPicker({
   // `isOpen: true` — otherwise those effects fire once with the stale
   // filter and again after the effect-driven reset commits, racing two
   // requests where the stale one can resolve last and overwrite the result.
-  const [prevIsOpenForScriptureReset, setPrevIsOpenForScriptureReset] =
-    useState(isOpen);
-  if (isOpen !== prevIsOpenForScriptureReset) {
-    setPrevIsOpenForScriptureReset(isOpen);
-    if (isOpen) setFilterScriptureRefChecked(defaultScriptureRefChecked);
+  // Track `scripture` too: PlanContext starts `scripture: false` and
+  // resolves it from the plan in a passive effect that can commit after the
+  // picker is already open, so a reset on `isOpen` alone would miss it.
+  const [prevScriptureResetInputs, setPrevScriptureResetInputs] = useState({
+    isOpen,
+    scripture,
+  });
+  if (
+    isOpen !== prevScriptureResetInputs.isOpen ||
+    scripture !== prevScriptureResetInputs.scripture
+  ) {
+    const resetScriptureFilter =
+      isOpen &&
+      (!prevScriptureResetInputs.isOpen ||
+        scripture !== prevScriptureResetInputs.scripture);
+    setPrevScriptureResetInputs({ isOpen, scripture });
+    if (resetScriptureFilter)
+      setFilterScriptureRefChecked(defaultScriptureRefChecked);
   }
   const { getOrganizedBy } = useOrganizedBy();
   const bookData = useSelector((state: IState) => state.books.bookData);

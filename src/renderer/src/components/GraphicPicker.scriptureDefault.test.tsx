@@ -153,4 +153,24 @@ describe('GraphicPicker Scripture filter defaults', () => {
     expect(checkboxFor('graphic-filter-ref-chapter')).toBeChecked();
     expect(checkboxFor('graphic-filter-ref-verse')).toBeChecked();
   });
+
+  it('checks book/chapter/verse when scripture resolves true while the dialog is already open', () => {
+    // PlanContext (src/renderer/src/context/PlanContext.tsx:134-139) starts
+    // `scripture: false` and updates it from the plan in a passive effect,
+    // which can commit after the picker is already open (isOpen never
+    // changes in this sequence - only `scripture` does).
+    const { rerender } = render(
+      <GraphicPicker {...baseProps} isOpen scripture={false} />
+    );
+
+    // PlanContext resolves the plan as a Scripture-type plan while the
+    // dialog remains open the whole time.
+    rerender(<GraphicPicker {...baseProps} isOpen scripture />);
+
+    openScriptureFilterSection();
+
+    expect(checkboxFor('graphic-filter-ref-book')).toBeChecked();
+    expect(checkboxFor('graphic-filter-ref-chapter')).toBeChecked();
+    expect(checkboxFor('graphic-filter-ref-verse')).toBeChecked();
+  });
 });
