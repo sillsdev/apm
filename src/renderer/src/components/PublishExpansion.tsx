@@ -216,7 +216,10 @@ export function PublishExpansion(props: IProps) {
     }
     if (iso639_3 && newName.indexOf(iso639_3.toLocaleUpperCase()) !== 0)
       return t.bibleidiso;
-    if (newName === bible?.attributes?.bibleId) return '';
+    // Only treat this as "unchanged" when we own the loaded bible -- `bible`
+    // can be a match for another team's bibleId (see TeamDialog), and typing
+    // that same id back must not silently clear the ownership error.
+    if (newName === bible?.attributes?.bibleId && !ownerName) return '';
     //TODO: check bible brain also
     const sameNameRec = bibles.filter(
       (o) => o?.attributes?.bibleId === newName

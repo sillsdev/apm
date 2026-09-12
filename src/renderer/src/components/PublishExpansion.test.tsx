@@ -1,8 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { ICardsStrings, Organization, ProjectD } from '../model';
+import { Bible, ICardsStrings, Organization, ProjectD } from '../model';
 
 const mockShowMessage = jest.fn();
 const mockGetBibleMediaPlan = jest.fn();
@@ -63,6 +63,10 @@ const t = {
   copyright: 'Copyright',
   projectRequired: 'A project must be added before recordings are allowed',
   planNotFound: 'Plan not found. Please contact APM Support.',
+  bibleidformat: 'Bible Id must start with a 3-letter language code',
+  bibleidiso: 'Bible Id must match the language',
+  bibleidexists: 'This Bible Id already exists',
+  bibleOwnerRights: "Team '{0}' is the owner of this Bible.",
 } as ICardsStrings;
 
 const team = { id: 'team-1' } as Organization;
@@ -122,5 +126,60 @@ describe('PublishExpansion BibleMedia plan', () => {
 
     expect(allowed).toBe(true);
     expect(mockShowMessage).not.toHaveBeenCalledWith(t.planNotFound);
+  });
+});
+
+describe('PublishExpansion bibleId ownership validation (TT-7681)', () => {
+  beforeEach(() => {
+    mockGetBibleMediaPlan.mockReset();
+    mockGetBibleMediaPlan.mockResolvedValue({ id: 'plan-1' });
+  });
+
+  // Another team already owns this Bible Id. TeamDialog loads that team's
+  // bible record into `bible` and flags `ownerName` once the id resolves,
+  // which is why this prop shape (not our own team's bible) matters here.
+  const foreignBible = {
+    id: 'bible-other-team',
+    type: 'bible',
+    attributes: { bibleId: 'SEHICE', bibleName: '', description: '' },
+  } as Bible;
+
+  const renderWithForeignBible = (setValue: jest.Mock) =>
+    render(
+      <PublishExpansion
+        t={t}
+        team={team}
+        bible={foreignBible}
+        ownerName="01 Test Team Desktop 03 Sep 2026"
+        readonly
+        setValue={setValue}
+        onChanged={jest.fn()}
+        onRecording={jest.fn()}
+        bibles={[foreignBible]}
+      />
+    );
+
+  const lastBibleIdError = (setValue: jest.Mock): string | undefined =>
+    setValue.mock.calls
+      .filter(([what]) => what === 'bibleIdError')
+      .map(([, value]) => value)
+      .pop();
+
+  it('keeps the existing-bible error after deleting and retyping the last character', async () => {
+    const setValue = jest.fn();
+    renderWithForeignBible(setValue);
+    await waitFor(() => expect(capturedCanRecord).toBeDefined());
+
+    const input = document.getElementById('bibleid') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.value).toBe('SEHICE');
+
+    // Delete the last character, then retype it to restore the original,
+    // still-foreign, Bible Id -- mirrors the steps in TT-7681.
+    fireEvent.change(input, { target: { value: 'SEHIC' } });
+    fireEvent.change(input, { target: { value: 'SEHICE' } });
+
+    expect(lastBibleIdError(setValue)).toBe(t.bibleidexists);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
   });
 });
