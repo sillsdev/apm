@@ -393,6 +393,10 @@ export function GraphicPicker({
   );
   const [filterScriptureRefChecked, setFilterScriptureRefChecked] =
     useState<ScriptureRefChecked>(defaultScriptureRefChecked);
+
+  useEffect(() => {
+    if (isOpen) setFilterScriptureRefChecked(defaultScriptureRefChecked);
+  }, [isOpen, defaultScriptureRefChecked]);
   const { getOrganizedBy } = useOrganizedBy();
   const bookData = useSelector((state: IState) => state.books.bookData);
   const book = useMemo(
