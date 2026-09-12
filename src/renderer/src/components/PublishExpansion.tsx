@@ -57,6 +57,9 @@ interface IProps {
   team?: Organization;
   bible?: Bible;
   readonly?: boolean;
+  /** True when `bible` is owned by another team, regardless of whether that
+   * team's organization record (and thus `ownerName`) has loaded. */
+  foreignOwner?: boolean;
   ownerName?: string;
   setValue: (what: string, value: string, init?: boolean) => void;
   onChanged: (changed: boolean) => void;
@@ -71,6 +74,7 @@ export function PublishExpansion(props: IProps) {
     team,
     bible,
     readonly,
+    foreignOwner,
     ownerName,
     setValue,
     onChanged,
@@ -216,13 +220,26 @@ export function PublishExpansion(props: IProps) {
     }
     if (iso639_3 && newName.indexOf(iso639_3.toLocaleUpperCase()) !== 0)
       return t.bibleidiso;
-    if (newName === bible?.attributes?.bibleId) return '';
+    // Only treat this as "unchanged" when we own the loaded bible -- `bible`
+    // can be a match for another team's bibleId (see TeamDialog). Use the
+    // explicit ownership flag rather than `ownerName`: the display name can
+    // be undefined even when the bible is genuinely foreign-owned, if that
+    // team's organization record hasn't loaded.
+    if (newName === bible?.attributes?.bibleId && !foreignOwner) return '';
     //TODO: check bible brain also
     const sameNameRec = bibles.filter(
       (o) => o?.attributes?.bibleId === newName
     );
     return sameNameRec.length === 0 ? '' : t.bibleidexists;
   };
+
+  useEffect(() => {
+    // `foreignOwner` can resolve one render after `bible` (TeamDialog looks
+    // up the owning org in a separate effect). Re-check the id already
+    // typed so a stale '' error doesn't leave Save wrongly enabled.
+    if (bibleId) setBibleIdError(bibleIdIsValid(bibleId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foreignOwner]);
 
   const handleCanRecord = useCallback(async () => {
     const planId = mediaplanRef.current || (await loadBibleMediaPlan());
