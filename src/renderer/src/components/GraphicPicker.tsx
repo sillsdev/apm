@@ -393,10 +393,17 @@ export function GraphicPicker({
   );
   const [filterScriptureRefChecked, setFilterScriptureRefChecked] =
     useState<ScriptureRefChecked>(defaultScriptureRefChecked);
-
-  useEffect(() => {
+  // Reset during render (not in a useEffect) so the corrected value is in
+  // place before the style/keyword/search fetch effects below ever see
+  // `isOpen: true` — otherwise those effects fire once with the stale
+  // filter and again after the effect-driven reset commits, racing two
+  // requests where the stale one can resolve last and overwrite the result.
+  const [prevIsOpenForScriptureReset, setPrevIsOpenForScriptureReset] =
+    useState(isOpen);
+  if (isOpen !== prevIsOpenForScriptureReset) {
+    setPrevIsOpenForScriptureReset(isOpen);
     if (isOpen) setFilterScriptureRefChecked(defaultScriptureRefChecked);
-  }, [isOpen, defaultScriptureRefChecked]);
+  }
   const { getOrganizedBy } = useOrganizedBy();
   const bookData = useSelector((state: IState) => state.books.bookData);
   const book = useMemo(
