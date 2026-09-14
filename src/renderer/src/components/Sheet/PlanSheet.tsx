@@ -1426,50 +1426,52 @@ export function PlanSheet(props: IProps) {
     <ContentLayout
       header={
         <Box sx={spreadSx}>
-          {!readonly && (
-            <Box sx={rowSx}>
-              <AddSectionPassageButtons
-                inlinePassages={inlinePassages}
-                numRows={rowInfo.length}
-                canEditSheet={canEditSheet}
-                readonly={anyRecording}
-                isSection={dataRowisSection}
-                isPassage={isPassageType(currentRow - 1)}
-                mouseposition={position}
-                handleNoContextMenu={handleNoContextMenu}
-                sectionSequenceNumber={currentWholeRowSectionNum}
-                passageSequenceNumber={currentWholeRowPassageNum}
-                onDisableFilter={filtered ? disableFilter : undefined}
-                showIcon={showIcon(
-                  filtered,
-                  offline && !offlineOnly,
-                  currentRow - 1
-                )}
-                onAction={(what: ExtraIcon) => onAction(currentRow - 1, what)}
-                disablePublishingRows={disablePublishingRows}
-              />
-              {canEditSheet && (
-                <ProjButtons
-                  {...props}
-                  noCopy={pasting || filtered}
-                  noPaste={pasting || anyRecording || readonly || filtered}
-                  noReseq={
-                    pasting ||
-                    data.length < 2 ||
-                    anyRecording ||
-                    !canEditSheet ||
-                    filtered ||
-                    !hidePublishing
-                  }
-                  noImExport={anyRecording || pasting}
-                  noIntegrate={anyRecording || pasting || data.length < 2}
-                  onCopy={handleSheetCopy}
-                  onPaste={handleTablePaste}
-                  onReseq={handleResequence}
+          <Box sx={rowSx}>
+            {!readonly && (
+              <>
+                <AddSectionPassageButtons
+                  inlinePassages={inlinePassages}
+                  numRows={rowInfo.length}
+                  canEditSheet={canEditSheet}
+                  readonly={anyRecording}
+                  isSection={dataRowisSection}
+                  isPassage={isPassageType(currentRow - 1)}
+                  mouseposition={position}
+                  handleNoContextMenu={handleNoContextMenu}
+                  sectionSequenceNumber={currentWholeRowSectionNum}
+                  passageSequenceNumber={currentWholeRowPassageNum}
+                  onDisableFilter={filtered ? disableFilter : undefined}
+                  showIcon={showIcon(
+                    filtered,
+                    offline && !offlineOnly,
+                    currentRow - 1
+                  )}
+                  onAction={(what: ExtraIcon) => onAction(currentRow - 1, what)}
+                  disablePublishingRows={disablePublishingRows}
                 />
-              )}
-            </Box>
-          )}
+                {canEditSheet && (
+                  <ProjButtons
+                    {...props}
+                    noCopy={pasting || filtered}
+                    noPaste={pasting || anyRecording || readonly || filtered}
+                    noReseq={
+                      pasting ||
+                      data.length < 2 ||
+                      anyRecording ||
+                      !canEditSheet ||
+                      filtered ||
+                      !hidePublishing
+                    }
+                    noImExport={anyRecording || pasting}
+                    noIntegrate={anyRecording || pasting || data.length < 2}
+                    onCopy={handleSheetCopy}
+                    onPaste={handleTablePaste}
+                    onReseq={handleResequence}
+                  />
+                )}
+              </>
+            )}
+          </Box>
           <Box sx={rowSx}>
             {data.length > 1 &&
               !offline &&
