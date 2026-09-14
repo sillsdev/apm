@@ -123,6 +123,18 @@ describe('evictMediaCache', () => {
     expect(api.delete).not.toHaveBeenCalled();
   });
 
+  it('never deletes via an encoded-backslash traversal (Windows separator)', async () => {
+    // path-browserify keeps "\" literal so the prefix check passes, but Windows
+    // would treat it as a separator and escape the cache. Must be refused.
+    const { mod, api } = load({ existsImpl: async () => true });
+    const url =
+      'https://host/media/..%5C..%5Csecret.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+
+    await mod.evictMediaCache(url);
+
+    expect(api.delete).not.toHaveBeenCalled();
+  });
+
   it('evicts cached media in a subfolder of the media dir (%2F filename)', async () => {
     // Some S3 filenames contain %2F, which dataPath decodes to "/", nesting the
     // cached file under .../media. That is still inside the cache tree, so it

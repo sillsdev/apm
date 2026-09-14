@@ -26,8 +26,17 @@ export const evictMediaCache = async (url?: string): Promise<void> => {
   // Without a home dir, mediaDir would be relative (e.g. offline/media) and the
   // containment check below could pass for a relative path; never target one.
   if (!homeDir) return;
-  const mediaDir = path.join(homeDir, offlineData, PathType.MEDIA);
-  if (!local.localname.startsWith(mediaDir + '/')) return;
+  // Resolve the path the way the Windows main process will before checking
+  // containment. path-browserify is posix, so on its own it keeps "\" literal
+  // and would miss a backslash traversal that fs.unlink (win32) then follows.
+  // Canonicalizing "\" to "/" and normalizing collapses any ".." (from a %2F- or
+  // %5C-decoded filename), so a path that escapes <home>/<offlineData>/media
+  // fails this check exactly as it would resolve at the delete site — eviction
+  // can never unlink a file outside the media tree. (Devin + Copilot review.)
+  const canon = (p: string) => path.normalize(p.replace(/\\/g, '/'));
+  const mediaRoot =
+    canon(path.join(homeDir, offlineData, PathType.MEDIA)) + '/';
+  if (!canon(local.localname).startsWith(mediaRoot)) return;
   // delete (fs.unlink) can reject (ENOENT race, EBUSY when the player still
   // holds the file, permissions). Report via the standard logError channel
   // (Bugsnag online / error log offline) rather than throwing, so a failed
