@@ -13,7 +13,7 @@ import { useParams } from 'react-router-dom';
 import { Badge, Box } from '@mui/material';
 import JSONAPISource from '@orbit/jsonapi';
 import Memory from '@orbit/memory';
-import { RecordIdentity, RecordKeyMap } from '@orbit/records';
+import { RecordKeyMap } from '@orbit/records';
 import { debounce } from 'lodash';
 import bookSortJson from '../../assets/akuosort.json';
 import {
@@ -128,8 +128,7 @@ import {
   shtNumChanges,
   getSheet,
   workSheet,
-  isSectionFiltered,
-  isPassageFiltered,
+  refilterSheet,
   nextNum,
   getMinSection,
 } from '.';
@@ -1313,8 +1312,7 @@ export function ScriptureTable(props: IProps) {
       const secRec =
         ws?.kind === IwsKind.Section
           ? (findRecord(memory, 'section', ws?.sectionId?.id ?? '') as
-              | Section
-              | undefined)
+              Section | undefined)
           : undefined;
       const resourceId =
         ws?.kind === IwsKind.Section
@@ -1671,88 +1669,19 @@ export function ScriptureTable(props: IProps) {
   }, [sheet, width, colNames, flat, lang]);
 
   useEffect(() => {
-    const newWork: ISheet[] = [];
-    let changed = false;
-    let sectionfiltered = false;
-    let filtered = false;
-
     if (!updateRef.current) {
       setUpdate(true);
-      let sectionIndex = -1;
-      let sectionScheme: RecordIdentity | undefined;
-      let hasOnePassage = false;
-      sheetRef.current.forEach((s, index) => {
-        if (isSectionRow(s)) {
-          if (sectionIndex >= 0) {
-            if (!hasOnePassage && filterState.assignedToMe && !flat) {
-              (newWork[sectionIndex] as ISheet).filtered = true;
-            }
-          }
-          sectionIndex = index;
-          sectionScheme = s.scheme;
-          hasOnePassage = false;
-          sectionfiltered = isSectionFiltered(
-            filterState,
-            minSection,
-            s.sectionSeq,
-            hidePublishing,
-            s.reference || ''
-          );
-          if (
-            !sectionfiltered &&
-            hidePublishing &&
-            s.kind === IwsKind.Section &&
-            s.level !== SheetLevel.Section
-          ) {
-            let allMyPassagesArePublishing = true;
-            for (
-              let ix = index + 1;
-              ix < sheetRef.current.length &&
-              isPassageRow(sheetRef.current[ix] as ISheet) &&
-              allMyPassagesArePublishing;
-              ix++
-            ) {
-              if (
-                !isPublishingTitle(
-                  (sheetRef.current[ix] as ISheet).reference,
-                  flat
-                )
-              ) {
-                allMyPassagesArePublishing = false;
-              }
-            }
-            sectionfiltered = allMyPassagesArePublishing;
-          }
-        }
-        if (isPassageRow(s)) {
-          filtered =
-            sectionfiltered ||
-            isPassageFiltered(
-              s,
-              filterState,
-              minSection,
-              hidePublishing,
-              orgSteps,
-              doneStepId,
-              sectionScheme,
-              s.assign,
-              user,
-              myGroups
-            );
-        } else filtered = sectionfiltered;
-        hasOnePassage ||= s.kind === IwsKind.Passage && filtered === false;
-        if (filtered !== s.filtered) changed = true;
-        newWork.push({
-          ...s,
-          filtered,
-        });
+      const { sheet: newWork, changed } = refilterSheet({
+        sheet: sheetRef.current,
+        filterState,
+        minSection,
+        hidePublishing,
+        orgSteps,
+        doneStepId,
+        flat,
+        user,
+        myGroups,
       });
-      if (sectionIndex >= 0) {
-        if (!hasOnePassage && filterState.assignedToMe) {
-          (newWork[sectionIndex] as ISheet).filtered = true;
-        }
-      }
-
       if (changed) {
         setSheet(newWork);
       }
