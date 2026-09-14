@@ -40,6 +40,13 @@ interface IProps {
    * getter so callers can capture live comment/speaker state at upload time.
    */
   pendingRestore?: PendingRestoreInput;
+  /**
+   * Commit deferred metadata (e.g. a newly typed artifact category) before
+   * staging the upload and evaluating `pendingRestore`. Uploader's recorded
+   * path forwards this here and does not await it again in afterUploadCb
+   * (TT-7363 Copilot r3919030521).
+   */
+  beforeUpload?: () => Promise<void>;
 }
 export const useMediaUpload = ({
   artifactId,
@@ -53,6 +60,7 @@ export const useMediaUpload = ({
   afterUploadCb,
   pendingUploadIdToClearOnSuccess,
   pendingRestore,
+  beforeUpload,
 }: IProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -167,93 +175,106 @@ export const useMediaUpload = ({
   return (files: File[]): Promise<boolean> => {
     if (!files.length) return Promise.resolve(false);
     return new Promise((resolve, reject) => {
-      const getPlanId = () =>
-        planId
-          ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
+      void (async () => {
+        try {
+          if (beforeUpload) await beforeUpload();
+          const getPlanId = () =>
             planId
-          : remoteIdNum(
-              'plan',
-              getGlobal('plan'),
-              memory?.keyMap as RecordKeyMap
-            ) || getGlobal('plan');
-      const getArtifactId = () =>
-        artifactId === null
-          ? null
-          : remoteIdNum(
-              'artifacttype',
-              artifactId,
-              memory?.keyMap as RecordKeyMap
-            ) || artifactId;
-      const getPassageId = () =>
-        passageId
-          ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
+              ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
+                planId
+              : remoteIdNum(
+                  'plan',
+                  getGlobal('plan'),
+                  memory?.keyMap as RecordKeyMap
+                ) || getGlobal('plan');
+          const getArtifactId = () =>
+            artifactId === null
+              ? null
+              : remoteIdNum(
+                  'artifacttype',
+                  artifactId,
+                  memory?.keyMap as RecordKeyMap
+                ) || artifactId;
+          const getPassageId = () =>
             passageId
-          : '';
-      const getUserId = () =>
-        remoteIdNum('user', user, memory?.keyMap as RecordKeyMap) || user;
-      const getSourceMediaId = () =>
-        remoteIdNum(
-          'mediafile',
-          sourceMediaId || '',
-          memory?.keyMap as RecordKeyMap
-        ) || sourceMediaId;
+              ? remoteIdNum(
+                  'passage',
+                  passageId,
+                  memory?.keyMap as RecordKeyMap
+                ) || passageId
+              : '';
+          const getUserId = () =>
+            remoteIdNum('user', user, memory?.keyMap as RecordKeyMap) || user;
+          const getSourceMediaId = () =>
+            remoteIdNum(
+              'mediafile',
+              sourceMediaId || '',
+              memory?.keyMap as RecordKeyMap
+            ) || sourceMediaId;
 
-      uploadFiles(files);
-      fileList.current = files;
+          uploadFiles(files);
+          fileList.current = files;
 
-      const mediafile = {
-        planId: getPlanId(),
-        versionNumber: 1,
-        originalFile: (files[0] as File).name,
-        contentType: getContentType(files[0]?.type, (files[0] as File).name),
-        artifactTypeId: getArtifactId(),
-        passageId: getPassageId(),
-        recordedbyUserId: getUserId(),
-        userId: getUserId(),
-        sourceMediaId: getSourceMediaId(),
-        sourceSegments: sourceSegments ?? '{}',
-        performedBy: performedByRef.current ?? null,
-        topic: topicRef.current ?? '',
-        languagebcp47: languagebcp47 ?? '',
-        eafUrl: !artifactId
-          ? ts.mediaAttached
-          : localizedArtifactTypeFromId(artifactId), //put psc message here
-      } as MediaFileAttributes & {
-        planId: string;
-        artifactTypeId: string;
-        passageId: string;
-        recordedbyUserId: string;
-        userId: string;
-        sourceMediaId: string;
-      };
-      nextUpload({
-        record: mediafile,
-        files,
-        n: 0,
-        token: accessToken || '',
-        offline: getGlobal('offline'),
-        errorReporter: reporter,
-        uploadType: UploadType.Media,
-        cb: (n, success, data) => {
-          void itemComplete(n, success, data)
-            .then(() => {
-              if (success) resolve(true);
-              else reject(new Error(t.uploadFailed));
-            })
-            .catch(reject);
-        },
-        pendingUploadIdToClearOnSuccess,
-        pendingRestore:
-          typeof pendingRestore === 'function'
-            ? pendingRestore()
-            : pendingRestore,
-        onTerminalFailure: (info) => {
-          showMessage(
-            formatUploadTerminalFailureMessage(t, info),
-            AlertSeverity.Warning
-          );
-        },
-      });
+          const mediafile = {
+            planId: getPlanId(),
+            versionNumber: 1,
+            originalFile: (files[0] as File).name,
+            contentType: getContentType(
+              files[0]?.type,
+              (files[0] as File).name
+            ),
+            artifactTypeId: getArtifactId(),
+            passageId: getPassageId(),
+            recordedbyUserId: getUserId(),
+            userId: getUserId(),
+            sourceMediaId: getSourceMediaId(),
+            sourceSegments: sourceSegments ?? '{}',
+            performedBy: performedByRef.current ?? null,
+            topic: topicRef.current ?? '',
+            languagebcp47: languagebcp47 ?? '',
+            eafUrl: !artifactId
+              ? ts.mediaAttached
+              : localizedArtifactTypeFromId(artifactId), //put psc message here
+          } as MediaFileAttributes & {
+            planId: string;
+            artifactTypeId: string;
+            passageId: string;
+            recordedbyUserId: string;
+            userId: string;
+            sourceMediaId: string;
+          };
+          nextUpload({
+            record: mediafile,
+            files,
+            n: 0,
+            token: accessToken || '',
+            offline: getGlobal('offline'),
+            errorReporter: reporter,
+            uploadType: UploadType.Media,
+            cb: (n, success, data) => {
+              void itemComplete(n, success, data)
+                .then(() => {
+                  if (success) resolve(true);
+                  else reject(new Error(t.uploadFailed));
+                })
+                .catch(reject);
+            },
+            pendingUploadIdToClearOnSuccess,
+            pendingRestore:
+              typeof pendingRestore === 'function'
+                ? pendingRestore()
+                : pendingRestore,
+            onTerminalFailure: (info) => {
+              showMessage(
+                formatUploadTerminalFailureMessage(t, info),
+                AlertSeverity.Warning
+              );
+            },
+          });
+        } catch (err) {
+          reject(err);
+        }
+      })();
     });
   };
 };

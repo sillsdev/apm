@@ -1,4 +1,11 @@
-import { useState, useContext, useMemo, useRef, useEffect } from 'react';
+import {
+  useState,
+  useContext,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
@@ -95,6 +102,8 @@ import { usePassageRef } from './usePassageRef';
 import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
+import { buildResourcePendingRestore } from './buildResourcePendingRestore';
+import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import IconMenu from '../../../control/IconMenu';
 
@@ -126,7 +135,7 @@ export function PassageDetailArtifactsMobile() {
     sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
-  const { AddSectionResource } = useSecResCreate(section);
+  const { AddSectionResource, InternalizationStep } = useSecResCreate(section);
   const AddSectionResourceUser = useSecResUserCreate();
   const ReadSectionResourceUser = useSecResUserRead();
   const RemoveSectionResourceUser = useSecResUserDelete();
@@ -173,6 +182,7 @@ export function PassageDetailArtifactsMobile() {
   const editCatCommitRef = useRef<(() => Promise<string>) | null>(null);
   const addCatCommitRef = useRef<(() => Promise<string>) | null>(null);
   const descriptionRef = useRef<string>('');
+  const pendingResourceSeqRef = useRef(0);
 
   const resourceTypeRef = useRef<ResourceTypeEnum>(
     ResourceTypeEnum.sectionResource
@@ -255,6 +265,38 @@ export function PassageDetailArtifactsMobile() {
     );
     return resourceType?.id;
   }, [artifactTypes, offlineOnly]);
+
+  const resourcePendingRestore = useCallback(() => {
+    if (resourceTypeRef.current === ResourceTypeEnum.projectResource) {
+      return buildResourcePendingRestore({
+        resourceType: ResourceTypeEnum.projectResource,
+        sectionId: section.id,
+        passageId: passage.id,
+        description: descriptionRef.current || null,
+        sequenceNum: 0,
+        ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
+      });
+    }
+    const step = InternalizationStep();
+    if (!step?.id) return undefined;
+    pendingResourceSeqRef.current += 1;
+    return buildResourcePendingRestore({
+      resourceType: resourceTypeRef.current,
+      sectionId: section.id,
+      passageId: passage.id,
+      description: descriptionRef.current || null,
+      sequenceNum: rowData.length + pendingResourceSeqRef.current,
+      orgWorkflowStepId: step.id,
+      ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
+    });
+  }, [InternalizationStep, section.id, passage.id, rowData.length]);
+
+  useResumePendingProjectResourceConfig({
+    memory,
+    mediafiles,
+    setProjResSetup,
+    isAddingAudioResourceRef,
+  });
 
   const handlePlay = (id: string) => {
     if (id === playItem) {
@@ -380,8 +422,7 @@ export function PassageDetailArtifactsMobile() {
       (r) => related(r, 'mediafile') === id
     ) as SectionResourceD;
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
-      | MediaFileD
-      | undefined;
+      MediaFileD | undefined;
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (mf && related(mf, 'artifactType') === projResourceType) {
@@ -685,8 +726,7 @@ export function PassageDetailArtifactsMobile() {
     const results: number[] = [];
     sectionResources.forEach((sr) => {
       const rec = findRecord(memory, 'mediafile', related(sr, 'mediafile')) as
-        | MediaFileD
-        | undefined;
+        MediaFileD | undefined;
       if (rowData.find((r) => r.id === rec?.id)) {
         const passageId = rec?.attributes.resourcePassageId;
         if (passageId) results.push(passageId);
@@ -734,8 +774,7 @@ export function PassageDetailArtifactsMobile() {
     const total = items.length;
     for (const i of items) {
       const rec = memory.cache.query((q) => q.findRecord(i)) as
-        | Passage
-        | Section;
+        Passage | Section;
       const secRec =
         rec?.type === 'section'
           ? (rec as Section)
@@ -956,6 +995,7 @@ export function PassageDetailArtifactsMobile() {
         multiple={true}
         finish={afterUpload}
         beforeUpload={async () => {
+          pendingResourceSeqRef.current = 0;
           if (addCatCommitRef.current)
             catIdRef.current = await addCatCommitRef.current();
         }}
@@ -970,6 +1010,7 @@ export function PassageDetailArtifactsMobile() {
         inValue={markdownValue}
         eafUrl={aiGenerated ? AIGenerated : ''}
         defaultFilename={filename}
+        pendingRestore={resourcePendingRestore}
         metaData={
           <ResourceData
             uploadType={uploadType}
