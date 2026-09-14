@@ -856,8 +856,27 @@ export function PassageDetailGuidedPhraseRecord({
             (Math.max(0, region.end - seek) * 1000) / rate +
             CLAUSE_PLAYBACK_MARGIN_MS
         );
+        // Whether this exact clause is already the one playing, measured before
+        // gotoTime moves the playhead. Only in that case may we skip the
+        // (re)start below, so we don't yank an in-progress clause back to its
+        // start on a re-entrant call — the original intent of the old
+        // `!isPlaying()` guard.
+        const posBeforeSeek = ctrl.getProgress?.() ?? -1;
+        const alreadyPlayingThisClause =
+          ctrl.isPlaying() &&
+          posBeforeSeek > region.start &&
+          posBeforeSeek < region.end;
         await ctrl.gotoTime(seek, region);
-        if (!ctrl.isPlaying()) {
+        // (Re)start region playback for the clause we just seeked to. In
+        // region-only mode setPlay(true) replays the current segment even while
+        // audio is already playing (WSAudioPlayer.handlePlayStatus
+        // `wouldReplayRegion`), re-arming playRegionRef so region-out fires
+        // onRegionPlayEnd and Record re-enables. The old guard skipped this
+        // whenever *any* clause was playing, so pressing Next mid-playback never
+        // armed the new clause and Record stayed disabled after it finished
+        // (TT-7690). Skip only the true re-entrant case: this same clause is
+        // already playing.
+        if (!alreadyPlayingThisClause) {
           skipBeforePlayRef.current = true;
           try {
             ctrl.setPlay(true);
