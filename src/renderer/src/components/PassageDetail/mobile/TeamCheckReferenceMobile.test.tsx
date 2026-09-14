@@ -45,7 +45,7 @@ jest.mock('../PassageDetailPlayer', () => ({
 
 jest.mock('../Internalization/SelectMyResource', () => ({
   __esModule: true,
-  default: () => <div data-testid="select-resource" />,
+  default: jest.fn(() => <div data-testid="select-resource" />),
 }));
 
 jest.mock('../../../utils/storedCompareKey', () => ({
@@ -64,11 +64,13 @@ import React from 'react';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { TeamCheckReferenceMobile } from './TeamCheckReferenceMobile';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
+import SelectMyResource from '../Internalization/SelectMyResource';
 
 const PassageDetailPlayerMock =
   PassageDetailPlayer as unknown as jest.MockedFunction<
     typeof PassageDetailPlayer
   >;
+const SelectMyResourceMock = SelectMyResource as unknown as jest.Mock;
 
 function buildState(overrides: Record<string, unknown> = {}) {
   return {
@@ -104,6 +106,13 @@ function lastBottomPassageDetailPlayerProps() {
   return last as { playerState: { playing: boolean } };
 }
 
+function lastSelectMyResourceProps() {
+  const calls = SelectMyResourceMock.mock.calls;
+  const last = calls[calls.length - 1]?.[0] as { disabled?: boolean };
+  expect(last).toBeDefined();
+  return last;
+}
+
 describe('TeamCheckReferenceMobile', () => {
   beforeEach(() => {
     cleanup();
@@ -129,6 +138,29 @@ describe('TeamCheckReferenceMobile', () => {
     renderWithContext();
     expect(screen.getAllByTestId('passage-player')).toHaveLength(2);
     expect(screen.getByTestId('select-resource')).toBeInTheDocument();
+  });
+
+  it('TT-7005: leaves the mobile resource selector enabled when idle', () => {
+    renderWithContext();
+
+    expect(lastSelectMyResourceProps().disabled).toBe(false);
+  });
+
+  it('TT-7005: disables the mobile resource selector while the bottom (reference) player is playing', async () => {
+    renderWithContext();
+
+    const initialCalls = PassageDetailPlayerMock.mock.calls;
+    const bottomProps = initialCalls[1][0] as {
+      playerState?: { playing: boolean; setPlaying: (b: boolean) => void };
+    };
+    bottomProps.playerState!.setPlaying(true);
+
+    await waitFor(() => {
+      expect(lastBottomPassageDetailPlayerProps().playerState.playing).toBe(
+        true
+      );
+    });
+    expect(lastSelectMyResourceProps().disabled).toBe(true);
   });
 
   it('stops the top player when bottom player starts (TT-7280)', () => {

@@ -121,10 +121,10 @@ selection change outright while a resource is playing.**
   `itemPlaying: true` is in context state. This failed for the real reason —
   `TeamCheckReference` never passed a `disabled` prop at all — not a proxy
   assertion.
-  - Gotcha: `toHaveBeenCalledWith(propsMatcher, {})` false-fails under React 18
-    function components — the second call argument is `undefined`, not `{}`,
-    and `expect.anything()` also rejects `undefined`. Index into
-    `mock.calls[0][0]` directly instead of asserting the full call signature.
+  - Gotcha: React 19 function components receive `undefined`, not `{}`, as the
+    second call argument. `expect.anything()` also rejects `undefined`, so index
+    into `mock.calls[0][0]` directly instead of asserting the full call
+    signature.
 - **Green:** add `disabled?: boolean` to `SelectMyResource`'s `IProps`, forward
   it to the MUI `TextField`'s `disabled` prop, then pass
   `disabled={itemPlaying}` from `TeamCheckReference` and `disabled={playing}`

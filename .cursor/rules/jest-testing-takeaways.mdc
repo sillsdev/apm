@@ -133,7 +133,7 @@ alwaysApply: true
   `TeamCheckReferenceMobile.test.tsx` / `TeamCheckReference.test.tsx`), prefer
   `mock.calls[0][0]` to read the props it was called with over
   `toHaveBeenCalledWith(propsMatcher, ...)`.
-- React 18 function components are invoked with a **second argument of
+- React 19 function components are invoked with a **second argument of
   `undefined`** (no legacy context), not `{}`. `toHaveBeenCalledWith(matcher, {})`
   false-fails against that `undefined`; `expect.anything()` fails too (it
   excludes `null`/`undefined`). Index into `mock.calls[N][0]` directly instead
