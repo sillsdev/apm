@@ -8176,6 +8176,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.leaveUnsavedChanges">
+         <segment>
+            <source>You have unsaved changes that will be lost if you leave this page. Leave anyway?</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.loadFromFile">
          <segment>
             <source>Load from file...</source>
@@ -8203,6 +8209,12 @@
       <unit id="shared.mediaError">
          <segment>
             <source>Media is missing or has an unaccepted format.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.mediaQueuedForUpload">
+         <segment>
+            <source>You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
             <target/>
          </segment>
       </unit>
@@ -8239,6 +8251,12 @@
       <unit id="shared.noiseRemovalFailed">
          <segment>
             <source>Noise Removal Failed</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.NoSaveStayOnPage">
+         <segment>
+            <source>If you leave this page before saving, your changes will be lost.</source>
             <target/>
          </segment>
       </unit>

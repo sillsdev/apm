@@ -46,6 +46,7 @@ jest.mock('./WSAudioPlayer', () => {
 
 jest.mock('../context/useGlobal', () => ({
   useGlobal: () => [undefined, jest.fn()],
+  useGetGlobal: () => () => undefined,
 }));
 
 jest.mock('../crud', () => ({
@@ -97,6 +98,7 @@ jest.mock('../utils', () => ({
   loadBlobAsync: jest.fn(),
   logError: jest.fn(),
   Severity: { error: 'error' },
+  useCheckOnline: () => (cb: (online: boolean) => void) => cb(true),
   useMobile: () => ({ isMobile: false }),
   waitForIt: jest.fn(),
   JSONParse: jest.fn(),

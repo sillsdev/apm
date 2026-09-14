@@ -6,7 +6,7 @@ import React, {
   useRef,
   useContext,
 } from 'react';
-import { useGlobal } from '../context/useGlobal';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
@@ -15,9 +15,11 @@ import {
   loadBlobAsync,
   logError,
   Severity,
+  useCheckOnline,
   useMobile,
   waitForIt,
 } from '../utils';
+import { isElectron } from '../../api-variable';
 import {
   IMediaState,
   MediaSt,
@@ -25,7 +27,7 @@ import {
   useMediaUpload,
   convertToFormat,
 } from '../crud';
-import { useSnackBar } from '../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
 import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
@@ -262,6 +264,8 @@ function MediaRecord(props: IProps) {
   const processingRecordingRef = useRef(false);
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
+  const getGlobal = useGetGlobal();
+  const checkOnline = useCheckOnline('MediaRecord');
   const [converting, setConverting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const {
@@ -332,6 +336,19 @@ function MediaRecord(props: IProps) {
     return '';
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
+  const failureMessage = () =>
+    new Promise<string>((resolve) => {
+      if (getGlobal('offline')) {
+        resolve(ts.NoSaveWoMedia);
+        return;
+      }
+      checkOnline((online) => {
+        if (online) resolve(ts.NoSaveWoMedia);
+        else if (isElectron) resolve(ts.mediaQueuedForUpload);
+        else resolve(`${ts.NoSaveWoMedia} ${ts.NoSaveStayOnPage}`);
+      });
+    });
+
   const myAfterUploadCb = async (mediaId: string) => {
     // Notify before any setState: canSave goes true again on the next commit,
     // and auto-save parents must already know this take was rejected or they
@@ -344,9 +361,10 @@ function MediaRecord(props: IProps) {
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
     if (!mediaId) {
-      showMessage(ts.NoSaveWoMedia);
-      setStatusText(ts.NoSaveWoMedia);
-      saveCompleted(toolId, ts.NoSaveWoMedia);
+      const message = await failureMessage();
+      showMessage(message);
+      setStatusText(message);
+      saveCompleted(toolId, message);
     } else {
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
