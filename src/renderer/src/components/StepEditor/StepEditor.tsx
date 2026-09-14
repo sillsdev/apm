@@ -355,8 +355,7 @@ export const StepEditor = ({ process, org }: IProps) => {
         }
         const recId = { type: 'orgworkflowstep', id };
         const rec = memory.cache.query((q) => q.findRecord(recId)) as
-          | OrgWorkflowStep
-          | undefined;
+          OrgWorkflowStep | undefined;
 
         if (rec) {
           let name = rec.attributes?.name;
@@ -536,7 +535,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           justifyContent: 'space-between',
           position: 'sticky',
           top: 0,
-          zIndex: 1,
+          zIndex: 2,
           bgcolor: theme.palette.background.paper,
           pb: 1,
           borderBottom: `1px solid ${theme.palette.divider}`,
