@@ -513,29 +513,31 @@ export function AssignmentTable() {
           {isMobile ? (
             <PlanTabSelect />
           ) : (
-            userIsAdmin && (
-              <Box sx={rowSx}>
-                <Button
-                  id="assignAdd"
-                  key="assign"
-                  aria-label={t.assignSec}
-                  variant="outlined"
-                  onClick={handleMenu}
-                  endIcon={<DropDownIcon />}
-                >
-                  {isPermission ? t.assignSec : t.assignSec2}
-                </Button>
-                <Button
-                  id="assignRem"
-                  key="remove"
-                  aria-label={t.removeSec}
-                  variant="outlined"
-                  onClick={handleRemoveAssignments}
-                >
-                  {isPermission ? t.removeSec : t.removeSec2}
-                </Button>
-              </Box>
-            )
+            <Box sx={rowSx}>
+              {userIsAdmin && (
+                <>
+                  <Button
+                    id="assignAdd"
+                    key="assign"
+                    aria-label={t.assignSec}
+                    variant="outlined"
+                    onClick={handleMenu}
+                    endIcon={<DropDownIcon />}
+                  >
+                    {isPermission ? t.assignSec : t.assignSec2}
+                  </Button>
+                  <Button
+                    id="assignRem"
+                    key="remove"
+                    aria-label={t.removeSec}
+                    variant="outlined"
+                    onClick={handleRemoveAssignments}
+                  >
+                    {isPermission ? t.removeSec : t.removeSec2}
+                  </Button>
+                </>
+              )}
+            </Box>
           )}
         </Box>
       }

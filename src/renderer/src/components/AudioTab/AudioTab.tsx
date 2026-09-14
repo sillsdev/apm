@@ -328,43 +328,47 @@ export function AudioTab() {
     <ContentLayout
       header={
         <Box sx={spreadSx}>
-          {canEditAudio && (
-            <Box sx={rowSx}>
-              <Button
-                id="audUpload"
-                key="upload"
-                aria-label={ts.uploadMediaPlural}
-                variant="outlined"
-                onClick={handleUpload}
-                endIcon={<AddIcon />}
-              >
-                {ts.uploadMediaPlural}
-              </Button>
-              <Button
-                id="audMatch"
-                key={t.autoMatch}
-                aria-label={t.autoMatch}
-                variant="outlined"
-                onClick={handleAutoMatch}
-              >
-                {t.autoMatch}
-              </Button>
-            </Box>
-          )}
-          {complete !== 0 &&
-            complete !== 100 &&
-            !cloudSync.current &&
-            !uploadVisible &&
-            !cancelled.current && (
-              <Button
-                id="uploadCancel"
-                aria-label={ts.cancel}
-                variant="outlined"
-                onClick={handleUploadCancel}
-              >
-                {ts.cancel}
-              </Button>
+          <Box sx={rowSx}>
+            {canEditAudio && (
+              <>
+                <Button
+                  id="audUpload"
+                  key="upload"
+                  aria-label={ts.uploadMediaPlural}
+                  variant="outlined"
+                  onClick={handleUpload}
+                  endIcon={<AddIcon />}
+                >
+                  {ts.uploadMediaPlural}
+                </Button>
+                <Button
+                  id="audMatch"
+                  key={t.autoMatch}
+                  aria-label={t.autoMatch}
+                  variant="outlined"
+                  onClick={handleAutoMatch}
+                >
+                  {t.autoMatch}
+                </Button>
+              </>
             )}
+          </Box>
+          <Box sx={rowSx}>
+            {complete !== 0 &&
+              complete !== 100 &&
+              !cloudSync.current &&
+              !uploadVisible &&
+              !cancelled.current && (
+                <Button
+                  id="uploadCancel"
+                  aria-label={ts.cancel}
+                  variant="outlined"
+                  onClick={handleUploadCancel}
+                >
+                  {ts.cancel}
+                </Button>
+              )}
+          </Box>
         </Box>
       }
       drawBottomBorder={true}
