@@ -38,6 +38,7 @@ import {
 } from './uploadRetry';
 import {
   appendPendingMediaUpload,
+  findPendingUploadIdForIdentity,
   PendingUploadRecord,
   PendingUploadMediaRecord,
   PendingUploadRestore,
@@ -284,7 +285,15 @@ export const nextUpload =
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
-    let pendingIdToClear = pendingUploadIdToClearOnSuccess;
+    // TT-7365: a retried Save (e.g. re-clicked after an offline failure) may
+    // not carry pendingUploadIdToClearOnSuccess (that's only wired from the
+    // Pending Media Uploads dialog's Retry button). Reuse any pending row
+    // already staged for this section/artifact/file so repeated Save clicks
+    // update one row instead of appending a new one each time
+    // writeFileLocal stages the same recording under a new versioned path.
+    let pendingIdToClear =
+      pendingUploadIdToClearOnSuccess ??
+      findPendingUploadIdForIdentity(record as PendingUploadMediaRecord);
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {

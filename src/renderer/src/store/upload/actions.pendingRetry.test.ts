@@ -16,6 +16,11 @@ const appendPendingMediaUpload = jest.fn();
 const updatePendingMediaUpload = jest.fn();
 const removePendingMediaUpload = jest.fn();
 const removeMatchingPendingUploads = jest.fn();
+// Defaults to undefined so these tests keep exercising the pre-existing
+// append/update paths without a caller-supplied pendingUploadIdToClearOnSuccess
+// (TT-7365 identity lookup is covered separately, in
+// actions.duplicatePendingUpload.test.ts).
+const findPendingUploadIdForIdentity = jest.fn();
 
 jest.mock('./pendingMediaUploads', () => ({
   appendPendingMediaUpload: (...args: unknown[]) =>
@@ -26,6 +31,8 @@ jest.mock('./pendingMediaUploads', () => ({
     removePendingMediaUpload(...args),
   removeMatchingPendingUploads: (...args: unknown[]) =>
     removeMatchingPendingUploads(...args),
+  findPendingUploadIdForIdentity: (...args: unknown[]) =>
+    findPendingUploadIdForIdentity(...args),
 }));
 
 jest.mock('../../utils', () => ({

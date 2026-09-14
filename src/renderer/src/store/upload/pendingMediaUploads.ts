@@ -165,6 +165,21 @@ export function hasPendingUploadForPassage(query: {
   );
 }
 
+/**
+ * Existing pending row id for this plan/passage/artifact/file identity, if
+ * any (no path comparison — TT-7365). Lets a retried Save reuse the same row
+ * instead of appending a new one each time `writeFileLocal` stages the same
+ * recording under a new versioned local path.
+ */
+export function findPendingUploadIdForIdentity(
+  identity: PendingUploadIdentity
+): string | undefined {
+  const key = pendingUploadIdentityKey(identity);
+  return loadPendingMediaUploads().find(
+    (p) => pendingUploadIdentityKey(p.record) === key
+  )?.id;
+}
+
 export function removeMatchingPendingUploads(
   identity: PendingUploadIdentity
 ): number {
