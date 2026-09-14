@@ -245,15 +245,16 @@ describe('SelectArtifactCategory (TT-7656)', () => {
     );
   };
 
+  // Prefer the combobox input; MUI may not put our id on the value-bearing node.
+  const categoryInput = (timeout = 4000) =>
+    cy.get('input[role="combobox"]', { timeout });
+
   it('shows note categories immediately while the remote queue is busy', () => {
     mountSelect();
 
     // Discriminating: must appear well under a 1s waitForIt poll.
-    cy.get('#artifact-category', { timeout: 800 }).should(
-      'have.value',
-      'Category 1'
-    );
-    cy.get('#artifact-category').click();
+    categoryInput(800).should('have.value', 'Category 1');
+    categoryInput().click();
     cy.contains('li', 'Category 1').should('be.visible');
     cy.contains('li', 'Category 2').should('be.visible');
     // specialuse categories are filtered out of the dropdown
@@ -261,23 +262,22 @@ describe('SelectArtifactCategory (TT-7656)', () => {
   });
 
   it('keeps what the user types when the queue drains late', () => {
+    // Fake timers before mount so waitForRemoteQueue's 1s poll is under our control.
     cy.clock();
     mountSelect();
+    cy.tick(100);
 
-    // With the fix, categories load from cache before any tick — field is ready.
-    // With the bug, getArtifactCategorys is still blocked on waitForRemoteQueue.
-    cy.tick(0);
-    cy.get('#artifact-category', { timeout: 800 }).should('exist');
+    // Discriminating under a busy queue: categories must already be present from
+    // the local cache (unfixed code is still blocked on waitForRemoteQueue here).
+    categoryInput(800).should('have.value', 'Category 1');
 
-    // Type a new category name while (on unfixed code) load is still pending.
-    cy.get('#artifact-category').clear().type('My New Category');
-
-    // Simulate a late queue drain after a waitForIt poll interval.
+    // Type a new category name, then let a late queue drain land.
+    categoryInput().clear().type('My New Category');
     queueLength = 0;
     cy.tick(1000);
 
     // Typed text must survive — late setCategoryId(init) + setInputVal(currentName)
     // used to wipe it when categories finally arrived.
-    cy.get('#artifact-category').should('have.value', 'My New Category');
+    categoryInput().should('have.value', 'My New Category');
   });
 });
