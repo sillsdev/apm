@@ -1,6 +1,7 @@
 import { UploadType } from '../../components/UploadType';
 import {
   appendPendingMediaUpload,
+  findPendingUploadIdForIdentity,
   hasPendingUploadForPassage,
   loadPendingMediaUploads,
   removeMatchingPendingUploads,
@@ -318,5 +319,59 @@ describe('hasPendingUploadForPassage (TT-7366)', () => {
         artifactTypeId: '',
       })
     ).toBe(true);
+  });
+});
+
+describe('findPendingUploadIdForIdentity (TT-7365 PR #603 review)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('returns the matching row id when passageId is set', () => {
+    const created = appendPendingMediaUpload({
+      localAbsolutePath: '/pending/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+
+    expect(
+      findPendingUploadIdForIdentity({
+        planId: baseRecord.planId,
+        passageId: baseRecord.passageId,
+        artifactTypeId: baseRecord.artifactTypeId,
+        originalFile: baseRecord.originalFile,
+      })
+    ).toBe(created.id);
+  });
+
+  it('returns undefined when there is no passageId, even if plan/artifactType/file all match', () => {
+    // Two distinct project-level resources (no passage) can legitimately
+    // share planId, a blank passageId, the same shared "projectresource"
+    // artifact type, and the same default recorded filename. Falling back
+    // to identity here would silently merge unrelated uploads (Copilot
+    // review on PR #603, actions.tsx line 296) — the same hazard
+    // hasPendingUploadForPassage already guards against for TT-7366.
+    appendPendingMediaUpload({
+      localAbsolutePath: '/pending/resource-a.wav',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: {
+        ...baseRecord,
+        passageId: '',
+        artifactTypeId: 'project-resource-type',
+        originalFile: 'recording.wav',
+        topic: 'First resource',
+      },
+    });
+
+    expect(
+      findPendingUploadIdForIdentity({
+        planId: baseRecord.planId,
+        passageId: '',
+        artifactTypeId: 'project-resource-type',
+        originalFile: 'recording.wav',
+      })
+    ).toBeUndefined();
   });
 });
