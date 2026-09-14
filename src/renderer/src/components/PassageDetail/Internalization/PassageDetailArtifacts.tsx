@@ -935,10 +935,17 @@ export function PassageDetailArtifacts() {
           container
           size={12}
           spacing={theme.layout.p}
-          sx={{ display: 'flex', alignItems: 'center' }}
+          wrap="nowrap"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            minWidth: 0,
+            width: '100%',
+            overflow: 'hidden',
+          }}
         >
           {isScripture && (
-            <Grid>
+            <Grid sx={{ flexShrink: 0 }}>
               <Button disableTypography onClick={() => handleFindVisible(true)}>
                 <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
               </Button>
@@ -946,11 +953,11 @@ export function PassageDetailArtifacts() {
           )}
           {hasPermission && (!offline || offlineOnly) && (
             <>
-              <Grid>
+              <Grid sx={{ flexShrink: 0 }}>
                 <AddResource action={handleAction} />
               </Grid>
               {hasProjRes && !isMobileWidth && (
-                <Grid>
+                <Grid sx={{ flexShrink: 0 }}>
                   <Button onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
                   </Button>
@@ -959,7 +966,14 @@ export function PassageDetailArtifacts() {
             </>
           )}
           {playItem !== '' && (
-            <Grid sx={{ width: '50%' }}>
+            <Grid
+              sx={{
+                width: '50%',
+                minWidth: 0,
+                flexShrink: 1,
+                overflow: 'hidden',
+              }}
+            >
               <MediaContainer>
                 <LimitedMediaPlayer
                   srcMediaId={playItem}
@@ -974,7 +988,7 @@ export function PassageDetailArtifacts() {
             </Grid>
           )}
           {otherResourcesAvailable && (
-            <Grid>
+            <Grid sx={{ flexShrink: 0 }}>
               <PassageResourceButton
                 value={allResources}
                 label={t.allResources}
