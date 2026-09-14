@@ -26,13 +26,24 @@ describe('evictMediaCache', () => {
     };
     (window as unknown as { api?: typeof api }).api = api;
 
+    const logError = jest.fn();
+
     jest.doMock('../../api-variable', () => ({
       isElectron,
       API_CONFIG: { offlineData: 'offline' },
     }));
+    jest.doMock('./logErrorService', () => ({
+      logError,
+      Severity: { info: 0, error: 1, retry: 2 },
+    }));
+    jest.doMock('../auth/bugsnagClient', () => ({
+      __esModule: true,
+      default: {},
+    }));
 
     return {
       api,
+      logError,
       mod: require('./evictMediaCache') as typeof import('./evictMediaCache'),
     };
   }
@@ -75,8 +86,8 @@ describe('evictMediaCache', () => {
     expect(api.delete).not.toHaveBeenCalled();
   });
 
-  it('lets delete errors bubble instead of failing silently', async () => {
-    const { mod, api } = load({
+  it('logs delete errors instead of throwing so the caller can finish', async () => {
+    const { mod, api, logError } = load({
       existsImpl: async () => true,
       deleteImpl: async () => {
         throw new Error('EBUSY');
@@ -84,8 +95,20 @@ describe('evictMediaCache', () => {
     });
     const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
-    await expect(mod.evictMediaCache(url)).rejects.toThrow('EBUSY');
+    await expect(mod.evictMediaCache(url)).resolves.toBeUndefined();
     expect(api.delete).toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledTimes(1);
+    expect(String(logError.mock.calls[0][2])).toContain('EBUSY');
+  });
+
+  it('does nothing when there is no home dir', async () => {
+    localStorage.removeItem('home');
+    const { mod, api } = load({ existsImpl: async () => true });
+    const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+
+    await mod.evictMediaCache(url);
+
+    expect(api.delete).not.toHaveBeenCalled();
   });
 
   it('never deletes outside the media cache dir (encoded traversal)', async () => {

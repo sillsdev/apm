@@ -1,6 +1,8 @@
 import path from 'path-browserify';
 import { dataPath, PathType } from './dataPath';
 import { isElectron, API_CONFIG } from '../../api-variable';
+import { logError, Severity } from './logErrorService';
+import bugsnagClient from '../auth/bugsnagClient';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 const { offlineData } = API_CONFIG;
@@ -22,13 +24,28 @@ export const evictMediaCache = async (url?: string): Promise<void> => {
   // resolves elsewhere is refused, so eviction can never delete an arbitrary
   // file. (Devin review, TT-7689.)
   const homeDir = localStorage.getItem('home') ?? '';
+  // Without a home dir, mediaDir would be relative (e.g. offline/media) and the
+  // containment check below could pass for a relative path; never target one.
+  // (Copilot review, TT-7689.)
+  if (!homeDir) return;
   const mediaDir = path.join(homeDir, offlineData, PathType.MEDIA);
   if (path.dirname(local.localname) !== mediaDir) return;
   // delete (fs.unlink) can reject (ENOENT race, EBUSY when the player still
-  // holds the file, permissions). We deliberately let it bubble rather than
-  // swallow it, so a failed eviction surfaces instead of silently leaving the
-  // stale clip in the cache.
-  await ipc?.delete(local.localname);
+  // holds the file, permissions). Report via the standard logError channel
+  // (Bugsnag online / error log offline) rather than throwing, so a failed
+  // eviction surfaces without derailing the PBT delete/reset flow that calls
+  // us. Worst case is a stale clip left in the cache, not a broken re-record.
+  try {
+    await ipc?.delete(local.localname);
+  } catch (err) {
+    logError(
+      Severity.error,
+      bugsnagClient,
+      `evictMediaCache failed for ${local.localname}: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
 };
 
 export default evictMediaCache;
