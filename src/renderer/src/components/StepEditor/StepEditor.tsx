@@ -355,8 +355,7 @@ export const StepEditor = ({ process, org }: IProps) => {
         }
         const recId = { type: 'orgworkflowstep', id };
         const rec = memory.cache.query((q) => q.findRecord(recId)) as
-          | OrgWorkflowStep
-          | undefined;
+          OrgWorkflowStep | undefined;
 
         if (rec) {
           let name = rec.attributes?.name;
