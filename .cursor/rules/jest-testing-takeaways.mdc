@@ -127,6 +127,18 @@ alwaysApply: true
   tree, or assert via **`within(dialog)` + partial name regex** or **`#id` + `textContent`**
   for the title node when appropriate.
 
+## Asserting props on a mocked child component
+
+- When a component under test is mocked with `jest.fn(() => <div />)` (see
+  `TeamCheckReferenceMobile.test.tsx` / `TeamCheckReference.test.tsx`), prefer
+  `mock.calls[0][0]` to read the props it was called with over
+  `toHaveBeenCalledWith(propsMatcher, ...)`.
+- React 18 function components are invoked with a **second argument of
+  `undefined`** (no legacy context), not `{}`. `toHaveBeenCalledWith(matcher, {})`
+  false-fails against that `undefined`; `expect.anything()` fails too (it
+  excludes `null`/`undefined`). Index into `mock.calls[N][0]` directly instead
+  of asserting the full call signature.
+
 ## Running a New Jest Test Module
 
 Run Jest from `src/renderer` (required for this repo).

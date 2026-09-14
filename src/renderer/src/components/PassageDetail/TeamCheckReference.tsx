@@ -86,7 +86,11 @@ export function TeamCheckReference() {
   return (
     <Grid container direction="column">
       <Grid size={{ xs: 10 }} sx={{ m: 2, p: 2 }}>
-        <SelectMyResource onChange={handleResource} inResource={resource} />
+        <SelectMyResource
+          onChange={handleResource}
+          inResource={resource}
+          disabled={itemPlaying}
+        />
       </Grid>
       <StyledGrid size={{ xs: 10 }}>
         <LimitedMediaPlayer

@@ -12,10 +12,11 @@ interface IProps {
   label?: string;
   onChange?: (resource: string) => void;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export const SelectMyResource = (props: IProps) => {
-  const { onChange, inResource, required } = props;
+  const { onChange, inResource, required, disabled } = props;
   const ctx = useContext(PassageDetailContext);
   const { rowData, section, passage } = ctx.state;
   const [resource, setResource] = useState('');
@@ -77,6 +78,7 @@ export const SelectMyResource = (props: IProps) => {
       onChange={handleUserChange}
       variant="filled"
       required={required}
+      disabled={disabled}
     >
       {rowData
         .filter(
