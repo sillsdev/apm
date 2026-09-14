@@ -25,6 +25,14 @@ let mockUploadMedia: jest.Mock;
 let mockConvertToFormat: jest.Mock;
 /** MediaRecord's own myAfterUploadCb, captured from the useMediaUpload props. */
 let capturedAfterUploadCb: ((mediaId: string) => Promise<void>) | undefined;
+const mockEnv = { isElectron: false, online: true };
+const mockShowMessage = jest.fn();
+
+jest.mock('../../api-variable', () => ({
+  get isElectron() {
+    return mockEnv.isElectron;
+  },
+}));
 
 jest.mock('../utils/typeLimit', () => ({
   typeLimit: () => 1,
@@ -66,7 +74,9 @@ jest.mock('../crud', () => ({
 }));
 
 jest.mock('../hoc/SnackBar', () => ({
-  useSnackBar: () => ({ showMessage: jest.fn() }),
+  useSnackBar: () => ({
+    showMessage: (...args: unknown[]) => mockShowMessage(...args),
+  }),
 }));
 
 jest.mock('../context/UnsavedContext', () => {
@@ -98,7 +108,7 @@ jest.mock('../utils', () => ({
   loadBlobAsync: jest.fn(),
   logError: jest.fn(),
   Severity: { error: 'error' },
-  useCheckOnline: () => (cb: (online: boolean) => void) => cb(true),
+  useCheckOnline: () => (cb: (online: boolean) => void) => cb(mockEnv.online),
   useMobile: () => ({ isMobile: false }),
   waitForIt: jest.fn(),
   JSONParse: jest.fn(),
@@ -121,6 +131,8 @@ jest.mock('react-redux', () => ({
     }
     return {
       NoSaveWoMedia: 'No media to save',
+      NoSaveStayOnPage: 'Stay on this page',
+      mediaQueuedForUpload: 'Queued for upload',
       mediaError: 'Media error',
       loading: 'Loading...',
     };
@@ -150,6 +162,8 @@ describe('MediaRecord save gating', () => {
     wsLoadingHistory = [];
     capturedAfterUploadCb = undefined;
     jest.clearAllMocks();
+    mockEnv.isElectron = false;
+    mockEnv.online = true;
     mockSaveRequested = () => false;
     mockUploadMedia = jest.fn().mockResolvedValue(undefined);
     mockConvertToFormat = jest.fn((blob: Blob) => Promise.resolve(blob));
@@ -378,5 +392,30 @@ describe('MediaRecord save gating', () => {
     // toolChanged from it. Latching it off after a transient failure would
     // leave no way to retry and no unsaved-changes warning.
     await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
+  });
+
+  // On desktop the take survives as a pending media upload, so a network loss
+  // tells the user it is queued rather than that the save failed.
+  it('tells electron users the take is queued when the network is lost', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    await failASave(jest.fn());
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+  });
+
+  // On web nothing is kept, so the user is warned to stay on the page.
+  it('tells web users to stay on the page when the network is lost', async () => {
+    mockEnv.isElectron = false;
+    mockEnv.online = false;
+    await failASave(jest.fn());
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith(
+        'No media to save Stay on this page'
+      )
+    );
   });
 });
