@@ -319,6 +319,27 @@ export function useWaveSurfer(
     isSegmentRecorded
   );
 
+  // Cypress CT seam (TT-7138): allow tests to overshoot region.end past the
+  // AudioBuffer duration the way media-element duration can in production.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const w = window as Window & {
+      Cypress?: unknown;
+      __wsCt?: {
+        currentRegion: typeof currentRegion;
+        blobDuration: () => number;
+      };
+    };
+    if (!w.Cypress) return;
+    w.__wsCt = {
+      currentRegion,
+      blobDuration: () => blobAudioRef.current?.duration ?? 0,
+    };
+    return () => {
+      delete w.__wsCt;
+    };
+  }, [currentRegion]);
+
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
     playingRef.current = value;
     try {
@@ -1057,22 +1078,46 @@ export function useWaveSurfer(
   };
 
   //delete the audio in the current region
-  const wsRegionDelete = async () => {
-    if (!currentRegion() || !wavesurferRef.current) return;
+  // Returns true when decoded audio was mutated (caller should mark changed).
+  const wsRegionDelete = async (): Promise<boolean> => {
+    if (!currentRegion() || !wavesurferRef.current) return false;
     const start = trimTo(currentRegion()?.start ?? 0, 3);
     const end = trimTo(currentRegion()?.end ?? 0, 3);
-    currentRegion()?.remove();
     const len = end - start;
+    const regionToRemove = currentRegion();
 
-    if (!len) return wsClear();
+    if (!len) {
+      regionToRemove?.remove();
+      await wsClear();
+      return true;
+    }
     const originalBuffer = blobAudioRef.current;
-    if (!originalBuffer) return null;
+    // Validate buffer before clearing the selection so a failed delete does not
+    // leave the highlight gone with unchanged audio (TT-7138).
+    if (!originalBuffer) return false;
+
+    const { numberOfChannels, sampleRate, length } = originalBuffer;
+    // Clamp like insertAudioData's after_len guard: region.end can exceed the
+    // AudioBuffer when UI/media duration is slightly longer (TT-7138).
+    const startSample = Math.max(0, Math.floor(start * sampleRate));
+    const endSample = Math.min(length, Math.floor(end * sampleRate));
+    // Selection entirely past the decoded buffer (or empty after clamp): dismiss
+    // the highlight without arming undo or marking the take changed.
+    if (endSample <= startSample) {
+      regionToRemove?.remove();
+      onRegion(0, true);
+      return false;
+    }
+    const newLength = length - (endSample - startSample);
+    if (newLength <= 0) {
+      regionToRemove?.remove();
+      await wsClear();
+      return true;
+    }
+
     setUndoBuffer(copyOriginal());
     onCanUndo(true);
-    const { numberOfChannels, sampleRate, length } = originalBuffer;
-    const startSample = Math.floor(start * sampleRate);
-    const endSample = Math.floor(end * sampleRate);
-    const newLength = length - (endSample - startSample);
+    regionToRemove?.remove();
 
     const newAudioBuffer = audioContext().createBuffer(
       numberOfChannels,
@@ -1092,6 +1137,7 @@ export function useWaveSurfer(
     if (tmp < 0) tmp = 0;
     await loadDecoded(newAudioBuffer, tmp);
     onRegion(0, true);
+    return true;
   };
 
   const wsRegionReplace = async (blob: Blob) => {

@@ -1574,8 +1574,8 @@ function WSAudioPlayer(props: IProps) {
   const handleDeleteRegion = () => {
     setPlaying(false);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
-    wsRegionDelete().then(() => {
-      handleChanged();
+    wsRegionDelete().then((mutated) => {
+      if (mutated) handleChanged();
     });
   };
 
