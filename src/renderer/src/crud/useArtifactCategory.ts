@@ -20,6 +20,7 @@ import {
 } from '../model/baseModel';
 import { cleanFileName } from '../utils/cleanFileName';
 import { useWaitForRemoteQueue } from '../utils/useWaitForRemoteQueue';
+import { logError, Severity } from '../utils/logErrorService';
 
 interface ISwitches {
   [key: string]: any;
@@ -47,11 +48,12 @@ export const useArtifactCategory = (teamId?: string) => {
   const [organization] = useGlobal('organization');
   const curOrg = teamId ?? organization;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const [errorReporter] = useGlobal('errorReporter');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const t: IArtifactCategoryStrings = useSelector(stringSelector, shallowEqual);
   const [fromLocal] = useState<ISwitches>({});
   const specialNoteCategories = ['chapter', 'title'];
-  // Ensure chapter/title bootstrap runs at most once per org per session.
+  // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
   const specialBootstrapOrgs = useRef<Set<string>>(new Set());
   const localizedArtifactCategory = (val: string) => {
     return (t as ISwitches)[val] || val;
@@ -148,8 +150,12 @@ export const useArtifactCategory = (teamId?: string) => {
       ) {
         specialBootstrapOrgs.current.add(curOrg);
         // Fire-and-forget: liveQuery refreshes the picker when records land,
-        // and specials are filtered out of the dropdown anyway.
-        void AddOrgNoteCategories(curOrg);
+        // and specials are filtered out of the dropdown anyway. On failure,
+        // clear the marker so a later read can retry.
+        void AddOrgNoteCategories(curOrg).catch((err: Error) => {
+          specialBootstrapOrgs.current.delete(curOrg);
+          logError(Severity.error, errorReporter, err);
+        });
       }
     }
 

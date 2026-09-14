@@ -81,6 +81,14 @@ const mockMemory = {
   schema: {},
 };
 
+const mockErrorReporter = { notify: jest.fn() };
+const mockLogError = jest.fn();
+
+jest.mock('../utils/logErrorService', () => ({
+  Severity: { info: 0, error: 1, retry: 2 },
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 jest.mock('../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
     const mockValues: Record<string, unknown> = {
@@ -88,6 +96,7 @@ jest.mock('../context/useGlobal', () => ({
       user: USER_ID,
       organization: ORG_ID,
       offlineOnly: false,
+      errorReporter: mockErrorReporter,
     };
     return [mockValues[key], jest.fn()];
   }),
@@ -98,6 +107,7 @@ jest.mock('../context/useGlobal', () => ({
         user: USER_ID,
         organization: ORG_ID,
         offlineOnly: false,
+        errorReporter: mockErrorReporter,
       };
       return mockValues[key];
     })
@@ -108,6 +118,7 @@ import {
   ArtifactCategoryType,
   useArtifactCategory,
 } from './useArtifactCategory';
+import { Severity } from '../utils/logErrorService';
 
 const noteCat = (
   id: string,
@@ -175,6 +186,7 @@ const settleSoon = <T>(p: Promise<T>, ms = 100): Promise<T> =>
 describe('useArtifactCategory (TT-7656)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLogError.mockClear();
     pendingWaits.length = 0;
     waitForRemoteQueue.mockImplementation(
       () =>
@@ -243,6 +255,44 @@ describe('useArtifactCategory (TT-7656)', () => {
       result.current.getArtifactCategorys(ArtifactCategoryType.Note)
     );
     expect(mockMemory.update).not.toHaveBeenCalled();
+  });
+
+  it('retries special note-category bootstrap after a failed Orbit write', async () => {
+    // No chapter special — bootstrap must run. A transient memory.update failure
+    // must not permanently suppress retries on the same hook instance (Devin).
+    categoryRecords = [
+      noteCat('note-1', 'general', { remoteId: '11' }),
+      noteCat('note-2', 'activity', { remoteId: '12' }),
+    ];
+    const boom = new Error('IndexedDB transform failed');
+    mockMemory.update
+      .mockRejectedValueOnce(boom)
+      .mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    // Let the detached bootstrap rejection settle (and clear the marker).
+    await act(async () => {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    await act(async () => {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    // Discriminating: failed bootstrap must not permanently suppress retries.
+    expect(mockMemory.update).toHaveBeenCalledTimes(2);
+    expect(mockLogError).toHaveBeenCalledWith(
+      Severity.error,
+      mockErrorReporter,
+      boom
+    );
   });
 
   it('waits for the remote queue only after creating a new category', async () => {
