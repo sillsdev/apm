@@ -122,4 +122,19 @@ describe('evictMediaCache', () => {
 
     expect(api.delete).not.toHaveBeenCalled();
   });
+
+  it('evicts cached media in a subfolder of the media dir (%2F filename)', async () => {
+    // Some S3 filenames contain %2F, which dataPath decodes to "/", nesting the
+    // cached file under .../media. That is still inside the cache tree, so it
+    // must be evicted, not skipped.
+    const { mod, api } = load({ existsImpl: async () => true });
+    const url =
+      'https://host/media/sub%2Fclip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+
+    await mod.evictMediaCache(url);
+
+    expect(api.delete).toHaveBeenCalledWith(
+      'C:\\\\home/offline/media/sub/clip.mp3'
+    );
+  });
 });
