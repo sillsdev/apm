@@ -165,6 +165,28 @@ export function hasPendingUploadForPassage(query: {
   );
 }
 
+/**
+ * Existing pending row id for this plan/passage/artifact/file identity, if
+ * any (no path comparison — TT-7365). Lets a retried Save reuse the same row
+ * instead of appending a new one each time `writeFileLocal` stages the same
+ * recording under a new versioned local path.
+ *
+ * Requires a non-empty `passageId`, same as `hasPendingUploadForPassage`
+ * (TT-7366): without a passage to scope it, distinct project/section-level
+ * resources can share planId + a blank passageId + a common artifact type +
+ * a generic recorded filename, and matching on identity alone would merge
+ * unrelated uploads (PR #603 review).
+ */
+export function findPendingUploadIdForIdentity(
+  identity: PendingUploadIdentity
+): string | undefined {
+  if (!identity.passageId) return undefined;
+  const key = pendingUploadIdentityKey(identity);
+  return loadPendingMediaUploads().find(
+    (p) => pendingUploadIdentityKey(p.record) === key
+  )?.id;
+}
+
 export function removeMatchingPendingUploads(
   identity: PendingUploadIdentity
 ): number {
