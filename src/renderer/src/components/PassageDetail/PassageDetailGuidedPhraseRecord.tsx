@@ -260,7 +260,9 @@ export function PassageDetailGuidedPhraseRecord({
   const addOptimistic = useCallback(
     (region: IRegion | undefined) => {
       if (!region) return;
-      if (optimisticTakeRegionsRef.current.some((r) => regionsMatch(r, region))) {
+      if (
+        optimisticTakeRegionsRef.current.some((r) => regionsMatch(r, region))
+      ) {
         return;
       }
       optimisticTakeRegionsRef.current = [
@@ -1855,7 +1857,8 @@ export function PassageDetailGuidedPhraseRecord({
       // Mark optimistic completion immediately after real upload (TT-7552),
       // and always apply it to the latched recording-start clause (TT-7437).
       // No mediaId means upload failed; do not show optimistic success (TT-7583).
-      const takeRegion = recordingTargetRef.current?.region ?? currentRegionRef.current;
+      const takeRegion =
+        recordingTargetRef.current?.region ?? currentRegionRef.current;
       if (mediaId) {
         addOptimistic(takeRegion);
         // Stored: the take is no longer pending, so release the clause.

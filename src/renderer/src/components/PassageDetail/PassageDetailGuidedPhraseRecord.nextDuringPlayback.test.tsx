@@ -226,9 +226,7 @@ const startRecordingPass = async () => {
   await act(async () => {
     (controlsProps?.onStartRecording as () => void)();
   });
-  await waitFor(() =>
-    expect(controlsProps?.recordingPassStarted).toBe(true)
-  );
+  await waitFor(() => expect(controlsProps?.recordingPassStarted).toBe(true));
 };
 
 beforeEach(() => {
