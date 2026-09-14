@@ -319,6 +319,27 @@ export function useWaveSurfer(
     isSegmentRecorded
   );
 
+  // Cypress CT seam (TT-7138): allow tests to overshoot region.end past the
+  // AudioBuffer duration the way media-element duration can in production.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const w = window as Window & {
+      Cypress?: unknown;
+      __wsCt?: {
+        currentRegion: typeof currentRegion;
+        blobDuration: () => number;
+      };
+    };
+    if (!w.Cypress) return;
+    w.__wsCt = {
+      currentRegion,
+      blobDuration: () => blobAudioRef.current?.duration ?? 0,
+    };
+    return () => {
+      delete w.__wsCt;
+    };
+  }, [currentRegion]);
+
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
     playingRef.current = value;
     try {
@@ -1061,18 +1082,36 @@ export function useWaveSurfer(
     if (!currentRegion() || !wavesurferRef.current) return;
     const start = trimTo(currentRegion()?.start ?? 0, 3);
     const end = trimTo(currentRegion()?.end ?? 0, 3);
-    currentRegion()?.remove();
     const len = end - start;
 
-    if (!len) return wsClear();
+    if (!len) {
+      currentRegion()?.remove();
+      return wsClear();
+    }
     const originalBuffer = blobAudioRef.current;
+    // Validate buffer before clearing the selection so a failed delete does not
+    // leave the highlight gone with unchanged audio (TT-7138).
     if (!originalBuffer) return null;
+
+    const regionToRemove = currentRegion();
     setUndoBuffer(copyOriginal());
     onCanUndo(true);
     const { numberOfChannels, sampleRate, length } = originalBuffer;
-    const startSample = Math.floor(start * sampleRate);
-    const endSample = Math.floor(end * sampleRate);
+    // Clamp like insertAudioData's after_len guard: region.end can exceed the
+    // AudioBuffer when UI/media duration is slightly longer (TT-7138).
+    const startSample = Math.max(0, Math.floor(start * sampleRate));
+    const endSample = Math.min(length, Math.floor(end * sampleRate));
+    if (endSample <= startSample) {
+      regionToRemove?.remove();
+      return;
+    }
     const newLength = length - (endSample - startSample);
+    if (newLength <= 0) {
+      regionToRemove?.remove();
+      return wsClear();
+    }
+
+    regionToRemove?.remove();
 
     const newAudioBuffer = audioContext().createBuffer(
       numberOfChannels,

@@ -22,13 +22,15 @@ those files plus `src/auth/auth0-variables.json` for `cy.loginByAuth0()`.
 
 ## Running tests
 
-From `src/renderer`:
+From `src/renderer` (required — not the repo root):
 
 ```powershell
 # Component tests (Cypress starts its own Vite dev server)
 npm run cy:run-ct
 npm run cy:open-ct
 npm run cy:run-ct -- --spec=**/PlanTabSelect.cy.tsx --browser chrome
+# PowerShell also accepts an unquoted glob without '=':
+# npm run cy:run-ct -- --spec **/PlanTabSelect.cy.tsx
 
 # Multiple specs: quote the whole --spec value and comma-separate globs.
 # Do NOT append a second --browser (the cy:run-ct script already sets it);
@@ -39,6 +41,36 @@ npm run cy:run-ct -- --spec "**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx"
 npm run cy:run-local
 npm run cy:open-local
 ```
+
+### Cursor agents: Cypress binary / cache (do not reinstall)
+
+Agents often fail with:
+
+```text
+No version of Cypress is installed in: ...\cursor-sandbox-cache\...\cypress\...\Cypress
+Please reinstall Cypress by running: cypress install
+```
+
+That is **not** a missing install. Cursor's shell can set `CYPRESS_CACHE_FOLDER` (and
+sometimes `npm_config_devdir`) to an **empty sandbox temp cache**, so Cypress looks
+there instead of the real user cache (`%LOCALAPPDATA%\Cypress\Cache` on Windows).
+
+**Do not** run `cypress install` / reinstall to “fix” this. Clear the sandbox override
+and run from `src/renderer`:
+
+```powershell
+Remove-Item Env:CYPRESS_CACHE_FOLDER -ErrorAction SilentlyContinue
+Remove-Item Env:npm_config_devdir -ErrorAction SilentlyContinue
+# Optional: pin the real cache explicitly
+$env:CYPRESS_CACHE_FOLDER = "$env:LOCALAPPDATA\Cypress\Cache"
+Set-Location <repo>\src\renderer
+npm run cy:run-ct -- --spec **/YourSpec.cy.tsx
+```
+
+If the user's own terminal already runs CT successfully, prefer that same cwd and
+command shape; the agent failure is almost always the redirected cache, not the
+project setup. Confirm with `$env:CYPRESS_CACHE_FOLDER` — if it contains
+`cursor-sandbox-cache`, clear it.
 
 Docker CT uses the same config file. E2e needs the app at `http://localhost:3000`
 and a reachable dev API (`VITE_HOST`).
