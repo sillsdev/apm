@@ -1,11 +1,19 @@
 import React from 'react';
+import {
+  jest,
+  describe,
+  beforeEach,
+  afterEach,
+  it,
+  expect,
+} from '@jest/globals';
+import '@testing-library/jest-dom/jest-globals';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 
 const RECORD_KEY = 'F9,CTRL+9';
 
 let capturedOnWSReady:
-  | ((duration: number, loadingAnother: boolean) => void)
-  | undefined;
+  ((duration: number, loadingAnother: boolean) => void) | undefined;
 
 const waveSurferMock = {
   wsLoad: jest.fn(),
@@ -24,7 +32,7 @@ const waveSurferMock = {
   wsClearRegions: jest.fn(),
   wsGetRegions: jest.fn(() => '{}'),
   wsLoopRegion: jest.fn(() => false),
-  wsRegionDelete: jest.fn(async () => undefined),
+  wsRegionDelete: jest.fn(async () => true),
   wsRegionReplace: jest.fn(),
   wsUndo: jest.fn(),
   wsInsertAudio: jest.fn(async () => 0),
@@ -85,8 +93,7 @@ jest.mock('../crud/useWaveSurfer', () => ({
 }));
 
 let capturedOnRecordError:
-  | ((e: { deviceLost?: boolean; deviceId?: string }) => void)
-  | undefined;
+  ((e: { deviceLost?: boolean; deviceId?: string }) => void) | undefined;
 let capturedOnRecordStop: ((blob?: Blob) => void | Promise<void>) | undefined;
 const mockStartRecording = jest.fn(() => Promise.resolve(true));
 
@@ -364,9 +371,9 @@ describe('WSAudioPlayer microphone disconnect fallback', () => {
     onDeviceChange = undefined;
     localStorage.setItem('microphoneId', 'headset');
     enumerateDevices = jest
-      .fn()
-      .mockResolvedValueOnce([headset, laptop])
-      .mockResolvedValue([laptop]);
+      .fn<() => Promise<MediaDeviceInfo[]>>()
+      .mockResolvedValueOnce([headset, laptop] as MediaDeviceInfo[])
+      .mockResolvedValue([laptop] as MediaDeviceInfo[]);
     previousMediaDevices = navigator.mediaDevices;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
