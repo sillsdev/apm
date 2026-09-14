@@ -76,6 +76,10 @@ const AssignmentDiv = styled('div')(() => ({
   '& tr > td > div > span.MuiButtonBase-root:nth-of-type(3)': {
     visibility: 'hidden',
   },
+  // passage (child) rows have no working selection, so hide their checkbox
+  '& .passage-row .MuiDataGrid-cellCheckbox': {
+    visibility: 'hidden',
+  },
 }));
 
 interface IRow {
@@ -544,6 +548,10 @@ export function AssignmentTable() {
           rows={data}
           checkboxSelection={!isMobile}
           disableRowSelectionOnClick
+          isRowSelectable={(params) => !params.row.parentId}
+          getRowClassName={(params) =>
+            params.row.parentId ? 'passage-row' : ''
+          }
           rowSelectionModel={selectedRows}
           onRowSelectionModelChange={handleRowSelectionChange}
           recIdName="recId"
