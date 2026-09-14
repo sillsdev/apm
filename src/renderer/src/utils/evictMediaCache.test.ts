@@ -74,4 +74,29 @@ describe('evictMediaCache', () => {
 
     expect(api.delete).not.toHaveBeenCalled();
   });
+
+  it('lets delete errors bubble instead of failing silently', async () => {
+    const { mod, api } = load({
+      existsImpl: async () => true,
+      deleteImpl: async () => {
+        throw new Error('EBUSY');
+      },
+    });
+    const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+
+    await expect(mod.evictMediaCache(url)).rejects.toThrow('EBUSY');
+    expect(api.delete).toHaveBeenCalled();
+  });
+
+  it('never deletes outside the media cache dir (encoded traversal)', async () => {
+    // %2F decodes to "/" only after the basename is taken, so dataPath resolves
+    // this above the media folder. Eviction must refuse to unlink it.
+    const { mod, api } = load({ existsImpl: async () => true });
+    const url =
+      'https://host/media/..%2F..%2Fsecret.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+
+    await mod.evictMediaCache(url);
+
+    expect(api.delete).not.toHaveBeenCalled();
+  });
 });
