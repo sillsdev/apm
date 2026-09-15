@@ -8214,7 +8214,7 @@
       </unit>
       <unit id="shared.mediaQueuedForUpload">
          <segment>
-            <source>You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
+            <source>This media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
             <target/>
          </segment>
       </unit>

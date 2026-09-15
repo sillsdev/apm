@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+/// <reference types="jest" />
 import Axios from 'axios';
 import { UploadType } from '../../components/UploadType';
 import { type MediaFileAttributes } from '../../model';
@@ -106,6 +107,7 @@ describe('nextUpload pending retry failure', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    findPendingUploadIdForIdentity.mockReset();
     dispatch = jest.fn();
     mockedAxios.post.mockRejectedValue({
       response: { status: 500 },
@@ -228,6 +230,7 @@ describe('nextUpload pendingQueued meta (TT-7365 follow-up)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    findPendingUploadIdForIdentity.mockReset();
     dispatch = jest.fn();
     mockedAxios.post.mockRejectedValue({
       response: { status: 500 },
@@ -330,6 +333,102 @@ describe('nextUpload pendingQueued meta (TT-7365 follow-up)', () => {
       expect.objectContaining({ pendingQueued: true })
     );
   });
+
+  // Silent localStorage persist failure: updatePendingMediaUpload returns the
+  // patched in-memory row, but reload still has the previous path. Claiming
+  // pendingQueued would clear dirty while Retry uploads the wrong take.
+  it('reports pendingQueued false when reload still has a stale path', async () => {
+    const oldPath = '/staged/take.ver1.mp3';
+    const newPath = '/staged/take.ver2.mp3';
+    findPendingUploadIdForIdentity.mockReturnValue('stale-path-1');
+    loadPendingMediaUploads.mockReturnValue([
+      {
+        id: 'stale-path-1',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        localAbsolutePath: oldPath,
+        fileSize: 3,
+        uploadType: UploadType.Media,
+        record: baseRecord,
+      },
+    ]);
+    updatePendingMediaUpload.mockImplementation(
+      (_id: string, patch: object) => {
+        return {
+          id: 'stale-path-1',
+          failedAt: '2026-01-01T00:00:00.000Z',
+          fileSize: 3,
+          uploadType: UploadType.Media,
+          record: baseRecord,
+          ...(patch as object),
+        };
+      }
+    );
+
+    const cb = jest.fn();
+    const file = Object.assign(makeFile(), { path: newPath });
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(updatePendingMediaUpload).toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.objectContaining({ pendingQueued: false })
+    );
+    expect(removePendingMediaUpload).toHaveBeenCalledWith('stale-path-1');
+  });
+
+  it('reports pendingQueued true when reload matches the new staged path', async () => {
+    const newPath = '/staged/take.ver2.mp3';
+    findPendingUploadIdForIdentity.mockReturnValue('fresh-path-1');
+    updatePendingMediaUpload.mockImplementation(
+      (_id: string, patch: object) => {
+        const full = {
+          id: 'fresh-path-1',
+          failedAt: '2026-01-01T00:00:00.000Z',
+          fileSize: 3,
+          uploadType: UploadType.Media,
+          record: baseRecord,
+          ...(patch as object),
+        };
+        loadPendingMediaUploads.mockReturnValue([full]);
+        return full;
+      }
+    );
+
+    const cb = jest.fn();
+    const file = Object.assign(makeFile(), { path: newPath });
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.objectContaining({ pendingQueued: true })
+    );
+  });
 });
 
 const vndResponse = {
@@ -352,6 +451,7 @@ describe('nextUpload pending clear on success (TT-7347)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    findPendingUploadIdForIdentity.mockReset();
     dispatch = jest.fn();
     mockedAxios.post.mockResolvedValue(vndResponse as never);
 
@@ -437,6 +537,7 @@ describe('nextUpload pending clear after secondary restore (TT-7363)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    findPendingUploadIdForIdentity.mockReset();
     dispatch = jest.fn();
     mockedAxios.post.mockResolvedValue(vndResponse as never);
 
@@ -595,6 +696,7 @@ describe('nextUpload enqueue after staging (TT-7348)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    findPendingUploadIdForIdentity.mockReset();
     dispatch = jest.fn();
     appendPendingMediaUpload.mockImplementation((entry: unknown) => {
       const full = {

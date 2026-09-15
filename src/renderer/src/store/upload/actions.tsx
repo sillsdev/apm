@@ -565,7 +565,8 @@ export const nextUpload =
               appendPendingMediaUpload(queuePatch))
             : appendPendingMediaUpload(queuePatch);
           const stored = loadPendingMediaUploads().find(
-            (p) => p.id === pendingRecord.id && Boolean(p.localAbsolutePath)
+            (p) =>
+              p.id === pendingRecord.id && p.localAbsolutePath === pathForQueue
           );
           const fileOk =
             Boolean(stored) &&
