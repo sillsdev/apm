@@ -1700,7 +1700,7 @@ const initialState = {
 			"mediaAttached": "Audio Attached",
 			"mediaDetached": "Audio Detached",
 			"mediaError": "Media is missing or has an unaccepted format.",
-			"mediaQueuedForUpload": "You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.",
+			"mediaQueuedForUpload": "This media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.",
 			"member": "Member",
 			"mustBeOnline": "You must be online to use this feature",
 			"no": "No",

@@ -193,9 +193,16 @@ export const CommentCard = (props: IProps) => {
     );
     reset();
   };
-  const afterUploadCb = async (mediaId: string | undefined) => {
+  const afterUploadCb = async (
+    mediaId: string | undefined,
+    outcome?: { pendingQueued?: boolean }
+  ) => {
     if (mediaId) doSaveComment(mediaId);
-    else resetAfterError();
+    else if (outcome?.pendingQueued) {
+      // Queued acceptance — clear without treating as failure (Copilot r4020216298).
+      savingRef.current = false;
+      saveCompleted(comment.id);
+    } else resetAfterError();
   };
   const pendingRestore = () => ({
     kind: 'comment' as const,

@@ -50,7 +50,10 @@ interface IProps {
   topic?: string | undefined;
   languagebcp47?: string | undefined;
   keepItSmall?: boolean | undefined;
-  afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  afterUploadCb: (
+    mediaId: string | undefined,
+    outcome?: { pendingQueued?: boolean }
+  ) => Promise<void>;
   /**
    * Domain restore metadata for pending-upload Retry (TT-7363).
    */
@@ -73,11 +76,12 @@ interface IProps {
   setCanSave: (canSave: boolean) => void;
   /**
    * Called when a save attempt is rejected — the upload failed or finished
-   * without a mediaId. May fire more than once for a single failed save, so
-   * handlers must be idempotent. Parents that auto-save on the rising edge of
-   * canSave use this to stop retrying the same doomed take (TT-7583); canSave
-   * itself stays true so screens with a manual Save button keep their retry
-   * path.
+   * without a mediaId. Not called when Electron accepts the take into Pending
+   * Media Uploads (TT-7365). May fire more than once for a single failed save,
+   * so handlers must be idempotent. Parents that auto-save on the rising edge
+   * of canSave use this to stop retrying the same doomed take (TT-7583);
+   * canSave itself stays true on true failures so screens with a manual Save
+   * button keep their retry path.
    */
   onSaveRejected?: (() => void) | undefined;
   setCanCancel?: ((canCancel: boolean) => void) | undefined;
@@ -276,6 +280,12 @@ function MediaRecord(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const saveRef = useRef(false);
+  /**
+   * Set when myAfterUploadCb has already finished a terminal !mediaId outcome
+   * (queued pending or true reject). uploadMedia still rejects afterward, so
+   * handleSaveFailed must not re-notify or overwrite that outcome (TT-7365).
+   */
+  const uploadOutcomeHandledRef = useRef(false);
   const mediaSaveInProgress = saveRequested(toolId) || uploading || converting;
   const extensions = useMemo(
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
@@ -349,28 +359,58 @@ function MediaRecord(props: IProps) {
       });
     });
 
-  const myAfterUploadCb = async (mediaId: string) => {
-    // Notify before any setState: canSave goes true again on the next commit,
-    // and auto-save parents must already know this take was rejected or they
-    // would retry it on that rising edge (TT-7583).
-    if (!mediaId) onSaveRejected?.();
+  const myAfterUploadCb = async (
+    mediaId: string,
+    outcome?: { pendingQueued?: boolean }
+  ) => {
+    uploadOutcomeHandledRef.current = false;
     // The take this id points at is already in the waveform, so the mediaId
     // change it triggers must not blank it and fetch it back (TT-7609).
-    if (mediaId) loadRequestedIdRef.current = mediaId;
-    setUploading(false);
-    setPendingSave(false);
-    if (filechangedRef.current && mediaId) setFilechanged(false);
-    if (!mediaId) {
-      const message = await failureMessage();
-      showMessage(message);
-      setStatusText(message);
-      saveCompleted(toolId, message);
-    } else {
+    if (mediaId) {
+      loadRequestedIdRef.current = mediaId;
+      setUploading(false);
+      setPendingSave(false);
+      if (filechangedRef.current) setFilechanged(false);
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
+      saveRef.current = false;
+      await afterUploadCb(mediaId);
+      return;
     }
+
+    // Gate dirty / onSaveRejected on whether nextUpload persisted a pending
+    // row — not on a later connectivity probe (TT-7365 follow-up). Keep
+    // saveRef true until decided so canSave cannot rearm mid-await.
+    const pendingQueued = Boolean(outcome?.pendingQueued);
+    const message = pendingQueued
+      ? ts.mediaQueuedForUpload
+      : await failureMessage();
+    if (pendingQueued) {
+      // Accepted into Pending Media Uploads — clear dirty so Save stays off
+      // until the user changes the audio (new version).
+      setFilechanged(false);
+      setPendingSave(false);
+    } else {
+      // Notify before any setState that would rearm canSave: auto-save parents
+      // must already know this take was rejected (TT-7583).
+      onSaveRejected?.();
+      setPendingSave(false);
+      // Leave filechanged true so manual Save screens can retry.
+    }
+    setUploading(false);
+    showMessage(message);
+    setStatusText(message);
+    // Queued acceptance is not a save error — pass no message so UnsavedContext
+    // clears the tool entry; otherwise waitForSave rejects (Copilot r4019376949).
+    if (pendingQueued) saveCompleted(toolId);
+    else saveCompleted(toolId, message);
     saveRef.current = false;
-    await afterUploadCb(mediaId);
+    // Mark before the parent await / upload promise reject so handleSaveFailed
+    // does not treat this as a second rejection (TT-7365).
+    uploadOutcomeHandledRef.current = true;
+    // Forward pendingQueued so parents (Discussion/Reply/Comment) do not treat
+    // empty mediaId as a true failure and re-mark UnsavedContext (Copilot r4020216298).
+    await afterUploadCb(mediaId, { pendingQueued });
   };
 
   const uploadMedia = useMediaUpload({
@@ -532,6 +572,17 @@ function MediaRecord(props: IProps) {
 
   const handleSaveFailed = useCallback(
     (error: unknown) => {
+      // uploadMedia rejects after myAfterUploadCb('') even when the outcome was
+      // already applied (queued pending or true reject). Do not re-notify or
+      // overwrite that outcome (TT-7365).
+      if (uploadOutcomeHandledRef.current) {
+        uploadOutcomeHandledRef.current = false;
+        setUploading(false);
+        setConverting(false);
+        setLoading(false);
+        onReady?.();
+        return;
+      }
       saveRef.current = false;
       // Before the setState calls below, for the reason in myAfterUploadCb.
       onSaveRejected?.();
@@ -560,6 +611,7 @@ function MediaRecord(props: IProps) {
         if (audioBlob && waveformDuration > 0) {
           onSaving && onSaving();
           saveRef.current = true;
+          uploadOutcomeHandledRef.current = false;
           setLoading(true);
           if (mimeType !== 'audio/wav') {
             // Convert to target format

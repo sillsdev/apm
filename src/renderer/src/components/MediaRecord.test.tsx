@@ -24,9 +24,12 @@ let mockSaveRequested: () => boolean;
 let mockUploadMedia: jest.Mock;
 let mockConvertToFormat: jest.Mock;
 /** MediaRecord's own myAfterUploadCb, captured from the useMediaUpload props. */
-let capturedAfterUploadCb: ((mediaId: string) => Promise<void>) | undefined;
+let capturedAfterUploadCb:
+  | ((mediaId: string, outcome?: { pendingQueued?: boolean }) => Promise<void>)
+  | undefined;
 const mockEnv = { isElectron: false, online: true };
 const mockShowMessage = jest.fn();
+const mockSaveCompleted = jest.fn();
 
 jest.mock('../../api-variable', () => ({
   get isElectron() {
@@ -64,7 +67,10 @@ jest.mock('../crud', () => ({
     mediaState: { status: 0, id: '', url: '', error: null },
   }),
   useMediaUpload: (props: {
-    afterUploadCb: (mediaId: string) => Promise<void>;
+    afterUploadCb: (
+      mediaId: string,
+      outcome?: { pendingQueued?: boolean }
+    ) => Promise<void>;
   }) => {
     capturedAfterUploadCb = props.afterUploadCb;
     return (files: File[]) => mockUploadMedia(files);
@@ -86,7 +92,7 @@ jest.mock('../context/UnsavedContext', () => {
       state: {
         toolsChanged: 0,
         saveRequested: () => mockSaveRequested(),
-        saveCompleted: jest.fn(),
+        saveCompleted: (...args: unknown[]) => mockSaveCompleted(...args),
         clearRequested: () => false,
         clearCompleted: jest.fn(),
       },
@@ -292,14 +298,18 @@ describe('MediaRecord save gating', () => {
   const failASave = async (
     setCanSave: jest.Mock,
     onSaveRejected?: jest.Mock,
-    order?: string[]
+    order?: string[],
+    outcome?: { pendingQueued?: boolean }
   ) => {
-    mockSaveRequested = () => true;
+    // Stay idle until the waveform has a take — otherwise the save effect hits
+    // the no-audio rejection path on mount (TT-7583) and muddies assertions
+    // about upload outcomes (TT-7365).
+    mockSaveRequested = () => false;
     mockUploadMedia = jest.fn(async () => {
       order?.push('upload');
       // Mirrors nextUpload's terminal failure: afterUploadCb with no mediaId,
       // then the upload promise rejects.
-      await capturedAfterUploadCb?.('');
+      await capturedAfterUploadCb?.('', outcome);
       throw new Error('upload failed');
     });
     render(
@@ -312,6 +322,7 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
 
+    mockSaveRequested = () => true;
     act(() => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
@@ -377,6 +388,9 @@ describe('MediaRecord save gating', () => {
     expect(rearmed === -1 || rearmed > rejected).toBe(true);
   });
 
+  // Non-queued failure only (default mockEnv: not Electron / online). When
+  // Electron queues the take instead, Save must stay off until the audio
+  // changes — see the TT-7365 cases below.
   it('keeps save available so the same take can be retried', async () => {
     const setCanSave = jest.fn();
     await failASave(setCanSave);
@@ -399,11 +413,203 @@ describe('MediaRecord save gating', () => {
   it('tells electron users the take is queued when the network is lost', async () => {
     mockEnv.isElectron = true;
     mockEnv.online = false;
-    await failASave(jest.fn());
+    await failASave(jest.fn(), undefined, undefined, { pendingQueued: true });
 
     await waitFor(() =>
       expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
     );
+  });
+
+  // TT-7365: once a take is accepted into Pending Media Uploads, Save must
+  // stay off until the user changes the audio (new version). Re-enabling Save
+  // after each offline alert produced duplicate pending rows and re-staged
+  // the same take under a new .verNN path.
+  it('does not re-enable save after electron queues the take for upload', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const setCanSave = jest.fn();
+    await failASave(setCanSave, undefined, undefined, { pendingQueued: true });
+
+    mockSaveRequested = () => false;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+  });
+
+  it('does not report a queued pending take as a rejected save', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const onSaveRejected = jest.fn();
+    await failASave(jest.fn(), onSaveRejected, undefined, {
+      pendingQueued: true,
+    });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    expect(onSaveRejected).not.toHaveBeenCalled();
+  });
+
+  // Queued acceptance must clear UnsavedContext without a saveError, or
+  // waitForSave rejects even though dirty was cleared (Copilot r4019376949).
+  it('completes UnsavedContext without a save error when the take is queued', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    await failASave(jest.fn(), undefined, undefined, { pendingQueued: true });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    expect(mockSaveCompleted).toHaveBeenCalledWith('record-tool');
+    expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+      'record-tool',
+      expect.anything()
+    );
+  });
+
+  it('reports a save error to UnsavedContext when the take is not queued', async () => {
+    mockEnv.isElectron = false;
+    mockEnv.online = true;
+    await failASave(jest.fn(), undefined, undefined, { pendingQueued: false });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('No media to save')
+    );
+    expect(mockSaveCompleted).toHaveBeenCalledWith(
+      'record-tool',
+      'No media to save'
+    );
+  });
+
+  // Parents like DiscussionCard treat empty mediaId as failure unless they see
+  // pendingQueued (Copilot r4020216298).
+  it('forwards pendingQueued true to the parent afterUploadCb', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    mockSaveRequested = () => false;
+    mockUploadMedia = jest.fn(async () => {
+      await capturedAfterUploadCb?.('', { pendingQueued: true });
+      throw new Error('upload failed');
+    });
+    render(
+      <MediaRecord
+        {...defaultProps}
+        afterUploadCb={afterUploadCb}
+        setCanSave={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    mockSaveRequested = () => true;
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/ogg' })
+      );
+    });
+    await waitFor(() =>
+      expect(afterUploadCb).toHaveBeenCalledWith('', { pendingQueued: true })
+    );
+  });
+
+  it('forwards pendingQueued false to the parent afterUploadCb', async () => {
+    mockEnv.isElectron = false;
+    mockEnv.online = true;
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    mockSaveRequested = () => false;
+    mockUploadMedia = jest.fn(async () => {
+      await capturedAfterUploadCb?.('', { pendingQueued: false });
+      throw new Error('upload failed');
+    });
+    render(
+      <MediaRecord
+        {...defaultProps}
+        afterUploadCb={afterUploadCb}
+        setCanSave={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    mockSaveRequested = () => true;
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/ogg' })
+      );
+    });
+    await waitFor(() =>
+      expect(afterUploadCb).toHaveBeenCalledWith('', { pendingQueued: false })
+    );
+  });
+
+  it('re-enables save after a queued take only when the audio changes', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const setCanSave = jest.fn();
+    await failASave(setCanSave, undefined, undefined, { pendingQueued: true });
+
+    mockSaveRequested = () => false;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(false));
+
+    act(() => {
+      latestWsProps?.setChanged?.(true);
+    });
+
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
+  });
+
+  // Connectivity must not decide pending: a staged take with an online API
+  // failure (e.g. HTTP 401) still has a pending row.
+  it('clears dirty when a pending row was persisted even if still online', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = true;
+    const setCanSave = jest.fn();
+    const onSaveRejected = jest.fn();
+    await failASave(setCanSave, onSaveRejected, undefined, {
+      pendingQueued: true,
+    });
+
+    mockSaveRequested = () => false;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(onSaveRejected).not.toHaveBeenCalled();
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+  });
+
+  // Connectivity must not decide pending: offline staging failure (e.g. ENOSPC)
+  // stores nothing, so Save must stay available for retry.
+  it('keeps save available when offline but no pending row was persisted', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const setCanSave = jest.fn();
+    const onSaveRejected = jest.fn();
+    await failASave(setCanSave, onSaveRejected, undefined, {
+      pendingQueued: false,
+    });
+
+    mockSaveRequested = () => false;
+    act(() => {
+      latestWsProps?.setChanged?.(true);
+    });
+
+    expect(onSaveRejected).toHaveBeenCalled();
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
   });
 
   // On web nothing is kept, so the user is warned to stay on the page.
