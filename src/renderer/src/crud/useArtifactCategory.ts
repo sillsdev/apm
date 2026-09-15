@@ -178,10 +178,12 @@ export const useArtifactCategory = (teamId?: string) => {
    * Hide-only filtering left unreachable specials that notes / CHNUM still
    * reference by id (Devin). Migrate refs to a canonical winner, copy empty
    * winner settings from losers (color / titleMedia / category graphic), remove
-   * losers, then return the cleaned note list.
+   * local-only losers, then return the cleaned note list.
    *
    * Only consolidates within the same non-empty organization — never deletes
    * system (org null) categories or groups them with team specials.
+   * Synced losers (remoteId) are hidden but not removeRecord'd so uncached
+   * server refs remain valid.
    */
   const consolidateDuplicateNoteSpecials = async (
     noteRecs: ArtifactCategoryD[]
@@ -211,6 +213,7 @@ export const useArtifactCategory = (teamId?: string) => {
       }
     }
 
+    // Hide every loser from the returned list (removed local-only and retained synced).
     const filterLosers = (recs: ArtifactCategoryD[]) => {
       const loserIds = new Set(pairs.map((p) => p.loser.id));
       return recs.filter((r) => !loserIds.has(r.id));
@@ -245,6 +248,9 @@ export const useArtifactCategory = (teamId?: string) => {
             type: string;
             attributes?: { resourceType?: string; resourceId?: number };
           }[];
+          // Track winners that receive a graphic in this transform so multiple
+          // losers do not all re-key onto the same remoteId.
+          const winnersGivenGraphic = new Set<number>();
 
           for (const { winner, loser } of pairs) {
             // Never delete system categories (defense in depth).
@@ -290,17 +296,19 @@ export const useArtifactCategory = (teamId?: string) => {
               );
             }
 
-            // Re-key category graphic from loser remoteId → winner remoteId.
+            // Re-key at most one category graphic onto the winner remoteId.
             const loserRemote = loser.keys?.remoteId;
             const winnerRemote = winner.keys?.remoteId;
             if (loserRemote && winnerRemote) {
               const loserRid = parseInt(String(loserRemote), 10);
               const winnerRid = parseInt(String(winnerRemote), 10);
-              const winnerHasGraphic = graphics.some(
-                (g) =>
-                  g.attributes?.resourceType === 'category' &&
-                  g.attributes?.resourceId === winnerRid
-              );
+              const winnerHasGraphic =
+                winnersGivenGraphic.has(winnerRid) ||
+                graphics.some(
+                  (g) =>
+                    g.attributes?.resourceType === 'category' &&
+                    g.attributes?.resourceId === winnerRid
+                );
               if (!winnerHasGraphic && !Number.isNaN(loserRid)) {
                 const loserGraphic = graphics.find(
                   (g) =>
@@ -308,6 +316,7 @@ export const useArtifactCategory = (teamId?: string) => {
                     g.attributes?.resourceId === loserRid
                 );
                 if (loserGraphic && !Number.isNaN(winnerRid)) {
+                  winnersGivenGraphic.add(winnerRid);
                   ops.push(
                     ...UpdateRecord(
                       t,
@@ -345,11 +354,15 @@ export const useArtifactCategory = (teamId?: string) => {
                 );
               }
             }
-            ops.push(
-              t
-                .removeRecord({ type: 'artifactcategory', id: loser.id })
-                .toOperation()
-            );
+            // Local-only losers: cache scan is exhaustive — safe to delete.
+            // Synced losers may have unloaded server refs — keep the row.
+            if (!loser.keys?.remoteId) {
+              ops.push(
+                t
+                  .removeRecord({ type: 'artifactcategory', id: loser.id })
+                  .toOperation()
+              );
+            }
           }
           return ops;
         });
