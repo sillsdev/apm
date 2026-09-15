@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import {
   IState,
@@ -20,6 +20,7 @@ import {
 } from '../model/baseModel';
 import { cleanFileName } from '../utils/cleanFileName';
 import { useWaitForRemoteQueue } from '../utils/useWaitForRemoteQueue';
+import { logError, Severity } from '../utils/logErrorService';
 
 interface ISwitches {
   [key: string]: any;
@@ -47,10 +48,13 @@ export const useArtifactCategory = (teamId?: string) => {
   const [organization] = useGlobal('organization');
   const curOrg = teamId ?? organization;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const [errorReporter] = useGlobal('errorReporter');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const t: IArtifactCategoryStrings = useSelector(stringSelector, shallowEqual);
   const [fromLocal] = useState<ISwitches>({});
   const specialNoteCategories = ['chapter', 'title'];
+  // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
+  const specialBootstrapOrgs = useRef<Set<string>>(new Set());
   const localizedArtifactCategory = (val: string) => {
     return (t as ISwitches)[val] || val;
   };
@@ -116,9 +120,10 @@ export const useArtifactCategory = (teamId?: string) => {
   };
   const getArtifactCategorys = async (type: ArtifactCategoryType) => {
     const categorys: IArtifactCategory[] = [];
-    /* wait for new categories remote id to fill in */
-    await waitForRemoteQueue('category update');
-    let orgrecs: ArtifactCategoryD[] = (
+    // Read from the local Orbit cache only. Waiting on the remote request
+    // queue here stalled the Note Details picker for whole seconds whenever
+    // any mid-session sync work was still draining (TT-7656).
+    const allOrgRecs: ArtifactCategoryD[] = (
       memory?.cache.query((q) =>
         q.findRecords('artifactcategory')
       ) as ArtifactCategoryD[]
@@ -126,31 +131,31 @@ export const useArtifactCategory = (teamId?: string) => {
       (r) =>
         Boolean(r.relationships) &&
         (related(r, 'organization') === curOrg ||
-          related(r, 'organization') === null) &&
-        Boolean(r.keys?.remoteId) !== offlineOnly
+          related(r, 'organization') === null)
     );
-    if (!offlineOnly && type === ArtifactCategoryType.Note) {
+    let orgrecs: ArtifactCategoryD[] = allOrgRecs.filter(
+      (r) => Boolean(r.keys?.remoteId) !== offlineOnly
+    );
+    if (!offlineOnly && type === ArtifactCategoryType.Note && curOrg) {
+      // Detect chapter against unfiltered cache so an unsynced local special
+      // (no remoteId yet) still counts and is not created again.
+      const hasChapterSpecial = allOrgRecs.some(
+        (r) =>
+          r.attributes.note &&
+          r.attributes.specialuse === specialNoteCategories[0]
+      );
       if (
-        orgrecs.filter(
-          (r) =>
-            r.attributes.note &&
-            r.attributes.specialuse === specialNoteCategories[0]
-        ).length === 0
+        !hasChapterSpecial &&
+        !specialBootstrapOrgs.current.has(curOrg)
       ) {
-        //double check online
-        const special = (await memory.query((q) =>
-          q.findRecords('artifactcategory').filter({
-            attribute: 'specialuse',
-            value: specialNoteCategories[0],
-          })
-        )) as ArtifactCategoryD[];
-        if (
-          special.filter((r) => related(r, 'organization') === curOrg)
-            .length === 0
-        ) {
-          await AddOrgNoteCategories(curOrg);
-          await waitForRemoteQueue('category add special');
-        }
+        specialBootstrapOrgs.current.add(curOrg);
+        // Fire-and-forget: liveQuery refreshes the picker when records land,
+        // and specials are filtered out of the dropdown anyway. On failure,
+        // clear the marker so a later read can retry.
+        void AddOrgNoteCategories(curOrg).catch((err: Error) => {
+          specialBootstrapOrgs.current.delete(curOrg);
+          logError(Severity.error, errorReporter, err);
+        });
       }
     }
 
@@ -246,6 +251,13 @@ export const useArtifactCategory = (teamId?: string) => {
         ];
       }
       await memory.update(ops);
+      // Wait here (not on read) so keys.remoteId can fill in before callers
+      // that need a synced id continue. A stuck queue must not blank the list.
+      try {
+        await waitForRemoteQueue('category update');
+      } catch {
+        /* ignore — create already persisted locally */
+      }
       return artifactCategory.id;
     }
     return undefined;
