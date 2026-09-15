@@ -194,6 +194,8 @@ jest.mock('../context/useGlobal', () => ({
 
 import {
   ArtifactCategoryType,
+  resetSpecialBootstrapInFlightForTests,
+  teamMissingNoteSpecials,
   useArtifactCategory,
 } from './useArtifactCategory';
 import {
@@ -324,6 +326,7 @@ const settleSoon = <T>(p: Promise<T>, ms = 100): Promise<T> =>
 describe('useArtifactCategory (TT-7656)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetSpecialBootstrapInFlightForTests();
     mockLogError.mockClear();
     lastTransformResult = [];
     pendingWaits.length = 0;
@@ -473,6 +476,7 @@ describe('useArtifactCategory (TT-7656)', () => {
 describe('useArtifactCategory (TT-7702 special note categories)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetSpecialBootstrapInFlightForTests();
     mockLogError.mockClear();
     lastTransformResult = [];
     pendingWaits.length = 0;
@@ -510,6 +514,83 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
 
     expect(mockMemory.update).toHaveBeenCalled();
     expect(specialusesFromAddRecord()).toEqual(['title']);
+  });
+
+  it('bootstraps team title when only a system title exists', async () => {
+    // Devin: system title must not satisfy bootstrap presence for the team.
+    orbitRecords = [
+      noteCat('note-1', 'general', { remoteId: '11' }),
+      noteCat('chapter-team', 'chapter', { specialuse: 'chapter' }),
+      noteCat('title-system', 'title', {
+        remoteId: '1',
+        specialuse: 'title',
+        orgId: null,
+      }),
+    ];
+    expect(teamMissingNoteSpecials(orbitRecords, ORG_ID)).toEqual(['title']);
+
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    await act(async () => {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(specialusesFromAddRecord()).toEqual(['title']);
+  });
+
+  it('coordinates bootstrap across concurrent hook instances', async () => {
+    // Devin: per-hook specialBootstrapOrgs lets two readers each add title.
+    orbitRecords = [
+      noteCat('note-1', 'general', { remoteId: '11' }),
+      noteCat('chapter-local', 'chapter', { specialuse: 'chapter' }),
+    ];
+    let releaseUpdate: (() => void) | undefined;
+    const defaultUpdate = mockMemory.update.getMockImplementation();
+    mockMemory.update.mockImplementation(
+      (arg: unknown) =>
+        new Promise<void>((resolve) => {
+          releaseUpdate = () => {
+            if (typeof arg === 'function') {
+              const ops = (
+                arg as (t: ReturnType<typeof transformBuilderStub>) => unknown
+              )(transformBuilderStub());
+              lastTransformResult = Array.isArray(ops) ? ops : [];
+            }
+            resolve();
+          };
+        })
+    );
+
+    try {
+      const hookA = renderHook(() => useArtifactCategory(ORG_ID));
+      const hookB = renderHook(() => useArtifactCategory(ORG_ID));
+
+      await act(async () => {
+        void hookA.result.current.getArtifactCategorys(
+          ArtifactCategoryType.Note
+        );
+        void hookB.result.current.getArtifactCategorys(
+          ArtifactCategoryType.Note
+        );
+        await new Promise<void>((r) => setTimeout(r, 0));
+      });
+
+      expect(mockMemory.update).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        releaseUpdate?.();
+        await new Promise<void>((r) => setTimeout(r, 0));
+      });
+      expect(specialusesFromAddRecord()).toEqual(['title']);
+    } finally {
+      if (defaultUpdate) {
+        mockMemory.update.mockImplementation(defaultUpdate);
+      }
+    }
   });
 
   it('consolidates slug and localized chapter specials to one Chapter Number', async () => {

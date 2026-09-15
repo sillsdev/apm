@@ -42,6 +42,30 @@ export enum ArtifactCategoryType {
 const stringSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'artifactCategory' });
 
+/** Coalesce special bootstrap across hook instances for the same org. */
+const specialBootstrapInFlight = new Map<string, Promise<void>>();
+
+/** Team-owned note specials still missing for bootstrap (system rows ignored). */
+export const teamMissingNoteSpecials = (
+  recs: ArtifactCategoryD[],
+  curOrg: string,
+  specials: readonly string[] = ['chapter', 'title']
+): string[] => {
+  const present = new Set<string>();
+  for (const r of recs) {
+    if (!r.attributes?.note) continue;
+    if (related(r, 'organization') !== curOrg) continue;
+    const su = r.attributes.specialuse ?? '';
+    if (su) present.add(su);
+  }
+  return specials.filter((s) => !present.has(s));
+};
+
+/** @internal clears module bootstrap state between Jest cases. */
+export const resetSpecialBootstrapInFlightForTests = () => {
+  specialBootstrapInFlight.clear();
+};
+
 export const useArtifactCategory = (teamId?: string) => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
@@ -53,8 +77,6 @@ export const useArtifactCategory = (teamId?: string) => {
   const t: IArtifactCategoryStrings = useSelector(stringSelector, shallowEqual);
   const [fromLocal] = useState<ISwitches>({});
   const specialNoteCategories = ['chapter', 'title'];
-  // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
-  const specialBootstrapOrgs = useRef<Set<string>>(new Set());
   // Coalesce concurrent consolidates; cleared after settle so later dups re-run.
   const specialConsolidateInFlight = useRef<
     Map<string, Promise<ArtifactCategoryD[]>>
@@ -82,16 +104,6 @@ export const useArtifactCategory = (teamId?: string) => {
   const defaultMediaName = (name: string) => {
     const orgRec = findRecord(memory, 'organization', curOrg) as Organization;
     return cleanFileName(orgRec?.attributes?.slug + 'cat' + name) ?? '';
-  };
-
-  const noteSpecialsPresent = (recs: ArtifactCategoryD[]) => {
-    const present = new Set<string>();
-    for (const r of recs) {
-      if (!r.attributes?.note) continue;
-      const su = r.attributes.specialuse ?? '';
-      if (su) present.add(su);
-    }
-    return present;
   };
 
   const AddOrgNoteCategoryOps = (
@@ -387,19 +399,28 @@ export const useArtifactCategory = (teamId?: string) => {
       (r) => Boolean(r.keys?.remoteId) !== offlineOnly
     );
     if (!offlineOnly && type === ArtifactCategoryType.Note && curOrg) {
-      // Detect specials against unfiltered cache so an unsynced local special
-      // (no remoteId yet) still counts and is not created again (TT-7656).
-      // Create each missing specialuse individually so chapter-only orgs still
-      // get title (TT-7702).
-      const present = noteSpecialsPresent(allOrgRecs);
-      const missing = specialNoteCategories.filter((s) => !present.has(s));
-      if (missing.length > 0 && !specialBootstrapOrgs.current.has(curOrg)) {
-        specialBootstrapOrgs.current.add(curOrg);
-        // Fire-and-forget: liveQuery refreshes the picker when records land,
-        // and specials are filtered out of the dropdown anyway. On failure,
-        // clear the marker so a later read can retry.
-        void AddOrgNoteCategories(curOrg, missing).catch((err: Error) => {
-          specialBootstrapOrgs.current.delete(curOrg);
+      // Bootstrap creates team-owned defaults — presence is team-only; system
+      // categories remain display fallbacks via hideSystemOverriddenByTeam.
+      const missing = teamMissingNoteSpecials(allOrgRecs, curOrg);
+      if (missing.length > 0 && !specialBootstrapInFlight.has(curOrg)) {
+        const run = (async () => {
+          try {
+            const recheck: ArtifactCategoryD[] = (
+              memory?.cache.query((q) =>
+                q.findRecords('artifactcategory')
+              ) as ArtifactCategoryD[]
+            ).filter((r) => related(r, 'organization') === curOrg);
+            const stillMissing = teamMissingNoteSpecials(recheck, curOrg);
+            if (stillMissing.length > 0) {
+              await AddOrgNoteCategories(curOrg, stillMissing);
+            }
+          } finally {
+            specialBootstrapInFlight.delete(curOrg);
+          }
+        })();
+        specialBootstrapInFlight.set(curOrg, run);
+        // Fire-and-forget: liveQuery refreshes the picker when records land.
+        void run.catch((err: Error) => {
           logError(Severity.error, errorReporter, err);
         });
       }
