@@ -20,6 +20,7 @@ import {
 import { cleanFileName } from '../utils/cleanFileName';
 import { useWaitForRemoteQueue } from '../utils/useWaitForRemoteQueue';
 import { logError, Severity } from '../utils/logErrorService';
+import { pickSpecialWinner } from './pickArtifactCategorySpecial';
 
 interface ISwitches {
   [key: string]: any;
@@ -138,21 +139,6 @@ export const useArtifactCategory = (teamId?: string) => {
     // Add default note categories
 
     await memory.update((t) => AddOrgNoteCategoryOps(t, orgId, onlySpecials));
-  };
-
-  /** Prefer remoteId, then richer settings, then stable id. */
-  const pickSpecialWinner = (group: ArtifactCategoryD[]): ArtifactCategoryD => {
-    return [...group].sort((a, b) => {
-      const aR = a.keys?.remoteId ? 0 : 1;
-      const bR = b.keys?.remoteId ? 0 : 1;
-      if (aR !== bR) return aR - bR;
-      const aRich =
-        (a.attributes?.color ? 1 : 0) + (related(a, 'titleMediafile') ? 1 : 0);
-      const bRich =
-        (b.attributes?.color ? 1 : 0) + (related(b, 'titleMediafile') ? 1 : 0);
-      if (bRich !== aRich) return bRich - aRich;
-      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-    })[0];
   };
 
   /**
