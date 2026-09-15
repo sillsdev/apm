@@ -54,6 +54,8 @@ export const useArtifactCategory = (teamId?: string) => {
   const specialNoteCategories = ['chapter', 'title'];
   // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
   const specialBootstrapOrgs = useRef<Set<string>>(new Set());
+  // Ensure duplicate-special consolidate runs at most once per org per attempt.
+  const specialConsolidateOrgs = useRef<Set<string>>(new Set());
   const localizedArtifactCategory = (val: string) => {
     return (t as ISwitches)[val] || val;
   };
@@ -136,24 +138,101 @@ export const useArtifactCategory = (teamId?: string) => {
     await memory.update((t) => AddOrgNoteCategoryOps(t, orgId, onlySpecials));
   };
 
-  /** Keep one row per non-empty specialuse (prefer remoteId when both exist). */
-  const dedupeNoteSpecials = (recs: ArtifactCategoryD[]) => {
-    const sorted = [...recs].sort((a, b) => {
+  /** Prefer remoteId, then richer settings, then stable id. */
+  const pickSpecialWinner = (group: ArtifactCategoryD[]): ArtifactCategoryD => {
+    return [...group].sort((a, b) => {
       const aR = a.keys?.remoteId ? 0 : 1;
       const bR = b.keys?.remoteId ? 0 : 1;
-      return aR - bR;
-    });
-    const seen = new Set<string>();
-    const out: ArtifactCategoryD[] = [];
-    for (const r of sorted) {
+      if (aR !== bR) return aR - bR;
+      const aRich =
+        (a.attributes?.color ? 1 : 0) + (related(a, 'titleMediafile') ? 1 : 0);
+      const bRich =
+        (b.attributes?.color ? 1 : 0) + (related(b, 'titleMediafile') ? 1 : 0);
+      if (bRich !== aRich) return bRich - aRich;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    })[0];
+  };
+
+  /**
+   * Hide-only filtering left unreachable specials that notes / CHNUM still
+   * reference by id (Devin). Migrate refs to a canonical winner and remove
+   * losers, then return the cleaned note list.
+   */
+  const consolidateDuplicateNoteSpecials = async (
+    noteRecs: ArtifactCategoryD[]
+  ): Promise<ArtifactCategoryD[]> => {
+    if (!curOrg) return noteRecs;
+
+    const bySpecial = new Map<string, ArtifactCategoryD[]>();
+    for (const r of noteRecs) {
       const su = r.attributes?.specialuse ?? '';
-      if (su) {
-        if (seen.has(su)) continue;
-        seen.add(su);
-      }
-      out.push(r);
+      if (!su) continue;
+      const list = bySpecial.get(su) ?? [];
+      list.push(r);
+      bySpecial.set(su, list);
     }
-    return out;
+
+    const pairs: { winner: ArtifactCategoryD; loser: ArtifactCategoryD }[] = [];
+    for (const group of bySpecial.values()) {
+      if (group.length < 2) continue;
+      const winner = pickSpecialWinner(group);
+      for (const r of group) {
+        if (r.id !== winner.id) pairs.push({ winner, loser: r });
+      }
+    }
+
+    const filterLosers = (recs: ArtifactCategoryD[]) => {
+      const loserIds = new Set(pairs.map((p) => p.loser.id));
+      return recs.filter((r) => !loserIds.has(r.id));
+    };
+
+    if (pairs.length === 0) return noteRecs;
+
+    // Already attempted this session — still hide losers for the editor UI.
+    if (specialConsolidateOrgs.current.has(curOrg)) {
+      return filterLosers(noteRecs);
+    }
+
+    specialConsolidateOrgs.current.add(curOrg);
+    try {
+      await memory.update((t: RecordTransformBuilder) => {
+        const ops: RecordOperation[] = [];
+        const refTypes = ['sharedresource', 'mediafile', 'discussion'] as const;
+        for (const { winner, loser } of pairs) {
+          for (const type of refTypes) {
+            const refs = (
+              memory.cache.query((q) => q.findRecords(type)) as {
+                id: string;
+                type: string;
+                relationships?: unknown;
+              }[]
+            ).filter((r) => related(r, 'artifactCategory') === loser.id);
+            for (const ref of refs) {
+              ops.push(
+                ...ReplaceRelatedRecord(
+                  t,
+                  ref as Parameters<typeof ReplaceRelatedRecord>[1],
+                  'artifactCategory',
+                  'artifactcategory',
+                  winner.id
+                )
+              );
+            }
+          }
+          ops.push(
+            t
+              .removeRecord({ type: 'artifactcategory', id: loser.id })
+              .toOperation()
+          );
+        }
+        return ops;
+      });
+      return filterLosers(noteRecs);
+    } catch (err) {
+      specialConsolidateOrgs.current.delete(curOrg);
+      logError(Severity.error, errorReporter, err as Error);
+      return filterLosers(noteRecs);
+    }
   };
 
   const getArtifactCategorys = async (type: ArtifactCategoryType) => {
@@ -198,7 +277,14 @@ export const useArtifactCategory = (teamId?: string) => {
     else if (type === ArtifactCategoryType.Discussion)
       orgrecs = orgrecs.filter((r) => r.attributes.discussion);
     else if (type === ArtifactCategoryType.Note) {
-      orgrecs = dedupeNoteSpecials(orgrecs.filter((r) => r.attributes.note));
+      // Consolidate against unfiltered org notes so an unsynced loser (no
+      // remoteId) is still migrated/removed, not merely omitted from the list.
+      const consolidated = await consolidateDuplicateNoteSpecials(
+        allOrgRecs.filter((r) => r.attributes.note)
+      );
+      orgrecs = consolidated.filter(
+        (r) => Boolean(r.keys?.remoteId) !== offlineOnly
+      );
     }
 
     orgrecs.forEach((r) =>

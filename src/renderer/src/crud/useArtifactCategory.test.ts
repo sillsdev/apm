@@ -40,7 +40,22 @@ jest.mock('../model/baseModel', () => ({
       return [{ op: 'addRecord', record: rec }];
     }
   ),
-  ReplaceRelatedRecord: jest.fn(() => []),
+  ReplaceRelatedRecord: jest.fn(
+    (
+      _t: unknown,
+      rec: { type?: string; id?: string },
+      relationship: string,
+      relatedType: string,
+      newId: string | null | undefined
+    ) => [
+      {
+        op: 'replaceRelatedRecord',
+        record: { type: rec.type, id: rec.id },
+        relationship,
+        relatedRecord: newId ? { type: relatedType, id: newId } : null,
+      },
+    ]
+  ),
   UpdateRecord: jest.fn(() => []),
 }));
 
@@ -54,14 +69,47 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 
-let categoryRecords: ArtifactCategoryD[] = [];
+/** All Orbit records (artifactcategory, sharedresource, …) for cache.query. */
+let orbitRecords: any[] = [];
+
+const transformBuilderStub = () => ({
+  removeRecord: (rec: unknown) => ({
+    toOperation: () => ({ op: 'removeRecord', record: rec }),
+  }),
+  replaceRelatedRecord: (
+    rec: unknown,
+    relationship: string,
+    related: unknown
+  ) => ({
+    toOperation: () => ({
+      op: 'replaceRelatedRecord',
+      record: rec,
+      relationship,
+      relatedRecord: related,
+    }),
+  }),
+  addRecord: (rec: unknown) => ({
+    toOperation: () => ({ op: 'addRecord', record: rec }),
+  }),
+  updateRecord: (rec: unknown) => ({
+    toOperation: () => ({ op: 'updateRecord', record: rec }),
+  }),
+  replaceAttribute: (rec: unknown, attribute: string, value: unknown) => ({
+    toOperation: () => ({
+      op: 'replaceAttribute',
+      record: rec,
+      attribute,
+      value,
+    }),
+  }),
+});
 
 const mockMemory = {
   cache: {
     query: jest.fn((qFn: (q: unknown) => unknown) => {
       const builder = {
         findRecords: (type: string) => {
-          const list = categoryRecords.filter((r) => r.type === type);
+          const list = orbitRecords.filter((r) => r.type === type);
           return Object.assign([...list], {
             filter: (f: { attribute: string; value: unknown }) =>
               list.filter(
@@ -70,7 +118,7 @@ const mockMemory = {
           });
         },
         findRecord: ({ type, id }: { type: string; id: string }) =>
-          categoryRecords.find((r) => r.type === type && r.id === id),
+          orbitRecords.find((r) => r.type === type && r.id === id),
       };
       return qFn(builder);
     }),
@@ -78,7 +126,7 @@ const mockMemory = {
   query: jest.fn(async (qFn: (q: unknown) => unknown) => {
     const builder = {
       findRecords: (type: string) => {
-        const list = categoryRecords.filter((r) => r.type === type);
+        const list = orbitRecords.filter((r) => r.type === type);
         return Object.assign([...list], {
           filter: (f: { attribute: string; value: unknown }) =>
             list.filter(
@@ -90,13 +138,21 @@ const mockMemory = {
     return qFn(builder);
   }),
   update: jest.fn(async (arg: unknown) => {
-    // Invoke transform builders so AddRecord captures bootstrap ops (TT-7702).
+    // Invoke transform builders so AddRecord / consolidate ops are captured.
     if (typeof arg === 'function') {
-      (arg as (t: Record<string, unknown>) => unknown)({});
+      const ops = (
+        arg as (t: ReturnType<typeof transformBuilderStub>) => unknown
+      )(transformBuilderStub());
+      lastTransformResult = Array.isArray(ops) ? ops : [];
+      return ops;
     }
+    lastTransformResult = [];
   }),
   schema: {},
 };
+
+/** Ops returned from the most recent memory.update transform callback. */
+let lastTransformResult: Array<Record<string, unknown>> = [];
 
 const mockErrorReporter = { notify: jest.fn() };
 const mockLogError = jest.fn();
@@ -135,10 +191,11 @@ import {
   ArtifactCategoryType,
   useArtifactCategory,
 } from './useArtifactCategory';
-import { AddRecord } from '../model/baseModel';
+import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { Severity } from '../utils/logErrorService';
 
 const addRecordMock = AddRecord as jest.Mock;
+const replaceRelatedMock = ReplaceRelatedRecord as jest.Mock;
 
 /** specialuse values passed to AddRecord during bootstrap / team-create ops. */
 const specialusesFromAddRecord = (): string[] =>
@@ -146,10 +203,12 @@ const specialusesFromAddRecord = (): string[] =>
     .map((call) => (call[1] as ArtifactCategoryD)?.attributes?.specialuse)
     .filter((s): s is string => Boolean(s));
 
+const lastUpdateOps = (): Array<Record<string, unknown>> => lastTransformResult;
+
 const noteCat = (
   id: string,
   name: string,
-  opts: { remoteId?: string; specialuse?: string } = {}
+  opts: { remoteId?: string; specialuse?: string; color?: string } = {}
 ): ArtifactCategoryD =>
   ({
     id,
@@ -160,7 +219,7 @@ const noteCat = (
       discussion: false,
       resource: false,
       note: true,
-      color: '#ed071d',
+      color: opts.color ?? '#ed071d',
       specialuse: opts.specialuse ?? '',
       dateCreated: '2020-01-01',
       dateUpdated: '2020-01-01',
@@ -194,6 +253,23 @@ const resourceCat = (id: string, name: string): ArtifactCategoryD =>
     },
   }) as unknown as ArtifactCategoryD;
 
+const sharedRes = (id: string, categoryId: string) =>
+  ({
+    id,
+    type: 'sharedresource',
+    keys: { remoteId: id },
+    attributes: {
+      note: true,
+      dateCreated: '2020-01-01',
+      dateUpdated: '2020-01-01',
+    },
+    relationships: {
+      artifactCategory: { data: { type: 'artifactcategory', id: categoryId } },
+      passage: { data: null },
+      titleMediafile: { data: null },
+    },
+  }) as const;
+
 /**
  * Race `p` against a short timeout so a hung waitForRemoteQueue fails the
  * test cleanly instead of leaving Jest waiting on an open handle.
@@ -214,6 +290,7 @@ describe('useArtifactCategory (TT-7656)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockLogError.mockClear();
+    lastTransformResult = [];
     pendingWaits.length = 0;
     waitForRemoteQueue.mockImplementation(
       () =>
@@ -221,7 +298,7 @@ describe('useArtifactCategory (TT-7656)', () => {
           pendingWaits.push(resolve);
         })
     );
-    categoryRecords = [
+    orbitRecords = [
       noteCat('note-1', 'general', { remoteId: '11' }),
       noteCat('note-2', 'activity', { remoteId: '12' }),
       resourceCat('res-1', 'scripture'),
@@ -258,7 +335,7 @@ describe('useArtifactCategory (TT-7656)', () => {
   it('does not block on the special note-category bootstrap', async () => {
     // No chapter special-use record — bootstrap path used to await memory.query
     // and waitForRemoteQueue, stalling the picker.
-    categoryRecords = [
+    orbitRecords = [
       noteCat('note-1', 'general', { remoteId: '11' }),
       noteCat('note-2', 'activity', { remoteId: '12' }),
     ];
@@ -272,7 +349,7 @@ describe('useArtifactCategory (TT-7656)', () => {
 
   it('does not recreate special note categories when chapter and title exist unsynced', async () => {
     // Both specials exist locally but have no remoteId yet (just created / still syncing).
-    categoryRecords = [
+    orbitRecords = [
       noteCat('note-1', 'general', { remoteId: '11' }),
       noteCat('chapter-local', 'chapter', { specialuse: 'chapter' }),
       noteCat('title-local', 'title', { specialuse: 'title' }),
@@ -288,7 +365,7 @@ describe('useArtifactCategory (TT-7656)', () => {
   it('retries special note-category bootstrap after a failed Orbit write', async () => {
     // No chapter special — bootstrap must run. A transient memory.update failure
     // must not permanently suppress retries on the same hook instance (Devin).
-    categoryRecords = [
+    orbitRecords = [
       noteCat('note-1', 'general', { remoteId: '11' }),
       noteCat('note-2', 'activity', { remoteId: '12' }),
     ];
@@ -362,6 +439,7 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockLogError.mockClear();
+    lastTransformResult = [];
     pendingWaits.length = 0;
     waitForRemoteQueue.mockImplementation(
       () =>
@@ -369,7 +447,7 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
           pendingWaits.push(resolve);
         })
     );
-    categoryRecords = [];
+    orbitRecords = [];
   });
 
   afterEach(async () => {
@@ -382,7 +460,7 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
   it('bootstraps only the missing title special when chapter already exists', async () => {
     // TT-7702: chapter-only gate skipped title forever; slug chapter still
     // counts, so bootstrap must add title only — never a second chapter.
-    categoryRecords = [
+    orbitRecords = [
       noteCat('note-1', 'general', { remoteId: '11' }),
       noteCat('chapter-local', 'chapter', { specialuse: 'chapter' }),
     ];
@@ -399,10 +477,10 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
     expect(specialusesFromAddRecord()).toEqual(['title']);
   });
 
-  it('dedupes slug and localized chapter specials to one Chapter Number label', async () => {
-    // Both display as "Chapter Number" via localizedArtifactCategory — list
-    // must keep a single specialuse=chapter row (prefer remoteId when online).
-    categoryRecords = [
+  it('consolidates slug and localized chapter specials to one Chapter Number', async () => {
+    // Both display as "Chapter Number" — consolidate must keep one row and
+    // remove the loser from Orbit (not merely hide it from the returned list).
+    orbitRecords = [
       noteCat('chapter-slug', 'chapter', {
         remoteId: '21',
         specialuse: 'chapter',
@@ -422,5 +500,50 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
     expect(labels.filter((l) => l === 'Chapter Number')).toHaveLength(1);
     expect(labels.filter((l) => l === 'Title')).toHaveLength(1);
     expect(cats.filter((c) => c.specialuse === 'chapter')).toHaveLength(1);
+
+    const removed = lastUpdateOps().filter((op) => op.op === 'removeRecord');
+    expect(removed).toHaveLength(1);
+    const removedId = (removed[0].record as { id: string }).id;
+    expect(['chapter-slug', 'chapter-localized']).toContain(removedId);
+    expect(cats.map((c) => c.id)).not.toContain(removedId);
+  });
+
+  it('migrates sharedresource refs off a hidden duplicate chapter special', async () => {
+    // Devin: hide-only dedupe leaves notes linked to the unreachable loser.
+    // Winner prefers remoteId (chapter-new); loser chapter-old has the ref.
+    orbitRecords = [
+      noteCat('chapter-old', 'chapter', { specialuse: 'chapter' }),
+      noteCat('chapter-new', 'Chapter Number', {
+        remoteId: '99',
+        specialuse: 'chapter',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+      sharedRes('sr-1', 'chapter-old'),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+
+    expect(
+      cats.filter((c) => c.specialuse === 'chapter').map((c) => c.id)
+    ).toEqual(['chapter-new']);
+
+    const ops = lastUpdateOps();
+    expect(
+      ops.some(
+        (op) =>
+          op.op === 'removeRecord' &&
+          (op.record as { id: string }).id === 'chapter-old'
+      )
+    ).toBe(true);
+    expect(replaceRelatedMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: 'sr-1', type: 'sharedresource' }),
+      'artifactCategory',
+      'artifactcategory',
+      'chapter-new'
+    );
   });
 });
