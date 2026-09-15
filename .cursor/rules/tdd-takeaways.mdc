@@ -89,3 +89,48 @@ Check in order:
 2. Mock does not reproduce production chunk shape (native vs mock `MediaRecorder`).
 3. Harness bug (mock `stop()` order, frozen timers, missing `cy.tick` after async stop).
 4. Production accidentally fixed by test-only changes — revert production files and re-run red.
+
+## Example: TT-7005 — resource switch mid-playback (Compare step)
+
+Bug: on the Compare step, selecting a new resource from the dropdown while
+another resource is playing does not play the new resource (dropdown gave no
+feedback and playback silently stopped). Root cause traced to
+`PassageDetailContext.setSelected` setting `itemPlaying: false` on selection
+with a comment that a `useEffect` would turn it back on — but
+`TeamCheckReference`/`TeamCheckReferenceMobile` wire no such re-trigger
+(unlike `PassageDetailArtifacts.tsx`'s `handleLoaded` callback for the same
+pattern). Rather than fix that race, the agreed simple fix: **block the
+selection change outright while a resource is playing.**
+
+- **Where the fix belongs:** `SelectMyResource` (`.../PassageDetail/Internalization/SelectMyResource.tsx`)
+  had no `disabled` prop at all — the dropdown was always interactive
+  regardless of playback state. Consumers (`TeamCheckReference.tsx` desktop,
+  `TeamCheckReferenceMobile.tsx` mobile) already had a playing flag in scope
+  (`itemPlaying` from context; local `playing` state on mobile) but never
+  passed it down.
+- **Red before the interface existed:** adding `disabled={...}` to a
+  `<SelectMyResource>` call site was a **TypeScript compile error**
+  (`Property 'disabled' does not exist on type 'IntrinsicAttributes & IProps'`)
+  — a legitimate red for a missing-capability bug, not a logic bug. The test
+  suite failed to run at all (0 tests), which is expected when the fix is an
+  interface addition, not just a value change.
+- **Red at the wiring layer (real runtime failure, not a proxy):** a separate
+  test mocked `SelectMyResource` (jest.fn() component, matching the
+  `TeamCheckReferenceMobile.test.tsx` pattern) and asserted
+  `SelectMyResourceMock.mock.calls[0][0]` contains `disabled: true` when
+  `itemPlaying: true` is in context state. This failed for the real reason —
+  `TeamCheckReference` never passed a `disabled` prop at all — not a proxy
+  assertion.
+  - Gotcha: React 19 function components receive `undefined`, not `{}`, as the
+    second call argument. `expect.anything()` also rejects `undefined`, so index
+    into `mock.calls[0][0]` directly instead of asserting the full call
+    signature.
+- **Green:** add `disabled?: boolean` to `SelectMyResource`'s `IProps`, forward
+  it to the MUI `TextField`'s `disabled` prop, then pass
+  `disabled={itemPlaying}` from `TeamCheckReference` and `disabled={playing}`
+  (the local reference-player flag) from `TeamCheckReferenceMobile`.
+- **Files:** [SelectMyResource.tsx](../../src/renderer/src/components/PassageDetail/Internalization/SelectMyResource.tsx),
+  [SelectMyResource.test.tsx](../../src/renderer/src/components/PassageDetail/Internalization/SelectMyResource.test.tsx),
+  [TeamCheckReference.tsx](../../src/renderer/src/components/PassageDetail/TeamCheckReference.tsx),
+  [TeamCheckReference.test.tsx](../../src/renderer/src/components/PassageDetail/TeamCheckReference.test.tsx),
+  [TeamCheckReferenceMobile.tsx](../../src/renderer/src/components/PassageDetail/mobile/TeamCheckReferenceMobile.tsx).

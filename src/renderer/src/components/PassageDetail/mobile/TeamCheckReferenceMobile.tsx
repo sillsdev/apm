@@ -165,7 +165,11 @@ export function TeamCheckReferenceMobile(props: IProps) {
       </MobileGrid>
 
       <MobileGrid maxWidth={800} sx={{ width: '80%' }}>
-        <SelectMyResource onChange={handleResource} inResource={resource} />
+        <SelectMyResource
+          onChange={handleResource}
+          inResource={resource}
+          disabled={playing}
+        />
       </MobileGrid>
 
       <MobileGrid>
