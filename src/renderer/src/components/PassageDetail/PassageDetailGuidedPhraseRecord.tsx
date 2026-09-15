@@ -30,6 +30,7 @@ import {
   MediaFileD,
 } from '../../model';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
+import { evictMediaCache } from '../../utils/evictMediaCache';
 import { related } from '../../crud/related';
 import { RecordKeyMap } from '@orbit/records';
 import CarefulSpeechControls, {
@@ -1492,6 +1493,11 @@ export function PassageDetailGuidedPhraseRecord({
           t.removeRecord({ type: 'mediafile', id: r.mediafile.id })
         )
       );
+      // TT-7689: evict the deleted takes from the basename-keyed desktop media
+      // cache so a re-record with the same server name can't play stale audio.
+      await Promise.all(
+        toDelete.map((r) => evictMediaCache(r.mediafile.attributes?.audioUrl))
+      );
     }
     clearSegmentUndo();
     setCombineUndo(null);
@@ -1872,9 +1878,13 @@ export function PassageDetailGuidedPhraseRecord({
     // local take (TT-7583).
     const mediaId = recordingRow?.mediafile?.id;
     if (mediaId) {
+      const audioUrl = recordingRow?.mediafile?.attributes?.audioUrl;
       await memory.update((t) =>
         t.removeRecord({ type: 'mediafile', id: mediaId })
       );
+      // TT-7689: evict the cleared take from the basename-keyed desktop media
+      // cache so re-recording under the same server name can't play it back.
+      await evictMediaCache(audioUrl);
       forceRefresh();
       if (stepComplete(currentstep)) {
         await setStepComplete(currentstep, false);
