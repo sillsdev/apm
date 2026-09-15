@@ -397,7 +397,10 @@ function MediaRecord(props: IProps) {
     setUploading(false);
     showMessage(message);
     setStatusText(message);
-    saveCompleted(toolId, message);
+    // Queued acceptance is not a save error — pass no message so UnsavedContext
+    // clears the tool entry; otherwise waitForSave rejects (Copilot r4019376949).
+    if (pendingQueued) saveCompleted(toolId);
+    else saveCompleted(toolId, message);
     saveRef.current = false;
     // Mark before the parent await / upload promise reject so handleSaveFailed
     // does not treat this as a second rejection (TT-7365).

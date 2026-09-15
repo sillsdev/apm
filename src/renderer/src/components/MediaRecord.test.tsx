@@ -29,6 +29,7 @@ let capturedAfterUploadCb:
   | undefined;
 const mockEnv = { isElectron: false, online: true };
 const mockShowMessage = jest.fn();
+const mockSaveCompleted = jest.fn();
 
 jest.mock('../../api-variable', () => ({
   get isElectron() {
@@ -91,7 +92,7 @@ jest.mock('../context/UnsavedContext', () => {
       state: {
         toolsChanged: 0,
         saveRequested: () => mockSaveRequested(),
-        saveCompleted: jest.fn(),
+        saveCompleted: (...args: unknown[]) => mockSaveCompleted(...args),
         clearRequested: () => false,
         clearCompleted: jest.fn(),
       },
@@ -452,6 +453,37 @@ describe('MediaRecord save gating', () => {
       expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
     );
     expect(onSaveRejected).not.toHaveBeenCalled();
+  });
+
+  // Queued acceptance must clear UnsavedContext without a saveError, or
+  // waitForSave rejects even though dirty was cleared (Copilot r4019376949).
+  it('completes UnsavedContext without a save error when the take is queued', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    await failASave(jest.fn(), undefined, undefined, { pendingQueued: true });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    expect(mockSaveCompleted).toHaveBeenCalledWith('record-tool');
+    expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+      'record-tool',
+      expect.anything()
+    );
+  });
+
+  it('reports a save error to UnsavedContext when the take is not queued', async () => {
+    mockEnv.isElectron = false;
+    mockEnv.online = true;
+    await failASave(jest.fn(), undefined, undefined, { pendingQueued: false });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('No media to save')
+    );
+    expect(mockSaveCompleted).toHaveBeenCalledWith(
+      'record-tool',
+      'No media to save'
+    );
   });
 
   it('re-enables save after a queued take only when the audio changes', async () => {
