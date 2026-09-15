@@ -11,10 +11,11 @@ import { IRegion } from '../../crud/useWavesurferRegions';
  *   4) let segment 2 finish
  *   -> the Record button never re-enables.
  *
- * Root cause lives in `playCurrentClause`: after seeking to the new clause it
- * only (re)starts playback when `!ctrl.isPlaying()`. When Next is pressed while
- * audio is still playing that guard is true, so `setPlay(true)` is skipped and
- * the region for the new clause is never armed (`gotoTime` -> `wsGoto` clears
+ * Root cause lived in `playCurrentClause`: after seeking to the new clause it
+ * only (re)started playback when `!ctrl.isPlaying()`. When Next is pressed while
+ * audio is still playing, `ctrl.isPlaying()` is true, so `!ctrl.isPlaying()` is
+ * false, the guarded block is skipped, `setPlay(true)` is never called, and the
+ * region for the new clause is never armed (`gotoTime` -> `wsGoto` clears
  * `playRegionRef` via `resetPlayingRegion`). With no armed region, the
  * `region-out` handler never fires `onRegionPlayEnd` when the new segment ends,
  * so `handleRegionPlayEnd` never runs, `phase` never becomes 'recordReady' and
