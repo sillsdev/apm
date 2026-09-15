@@ -65,6 +65,9 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
   const media = useOrbitData('mediafile') as MediaFileD[];
   const discussions = useOrbitData('discussion') as Discussion[];
   const sharedResources = useOrbitData('sharedresource') as SharedResource[];
+  // TT-7702: reload when bootstrap/sync adds special note categories (same
+  // pattern as SelectArtifactCategory).
+  const artifactCategories = useOrbitData('artifactcategory');
   const {
     getArtifactCategorys,
     localizedArtifactCategory,
@@ -154,7 +157,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
       setOrgCategories(cats);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, refresh]);
+  }, [type, refresh, artifactCategories]);
 
   const handleClose = () => onClose && onClose();
 
@@ -256,7 +259,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
             const isEditing = editingId === c.id;
             return (
               <ListItem
-                key={c.slug}
+                key={c.id}
                 secondaryAction={
                   <IconButton
                     id={`cat-delete-${c.id}`}
@@ -343,7 +346,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
           <Typography variant="body2">{t.builtIn}</Typography>
           <List dense={true}>
             {builtIn.map((c) => (
-              <ListItem key={c.slug}>
+              <ListItem key={c.id}>
                 <TextField
                   sx={{ flexGrow: 1 }}
                   variant="outlined"

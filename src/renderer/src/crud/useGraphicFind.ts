@@ -3,7 +3,7 @@ import { apmGraphic } from '../components/apmGraphic';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { ArtifactCategoryD, GraphicD } from '../model';
 import { useArtifactCategory } from './useArtifactCategory';
-import { related } from './related';
+import { canonicalNoteSpecial } from './pickArtifactCategorySpecial';
 import { useGlobal } from '../context/useGlobal';
 
 export function useGraphicFind() {
@@ -23,13 +23,7 @@ export function useGraphicFind() {
     const isChnum = /^CHNUM\b/i.test(ref ?? '');
     const catText = isChnum ? undefined : ref?.split('|')[1];
     const catRec = isChnum
-      ? (artifactCategory.find(
-          (c) =>
-            c.attributes?.specialuse === 'chapter' &&
-            (related(c, 'organization') === organization ||
-              related(c, 'organization') === null)
-        ) ??
-        artifactCategory.find((c) => c.attributes?.specialuse === 'chapter'))
+      ? canonicalNoteSpecial(artifactCategory, 'chapter', organization)
       : catText
         ? artifactCategory.find(
             (c) =>
