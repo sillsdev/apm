@@ -568,9 +568,12 @@ export const nextUpload =
             (p) =>
               p.id === pendingRecord.id && p.localAbsolutePath === pathForQueue
           );
-          const fileOk =
-            Boolean(stored) &&
-            (!ipc?.exists || (await ipc.exists(pathForQueue)));
+          // A rejecting exists probe must not escape before completeCB or the
+          // upload promise never settles (Copilot r4020216334).
+          const existsOk = !ipc?.exists
+            ? true
+            : await ipc.exists(pathForQueue).catch(() => false);
+          const fileOk = Boolean(stored) && existsOk;
           if (fileOk && stored) {
             pendingQueued = true;
             onTerminalFailure?.({

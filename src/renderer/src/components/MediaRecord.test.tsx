@@ -486,6 +486,70 @@ describe('MediaRecord save gating', () => {
     );
   });
 
+  // Parents like DiscussionCard treat empty mediaId as failure unless they see
+  // pendingQueued (Copilot r4020216298).
+  it('forwards pendingQueued true to the parent afterUploadCb', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    mockSaveRequested = () => false;
+    mockUploadMedia = jest.fn(async () => {
+      await capturedAfterUploadCb?.('', { pendingQueued: true });
+      throw new Error('upload failed');
+    });
+    render(
+      <MediaRecord
+        {...defaultProps}
+        afterUploadCb={afterUploadCb}
+        setCanSave={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    mockSaveRequested = () => true;
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/ogg' })
+      );
+    });
+    await waitFor(() =>
+      expect(afterUploadCb).toHaveBeenCalledWith('', { pendingQueued: true })
+    );
+  });
+
+  it('forwards pendingQueued false to the parent afterUploadCb', async () => {
+    mockEnv.isElectron = false;
+    mockEnv.online = true;
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    mockSaveRequested = () => false;
+    mockUploadMedia = jest.fn(async () => {
+      await capturedAfterUploadCb?.('', { pendingQueued: false });
+      throw new Error('upload failed');
+    });
+    render(
+      <MediaRecord
+        {...defaultProps}
+        afterUploadCb={afterUploadCb}
+        setCanSave={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    mockSaveRequested = () => true;
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/ogg' })
+      );
+    });
+    await waitFor(() =>
+      expect(afterUploadCb).toHaveBeenCalledWith('', { pendingQueued: false })
+    );
+  });
+
   it('re-enables save after a queued take only when the audio changes', async () => {
     mockEnv.isElectron = true;
     mockEnv.online = false;

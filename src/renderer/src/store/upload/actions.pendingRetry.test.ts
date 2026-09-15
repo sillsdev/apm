@@ -944,4 +944,70 @@ describe('writeFileLocal disk write (TT-7348)', () => {
     );
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
+
+  // Rejected ipc.exists must not escape before completeCB or the upload
+  // promise never settles (Copilot r4020216334).
+  it('nextUpload completes with pendingQueued false when ipc.exists rejects', async () => {
+    findPendingUploadIdForIdentity.mockReset();
+    let existsCalls = 0;
+    // Succeed during writeFileLocal uniqueness checks; reject on the
+    // finalizeTerminalFailure recoverability probe.
+    mockIpc.exists.mockImplementation(async () => {
+      existsCalls += 1;
+      if (existsCalls === 1) return false;
+      throw new Error('IPC exists failed');
+    });
+    mockedAxios.post.mockRejectedValue({
+      response: { status: 500 },
+      message: 'network error',
+    } as never);
+    appendPendingMediaUpload.mockImplementation((entry: unknown) => {
+      const full = {
+        id: 'exists-reject-1',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        ...(entry as object),
+      };
+      loadPendingMediaUploads.mockReturnValue([full]);
+      return full;
+    });
+    updatePendingMediaUpload.mockImplementation(
+      (id: unknown, patch: unknown) => {
+        const full = {
+          id: id as string,
+          failedAt: '2026-01-01T00:00:00.000Z',
+          ...(patch as object),
+        };
+        loadPendingMediaUploads.mockReturnValue([full]);
+        return full;
+      }
+    );
+
+    const dispatch = jest.fn();
+    const cb = jest.fn();
+    const file = new File([new Uint8Array([1, 2, 3])], 'recording.wav', {
+      type: 'audio/wav',
+    });
+    const action = actionsModule.nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      cb,
+    });
+    action(dispatch);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    // After resetModules, this suite's Axios mock is not the top-level
+    // mockedAxios — assert via cb + exists call count instead.
+    expect(existsCalls).toBeGreaterThan(1);
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.objectContaining({ pendingQueued: false })
+    );
+  });
 });

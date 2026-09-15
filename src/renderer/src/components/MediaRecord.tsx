@@ -50,7 +50,10 @@ interface IProps {
   topic?: string | undefined;
   languagebcp47?: string | undefined;
   keepItSmall?: boolean | undefined;
-  afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  afterUploadCb: (
+    mediaId: string | undefined,
+    outcome?: { pendingQueued?: boolean }
+  ) => Promise<void>;
   /**
    * Domain restore metadata for pending-upload Retry (TT-7363).
    */
@@ -405,7 +408,9 @@ function MediaRecord(props: IProps) {
     // Mark before the parent await / upload promise reject so handleSaveFailed
     // does not treat this as a second rejection (TT-7365).
     uploadOutcomeHandledRef.current = true;
-    await afterUploadCb(mediaId);
+    // Forward pendingQueued so parents (Discussion/Reply/Comment) do not treat
+    // empty mediaId as a true failure and re-mark UnsavedContext (Copilot r4020216298).
+    await afterUploadCb(mediaId, { pendingQueued });
   };
 
   const uploadMedia = useMediaUpload({
