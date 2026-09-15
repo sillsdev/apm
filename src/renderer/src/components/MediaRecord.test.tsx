@@ -294,7 +294,10 @@ describe('MediaRecord save gating', () => {
     onSaveRejected?: jest.Mock,
     order?: string[]
   ) => {
-    mockSaveRequested = () => true;
+    // Stay idle until the waveform has a take — otherwise the save effect hits
+    // the no-audio rejection path on mount (TT-7583) and muddies assertions
+    // about upload outcomes (TT-7365).
+    mockSaveRequested = () => false;
     mockUploadMedia = jest.fn(async () => {
       order?.push('upload');
       // Mirrors nextUpload's terminal failure: afterUploadCb with no mediaId,
@@ -312,6 +315,7 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
 
+    mockSaveRequested = () => true;
     act(() => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
@@ -377,6 +381,9 @@ describe('MediaRecord save gating', () => {
     expect(rearmed === -1 || rearmed > rejected).toBe(true);
   });
 
+  // Non-queued failure only (default mockEnv: not Electron / online). When
+  // Electron queues the take instead, Save must stay off until the audio
+  // changes — see the TT-7365 cases below.
   it('keeps save available so the same take can be retried', async () => {
     const setCanSave = jest.fn();
     await failASave(setCanSave);
@@ -404,6 +411,58 @@ describe('MediaRecord save gating', () => {
     await waitFor(() =>
       expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
     );
+  });
+
+  // TT-7365: once a take is accepted into Pending Media Uploads, Save must
+  // stay off until the user changes the audio (new version). Re-enabling Save
+  // after each offline alert produced duplicate pending rows and re-staged
+  // the same take under a new .verNN path.
+  it('does not re-enable save after electron queues the take for upload', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const setCanSave = jest.fn();
+    await failASave(setCanSave);
+
+    mockSaveRequested = () => false;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+  });
+
+  it('does not report a queued pending take as a rejected save', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const onSaveRejected = jest.fn();
+    await failASave(jest.fn(), onSaveRejected);
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    expect(onSaveRejected).not.toHaveBeenCalled();
+  });
+
+  it('re-enables save after a queued take only when the audio changes', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const setCanSave = jest.fn();
+    await failASave(setCanSave);
+
+    mockSaveRequested = () => false;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(false));
+
+    act(() => {
+      latestWsProps?.setChanged?.(true);
+    });
+
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
   });
 
   // On web nothing is kept, so the user is warned to stay on the page.
