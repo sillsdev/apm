@@ -27,7 +27,7 @@ import {
   useMediaUpload,
   convertToFormat,
 } from '../crud';
-import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
+import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
 import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
