@@ -156,27 +156,54 @@ export const useArtifactCategory = (teamId?: string) => {
   };
 
   /**
+   * When the team has its own specialuse note category, omit system (org null)
+   * rows with that specialuse from the returned list — display override only.
+   */
+  const hideSystemOverriddenByTeam = (recs: ArtifactCategoryD[]) => {
+    const teamSpecials = new Set<string>();
+    for (const r of recs) {
+      const org = related(r, 'organization');
+      const su = r.attributes?.specialuse ?? '';
+      if (org && su) teamSpecials.add(su);
+    }
+    return recs.filter((r) => {
+      const org = related(r, 'organization');
+      const su = r.attributes?.specialuse ?? '';
+      if (org == null && su && teamSpecials.has(su)) return false;
+      return true;
+    });
+  };
+
+  /**
    * Hide-only filtering left unreachable specials that notes / CHNUM still
    * reference by id (Devin). Migrate refs to a canonical winner, copy empty
    * winner settings from losers (color / titleMedia / category graphic), remove
    * losers, then return the cleaned note list.
+   *
+   * Only consolidates within the same non-empty organization — never deletes
+   * system (org null) categories or groups them with team specials.
    */
   const consolidateDuplicateNoteSpecials = async (
     noteRecs: ArtifactCategoryD[]
   ): Promise<ArtifactCategoryD[]> => {
     if (!curOrg) return noteRecs;
 
-    const bySpecial = new Map<string, ArtifactCategoryD[]>();
+    // Partition by organization + specialuse so team and system never pair.
+    const byOrgSpecial = new Map<string, ArtifactCategoryD[]>();
     for (const r of noteRecs) {
       const su = r.attributes?.specialuse ?? '';
       if (!su) continue;
-      const list = bySpecial.get(su) ?? [];
+      const org = related(r, 'organization') ?? '';
+      // System categories (org '') are never consolidate losers/winners.
+      if (!org) continue;
+      const key = `${org}::${su}`;
+      const list = byOrgSpecial.get(key) ?? [];
       list.push(r);
-      bySpecial.set(su, list);
+      byOrgSpecial.set(key, list);
     }
 
     const pairs: { winner: ArtifactCategoryD; loser: ArtifactCategoryD }[] = [];
-    for (const group of bySpecial.values()) {
+    for (const group of byOrgSpecial.values()) {
       if (group.length < 2) continue;
       const winner = pickSpecialWinner(group);
       for (const r of group) {
@@ -189,12 +216,20 @@ export const useArtifactCategory = (teamId?: string) => {
       return recs.filter((r) => !loserIds.has(r.id));
     };
 
-    if (pairs.length === 0) return noteRecs;
+    const applyPatches = (
+      recs: ArtifactCategoryD[],
+      patches: Map<string, ArtifactCategoryD>
+    ) => recs.map((r) => patches.get(r.id) ?? r);
+
+    if (pairs.length === 0) {
+      return hideSystemOverriddenByTeam(noteRecs);
+    }
 
     const inflight = specialConsolidateInFlight.current.get(curOrg);
     if (inflight) return inflight;
 
     const run = (async (): Promise<ArtifactCategoryD[]> => {
+      const patchedWinners = new Map<string, ArtifactCategoryD>();
       try {
         await memory.update((t: RecordTransformBuilder) => {
           const ops: RecordOperation[] = [];
@@ -212,31 +247,42 @@ export const useArtifactCategory = (teamId?: string) => {
           }[];
 
           for (const { winner, loser } of pairs) {
+            // Never delete system categories (defense in depth).
+            if (related(loser, 'organization') == null) continue;
+
+            let patched = patchedWinners.get(winner.id) ?? winner;
+
             // Fill empty winner settings from loser (keep winner on conflicts).
-            const winnerColor = winner.attributes?.color ?? '';
+            const winnerColor = patched.attributes?.color ?? '';
             const loserColor = loser.attributes?.color ?? '';
             if (!winnerColor && loserColor) {
-              ops.push(
-                ...UpdateRecord(
-                  t,
-                  {
-                    ...winner,
-                    attributes: {
-                      ...winner.attributes,
-                      color: loserColor,
-                    },
-                  } as ArtifactCategoryD,
-                  user
-                )
-              );
+              patched = {
+                ...patched,
+                attributes: {
+                  ...patched.attributes,
+                  color: loserColor,
+                },
+              } as ArtifactCategoryD;
+              patchedWinners.set(winner.id, patched);
+              ops.push(...UpdateRecord(t, patched, user));
             }
-            const winnerTitle = related(winner, 'titleMediafile');
+            const winnerTitle = related(patched, 'titleMediafile');
             const loserTitle = related(loser, 'titleMediafile');
             if (!winnerTitle && loserTitle) {
+              patched = {
+                ...patched,
+                relationships: {
+                  ...patched.relationships,
+                  titleMediafile: {
+                    data: { type: 'mediafile', id: loserTitle },
+                  },
+                },
+              } as ArtifactCategoryD;
+              patchedWinners.set(winner.id, patched);
               ops.push(
                 ...ReplaceRelatedRecord(
                   t,
-                  winner,
+                  patched,
                   'titleMediafile',
                   'mediafile',
                   loserTitle
@@ -307,10 +353,13 @@ export const useArtifactCategory = (teamId?: string) => {
           }
           return ops;
         });
-        return filterLosers(noteRecs);
+        return hideSystemOverriddenByTeam(
+          applyPatches(filterLosers(noteRecs), patchedWinners)
+        );
       } catch (err) {
         logError(Severity.error, errorReporter, err as Error);
-        return filterLosers(noteRecs);
+        // Do not hide losers still present in the cache.
+        return hideSystemOverriddenByTeam(noteRecs);
       } finally {
         specialConsolidateInFlight.current.delete(curOrg);
       }

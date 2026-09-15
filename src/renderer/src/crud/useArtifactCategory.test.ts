@@ -223,6 +223,8 @@ const noteCat = (
     specialuse?: string;
     color?: string;
     titleMediaId?: string;
+    /** null = system (built-in) category */
+    orgId?: string | null;
   } = {}
 ): ArtifactCategoryD =>
   ({
@@ -241,7 +243,10 @@ const noteCat = (
       lastModifiedBy: 1,
     },
     relationships: {
-      organization: { data: { type: 'organization', id: ORG_ID } },
+      organization:
+        opts.orgId === null
+          ? { data: null }
+          : { data: { type: 'organization', id: opts.orgId ?? ORG_ID } },
       titleMediafile: opts.titleMediaId
         ? { data: { type: 'mediafile', id: opts.titleMediaId } }
         : { data: null },
@@ -610,6 +615,83 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
           (op.record as { id: string }).id === 'chapter-old'
       )
     ).toBe(true);
+    // Devin: this call must return merged presentation, not a stale empty color.
+    const chapter = cats.find((c) => c.id === 'chapter-new');
+    expect(chapter?.color).toBe('#00ff00');
+    expect(chapter?.titleMediaId).toBe('media-1');
+  });
+
+  it('does not delete system chapter or rewrite other-org refs when team has its own', async () => {
+    // Devin: team+system share specialuse — must not delete global or retarget
+    // other teams' notes onto this team's category.
+    orbitRecords = [
+      noteCat('chapter-system', 'chapter', {
+        remoteId: '1',
+        specialuse: 'chapter',
+        orgId: null,
+      }),
+      noteCat('chapter-team', 'Chapter Number', {
+        remoteId: '99',
+        specialuse: 'chapter',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+      sharedRes('sr-other', 'chapter-system'),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+
+    expect(
+      lastUpdateOps().some(
+        (op) =>
+          op.op === 'removeRecord' &&
+          (op.record as { id: string }).id === 'chapter-system'
+      )
+    ).toBe(false);
+    expect(replaceRelatedMock).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: 'sr-other' }),
+      'artifactCategory',
+      'artifactcategory',
+      'chapter-team'
+    );
+    // Team view: one Chapter Number (team); system row hidden, not deleted.
+    expect(
+      cats.filter((c) => c.specialuse === 'chapter').map((c) => c.id)
+    ).toEqual(['chapter-team']);
+    expect(orbitRecords.some((r) => r.id === 'chapter-system')).toBe(true);
+  });
+
+  it('returns both team duplicate chapters when consolidate update fails', async () => {
+    // Devin: catch must not hide losers still present in the cache.
+    // Both need remoteId so the online list would include the loser if
+    // consolidate returns it (without remoteId the post-filter hides it).
+    orbitRecords = [
+      noteCat('chapter-old', 'chapter', {
+        remoteId: '98',
+        specialuse: 'chapter',
+      }),
+      noteCat('chapter-new', 'Chapter Number', {
+        remoteId: '99',
+        specialuse: 'chapter',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+    ];
+    mockMemory.update.mockRejectedValueOnce(new Error('IndexedDB failed'));
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+
+    expect(mockLogError).toHaveBeenCalled();
+    const chapterIds = cats
+      .filter((c) => c.specialuse === 'chapter')
+      .map((c) => c.id)
+      .sort();
+    expect(chapterIds).toEqual(['chapter-new', 'chapter-old']);
   });
 
   it('consolidates a later duplicate after a prior successful cleanup on the same hook', async () => {
