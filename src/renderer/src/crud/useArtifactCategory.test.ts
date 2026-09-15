@@ -56,7 +56,12 @@ jest.mock('../model/baseModel', () => ({
       },
     ]
   ),
-  UpdateRecord: jest.fn(() => []),
+  UpdateRecord: jest.fn(
+    (
+      _t: unknown,
+      rec: { type?: string; id?: string; attributes?: Record<string, unknown> }
+    ) => [{ op: 'updateRecord', record: rec }]
+  ),
 }));
 
 jest.mock('react-redux', () => ({
@@ -191,11 +196,16 @@ import {
   ArtifactCategoryType,
   useArtifactCategory,
 } from './useArtifactCategory';
-import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
+import {
+  AddRecord,
+  ReplaceRelatedRecord,
+  UpdateRecord,
+} from '../model/baseModel';
 import { Severity } from '../utils/logErrorService';
 
 const addRecordMock = AddRecord as jest.Mock;
 const replaceRelatedMock = ReplaceRelatedRecord as jest.Mock;
+const updateRecordMock = UpdateRecord as jest.Mock;
 
 /** specialuse values passed to AddRecord during bootstrap / team-create ops. */
 const specialusesFromAddRecord = (): string[] =>
@@ -208,7 +218,12 @@ const lastUpdateOps = (): Array<Record<string, unknown>> => lastTransformResult;
 const noteCat = (
   id: string,
   name: string,
-  opts: { remoteId?: string; specialuse?: string; color?: string } = {}
+  opts: {
+    remoteId?: string;
+    specialuse?: string;
+    color?: string;
+    titleMediaId?: string;
+  } = {}
 ): ArtifactCategoryD =>
   ({
     id,
@@ -219,7 +234,7 @@ const noteCat = (
       discussion: false,
       resource: false,
       note: true,
-      color: opts.color ?? '#ed071d',
+      color: opts.color !== undefined ? opts.color : '#ed071d',
       specialuse: opts.specialuse ?? '',
       dateCreated: '2020-01-01',
       dateUpdated: '2020-01-01',
@@ -227,7 +242,9 @@ const noteCat = (
     },
     relationships: {
       organization: { data: { type: 'organization', id: ORG_ID } },
-      titleMediafile: { data: null },
+      titleMediafile: opts.titleMediaId
+        ? { data: { type: 'mediafile', id: opts.titleMediaId } }
+        : { data: null },
     },
   }) as unknown as ArtifactCategoryD;
 
@@ -541,6 +558,111 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
     expect(replaceRelatedMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ id: 'sr-1', type: 'sharedresource' }),
+      'artifactCategory',
+      'artifactcategory',
+      'chapter-new'
+    );
+  });
+
+  it('merges loser color and titleMedia onto the synced winner before remove', async () => {
+    // Devin: remoteId-first winner must not discard local customizations.
+    orbitRecords = [
+      noteCat('chapter-old', 'chapter', {
+        specialuse: 'chapter',
+        color: '#00ff00',
+        titleMediaId: 'media-1',
+      }),
+      noteCat('chapter-new', 'Chapter Number', {
+        remoteId: '99',
+        specialuse: 'chapter',
+        color: '',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    expect(
+      cats.filter((c) => c.specialuse === 'chapter').map((c) => c.id)
+    ).toEqual(['chapter-new']);
+
+    expect(updateRecordMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        id: 'chapter-new',
+        attributes: expect.objectContaining({ color: '#00ff00' }),
+      }),
+      expect.anything()
+    );
+    expect(replaceRelatedMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: 'chapter-new' }),
+      'titleMediafile',
+      'mediafile',
+      'media-1'
+    );
+    expect(
+      lastUpdateOps().some(
+        (op) =>
+          op.op === 'removeRecord' &&
+          (op.record as { id: string }).id === 'chapter-old'
+      )
+    ).toBe(true);
+  });
+
+  it('consolidates a later duplicate after a prior successful cleanup on the same hook', async () => {
+    // Devin: permanent org marker left later sync dups hide-only / orphaned.
+    orbitRecords = [
+      noteCat('chapter-old', 'chapter', { specialuse: 'chapter' }),
+      noteCat('chapter-new', 'Chapter Number', {
+        remoteId: '99',
+        specialuse: 'chapter',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    expect(
+      lastUpdateOps().some(
+        (op) =>
+          op.op === 'removeRecord' &&
+          (op.record as { id: string }).id === 'chapter-old'
+      )
+    ).toBe(true);
+
+    // Simulate successful remove, then a later sync duplicate.
+    orbitRecords = orbitRecords.filter((r) => r.id !== 'chapter-old');
+    orbitRecords.push(
+      noteCat('chapter-z', 'Chapter Number', {
+        remoteId: '100',
+        specialuse: 'chapter',
+      }),
+      sharedRes('sr-c', 'chapter-z')
+    );
+    mockMemory.update.mockClear();
+    replaceRelatedMock.mockClear();
+    lastTransformResult = [];
+
+    await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(
+      lastUpdateOps().some(
+        (op) =>
+          op.op === 'removeRecord' &&
+          (op.record as { id: string }).id === 'chapter-z'
+      )
+    ).toBe(true);
+    expect(replaceRelatedMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: 'sr-c', type: 'sharedresource' }),
       'artifactCategory',
       'artifactcategory',
       'chapter-new'

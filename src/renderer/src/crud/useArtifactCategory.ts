@@ -54,8 +54,10 @@ export const useArtifactCategory = (teamId?: string) => {
   const specialNoteCategories = ['chapter', 'title'];
   // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
   const specialBootstrapOrgs = useRef<Set<string>>(new Set());
-  // Ensure duplicate-special consolidate runs at most once per org per attempt.
-  const specialConsolidateOrgs = useRef<Set<string>>(new Set());
+  // Coalesce concurrent consolidates; cleared after settle so later dups re-run.
+  const specialConsolidateInFlight = useRef<
+    Map<string, Promise<ArtifactCategoryD[]>>
+  >(new Map());
   const localizedArtifactCategory = (val: string) => {
     return (t as ISwitches)[val] || val;
   };
@@ -155,7 +157,8 @@ export const useArtifactCategory = (teamId?: string) => {
 
   /**
    * Hide-only filtering left unreachable specials that notes / CHNUM still
-   * reference by id (Devin). Migrate refs to a canonical winner and remove
+   * reference by id (Devin). Migrate refs to a canonical winner, copy empty
+   * winner settings from losers (color / titleMedia / category graphic), remove
    * losers, then return the cleaned note list.
    */
   const consolidateDuplicateNoteSpecials = async (
@@ -188,51 +191,133 @@ export const useArtifactCategory = (teamId?: string) => {
 
     if (pairs.length === 0) return noteRecs;
 
-    // Already attempted this session — still hide losers for the editor UI.
-    if (specialConsolidateOrgs.current.has(curOrg)) {
-      return filterLosers(noteRecs);
-    }
+    const inflight = specialConsolidateInFlight.current.get(curOrg);
+    if (inflight) return inflight;
 
-    specialConsolidateOrgs.current.add(curOrg);
-    try {
-      await memory.update((t: RecordTransformBuilder) => {
-        const ops: RecordOperation[] = [];
-        const refTypes = ['sharedresource', 'mediafile', 'discussion'] as const;
-        for (const { winner, loser } of pairs) {
-          for (const type of refTypes) {
-            const refs = (
-              memory.cache.query((q) => q.findRecords(type)) as {
-                id: string;
-                type: string;
-                relationships?: unknown;
-              }[]
-            ).filter((r) => related(r, 'artifactCategory') === loser.id);
-            for (const ref of refs) {
+    const run = (async (): Promise<ArtifactCategoryD[]> => {
+      try {
+        await memory.update((t: RecordTransformBuilder) => {
+          const ops: RecordOperation[] = [];
+          const refTypes = [
+            'sharedresource',
+            'mediafile',
+            'discussion',
+          ] as const;
+          const graphics = memory.cache.query((q) =>
+            q.findRecords('graphic')
+          ) as {
+            id: string;
+            type: string;
+            attributes?: { resourceType?: string; resourceId?: number };
+          }[];
+
+          for (const { winner, loser } of pairs) {
+            // Fill empty winner settings from loser (keep winner on conflicts).
+            const winnerColor = winner.attributes?.color ?? '';
+            const loserColor = loser.attributes?.color ?? '';
+            if (!winnerColor && loserColor) {
               ops.push(
-                ...ReplaceRelatedRecord(
+                ...UpdateRecord(
                   t,
-                  ref as Parameters<typeof ReplaceRelatedRecord>[1],
-                  'artifactCategory',
-                  'artifactcategory',
-                  winner.id
+                  {
+                    ...winner,
+                    attributes: {
+                      ...winner.attributes,
+                      color: loserColor,
+                    },
+                  } as ArtifactCategoryD,
+                  user
                 )
               );
             }
+            const winnerTitle = related(winner, 'titleMediafile');
+            const loserTitle = related(loser, 'titleMediafile');
+            if (!winnerTitle && loserTitle) {
+              ops.push(
+                ...ReplaceRelatedRecord(
+                  t,
+                  winner,
+                  'titleMediafile',
+                  'mediafile',
+                  loserTitle
+                )
+              );
+            }
+
+            // Re-key category graphic from loser remoteId → winner remoteId.
+            const loserRemote = loser.keys?.remoteId;
+            const winnerRemote = winner.keys?.remoteId;
+            if (loserRemote && winnerRemote) {
+              const loserRid = parseInt(String(loserRemote), 10);
+              const winnerRid = parseInt(String(winnerRemote), 10);
+              const winnerHasGraphic = graphics.some(
+                (g) =>
+                  g.attributes?.resourceType === 'category' &&
+                  g.attributes?.resourceId === winnerRid
+              );
+              if (!winnerHasGraphic && !Number.isNaN(loserRid)) {
+                const loserGraphic = graphics.find(
+                  (g) =>
+                    g.attributes?.resourceType === 'category' &&
+                    g.attributes?.resourceId === loserRid
+                );
+                if (loserGraphic && !Number.isNaN(winnerRid)) {
+                  ops.push(
+                    ...UpdateRecord(
+                      t,
+                      {
+                        ...loserGraphic,
+                        attributes: {
+                          ...loserGraphic.attributes,
+                          resourceId: winnerRid,
+                        },
+                      } as unknown as Parameters<typeof UpdateRecord>[1],
+                      user
+                    )
+                  );
+                }
+              }
+            }
+
+            for (const type of refTypes) {
+              const refs = (
+                memory.cache.query((q) => q.findRecords(type)) as {
+                  id: string;
+                  type: string;
+                  relationships?: unknown;
+                }[]
+              ).filter((r) => related(r, 'artifactCategory') === loser.id);
+              for (const ref of refs) {
+                ops.push(
+                  ...ReplaceRelatedRecord(
+                    t,
+                    ref as Parameters<typeof ReplaceRelatedRecord>[1],
+                    'artifactCategory',
+                    'artifactcategory',
+                    winner.id
+                  )
+                );
+              }
+            }
+            ops.push(
+              t
+                .removeRecord({ type: 'artifactcategory', id: loser.id })
+                .toOperation()
+            );
           }
-          ops.push(
-            t
-              .removeRecord({ type: 'artifactcategory', id: loser.id })
-              .toOperation()
-          );
-        }
-        return ops;
-      });
-      return filterLosers(noteRecs);
-    } catch (err) {
-      specialConsolidateOrgs.current.delete(curOrg);
-      logError(Severity.error, errorReporter, err as Error);
-      return filterLosers(noteRecs);
-    }
+          return ops;
+        });
+        return filterLosers(noteRecs);
+      } catch (err) {
+        logError(Severity.error, errorReporter, err as Error);
+        return filterLosers(noteRecs);
+      } finally {
+        specialConsolidateInFlight.current.delete(curOrg);
+      }
+    })();
+
+    specialConsolidateInFlight.current.set(curOrg, run);
+    return run;
   };
 
   const getArtifactCategorys = async (type: ArtifactCategoryType) => {
