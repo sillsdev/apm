@@ -3,6 +3,14 @@
  * waiting for the remote request queue. A busy queue (normal mid-session) used
  * to stall the Note Details category picker for whole seconds.
  */
+import {
+  jest,
+  describe,
+  beforeEach,
+  afterEach,
+  it,
+  expect,
+} from '@jest/globals';
 import { act, renderHook } from '@testing-library/react';
 import type { ArtifactCategoryD } from '../model';
 
@@ -56,7 +64,9 @@ const mockMemory = {
           const list = categoryRecords.filter((r) => r.type === type);
           return Object.assign([...list], {
             filter: (f: { attribute: string; value: unknown }) =>
-              list.filter((r) => (r.attributes as any)?.[f.attribute] === f.value),
+              list.filter(
+                (r) => (r.attributes as any)?.[f.attribute] === f.value
+              ),
           });
         },
         findRecord: ({ type, id }: { type: string; id: string }) =>
@@ -71,13 +81,20 @@ const mockMemory = {
         const list = categoryRecords.filter((r) => r.type === type);
         return Object.assign([...list], {
           filter: (f: { attribute: string; value: unknown }) =>
-            list.filter((r) => (r.attributes as any)?.[f.attribute] === f.value),
+            list.filter(
+              (r) => (r.attributes as any)?.[f.attribute] === f.value
+            ),
         });
       },
     };
     return qFn(builder);
   }),
-  update: jest.fn(async () => undefined),
+  update: jest.fn(async (arg: unknown) => {
+    // Invoke transform builders so AddRecord captures bootstrap ops (TT-7702).
+    if (typeof arg === 'function') {
+      (arg as (t: Record<string, unknown>) => unknown)({});
+    }
+  }),
   schema: {},
 };
 
@@ -118,7 +135,16 @@ import {
   ArtifactCategoryType,
   useArtifactCategory,
 } from './useArtifactCategory';
+import { AddRecord } from '../model/baseModel';
 import { Severity } from '../utils/logErrorService';
+
+const addRecordMock = AddRecord as jest.Mock;
+
+/** specialuse values passed to AddRecord during bootstrap / team-create ops. */
+const specialusesFromAddRecord = (): string[] =>
+  addRecordMock.mock.calls
+    .map((call) => (call[1] as ArtifactCategoryD)?.attributes?.specialuse)
+    .filter((s): s is string => Boolean(s));
 
 const noteCat = (
   id: string,
@@ -177,7 +203,8 @@ const settleSoon = <T>(p: Promise<T>, ms = 100): Promise<T> =>
     p,
     new Promise<T>((_, reject) =>
       setTimeout(
-        () => reject(new Error(`timed out after ${ms}ms waiting for categories`)),
+        () =>
+          reject(new Error(`timed out after ${ms}ms waiting for categories`)),
         ms
       )
     ),
@@ -243,11 +270,12 @@ describe('useArtifactCategory (TT-7656)', () => {
     expect(cats.map((c) => c.id).sort()).toEqual(['note-1', 'note-2']);
   });
 
-  it('does not recreate special note categories that already exist unsynced', async () => {
-    // chapter exists locally but has no remoteId yet (just created / still syncing).
+  it('does not recreate special note categories when chapter and title exist unsynced', async () => {
+    // Both specials exist locally but have no remoteId yet (just created / still syncing).
     categoryRecords = [
       noteCat('note-1', 'general', { remoteId: '11' }),
       noteCat('chapter-local', 'chapter', { specialuse: 'chapter' }),
+      noteCat('title-local', 'title', { specialuse: 'title' }),
     ];
     const { result } = renderHook(() => useArtifactCategory(ORG_ID));
 
@@ -327,5 +355,72 @@ describe('useArtifactCategory (TT-7656)', () => {
       await p;
     });
     expect(settledId).toBe('new-cat-id');
+  });
+});
+
+describe('useArtifactCategory (TT-7702 special note categories)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockLogError.mockClear();
+    pendingWaits.length = 0;
+    waitForRemoteQueue.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          pendingWaits.push(resolve);
+        })
+    );
+    categoryRecords = [];
+  });
+
+  afterEach(async () => {
+    while (pendingWaits.length) {
+      pendingWaits.shift()?.();
+    }
+    await new Promise<void>((r) => setTimeout(r, 0));
+  });
+
+  it('bootstraps only the missing title special when chapter already exists', async () => {
+    // TT-7702: chapter-only gate skipped title forever; slug chapter still
+    // counts, so bootstrap must add title only — never a second chapter.
+    categoryRecords = [
+      noteCat('note-1', 'general', { remoteId: '11' }),
+      noteCat('chapter-local', 'chapter', { specialuse: 'chapter' }),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    await act(async () => {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    expect(mockMemory.update).toHaveBeenCalled();
+    expect(specialusesFromAddRecord()).toEqual(['title']);
+  });
+
+  it('dedupes slug and localized chapter specials to one Chapter Number label', async () => {
+    // Both display as "Chapter Number" via localizedArtifactCategory — list
+    // must keep a single specialuse=chapter row (prefer remoteId when online).
+    categoryRecords = [
+      noteCat('chapter-slug', 'chapter', {
+        remoteId: '21',
+        specialuse: 'chapter',
+      }),
+      noteCat('chapter-localized', 'Chapter Number', {
+        remoteId: '22',
+        specialuse: 'chapter',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    const labels = cats.map((c) => c.category);
+    expect(labels.filter((l) => l === 'Chapter Number')).toHaveLength(1);
+    expect(labels.filter((l) => l === 'Title')).toHaveLength(1);
+    expect(cats.filter((c) => c.specialuse === 'chapter')).toHaveLength(1);
   });
 });
