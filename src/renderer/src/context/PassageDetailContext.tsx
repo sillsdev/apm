@@ -1255,6 +1255,12 @@ const PassageDetailProvider = (props: IProps) => {
   }, [state.orgWorkflowSteps]);
 
   useEffect(() => {
+    return () => {
+      forceClearPending();
+    };
+  }, []);
+
+  useEffect(() => {
     if (state.currentstep === '' && state.orgWorkflowSteps.length > 0) {
       const next = getNextStep(state);
       if (state.currentstep !== next) {

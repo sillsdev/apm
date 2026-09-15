@@ -9539,6 +9539,13 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="shared.leaveUnsavedChanges">
+            <source>You have unsaved changes that will be lost if you leave this page. Leave anyway?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="shared.loadFromFile">
             <source>Load from file...</source>
             <target/>
@@ -9572,6 +9579,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">Access.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="shared.mediaQueuedForUpload">
+            <source>You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="shared.member">
@@ -9614,6 +9628,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="shared.NoSaveStayOnPage">
+            <source>If you leave this page before saving, your changes will be lost.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="shared.NoSaveOffline">

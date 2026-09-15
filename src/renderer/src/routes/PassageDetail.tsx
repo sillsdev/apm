@@ -1,6 +1,8 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { useGlobal } from '../context/useGlobal';
-import { useLocation, useParams } from 'react-router-dom';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { useBlocker, useLocation, useParams } from 'react-router-dom';
+import { isElectron } from '../../api-variable';
+import { navigationCancelled } from '../utils/useMyNavigate';
 import AppLayout from '../components/App/AppLayout';
 import {
   PassageDetailContext,
@@ -37,6 +39,29 @@ import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetai
 import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
 
 const NotImplemented = () => 'Not implemented';
+
+const LeaveUnsavedGuard = () => {
+  const { prjId, pasId } = useParams();
+  const getGlobal = useGetGlobal();
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const here = `/detail/${prjId}/${pasId}`;
+  const blocker = useBlocker(
+    ({ nextLocation }) =>
+      !isElectron &&
+      !nextLocation.pathname.startsWith(here) &&
+      Boolean(getGlobal('changed'))
+  );
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    if (window.confirm(ts.leaveUnsavedChanges)) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+      navigationCancelled();
+    }
+  }, [blocker, ts.leaveUnsavedChanges]);
+  return null;
+};
 
 const MobileStep = () => {
   const { currentstep, isBoldWorkflow } = useContext(PassageDetailContext)
@@ -188,6 +213,7 @@ export const PassageDetail = () => {
 
   return (
     <AppLayout appHeadProps={{ drawBottomBorder: false }}>
+      <LeaveUnsavedGuard />
       <PassageDetailProvider>
         {isMobile ? <MobileDetail /> : <PassageDetailGrids />}
       </PassageDetailProvider>
