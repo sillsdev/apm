@@ -121,7 +121,8 @@ export const useArtifactCategory = (teamId?: string) => {
         type: 'artifactcategory',
         attributes: {
           specialuse: category,
-          categoryname: localizedArtifactCategory(category),
+          // Store the localization key; display translates on read.
+          categoryname: category,
           discussion: false,
           resource: false,
           note: true,
@@ -156,13 +157,17 @@ export const useArtifactCategory = (teamId?: string) => {
   /**
    * When the team has its own specialuse note category, omit system (org null)
    * rows with that specialuse from the returned list — display override only.
+   * Online: only synced team specials count (unsynced rows are dropped by the
+   * remoteId filter and must not blank the system fallback).
    */
   const hideSystemOverriddenByTeam = (recs: ArtifactCategoryD[]) => {
     const teamSpecials = new Set<string>();
     for (const r of recs) {
       const org = related(r, 'organization');
       const su = r.attributes?.specialuse ?? '';
-      if (org && su) teamSpecials.add(su);
+      if (!org || !su) continue;
+      if (!offlineOnly && !r.keys?.remoteId) continue;
+      teamSpecials.add(su);
     }
     return recs.filter((r) => {
       const org = related(r, 'organization');
@@ -255,6 +260,25 @@ export const useArtifactCategory = (teamId?: string) => {
             if (related(loser, 'organization') == null) continue;
 
             let patched = patchedWinners.get(winner.id) ?? winner;
+
+            // Normalize special categoryname to the specialuse key so display
+            // can re-localize after a language switch.
+            const su = patched.attributes?.specialuse ?? '';
+            if (
+              su &&
+              specialNoteCategories.includes(su) &&
+              (patched.attributes?.categoryname ?? '') !== su
+            ) {
+              patched = {
+                ...patched,
+                attributes: {
+                  ...patched.attributes,
+                  categoryname: su,
+                },
+              } as ArtifactCategoryD;
+              patchedWinners.set(winner.id, patched);
+              ops.push(...UpdateRecord(t, patched, user));
+            }
 
             // Fill empty winner settings from loser (keep winner on conflicts).
             const winnerColor = patched.attributes?.color ?? '';

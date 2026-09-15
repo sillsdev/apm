@@ -1,7 +1,7 @@
 import { ArtifactCategoryD } from '../model';
 import { related } from './related';
 
-/** Prefer remoteId, then richer settings, then stable id. */
+/** Prefer remoteId, then slug===specialuse, then richer settings, then stable id. */
 export const pickSpecialWinner = (
   group: ArtifactCategoryD[]
 ): ArtifactCategoryD => {
@@ -9,6 +9,11 @@ export const pickSpecialWinner = (
     const aR = a.keys?.remoteId ? 0 : 1;
     const bR = b.keys?.remoteId ? 0 : 1;
     if (aR !== bR) return aR - bR;
+    const aSu = a.attributes?.specialuse ?? '';
+    const bSu = b.attributes?.specialuse ?? '';
+    const aSlug = aSu && a.attributes?.categoryname === aSu ? 0 : 1;
+    const bSlug = bSu && b.attributes?.categoryname === bSu ? 0 : 1;
+    if (aSlug !== bSlug) return aSlug - bSlug;
     const aRich =
       (a.attributes?.color ? 1 : 0) + (related(a, 'titleMediafile') ? 1 : 0);
     const bRich =

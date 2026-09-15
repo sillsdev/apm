@@ -15,6 +15,7 @@ const cat = (
     color?: string;
     orgId?: string | null;
     titleMediaId?: string;
+    categoryname?: string;
   } = {}
 ): ArtifactCategoryD =>
   ({
@@ -22,7 +23,7 @@ const cat = (
     type: 'artifactcategory',
     keys: opts.remoteId !== undefined ? { remoteId: opts.remoteId } : {},
     attributes: {
-      categoryname: id,
+      categoryname: opts.categoryname ?? id,
       specialuse: opts.specialuse ?? 'chapter',
       color: opts.color ?? '',
       note: true,
@@ -45,6 +46,23 @@ describe('pickSpecialWinner', () => {
       cat('chapter-new', { remoteId: '99', specialuse: 'chapter' }),
     ]);
     expect(winner.id).toBe('chapter-new');
+  });
+
+  it('prefers categoryname matching specialuse when both are synced', () => {
+    // Devin: localized "Chapter Number" must not beat the slug key for i18n.
+    const winner = pickSpecialWinner([
+      cat('chapter-localized', {
+        remoteId: '21',
+        specialuse: 'chapter',
+        categoryname: 'Chapter Number',
+      }),
+      cat('chapter-slug', {
+        remoteId: '22',
+        specialuse: 'chapter',
+        categoryname: 'chapter',
+      }),
+    ]);
+    expect(winner.id).toBe('chapter-slug');
   });
 });
 

@@ -514,6 +514,10 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
 
     expect(mockMemory.update).toHaveBeenCalled();
     expect(specialusesFromAddRecord()).toEqual(['title']);
+    const titleRec = addRecordMock.mock.calls
+      .map((call) => call[1] as ArtifactCategoryD)
+      .find((r) => r?.attributes?.specialuse === 'title');
+    expect(titleRec?.attributes?.categoryname).toBe('title');
   });
 
   it('bootstraps team title when only a system title exists', async () => {
@@ -849,6 +853,7 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
   it('does not removeRecord a synced loser so uncached refs stay valid', async () => {
     // Devin: only cached refs are migrated; deleting a synced loser orphans
     // unloaded plan media that still reference it on the server.
+    // Slug-named chapter-old wins over localized chapter-new (both synced).
     orbitRecords = [
       noteCat('chapter-old', 'chapter', {
         remoteId: '98',
@@ -859,7 +864,7 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
         specialuse: 'chapter',
       }),
       noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
-      sharedRes('sr-cached', 'chapter-old'),
+      sharedRes('sr-cached', 'chapter-new'),
       // Intentionally no second media/SR for another plan — simulates uncached.
     ];
     const { result } = renderHook(() => useArtifactCategory(ORG_ID));
@@ -870,39 +875,40 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
 
     expect(
       cats.filter((c) => c.specialuse === 'chapter').map((c) => c.id)
-    ).toEqual(['chapter-new']);
+    ).toEqual(['chapter-old']);
     expect(replaceRelatedMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ id: 'sr-cached', type: 'sharedresource' }),
       'artifactCategory',
       'artifactcategory',
-      'chapter-new'
+      'chapter-old'
     );
     expect(
       lastUpdateOps().some(
         (op) =>
           op.op === 'removeRecord' &&
-          (op.record as { id: string }).id === 'chapter-old'
+          (op.record as { id: string }).id === 'chapter-new'
       )
     ).toBe(false);
-    expect(orbitRecords.some((r) => r.id === 'chapter-old')).toBe(true);
+    expect(orbitRecords.some((r) => r.id === 'chapter-new')).toBe(true);
   });
 
   it('re-keys only one loser graphic onto the winner remoteId', async () => {
     // Devin: snapshotted graphics + winnerHasGraphic never updates → both
     // loser graphics get the winner resourceId and lookup is ambiguous.
+    // Slug-named chapter-a is the winner (no graphic); losers are localized.
     orbitRecords = [
-      noteCat('chapter-a', 'Chapter Number', {
+      noteCat('chapter-a', 'chapter', {
         remoteId: '30',
         specialuse: 'chapter',
         color: '',
       }),
-      noteCat('chapter-b', 'chapter', {
+      noteCat('chapter-b', 'Chapter Number', {
         remoteId: '31',
         specialuse: 'chapter',
         color: '',
       }),
-      noteCat('chapter-c', 'chapter', {
+      noteCat('chapter-c', 'Chapter Number', {
         remoteId: '32',
         specialuse: 'chapter',
         color: '',
@@ -927,5 +933,59 @@ describe('useArtifactCategory (TT-7702 special note categories)', () => {
       (r) => r.attributes?.resourceId === 30
     );
     expect(rekeyedToWinner).toHaveLength(1);
+  });
+
+  it('keeps system chapter when team chapter is unsynced online', async () => {
+    // Devin: unsynced team special must not hide system before remoteId filter
+    // drops the team row — otherwise the list has no chapter at all.
+    orbitRecords = [
+      noteCat('chapter-system', 'chapter', {
+        remoteId: '1',
+        specialuse: 'chapter',
+        orgId: null,
+      }),
+      noteCat('chapter-team', 'chapter', { specialuse: 'chapter' }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+
+    expect(
+      cats.filter((c) => c.specialuse === 'chapter').map((c) => c.id)
+    ).toEqual(['chapter-system']);
+  });
+
+  it('normalizes winner categoryname to specialuse key for locale', async () => {
+    // Devin: synced "Chapter Number" winner must be rewritten to "chapter"
+    // so localizedArtifactCategory can translate after a language switch.
+    orbitRecords = [
+      noteCat('chapter-slug', 'chapter', { specialuse: 'chapter' }),
+      noteCat('chapter-localized', 'Chapter Number', {
+        remoteId: '99',
+        specialuse: 'chapter',
+      }),
+      noteCat('title-1', 'title', { remoteId: '23', specialuse: 'title' }),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+
+    expect(updateRecordMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        id: 'chapter-localized',
+        attributes: expect.objectContaining({ categoryname: 'chapter' }),
+      }),
+      expect.anything()
+    );
+    const chapter = cats.find((c) => c.specialuse === 'chapter');
+    expect(chapter?.id).toBe('chapter-localized');
+    expect(chapter?.slug).toBe('chapter');
+    expect(chapter?.category).toBe('Chapter Number');
   });
 });
