@@ -245,6 +245,9 @@ export interface UploadTerminalFailureInfo {
   failedRemoteMediaId?: number;
 }
 
+/** Terminal outcome meta passed on nextUpload's cb (TT-7365 follow-up). */
+export type UploadCbMeta = { pendingQueued?: boolean };
+
 export interface NextUploadProps {
   record: MediaFileAttributes;
   files: File[];
@@ -253,7 +256,12 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
-  cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
+  cb?: (
+    n: number,
+    success: boolean,
+    data?: MediaFileAttributes,
+    meta?: UploadCbMeta
+  ) => void;
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -303,7 +311,8 @@ export const nextUpload =
         },
         type: UPLOAD_ITEM_FAILED,
       });
-      if (cb) cb(n, false);
+      // Staging / pre-stage failures never persist a pending row.
+      if (cb) cb(n, false, undefined, { pendingQueued: false });
     };
     const { name, size, type } = files[n] as File;
     const isDownloadable = !isNotDownloadable(type);
@@ -345,7 +354,8 @@ export const nextUpload =
       success: boolean,
       data: MediaFileAttributes | undefined,
       statusNum: number | undefined,
-      statusText: string
+      statusText: string,
+      meta?: UploadCbMeta
     ): void => {
       void (async () => {
         if (success) {
@@ -377,7 +387,7 @@ export const nextUpload =
             },
             type: UPLOAD_ITEM_FAILED,
           });
-          if (cb) cb(n, false, data);
+          if (cb) cb(n, false, data, meta);
         }
       })();
     };
@@ -554,7 +564,9 @@ export const nextUpload =
           cloudRowDeleted,
           failedRemoteMediaId,
         });
-        completeCB(false, undefined, statusNum, statusText);
+        completeCB(false, undefined, statusNum, statusText, {
+          pendingQueued: true,
+        });
       };
 
       let json: unknown;

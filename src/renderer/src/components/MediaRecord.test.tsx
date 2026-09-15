@@ -24,7 +24,9 @@ let mockSaveRequested: () => boolean;
 let mockUploadMedia: jest.Mock;
 let mockConvertToFormat: jest.Mock;
 /** MediaRecord's own myAfterUploadCb, captured from the useMediaUpload props. */
-let capturedAfterUploadCb: ((mediaId: string) => Promise<void>) | undefined;
+let capturedAfterUploadCb:
+  | ((mediaId: string, outcome?: { pendingQueued?: boolean }) => Promise<void>)
+  | undefined;
 const mockEnv = { isElectron: false, online: true };
 const mockShowMessage = jest.fn();
 
@@ -64,7 +66,10 @@ jest.mock('../crud', () => ({
     mediaState: { status: 0, id: '', url: '', error: null },
   }),
   useMediaUpload: (props: {
-    afterUploadCb: (mediaId: string) => Promise<void>;
+    afterUploadCb: (
+      mediaId: string,
+      outcome?: { pendingQueued?: boolean }
+    ) => Promise<void>;
   }) => {
     capturedAfterUploadCb = props.afterUploadCb;
     return (files: File[]) => mockUploadMedia(files);
@@ -292,7 +297,8 @@ describe('MediaRecord save gating', () => {
   const failASave = async (
     setCanSave: jest.Mock,
     onSaveRejected?: jest.Mock,
-    order?: string[]
+    order?: string[],
+    outcome?: { pendingQueued?: boolean }
   ) => {
     // Stay idle until the waveform has a take — otherwise the save effect hits
     // the no-audio rejection path on mount (TT-7583) and muddies assertions
@@ -302,7 +308,7 @@ describe('MediaRecord save gating', () => {
       order?.push('upload');
       // Mirrors nextUpload's terminal failure: afterUploadCb with no mediaId,
       // then the upload promise rejects.
-      await capturedAfterUploadCb?.('');
+      await capturedAfterUploadCb?.('', outcome);
       throw new Error('upload failed');
     });
     render(
@@ -406,7 +412,7 @@ describe('MediaRecord save gating', () => {
   it('tells electron users the take is queued when the network is lost', async () => {
     mockEnv.isElectron = true;
     mockEnv.online = false;
-    await failASave(jest.fn());
+    await failASave(jest.fn(), undefined, undefined, { pendingQueued: true });
 
     await waitFor(() =>
       expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
@@ -421,7 +427,7 @@ describe('MediaRecord save gating', () => {
     mockEnv.isElectron = true;
     mockEnv.online = false;
     const setCanSave = jest.fn();
-    await failASave(setCanSave);
+    await failASave(setCanSave, undefined, undefined, { pendingQueued: true });
 
     mockSaveRequested = () => false;
     await act(async () => {
@@ -438,7 +444,9 @@ describe('MediaRecord save gating', () => {
     mockEnv.isElectron = true;
     mockEnv.online = false;
     const onSaveRejected = jest.fn();
-    await failASave(jest.fn(), onSaveRejected);
+    await failASave(jest.fn(), onSaveRejected, undefined, {
+      pendingQueued: true,
+    });
 
     await waitFor(() =>
       expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
@@ -450,7 +458,7 @@ describe('MediaRecord save gating', () => {
     mockEnv.isElectron = true;
     mockEnv.online = false;
     const setCanSave = jest.fn();
-    await failASave(setCanSave);
+    await failASave(setCanSave, undefined, undefined, { pendingQueued: true });
 
     mockSaveRequested = () => false;
     await act(async () => {
@@ -462,6 +470,49 @@ describe('MediaRecord save gating', () => {
       latestWsProps?.setChanged?.(true);
     });
 
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
+  });
+
+  // Connectivity must not decide pending: a staged take with an online API
+  // failure (e.g. HTTP 401) still has a pending row.
+  it('clears dirty when a pending row was persisted even if still online', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = true;
+    const setCanSave = jest.fn();
+    const onSaveRejected = jest.fn();
+    await failASave(setCanSave, onSaveRejected, undefined, {
+      pendingQueued: true,
+    });
+
+    mockSaveRequested = () => false;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(onSaveRejected).not.toHaveBeenCalled();
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+  });
+
+  // Connectivity must not decide pending: offline staging failure (e.g. ENOSPC)
+  // stores nothing, so Save must stay available for retry.
+  it('keeps save available when offline but no pending row was persisted', async () => {
+    mockEnv.isElectron = true;
+    mockEnv.online = false;
+    const setCanSave = jest.fn();
+    const onSaveRejected = jest.fn();
+    await failASave(setCanSave, onSaveRejected, undefined, {
+      pendingQueued: false,
+    });
+
+    mockSaveRequested = () => false;
+    act(() => {
+      latestWsProps?.setChanged?.(true);
+    });
+
+    expect(onSaveRejected).toHaveBeenCalled();
     await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
   });
 

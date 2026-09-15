@@ -356,7 +356,10 @@ function MediaRecord(props: IProps) {
       });
     });
 
-  const myAfterUploadCb = async (mediaId: string) => {
+  const myAfterUploadCb = async (
+    mediaId: string,
+    outcome?: { pendingQueued?: boolean }
+  ) => {
     uploadOutcomeHandledRef.current = false;
     // The take this id points at is already in the waveform, so the mediaId
     // change it triggers must not blank it and fetch it back (TT-7609).
@@ -372,12 +375,14 @@ function MediaRecord(props: IProps) {
       return;
     }
 
-    // Resolve the message before notifying or clearing dirty so we can tell a
-    // queued pending take (TT-7365) from a true reject (TT-7583). Keep saveRef
-    // true until decided so canSave cannot rearm mid-await.
-    const message = await failureMessage();
-    const queued = message === ts.mediaQueuedForUpload;
-    if (queued) {
+    // Gate dirty / onSaveRejected on whether nextUpload persisted a pending
+    // row — not on a later connectivity probe (TT-7365 follow-up). Keep
+    // saveRef true until decided so canSave cannot rearm mid-await.
+    const pendingQueued = Boolean(outcome?.pendingQueued);
+    const message = pendingQueued
+      ? ts.mediaQueuedForUpload
+      : await failureMessage();
+    if (pendingQueued) {
       // Accepted into Pending Media Uploads — clear dirty so Save stays off
       // until the user changes the audio (new version).
       setFilechanged(false);
