@@ -330,6 +330,7 @@ export const DiscussionCard = (props: IProps) => {
       // Queued acceptance already cleared MediaRecord's tool; do not re-fail
       // the comment tool (Copilot r4020216298).
       if (outcome?.pendingQueued) {
+        cardSavingRef.current = false;
         saveCompleted(NewCommentToolId);
         return;
       }
