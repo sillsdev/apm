@@ -16,6 +16,7 @@ const appendPendingMediaUpload = jest.fn();
 const updatePendingMediaUpload = jest.fn();
 const removePendingMediaUpload = jest.fn();
 const removeMatchingPendingUploads = jest.fn();
+const loadPendingMediaUploads = jest.fn(() => [] as unknown[]);
 // Defaults to undefined so these tests keep exercising the pre-existing
 // append/update paths without a caller-supplied pendingUploadIdToClearOnSuccess
 // (TT-7365 identity lookup is covered separately, in
@@ -31,6 +32,7 @@ jest.mock('./pendingMediaUploads', () => ({
     removePendingMediaUpload(...args),
   removeMatchingPendingUploads: (...args: unknown[]) =>
     removeMatchingPendingUploads(...args),
+  loadPendingMediaUploads: () => loadPendingMediaUploads(),
   findPendingUploadIdForIdentity: (...args: unknown[]) =>
     findPendingUploadIdForIdentity(...args),
 }));
@@ -111,6 +113,8 @@ describe('nextUpload pending retry failure', () => {
     } as never);
     updatePendingMediaUpload.mockReturnValue(pendingRecord);
     appendPendingMediaUpload.mockReturnValue(pendingRecord);
+    // Reload verification must see the persisted row (TT-7365 follow-up).
+    loadPendingMediaUploads.mockReturnValue([pendingRecord]);
 
     const xhrProto = XMLHttpRequest.prototype;
     jest.spyOn(xhrProto, 'open').mockImplementation(function (
@@ -141,10 +145,13 @@ describe('nextUpload pending retry failure', () => {
     }
   };
 
+  const stagedFile = () =>
+    Object.assign(makeFile(), { path: '/staged/test.mp3' });
+
   it('updates existing pending row instead of appending on terminal failure', async () => {
     const action = nextUpload({
       record: baseRecord,
-      files: [makeFile()],
+      files: [stagedFile()],
       n: 0,
       token: 'token',
       offline: false,
@@ -167,9 +174,34 @@ describe('nextUpload pending retry failure', () => {
   });
 
   it('appends pending row on terminal failure when not retrying from queue', async () => {
+    appendPendingMediaUpload.mockImplementation((entry: unknown) => {
+      const full = {
+        id: 'staged-from-upload-1',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        ...(entry as object),
+      };
+      loadPendingMediaUploads.mockReturnValue([full]);
+      return full;
+    });
+    updatePendingMediaUpload.mockImplementation(
+      (id: string, patch: unknown) => {
+        const full = {
+          id,
+          failedAt: '2026-01-01T00:00:00.000Z',
+          localAbsolutePath: '/staged/test.mp3',
+          fileSize: 3,
+          uploadType: UploadType.Media,
+          record: baseRecord,
+          ...(patch as object),
+        };
+        loadPendingMediaUploads.mockReturnValue([full]);
+        return full;
+      }
+    );
+
     const action = nextUpload({
       record: baseRecord,
-      files: [makeFile()],
+      files: [stagedFile()],
       n: 0,
       token: 'token',
       offline: false,
@@ -180,8 +212,123 @@ describe('nextUpload pending retry failure', () => {
     action(dispatch);
     await flushPromises();
 
-    expect(appendPendingMediaUpload).toHaveBeenCalled();
+    // Staging appends once; terminal failure updates that row (no second append).
+    expect(appendPendingMediaUpload).toHaveBeenCalledTimes(1);
+    expect(updatePendingMediaUpload).toHaveBeenCalledWith(
+      'staged-from-upload-1',
+      expect.objectContaining({
+        localAbsolutePath: '/staged/test.mp3',
+      })
+    );
+  });
+});
+
+describe('nextUpload pendingQueued meta (TT-7365 follow-up)', () => {
+  let dispatch: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    dispatch = jest.fn();
+    mockedAxios.post.mockRejectedValue({
+      response: { status: 500 },
+      message: 'network error',
+    } as never);
+    loadPendingMediaUploads.mockReturnValue([]);
+
+    const xhrProto = XMLHttpRequest.prototype;
+    jest.spyOn(xhrProto, 'open').mockImplementation(function () {
+      return undefined;
+    });
+    jest.spyOn(xhrProto, 'send').mockImplementation(function (
+      this: XMLHttpRequest
+    ) {
+      Object.defineProperty(this, 'status', { value: 200, configurable: true });
+      if (this.onload) this.onload(new ProgressEvent('load'));
+    });
+    jest
+      .spyOn(xhrProto, 'setRequestHeader')
+      .mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  const flushPromises = async (times = 16) => {
+    for (let i = 0; i < times; i += 1) {
+      await Promise.resolve();
+    }
+  };
+
+  it('reports pendingQueued false when the take has no staged path (web)', async () => {
+    const cb = jest.fn();
+    const action = nextUpload({
+      record: baseRecord,
+      files: [makeFile()],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(appendPendingMediaUpload).not.toHaveBeenCalled();
     expect(updatePendingMediaUpload).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.objectContaining({ pendingQueued: false })
+    );
+  });
+
+  it('reports pendingQueued true when a staged path is persisted and reloadable', async () => {
+    const staged = {
+      id: 'staged-recoverable-1',
+      failedAt: '2026-01-01T00:00:00.000Z',
+      localAbsolutePath: '/staged/test.mp3',
+      fileSize: 3,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    };
+    appendPendingMediaUpload.mockImplementation((entry: unknown) => {
+      const full = {
+        id: 'staged-recoverable-1',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        ...(entry as object),
+      };
+      loadPendingMediaUploads.mockReturnValue([full]);
+      return full;
+    });
+    updatePendingMediaUpload.mockReturnValue(staged);
+
+    const cb = jest.fn();
+    const file = Object.assign(makeFile(), { path: '/staged/test.mp3' });
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      cb,
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(appendPendingMediaUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ localAbsolutePath: '/staged/test.mp3' })
+    );
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.objectContaining({ pendingQueued: true })
+    );
   });
 });
 
@@ -449,17 +596,25 @@ describe('nextUpload enqueue after staging (TT-7348)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     dispatch = jest.fn();
-    appendPendingMediaUpload.mockImplementation((entry: unknown) => ({
-      id: 'staged-1',
-      failedAt: '2026-01-01T00:00:00.000Z',
-      ...(entry as object),
-    }));
-    updatePendingMediaUpload.mockImplementation(
-      (id: unknown, patch: unknown) => ({
-        id,
+    appendPendingMediaUpload.mockImplementation((entry: unknown) => {
+      const full = {
+        id: 'staged-1',
         failedAt: '2026-01-01T00:00:00.000Z',
-        ...(patch as object),
-      })
+        ...(entry as object),
+      };
+      loadPendingMediaUploads.mockReturnValue([full]);
+      return full;
+    });
+    updatePendingMediaUpload.mockImplementation(
+      (id: unknown, patch: unknown) => {
+        const full = {
+          id,
+          failedAt: '2026-01-01T00:00:00.000Z',
+          ...(patch as object),
+        };
+        loadPendingMediaUploads.mockReturnValue([full]);
+        return full;
+      }
     );
 
     const xhrProto = XMLHttpRequest.prototype;
@@ -679,7 +834,12 @@ describe('writeFileLocal disk write (TT-7348)', () => {
         }),
       })
     );
-    expect(cb).toHaveBeenCalledWith(0, false);
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.objectContaining({ pendingQueued: false })
+    );
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 });
