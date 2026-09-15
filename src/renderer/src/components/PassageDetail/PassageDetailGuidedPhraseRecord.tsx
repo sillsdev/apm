@@ -261,7 +261,9 @@ export function PassageDetailGuidedPhraseRecord({
   const addOptimistic = useCallback(
     (region: IRegion | undefined) => {
       if (!region) return;
-      if (optimisticTakeRegionsRef.current.some((r) => regionsMatch(r, region))) {
+      if (
+        optimisticTakeRegionsRef.current.some((r) => regionsMatch(r, region))
+      ) {
         return;
       }
       optimisticTakeRegionsRef.current = [
@@ -858,13 +860,35 @@ export function PassageDetailGuidedPhraseRecord({
             CLAUSE_PLAYBACK_MARGIN_MS
         );
         await ctrl.gotoTime(seek, region);
-        if (!ctrl.isPlaying()) {
-          skipBeforePlayRef.current = true;
-          try {
-            ctrl.setPlay(true);
-          } finally {
-            skipBeforePlayRef.current = false;
-          }
+        // Always (re)start region playback for the clause we just seeked to.
+        // gotoTime made this clause the current segment and cleared the play
+        // region lock (resetPlayingRegion); in region-only mode setPlay(true)
+        // replays the current segment even while audio is already playing
+        // (WSAudioPlayer.handlePlayStatus `wouldReplayRegion`), re-arming
+        // playRegionRef so region-out fires onRegionPlayEnd and Record
+        // re-enables. The old `!ctrl.isPlaying()` guard skipped this whenever
+        // any clause was playing, so pressing Next mid-playback never armed the
+        // new clause and Record stayed disabled after it finished (TT-7690).
+        //
+        // We restart unconditionally rather than trying to detect the
+        // already-playing-this-clause case. The trade-off: if playCurrentClause
+        // is ever invoked for the clause that is *already* playing, this yanks
+        // it back to its start instead of letting it continue — an audible
+        // replay from the top. That is acceptable here because the callers that
+        // replay the current clause (boundary split/combine/undo) want exactly
+        // that restart, and there is no caller that re-plays an unchanged,
+        // mid-playback clause where continuing would be preferred. The
+        // alternative — a position/index heuristic to skip the restart — is
+        // worse: once a boundary edit reloads the regions the live playhead
+        // still sits inside the new region, so the heuristic reads it as "same
+        // clause already playing", skips the re-arm, and silently strands Record
+        // again (the exact TT-7690 symptom). A stray replay is the safe failure
+        // mode; a skipped re-arm is not.
+        skipBeforePlayRef.current = true;
+        try {
+          ctrl.setPlay(true);
+        } finally {
+          skipBeforePlayRef.current = false;
         }
       } finally {
         playClauseInFlightRef.current = false;
@@ -1842,7 +1866,8 @@ export function PassageDetailGuidedPhraseRecord({
       // Mark optimistic completion immediately after real upload (TT-7552),
       // and always apply it to the latched recording-start clause (TT-7437).
       // No mediaId means upload failed; do not show optimistic success (TT-7583).
-      const takeRegion = recordingTargetRef.current?.region ?? currentRegionRef.current;
+      const takeRegion =
+        recordingTargetRef.current?.region ?? currentRegionRef.current;
       if (mediaId) {
         addOptimistic(takeRegion);
         // Stored: the take is no longer pending, so release the clause.
