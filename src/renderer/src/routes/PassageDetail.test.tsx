@@ -55,26 +55,60 @@ jest.mock('../components/App/AppLayout', () => mockPassthrough);
 jest.mock('../context/PassageDetailContext', () => ({
   PassageDetailProvider: mockPassthrough,
 }));
-jest.mock('../components/PassageDetail/PassageDetailGrids', () => () => (
-  <div data-testid="grids" />
-));
+jest.mock('../components/PassageDetail/PassageDetailGrids', () => {
+  function PassageDetailGrids() {
+    return <div data-testid="grids" />;
+  }
+
+  return PassageDetailGrids;
+});
 
 // Not rendered on desktop; stubbed so their dependency trees stay out.
 const mockNull = () => null;
 jest.mock('../components/StickyRedirect', () => mockNull);
 jest.mock('../components/usePaneWidth', () => ({}));
 jest.mock('../components/PassageDetail/boldClauseTranscription', () => ({}));
-jest.mock('../components/PassageDetail/PassageDetailMobileDetail', () => mockNull);
+jest.mock(
+  '../components/PassageDetail/PassageDetailMobileDetail',
+  () => mockNull
+);
 jest.mock('../components/PassageDetail/PassageDetailRecord', () => mockNull);
-jest.mock('../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile', () => mockNull);
-jest.mock('../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses', () => mockNull);
-jest.mock('../components/PassageDetail/PassageDetailCarefulSpeech', () => mockNull);
-jest.mock('../components/PassageDetail/PassageDetailPhraseBackTranslate', () => mockNull);
-jest.mock('../components/PassageDetail/PassageDetailLwcTranslation', () => mockNull);
-jest.mock('../components/PassageDetail/PassageDetailLwcTranscription', () => mockNull);
-jest.mock('../components/PassageDetail/mobile/TeamCheckReferenceMobile', () => mockNull);
-jest.mock('../components/PassageDetail/Prompt/PassageDetailPrompt', () => mockNull);
-jest.mock('../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile', () => mockNull);
+jest.mock(
+  '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/PassageDetailCarefulSpeech',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/PassageDetailPhraseBackTranslate',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/PassageDetailLwcTranslation',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/PassageDetailLwcTranscription',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/mobile/TeamCheckReferenceMobile',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/Prompt/PassageDetailPrompt',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile',
+  () => mockNull
+);
 
 import PassageDetail from './PassageDetail';
 import { navigationCancelled } from '../utils/useMyNavigate';
