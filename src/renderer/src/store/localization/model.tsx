@@ -1063,6 +1063,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
 
 export interface IMobileStrings extends Localize.LocalizedStringsMethods {
     "addSegment": string;
+    "desktopOnlyStep": string;
     "next": string;
     "previous": string;
     "removeSegment": string;

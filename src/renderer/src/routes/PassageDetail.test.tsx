@@ -13,6 +13,30 @@ const mockBlocker = {
 };
 let mockShouldBlock: ShouldBlock | undefined;
 
+// The message TT-7694 agreed on for steps mobile does not implement yet.
+const desktopOnlyEn =
+  'This step is only available on computers right now. We are working to bring it to mobile phones soon.';
+
+// Serves the selectors below; tests mutate it to change language.
+const mockStrings = {
+  shared: { leaveUnsavedChanges: 'Leave unsaved?', noAudio: 'No audio' },
+  mobile: { desktopOnlyStep: desktopOnlyEn },
+};
+
+const mockMobile = { isMobile: false, isMobileWidth: false };
+const mockStep = { tool: '' };
+const mockPdState: {
+  currentstep: string;
+  isBoldWorkflow: boolean;
+  discussOpen: boolean;
+  rowData: { version: number }[];
+} = {
+  currentstep: 'step1',
+  isBoldWorkflow: false,
+  discussOpen: false,
+  rowData: [{ version: 1 }],
+};
+
 jest.mock('react-router-dom', () => ({
   useParams: () => ({ prjId: 'p1', pasId: 's1' }),
   useLocation: () => ({ pathname: '/detail/p1/s1' }),
@@ -36,25 +60,54 @@ jest.mock('../context/useGlobal', () => ({
 
 jest.mock('../utils/useMyNavigate', () => ({ navigationCancelled: jest.fn() }));
 
+// Run the real selectors against a stub strings state so a component that
+// hard-codes English instead of reading its strings layout fails.
+jest.mock('../selector', () => ({
+  sharedSelector: (state: { strings: { shared: unknown } }) =>
+    state.strings.shared,
+  mobileSelector: (state: { strings: { mobile: unknown } }) =>
+    state.strings.mobile,
+}));
 jest.mock('react-redux', () => ({
-  useSelector: () => ({ leaveUnsavedChanges: 'Leave unsaved?' }),
+  useSelector: (sel: (state: unknown) => unknown) =>
+    sel({ strings: mockStrings }),
+  shallowEqual: jest.fn(),
 }));
-jest.mock('../selector', () => ({}));
 
-jest.mock('../crud', () => ({
-  useUrlContext: () => (id: string) => id,
-  useProjectType: () => ({ setProjectType: () => true }),
-}));
+jest.mock('../crud', () => {
+  const toolSlug =
+    jest.requireActual<typeof import('../crud/toolSlug')>('../crud/toolSlug');
+  return {
+    ToolSlug: toolSlug.ToolSlug,
+    toolAllowsEmptyVernacularAudio: toolSlug.toolAllowsEmptyVernacularAudio,
+    useUrlContext: () => (id: string) => id,
+    useProjectType: () => ({ setProjectType: () => true }),
+    useStepTool: () => ({ tool: mockStep.tool, settings: '{}' }),
+    useArtifactType: () => ({ slugFromId: () => null }),
+    remoteIdGuid: () => undefined,
+  };
+});
 
 jest.mock('../utils/useMobile', () => ({
-  useMobile: () => ({ isMobile: false }),
+  useMobile: () => ({ ...mockMobile }),
 }));
 
 const mockPassthrough = ({ children }: { children: ReactNode }) => children;
 jest.mock('../components/App/AppLayout', () => mockPassthrough);
-jest.mock('../context/PassageDetailContext', () => ({
-  PassageDetailProvider: mockPassthrough,
-}));
+
+// Context created inside the factory so the provider and useContext always
+// share one context object (see jest-testing-takeaways).
+jest.mock('../context/PassageDetailContext', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const PassageDetailContext = React.createContext<unknown>(undefined);
+  const PassageDetailProvider = ({ children }: { children: ReactNode }) => (
+    <PassageDetailContext.Provider value={{ state: mockPdState }}>
+      {children}
+    </PassageDetailContext.Provider>
+  );
+  return { PassageDetailContext, PassageDetailProvider };
+});
+
 jest.mock('../components/PassageDetail/PassageDetailGrids', () => {
   function PassageDetailGrids() {
     return <div data-testid="grids" />;
@@ -63,16 +116,44 @@ jest.mock('../components/PassageDetail/PassageDetailGrids', () => {
   return PassageDetailGrids;
 });
 
-// Not rendered on desktop; stubbed so their dependency trees stay out.
+// Stands in for the mobile layout: renders whichever branch the route chose.
+jest.mock('../components/PassageDetail/PassageDetailMobileDetail', () => {
+  function PassageDetailMobileDetail({
+    showNoAudioPlaceholder,
+    recordContent,
+    noAudioText,
+  }: {
+    showNoAudioPlaceholder: boolean;
+    recordContent: ReactNode;
+    noAudioText: string;
+  }) {
+    return (
+      <div data-testid="mobile-detail">
+        {showNoAudioPlaceholder ? noAudioText : recordContent}
+      </div>
+    );
+  }
+
+  return PassageDetailMobileDetail;
+});
+
+jest.mock('../components/PassageDetail/PassageDetailRecord', () => {
+  function PassageDetailRecord() {
+    return <div data-testid="record" />;
+  }
+
+  return PassageDetailRecord;
+});
+
+// Not exercised by these tests; stubbed so their dependency trees stay out.
 const mockNull = () => null;
 jest.mock('../components/StickyRedirect', () => mockNull);
-jest.mock('../components/usePaneWidth', () => ({}));
-jest.mock('../components/PassageDetail/boldClauseTranscription', () => ({}));
-jest.mock(
-  '../components/PassageDetail/PassageDetailMobileDetail',
-  () => mockNull
-);
-jest.mock('../components/PassageDetail/PassageDetailRecord', () => mockNull);
+jest.mock('../components/usePaneWidth', () => ({
+  usePaneWidth: () => ({ paneWidth: 320 }),
+}));
+jest.mock('../components/PassageDetail/boldClauseTranscription', () => ({
+  isBoldClauseTranscriptionStep: () => false,
+}));
 jest.mock(
   '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile',
   () => mockNull
@@ -112,6 +193,7 @@ jest.mock(
 
 import PassageDetail from './PassageDetail';
 import { navigationCancelled } from '../utils/useMyNavigate';
+import { ToolSlug } from '../crud/toolSlug';
 
 const confirmSpy = jest.spyOn(window, 'confirm');
 
@@ -120,6 +202,11 @@ describe('PassageDetail', () => {
     mockEnv.isElectron = false;
     mockBlocker.state = 'unblocked';
     mockShouldBlock = undefined;
+    mockMobile.isMobile = false;
+    mockMobile.isMobileWidth = false;
+    mockStep.tool = '';
+    mockPdState.rowData = [{ version: 1 }];
+    mockStrings.mobile.desktopOnlyStep = desktopOnlyEn;
     for (const key of Object.keys(mockGlobals)) delete mockGlobals[key];
   });
 
@@ -160,6 +247,53 @@ describe('PassageDetail', () => {
       expect(mockBlocker.reset).toHaveBeenCalledTimes(1);
       expect(mockBlocker.proceed).not.toHaveBeenCalled();
       expect(navigationCancelled).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // TT-7694: steps mobile has no UI for showed a bare developer string,
+  // "Not implemented". Users get an explanation instead, from the strings.
+  describe('steps mobile does not implement yet', () => {
+    beforeEach(() => {
+      mockMobile.isMobile = true;
+      mockMobile.isMobileWidth = true;
+      mockStep.tool = ToolSlug.KeyTerm;
+    });
+
+    it('explains that the step is desktop-only for now', () => {
+      render(<PassageDetail />);
+      expect(screen.getByText(desktopOnlyEn)).toBeInTheDocument();
+      expect(screen.queryByText('Not implemented')).not.toBeInTheDocument();
+    });
+
+    it.each([
+      ToolSlug.KeyTerm,
+      ToolSlug.Discuss,
+      ToolSlug.WholeBackTranslate,
+      ToolSlug.ConsultantCheck,
+      ToolSlug.Paratext,
+      ToolSlug.Community,
+      ToolSlug.Export,
+    ])('explains it for the %s step', (tool) => {
+      mockStep.tool = tool;
+      render(<PassageDetail />);
+      expect(screen.getByText(desktopOnlyEn)).toBeInTheDocument();
+    });
+
+    // Discriminates a localized string from the agreed English hard-coded.
+    it('shows the message in the current language', () => {
+      const desktopOnlyEs =
+        'Este paso solo está disponible en computadoras por ahora.';
+      mockStrings.mobile.desktopOnlyStep = desktopOnlyEs;
+      render(<PassageDetail />);
+      expect(screen.getByText(desktopOnlyEs)).toBeInTheDocument();
+      expect(screen.queryByText(desktopOnlyEn)).not.toBeInTheDocument();
+    });
+
+    it('renders the step itself when mobile does implement it', () => {
+      mockStep.tool = ToolSlug.Record;
+      render(<PassageDetail />);
+      expect(screen.getByTestId('record')).toBeInTheDocument();
+      expect(screen.queryByText(desktopOnlyEn)).not.toBeInTheDocument();
     });
   });
 });
