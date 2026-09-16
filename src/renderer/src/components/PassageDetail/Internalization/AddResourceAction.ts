@@ -4,5 +4,4 @@ export enum AddResourceAction {
   Link = 'link',
   Shared = 'shared',
   Scripture = 'scripture',
-  Close = 'Close',
 }

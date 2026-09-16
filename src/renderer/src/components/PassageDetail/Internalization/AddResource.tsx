@@ -28,6 +28,11 @@ export const AddResource = (props: IProps) => {
     setAnchorEl(event.currentTarget);
   };
 
+  // Dismissing the menu (backdrop click / Esc) should only close it, never fire
+  // an action — firing one runs parent side effects (e.g. resetting the
+  // resource scope) even though the user chose nothing.
+  const handleClose = () => setAnchorEl(null);
+
   const handle = (what: AddResourceAction) => (event: React.MouseEvent) => {
     event.stopPropagation();
     setAnchorEl(null);
@@ -48,7 +53,7 @@ export const AddResource = (props: IProps) => {
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         keepMounted
         open={Boolean(anchorEl)}
-        onClose={handle(AddResourceAction.Close)}
+        onClose={handleClose}
       >
         <StyledMenuItem
           id="audioResource"
