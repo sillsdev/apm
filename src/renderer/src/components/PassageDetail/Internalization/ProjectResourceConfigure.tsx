@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useContext, ChangeEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  ChangeEvent,
+  ReactNode,
+} from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   Section,
@@ -14,6 +21,8 @@ import {
   Paper,
   PaperProps,
   Stack,
+  Table,
+  TableBody,
   TextField,
   debounce,
   styled,
@@ -43,6 +52,7 @@ import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import Confirm from '../../AlertDialog';
+import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
 const NotTable = 420;
 
@@ -59,51 +69,58 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   flexDirection: 'column',
 }));
 
-const StyledTable = styled('div')(({ theme }) => ({
-  padding: theme.spacing(2),
-  // Let the sheet span the full dialog width; the Description column (no fixed
-  // width) absorbs the extra space.
-  '& .data-grid': {
-    width: '100%',
-  },
-  '& .data-grid .cell': {
-    height: '48px',
-  },
-  // Alternating striped rows, matching the way KeyTermTable stripes its rows
-  // (theme.palette.action.hover on every other row). react-datasheet tints
-  // read-only cells with their own grey background, so first clear that on the
-  // body rows to let each row stripe uniformly ('&&' doubles specificity to win
-  // over the library CSS).
-  '&& .data-grid tr:not(:first-of-type) td.cell': {
-    backgroundColor: 'transparent',
-  },
-  '&& .data-grid tr:nth-of-type(even) td.cell': {
-    backgroundColor: theme.palette.action.hover,
-  },
-  // react-datasheet dims read-only cells to grey text; keep every cell (the
-  // header row and the read-only Reference column) at the normal text color.
-  '&& .data-grid td.cell.read-only': {
-    color: theme.palette.text.primary,
-  },
-  '& .cTitle': {
-    fontWeight: 'bold',
-  },
-  '& .lim': {
-    verticalAlign: 'inherit !important',
-    '& .value-viewer': {
-      textAlign: 'center',
-    },
-  },
-  '& .ref': {
-    verticalAlign: 'inherit !important',
-  },
-  '& .des': {
-    verticalAlign: 'inherit !important',
-    '& .value-viewer': {
-      textAlign: 'left',
-    },
-  },
-}));
+interface ISheetRendererProps {
+  className: string;
+  children: ReactNode;
+}
+
+// react-datasheet's sheetRenderer: renders the grid as a real MUI Table so it
+// picks up the theme's `variant="striped"` (even rows tinted with
+// action.hover) instead of duplicating that striping CSS here. The sheet spans
+// the full dialog width (MUI Table defaults to width:100%); the Description
+// column (no fixed width) absorbs the extra space.
+const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
+  <Table
+    className={className}
+    variant="striped"
+    sx={{
+      '& .cell': {
+        height: 48,
+      },
+      // react-datasheet tints read-only cells with their own grey background;
+      // clear it on the body rows so each row's stripe shows uniformly (the
+      // header row, the first tr, keeps the library default).
+      '& > tbody > tr:not(:first-of-type) > .cell.read-only': {
+        backgroundColor: 'transparent',
+      },
+      // react-datasheet also dims read-only cells to grey text; keep every cell
+      // (header row and the read-only Reference column) at normal text color.
+      '& .cell.read-only': {
+        color: 'text.primary',
+      },
+      '& .cTitle': {
+        fontWeight: 'bold',
+      },
+      '& .lim': {
+        verticalAlign: 'inherit !important',
+        '& .value-viewer': {
+          textAlign: 'center',
+        },
+      },
+      '& .ref': {
+        verticalAlign: 'inherit !important',
+      },
+      '& .des': {
+        verticalAlign: 'inherit !important',
+        '& .value-viewer': {
+          textAlign: 'left',
+        },
+      },
+    }}
+  >
+    <TableBody>{children}</TableBody>
+  </Table>
+);
 
 interface ICell {
   value: any;
@@ -123,12 +140,16 @@ interface IProps {
   width: number;
   media: MediaFileD | undefined;
   items: RecordIdentity[];
+  /** Passages/sections the selection dialog offered; scopes cleanup. */
+  candidateItems?: RecordIdentity[];
+  /** Artifact type id of a derived resource copy (`resource` slug). */
+  resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
   bookData?: BookName[];
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { width, media, items, onOpen } = props;
+  const { width, media, items, candidateItems, resourceTypeId, onOpen } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -283,6 +304,19 @@ export const ProjectResourceConfigure = (props: IProps) => {
             });
           }
           setComplete(Math.min((ix * 100) / total, 100));
+        }
+        // A cancelled save never wrote the new assignments, so leave the
+        // existing ones alone rather than deleting the unselected ones.
+        if (!canceling.current) {
+          await removeUnselectedProjectResourceAssignments({
+            memory,
+            sourceMedia: media,
+            selectedItems: items,
+            mediafiles,
+            sectionResources,
+            resourceTypeId,
+            candidateItems,
+          });
         }
         projectSegmentSave({
           media,
@@ -565,14 +599,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
       />
-      <StyledPaper style={heightStyle}>
-        <StyledTable>
+      <StyledPaper id="proj-res-sheet" style={heightStyle}>
+        <Box sx={{ p: 2 }}>
           <Box data-testid="proj-res-sheet">
             <DataSheet
               data={data}
               valueRenderer={handleValueRenderer}
               onCellsChanged={handleCellsChanged}
               parsePaste={handleParsePaste}
+              sheetRenderer={ProjectResourceTable}
             />
           </Box>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }}>
@@ -583,10 +618,17 @@ export const ProjectResourceConfigure = (props: IProps) => {
               onChange={handleSuffix}
             />
             <LightTooltip title={t.suffixTip}>
-              <InfoIcon color="info" fontSize="small" />
+              {/* Focusable + labelled so keyboard/AT users can reach the tip. */}
+              <InfoIcon
+                color="info"
+                fontSize="small"
+                role="img"
+                aria-label={t.suffixTip}
+                tabIndex={0}
+              />
             </LightTooltip>
           </Stack>
-        </StyledTable>
+        </Box>
       </StyledPaper>
       <ActionRow>
         <Button

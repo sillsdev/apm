@@ -8,6 +8,16 @@ declare module '@mui/material/IconButton' {
   }
 }
 
+// MUI Table has no `variant` prop of its own. As with IconButton above, Table
+// forwards arbitrary props through ownerState, letting the MuiTable variant
+// matcher below key off this value (it is also passed to the underlying
+// <table>). Used for the internalization resource/passage grids.
+declare module '@mui/material/Table' {
+  interface TableOwnProps {
+    variant?: 'striped';
+  }
+}
+
 declare module '@mui/material/styles' {
   interface Palette {
     custom: {
@@ -122,6 +132,18 @@ export const createAppTheme = (lang: string) =>
         },
       },
       components: {
+        MuiTable: {
+          variants: [
+            {
+              props: { variant: 'striped' },
+              style: ({ theme }) => ({
+                '& > tbody > tr:nth-of-type(even)': {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }),
+            },
+          ],
+        },
         MuiAppBar: {
           styleOverrides: {
             root: {
