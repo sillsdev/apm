@@ -4,13 +4,13 @@
       <unit id="access.availableUsers">
          <segment>
             <source>Other Users</source>
-            <target>Outros usuários</target>
+            <target>Otros usuarios</target>
          </segment>
       </unit>
       <unit id="access.back">
          <segment>
             <source>Back</source>
-            <target>Voltar</target>
+            <target>Atrás</target>
          </segment>
       </unit>
       <unit id="access.cancel">
@@ -22,43 +22,43 @@
       <unit id="access.createUser">
          <segment>
             <source>Add a new user</source>
-            <target>Adicionar um novo usuário</target>
+            <target>Añadir un nuevo usuario</target>
          </segment>
       </unit>
       <unit id="access.currentUser">
          <segment>
             <source>Current User</source>
-            <target>Usuário Atual</target>
+            <target>Usuario Actual</target>
          </segment>
       </unit>
       <unit id="access.importSnapshot">
          <segment>
             <source>Import Audio Project</source>
-            <target>Importar Projeto de Áudio</target>
+            <target>Importar Proyecto de Audio</target>
          </segment>
       </unit>
       <unit id="access.logIn">
          <segment>
             <source>Log In</source>
-            <target>Fazer login</target>
+            <target>Iniciar Sesión</target>
          </segment>
       </unit>
       <unit id="access.logout">
          <segment>
             <source>Log Out</source>
-            <target>Sair</target>
+            <target>Cerrar la sesión</target>
          </segment>
       </unit>
       <unit id="access.mustBeOnline">
          <segment>
             <source>You must be connected to the Internet to Log In!</source>
-            <target>Você precisa estar conectado à internet para Fazer o login!</target>
+            <target>Debe conectarse a internet para poder iniciar sesión!</target>
          </segment>
       </unit>
       <unit id="access.noOnlineUsers1">
          <segment>
             <source>To allow offline use:</source>
-            <target>Permitir uso offline:</target>
+            <target>Para permitir el uso sin conexión:</target>
          </segment>
       </unit>
       <unit id="access.noOnlineUsers2">
@@ -76,31 +76,31 @@
       <unit id="access.noOnlineUsers4">
          <segment>
             <source>Create a personal audio project.</source>
-            <target>Criar um projeto de áudio pessoal.</target>
+            <target>Crear un proyecto de audio personal.</target>
          </segment>
       </unit>
       <unit id="access.offlineUsers">
          <segment>
             <source>Offline Users</source>
-            <target>Usuários Offline</target>
+            <target>Usuarios sin conexión</target>
          </segment>
       </unit>
       <unit id="access.title">
          <segment>
             <source>Connection Mode</source>
-            <target>Modo de Conexão</target>
+            <target>Modo de conexión</target>
          </segment>
       </unit>
       <unit id="activityState.approved">
          <segment>
             <source>Ready to Sync</source>
-            <target>Pronto para Sincronizar</target>
+            <target>Listo para sincronizar</target>
          </segment>
       </unit>
       <unit id="activityState.done">
          <segment>
             <source>Done</source>
-            <target>Concluído</target>
+            <target>Completado</target>
          </segment>
       </unit>
       <unit id="activityState.incomplete">
@@ -112,19 +112,19 @@
       <unit id="activityState.needsNewRecording">
          <segment>
             <source>Recording Needed</source>
-            <target>Gravação Necessária</target>
+            <target>Se necesita grabar</target>
          </segment>
       </unit>
       <unit id="activityState.needsNewTranscription">
          <segment>
             <source>Correction Needed</source>
-            <target>Correção Necessária</target>
+            <target>Se necesita corregir</target>
          </segment>
       </unit>
       <unit id="activityState.noMedia">
          <segment>
             <source>No Recording</source>
-            <target>Nenhuma Gravação</target>
+            <target>No existe grabación</target>
          </segment>
       </unit>
       <unit id="activityState.review">
@@ -148,7 +148,7 @@
       <unit id="activityState.transcribe">
          <segment>
             <source>Transcribe</source>
-            <target>Transcrever</target>
+            <target>Transcribir</target>
          </segment>
       </unit>
       <unit id="activityState.transcribed">
@@ -160,19 +160,19 @@
       <unit id="activityState.transcribeReady">
          <segment>
             <source>Ready to Transcribe</source>
-            <target>Pronto para Transcrever</target>
+            <target>Listo para transcribir</target>
          </segment>
       </unit>
       <unit id="activityState.transcribing">
          <segment>
             <source>Transcribing</source>
-            <target>Transcrevendo</target>
+            <target>Transcribiendo</target>
          </segment>
       </unit>
       <unit id="alert.areYouSure">
          <segment>
             <source>Are you sure?</source>
-            <target>Você tem certeza?</target>
+            <target>¿Está seguro?</target>
          </segment>
       </unit>
       <unit id="alert.confirmation">
@@ -190,31 +190,31 @@
       <unit id="alert.no">
          <segment>
             <source>No</source>
-            <target>Não</target>
+            <target>No</target>
          </segment>
       </unit>
       <unit id="alert.yes">
          <segment>
             <source>Yes</source>
-            <target>Sim</target>
+            <target>Sí</target>
          </segment>
       </unit>
       <unit id="artifactCategory.activity">
          <segment>
             <source>Activity</source>
-            <target>Atividade</target>
+            <target>Actividad</target>
          </segment>
       </unit>
       <unit id="artifactCategory.biblestory">
          <segment>
             <source>Bible Story</source>
-            <target>História Bíblica</target>
+            <target>Historia bíblica</target>
          </segment>
       </unit>
       <unit id="artifactCategory.bookintro">
          <segment>
             <source>Book Introduction</source>
-            <target>Introdução de Livro</target>
+            <target>Introducción al libro</target>
          </segment>
       </unit>
       <unit id="artifactCategory.chapter">
@@ -226,19 +226,19 @@
       <unit id="artifactCategory.scripture">
          <segment>
             <source>Scripture</source>
-            <target>Referência Bíblica</target>
+            <target>Escrituras</target>
          </segment>
       </unit>
       <unit id="artifactCategory.translationresource">
          <segment>
             <source>Translation Resource</source>
-            <target>Recurso de Tradução</target>
+            <target>Recursos para traduccion</target>
          </segment>
       </unit>
       <unit id="artifactCategory.uncategorized">
          <segment>
             <source>Uncategorized</source>
-            <target>Sem Categoria</target>
+            <target>Sin categoría</target>
          </segment>
       </unit>
       <unit id="artifactCategory.retelling">
@@ -298,7 +298,7 @@
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
-            <target>Comentário</target>
+            <target>Comentario</target>
          </segment>
       </unit>
       <unit id="artifactType.graphic">
@@ -346,13 +346,13 @@
       <unit id="artifactType.sharedresource">
          <segment>
             <source>Shared Resource</source>
-            <target>Recurso Compartilhado</target>
+            <target>Recurso compartido</target>
          </segment>
       </unit>
       <unit id="artifactType.testing">
          <segment>
             <source>Testing</source>
-            <target>Testando</target>
+            <target>Prueba</target>
          </segment>
       </unit>
       <unit id="artifactType.title">
@@ -400,13 +400,13 @@
       <unit id="assignmentTable.delete">
          <segment>
             <source>Delete</source>
-            <target>Excluir</target>
+            <target>Eliminar</target>
          </segment>
       </unit>
       <unit id="assignmentTable.filter">
          <segment>
             <source>Filter</source>
-            <target>Filtro</target>
+            <target>Filtrar</target>
          </segment>
       </unit>
       <unit id="assignmentTable.removeSec">
@@ -424,7 +424,7 @@
       <unit id="assignmentTable.role">
          <segment>
             <source>Role</source>
-            <target>Função</target>
+            <target>Función</target>
          </segment>
       </unit>
       <unit id="assignmentTable.sectionstate">
@@ -532,7 +532,7 @@
       <unit id="assignSection.role">
          <segment>
             <source>Role</source>
-            <target>Função</target>
+            <target>Rol</target>
          </segment>
       </unit>
       <unit id="assignSection.schemeName">
@@ -562,7 +562,7 @@
       <unit id="assignSection.users">
          <segment>
             <source>Members</source>
-            <target>Membros</target>
+            <target>Miembros</target>
          </segment>
       </unit>
       <unit id="audacityManager.audacityProject">
@@ -987,8 +987,8 @@
       </unit>
       <unit id="cards.bibleidformat">
          <segment>
-            <source>Bible Id must begin with the language code and version (six letters).</source>
-            <target>A identificação da Bíblia deve começar com o código da língua e a versão (seis letras).</target>
+            <source>Bible Id must begin with the language code and version (a total of at least six letters).</source>
+            <target>O «Bible Id» deve começar com o código do idioma e a versão (um total de, pelo menos, seis letras).</target>
          </segment>
       </unit>
       <unit id="cards.bibleidiso">
@@ -1001,6 +1001,12 @@
          <segment>
             <source>Explain Bible Id</source>
             <target>Explicar a identificação da Bíblia</target>
+         </segment>
+      </unit>
+      <unit id="cards.bibleOwnerRights">
+         <segment>
+            <source>Team {0} is the owner of this Bible.</source>
+            <target>A equipa {0} é a proprietária desta Bíblia.</target>
          </segment>
       </unit>
       <unit id="cards.biblename">
@@ -1102,7 +1108,7 @@
       <unit id="cards.deleteTeam">
          <segment>
             <source>Delete Team</source>
-            <target>Excluir Equipe</target>
+            <target>Eliminar equipo</target>
          </segment>
       </unit>
       <unit id="cards.description">
@@ -1279,6 +1285,12 @@
             <target>Configurações pessoais</target>
          </segment>
       </unit>
+      <unit id="cards.planNotFound">
+         <segment>
+            <source>Bible Media Plan not found. Please contact APM Support.</source>
+            <target>Não foi encontrado o Plano de Multimédia da Bíblia. Contacte o Suporte da APM.</target>
+         </segment>
+      </unit>
       <unit id="cards.process">
          <segment>
             <source>Default Workflow</source>
@@ -1288,7 +1300,7 @@
       <unit id="cards.projectCreated">
          <segment>
             <source>Audio Project Created</source>
-            <target>Projeto de Áudio Criado</target>
+            <target>Proyecto de audio creado</target>
          </segment>
       </unit>
       <unit id="cards.projectRequired">
@@ -1330,7 +1342,7 @@
       <unit id="cards.save">
          <segment>
             <source>Save</source>
-            <target>Salvar</target>
+            <target>Guardar</target>
          </segment>
       </unit>
       <unit id="cards.sectionStatus">
@@ -1342,7 +1354,7 @@
       <unit id="cards.settings">
          <segment>
             <source>Settings</source>
-            <target>Configurações</target>
+            <target>Ajustes</target>
          </segment>
       </unit>
       <unit id="cards.sortProjects">
@@ -1390,19 +1402,19 @@
       <unit id="cards.teamName">
          <segment>
             <source>Team Name</source>
-            <target>Nome da Equipe</target>
+            <target>Nombre del equipo</target>
          </segment>
       </unit>
       <unit id="cards.teamSettings">
          <segment>
             <source>Team Settings</source>
-            <target>Configurações da Equipe</target>
+            <target>Configuración del equipo</target>
          </segment>
       </unit>
       <unit id="cards.transcriber">
          <segment>
             <source>Transcribing</source>
-            <target>Transcrevendo</target>
+            <target>Transcribiendo</target>
          </segment>
       </unit>
       <unit id="cards.unassigned">
@@ -1441,6 +1453,12 @@
             <target>Sim</target>
          </segment>
       </unit>
+      <unit id="category.apply">
+         <segment>
+            <source>Apply</source>
+            <target>Aplicar</target>
+         </segment>
+      </unit>
       <unit id="category.builtIn">
          <segment>
             <source>System Categories</source>
@@ -1469,6 +1487,12 @@
          <segment>
             <source>discussion(s)</source>
             <target>discussão(ões)</target>
+         </segment>
+      </unit>
+      <unit id="category.edit">
+         <segment>
+            <source>Edit</source>
+            <target>Editar</target>
          </segment>
       </unit>
       <unit id="category.ignoreInvalid">
@@ -1903,6 +1927,12 @@
             <target>{0} de {1} cláusulas gravadas</target>
          </segment>
       </unit>
+      <unit id="lwcTranslation.waitForPlayback">
+         <segment>
+            <source>Recording controls will appear after playback finishes.</source>
+            <target>Os controlos de gravação aparecerão assim que a reprodução terminar.</target>
+         </segment>
+      </unit>
       <unit id="lwcTranscription.clauseIndex">
          <segment>
             <source>Clause {0}/{1}</source>
@@ -1939,6 +1969,90 @@
             <target>{0} de {1} cláusulas transcritas</target>
          </segment>
       </unit>
+      <unit id="phraseBackTranslationGuided.allComplete">
+         <segment>
+            <source>All segments are complete.</source>
+            <target>Todos os segmentos estão concluídos.</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.clearRecording">
+         <segment>
+            <source>Clear Recording</source>
+            <target>Limpar gravação</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.combineWithNextSegment">
+         <segment>
+            <source>Combine with Next Segment</source>
+            <target>Combinar com o segmento seguinte</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.fewerSegments">
+         <segment>
+            <source>Fewer Segments</source>
+            <target>Menos segmentos</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.moreSegments">
+         <segment>
+            <source>More Segments</source>
+            <target>Mais segmentos</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.nextSegment">
+         <segment>
+            <source>Next Segment</source>
+            <target>Segmento seguinte</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.noStepLanguage">
+         <segment>
+            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <target>Configure um idioma para esta etapa de tradução inversa de frases no Editor de Etapas antes de gravar.</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
+         <segment>
+            <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target>A redefinição irá restaurar os limites dos segmentos para o estado em que se encontravam quando abriu esta etapa. Deseja continuar?</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.resetConfirmRecordings">
+         <segment>
+            <source>Resetting will delete back-translation recordings for this language on the current vernacular recording and restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target>A redefinição irá eliminar as gravações de retrotradução para este idioma na gravação na língua vernácula atual e restaurar os limites dos segmentos tal como estavam quando abriu este passo. Deseja continuar?</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target>Segmento: {0}</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.speaker">
+         <segment>
+            <source>Speaker</source>
+            <target>Orador</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.splitSegment">
+         <segment>
+            <source>Split</source>
+            <target>Dividir</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.startRecording">
+         <segment>
+            <source>Start Recording</source>
+            <target>Iniciar gravação</target>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.undo">
+         <segment>
+            <source>Undo</source>
+            <target>Desfazer</target>
+         </segment>
+      </unit>
       <unit id="consultantCheck.checked">
          <segment>
             <source>Mark Checked</source>
@@ -1961,6 +2075,12 @@
          <segment>
             <source>Review More</source>
             <target>Revisar mais</target>
+         </segment>
+      </unit>
+      <unit id="consultantCheck.language">
+         <segment>
+            <source>Language</source>
+            <target>Idioma</target>
          </segment>
       </unit>
       <unit id="consultantCheck.noMedia">
@@ -2008,7 +2128,7 @@
       <unit id="deleteExpansion.advanced">
          <segment>
             <source>Advanced</source>
-            <target>Avançado</target>
+            <target>Avanzado</target>
          </segment>
       </unit>
       <unit id="deleteExpansion.dangerZone">
@@ -2344,7 +2464,7 @@
       <unit id="electronImport.members">
          <segment>
             <source>Members</source>
-            <target>Membros</target>
+            <target>Miembros</target>
          </segment>
       </unit>
       <unit id="electronImport.neverExported">
@@ -2386,7 +2506,7 @@
       <unit id="emailUnverified.emailUnverified">
          <segment>
             <source>Your email is unverified</source>
-            <target>Seu e-mail não foi confirmado</target>
+            <target>O seu e-mail não está verificado</target>
          </segment>
       </unit>
       <unit id="emailUnverified.logout">
@@ -2404,31 +2524,31 @@
       <unit id="emailUnverified.resendError">
          <segment>
             <source>We couldn't send the verification link. Please check your connection and try again.</source>
-            <target>Não foi possível enviar o link de verificação. Verifique sua conexão e tente novamente.</target>
+            <target>Não foi possível enviar o link de verificação. Verifique a sua ligação e tente novamente.</target>
          </segment>
       </unit>
       <unit id="emailUnverified.resendSuccess">
          <segment>
             <source>Sent! Please check your inbox for a new verification link. It may be in your spam folder.</source>
-            <target>Enviado! Verifique sua caixa de entrada para um novo link de verificação. Ele pode estar na pasta de spam.</target>
+            <target>Enviado! Verifique a sua caixa de entrada para obter um novo link de verificação. Pode estar na sua pasta de spam.</target>
          </segment>
       </unit>
       <unit id="emailUnverified.resendWait">
          <segment>
             <source>Resend again in {0}s</source>
-            <target>Reenviar novamente em {0}s</target>
+            <target>Reenviar daqui a {0}s</target>
          </segment>
       </unit>
       <unit id="emailUnverified.verified">
          <segment>
             <source>I've verified my email</source>
-            <target>Eu confirmei meu e-mail</target>
+            <target>Já verifiquei o meu e-mail</target>
          </segment>
       </unit>
       <unit id="emailUnverified.verify">
          <segment>
             <source>Please check your email for a verification link from us to finish setting up your account</source>
-            <target>Verifique seu e-mail para um link de verificação nosso para concluir a configuração da sua conta</target>
+            <target>Por favor, verifique o seu e-mail para encontrar um link de verificação que lhe enviámos para concluir a configuração da sua conta</target>
          </segment>
       </unit>
       <unit id="faithbridge.addContent">
@@ -2707,12 +2827,6 @@
             <target>Criar um recurso geral</target>
          </segment>
       </unit>
-      <unit id="findResource.group">
-         <segment>
-            <source>Group</source>
-            <target>Agrupar</target>
-         </segment>
-      </unit>
       <unit id="findResource.image">
          <segment>
             <source>image</source>
@@ -2749,22 +2863,10 @@
             <target>Por favor, redija uma história para ilustrar o significado de {0}</target>
          </segment>
       </unit>
-      <unit id="findResource.mediaType">
-         <segment>
-            <source>Media</source>
-            <target>Mídia</target>
-         </segment>
-      </unit>
       <unit id="findResource.movement">
          <segment>
             <source>movement</source>
             <target>movimento</target>
-         </segment>
-      </unit>
-      <unit id="findResource.name">
-         <segment>
-            <source>Name</source>
-            <target>Nome da mídia</target>
          </segment>
       </unit>
       <unit id="findResource.next">
@@ -2853,14 +2955,38 @@
       </unit>
       <unit id="findResource.showing">
          <segment>
-            <source>{0} to {1} of {2} results</source>
-            <target>{0} a {1} de {2} resultados</target>
+            <source>{0}-{1} of {2} results</source>
+            <target>{0}-{1} de {2} resultados</target>
          </segment>
       </unit>
-      <unit id="findResource.source">
+      <unit id="findResource.sortGroupingName">
          <segment>
             <source>Source</source>
             <target>Fonte</target>
+         </segment>
+      </unit>
+      <unit id="findResource.sortGroupingType">
+         <segment>
+            <source>Group</source>
+            <target>Grupo</target>
+         </segment>
+      </unit>
+      <unit id="findResource.sortMediaType">
+         <segment>
+            <source>Media</source>
+            <target>Multimédia</target>
+         </segment>
+      </unit>
+      <unit id="findResource.sortMenu">
+         <segment>
+            <source>Sort results</source>
+            <target>Ordenar resultados</target>
+         </segment>
+      </unit>
+      <unit id="findResource.sortName">
+         <segment>
+            <source>Name</source>
+            <target>Nome</target>
          </segment>
       </unit>
       <unit id="findResource.summary">
@@ -3280,7 +3406,7 @@
       <unit id="import.family">
          <segment>
             <source>Family Name</source>
-            <target>Nome de Família</target>
+            <target>Apellido(s)</target>
          </segment>
       </unit>
       <unit id="import.filter">
@@ -3310,7 +3436,7 @@
       <unit id="import.importComplete">
          <segment>
             <source>Import Complete</source>
-            <target>Importação Completa</target>
+            <target>Importación completa</target>
          </segment>
       </unit>
       <unit id="import.imported">
@@ -3424,7 +3550,7 @@
       <unit id="import.phone">
          <segment>
             <source>Phone</source>
-            <target>Telefone</target>
+            <target>Teléfono</target>
          </segment>
       </unit>
       <unit id="import.plan">
@@ -3478,7 +3604,7 @@
       <unit id="import.transcription">
          <segment>
             <source>Transcription</source>
-            <target>Transcrição</target>
+            <target>Transcripción</target>
          </segment>
       </unit>
       <unit id="import.unassigned">
@@ -3502,7 +3628,7 @@
       <unit id="import.username">
          <segment>
             <source>Name</source>
-            <target>Nome</target>
+            <target>Nombre</target>
          </segment>
       </unit>
       <unit id="scriptureBurritoImport.title">
@@ -3604,7 +3730,7 @@
       <unit id="integration.no">
          <segment>
             <source>No</source>
-            <target>Não</target>
+            <target>No</target>
          </segment>
       </unit>
       <unit id="integration.noProject">
@@ -3730,7 +3856,7 @@
       <unit id="integration.yes">
          <segment>
             <source>Yes</source>
-            <target>Sim</target>
+            <target>Sí</target>
          </segment>
       </unit>
       <unit id="invitationTable.accepted">
@@ -3742,7 +3868,7 @@
       <unit id="invitationTable.action">
          <segment>
             <source>Action</source>
-            <target>Ação</target>
+            <target>Acción</target>
          </segment>
       </unit>
       <unit id="invitationTable.delete">
@@ -3754,7 +3880,7 @@
       <unit id="invitationTable.email">
          <segment>
             <source>Email</source>
-            <target>E-mail</target>
+            <target>Correo electrónico</target>
          </segment>
       </unit>
       <unit id="invitationTable.filter">
@@ -3766,7 +3892,7 @@
       <unit id="invitationTable.invite">
          <segment>
             <source>Invite</source>
-            <target>Convidar</target>
+            <target>Invitar</target>
          </segment>
       </unit>
       <unit id="invitationTable.noData">
@@ -3832,7 +3958,7 @@
       <unit id="invite.email">
          <segment>
             <source>Email</source>
-            <target>E-mail</target>
+            <target>Correo electrónico</target>
          </segment>
       </unit>
       <unit id="invite.emailsubject">
@@ -3916,7 +4042,7 @@
       <unit id="invite.save">
          <segment>
             <source>Save</source>
-            <target>Salvar</target>
+            <target>Guardar</target>
          </segment>
       </unit>
       <unit id="invite.selectTeamRole">
@@ -4180,7 +4306,7 @@
       <unit id="languagePicker.details">
          <segment>
             <source>Details</source>
-            <target>Detalhes</target>
+            <target>Detalles</target>
          </segment>
       </unit>
       <unit id="languagePicker.findALanguage">
@@ -4192,13 +4318,13 @@
       <unit id="languagePicker.font">
          <segment>
             <source>Font</source>
-            <target>Fonte</target>
+            <target>Fuente</target>
          </segment>
       </unit>
       <unit id="languagePicker.inScript">
          <segment>
             <source> in the $1 script</source>
-            <target> no script $1</target>
+            <target> en el script $1</target>
          </segment>
       </unit>
       <unit id="languagePicker.language">
@@ -4252,7 +4378,7 @@
       <unit id="main.about">
          <segment>
             <source>About</source>
-            <target>Sobre</target>
+            <target>Acerca de</target>
          </segment>
       </unit>
       <unit id="main.addSectionOrPassage">
@@ -4408,7 +4534,7 @@
       <unit id="main.helpCenter">
          <segment>
             <source>Help Center</source>
-            <target>Central de Ajuda</target>
+            <target>Centro de ayuda</target>
          </segment>
       </unit>
       <unit id="main.helpSpreadsheet">
@@ -4447,6 +4573,12 @@
             <target>Ocupado... Por favor, aguarde.</target>
          </segment>
       </unit>
+      <unit id="main.loadDataOffline">
+         <segment>
+            <source>Unable to complete loading while offline. Check your internet connection and try again.</source>
+            <target>Não foi possível concluir o carregamento enquanto está offline. Verifique a sua ligação à Internet e tente novamente.</target>
+         </segment>
+      </unit>
       <unit id="main.loadingTranscriber">
          <segment>
             <source>Loading {0}</source>
@@ -4480,7 +4612,7 @@
       <unit id="main.myAccount">
          <segment>
             <source>My Account</source>
-            <target>Minha Conta</target>
+            <target>Mi cuenta</target>
          </segment>
       </unit>
       <unit id="main.NoLoadOffline">
@@ -4511,6 +4643,18 @@
          <segment>
             <source>Audio Project</source>
             <target>Projeto de Áudio</target>
+         </segment>
+      </unit>
+      <unit id="main.pwaReload">
+         <segment>
+            <source>Reload</source>
+            <target>Atualizar</target>
+         </segment>
+      </unit>
+      <unit id="main.pwaUpdateReady">
+         <segment>
+            <source>A new version is available.</source>
+            <target>Está disponível uma nova versão.</target>
          </segment>
       </unit>
       <unit id="main.orgRole">
@@ -4714,7 +4858,7 @@
       <unit id="mediaTab.action">
          <segment>
             <source>Action</source>
-            <target>Ação</target>
+            <target>Acción</target>
          </segment>
       </unit>
       <unit id="mediaTab.actions">
@@ -4756,7 +4900,7 @@
       <unit id="mediaTab.book">
          <segment>
             <source>Book</source>
-            <target>Livro</target>
+            <target>Libro</target>
          </segment>
       </unit>
       <unit id="mediaTab.cancelling">
@@ -4792,7 +4936,7 @@
       <unit id="mediaTab.date">
          <segment>
             <source>Date</source>
-            <target>Data</target>
+            <target>Fecha</target>
          </segment>
       </unit>
       <unit id="mediaTab.delete">
@@ -4919,6 +5063,12 @@
          <segment>
             <source>No pending uploads.</source>
             <target>Nenhum envio pendente.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadExistsWarn">
+         <segment>
+            <source>A recording for this passage is already pending upload. Recording it again will replace the existing pending recording. Do you want to continue?</source>
+            <target>Já existe uma gravação desta passagem pendente de envio. Se a gravar novamente, a gravação existente pendente será substituída. Deseja continuar?</target>
          </segment>
       </unit>
       <unit id="mediaTab.pendingUploadMenu">
@@ -5479,6 +5629,36 @@
             <target>Adicionar</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.addAudio">
+         <segment>
+            <source>Audio...</source>
+            <target>Áudio...</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addAudioResource">
+         <segment>
+            <source>Add Audio Resource</source>
+            <target>Adicionar recurso de áudio</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addLinked">
+         <segment>
+            <source>Linked Resource...</source>
+            <target>Recurso associado...</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addText">
+         <segment>
+            <source>Text...</source>
+            <target>Texto...</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addUrl">
+         <segment>
+            <source>URL...</source>
+            <target>URL...</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.allLevel">
          <segment>
             <source>All {0}</source>
@@ -5551,10 +5731,22 @@
             <target>Configuração Geral</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.confirmClose">
+         <segment>
+            <source>Do you want to close this dialog? Your changes will be discarded.</source>
+            <target>Deseja fechar esta caixa de diálogo? As suas alterações serão descartadas.</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.createResources">
          <segment>
             <source>Create Resources</source>
             <target>Criar Recursos</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.currentResource">
+         <segment>
+            <source>Current {0}</source>
+            <target>Atual {0}</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.deleteConfirm">
@@ -5567,6 +5759,18 @@
          <segment>
             <source>Description</source>
             <target>Descrição</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.discardAndClose">
+         <segment>
+            <source>Discard and Close</source>
+            <target>Descartar e fechar</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.editAudioResource">
+         <segment>
+            <source>Edit Audio Resource</source>
+            <target>Editar recurso de áudio</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.editResource">
@@ -5589,14 +5793,20 @@
       </unit>
       <unit id="passageDetailArtifacts.findResourceDesc">
          <segment>
-            <source>These controls can be used to find or create (using artificial intelligence -- AI) resources for internalizing the passage, section, chapter, or book.</source>
-            <target>Esses controles podem ser usados para localizar ou criar (usando inteligência artificial - IA) recursos para internalizar a passagem, a seção, o capítulo ou o livro.</target>
+            <source>Create (using artificial intelligence -- AI) resources for internalizing scripture.</source>
+            <target>Criar (utilizando inteligência artificial — IA) recursos para a interiorização das Escrituras.</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.generalResources">
          <segment>
             <source>General Resources</source>
             <target>Recursos Gerais</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.keepOpen">
+         <segment>
+            <source>Keep Open</source>
+            <target>Manter aberto</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.keywords">
@@ -5627,6 +5837,12 @@
          <segment>
             <source>Movement</source>
             <target>Movimento</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.next">
+         <segment>
+            <source>Next</source>
+            <target>Seguinte</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.no">
@@ -5669,12 +5885,6 @@
          <segment>
             <source>Nothing changed! Perhaps no references matched?</source>
             <target>Nada alterado! Talvez não tenha sido encontrada nenhuma referência adequada?</target>
-         </segment>
-      </unit>
-      <unit id="passageDetailArtifacts.projectResourcePassage">
-         <segment>
-            <source>Select {0} and Passages</source>
-            <target>Selecione {0} e Passagens</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.projectResourceSheet">
@@ -5735,6 +5945,12 @@
          <segment>
             <source>Only the first selected note is used</source>
             <target>Apenas a primeira nota selecionada é utilizada</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.selectPassagesSub">
+         <segment>
+            <source>Select this resource's passages.</source>
+            <target>Selecione as passagens deste recurso.</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.sharedResource">
@@ -5811,8 +6027,8 @@
       </unit>
       <unit id="passageDetailArtifacts.tip1a">
          <segment>
-            <source>Resources for:</source>
-            <target>Recursos para:</target>
+            <source>Available for:</source>
+            <target>Disponível para:</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.tip1b">
@@ -5841,8 +6057,14 @@
       </unit>
       <unit id="passageDetailArtifacts.uploadProject">
          <segment>
-            <source>General - to be used by multiple {0} or passages. (Uploaded files will only appear under Configure General.)</source>
-            <target>Geral - para ser usado por múltiplos {0} ou passagens. (Os arquivos carregados só aparecerão em Configuração Geral.)</target>
+            <source>Multiple {0} or Passages (General Resource)</source>
+            <target>Várias {0} ou passagens (Recurso geral)</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.uploadTab">
+         <segment>
+            <source>Upload</source>
+            <target>Carregar</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.verseLevel">
@@ -6364,7 +6586,7 @@
       <unit id="planSheet.action">
          <segment>
             <source>Action</source>
-            <target>Ação</target>
+            <target>Acción</target>
          </segment>
       </unit>
       <unit id="planSheet.addNote">
@@ -6760,25 +6982,25 @@
       <unit id="planTabs.transcriptions">
          <segment>
             <source>Transcriptions</source>
-            <target>Transcrições</target>
+            <target>Transcripciones</target>
          </segment>
       </unit>
       <unit id="prompt.adminInstructions">
          <segment>
-            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
-            <target>Grave uma breve orientação para esta seção e, em seguida, salve. Os membros da equipe ouvirão antes de gravarem.</target>
+            <source>Record a short prompt for this {0}, then save. Team members will listen before they record.</source>
+            <target>Grave uma breve mensagem para este {0} e, em seguida, guarde. Os membros da equipa irão ouvi-la antes de gravarem.</target>
          </segment>
       </unit>
       <unit id="prompt.offlineCannotAdd">
          <segment>
-            <source>You must be online to add or replace the prompt recording for this section.</source>
-            <target>Você precisa estar online para adicionar ou substituir a gravação da orientação para esta seção.</target>
+            <source>You must be online to add or replace the prompt recording for this {0}.</source>
+            <target>Tem de estar online para adicionar ou substituir a gravação da mensagem para este {0}.</target>
          </segment>
       </unit>
       <unit id="prompt.noAudio">
          <segment>
-            <source>No prompt has been recorded for this section yet.</source>
-            <target>Ainda não foi gravada nenhuma orientação para esta seção.</target>
+            <source>No prompt has been recorded for this {0} yet.</source>
+            <target>Ainda não foi gravada nenhuma mensagem para este {0}.</target>
          </segment>
       </unit>
       <unit id="profile.add">
@@ -6880,7 +7102,7 @@
       <unit id="profile.email">
          <segment>
             <source>Email</source>
-            <target>E-mail</target>
+            <target>Correo electrónico</target>
          </segment>
       </unit>
       <unit id="profile.family">
@@ -7018,7 +7240,7 @@
       <unit id="profile.timezone">
          <segment>
             <source>Time zone</source>
-            <target>Fuso horário</target>
+            <target>Zona horaria</target>
          </segment>
       </unit>
       <unit id="profile.userExists">
@@ -7269,8 +7491,8 @@
       </unit>
       <unit id="resource.changes">
          <segment>
-            <source>Changes made will affect source and all shared locations.</source>
-            <target>As alterações efectuadas afectarão a fonte e todas as localizações partilhadas.</target>
+            <source>Edit this note in the project where it was created. Changes there apply to all linked locations.</source>
+            <target>Edite esta nota no projeto onde foi criada. As alterações efetuadas nesse local aplicam-se a todos os locais associados.</target>
          </segment>
       </unit>
       <unit id="resource.delete">
@@ -7373,6 +7595,12 @@
          <segment>
             <source>Title</source>
             <target>Título</target>
+         </segment>
+      </unit>
+      <unit id="resource.unlinkNote">
+         <segment>
+            <source>Unlink</source>
+            <target>Desvincular</target>
          </segment>
       </unit>
       <unit id="resource.versions">
@@ -7504,7 +7732,7 @@
       <unit id="scriptureTable.book">
          <segment>
             <source>Book</source>
-            <target>Livro</target>
+            <target>Libro</target>
          </segment>
       </unit>
       <unit id="scriptureTable.chapter">
@@ -7522,7 +7750,7 @@
       <unit id="scriptureTable.description">
          <segment>
             <source>Description</source>
-            <target>Descrição</target>
+            <target>Descripción</target>
          </segment>
       </unit>
       <unit id="scriptureTable.extras">
@@ -7546,7 +7774,7 @@
       <unit id="scriptureTable.passage">
          <segment>
             <source>Passage</source>
-            <target>Passagem</target>
+            <target>Pasaje</target>
          </segment>
       </unit>
       <unit id="scriptureTable.pasteInvalidBooks">
@@ -7839,8 +8067,8 @@
       </unit>
       <unit id="shared.BookNotSet">
          <segment>
-            <source>Book was not set for Section {0} Passage {1}</source>
-            <target>O livro não foi configurando para a Seção {0} Passagem {1}</target>
+            <source>Book was not set for {0} {1} Passage {2}</source>
+            <target>O livro não foi definido para {0} {1} Passagem {2}</target>
          </segment>
       </unit>
       <unit id="shared.cancel">
@@ -7945,6 +8173,12 @@
             <target>Iniciar Audacity</target>
          </segment>
       </unit>
+      <unit id="shared.leaveUnsavedChanges">
+         <segment>
+            <source>You have unsaved changes that will be lost if you leave this page. Leave anyway?</source>
+            <target>Tem alterações não guardadas que serão perdidas se sair desta página. Deseja sair na mesma?</target>
+         </segment>
+      </unit>
       <unit id="shared.loadFromFile">
          <segment>
             <source>Load from file...</source>
@@ -7973,6 +8207,12 @@
          <segment>
             <source>Media is missing or has an unaccepted format.</source>
             <target>Mídia não encontrada ou formato de mídia não aceitável.</target>
+         </segment>
+      </unit>
+      <unit id="shared.mediaQueuedForUpload">
+         <segment>
+            <source>You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
+            <target>Não está ligado à rede, pelo que este ficheiro multimédia foi adicionado à fila de carregamentos pendentes. Assim que a ligação for restabelecida, poderá tentar guardar novamente a partir do ecrã do Teams.</target>
          </segment>
       </unit>
       <unit id="shared.member">
@@ -8009,6 +8249,12 @@
          <segment>
             <source>Noise Removal Failed</source>
             <target>Falha na remoção de ruído</target>
+         </segment>
+      </unit>
+      <unit id="shared.NoSaveStayOnPage">
+         <segment>
+            <source>If you leave this page before saving, your changes will be lost.</source>
+            <target>Se sair desta página antes de guardar, as suas alterações serão perdidas.</target>
          </segment>
       </unit>
       <unit id="shared.NoSaveOffline">
@@ -8299,6 +8545,12 @@
             <target>{0} alteração(ões)</target>
          </segment>
       </unit>
+      <unit id="stepEditor.duplicatePhraseBtLanguage">
+         <segment>
+            <source>Another step already uses this language for the same artifact type.</source>
+            <target>Outra etapa já utiliza este idioma para o mesmo tipo de artefacto.</target>
+         </segment>
+      </unit>
       <unit id="stepEditor.hide">
          <segment>
             <source>Hide</source>
@@ -8309,6 +8561,12 @@
          <segment>
             <source>In progress...</source>
             <target>Em Progresso...</target>
+         </segment>
+      </unit>
+      <unit id="stepEditor.languageRequired">
+         <segment>
+            <source>Language is required for this step.</source>
+            <target>O idioma é obrigatório para esta etapa.</target>
          </segment>
       </unit>
       <unit id="stepEditor.lastStep">
@@ -8518,7 +8776,7 @@
       <unit id="toDoTable.action">
          <segment>
             <source>Action</source>
-            <target>Ação</target>
+            <target>Acción</target>
          </segment>
       </unit>
       <unit id="toDoTable.assigned">
@@ -8530,7 +8788,7 @@
       <unit id="toDoTable.description">
          <segment>
             <source>Description</source>
-            <target>Descrição</target>
+            <target>Descripción</target>
          </segment>
       </unit>
       <unit id="toDoTable.editor">
@@ -8560,13 +8818,13 @@
       <unit id="toDoTable.no">
          <segment>
             <source>No</source>
-            <target>Não</target>
+            <target>No</target>
          </segment>
       </unit>
       <unit id="toDoTable.passage">
          <segment>
             <source>Passage</source>
-            <target>Passagem</target>
+            <target>Pasaje</target>
          </segment>
       </unit>
       <unit id="toDoTable.plan">
@@ -8620,7 +8878,7 @@
       <unit id="toDoTable.yes">
          <segment>
             <source>Yes</source>
-            <target>Sim</target>
+            <target>Sí</target>
          </segment>
       </unit>
       <unit id="tool.carefulSpeech">
@@ -8819,6 +9077,12 @@
          <segment>
             <source>Book or Reference is invalid.</source>
             <target>O livro ou a referência é inválida.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.missingSegmentRecordings">
+         <segment>
+            <source>Some Phrase Back Translation segments are missing recordings. Complete recording for every segment before starting transcription.</source>
+            <target>Faltam gravações em alguns segmentos da tradução inversa de frases. Conclua a gravação de todos os segmentos antes de iniciar a transcrição.</target>
          </segment>
       </unit>
       <unit id="transcriber.needsNewRecording">
@@ -9064,7 +9328,7 @@
       <unit id="transcriptionShow.transcription">
          <segment>
             <source>Transcription</source>
-            <target>Transcrição</target>
+            <target>Transcripción</target>
          </segment>
       </unit>
       <unit id="transcriptionShow.transcriptionDisplay">
@@ -9358,7 +9622,7 @@
       <unit id="usertable.action">
          <segment>
             <source>Action</source>
-            <target>Ação</target>
+            <target>Acción</target>
          </segment>
       </unit>
       <unit id="usertable.addMember">
@@ -9394,7 +9658,7 @@
       <unit id="usertable.email">
          <segment>
             <source>Email</source>
-            <target>E-mail</target>
+            <target>Correo electrónico</target>
          </segment>
       </unit>
       <unit id="usertable.filter">
@@ -9418,7 +9682,7 @@
       <unit id="usertable.name">
          <segment>
             <source>Name</source>
-            <target>Nome</target>
+            <target>Nombre</target>
          </segment>
       </unit>
       <unit id="usertable.phone">
@@ -9442,7 +9706,7 @@
       <unit id="usertable.timezone">
          <segment>
             <source>Timezone</source>
-            <target>Fuso horário</target>
+            <target>Zona horaria</target>
          </segment>
       </unit>
       <unit id="verse.autosaveSkipped">
@@ -9479,6 +9743,12 @@
          <segment>
             <source>Done Editing</source>
             <target>Edição concluída</target>
+         </segment>
+      </unit>
+      <unit id="verse.edit">
+         <segment>
+            <source>Edit</source>
+            <target>Editar</target>
          </segment>
       </unit>
       <unit id="verse.editReference">
@@ -9673,6 +9943,12 @@
             <target>Personalizar permissão de voz</target>
          </segment>
       </unit>
+      <unit id="voice.rightsHolder">
+         <segment>
+            <source>Rights Holder</source>
+            <target>Titular dos direitos</target>
+         </segment>
+      </unit>
       <unit id="voice.scope">
          <segment>
             <source>Scope of use</source>
@@ -9739,10 +10015,16 @@
             <target>mas opto por não ser identificado pelo nome</target>
          </segment>
       </unit>
-      <unit id="voice.stStatement">
+      <unit id="voice.aiipStatement">
          <segment>
             <source>I {0} provide consent for {1} to record and store this file with my voice in the cloud and possibly in a voice library for publishing and use in AI applications that require a voice sample, including voice conversion. The recording created by {1} of me reading this script will become the exclusive property of {1} which shall have the unlimited right to make, have made, use, copy, display in public, reconstruct, repair, modify, reproduce, publish, distribute and sell the Work Product, in whole or in part, or combine the Work Product with other matter, or not use the Work Product at all, as it sees fit. {1} will use the recording in a variety of ways, including, but not limited to, Audio books, narrating apps, and scripture engagement to further the mission of the organization. {2}{3} I have been provided this script in a language I understand, and have been given the option to request this script in a language of my choice. This recording will act as my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
-            <target>Eu {0} autorizo {1} a gravar e armazenar este arquivo com minha voz na nuvem e possivelmente em uma biblioteca de voz para publicação e uso em aplicativos de IA que exijam uma amostra de voz, incluindo conversão de voz. A gravação criada por {1} de minha voz lendo este script se tornará propriedade exclusiva de {1}, que terá o direito ilimitado de fazer, mandar fazer, usar, copiar, exibir em público, reconstruir, reparar, modificar, reproduzir, publicar, distribuir e vender o Produto de Trabalho, no todo ou em parte, ou combinar o Produto de Trabalho com outro material, ou não usar o Produto de Trabalho de forma alguma, conforme julgar adequado. A {1} usará a gravação de várias maneiras, incluindo, mas não se limitando a, livros de áudio, aplicativos de narração e envolvimento com as escrituras para promover a missão da organização. {2}{3} Recebi este roteiro em um idioma que compreendo e tive a opção de solicitar este roteiro em um idioma de minha escolha. Esta gravação funcionará como minha assinatura no lugar de um contrato por escrito. {4} Assino com minha voz, {5}.</target>
+            <target>Eu, {0}, dou o meu consentimento para que {1} grave e armazene este ficheiro com a minha voz na nuvem e, eventualmente, numa biblioteca de vozes, para publicação e utilização em aplicações de IA que requeiram uma amostra de voz, incluindo a conversão de voz. A gravação criada por {1} em que leio este guião tornar-se-á propriedade exclusiva de {1}, que terá o direito ilimitado de criar, mandar criar, utilizar, copiar, exibir em público, reconstruir, reparar, modificar, reproduzir, publicar, distribuir e vender o Produto do Trabalho, na totalidade ou em parte, ou combinar o Produto do Trabalho com outro material, ou não utilizar o Produto do Trabalho de todo, conforme considerar adequado. {1} utilizará a gravação de diversas formas, incluindo, entre outras, audiolivros, aplicações de narração e interação com textos sagrados, com o objetivo de promover a missão da organização. {2}{3} Recebi este guião numa língua que compreendo e tive a opção de solicitar este guião numa língua à minha escolha. Esta gravação funcionará como a minha assinatura, em substituição de um acordo escrito. {4} Assino com a minha voz, {5}.</target>
+         </segment>
+      </unit>
+      <unit id="voice.ipStatement">
+         <segment>
+            <source>I {0} give {1} permission to record and use my recordings and other contributions made for {2}. I grant {1} a perpetual, worldwide, royalty-free right to record, reproduce, edit, modify, combine, publish, distribute, broadcast, stream, and otherwise use Work Products I make, in whole or in part, in the {2} and in any derivative works, whether now existing or developed in the future. My Work Products are the exclusive property of {1}, which shall have the unlimited right to make, have made, use, copy, repair, modify, reproduce, publish, distribute and sell the Work Products, in whole or in part, or combine the Work Products with other matter, or not use the Work Products at all, as it sees fit. {1} will use the Work Products in a variety of ways, including, but not limited to, Scripture Publication, Audio books, narrating apps, and scripture engagement to further the mission of the organization. I have been provided this script in a language I understand, and have been given the option to request this script in a language of my choice. This recording will act as my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
+            <target>Eu, {0}, concedo a {1} autorização para gravar e utilizar as minhas gravações e outras contribuições feitas para {2}. Concedo a {1} o direito perpétuo, mundial e isento de direitos de autor para gravar, reproduzir, editar, modificar, combinar, publicar, distribuir, transmitir, transmitir em streaming e utilizar de qualquer outra forma os Produtos do Trabalho que eu criar, na totalidade ou em parte, no âmbito do {2} e em quaisquer obras derivadas, quer já existam, quer venham a ser desenvolvidas no futuro. Os meus Produtos de Trabalho são propriedade exclusiva de {1}, que terá o direito ilimitado de criar, mandar criar, utilizar, copiar, reparar, modificar, reproduzir, publicar, distribuir e vender os Produtos de Trabalho, na totalidade ou em parte, ou de combinar os Produtos de Trabalho com outros conteúdos, ou de não utilizar os Produtos de Trabalho de todo, conforme entender. {1} utilizará os Produtos do Trabalho de diversas formas, incluindo, entre outras, a publicação de escrituras, audiolivros, aplicações de narração e interação com as escrituras, com o objetivo de promover a missão da organização. Foi-me fornecido este guião numa língua que compreendo e foi-me dada a opção de solicitar este guião numa língua à minha escolha. Esta gravação servirá como minha assinatura em substituição de um acordo escrito. {4} Assino com a minha voz, {5}.</target>
          </segment>
       </unit>
       <unit id="voice.stTeam">
@@ -10671,8 +10953,8 @@
       </unit>
       <unit id="workflowSteps.promptAdminTip">
          <segment>
-            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
-            <target>Grave as instruções para esta seção, salve-as e, quando estiver pronto, passe para a próxima etapa.</target>
+            <source>Record a prompt for this {0}, save it, then continue to the next step when ready.</source>
+            <target>Grave uma mensagem para este {0}, guarde-a e, quando estiver pronto, avance para o passo seguinte.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.promptTip">
@@ -10843,10 +11125,16 @@
             <target>Loop Ativado</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.microphone">
+      <unit id="wsAudioPlayer.microphoneDisconnected">
          <segment>
-            <source>Select microphone</source>
-            <target>Selecionar microfone</target>
+            <source>The microphone was disconnected. Select another microphone to record.</source>
+            <target>O microfone foi desligado. Selecione outro microfone para gravar.</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.microphoneDisconnectedFallback">
+         <segment>
+            <source>The preferred microphone was disconnected. Default microphone selected.</source>
+            <target>O microfone preferencial foi desligado. Microfone predefinido selecionado.</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.moreOptions">
@@ -11073,8 +11361,8 @@
       </unit>
       <unit id="wsAudioPlayerSegment.removeSegment">
          <segment>
-            <source>Remove Next Boundary [{0}]</source>
-            <target>Remover o Próximo Limite [{0}]</target>
+            <source>Remove Boundary [{0}]</source>
+            <target>Remover limite [{0}]</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayerSegment.segmentLength">
