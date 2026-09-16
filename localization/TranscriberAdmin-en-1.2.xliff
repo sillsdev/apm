@@ -6380,6 +6380,13 @@
                <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mobile.desktopOnlyStep">
+            <source>This step is only available on computers right now. We are working to bring it to mobile phones soon.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mobile.next">
             <source>Next</source>
             <target/>

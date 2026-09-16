@@ -5470,6 +5470,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mobile.desktopOnlyStep">
+         <segment>
+            <source>This step is only available on computers right now. We are working to bring it to mobile phones soon.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mobile.next">
          <segment>
             <source>Next</source>

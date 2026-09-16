@@ -21,9 +21,10 @@ import {
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
 import { useMobile } from '../utils/useMobile';
 import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
-import { ISharedStrings } from '@model/index';
+import { IMobileStrings, ISharedStrings } from '@model/index';
 import { shallowEqual, useSelector } from 'react-redux';
-import { sharedSelector } from '../selector';
+import { mobileSelector, sharedSelector } from '../selector';
+import { Paper, Typography } from '@mui/material';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
 import { usePaneWidth } from '../components/usePaneWidth';
 import { RecordKeyMap } from '@orbit/records';
@@ -38,7 +39,20 @@ import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamChe
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
 import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
 
-const NotImplemented = () => 'Not implemented';
+/**
+ * Fallback for steps mobile has no UI for yet. Reads its string here rather
+ * than taking it as a prop so it follows a runtime language change (TT-7694).
+ */
+const DesktopOnlyStep = () => {
+  const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
+  return (
+    <Paper sx={{ p: 2, m: 'auto', width: `calc(100% - 40px)` }}>
+      <Typography variant="h6" align="center" data-cy="desktop-only-step">
+        {t.desktopOnlyStep}
+      </Typography>
+    </Paper>
+  );
+};
 
 const LeaveUnsavedGuard = () => {
   const { prjId, pasId } = useParams();
@@ -147,7 +161,7 @@ const MobileStep = () => {
   ) : tool === ToolSlug.Transcribe && isDeveloper ? (
     <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
-    <NotImplemented />
+    <DesktopOnlyStep />
   );
 };
 

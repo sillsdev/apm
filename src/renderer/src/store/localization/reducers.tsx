@@ -1119,6 +1119,7 @@ const initialState = {
 	"mobile": new LocalizedStrings({
 		"en": {
 			"addSegment": "Add segment boundary",
+			"desktopOnlyStep": "This step is only available on computers right now. We are working to bring it to mobile phones soon.",
 			"next": "Next",
 			"previous": "Previous",
 			"removeSegment": "Remove next segment boundary",
