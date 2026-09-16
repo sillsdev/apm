@@ -440,6 +440,93 @@ describe('<LimitedMediaPlayer />', () => {
     await waitFor(() => expect(mockPosition).toBe(47));
   });
 
+  // TT-7005: the Compare step keeps one LimitedMediaPlayer instance alive across
+  // resource changes, so its timing refs survive. After a resource plays to the
+  // end, WSAudioPlayer emits onProgress(0) for the next blob before its duration
+  // is known; a stale valueTracker made that look like "at the end", firing
+  // onEnded on load, so the newly selected resource never played and the player
+  // unmounted/remounted in a loop.
+  // TT-7005 (PR #619 review): resetPlay() also runs from ended(), so clearing
+  // the media-scoped timing there left a replay of the same loaded resource
+  // with no end boundary at all. The player does not reload for a replay, so
+  // it never emits onDuration again — onEnded was never called and the
+  // caller's itemPlaying stayed stuck on.
+  it('TT-7005: reports ended again when the same resource is replayed', async () => {
+    mockBlobState = { ...blobFetched };
+
+    const onEnded = jest.fn();
+    const props = {
+      srcMediaId: 'apcd-1',
+      requestPlay: true,
+      onEnded,
+      limits: {},
+    };
+
+    const { container } = render(<LimitedMediaPlayer {...props} />);
+    await waitFor(() => expect(container.firstChild).not.toBe(null));
+
+    act(() => {
+      mockOnDuration(10);
+      mockSetPlaying(true);
+      mockOnProgress(5);
+      mockOnProgress(10); // end of the resource
+    });
+    expect(onEnded).toHaveBeenCalledTimes(1);
+    onEnded.mockClear();
+
+    // the user presses play again: same blob, so no second onDuration report
+    act(() => {
+      mockSetPlaying(true);
+      mockOnProgress(5);
+      mockOnProgress(10);
+    });
+    expect(onEnded).toHaveBeenCalledTimes(1);
+  });
+
+  it('TT-7005: does not report ended when the next resource loads', async () => {
+    mockBlobState = { ...blobFetched };
+
+    const onEnded = jest.fn();
+    const props = {
+      srcMediaId: 'apcd-1',
+      requestPlay: true,
+      onEnded,
+      limits: {},
+    };
+
+    const { container, rerender } = render(<LimitedMediaPlayer {...props} />);
+    await waitFor(() => expect(container.firstChild).not.toBe(null));
+
+    act(() => {
+      mockOnDuration(10);
+      mockSetPlaying(true);
+      mockOnProgress(5); // valueTracker.current -> 5
+      mockOnProgress(10); // end of the first resource
+    });
+    expect(onEnded).toHaveBeenCalledTimes(1);
+    onEnded.mockClear();
+
+    // the user picks a different resource: a fresh WSAudioPlayer reports
+    // duration 0 / progress 0 on mount, before the file is decoded
+    mockBlobState = { ...blobFetched, id: 'apcd-2' };
+    rerender(<LimitedMediaPlayer {...props} srcMediaId="apcd-2" />);
+    await waitFor(() => expect(container.firstChild).not.toBe(null));
+    act(() => {
+      mockOnDuration(0);
+      mockOnProgress(0);
+    });
+
+    expect(onEnded).not.toHaveBeenCalled();
+
+    // ...and the new resource still reports ended at its own end
+    act(() => {
+      mockOnDuration(8);
+      mockSetPlaying(true);
+      mockOnProgress(8);
+    });
+    expect(onEnded).toHaveBeenCalledTimes(1);
+  });
+
   it('should show negative time when if currentTime is less than start', async () => {
     const user = userEvent.setup();
     mockBlobState = { ...blobFetched };

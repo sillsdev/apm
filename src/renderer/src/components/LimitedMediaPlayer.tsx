@@ -138,15 +138,31 @@ export function LimitedMediaPlayer(props: IProps) {
     }
   };
 
+  // Rewind one playthrough. valueTracker mirrors the slider value, so it is
+  // cleared alongside it. The media-scoped timing below is deliberately left
+  // alone: this also runs from ended(), and after a normal end `stop` /
+  // `durationRef` are the only things that can detect the end of a replay,
+  // because the player does not reload and so never reports onDuration again.
   const resetPlay = () => {
     if (playingRef.current) stopPlay();
     setPosition(limits?.start ?? 0);
     setValue(0);
+    valueTracker.current = 0;
+  };
+
+  // Timing that describes the loaded media rather than one playthrough, so it
+  // is cleared only when the source changes. The Compare step keeps one player
+  // instance alive across resource changes, so leftovers here would make the
+  // next resource's first progress report — which WSAudioPlayer emits as 0
+  // before the file is decoded — look like the end of the media. TT-7005.
+  const resetMediaTiming = () => {
+    resetPlay();
+    stop.current = 0;
     durationRef.current = 0;
   };
 
   useEffect(() => {
-    resetPlay();
+    resetMediaTiming();
 
     if (srcMediaId !== blobState?.id) {
       if (ready) setReady(false);
@@ -203,6 +219,8 @@ export function LimitedMediaPlayer(props: IProps) {
     } else if (
       // We use a tolerance of 0.1 seconds to avoid floating point precision issues.
       // The progress seems to set time to end at the beginning so we test two values.
+      // A duration of 0 means "not known yet", not "finished".
+      durationRef.current > 0 &&
       durationRef.current - time < 0.1 &&
       durationRef.current - valueTracker.current < 0.1 &&
       valueTracker.current !== 0

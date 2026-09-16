@@ -28,19 +28,38 @@ jest.mock('../../utils/storedCompareKey', () => ({
   storedCompareKey: () => ({
     removeStoredKeys: jest.fn(),
     saveKey: jest.fn(),
-    storeKey: () => 'compare-store-key',
-    SecSlug: 'SecSlug',
+    // distinct keys so a test can answer the resource lookup and the section
+    // lookup differently
+    storeKey: (keyType?: string) => `compare-${keyType ?? 'res'}`,
+    SecSlug: 'secId',
   }),
 }));
 
 import { render } from '@testing-library/react';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSX (react-jsx) still expects React in scope for TS in this file
-import React from 'react';
+import React, { act } from 'react';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { TeamCheckReference } from './TeamCheckReference';
 import SelectMyResource from './Internalization/SelectMyResource';
+import { LimitedMediaPlayer } from '../LimitedMediaPlayer';
 
 const SelectMyResourceMock = SelectMyResource as unknown as jest.Mock;
+const LimitedMediaPlayerMock = LimitedMediaPlayer as unknown as jest.Mock;
+
+const storedRow = {
+  id: 'res-1',
+  mediafile: { id: 'res-1', attributes: { segments: '{}' } },
+};
+
+/**
+ * The user previously chose 'res-1' for this passage of this section.
+ * Seed real storage: jsdom's localStorage is a Proxy, so assigning over
+ * `getItem` stores an item named "getItem" instead of replacing the method.
+ */
+function storedResourceInLocalStorage() {
+  localStorage.setItem('compare-res', 'res-1');
+  localStorage.setItem('compare-secId', 'section-1');
+}
 
 function buildState(overrides: Record<string, unknown> = {}) {
   return {
@@ -72,26 +91,60 @@ function renderWithContext(stateOverrides?: Record<string, unknown>) {
 describe('TeamCheckReference', () => {
   beforeEach(() => {
     SelectMyResourceMock.mockClear();
-    global.localStorage.getItem = jest.fn(() => null);
+    LimitedMediaPlayerMock.mockClear();
+    localStorage.clear();
   });
 
-  it('leaves the resource selector enabled when nothing is playing', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('leaves the resource selector usable when nothing is playing', () => {
     renderWithContext({ itemPlaying: false });
 
-    expect(SelectMyResourceMock.mock.calls[0][0]).toEqual(
-      expect.objectContaining({ disabled: false })
-    );
+    expect(SelectMyResourceMock.mock.calls[0][0].disabled).toBeFalsy();
   });
 
-  // TT-7005: while a Compare-step resource was playing, picking a different
-  // resource from the dropdown silently failed to play it. The fix disallows
-  // switching the selection while a resource is playing, so the dropdown must
-  // be disabled whenever itemPlaying is true.
-  it('TT-7005: disables the resource selector while a resource is playing', () => {
+  // TT-7005 (reopened): PR #606 blocked switching while a resource played,
+  // which only hid the real defect (LimitedMediaPlayer reporting a spurious
+  // "ended" as soon as the next resource's blob loaded). With that fixed, the
+  // dropdown must stay usable mid-playback — picking another resource while
+  // one plays is what the ticket asked for in the first place.
+  it('TT-7005: keeps the resource selector usable while a resource is playing', () => {
     renderWithContext({ itemPlaying: true });
 
-    expect(SelectMyResourceMock.mock.calls[0][0]).toEqual(
-      expect.objectContaining({ disabled: true })
-    );
+    expect(SelectMyResourceMock.mock.calls[0][0].disabled).toBeFalsy();
+  });
+
+  // TT-7005 (reopened): when a resource finished, handleEnded cleared playItem
+  // and 500ms later the restore effect re-selected the same resource from
+  // localStorage. That re-armed PassageDetailContext's 2-second auto-play
+  // timer, so the finished resource restarted itself and the player tore down
+  // and remounted on every cycle — the "blinking" QA reported.
+  it('TT-7005: does not re-select the resource after it finishes playing', () => {
+    jest.useFakeTimers();
+    storedResourceInLocalStorage();
+    const setPlayItem = jest.fn();
+    const handleItemPlayEnd = jest.fn();
+
+    renderWithContext({
+      rowData: [storedRow],
+      setPlayItem,
+      handleItemPlayEnd,
+    });
+    // sanity: the stored choice was restored on mount
+    expect(setPlayItem).toHaveBeenCalledWith('res-1');
+    setPlayItem.mockClear(); // ignore the mount-time restore
+
+    act(() => {
+      LimitedMediaPlayerMock.mock.calls[0][0].onEnded();
+    });
+    expect(handleItemPlayEnd).toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(setPlayItem).not.toHaveBeenCalledWith('res-1');
   });
 });

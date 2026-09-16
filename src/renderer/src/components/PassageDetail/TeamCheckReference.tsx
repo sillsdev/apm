@@ -34,7 +34,6 @@ export function TeamCheckReference() {
   const [mediaStart, setMediaStart] = useState<number | undefined>();
   const [mediaEnd, setMediaEnd] = useState<number | undefined>();
   const [resource, setResource] = useState('');
-  const [resetCount, setResetCount] = useState(0);
   const { removeStoredKeys, saveKey, storeKey, SecSlug } = storedCompareKey(
     passage,
     section
@@ -65,10 +64,12 @@ export function TeamCheckReference() {
     setPlayItem(id);
   };
 
+  // Leave playItem alone: the player has already rewound itself to
+  // limits.start, so the play button replays the same resource. Clearing and
+  // restoring it re-armed the context's auto-play timer, which restarted the
+  // finished resource and remounted the player on every cycle. TT-7005.
   const handleEnded = () => {
-    setPlayItem('');
     handleItemPlayEnd();
-    setTimeout(() => setResetCount(resetCount + 1), 500);
   };
 
   useEffect(() => {
@@ -81,16 +82,12 @@ export function TeamCheckReference() {
       handleResource(res);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, passage, currentstep, resetCount]);
+  }, [section, passage, currentstep]);
 
   return (
     <Grid container direction="column">
       <Grid size={{ xs: 10 }} sx={{ m: 2, p: 2 }}>
-        <SelectMyResource
-          onChange={handleResource}
-          inResource={resource}
-          disabled={itemPlaying}
-        />
+        <SelectMyResource onChange={handleResource} inResource={resource} />
       </Grid>
       <StyledGrid size={{ xs: 10 }}>
         <LimitedMediaPlayer

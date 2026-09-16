@@ -90,47 +90,83 @@ Check in order:
 3. Harness bug (mock `stop()` order, frozen timers, missing `cy.tick` after async stop).
 4. Production accidentally fixed by test-only changes — revert production files and re-run red.
 
-## Example: TT-7005 — resource switch mid-playback (Compare step)
+## Example: TT-7005 — Compare step, second resource never plays
 
-Bug: on the Compare step, selecting a new resource from the dropdown while
-another resource is playing does not play the new resource (dropdown gave no
-feedback and playback silently stopped). Root cause traced to
-`PassageDetailContext.setSelected` setting `itemPlaying: false` on selection
-with a comment that a `useEffect` would turn it back on — but
-`TeamCheckReference`/`TeamCheckReferenceMobile` wire no such re-trigger
-(unlike `PassageDetailArtifacts.tsx`'s `handleLoaded` callback for the same
-pattern). Rather than fix that race, the agreed simple fix: **block the
-selection change outright while a resource is playing.**
+Bug: on the Compare step, picking a second resource does not play it and the
+player blinks repeatedly. **First attempt (PR #606) treated the symptom** — it
+added a `disabled` prop to `SelectMyResource` and blocked switching while
+`itemPlaying`. QA reopened: the same failure appears as soon as the first
+resource finishes and the dropdown unlocks. That attempt is a cautionary tale:
+*blocking the interaction that exposes a defect is not a fix, and the "red"
+test it produced (a mocked child receiving `disabled: true`) locked in the
+wrong behaviour.*
 
-- **Where the fix belongs:** `SelectMyResource` (`.../PassageDetail/Internalization/SelectMyResource.tsx`)
-  had no `disabled` prop at all — the dropdown was always interactive
-  regardless of playback state. Consumers (`TeamCheckReference.tsx` desktop,
-  `TeamCheckReferenceMobile.tsx` mobile) already had a playing flag in scope
-  (`itemPlaying` from context; local `playing` state on mobile) but never
-  passed it down.
-- **Red before the interface existed:** adding `disabled={...}` to a
-  `<SelectMyResource>` call site was a **TypeScript compile error**
-  (`Property 'disabled' does not exist on type 'IntrinsicAttributes & IProps'`)
-  — a legitimate red for a missing-capability bug, not a logic bug. The test
-  suite failed to run at all (0 tests), which is expected when the fix is an
-  interface addition, not just a value change.
-- **Red at the wiring layer (real runtime failure, not a proxy):** a separate
-  test mocked `SelectMyResource` (jest.fn() component, matching the
-  `TeamCheckReferenceMobile.test.tsx` pattern) and asserted
-  `SelectMyResourceMock.mock.calls[0][0]` contains `disabled: true` when
-  `itemPlaying: true` is in context state. This failed for the real reason —
-  `TeamCheckReference` never passed a `disabled` prop at all — not a proxy
-  assertion.
-  - Gotcha: React 19 function components receive `undefined`, not `{}`, as the
-    second call argument. `expect.anything()` also rejects `undefined`, so index
-    into `mock.calls[0][0]` directly instead of asserting the full call
-    signature.
-- **Green:** add `disabled?: boolean` to `SelectMyResource`'s `IProps`, forward
-  it to the MUI `TextField`'s `disabled` prop, then pass
-  `disabled={itemPlaying}` from `TeamCheckReference` and `disabled={playing}`
-  (the local reference-player flag) from `TeamCheckReferenceMobile`.
-- **Files:** [SelectMyResource.tsx](../../src/renderer/src/components/PassageDetail/Internalization/SelectMyResource.tsx),
-  [SelectMyResource.test.tsx](../../src/renderer/src/components/PassageDetail/Internalization/SelectMyResource.test.tsx),
+**Real root cause — refs that outlive the media they describe.**
+`LimitedMediaPlayer.resetPlay()` cleared `durationRef` but left `valueTracker`
+and `stop` holding the *previous* resource's values. `timeUpdate`'s end
+heuristic is guarded by `valueTracker.current !== 0` ("not the first load"), so
+once anything had played, that guard was permanently satisfied:
+
+- `TeamCheckReference` renders `LimitedMediaPlayer` **unconditionally**, so the
+  instance and its refs survive every resource change. `PassageDetailArtifacts`
+  renders it as `{playItem !== '' && <LimitedMediaPlayer …>}`, which destroys
+  the refs each time — that is why only Compare showed the bug.
+- On a new blob, `WSAudioPlayer` calls `setDuration(0); setProgress(0)` before
+  the file is decoded, and `setProgress` forwards to `onProgress`. With
+  `durationRef === 0` and a stale `valueTracker`, `timeUpdate(0)` read as
+  end-of-media and fired `onEnded` **on load**.
+- `onEnded` → `handleEnded` cleared `playItem` and bumped a `resetCount` whose
+  effect re-selected the stored resource 500 ms later, re-arming
+  `PassageDetailContext`'s 2-second auto-play timer → reload → spurious
+  `ended()` → infinite remount loop, i.e. the "blinking".
+
+**Green:** clear every end-detection ref when the **source changes** —
+`resetMediaTiming()` (`stop`, `durationRef`) wrapping `resetPlay()`
+(`valueTracker`, position, slider), mirroring the sibling that already gets this
+right, `MediaPlayer.resetWaveSurferTiming`. Require `durationRef.current > 0`
+before the duration-based end test, drop the `resetCount` clear/restore cycle
+from `handleEnded`, and remove the #606 `disabled={itemPlaying}` so switching
+mid-playback works as the ticket originally asked. (`ended()` keeps calling only
+`resetPlay()` — see "One reset helper, two lifecycles" below.)
+
+**Lessons worth keeping:**
+
+- **Look for the sibling that works.** `MediaPlayer` had the identical heuristic
+  *and* a correct `resetWaveSurferTiming`. Diffing the two found the bug faster
+  than reading either alone.
+- **One reset helper, two lifecycles.** The first cut cleared `valueTracker`,
+  `stop` and `durationRef` together in `resetPlay()` — but `resetPlay()` runs
+  both on a source change *and* from `ended()`. Wiping the media-scoped timing
+  at the end of a playthrough left a replay of the same loaded resource with no
+  end boundary at all (the player never reloads, so it never reports
+  `onDuration` again), so `onEnded` stopped firing and the caller's
+  `itemPlaying` stuck on. Split it: `resetPlay()` rewinds one playthrough
+  (position, slider value, `valueTracker`), `resetMediaTiming()` additionally
+  clears `stop`/`durationRef` and runs only from the `[srcMediaId]` effect.
+  Caught by Copilot on PR #619 — when a helper is called from two lifecycles,
+  ask what each caller must *keep*, not only what it must clear. Regression
+  test: play to the end, then replay with **no** second `onDuration` and assert
+  `onEnded` fires again.
+- **Mounted-forever components make refs global state.** When a component is
+  kept alive across "documents", every `useRef` needs an explicit reset path.
+- **Drive the real callback sequence.** `LimitedMediaPlayer.test.tsx` already
+  mocks `HiddenPlayer` to capture `onProgress`/`onDuration`/`setPlaying`, so the
+  red test replays production's exact order: play to end → switch `srcMediaId` →
+  `onDuration(0)`, `onProgress(0)`. Pair `expect(onEnded).not.toHaveBeenCalled()`
+  with a follow-up "still ends at its own end" assertion so the fix cannot be a
+  blanket disabling of end detection.
+- **jsdom `localStorage` is a Proxy.** `global.localStorage.getItem = jest.fn()`
+  silently stores an *item* named `getItem` instead of replacing the method —
+  the component still reads real storage. Seed with
+  `localStorage.setItem(...)` and `localStorage.clear()` in `beforeEach`.
+- **Prove red with a file-scoped checkout, and commit the fix before you do it.**
+  `git checkout HEAD~1 -- <production files>` discards *uncommitted* production
+  edits. (Never `git stash` here — the stash stack is shared across worktrees.)
+- Gotcha retained from #606: React 19 function components receive `undefined`,
+  not `{}`, as the second call argument. `expect.anything()` rejects `undefined`
+  too, so index into `mock.calls[0][0]` directly.
+- **Files:** [LimitedMediaPlayer.tsx](../../src/renderer/src/components/LimitedMediaPlayer.tsx),
+  [LimitedMediaPlayer.test.tsx](../../src/renderer/src/components/LimitedMediaPlayer.test.tsx),
   [TeamCheckReference.tsx](../../src/renderer/src/components/PassageDetail/TeamCheckReference.tsx),
   [TeamCheckReference.test.tsx](../../src/renderer/src/components/PassageDetail/TeamCheckReference.test.tsx),
-  [TeamCheckReferenceMobile.tsx](../../src/renderer/src/components/PassageDetail/mobile/TeamCheckReferenceMobile.tsx).
+  [MediaPlayer.tsx](../../src/renderer/src/components/MediaPlayer.tsx) (the correct precedent).
