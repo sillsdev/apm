@@ -7,11 +7,11 @@ import {
   type CSSProperties,
   type MutableRefObject,
 } from 'react';
-import { Badge, Box, Stack } from '@mui/material';
+import { Badge, Box, ButtonGroup, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledTextAreaAutosize } from '../../../control/WebFontStyles';
 import { Button, LightTooltip } from '../../../control';
-import AsrButton from '../../../control/ConfButton';
+import SettingsIcon from '@mui/icons-material/Settings';
 import TranscriptionLogo from '../../../control/TranscriptionLogo';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
@@ -383,19 +383,35 @@ export default function BoldClauseTranscriptionEditor({
               title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
             >
               <span>
-                <AsrButton
-                  id={`${idPrefix}-asr`}
-                  onClick={handleAutoTranslation}
-                  onSettings={openAsrLanguageSettings}
-                  showSettings={needsLanguagePicker}
-                  disabled={runAsrDisabled}
+                <ButtonGroup
+                  variant="contained"
+                  color="inherit"
+                  aria-label="Button group with a nested menu"
                 >
-                  <TranscriptionLogo
+                  <Button
+                    id={`${idPrefix}-asr`}
+                    onClick={handleAutoTranslation}
                     disabled={runAsrDisabled}
-                    sx={{ height: 18, width: 18, mr: 1 }}
-                  />
-                  {tr.aiAutomaticTranscription}
-                </AsrButton>
+                  >
+                    <TranscriptionLogo
+                      disabled={runAsrDisabled}
+                      sx={{ height: 18, width: 18, mr: 1 }}
+                    />
+                    {tr.aiAutomaticTranscription}
+                  </Button>
+                  {needsLanguagePicker && (
+                    <Button
+                      disableTypography
+                      size="small"
+                      onClick={openAsrLanguageSettings}
+                    >
+                      <SettingsIcon
+                        fontSize="small"
+                        sx={{ color: 'secondary.light', opacity: 0.7 }}
+                      />
+                    </Button>
+                  )}
+                </ButtonGroup>
               </span>
             </LightTooltip>
           </Box>

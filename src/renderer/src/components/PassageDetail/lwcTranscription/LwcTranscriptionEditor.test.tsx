@@ -220,34 +220,6 @@ jest.mock('../../../control', () => ({
   ),
 }));
 
-jest.mock('../../../control/ConfButton', () => ({
-  __esModule: true,
-  default: ({
-    children,
-    id,
-    disabled,
-    showSettings = true,
-    onSettings,
-  }: {
-    children: React.ReactNode;
-    id?: string;
-    disabled?: boolean;
-    showSettings?: boolean;
-    onSettings?: () => void;
-  }) => (
-    <div>
-      <button type="button" id={id} disabled={disabled}>
-        {children}
-      </button>
-      {showSettings && (
-        <button type="button" id={`${id}-settings`} onClick={onSettings}>
-          settings
-        </button>
-      )}
-    </div>
-  ),
-}));
-
 jest.mock('../../../control/TranscriptionLogo', () => ({
   __esModule: true,
   default: () => <span>logo</span>,
@@ -326,9 +298,7 @@ describe('BoldClauseTranscriptionEditor', () => {
     expect(
       screen.getByRole('button', { name: /Auto Translation/i })
     ).not.toBeDisabled();
-    expect(
-      screen.queryByRole('button', { name: 'settings' })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('SettingsIcon')).not.toBeInTheDocument();
   });
 
   it('shows language settings gear when ASR language is not ready', () => {
@@ -345,9 +315,7 @@ describe('BoldClauseTranscriptionEditor', () => {
     expect(
       screen.getByRole('button', { name: /Auto Translation/i })
     ).not.toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'settings' })
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('SettingsIcon')).toBeInTheDocument();
   });
 
   it('caps transcription field height so long text scrolls inside (TT-7516)', () => {

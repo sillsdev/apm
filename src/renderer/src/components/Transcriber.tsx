@@ -121,7 +121,6 @@ import Settings from '@mui/icons-material/Settings';
 import { EditorSettings } from './Team/ProjectDialog';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
-import AsrButton from '../control/ConfButton';
 import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
 import { AsrTarget } from '../business/asr/AsrTarget';
@@ -1456,11 +1455,11 @@ export function Transcriber(props: IProps) {
                           }
                         >
                           <span>
-                            <AsrButton
+                            <Button
                               id="asrButton"
                               onClick={handleTranscribe}
-                              onSettings={openAsrLanguageSettings}
-                              showSettings={false}
+                              variant="contained"
+                              color="inherit"
                               disabled={role !== 'transcriber'}
                             >
                               {!hasTranscription &&
@@ -1478,7 +1477,7 @@ export function Transcriber(props: IProps) {
                                   sx={{ height: 18, width: 18 }}
                                 />
                               )}
-                            </AsrButton>
+                            </Button>
                           </span>
                         </LightTooltip>
                       )}
