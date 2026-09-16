@@ -366,12 +366,7 @@ function MediaRecord(props: IProps) {
     setUploading(false);
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
-    if (!mediaId) {
-      const message = failureMessage();
-      showMessage(message);
-      setStatusText(message);
-      saveCompleted(toolId, message);
-    } else {
+    if (mediaId) {
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
       saveRef.current = false;
@@ -385,7 +380,7 @@ function MediaRecord(props: IProps) {
     const pendingQueued = Boolean(outcome?.pendingQueued);
     const message = pendingQueued
       ? ts.mediaQueuedForUpload
-      : await failureMessage();
+      : failureMessage();
     if (pendingQueued) {
       // Accepted into Pending Media Uploads — clear dirty so Save stays off
       // until the user changes the audio (new version).

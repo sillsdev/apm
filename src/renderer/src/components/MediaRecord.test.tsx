@@ -477,12 +477,16 @@ describe('MediaRecord save gating', () => {
     mockEnv.online = true;
     await failASave(jest.fn(), undefined, undefined, { pendingQueued: false });
 
+    // Web failures keep the TT-7664 wording: the failure plus the warning that
+    // leaving the page loses the take.
     await waitFor(() =>
-      expect(mockShowMessage).toHaveBeenLastCalledWith('No media to save')
+      expect(mockShowMessage).toHaveBeenLastCalledWith(
+        'No media to save Stay on this page'
+      )
     );
     expect(mockSaveCompleted).toHaveBeenCalledWith(
       'record-tool',
-      'No media to save'
+      'No media to save Stay on this page'
     );
   });
 
