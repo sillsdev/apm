@@ -446,6 +446,43 @@ describe('<LimitedMediaPlayer />', () => {
   // is known; a stale valueTracker made that look like "at the end", firing
   // onEnded on load, so the newly selected resource never played and the player
   // unmounted/remounted in a loop.
+  // TT-7005 (PR #619 review): resetPlay() also runs from ended(), so clearing
+  // the media-scoped timing there left a replay of the same loaded resource
+  // with no end boundary at all. The player does not reload for a replay, so
+  // it never emits onDuration again — onEnded was never called and the
+  // caller's itemPlaying stayed stuck on.
+  it('TT-7005: reports ended again when the same resource is replayed', async () => {
+    mockBlobState = { ...blobFetched };
+
+    const onEnded = jest.fn();
+    const props = {
+      srcMediaId: 'apcd-1',
+      requestPlay: true,
+      onEnded,
+      limits: {},
+    };
+
+    const { container } = render(<LimitedMediaPlayer {...props} />);
+    await waitFor(() => expect(container.firstChild).not.toBe(null));
+
+    act(() => {
+      mockOnDuration(10);
+      mockSetPlaying(true);
+      mockOnProgress(5);
+      mockOnProgress(10); // end of the resource
+    });
+    expect(onEnded).toHaveBeenCalledTimes(1);
+    onEnded.mockClear();
+
+    // the user presses play again: same blob, so no second onDuration report
+    act(() => {
+      mockSetPlaying(true);
+      mockOnProgress(5);
+      mockOnProgress(10);
+    });
+    expect(onEnded).toHaveBeenCalledTimes(1);
+  });
+
   it('TT-7005: does not report ended when the next resource loads', async () => {
     mockBlobState = { ...blobFetched };
 

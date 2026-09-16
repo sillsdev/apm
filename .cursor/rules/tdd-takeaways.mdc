@@ -120,18 +120,33 @@ once anything had played, that guard was permanently satisfied:
   `PassageDetailContext`'s 2-second auto-play timer → reload → spurious
   `ended()` → infinite remount loop, i.e. the "blinking".
 
-**Green:** reset `valueTracker.current` and `stop.current` alongside
-`durationRef.current` in `resetPlay` (mirroring the sibling that already gets
-this right, `MediaPlayer.resetWaveSurferTiming`), require `durationRef.current > 0`
+**Green:** clear every end-detection ref when the **source changes** —
+`resetMediaTiming()` (`stop`, `durationRef`) wrapping `resetPlay()`
+(`valueTracker`, position, slider), mirroring the sibling that already gets this
+right, `MediaPlayer.resetWaveSurferTiming`. Require `durationRef.current > 0`
 before the duration-based end test, drop the `resetCount` clear/restore cycle
 from `handleEnded`, and remove the #606 `disabled={itemPlaying}` so switching
-mid-playback works as the ticket originally asked.
+mid-playback works as the ticket originally asked. (`ended()` keeps calling only
+`resetPlay()` — see "One reset helper, two lifecycles" below.)
 
 **Lessons worth keeping:**
 
 - **Look for the sibling that works.** `MediaPlayer` had the identical heuristic
   *and* a correct `resetWaveSurferTiming`. Diffing the two found the bug faster
   than reading either alone.
+- **One reset helper, two lifecycles.** The first cut cleared `valueTracker`,
+  `stop` and `durationRef` together in `resetPlay()` — but `resetPlay()` runs
+  both on a source change *and* from `ended()`. Wiping the media-scoped timing
+  at the end of a playthrough left a replay of the same loaded resource with no
+  end boundary at all (the player never reloads, so it never reports
+  `onDuration` again), so `onEnded` stopped firing and the caller's
+  `itemPlaying` stuck on. Split it: `resetPlay()` rewinds one playthrough
+  (position, slider value, `valueTracker`), `resetMediaTiming()` additionally
+  clears `stop`/`durationRef` and runs only from the `[srcMediaId]` effect.
+  Caught by Copilot on PR #619 — when a helper is called from two lifecycles,
+  ask what each caller must *keep*, not only what it must clear. Regression
+  test: play to the end, then replay with **no** second `onDuration` and assert
+  `onEnded` fires again.
 - **Mounted-forever components make refs global state.** When a component is
   kept alive across "documents", every `useRef` needs an explicit reset path.
 - **Drive the real callback sequence.** `LimitedMediaPlayer.test.tsx` already
