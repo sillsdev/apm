@@ -39,6 +39,7 @@ import {
 import {
   appendPendingMediaUpload,
   findPendingUploadIdForIdentity,
+  loadPendingMediaUploads,
   PendingUploadRecord,
   PendingUploadMediaRecord,
   PendingUploadRestore,
@@ -245,6 +246,9 @@ export interface UploadTerminalFailureInfo {
   failedRemoteMediaId?: number;
 }
 
+/** Terminal outcome meta passed on nextUpload's cb (TT-7365 follow-up). */
+export type UploadCbMeta = { pendingQueued?: boolean };
+
 export interface NextUploadProps {
   record: MediaFileAttributes;
   files: File[];
@@ -253,7 +257,12 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
-  cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
+  cb?: (
+    n: number,
+    success: boolean,
+    data?: MediaFileAttributes,
+    meta?: UploadCbMeta
+  ) => void;
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -303,7 +312,8 @@ export const nextUpload =
         },
         type: UPLOAD_ITEM_FAILED,
       });
-      if (cb) cb(n, false);
+      // Staging / pre-stage failures never persist a pending row.
+      if (cb) cb(n, false, undefined, { pendingQueued: false });
     };
     const { name, size, type } = files[n] as File;
     const isDownloadable = !isNotDownloadable(type);
@@ -345,7 +355,8 @@ export const nextUpload =
       success: boolean,
       data: MediaFileAttributes | undefined,
       statusNum: number | undefined,
-      statusText: string
+      statusText: string,
+      meta?: UploadCbMeta
     ): void => {
       void (async () => {
         if (success) {
@@ -377,7 +388,7 @@ export const nextUpload =
             },
             type: UPLOAD_ITEM_FAILED,
           });
-          if (cb) cb(n, false, data);
+          if (cb) cb(n, false, data, meta);
         }
       })();
     };
@@ -536,25 +547,49 @@ export const nextUpload =
         const pathForQueue =
           localAbsolutePath ||
           ((files[n] as File & { path?: string }).path ?? '');
-        const queuePatch = {
-          localAbsolutePath: pathForQueue,
-          fileSize: size,
-          uploadType,
-          record: snapshotForPending(),
-          ...(pendingRestore ? { restore: pendingRestore } : {}),
-        };
-        const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
-            appendPendingMediaUpload(queuePatch))
-          : appendPendingMediaUpload(queuePatch);
-        onTerminalFailure?.({
-          localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
-          originalFileName: name,
-          pendingRecord,
-          cloudRowDeleted,
-          failedRemoteMediaId,
+
+        // Only claim pendingQueued when Retry can recover the take: a non-empty
+        // local path, a row that reloads from storage, and (when IPC exists)
+        // the file still on disk. Empty-path web failures must keep Save dirty.
+        let pendingQueued = false;
+        if (pathForQueue) {
+          const queuePatch = {
+            localAbsolutePath: pathForQueue,
+            fileSize: size,
+            uploadType,
+            record: snapshotForPending(),
+            ...(pendingRestore ? { restore: pendingRestore } : {}),
+          };
+          const pendingRecord = pendingIdToClear
+            ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+              appendPendingMediaUpload(queuePatch))
+            : appendPendingMediaUpload(queuePatch);
+          const stored = loadPendingMediaUploads().find(
+            (p) =>
+              p.id === pendingRecord.id && p.localAbsolutePath === pathForQueue
+          );
+          // A rejecting exists probe must not escape before completeCB or the
+          // upload promise never settles (Copilot r4020216334).
+          const existsOk = !ipc?.exists
+            ? true
+            : await ipc.exists(pathForQueue).catch(() => false);
+          const fileOk = Boolean(stored) && existsOk;
+          if (fileOk && stored) {
+            pendingQueued = true;
+            onTerminalFailure?.({
+              localAbsolutePath: pathForQueue || stored.localAbsolutePath,
+              originalFileName: name,
+              pendingRecord: stored,
+              cloudRowDeleted,
+              failedRemoteMediaId,
+            });
+          } else if (pendingRecord) {
+            removePendingMediaUpload(pendingRecord.id);
+          }
+        }
+        completeCB(false, undefined, statusNum, statusText, {
+          pendingQueued,
         });
-        completeCB(false, undefined, statusNum, statusText);
       };
 
       let json: unknown;

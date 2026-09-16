@@ -32,7 +32,10 @@ interface IProps {
   topic?: string | undefined;
   /** Copied onto mediafile.attributes.languagebcp47 (e.g. `English|en`). */
   languagebcp47?: string | undefined;
-  afterUploadCb: (mediaId: string) => Promise<void>;
+  afterUploadCb: (
+    mediaId: string,
+    outcome?: { pendingQueued?: boolean }
+  ) => Promise<void>;
   /** When retrying a queued failed upload, pass id to clear the queue entry after success. */
   pendingUploadIdToClearOnSuccess?: string;
   /**
@@ -118,7 +121,8 @@ export const useMediaUpload = ({
   const itemComplete = async (
     n: number,
     success: boolean,
-    data?: any
+    data?: any,
+    meta?: { pendingQueued?: boolean }
   ): Promise<void> => {
     if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
@@ -150,7 +154,11 @@ export const useMediaUpload = ({
           .replace('{1}', String(total))
       );
       try {
-        await afterUploadCb(mediaIdRef.current);
+        if (!success && meta) {
+          await afterUploadCb(mediaIdRef.current, meta);
+        } else {
+          await afterUploadCb(mediaIdRef.current);
+        }
       } catch {
         // Parent after-upload hook failed; upload itself is finished.
       }
@@ -251,8 +259,8 @@ export const useMediaUpload = ({
             offline: getGlobal('offline'),
             errorReporter: reporter,
             uploadType: UploadType.Media,
-            cb: (n, success, data) => {
-              void itemComplete(n, success, data)
+            cb: (n, success, data, meta) => {
+              void itemComplete(n, success, data, meta)
                 .then(() => {
                   if (success) resolve(true);
                   else reject(new Error(t.uploadFailed));

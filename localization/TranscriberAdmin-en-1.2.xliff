@@ -9589,7 +9589,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="shared.mediaQueuedForUpload">
-            <source>You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
+            <source>This media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaRecord.tsx</context>

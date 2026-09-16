@@ -192,7 +192,7 @@ describe('useMediaUpload', () => {
   async function completeUpload(
     upload: (files: File[]) => Promise<boolean>,
     files: File[],
-    ...cbArgs: [number, boolean, unknown?]
+    ...cbArgs: [number, boolean, unknown?, { pendingQueued?: boolean }?]
   ) {
     const uploadPromise = upload(files);
     const nextUpload = await waitForNextUpload();
@@ -200,7 +200,8 @@ describe('useMediaUpload', () => {
     const cb = uploadProps.cb as (
       n: number,
       success: boolean,
-      data?: unknown
+      data?: unknown,
+      meta?: { pendingQueued?: boolean }
     ) => void | Promise<void>;
     await cb(...cbArgs);
     return uploadPromise;
@@ -259,6 +260,42 @@ describe('useMediaUpload', () => {
       '0 of 1 files uploaded successfully.'
     );
     expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
+  it('forwards pendingQueued true from nextUpload cb to afterUploadCb', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<boolean>;
+
+    await expect(
+      completeUpload(upload, [makeFile()], 0, false, undefined, {
+        pendingQueued: true,
+      })
+    ).rejects.toThrow('Upload Failed!');
+
+    expect(afterUploadCb).toHaveBeenCalledWith('', { pendingQueued: true });
+  });
+
+  it('forwards pendingQueued false from nextUpload cb to afterUploadCb', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<boolean>;
+
+    await expect(
+      completeUpload(upload, [makeFile()], 0, false, undefined, {
+        pendingQueued: false,
+      })
+    ).rejects.toThrow('Upload Failed!');
+
+    expect(afterUploadCb).toHaveBeenCalledWith('', { pendingQueued: false });
   });
 
   it('offline success: createMedia, snackbar, afterUploadCb with created id, no pullTableList', async () => {

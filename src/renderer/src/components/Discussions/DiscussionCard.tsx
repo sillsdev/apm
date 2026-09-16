@@ -321,9 +321,19 @@ export const DiscussionCard = (props: IProps) => {
 
   const saveComment = useSaveComment();
 
-  const afterUploadCb = async (mediaId: string | undefined) => {
+  const afterUploadCb = async (
+    mediaId: string | undefined,
+    outcome?: { pendingQueued?: boolean }
+  ) => {
     commentMediaId.current = mediaId;
     if (!mediaId) {
+      // Queued acceptance already cleared MediaRecord's tool; do not re-fail
+      // the comment tool (Copilot r4020216298).
+      if (outcome?.pendingQueued) {
+        cardSavingRef.current = false;
+        saveCompleted(NewCommentToolId);
+        return;
+      }
       saveCompleted(NewCommentToolId, ts.NoSaveWoMedia);
     } else {
       await saveDiscussion();
@@ -339,7 +349,8 @@ export const DiscussionCard = (props: IProps) => {
           visible: computeCommentVisibleString({
             isCIT: hasPermission(PermissionName.CIT),
             isMentor: hasPermission(PermissionName.Mentor),
-            authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
+            authorId:
+              remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
           }),
         }
       : undefined;

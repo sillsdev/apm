@@ -48,7 +48,10 @@ interface IProps extends IStateProps {
   comment: string;
   fileName: string;
   cancelOnlyIfChanged?: boolean;
-  afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  afterUploadCb: (
+    mediaId: string | undefined,
+    outcome?: { pendingQueued?: boolean }
+  ) => Promise<void>;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../../store/upload/pendingMediaUploads').PendingRestoreInput;
   refresh: number;
