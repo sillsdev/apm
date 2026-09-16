@@ -575,12 +575,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
               parsePaste={handleParsePaste}
             />
           </Box>
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{ mt: 2 }}
-          >
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }}>
             <TextField
               label={t.suffix}
               variant="outlined"
