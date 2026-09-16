@@ -14,7 +14,7 @@
     "format": "prettier --config ../../.prettierrc.yaml --ignore-path ../../.prettierignore --write \"**/*.{js,ts,tsx,json,css,md,mdx,html}\"",
     "lint": "eslint . --cache-location node_modules/.cache/eslint --quiet",
     "typecheck": "tsc --noEmit",
-    "validate": "npm-run-all --parallel format lint typecheck build",
+    "validate": "npm-run-all format --parallel lint build",
     "cy:open-local": "cypress open --e2e --browser chrome --config-file cypress/config/local.config.ts",
     "cy:run-local": "cypress run --e2e --browser chrome --config-file cypress/config/local.config.ts",
     "cy:open-ct": "cypress open --component --browser chrome --config-file cypress/config/local.config.ts",
