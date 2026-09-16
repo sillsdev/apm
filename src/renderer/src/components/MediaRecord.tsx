@@ -15,7 +15,6 @@ import {
   loadBlobAsync,
   logError,
   Severity,
-  useCheckOnline,
   useMobile,
   waitForIt,
 } from '../utils';
@@ -265,7 +264,6 @@ function MediaRecord(props: IProps) {
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
-  const checkOnline = useCheckOnline('MediaRecord');
   const [converting, setConverting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const {
@@ -336,18 +334,16 @@ function MediaRecord(props: IProps) {
     return '';
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
-  const failureMessage = () =>
-    new Promise<string>((resolve) => {
-      if (getGlobal('offline')) {
-        resolve(ts.NoSaveWoMedia);
-        return;
-      }
-      checkOnline((online) => {
-        if (online) resolve(ts.NoSaveWoMedia);
-        else if (isElectron) resolve(ts.mediaQueuedForUpload);
-        else resolve(`${ts.NoSaveWoMedia} ${ts.NoSaveStayOnPage}`);
-      });
-    });
+  const failureMessage = () => {
+    if (getGlobal('offline')) {
+      return ts.NoSaveOffline;
+    }
+
+    // If desktop had a failure
+    if (isElectron) return ts.mediaQueuedForUpload;
+    // If web had a failure
+    else return `${ts.NoSaveWoMedia} ${ts.NoSaveStayOnPage}`;
+  };
 
   const myAfterUploadCb = async (mediaId: string) => {
     // Notify before any setState: canSave goes true again on the next commit,
@@ -361,7 +357,7 @@ function MediaRecord(props: IProps) {
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
     if (!mediaId) {
-      const message = await failureMessage();
+      const message = failureMessage();
       showMessage(message);
       setStatusText(message);
       saveCompleted(toolId, message);
