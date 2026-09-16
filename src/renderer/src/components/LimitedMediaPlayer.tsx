@@ -142,6 +142,14 @@ export function LimitedMediaPlayer(props: IProps) {
     if (playingRef.current) stopPlay();
     setPosition(limits?.start ?? 0);
     setValue(0);
+    // Every end-detection ref must be cleared together (see
+    // MediaPlayer.resetWaveSurferTiming). The Compare step keeps one player
+    // instance alive across resource changes, so a leftover valueTracker or
+    // stop would make the next resource's first progress report — which
+    // WSAudioPlayer emits as 0 before the file is decoded — look like the end
+    // of the media. TT-7005.
+    valueTracker.current = 0;
+    stop.current = 0;
     durationRef.current = 0;
   };
 
@@ -203,6 +211,8 @@ export function LimitedMediaPlayer(props: IProps) {
     } else if (
       // We use a tolerance of 0.1 seconds to avoid floating point precision issues.
       // The progress seems to set time to end at the beginning so we test two values.
+      // A duration of 0 means "not known yet", not "finished".
+      durationRef.current > 0 &&
       durationRef.current - time < 0.1 &&
       durationRef.current - valueTracker.current < 0.1 &&
       valueTracker.current !== 0
