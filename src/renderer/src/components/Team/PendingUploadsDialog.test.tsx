@@ -126,7 +126,10 @@ import {
   removePendingMediaUpload,
 } from '../../store/upload/pendingMediaUploads';
 import { UploadType } from '../UploadType';
-import { PendingUploadsDialog } from './PendingUploadsDialog';
+const { PendingUploadsDialog } =
+  jest.requireActual<typeof import('./PendingUploadsDialog')>(
+    './PendingUploadsDialog'
+  );
 
 const stagePendingRow = (originalFile: string) =>
   appendPendingMediaUpload({
