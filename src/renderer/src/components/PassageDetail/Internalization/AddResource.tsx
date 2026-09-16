@@ -7,9 +7,10 @@ import { resourceSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledMenu, StyledMenuItem } from '../../../control';
 import { useGlobal } from '../../../context/useGlobal';
+import { AddResourceAction } from './AddResourceAction';
 
 interface IProps {
-  action?: (what: string) => void;
+  action?: (what: AddResourceAction) => void;
 }
 
 export const AddResource = (props: IProps) => {
@@ -27,7 +28,7 @@ export const AddResource = (props: IProps) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handle = (what: string) => (event: React.MouseEvent) => {
+  const handle = (what: AddResourceAction) => (event: React.MouseEvent) => {
     event.stopPropagation();
     setAnchorEl(null);
     if (action) {
@@ -36,7 +37,7 @@ export const AddResource = (props: IProps) => {
   };
 
   return (
-    <>
+    <div>
       <Button id="add-resource" onClick={handleClick}>
         {t.add}
       </Button>
@@ -47,19 +48,31 @@ export const AddResource = (props: IProps) => {
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         keepMounted
         open={Boolean(anchorEl)}
-        onClose={handle('Close')}
+        onClose={handle(AddResourceAction.Close)}
       >
-        <StyledMenuItem id="audioResource" onClick={handle('audio')}>
+        <StyledMenuItem
+          id="audioResource"
+          onClick={handle(AddResourceAction.Audio)}
+        >
           <ListItemText>{t.addAudio}</ListItemText>
         </StyledMenuItem>
-        <StyledMenuItem id="textResource" onClick={handle('text')}>
+        <StyledMenuItem
+          id="textResource"
+          onClick={handle(AddResourceAction.Text)}
+        >
           <ListItemText>{t.addText}</ListItemText>
         </StyledMenuItem>
-        <StyledMenuItem id="urlResource" onClick={handle('link')}>
+        <StyledMenuItem
+          id="urlResource"
+          onClick={handle(AddResourceAction.Link)}
+        >
           <ListItemText>{t.addUrl}</ListItemText>
         </StyledMenuItem>
         {!offline && !offlineOnly && (
-          <StyledMenuItem id="linkedResource" onClick={handle('shared')}>
+          <StyledMenuItem
+            id="linkedResource"
+            onClick={handle(AddResourceAction.Shared)}
+          >
             <ListItemText>
               {t.addLinked}
               {'\u00A0'}
@@ -70,7 +83,7 @@ export const AddResource = (props: IProps) => {
           </StyledMenuItem>
         )}
       </StyledMenu>
-    </>
+    </div>
   );
 };
 

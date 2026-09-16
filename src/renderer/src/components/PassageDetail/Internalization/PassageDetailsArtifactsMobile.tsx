@@ -107,6 +107,7 @@ import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { buildResourcePendingRestore } from './buildResourcePendingRestore';
 import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
+import { AddResourceAction } from './AddResourceAction';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import IconMenu from '../../../control/IconMenu';
 
@@ -187,9 +188,14 @@ export function PassageDetailArtifactsMobile() {
   const descriptionRef = useRef<string>('');
   const pendingResourceSeqRef = useRef(0);
 
-  const resourceTypeRef = useRef<ResourceTypeEnum>(
+  const [resourceKind, setResourceKindx] = useState(
     ResourceTypeEnum.sectionResource
   );
+  const resourceKindRef = useRef(resourceKind);
+  const setResourceKind = (kind: ResourceTypeEnum) => {
+    resourceKindRef.current = kind;
+    setResourceKindx(kind);
+  };
   const projIdentRef = useRef<RecordIdentity[]>([]);
   /** Every passage/section the selection dialog offered; scopes cleanup. */
   const projCandidateRef = useRef<RecordIdentity[]>([]);
@@ -258,9 +264,9 @@ export function PassageDetailArtifactsMobile() {
   const handleNonAudio = (value: boolean) => setNonAudio(value);
 
   const isPassageResource = () =>
-    resourceTypeRef.current === ResourceTypeEnum.passageResource;
+    resourceKindRef.current === ResourceTypeEnum.passageResource;
   const isProjectResource = () =>
-    resourceTypeRef.current === ResourceTypeEnum.projectResource;
+    resourceKindRef.current === ResourceTypeEnum.projectResource;
 
   const projResourceType = useMemo(() => {
     const resourceType = artifactTypes.find(
@@ -446,15 +452,17 @@ export function PassageDetailArtifactsMobile() {
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
-      resourceTypeRef.current = ResourceTypeEnum.projectResource;
+      setResourceKind(ResourceTypeEnum.projectResource);
       isAddingAudioResourceRef.current = false;
       handleSelectProjectResource(projectMedia);
       return;
     }
     setEditResource(secRes);
-    resourceTypeRef.current = related(secRes, 'passage')
-      ? ResourceTypeEnum.passageResource
-      : ResourceTypeEnum.sectionResource;
+    setResourceKind(
+      related(secRes, 'passage')
+        ? ResourceTypeEnum.passageResource
+        : ResourceTypeEnum.sectionResource
+    );
     descriptionRef.current = secRes?.attributes.description || '';
     catIdRef.current = mf ? related(mf, 'artifactCategory') : undefined;
     mediaRef.current = mf as MediaFileD;
@@ -482,7 +490,7 @@ export function PassageDetailArtifactsMobile() {
     setEditResource(undefined);
     catIdRef.current = undefined;
     descriptionRef.current = '';
-    resourceTypeRef.current = ResourceTypeEnum.sectionResource;
+    setResourceKind(ResourceTypeEnum.sectionResource);
     setUploadVisible(false);
     setMarkdownValue('');
     setInitDescription('');
@@ -563,29 +571,29 @@ export function PassageDetailArtifactsMobile() {
     }
   };
 
-  const handleAction = (what: string) => {
+  const handleAction = (what: AddResourceAction) => {
     artifactState.id = resourceType ?? null;
-    resourceTypeRef.current = ResourceTypeEnum.sectionResource;
-    if (what === 'audio') {
+    setResourceKind(ResourceTypeEnum.sectionResource);
+    if (what === AddResourceAction.Audio) {
       mediaRef.current = undefined;
       setUploadType(UploadType.Resource);
       syncResourceReady(UploadType.Resource, descriptionRef.current);
       setAudioUploadOrRecord(true);
       setUploadVisible(true);
-    } else if (what === 'scripture') {
+    } else if (what === AddResourceAction.Scripture) {
       setAudioScriptureVisible(true);
-    } else if (what === 'link') {
+    } else if (what === AddResourceAction.Link) {
       setUploadType(UploadType.Link);
       syncResourceReady(UploadType.Link, descriptionRef.current);
       setAudioUploadOrRecord(false);
       setUploadVisible(true);
-    } else if (what === 'text') {
+    } else if (what === AddResourceAction.Text) {
       setUploadType(UploadType.MarkDown);
       syncResourceReady(UploadType.MarkDown, descriptionRef.current);
       setAudioUploadOrRecord(false);
       setUploadVisible(true);
-    } else if (what === 'shared') {
-      resourceTypeRef.current = ResourceTypeEnum.sectionResource;
+    } else if (what === AddResourceAction.Shared) {
+      setResourceKind(ResourceTypeEnum.sectionResource);
       setSharedResourceVisible(true);
     }
   };
@@ -898,8 +906,8 @@ export function PassageDetailArtifactsMobile() {
   };
 
   const handlePassRes = (newValue: ResourceTypeEnum) => {
-    resourceTypeRef.current = newValue;
-    if (isProjectResource()) {
+    setResourceKind(newValue);
+    if (newValue === ResourceTypeEnum.projectResource) {
       artifactState.id = projResourceType ?? null;
       setUploadType(UploadType.ProjectResource);
       syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
@@ -1054,7 +1062,7 @@ export function PassageDetailArtifactsMobile() {
             initDescription={initDescription}
             onDescriptionChange={handleDescription}
             catRequired={false}
-            initPassRes={isPassageResource()}
+            resourceKind={resourceKind}
             onPassResChange={handlePassRes}
             allowProject={!nonAudio}
             sectDesc={sectDesc}
@@ -1093,7 +1101,7 @@ export function PassageDetailArtifactsMobile() {
       <BigDialog
         title={t.sharedResource.replace(
           '{0}',
-          resourceTypeRef.current === ResourceTypeEnum.sectionResource
+          resourceKind === ResourceTypeEnum.sectionResource
             ? getOrganizedBy(true)
             : t.passageResource
         )}
@@ -1103,8 +1111,8 @@ export function PassageDetailArtifactsMobile() {
       >
         <SelectSharedResource
           sourcePassages={resourceSourcePassages}
-          scope={resourceTypeRef.current}
-          onScope={(val) => (resourceTypeRef.current = val)}
+          scope={resourceKind}
+          onScope={setResourceKind}
           onSelect={handleSelectShared}
           onOpen={handleSharedResourceVisible}
         />
@@ -1193,7 +1201,7 @@ export function PassageDetailArtifactsMobile() {
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
           catRequired={false}
-          initPassRes={Boolean(resourceTypeRef.current)}
+          resourceKind={resourceKind}
           onPassResChange={handlePassRes}
           allowProject={false}
           onTextChange={handleTextChange}
