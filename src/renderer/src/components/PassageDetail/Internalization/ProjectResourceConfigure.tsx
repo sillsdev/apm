@@ -15,6 +15,7 @@ import {
   MediaFileD,
   SectionResource,
   BookName,
+  IState,
 } from '../../../model';
 import {
   Box,
@@ -37,6 +38,8 @@ import { cleanClipboard } from '../../../utils/cleanClipboard';
 import { NamedRegions, updateSegments } from '../../../utils/namedSegments';
 import { findRecord } from '../../../crud/tryFindRecord';
 import { related } from '../../../crud/related';
+import { useOrganizedBy } from '../../../crud/useOrganizedBy';
+import { sectionLabel, passageLabel } from './internalizeLabels';
 import {
   resourceSelector,
   sharedSelector,
@@ -93,10 +96,12 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
       '& > tbody > tr:not(:first-of-type) > .cell.read-only': {
         backgroundColor: 'transparent',
       },
-      // react-datasheet also dims read-only cells to grey text; keep every cell
-      // (header row and the read-only Reference column) at normal text color.
+      // react-datasheet dims read-only cells to grey text via its own
+      // `.data-grid .cell.read-only` rule (higher specificity than ours); every
+      // cell in this display-only sheet is read-only, so override with
+      // !important to keep the text normal black.
       '& .cell.read-only': {
-        color: 'text.primary',
+        color: (theme) => `${theme.palette.text.primary} !important`,
       },
       '& .cTitle': {
         fontWeight: 'bold',
@@ -124,6 +129,12 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
 
 interface ICell {
   value: any;
+  /**
+   * Optional on-screen label, shown instead of `value` when set. Lets the
+   * Reference column display the new-style row label while `value` keeps the
+   * original reference string used to build the saved resource topic.
+   */
+  display?: string;
   readOnly?: boolean;
   width?: number;
   className?: string;
@@ -174,6 +185,12 @@ export const ProjectResourceConfigure = (props: IProps) => {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const { getOrganizedBy } = useOrganizedBy();
+  const organizedBy = getOrganizedBy(true);
+  const reduxBookData = useSelector((state: IState) => state.books.bookData);
+  // Match useFullReference's book-data resolution so the display label uses the
+  // same source as the (unchanged) stored reference.
+  const labelBookData = props.bookData ?? reduxBookData;
   const {
     toolChanged,
     toolsChanged,
@@ -191,7 +208,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
 
-  const readOnlys = [false, true, false];
+  // The sheet is display-only: every cell is read-only (segment limits come
+  // from the audio player, not from typing here).
   // Description has no fixed width so it stretches to fill the full-width sheet.
   const widths = [150, 200, undefined];
   const cClass = ['lim', 'ref', 'des'];
@@ -224,7 +242,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
         ({
           value: v,
           width: widths[i],
-          readOnly: first || readOnlys[i],
+          readOnly: true,
           className: first ? 'cTitle' : cClass[i],
         }) as ICell
     );
@@ -259,7 +277,13 @@ export const ProjectResourceConfigure = (props: IProps) => {
         }
       });
       newInfo.forEach((v) => {
-        newData.push(rowCells(['', fullReference(v), '']));
+        // `value` keeps the original reference (feeds the saved topic, copy, and
+        // paste-matching); `display` shows the new-style row label on screen.
+        const cells = rowCells(['', fullReference(v), '']);
+        cells[ColName.Ref].display = v.passage
+          ? passageLabel(v.passage, labelBookData)
+          : sectionLabel(v.section, organizedBy);
+        newData.push(cells);
       });
       infoRef.current = newInfo;
       setData(newData);
@@ -589,7 +613,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setSuffix(e.target.value);
   };
 
-  const handleValueRenderer = (cell: ICell) => cell.value;
+  const handleValueRenderer = (cell: ICell) => cell.display ?? cell.value;
 
   return (
     <Box>

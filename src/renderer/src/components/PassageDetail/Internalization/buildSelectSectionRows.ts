@@ -1,9 +1,10 @@
-import { BookName, Passage, PassageD, SectionD } from '../../../model';
+import { BookName, PassageD, SectionD } from '../../../model';
 import { related } from '../../../crud/related';
 import { sectionCompare } from '../../../crud/section';
-import { passageCompare, passageRefText } from '../../../crud/passage';
+import { passageCompare } from '../../../crud/passage';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../../model/passageType';
+import { sectionLabel, passageLabel } from './internalizeLabels';
 
 export type SelectSectionRowKind = 'section' | 'passage';
 
@@ -15,10 +16,6 @@ export interface SelectSectionRow {
   parentId: string;
   kind: SelectSectionRowKind;
 }
-
-const getReference = (passage: Passage, bookData: BookName[] = []) => {
-  return passageRefText(passage, bookData);
-};
 
 export function buildSelectSectionRows(opts: {
   passages: PassageD[];
@@ -50,9 +47,7 @@ export function buildSelectSectionRows(opts: {
         // defined string — no `?? ''` fallback (which could seed duplicate
         // empty-string keys and break selection mapping).
         recId: section.id,
-        name:
-          section.attributes.name ||
-          `${organizedBy} ${section.attributes.sequencenum}`,
+        name: sectionLabel(section, organizedBy),
         passages: passageCount.toString(),
         parentId: '',
         kind: 'section',
@@ -64,7 +59,7 @@ export function buildSelectSectionRows(opts: {
         rowData.push({
           id: id++,
           recId: passage.id,
-          name: getReference(passage, bookData),
+          name: passageLabel(passage, bookData),
           passages: '',
           parentId: section.id,
           kind: 'passage',
