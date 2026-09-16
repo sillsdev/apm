@@ -21,6 +21,7 @@ import { MainAPI } from '../../model/main-api';
 import {
   loadPendingMediaUploads,
   removePendingMediaUpload,
+  subscribePendingMediaUploads,
   type PendingUploadRecord,
 } from '../../store/upload/pendingMediaUploads';
 import { formatUploadTerminalFailureMessage } from '../../store/upload/uploadTerminalMessages';
@@ -69,8 +70,14 @@ export function PendingUploadsDialog(props: IProps) {
     setItems(loadPendingMediaUploads());
   }, []);
 
+  // `nextUpload` drops the pending row *after* awaiting our `cb`, so the
+  // refresh we run from `finishOrContinue` still sees it. Stay subscribed
+  // while open so the list follows storage instead of going stale and
+  // offering Retry for an upload that already succeeded (TT-7363).
   useEffect(() => {
-    if (open) refresh();
+    if (!open) return;
+    refresh();
+    return subscribePendingMediaUploads(refresh);
   }, [open, refresh]);
 
   const showNoConnectionMessage = useCallback(() => {

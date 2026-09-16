@@ -330,6 +330,16 @@ export const DiscussionCard = (props: IProps) => {
       await saveMyComment();
     }
   };
+  /**
+   * A brand-new discussion only gets created in `afterUploadCb`, so an audio
+   * comment recorded while *adding* a discussion used to be staged with no
+   * `discussionId` — Retry then had nowhere to put it (TT-7363). Creating the
+   * discussion first (useMediaUpload awaits this before reading
+   * `pendingRestore`) means the queued row can always name its discussion.
+   */
+  const ensureDiscussionSaved = async () => {
+    if (!discussion.id && mediafileId) await saveDiscussion();
+  };
   const pendingRestore = () =>
     discussion.id
       ? {
@@ -1037,6 +1047,7 @@ export const DiscussionCard = (props: IProps) => {
                     onTextChange={handleTextChange}
                     cancelOnlyIfChanged={true}
                     pendingRestore={pendingRestore}
+                    beforeUpload={ensureDiscussionSaved}
                   />
                 )}
                 <Box sx={{ display: 'flex', flexDirection: 'row' }}>
