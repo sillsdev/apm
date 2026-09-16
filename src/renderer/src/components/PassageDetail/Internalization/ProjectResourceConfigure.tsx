@@ -565,8 +565,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
       />
-      <StyledPaper id="proj-res-sheet" style={heightStyle}>
-        <StyledTable id="proj-res-sheet">
+      <StyledPaper style={heightStyle}>
+        <StyledTable>
           <Box data-testid="proj-res-sheet">
             <DataSheet
               data={data}
