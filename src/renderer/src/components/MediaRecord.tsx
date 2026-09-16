@@ -15,7 +15,6 @@ import {
   loadBlobAsync,
   logError,
   Severity,
-  useCheckOnline,
   useMobile,
   waitForIt,
 } from '../utils';
@@ -265,7 +264,6 @@ function MediaRecord(props: IProps) {
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
-  const checkOnline = useCheckOnline('MediaRecord');
   const [converting, setConverting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const {
