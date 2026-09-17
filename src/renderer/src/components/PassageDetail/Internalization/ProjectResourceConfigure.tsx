@@ -517,11 +517,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   const handleCellsChanged = (changes: Array<ICellChange>) => {
+    if (changes.length === 0) return;
     const newData = dataRef.current.map((r) => r);
     changes.forEach((c) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
+    // Editing a Description marks the wizard dirty so Save gating and the
+    // discard-on-close prompt work (same tracking handleSegment uses).
+    if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
   const handleSegment = (segments: string, init: boolean) => {
