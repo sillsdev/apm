@@ -8,11 +8,16 @@ export const config: JestConfigWithTsJest = {
   // Show verbose output to see which test is running
   // verbose: process.env.CI ? true : false,
   collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.pacttest.ts', // Exclude pacttest files
+    // `*.ts` does NOT match `.tsx`, so this has to spell both out — otherwise
+    // every component in the app is silently absent from the report.
+    'src/**/*.ts?(x)',
+    '!src/**/*.pacttest.ts?(x)', // Exclude pacttest files
+    '!**/*.test.ts?(x)', // Exclude the jest tests themselves
+    '!**/*.cy.ts?(x)', // Exclude cypress component specs
+    '!**/*.d.ts', // Exclude ambient declarations
     '!**/test-helpers/**', // Exclude test helpers
     '!**/*.json',
-    '!?(**)/?(*.|*-)types.ts',
+    '!?(**)/?(*.|*-)types.ts?(x)',
     '!**/models/*',
     '!**/__snapshots__/*',
     '!**/scripts/*',
