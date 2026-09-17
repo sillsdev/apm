@@ -7,12 +7,10 @@ import {
   type CSSProperties,
   type MutableRefObject,
 } from 'react';
-import { Badge, Box, ButtonGroup, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledTextAreaAutosize } from '../../../control/WebFontStyles';
-import { Button, LightTooltip } from '../../../control';
-import SettingsIcon from '@mui/icons-material/Settings';
-import TranscriptionLogo from '../../../control/TranscriptionLogo';
+import { Button } from '../../../control';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
@@ -147,12 +145,11 @@ export default function BoldClauseTranscriptionEditor({
   const [getName] = useLocLangName();
   const { currentstep } = usePassageDetailContext();
   const { settings: stepSettings } = useStepTool(currentstep);
-  const { asrSettings, asrIsoReady, needsSisterLanguage } =
-    useBoldClauseTranscriptionAsrSettings(
-      transcriptionConfig.upstreamTool,
-      transcriptionConfig.defaultArtifactSlug,
-      stepSettings
-    );
+  const { asrSettings } = useBoldClauseTranscriptionAsrSettings(
+    transcriptionConfig.upstreamTool,
+    transcriptionConfig.defaultArtifactSlug,
+    stepSettings
+  );
   const asrTip = useMemo(() => {
     const step = parseStepSettings(stepSettings);
     const primary = parseStepLanguageField(step.language);
@@ -198,11 +195,6 @@ export default function BoldClauseTranscriptionEditor({
     },
     [onTextChange]
   );
-
-  const noLanguageMessage =
-    transcriptionConfig.stringsLayout === 'carefulTranscription'
-      ? (t as ICarefulTranscriptionStrings).noRecordingLanguage
-      : (t as ILwcTranscriptionStrings).noLwcLanguage;
 
   const { flushSave } = useTranscriptionAutosave({
     toolId: transcriptionConfig.toolId,
@@ -286,7 +278,6 @@ export default function BoldClauseTranscriptionEditor({
   );
 
   const hasText = text.trim().length > 0;
-  const needsLanguagePicker = !asrIsoReady || needsSisterLanguage();
   const runAsrDisabled =
     navigationDisabled || hasText || !features?.aiTranscribe || offline;
 
@@ -330,28 +321,9 @@ export default function BoldClauseTranscriptionEditor({
         showMessage(ts.mustBeOnline);
         return;
       }
-      if (!asrIsoReady) {
-        showMessage(noLanguageMessage);
-        openAsrLanguageSettings();
-        return;
-      }
-      if (needsSisterLanguage()) {
-        openAsrLanguageSettings();
-        return;
-      }
-      startAsr(asrSettings);
+      openAsrLanguageSettings();
     });
-  }, [
-    checkOnline,
-    showMessage,
-    ts.mustBeOnline,
-    asrIsoReady,
-    noLanguageMessage,
-    openAsrLanguageSettings,
-    needsSisterLanguage,
-    startAsr,
-    asrSettings,
-  ]);
+  }, [checkOnline, showMessage, ts.mustBeOnline, openAsrLanguageSettings]);
 
   const handleAsrResult = useCallback(
     (transcription: string) => {
@@ -379,41 +351,14 @@ export default function BoldClauseTranscriptionEditor({
       <Stack spacing={1} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
         {features?.aiTranscribe && !offline && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <LightTooltip
-              title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
+            <Button
+              id={`${idPrefix}-asr`}
+              title={asrTip}
+              disabled={runAsrDisabled}
+              onClick={handleAutoTranslation}
             >
-              <span>
-                <ButtonGroup
-                  variant="contained"
-                  color="inherit"
-                  aria-label="Button group with a nested menu"
-                >
-                  <Button
-                    id={`${idPrefix}-asr`}
-                    onClick={handleAutoTranslation}
-                    disabled={runAsrDisabled}
-                  >
-                    <TranscriptionLogo
-                      disabled={runAsrDisabled}
-                      sx={{ height: 18, width: 18, mr: 1 }}
-                    />
-                    {tr.aiAutomaticTranscription}
-                  </Button>
-                  {needsLanguagePicker && (
-                    <Button
-                      disableTypography
-                      size="small"
-                      onClick={openAsrLanguageSettings}
-                    >
-                      <SettingsIcon
-                        fontSize="small"
-                        sx={{ color: 'secondary.light', opacity: 0.7 }}
-                      />
-                    </Button>
-                  )}
-                </ButtonGroup>
-              </span>
-            </LightTooltip>
+              Auto Transcription...
+            </Button>
           </Box>
         )}
         <StyledTextAreaAutosize
