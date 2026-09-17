@@ -143,7 +143,6 @@ export default function SelectAsrLanguage({
           )}
         </Box>
         <Box sx={rowSx}>
-          <Button onClick={() => onClose(true)}>{ts.cancel}</Button>
           <Button color="primary" disabled={incomplete} onClick={handleRun}>
             {t.run}
           </Button>
