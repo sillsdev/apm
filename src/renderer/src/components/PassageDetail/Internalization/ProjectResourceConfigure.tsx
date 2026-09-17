@@ -609,13 +609,16 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
-  // it recomputes on each render and follows a runtime language change.
-  const handleValueRenderer = (cell: ICell) =>
-    cell.info
-      ? cell.info.passage
-        ? passageLabel(cell.info.passage, labelBookData)
-        : sectionLabel(cell.info.section, organizedBy)
-      : cell.value;
+  // it recomputes on each render and follows a runtime language change. Fall
+  // back to the stored reference text if the label can't be resolved, so a row
+  // with missing info never shows a blank/"undefined" cell.
+  const handleValueRenderer = (cell: ICell) => {
+    if (!cell.info) return cell.value;
+    const label = cell.info.passage
+      ? passageLabel(cell.info.passage, labelBookData)
+      : sectionLabel(cell.info.section, organizedBy);
+    return label || cell.value;
+  };
 
   return (
     <Box
