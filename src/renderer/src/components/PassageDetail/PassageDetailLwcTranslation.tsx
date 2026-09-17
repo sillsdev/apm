@@ -486,7 +486,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   const lwcPendingRestore = useCallback(
     () =>
       mediafileId
-        ? ({ kind: 'sourceMedia' as const, sourceMediaId: mediafileId })
+        ? { kind: 'sourceMedia' as const, sourceMediaId: mediafileId }
         : undefined,
     [mediafileId]
   );

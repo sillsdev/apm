@@ -1,4 +1,10 @@
-import { Box, CircularProgress, SxProps, Theme, Typography } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  SxProps,
+  Theme,
+  Typography,
+} from '@mui/material';
 
 interface Props {
   completedCount: number;

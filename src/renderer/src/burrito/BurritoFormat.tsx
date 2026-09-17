@@ -44,8 +44,7 @@ export function BurritoFormat() {
   React.useEffect(() => {
     if (!teamId) return;
     const raw = getOrgDefault(burritoFormat, teamId) as
-      | BurritoFormatParams
-      | undefined;
+      BurritoFormatParams | undefined;
     setConvertToMp3(raw?.convertToMp3 === true);
     setTextOutputFormat(parseBurritoTextOutputFormat(raw?.textOutputFormat));
     // eslint-disable-next-line react-hooks/exhaustive-deps

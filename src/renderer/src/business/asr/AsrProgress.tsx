@@ -154,8 +154,7 @@ export default function AsrProgress({
 
   const clearTrTasks = async () => {
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-      | MediaFileD
-      | undefined;
+      MediaFileD | undefined;
     if (!mediaRec) return;
     const segments = updateSegments(
       NamedRegions.TRTask,

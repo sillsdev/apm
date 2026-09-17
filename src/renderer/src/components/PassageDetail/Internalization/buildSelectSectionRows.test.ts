@@ -4,7 +4,11 @@ import {
 } from './buildSelectSectionRows';
 import { PassageD, SectionD } from '../../../model';
 
-const section = (id: string, sequencenum: number, planId = 'plan-1'): SectionD =>
+const section = (
+  id: string,
+  sequencenum: number,
+  planId = 'plan-1'
+): SectionD =>
   ({
     type: 'section',
     id,
@@ -61,20 +65,20 @@ describe('buildSelectSectionRows', () => {
 
 describe('selectSectionRowType', () => {
   it('returns section for flat section rows', () => {
-    expect(
-      selectSectionRowType({ parentId: '', passages: '1' }, true)
-    ).toBe('section');
+    expect(selectSectionRowType({ parentId: '', passages: '1' }, true)).toBe(
+      'section'
+    );
   });
 
   it('returns section for hierarchical multi-passage section rows', () => {
-    expect(
-      selectSectionRowType({ parentId: '', passages: '3' }, false)
-    ).toBe('section');
+    expect(selectSectionRowType({ parentId: '', passages: '3' }, false)).toBe(
+      'section'
+    );
   });
 
   it('returns passage for child rows', () => {
-    expect(
-      selectSectionRowType({ parentId: 's1', passages: '' }, false)
-    ).toBe('passage');
+    expect(selectSectionRowType({ parentId: 's1', passages: '' }, false)).toBe(
+      'passage'
+    );
   });
 });

@@ -57,8 +57,7 @@ export async function preprocessTextTranslationBurritoToUsfm(
   if (!wrapperPath || !(await ipc.exists(wrapperPath))) return;
 
   const wrapperRaw = (await ipc.read(wrapperPath, { encoding: 'utf-8' })) as
-    | string
-    | Uint8Array;
+    string | Uint8Array;
   const wrapper = JSON.parse(String(wrapperRaw)) as any;
   const burritos: any[] = wrapper?.contents?.burritos ?? [];
 
@@ -73,8 +72,7 @@ export async function preprocessTextTranslationBurritoToUsfm(
     );
     if (!metaPath || !(await ipc.exists(metaPath))) continue;
     const metaRaw = (await ipc.read(metaPath, { encoding: 'utf-8' })) as
-      | string
-      | Uint8Array;
+      string | Uint8Array;
     const meta = JSON.parse(String(metaRaw)) as any;
 
     const flavorName = meta?.type?.flavorType?.flavor?.name ?? null;
@@ -91,8 +89,7 @@ export async function preprocessTextTranslationBurritoToUsfm(
       if (!absPath || !(await ipc.exists(absPath))) continue;
 
       const raw = (await ipc.read(absPath, { encoding: 'utf-8' })) as
-        | string
-        | Uint8Array;
+        string | Uint8Array;
       const usfm = await normalizeTextToUsfm(String(raw), format);
       if (!usfm.trim()) continue;
 

@@ -60,8 +60,7 @@ interface IProps {
 }
 
 type TranscriptionStrings =
-  | ILwcTranscriptionStrings
-  | ICarefulTranscriptionStrings;
+  ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
 
 function useTranscriptionStrings(
   layout: BoldClauseTranscriptionConfig['stringsLayout'] | undefined

@@ -144,8 +144,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
     let projSectionArr: undefined | SectionArray = [];
     if (projRec) {
       projSectionArr = getProjectDefault(projDefSectionMap, projRec) as
-        | SectionArray
-        | undefined;
+        SectionArray | undefined;
     }
     return projSectionArr ?? [];
   };
@@ -248,12 +247,10 @@ export const ProjectDownloadAlert = (props: IProps) => {
           } else {
             const passId = related(m.media, 'passage') as string;
             const passRec = findRecord(memory, 'passage', passId) as
-              | PassageD
-              | undefined;
+              PassageD | undefined;
             const secId = related(passRec, 'section') as string;
             const section = findRecord(memory, 'section', secId) as
-              | SectionD
-              | undefined;
+              SectionD | undefined;
             const seq = section?.attributes?.sequencenum || 0;
             if (
               seq >= filterState.minSection &&
@@ -599,8 +596,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
                       memory?.keyMap as RecordKeyMap
                     ) || id;
                   const mediaFile = findRecord(memory, 'mediafile', localid) as
-                    | MediaFileD
-                    | undefined;
+                    MediaFileD | undefined;
                   const fileName = mediaFileName(mediaFile) || id;
                   return (
                     <ListItem key={id}>

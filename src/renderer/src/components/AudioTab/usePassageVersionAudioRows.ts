@@ -76,8 +76,7 @@ export function usePassageVersionAudioRows(passId: string, playItem: string) {
     if (projRec) {
       setShared(projRec?.attributes?.isPublic || false);
       projSectionArr = getProjectDefault(projDefSectionMap, projRec) as
-        | SectionArray
-        | undefined;
+        SectionArray | undefined;
     }
     setSectionArr(projSectionArr || []);
     setSectionMap(new Map(projSectionArr || []));

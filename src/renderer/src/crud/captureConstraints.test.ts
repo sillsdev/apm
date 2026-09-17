@@ -514,8 +514,7 @@ describe('listenForCaptureDeviceLoss', () => {
       const onDeviceChange = (
         navigator.mediaDevices.addEventListener as jest.Mock
       ).mock.calls.find((call) => call[0] === 'devicechange')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       onDeviceChange?.();
       await Promise.resolve();
       expect(onLost).toHaveBeenCalledTimes(1);
@@ -553,8 +552,7 @@ describe('listenForCaptureDeviceLoss', () => {
       const onDeviceChange = (
         navigator.mediaDevices.addEventListener as jest.Mock
       ).mock.calls.find((call) => call[0] === 'devicechange')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       onDeviceChange?.();
       await Promise.resolve();
       await Promise.resolve();

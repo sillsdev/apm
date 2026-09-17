@@ -53,7 +53,12 @@ describe('MarkVersesTable', () => {
       ],
       [
         { value: '', className: 'lim' },
-        { value: '2:11', className: 'ref', readOnly: true, status: RefStatus.Valid },
+        {
+          value: '2:11',
+          className: 'ref',
+          readOnly: true,
+          status: RefStatus.Valid,
+        },
       ],
     ];
     cy.mount(

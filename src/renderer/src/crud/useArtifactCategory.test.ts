@@ -56,7 +56,9 @@ const mockMemory = {
           const list = categoryRecords.filter((r) => r.type === type);
           return Object.assign([...list], {
             filter: (f: { attribute: string; value: unknown }) =>
-              list.filter((r) => (r.attributes as any)?.[f.attribute] === f.value),
+              list.filter(
+                (r) => (r.attributes as any)?.[f.attribute] === f.value
+              ),
           });
         },
         findRecord: ({ type, id }: { type: string; id: string }) =>
@@ -71,7 +73,9 @@ const mockMemory = {
         const list = categoryRecords.filter((r) => r.type === type);
         return Object.assign([...list], {
           filter: (f: { attribute: string; value: unknown }) =>
-            list.filter((r) => (r.attributes as any)?.[f.attribute] === f.value),
+            list.filter(
+              (r) => (r.attributes as any)?.[f.attribute] === f.value
+            ),
         });
       },
     };
@@ -177,7 +181,8 @@ const settleSoon = <T>(p: Promise<T>, ms = 100): Promise<T> =>
     p,
     new Promise<T>((_, reject) =>
       setTimeout(
-        () => reject(new Error(`timed out after ${ms}ms waiting for categories`)),
+        () =>
+          reject(new Error(`timed out after ${ms}ms waiting for categories`)),
         ms
       )
     ),

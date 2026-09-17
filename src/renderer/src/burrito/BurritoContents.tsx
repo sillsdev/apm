@@ -31,8 +31,7 @@ export function BurritoContents() {
     if (teamId) {
       if (teamId) {
         const curContents = getOrgDefault(burritoContents, teamId) as
-          | string[]
-          | undefined;
+          string[] | undefined;
         if (Array.isArray(curContents)) {
           setChecked(curContents);
         }

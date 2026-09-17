@@ -192,10 +192,7 @@ export function ResourceData(props: IProps) {
                 <FormControlLabel
                   value={'general'}
                   control={<Radio />}
-                  label={t.uploadProject.replace(
-                    '{0}',
-                    getOrganizedBy(false)
-                  )}
+                  label={t.uploadProject.replace('{0}', getOrganizedBy(false))}
                 />
               )}
           </RadioGroup>

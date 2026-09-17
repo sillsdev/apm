@@ -1,7 +1,7 @@
 export enum DialogMode {
-  'view',
-  'add',
-  'edit',
+  view,
+  add,
+  edit,
 }
 
 export default DialogMode;

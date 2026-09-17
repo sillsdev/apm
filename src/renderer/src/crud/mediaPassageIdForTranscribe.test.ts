@@ -117,9 +117,9 @@ describe('filterMediaForPassage (TT-5873)', () => {
     ];
     const memory = createMockMemory([source]);
     const passageId = mediaPassageIdForTranscribe(linking, memory);
-    expect(filterMediaForPassage(mediaFiles, passageId).map((m) => m.id)).toEqual(
-      ['pbt-1']
-    );
+    expect(
+      filterMediaForPassage(mediaFiles, passageId).map((m) => m.id)
+    ).toEqual(['pbt-1']);
   });
 });
 

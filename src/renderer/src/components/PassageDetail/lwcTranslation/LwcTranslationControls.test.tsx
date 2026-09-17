@@ -44,8 +44,7 @@ jest.mock('react-redux', () => ({
     nextClause: 'Next Clause',
     speaker: 'Speaker',
     clearRecording: 'Clear recording',
-    waitForPlayback:
-      'Recording controls will appear after playback finishes.',
+    waitForPlayback: 'Recording controls will appear after playback finishes.',
   }),
   shallowEqual: jest.fn(),
 }));

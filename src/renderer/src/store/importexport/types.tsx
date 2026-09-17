@@ -61,10 +61,7 @@ interface ExportCompleteMsg {
 }
 
 export type ExportMsgs =
-  | ExportPendingMsg
-  | ExportSucceededMsg
-  | ExportFailedMsg
-  | ExportCompleteMsg;
+  ExportPendingMsg | ExportSucceededMsg | ExportFailedMsg | ExportCompleteMsg;
 
 interface ImportPendingMsg {
   type: typeof IMPORT_PENDING;
@@ -86,10 +83,7 @@ interface ImportCompleteMsg {
 }
 
 export type ImportMsgs =
-  | ImportPendingMsg
-  | ImportSucceededMsg
-  | ImportFailedMsg
-  | ImportCompleteMsg;
+  ImportPendingMsg | ImportSucceededMsg | ImportFailedMsg | ImportCompleteMsg;
 
 interface CopyPendingMsg {
   type: typeof COPY_PENDING;
@@ -111,7 +105,4 @@ interface CopyCompleteMsg {
 }
 
 export type CopyMsgs =
-  | CopyPendingMsg
-  | CopySucceededMsg
-  | CopyFailedMsg
-  | CopyCompleteMsg;
+  CopyPendingMsg | CopySucceededMsg | CopyFailedMsg | CopyCompleteMsg;

@@ -43,7 +43,9 @@ const createMockMemory = (records: RecordsByKey = {}): Memory => {
   return {
     cache: {
       query: runQuery,
-      liveQuery: (queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown) => ({
+      liveQuery: (
+        queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
+      ) => ({
         subscribe: () => () => {},
         query: () => runQuery(queryFn),
       }),
@@ -443,7 +445,9 @@ describe('CategoryListEdit (TT-7627)', () => {
   it('allows renaming to a deleted category name', () => {
     mountList();
 
-    cy.get('#cat-delete-cat2', { timeout: 10000 }).should('not.be.disabled').click();
+    cy.get('#cat-delete-cat2', { timeout: 10000 })
+      .should('not.be.disabled')
+      .click();
     cy.get('#cat2adornment').should('not.exist');
 
     cy.get('#cat-edit-cat1').click();

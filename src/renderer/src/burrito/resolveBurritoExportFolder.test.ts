@@ -58,12 +58,12 @@ describe('resolveBurritoExportFolder — book rows', () => {
       computeSectionRef: () => '',
       computeMovementRef: () => '',
     };
-    expect(resolveBurritoExportFolder({ ...input, section: book }).scopeRef).toBe(
-      'BOOK'
-    );
-    expect(resolveBurritoExportFolder({ ...input, section: alt }).scopeRef).toBe(
-      'ALTBK'
-    );
+    expect(
+      resolveBurritoExportFolder({ ...input, section: book }).scopeRef
+    ).toBe('BOOK');
+    expect(
+      resolveBurritoExportFolder({ ...input, section: alt }).scopeRef
+    ).toBe('ALTBK');
   });
 });
 

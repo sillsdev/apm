@@ -97,8 +97,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
     if (!mounted.current) {
       let sortOrder =
         (getOrgDefault(orgDefaultProjSort, teamId ?? personalTeam) as
-          | SortArr
-          | undefined) || [];
+          SortArr | undefined) || [];
       if (!Array.isArray(sortOrder)) sortOrder = [];
       defSort.current = sortOrder.map((i) => [i[0], i[1]]);
       const projects = teamId ? teamProjects(teamId) : personalProjects;

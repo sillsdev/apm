@@ -47,7 +47,12 @@ import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
 import Confirm from '../AlertDialog';
 import { hasPendingUploadForPassage } from '../../store/upload/pendingMediaUploads';
-import { IMediaTabStrings, ISharedStrings, IState, MediaFileD } from '../../model';
+import {
+  IMediaTabStrings,
+  ISharedStrings,
+  IState,
+  MediaFileD,
+} from '../../model';
 
 interface IProps {
   ready?: () => boolean;
@@ -169,8 +174,7 @@ export function PassageDetailRecord(props: IProps) {
 
   const performedByFromMedia = useMemo(() => {
     const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
-      | MediaFileD
-      | undefined;
+      MediaFileD | undefined;
     return mediaRec?.attributes?.performedBy;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memory, mediafileId, mediafiles]);

@@ -1536,8 +1536,7 @@ export const importProjectToElectron =
       type: IMPORT_PENDING,
     });
     const result = (await ipc?.readDir(filepath)) as
-      | string[]
-      | NodeJS.ErrnoException;
+      string[] | NodeJS.ErrnoException;
     const err = !Array.isArray(result) ? result : undefined;
     if (err) {
       dispatch({

@@ -339,7 +339,8 @@ export const DiscussionCard = (props: IProps) => {
           visible: computeCommentVisibleString({
             isCIT: hasPermission(PermissionName.CIT),
             isMentor: hasPermission(PermissionName.Mentor),
-            authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
+            authorId:
+              remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
           }),
         }
       : undefined;
