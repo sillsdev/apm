@@ -124,23 +124,25 @@ export default function SelectAsrLanguage({ team, onRun }: ISelectAsrLanguage) {
           error={error}
         />
       )}
-      <Box sx={spreadSx}>
-        <Box sx={rowSx}>
-          {showTeamDefault && (
-            <Button
-              disabled={incomplete || teamDefaultSaved}
-              onClick={handleTeamDefault}
-            >
-              {ts.teamDefault}
+      {!loading && (
+        <Box sx={spreadSx}>
+          <Box sx={rowSx}>
+            {showTeamDefault && (
+              <Button
+                disabled={incomplete || teamDefaultSaved}
+                onClick={handleTeamDefault}
+              >
+                {ts.teamDefault}
+              </Button>
+            )}
+          </Box>
+          <Box sx={rowSx}>
+            <Button color="primary" disabled={incomplete} onClick={handleRun}>
+              {t.run}
             </Button>
-          )}
+          </Box>
         </Box>
-        <Box sx={rowSx}>
-          <Button color="primary" disabled={incomplete} onClick={handleRun}>
-            {t.run}
-          </Button>
-        </Box>
-      </Box>
+      )}
     </Box>
   );
 }
