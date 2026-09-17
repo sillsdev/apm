@@ -2162,6 +2162,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "aiFailed": string;
     "aiGiveUp": string;
     "aiInProgress": string;
+    "autoTranscription": string;
     "beginVoiceConvert": string;
     "backTip": string;
     "convertVoice": string;
