@@ -353,7 +353,7 @@ export default function BoldClauseTranscriptionEditor({
               disabled={runAsrDisabled}
               onClick={handleAutoTranslation}
             >
-              Auto Transcription...
+              {tPlayer.autoTranscription}
             </Button>
           </Box>
         )}

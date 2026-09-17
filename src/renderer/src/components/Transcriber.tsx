@@ -1418,7 +1418,7 @@ export function Transcriber(props: IProps) {
                           disabled={role !== 'transcriber'}
                           onClick={handleTranscribe}
                         >
-                          Auto Transcription...
+                          {tPlayer.autoTranscription}
                         </Button>
                       )}
                     </>

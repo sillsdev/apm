@@ -12901,6 +12901,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.autoTranscription">
+            <source>Auto Transcription...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Transcriber.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.beginVoiceConvert">
             <source>Beginning voice conversion...</source>
             <target/>
@@ -13105,7 +13112,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.recognizeSpeechSettings">
-            <source>Auto Transcription Settings</source>
+            <source>Auto Transcription</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailPlayer.tsx</context>
