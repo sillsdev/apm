@@ -9,6 +9,7 @@
     "stamp": "node env-config/writeDate.cjs",
     "logoassets": "node env-config/genLogoAssets.cjs",
     "format": "prettier --config .prettierrc.yaml --write .",
+    "format:check": "prettier --config .prettierrc.yaml --check .",
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",

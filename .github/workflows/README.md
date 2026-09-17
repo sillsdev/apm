@@ -28,16 +28,17 @@ The workflow runs on:
 3. Install Node.js 22
 4. Clean up any existing node processes
 5. Install dependencies (`npm ci` in `src/renderer`)
-6. Stamp build with date and time
-7. Create `.env.local` file with environment variables
-8. Create `auth0-variables.json` file
-9. Create `index.html` using template
-10. Clean build artifacts
-11. Run unit tests
-12. Validate source (format, lint, typecheck, build)
-13. Build the application
-14. Deploy to S3 bucket `app-dev.audioprojectmanager.org`
-15. Clean up processes
+6. Format check
+7. Stamp build with date and time
+8. Create `.env.local` file with environment variables
+9. Create `auth0-variables.json` file
+10. Create `index.html` using template
+11. Clean build artifacts
+12. Run unit tests
+13. Validate source (format, lint, typecheck, build)
+14. Build the application
+15. Deploy to S3 bucket `app-dev.audioprojectmanager.org`
+16. Clean up processes
 
 ### Build Version
 
