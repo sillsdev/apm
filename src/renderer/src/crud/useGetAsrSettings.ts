@@ -261,6 +261,14 @@ export function useGetAsrSettings(team?: OrganizationD) {
   };
 
   /**
+   * The ASR settings currently saved as the org (team) default, or undefined
+   * when none are. Counterpart of {@link saveTeamAsrSettings}, so callers can
+   * tell whether the settings in hand differ from the saved team default.
+   */
+  const getTeamAsrSettings = (): IAsrState | undefined =>
+    normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
+
+  /**
    * Persist the chosen ASR settings as the org (team) default. Also sets the org
    * default language to the project's vernacular so the org default is fully
    * defined (e.g. when the org language was previously unset).
@@ -343,6 +351,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
     getCachedSisterRecommendations,
     saveSisterRecommendations,
     canSetTeamAsrDefault,
+    getTeamAsrSettings,
     saveTeamAsrSettings,
     saveProjectAsrSettings,
     saveTranscribeStepSettings,
