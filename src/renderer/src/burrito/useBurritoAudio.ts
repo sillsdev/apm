@@ -222,8 +222,7 @@ export const useBurritoAudio = (teamId: string) => {
           attr?.segments || '{}'
         );
         const segs = JSON.parse(regionstr ?? '{}')?.regions as
-          | IRegion[]
-          | undefined;
+          IRegion[] | undefined;
         segs?.forEach((s) => {
           alignmentRecords.push({
             references: [

@@ -74,8 +74,7 @@ function parseStepSettings(settings: unknown): TranscribeStepSettingsJson {
 }
 
 type TranscriptionStrings =
-  | ILwcTranscriptionStrings
-  | ICarefulTranscriptionStrings;
+  ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
 
 interface Props {
   width: number;
@@ -141,8 +140,7 @@ export default function BoldClauseTranscriptionEditor({
     useGetAsrSettings(team);
   const { getOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
-    | { aiTranscribe?: boolean }
-    | undefined;
+    { aiTranscribe?: boolean } | undefined;
   const { showMessage } = useSnackBar();
   const { isMobile } = useMobile();
   const checkOnline = useCheckOnline(tr.run);
@@ -232,8 +230,7 @@ export default function BoldClauseTranscriptionEditor({
   useEffect(() => {
     if (!project) return;
     const projRec = findRecord(memory, 'project', project) as
-      | Project
-      | undefined;
+      Project | undefined;
     if (!projRec) return;
     let cancelled = false;
 

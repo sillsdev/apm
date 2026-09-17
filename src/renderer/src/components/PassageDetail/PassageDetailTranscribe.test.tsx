@@ -18,7 +18,10 @@ const passageDetailCtx = {
   orgWorkflowSteps: [
     {
       id: 'step-transcribe',
-      attributes: { sequencenum: 1, tool: '{"tool":"transcribe","settings":{}}' },
+      attributes: {
+        sequencenum: 1,
+        tool: '{"tool":"transcribe","settings":{}}',
+      },
     },
   ],
   setStepComplete: jest.fn(),
@@ -30,7 +33,10 @@ const passageDetailCtx = {
   sharedResource: undefined as unknown,
 };
 
-jest.mock('../../context/usePassageDetailContext', () => () => passageDetailCtx);
+jest.mock(
+  '../../context/usePassageDetailContext',
+  () => () => passageDetailCtx
+);
 
 jest.mock('../../context/PassageDetailContext', () => ({
   PassageDetailContext: React.createContext({ setState: jest.fn() }),

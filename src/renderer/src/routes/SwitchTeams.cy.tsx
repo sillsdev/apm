@@ -493,44 +493,51 @@ describe('SwitchTeams add team dialog', { tags: '@smoke' }, () => {
   });
 });
 
-describe('SwitchTeams shared content creator dialog', { tags: '@smoke' }, () => {
-  const openDialog = () => {
-    mountSwitchTeams({ global: { offline: false }, sharedContentAdmin: true });
-    cy.get('#contentCreator').click();
-    cy.get('#bigDlg').should('contain', 'Add Shared Content Creator');
-  };
+describe(
+  'SwitchTeams shared content creator dialog',
+  { tags: '@smoke' },
+  () => {
+    const openDialog = () => {
+      mountSwitchTeams({
+        global: { offline: false },
+        sharedContentAdmin: true,
+      });
+      cy.get('#contentCreator').click();
+      cy.get('#bigDlg').should('contain', 'Add Shared Content Creator');
+    };
 
-  it('opens the dialog with an empty email field', () => {
-    openDialog();
+    it('opens the dialog with an empty email field', () => {
+      openDialog();
 
-    cy.get('#email').should('be.visible').and('have.value', '');
-  });
+      cy.get('#email').should('be.visible').and('have.value', '');
+    });
 
-  it('offers Save only once the email is valid', () => {
-    openDialog();
+    it('offers Save only once the email is valid', () => {
+      openDialog();
 
-    // onSave is undefined while the email is invalid, so BigDialog renders no Save
-    cy.contains('button', 'Save').should('not.exist');
+      // onSave is undefined while the email is invalid, so BigDialog renders no Save
+      cy.contains('button', 'Save').should('not.exist');
 
-    cy.get('#email').type('invalid-email');
-    cy.contains('button', 'Save').should('not.exist');
+      cy.get('#email').type('invalid-email');
+      cy.contains('button', 'Save').should('not.exist');
 
-    cy.get('#email').clear().type('Test@Example.com');
-    cy.get('#email').should('have.value', 'test@example.com'); // lowercased on change
-    cy.contains('button', 'Save').should('be.visible');
-  });
+      cy.get('#email').clear().type('Test@Example.com');
+      cy.get('#email').should('have.value', 'test@example.com'); // lowercased on change
+      cy.contains('button', 'Save').should('be.visible');
+    });
 
-  it('closes and clears the email when cancelled', () => {
-    openDialog();
+    it('closes and clears the email when cancelled', () => {
+      openDialog();
 
-    cy.get('#email').type('test@example.com');
-    cy.get('#bigCancel').click();
-    cy.get('#bigDlg').should('not.exist');
+      cy.get('#email').type('test@example.com');
+      cy.get('#bigCancel').click();
+      cy.get('#bigDlg').should('not.exist');
 
-    cy.get('#contentCreator').click();
-    cy.get('#email').should('have.value', '');
-  });
-});
+      cy.get('#contentCreator').click();
+      cy.get('#email').should('have.value', '');
+    });
+  }
+);
 
 describe('SwitchTeams import dialog', { tags: '@smoke' }, () => {
   it('opens the import dialog from the Import button', () => {

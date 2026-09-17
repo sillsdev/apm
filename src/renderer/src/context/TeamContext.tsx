@@ -386,8 +386,7 @@ const TeamProvider = (props: IProps) => {
         related(p, 'project')
       ) as ProjectD;
       const bookSort = getProjectDefault(projDefBook, projRec) as
-        | string
-        | undefined;
+        string | undefined;
       if (!/^[@AB]\d{2}$/.test(bookSort || '')) {
         const sectIds = sections
           .filter((s) => related(s, 'plan') === p.id)

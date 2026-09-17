@@ -112,8 +112,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const projectDiffersFromOrg = () => {
     if (!projectLang) return false;
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      | ILanguage
-      | undefined;
+      ILanguage | undefined;
     return projectLang.bcp47 !== (orgLang?.bcp47 ?? 'und');
   };
 
@@ -140,8 +139,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
    * Returns undefined when no usable cache exists.
    */
   const getCachedSisterRecommendations = ():
-    | IAsrLanguageSuggestion[]
-    | undefined => {
+    IAsrLanguageSuggestion[] | undefined => {
     if (projectDiffersFromOrg()) {
       const cached = getProjectDefault(projDefSisterRecommendations) as
         | { forLanguage?: string; suggestions?: IAsrLanguageSuggestion[] }
@@ -257,8 +255,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const canSetTeamAsrDefault = (): boolean => {
     if (!canSetOrgDefault) return false;
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      | ILanguage
-      | undefined;
+      ILanguage | undefined;
     const orgBcp = orgLang?.bcp47 ?? 'und';
     return !isLangSet(orgBcp) || orgBcp === (projectLang?.bcp47 ?? 'und');
   };

@@ -35,11 +35,7 @@ interface IProps {
 }
 
 type FilenameFormat =
-  | 'bookChapterPassage'
-  | 'reference'
-  | 'sectionPassage'
-  | 'title'
-  | 'custom';
+  'bookChapterPassage' | 'reference' | 'sectionPassage' | 'title' | 'custom';
 
 export const RecordStepSettings = ({
   toolSettings,

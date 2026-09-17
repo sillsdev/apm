@@ -297,8 +297,7 @@ export const usePlanSheetFill = ({
 
   const schemeName = (schemeId: string) => {
     const schemeRec = findRecord(memory, 'organizationscheme', schemeId) as
-      | OrganizationSchemeD
-      | undefined;
+      OrganizationSchemeD | undefined;
     return schemeRec?.attributes?.name;
   };
 

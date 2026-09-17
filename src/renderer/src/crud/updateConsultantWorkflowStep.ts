@@ -14,8 +14,7 @@ async function getSteps(
   memory: MemorySource
 ) {
   const steps = (await memory.query((q) => q.findRecords(table))) as
-    | OrgWorkflowStepD[]
-    | WorkflowStepD[];
+    OrgWorkflowStepD[] | WorkflowStepD[];
   return steps.filter(
     (s) =>
       Boolean(remoteId(table, s.id, memory?.keyMap as RecordKeyMap)) ===

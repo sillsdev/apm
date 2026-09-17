@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { navigationCancelled, useMyNavigate } from './useMyNavigate';
-import { describe, it, expect, jest, beforeEach } from '@jest/globals'
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
 const mockNavigate = jest.fn();
 const mockCheckHome = jest.fn();

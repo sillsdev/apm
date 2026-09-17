@@ -8,10 +8,10 @@ import { act } from 'react';
 import { HiddenPlayerProps } from './HiddenPlayer';
 
 enum MediaSt {
-  'IDLE',
-  'PENDING',
-  'FETCHED',
-  'ERROR',
+  IDLE,
+  PENDING,
+  FETCHED,
+  ERROR,
 }
 interface IMediaState {
   status: MediaSt;
@@ -23,11 +23,11 @@ interface IMediaState {
 }
 
 enum BlobStatus {
-  'IDLE',
-  'PENDING',
-  'RESET',
-  'FETCHED',
-  'ERROR',
+  IDLE,
+  PENDING,
+  RESET,
+  FETCHED,
+  ERROR,
 }
 
 interface IBlobState extends IMediaState {

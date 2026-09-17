@@ -215,11 +215,13 @@ const createMockRow = (overrides: Partial<ISheet> = {}): ISheet => ({
 **IMPORTANT**: Tests for the renderer application must be run from the `src\renderer` directory.
 
 **PowerShell Syntax** (Windows):
+
 ```powershell
 cd src\renderer; npm test -- MetadataView
 ```
 
 **Bash Syntax** (Linux/Mac):
+
 ```bash
 cd src/renderer
 npm test -- yourHookName.test.tsx
@@ -292,9 +294,7 @@ const { useGlobal } = require('../../context/useGlobal');
 const { someFunction } = require('../../crud');
 
 describe('useExampleHook', () => {
-  const mockData = {
-    /* mock setup */
-  };
+  const mockData = {/* mock setup */};
 
   const createMockInput = (overrides = {}): InputType => ({
     // default properties

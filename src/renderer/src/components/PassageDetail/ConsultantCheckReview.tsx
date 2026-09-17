@@ -139,10 +139,7 @@ export default function ConsultantCheckReview({
       .filter((r) => {
         if (r.artifactType !== artifactType) return false;
         if (related(r.mediafile, 'sourceMedia') !== mediaId) return false;
-        if (
-          item === ArtifactTypeSlug.PhraseBackTranslation &&
-          selectedLang
-        ) {
+        if (item === ArtifactTypeSlug.PhraseBackTranslation && selectedLang) {
           const bcp = parseStepLanguageField(
             r.mediafile.attributes?.languagebcp47
           ).bcp47;
@@ -184,7 +181,14 @@ export default function ConsultantCheckReview({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item, selectedLang, rowData, mediafileId, artifactType, langOptions.length]);
+  }, [
+    item,
+    selectedLang,
+    rowData,
+    mediafileId,
+    artifactType,
+    langOptions.length,
+  ]);
 
   const hasTranscription = allMedia.some((m) => m.attributes.transcription);
 

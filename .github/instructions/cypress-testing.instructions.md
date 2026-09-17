@@ -406,12 +406,7 @@ const mountComponent = (props, contextOverrides = {}) => {
 };
 
 // Usage in tests
-mountComponent(
-  {
-    /* props */
-  },
-  { scripture: false }
-); // Override context state
+mountComponent({/* props */}, { scripture: false }); // Override context state
 ```
 
 **Key Context Patterns**:
@@ -615,29 +610,19 @@ import localizationReducer from '../../store/localization/reducers';
 
 describe('ComponentName', () => {
   // Mock setup
-  const createMockLiveQuery = () => ({
-    /* ... */
-  });
-  const mockMemory = {
-    /* ... */
-  };
-  const mockCoordinator = {
-    /* ... */
-  };
+  const createMockLiveQuery = () => ({/* ... */});
+  const mockMemory = {/* ... */};
+  const mockCoordinator = {/* ... */};
   const mockStore = createStore(/* ... */);
 
   // Factory functions
-  const createMockData = (/* ... */) => ({
-    /* ... */
-  });
+  const createMockData = (/* ... */) => ({/* ... */});
 
   // Helper functions
   const mountComponent = (props, mockData = []) => {
     /* ... */
   };
-  const createInitialState = (overrides = {}) => ({
-    /* ... */
-  });
+  const createInitialState = (overrides = {}) => ({/* ... */});
 
   // Test categories
   describe('Core Functionality', () => {

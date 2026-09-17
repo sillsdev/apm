@@ -25,7 +25,6 @@ jest.mock('../crud', () => ({
   related: () => 'org1',
 }));
 
-
 jest.mock('react-redux', () => ({
   useSelector: () => ({
     selectSpeaker: 'Select Speaker',

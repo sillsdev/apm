@@ -20,8 +20,7 @@ interface PlayerLogicProps {
   playing?: boolean | undefined;
   setPlaying?: ((playing: boolean) => void) | undefined;
   setCurrentSegment?:
-    | ((segment: IRegion | undefined, index: number) => void)
-    | undefined;
+    ((segment: IRegion | undefined, index: number) => void) | undefined;
   setDefaultSegments: (segments: string) => void;
   setRequestPlay: (request: RequestPlay) => void;
   setInitialPosition: (position: number | undefined) => void;
@@ -90,8 +89,7 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   const setSegmentToWhole = () => {
     if (allowSegment && setCurrentSegment && durationRef.current) {
       const segs = JSONParse(segmentsRef.current) as unknown as
-        | IRegions
-        | undefined;
+        IRegions | undefined;
       //might be "[]"
       //why was this 3?
       if ((segs?.regions?.length ?? 0) < 2) {

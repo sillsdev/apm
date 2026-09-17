@@ -123,7 +123,10 @@ export function releaseMediaDests(ipc: {
 
 export function buildSpeakerRightsMemoryStub(
   fixture: JamesSpeakerRightsFixture
-): { keyMap: Record<string, unknown>; cache: { query: (fn: (q: unknown) => unknown) => unknown } } {
+): {
+  keyMap: Record<string, unknown>;
+  cache: { query: (fn: (q: unknown) => unknown) => unknown };
+} {
   const records: Record<string, unknown[]> = {
     intellectualproperty: fixture.intellectualproperties,
     mediafile: fixture.mediafiles,

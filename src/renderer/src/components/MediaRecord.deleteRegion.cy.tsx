@@ -491,7 +491,9 @@ describe('MediaRecord delete region — TT-7138', { tags: '@recording' }, () => 
           .invoke('text')
           .should((afterText) => {
             const after = parseDurationText(afterText);
-            expect(after, 'duration after middle delete').to.be.lessThan(before);
+            expect(after, 'duration after middle delete').to.be.lessThan(
+              before
+            );
             expect(before - after, 'trimmed at least ~2s').to.be.at.least(2);
           });
       });

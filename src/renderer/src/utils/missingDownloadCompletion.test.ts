@@ -12,9 +12,9 @@ describe('missingDownloadCompletion', () => {
       expect(isSuccessfulMediaFetch(null, expired)).toBe(false);
       expect(isSuccessfulMediaFetch(undefined, expired)).toBe(false);
       expect(isSuccessfulMediaFetch(expired, expired)).toBe(false);
-      expect(
-        isSuccessfulMediaFetch('https://cdn.example/a.mp3', expired)
-      ).toBe(false);
+      expect(isSuccessfulMediaFetch('https://cdn.example/a.mp3', expired)).toBe(
+        false
+      );
       expect(isSuccessfulMediaFetch('http://cdn.example/a.mp3', expired)).toBe(
         false
       );

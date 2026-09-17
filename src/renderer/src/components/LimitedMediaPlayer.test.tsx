@@ -9,10 +9,10 @@ import userEvent from '@testing-library/user-event';
 import { HiddenPlayerProps } from './HiddenPlayer';
 
 enum MediaSt {
-  'IDLE',
-  'PENDING',
-  'FETCHED',
-  'ERROR',
+  IDLE,
+  PENDING,
+  FETCHED,
+  ERROR,
 }
 interface IMediaState {
   status: MediaSt;
@@ -24,11 +24,11 @@ interface IMediaState {
 }
 
 enum BlobStatus {
-  'IDLE',
-  'PENDING',
-  'RESET', // 403 when getting blob
-  'FETCHED',
-  'ERROR',
+  IDLE,
+  PENDING,
+  RESET, // 403 when getting blob
+  FETCHED,
+  ERROR,
 }
 
 interface IBlobState extends IMediaState {

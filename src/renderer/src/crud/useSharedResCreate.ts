@@ -111,12 +111,10 @@ export const useSharedResCreate = ({
 
     let newRef: string | undefined;
     const passRec = findRecord(memory, 'passage', passage.id) as
-      | PassageD
-      | undefined;
+      PassageD | undefined;
     if (note && category) {
       const catRec = findRecord(memory, 'artifactcategory', category) as
-        | ArtifactCategory
-        | undefined;
+        ArtifactCategory | undefined;
       if (catRec) {
         newRef = `NOTE|${localizedArtifactCategory(
           catRec.attributes?.categoryname

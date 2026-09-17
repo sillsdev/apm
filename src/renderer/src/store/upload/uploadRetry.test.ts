@@ -59,13 +59,11 @@ describe('runWithUploadRetries', () => {
   });
 
   it('does not retry permanent upload failures', async () => {
-    const runAttempt = jest
-      .fn()
-      .mockRejectedValue({
-        statusNum: 403,
-        statusText: 'Forbidden',
-        httpStatus: 403,
-      });
+    const runAttempt = jest.fn().mockRejectedValue({
+      statusNum: 403,
+      statusText: 'Forbidden',
+      httpStatus: 403,
+    });
     const onRetry = jest.fn();
 
     await expect(
@@ -77,13 +75,11 @@ describe('runWithUploadRetries', () => {
   });
 
   it('retries transient failures up to UPLOAD_MAX_ATTEMPTS', async () => {
-    const runAttempt = jest
-      .fn()
-      .mockRejectedValue({
-        statusNum: 503,
-        statusText: 'down',
-        httpStatus: 503,
-      });
+    const runAttempt = jest.fn().mockRejectedValue({
+      statusNum: 503,
+      statusText: 'down',
+      httpStatus: 503,
+    });
     const onRetry = jest.fn();
 
     const promise = runWithUploadRetries(runAttempt, onRetry);

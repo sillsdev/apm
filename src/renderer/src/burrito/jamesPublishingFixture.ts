@@ -288,29 +288,11 @@ export function buildJamesPublishingFixture(): JamesPublishingFixture {
     notePassage('p-note-alt', 'sec-alt', 'AltBook', 1),
     notePassage('p-note-m1', 'sec-m1', 'M1', 1),
     chnumPassage('p-chnum-1', 'sec-s1', 1, 0),
-    scripturePassage(
-      'p-jas-1-1',
-      'sec-s1',
-      'JAS 1:1',
-      1,
-      1,
-      1,
-      1,
-      26
-    ),
+    scripturePassage('p-jas-1-1', 'sec-s1', 'JAS 1:1', 1, 1, 1, 1, 26),
     notePassage('p-note-s1', 'sec-s1', 'S1', 2, 1),
     notePassage('p-note-m2', 'sec-m2', 'M2', 1),
     chnumPassage('p-chnum-14', 'sec-s2', 14, 0),
-    scripturePassage(
-      'p-jas-14-1',
-      'sec-s2',
-      'JAS 14:1',
-      1,
-      14,
-      1,
-      14,
-      26
-    ),
+    scripturePassage('p-jas-14-1', 'sec-s2', 'JAS 14:1', 1, 14, 1, 14, 26),
     notePassage('p-note-s2', 'sec-s2', 'S2', 2, 14),
     notePassage('p-note-ch14', 'sec-s2', 'Ch14', 3, 14),
   ];

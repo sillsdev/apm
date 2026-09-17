@@ -124,8 +124,8 @@ const baseProps = {
 
 describe('GraphicPicker open Scripture-filter fetch race', () => {
   it('fires exactly one search request on open, already scripture-filtered (no stale unfiltered request)', () => {
-    const fetchMock = jest.fn((..._args: unknown[]) =>
-      new Promise<Response>(() => undefined)
+    const fetchMock = jest.fn(
+      (..._args: unknown[]) => new Promise<Response>(() => undefined)
     );
     const originalFetch = global.fetch;
     global.fetch = fetchMock as unknown as typeof fetch;

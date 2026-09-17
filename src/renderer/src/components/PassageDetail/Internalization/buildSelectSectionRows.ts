@@ -1,10 +1,4 @@
-import {
-  BookName,
-  Passage,
-  PassageD,
-  Section,
-  SectionD,
-} from '../../../model';
+import { BookName, Passage, PassageD, Section, SectionD } from '../../../model';
 import { related } from '../../../crud/related';
 import {
   sectionNumber,

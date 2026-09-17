@@ -39,12 +39,10 @@ export const useSharedResUpdate = ({ onUpdRef }: ShResUpdProps) => {
     let newRef: string | undefined;
     const passageId = related(sharedResource, 'passage');
     const passage = findRecord(memory, 'passage', passageId as string) as
-      | PassageD
-      | undefined;
+      PassageD | undefined;
     if (sharedResource.attributes.note) {
       const catRec = findRecord(memory, 'artifactcategory', category) as
-        | ArtifactCategory
-        | undefined;
+        ArtifactCategory | undefined;
       newRef = catRec
         ? `NOTE|${localizedArtifactCategory(catRec.attributes?.categoryname)}`
         : 'NOTE';

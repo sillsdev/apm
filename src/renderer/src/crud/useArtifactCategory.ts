@@ -144,10 +144,7 @@ export const useArtifactCategory = (teamId?: string) => {
           r.attributes.note &&
           r.attributes.specialuse === specialNoteCategories[0]
       );
-      if (
-        !hasChapterSpecial &&
-        !specialBootstrapOrgs.current.has(curOrg)
-      ) {
+      if (!hasChapterSpecial && !specialBootstrapOrgs.current.has(curOrg)) {
         specialBootstrapOrgs.current.add(curOrg);
         // Fire-and-forget: liveQuery refreshes the picker when records land,
         // and specials are filtered out of the dropdown anyway. On failure,

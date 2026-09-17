@@ -19,11 +19,7 @@ import {
 } from 'react';
 
 export type LwcTranslationPhase =
-  | 'bootstrapping'
-  | 'playing'
-  | 'recordReady'
-  | 'recording'
-  | 'recorded';
+  'bootstrapping' | 'playing' | 'recordReady' | 'recording' | 'recorded';
 
 interface Props {
   width: number;

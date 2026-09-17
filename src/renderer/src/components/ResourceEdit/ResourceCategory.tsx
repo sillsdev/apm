@@ -21,7 +21,9 @@ export const ResourceCategory = (props: IProps) => {
   // new category is the only edit.
   const handleNewDraft = () => {
     setState &&
-      setState((state) => (state.changed ? state : { ...state, changed: true }));
+      setState((state) =>
+        state.changed ? state : { ...state, changed: true }
+      );
   };
 
   return (

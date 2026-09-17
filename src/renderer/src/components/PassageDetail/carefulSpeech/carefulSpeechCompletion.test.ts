@@ -102,13 +102,7 @@ describe('carefulSpeechCompletion', () => {
       sourceMediaId: 'other-vern',
     });
     expect(
-      getRecordingForClause(
-        [otherVern],
-        'art1',
-        1,
-        regions[0],
-        'vern1'
-      )
+      getRecordingForClause([otherVern], 'art1', 1, regions[0], 'vern1')
     ).toBeUndefined();
     expect(
       matchesGuidedOutputRow(otherVern, {
@@ -141,13 +135,7 @@ describe('carefulSpeechCompletion', () => {
       dateCreated: '2024-06-01T00:00:00.000Z',
     });
     expect(
-      getRecordingForClause(
-        [older, newer],
-        'art1',
-        1,
-        regions[0],
-        'vern1'
-      )?.id
+      getRecordingForClause([older, newer], 'art1', 1, regions[0], 'vern1')?.id
     ).toBe('new');
     expect(pickLatestGuidedOutputRow([older, newer])?.id).toBe('new');
   });

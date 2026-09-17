@@ -1101,8 +1101,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
    */
   const warnIfEditedReferenceFlagged = (rowIndex: number) => {
     const editedCell = dataRef.current[rowIndex]?.[ColName.Ref] as
-      | ICell
-      | undefined;
+      ICell | undefined;
     const status = editedCell?.status;
     if (status && status !== RefStatus.Valid) {
       showMessage(
@@ -1197,14 +1196,12 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
             ? (previousData[index + 1] as ICell[])
             : undefined;
         const previousReference = previousRow?.[ColName.Ref] as
-          | ICell
-          | undefined;
+          ICell | undefined;
         let nextReference = `${previousReference?.value ?? ''}`;
 
         if (!nextReference && autoRefs[index]) {
           const priorNewRow = newData[newData.length - 1] as
-            | ICell[]
-            | undefined;
+            ICell[] | undefined;
           const priorRef = `${priorNewRow?.[ColName.Ref]?.value ?? ''}`;
           const suffixIncrement = priorRef
             ? incrementMarkVersesReferenceSuffix(priorRef)

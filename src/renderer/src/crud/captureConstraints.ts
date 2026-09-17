@@ -199,7 +199,8 @@ export async function ensureCaptureStreamUsable(
     if (track.muted || track.readyState !== 'live') throw toDeviceLostError();
   }
   if (!(requested && actual && actual === requested)) {
-    if (await requestedCaptureDeviceMissing(requested)) throw toDeviceLostError();
+    if (await requestedCaptureDeviceMissing(requested))
+      throw toDeviceLostError();
   }
 }
 
@@ -265,17 +266,20 @@ export function listenForCaptureDeviceLoss(
     }
     const captureId = track.getSettings?.().deviceId;
     if (!captureId || !navigator.mediaDevices?.enumerateDevices) return;
-    void navigator.mediaDevices.enumerateDevices().then((devices) => {
-      if (!isCapturing?.()) return;
-      if (
-        fallbackInputDeviceId(
-          devices.filter((device) => device.kind === 'audioinput'),
-          captureId
-        ) !== undefined
-      ) {
-        confirmLost();
-      }
-    }).catch(() => undefined);
+    void navigator.mediaDevices
+      .enumerateDevices()
+      .then((devices) => {
+        if (!isCapturing?.()) return;
+        if (
+          fallbackInputDeviceId(
+            devices.filter((device) => device.kind === 'audioinput'),
+            captureId
+          ) !== undefined
+        ) {
+          confirmLost();
+        }
+      })
+      .catch(() => undefined);
   };
   navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange);
 

@@ -31,7 +31,8 @@ jest.mock('../../crud/related', () => ({
 
 jest.mock('../../crud/transcribeStepAsrSettings', () => ({
   parseStepLanguageField: (value: unknown) => {
-    if (value == null || value === '') return { languageName: '', bcp47: 'und' };
+    if (value == null || value === '')
+      return { languageName: '', bcp47: 'und' };
     const str = String(value);
     const pipe = str.indexOf('|');
     if (pipe === -1) return { languageName: '', bcp47: str || 'und' };

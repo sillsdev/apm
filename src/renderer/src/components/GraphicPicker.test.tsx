@@ -85,9 +85,7 @@ jest.mock('./GraphicUploader', () => {
           <button
             type="button"
             onClick={() =>
-              props.onFiles?.([
-                new File(['x'], 'a.png', { type: 'image/png' }),
-              ])
+              props.onFiles?.([new File(['x'], 'a.png', { type: 'image/png' })])
             }
           >
             pick-file

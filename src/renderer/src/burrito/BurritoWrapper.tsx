@@ -69,8 +69,7 @@ export function BurritoWrapper() {
     if (teamId) {
       if (teamId) {
         const curContents = getOrgDefault(burritoWrapper, teamId) as
-          | BurritoWrapperType
-          | undefined;
+          BurritoWrapperType | undefined;
         if (curContents) {
           setMetaData(curContents);
         } else if (users && teams && teamBibles && bibles) {
@@ -86,8 +85,7 @@ export function BurritoWrapper() {
               bible?.attributes?.bibleId || `${bible?.attributes?.iso}New`;
 
             const curContents = getOrgDefault(burritoContents, teamId) as
-              | string[]
-              | undefined;
+              string[] | undefined;
             const burritos =
               curContents?.map(
                 (c: string) =>

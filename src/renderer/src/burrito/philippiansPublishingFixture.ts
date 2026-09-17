@@ -24,11 +24,7 @@ export interface PhilippiansPublishingFixture {
   mediafiles: MediaFileD[];
 }
 
-function sectionRow(
-  id: string,
-  sequencenum: number,
-  planId: string
-): SectionD {
+function sectionRow(id: string, sequencenum: number, planId: string): SectionD {
   return {
     id,
     type: 'section',
@@ -164,10 +160,30 @@ export function buildPhilippiansPublishingFixture(): PhilippiansPublishingFixtur
   const mediafiles: MediaFileD[] = [
     noteMedia('med-book-note', 'p-note-book', planId, 'book-note.mp3'),
     noteMedia('med-alt-note', 'p-note-alt', planId, 'alt-note.mp3'),
-    noteMedia('med-ch1-section-note', 'p-note-ch1-section', planId, 'ch1-section-note.mp3'),
-    noteMedia('med-ch1-chapter-note', 'p-note-ch1-chapter', planId, 'ch1-chapter-note.mp3'),
-    noteMedia('med-ch2-section-note', 'p-note-ch2-section', planId, 'ch2-section-note.mp3'),
-    noteMedia('med-ch2-chapter-note', 'p-note-ch2-chapter', planId, 'ch2-chapter-note.mp3'),
+    noteMedia(
+      'med-ch1-section-note',
+      'p-note-ch1-section',
+      planId,
+      'ch1-section-note.mp3'
+    ),
+    noteMedia(
+      'med-ch1-chapter-note',
+      'p-note-ch1-chapter',
+      planId,
+      'ch1-chapter-note.mp3'
+    ),
+    noteMedia(
+      'med-ch2-section-note',
+      'p-note-ch2-section',
+      planId,
+      'ch2-section-note.mp3'
+    ),
+    noteMedia(
+      'med-ch2-chapter-note',
+      'p-note-ch2-chapter',
+      planId,
+      'ch2-chapter-note.mp3'
+    ),
   ];
 
   return { planId, sectionsAll, passages, mediafiles };
