@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import path from 'path-browserify';
 import { User } from '../model';
 import { dataPath, PathType } from '../utils/dataPath';
-import { remoteId } from '../crud';
+import { remoteId } from './remoteId';
 import { isElectron } from '../../api-variable';
 import { RecordIdentity, RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../context/useGlobal';
@@ -22,11 +23,10 @@ export const useAvatarSource = (name: string, rec: RecordIdentity) => {
           '.png',
       });
       if (src && isElectron && !src.startsWith('http')) {
-        if (await ipc?.exists(src)) {
-          const url = (await ipc?.isWindows())
-            ? new URL(src).toString().slice(8)
-            : src;
-          src = `file://${url}`;
+        // exists() is true for the offline data directory; only files are avatars
+        if (path.extname(src) && (await ipc?.exists(src))) {
+          const start = (await ipc?.isWindows()) ? 8 : 7;
+          src = `file://${new URL(`file://${src}`).toString().slice(start)}`;
         } else src = '';
       }
       setSource(src);

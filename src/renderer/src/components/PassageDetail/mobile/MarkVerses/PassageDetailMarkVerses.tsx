@@ -48,7 +48,6 @@ import {
   editReferenceValuesEqual,
   formatMarkVersesReference,
   getEndingVerseOptions,
-  incrementMarkVersesReferenceSuffix,
   markVersesReferenceHasLetterSuffix,
   normalizeEditReferenceDraft,
   normalizeEditReferenceForSave,
@@ -65,7 +64,6 @@ import {
   createMarkVersesUndoStack,
   type MarkVersesSnapshot,
 } from '../../../../utils/markVersesUndoStack';
-import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
 import {
   shouldAutoRenumberAfterEdit,
   evaluateMarkVersesReferenceStatus,
@@ -74,6 +72,11 @@ import {
   MarkVersesWarningReason,
   isValidMarkVersesReference,
 } from '../../../../utils/markVersesEditReference';
+import {
+  ColName,
+  rebuildMarkVersesTable,
+  type ICell,
+} from '../../../../utils/markVersesTableReconstruction';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
 /** Tolerance (seconds) when matching a table row to a precise waveform region and when seeking to a segment start. */
@@ -87,21 +90,7 @@ const cClass = ['lim', 'ref'];
 
 type IVrs = [string, number[]];
 
-export interface ICell {
-  value: any;
-  readOnly?: boolean;
-  width?: number;
-  className?: string;
-  status?: RefStatus;
-  /** Tooltip text shown on the row's warning icon (set for either flagged
-   * `status`, `RefStatus.Warn` or `RefStatus.Err`). */
-  warning?: string;
-}
-
-enum ColName {
-  Limits,
-  Ref,
-}
+export type { ICell };
 
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
@@ -1186,48 +1175,16 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
 
       setNumSegments(regions.length);
 
-      const newData = [rowCells([t.startStop, t.reference], true)];
-      const currentLength = previousData.length;
-      let reset = false;
-
-      regions.forEach((region, index) => {
-        const previousRow =
-          index + 1 < currentLength
-            ? (previousData[index + 1] as ICell[])
-            : undefined;
-        const previousReference = previousRow?.[ColName.Ref] as
-          ICell | undefined;
-        let nextReference = `${previousReference?.value ?? ''}`;
-
-        if (!nextReference && autoRefs[index]) {
-          const priorNewRow = newData[newData.length - 1] as
-            ICell[] | undefined;
-          const priorRef = `${priorNewRow?.[ColName.Ref]?.value ?? ''}`;
-          const suffixIncrement = priorRef
-            ? incrementMarkVersesReferenceSuffix(priorRef)
-            : undefined;
-          nextReference = suffixIncrement ?? autoRefs[index];
-        }
-        if (region.label && init) {
-          const refsSoFar = collectRefs(newData);
-          if (!refsSoFar.includes(region.label)) {
-            nextReference = region.label;
-          }
-        } else if (region.label !== nextReference) {
-          region.label = nextReference;
-          reset = true;
-        }
-
-        const row = rowCells([formLim(region), nextReference]);
-        newData.push(row);
-      });
-
-      const refs = collectRefs(newData);
-      previousData.slice(newData.length).forEach((existingRow) => {
-        const reference = existingRow[ColName.Ref] as ICell;
-        if (reference.value !== '' && !refs.includes(reference.value)) {
-          newData.push(rowCells(['', `${reference.value ?? ''}`]));
-        }
+      const { newData, reset } = rebuildMarkVersesTable({
+        regions,
+        previousData,
+        autoRefs,
+        init,
+        passage,
+        headerRow: rowCells([t.startStop, t.reference], true),
+        rowCells,
+        collectRefs,
+        formLim,
       });
 
       // Ill-formatted refs were already flagged by rowCells; this adds the
@@ -1505,37 +1462,25 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged, scheduleAutosave]);
 
-  const validationInput = useCallback(
-    () => ({
-      rows: dataRef.current
-        .filter((_, index) => index > 0)
-        .map((row) => ({
-          limits: `${(row[ColName.Limits] as ICell).value ?? ''}`,
-          ref: `${(row[ColName.Ref] as ICell).value ?? ''}`,
-        })),
-      expandedRefs: collectRefs(dataRef.current),
-      passageRefs: passageRefs.current,
-      hasBtRecordings,
-      strings: t,
-    }),
-    [collectRefs, hasBtRecordings, t]
-  );
-
-  const checkAutosaveBlockers = useCallback(
-    () => getMarkVersesAutosaveBlockers(validationInput()),
-    [validationInput]
+  const isAnyRowInvalid = useMemo(
+    () =>
+      data.some(
+        (row, index) =>
+          index > 0 && (row[ColName.Ref] as ICell).status !== RefStatus.Valid
+      ),
+    [data]
   );
 
   useEffect(() => {
     if (!hasChanged || !hasPermission || savingRef.current) return;
-    if (checkAutosaveBlockers().length > 0) return;
+    if (isAnyRowInvalid) return;
     scheduleAutosave();
   }, [
     toolsChanged,
+    isAnyRowInvalid,
     hasChanged,
     hasPermission,
     scheduleAutosave,
-    checkAutosaveBlockers,
   ]);
 
   const resetSave = () => {

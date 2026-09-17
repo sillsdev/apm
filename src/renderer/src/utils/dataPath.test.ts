@@ -85,6 +85,16 @@ describe('dataPath', () => {
     expect(p).toBe('C:\\\\home/offline/burrito/TST/text/metadata.json');
   });
 
+  it('dataPath() still returns the offline data root when that folder does not exist yet', async () => {
+    const { mod } = load({
+      isElectron: true,
+      offlineData: 'transcriber',
+      existsImpl: async () => false,
+    });
+    // ElectronImport / ProjectDownload call dataPath() then createFolder(where)
+    await expect(mod.dataPath()).resolves.toBe('C:\\\\home/transcriber');
+  });
+
   it('returns empty string when offlineData is empty and relPath is not http', async () => {
     const { mod } = load({ isElectron: false, offlineData: '' });
     await expect(

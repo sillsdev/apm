@@ -133,7 +133,17 @@ jobs:
       - name: Clean
         run: npm run clean
 
-      - name: Run unit tests
+      # Same split as the Cypress steps below. Pull requests run the 25-file
+      # jest smoke subset (~1:30); merges to develop/main and manual runs run
+      # all 213 files (~8:00), so nothing lands without full coverage.
+      # The subset is defined in src/renderer/jest.smoke.config.ts.
+      - name: Run unit test smoke subset
+        if: github.event_name == 'pull_request'
+        working-directory: src/renderer
+        run: npm run test:smoke:ci
+
+      - name: Run all unit tests
+        if: github.event_name != 'pull_request'
         working-directory: src/renderer
         run: npm run test:ci
 
