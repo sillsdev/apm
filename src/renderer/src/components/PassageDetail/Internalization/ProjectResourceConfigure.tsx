@@ -139,11 +139,13 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
 interface ICell {
   value: any;
   /**
-   * Optional on-screen label, shown instead of `value` when set. Lets the
-   * Reference column display the new-style row label while `value` keeps the
-   * original reference string used to build the saved resource topic.
+   * When set, the cell shows a localized label derived from this row's
+   * passage/section at render time (see `handleValueRenderer`) instead of
+   * `value`. Kept as the source (not a pre-rendered string) so the label
+   * follows a runtime language change; `value` keeps the original reference
+   * string used to build the saved resource topic.
    */
-  display?: string;
+  info?: IInfo;
   readOnly?: boolean;
   width?: number;
   className?: string;
@@ -214,8 +216,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
 
-  // The sheet is display-only: every cell is read-only (segment limits come
-  // from the audio player, not from typing here).
+  // Only the Description column is editable. Segment limits come from the audio
+  // player (not typed here) and the Reference is a derived label, so both stay
+  // read-only; the header row is fully read-only.
   // Description has no fixed width so it stretches to fill the full-width sheet.
   const widths = [150, 200, undefined];
   const cClass = ['lim', 'ref', 'des'];
@@ -231,7 +234,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
         ({
           value: v,
           width: widths[i],
-          readOnly: true,
+          readOnly: first || i !== ColName.Desc,
           className: first ? 'cTitle' : cClass[i],
         }) as ICell
     );
@@ -267,11 +270,10 @@ export const ProjectResourceConfigure = (props: IProps) => {
       });
       newInfo.forEach((v) => {
         // `value` keeps the original reference (feeds the saved topic, copy, and
-        // paste-matching); `display` shows the new-style row label on screen.
+        // paste-matching); `info` drives the localized row label rendered on
+        // screen, recomputed per render so it tracks language changes.
         const cells = rowCells(['', fullReference(v), '']);
-        cells[ColName.Ref].display = v.passage
-          ? passageLabel(v.passage, labelBookData)
-          : sectionLabel(v.section, organizedBy);
+        cells[ColName.Ref].info = v;
         newData.push(cells);
       });
       infoRef.current = newInfo;
@@ -602,7 +604,14 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setSuffix(e.target.value);
   };
 
-  const handleValueRenderer = (cell: ICell) => cell.display ?? cell.value;
+  // Reference cells carry their row's `info`; derive the localized label here so
+  // it recomputes on each render and follows a runtime language change.
+  const handleValueRenderer = (cell: ICell) =>
+    cell.info
+      ? cell.info.passage
+        ? passageLabel(cell.info.passage, labelBookData)
+        : sectionLabel(cell.info.section, organizedBy)
+      : cell.value;
 
   return (
     <Box
