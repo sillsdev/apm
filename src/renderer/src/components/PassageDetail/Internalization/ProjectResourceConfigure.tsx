@@ -25,7 +25,6 @@ import {
   Table,
   TableBody,
   TextField,
-  debounce,
   styled,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
@@ -57,8 +56,6 @@ import { useOrbitData } from '../../../hoc/useOrbitData';
 import Confirm from '../../AlertDialog';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
-const NotTable = 420;
-
 const wizToolId = 'ProjResWizard';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
@@ -67,6 +64,10 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
+  // Fill the dialog's flex column and scroll internally so the action buttons
+  // below stay pinned to the dialog bottom regardless of content size.
+  flex: '1 1 auto',
+  minHeight: 0,
   overflow: 'auto',
   display: 'flex',
   flexDirection: 'column',
@@ -87,8 +88,16 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
     className={className}
     variant="striped"
     sx={{
-      '& .cell': {
-        height: 48,
+      // react-datasheet's default cell font is cramped; use the theme body size
+      // so the rows read as balanced.
+      fontSize: (theme) => theme.typography.body1.fontSize,
+      // react-datasheet's own `.data-grid-container .data-grid .cell` rule (3
+      // classes) beats any `& .cell` override here and forces height:17px /
+      // padding:0. The inner `.value-viewer` span has no competing padding
+      // rule, so padding it is what actually gives each row its height.
+      '& .value-viewer': {
+        py: 1.25,
+        px: 1.5,
       },
       // react-datasheet tints read-only cells with their own grey background;
       // clear it on the body rows so each row's stripe shows uniformly (the
@@ -169,9 +178,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const [suffix, setSuffix] = useState('');
   const [numSegments, setNumSegments] = useState(0);
   const [pastedSegments, setPastedSegments] = useState('');
-  const [heightStyle, setHeightStyle] = useState({
-    maxHeight: `${window.innerHeight - NotTable}px`,
-  });
   const dataRef = useRef<ICell[][]>([]);
   const infoRef = useRef<IInfo[]>([]);
   const segmentsRef = useRef('{}');
@@ -219,23 +225,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     Ref,
     Desc,
   }
-  const setDimensions = () => {
-    setHeightStyle({
-      maxHeight: `${window.innerHeight - NotTable}px`,
-    });
-  };
-
-  useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   const rowCells = (row: string[], first = false) =>
     row.map(
       (v, i) =>
@@ -616,14 +605,24 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const handleValueRenderer = (cell: ICell) => cell.display ?? cell.value;
 
   return (
-    <Box>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        // Fill the dialog's (flex-column) content area so the sheet grows and
+        // the footer buttons stay pinned to the bottom. Relies on the BigDialog
+        // passing a flex-column dialogContentSx for this wizard.
+        flex: '1 1 auto',
+        minHeight: 0,
+      }}
+    >
       <PassageDetailPlayer
         width={width}
         allowSegment={NamedRegions.ProjectResource}
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
       />
-      <StyledPaper id="proj-res-sheet" style={heightStyle}>
+      <StyledPaper id="proj-res-sheet">
         <Box sx={{ p: 2 }}>
           <Box data-testid="proj-res-sheet">
             <DataSheet
@@ -638,6 +637,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
             <TextField
               label={t.suffix}
               variant="outlined"
+              size="small"
+              sx={{ width: 240 }}
               value={suffix}
               onChange={handleSuffix}
             />
@@ -654,29 +655,34 @@ export const ProjectResourceConfigure = (props: IProps) => {
           </Stack>
         </Box>
       </StyledPaper>
-      <ActionRow>
-        <Button
-          id="copy-configure"
-          sx={{ mr: 'auto' }}
-          disabled={numSegments === 0}
-          onClick={handleCopy}
-        >
-          {ts.clipboardCopy}
-        </Button>
-        <Box sx={rowSx}>
+      {/* Fixed footer: keeps the action buttons pinned to the dialog bottom
+          while the sheet above scrolls. Wrapping ActionRow in a non-growing
+          Box neutralizes its flexGrow:1 inside this flex column. */}
+      <Box sx={{ flexShrink: 0 }}>
+        <ActionRow>
           <Button
-            id="res-create"
-            color="primary"
-            disabled={numSegments === 0 || savingRef.current}
-            onClick={handleCreate}
+            id="copy-configure"
+            sx={{ mr: 'auto' }}
+            disabled={numSegments === 0}
+            onClick={handleCopy}
           >
-            {t.createResources}
+            {ts.clipboardCopy}
           </Button>
-          <Button id="res-create-cancel" onClick={handleCancel}>
-            {ts.cancel}
-          </Button>
-        </Box>
-      </ActionRow>
+          <Box sx={rowSx}>
+            <Button
+              id="res-create"
+              color="primary"
+              disabled={numSegments === 0 || savingRef.current}
+              onClick={handleCreate}
+            >
+              {t.createResources}
+            </Button>
+            <Button id="res-create-cancel" onClick={handleCancel}>
+              {ts.cancel}
+            </Button>
+          </Box>
+        </ActionRow>
+      </Box>
       {showConfirmClose && (
         <Confirm
           title={t.confirmCloseTitle}

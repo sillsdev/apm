@@ -1193,6 +1193,9 @@ export function PassageDetailArtifacts() {
         onOpen={handleProjResWizVisible}
         bp={BigDialogBp.md}
         disableBackdropClose
+        // Flex column so ProjectResourceConfigure can fill the height and pin
+        // its footer buttons to the dialog bottom.
+        dialogContentSx={{ display: 'flex', flexDirection: 'column' }}
       >
         {projResWizVisible ? (
           <ProjectResourceConfigure
