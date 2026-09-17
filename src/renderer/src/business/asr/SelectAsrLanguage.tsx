@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Button, columnSx, rowSx, spreadSx } from '../../control';
-import { Box, Checkbox, FormControlLabel } from '@mui/material';
+import { Box } from '@mui/material';
 import {
   ISharedStrings,
   ITranscriberStrings,
@@ -9,7 +9,7 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { AsrSettings } from './AsrSettings';
-import { IAsrState } from './asrState';
+import { asrStatesEqual, IAsrState } from './asrState';
 import {
   getPreferredAsrMethod,
   isoFromBcp47,
@@ -26,13 +26,14 @@ interface ISelectAsrLanguage {
   team?: OrganizationD;
   /**
    * cancel=true dismisses; otherwise returns the run-time ASR override.
-   * setAsTeamDefault requests persisting the choice as the org (team) default
-   * instead of the project default.
+   * isTeamDefault says the returned settings are the org (team) default —
+   * either already saved there or just saved from this dialog — so the caller
+   * must not also write them as the project default, which would shadow it.
    */
   onClose: (
     cancel: boolean,
     asrState?: IAsrState,
-    setAsTeamDefault?: boolean
+    isTeamDefault?: boolean
   ) => void;
 }
 
@@ -42,7 +43,9 @@ export default function SelectAsrLanguage({
 }: ISelectAsrLanguage) {
   const [asrState, setAsrState] = React.useState<IAsrState>();
   const [vernacularBcp47, setVernacularBcp47] = React.useState('und');
-  const [setAsTeamDefault, setSetAsTeamDefault] = React.useState(false);
+  // The settings currently saved as the team default (seeded from the org on
+  // mount), so the button is enabled only while the settings differ from them.
+  const [teamDefaultAsr, setTeamDefaultAsr] = React.useState<IAsrState>();
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const {
@@ -51,12 +54,26 @@ export default function SelectAsrLanguage({
     getCachedSisterRecommendations,
     saveSisterRecommendations,
     canSetTeamAsrDefault,
+    getTeamAsrSettings,
+    saveTeamAsrSettings,
   } = useGetAsrSettings(team);
   const { suggestions, loading, error, fetchRecommendations, seedSuggestions } =
     useRecommendAsrLanguage();
   const checkOnline = useCheckOnline(t.run);
   const { showMessage } = useSnackBar();
   const showTeamDefault = canSetTeamAsrDefault();
+  const incomplete =
+    !asrState?.target ||
+    (asrState?.target === AsrTarget.alphabet &&
+      !isLangSet(asrState?.language?.bcp47));
+  const teamDefaultSaved = asrStatesEqual(teamDefaultAsr, asrState);
+
+  /** Persist the current settings as the team default without closing. */
+  const handleTeamDefault = () => {
+    if (!asrState) return;
+    saveTeamAsrSettings(asrState);
+    setTeamDefaultAsr(asrState);
+  };
 
   const handleRun = () => {
     checkOnline((online) => {
@@ -64,12 +81,13 @@ export default function SelectAsrLanguage({
         showMessage(ts.mustBeOnline);
         return;
       }
-      onClose(false, asrState, showTeamDefault && setAsTeamDefault);
+      onClose(false, asrState, showTeamDefault && teamDefaultSaved);
     });
   };
 
   React.useEffect(() => {
     const asr = getAsrSettings();
+    setTeamDefaultAsr(getTeamAsrSettings());
     setAsrState({
       target: asr?.target ?? AsrTarget.alphabet,
       language: asr?.language ?? {
@@ -116,28 +134,18 @@ export default function SelectAsrLanguage({
       <Box sx={spreadSx}>
         <Box sx={rowSx}>
           {showTeamDefault && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={setAsTeamDefault}
-                  onChange={(_e, checked) => setSetAsTeamDefault(checked)}
-                />
-              }
-              label={ts.teamDefault}
-            />
+            <Button
+              variant="outlined"
+              disabled={incomplete || teamDefaultSaved}
+              onClick={handleTeamDefault}
+            >
+              {ts.teamDefault}
+            </Button>
           )}
         </Box>
         <Box sx={rowSx}>
           <Button onClick={() => onClose(true)}>{ts.cancel}</Button>
-          <Button
-            color="primary"
-            disabled={
-              !asrState?.target ||
-              (asrState?.target === AsrTarget.alphabet &&
-                !isLangSet(asrState?.language?.bcp47))
-            }
-            onClick={handleRun}
-          >
+          <Button color="primary" disabled={incomplete} onClick={handleRun}>
             {t.run}
           </Button>
         </Box>

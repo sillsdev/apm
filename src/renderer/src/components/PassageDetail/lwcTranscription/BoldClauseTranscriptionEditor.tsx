@@ -134,8 +134,7 @@ export default function BoldClauseTranscriptionEditor({
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
+  const { saveProjectAsrSettings } = useGetAsrSettings(team);
   const { getOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
     { aiTranscribe?: boolean } | undefined;
@@ -297,16 +296,17 @@ export default function BoldClauseTranscriptionEditor({
   );
 
   const handleAsrLanguageClose = useCallback(
-    (cancel: boolean, asrState?: IAsrState, setAsTeamDefault?: boolean) => {
+    (cancel: boolean, asrState?: IAsrState, isTeamDefault?: boolean) => {
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
       if (!isLangSet(asr?.asrIso)) return;
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
+      // These settings are the team default already; a project default would
+      // shadow it.
+      if (!isTeamDefault) saveProjectAsrSettings(asr);
       startAsr(asr);
     },
-    [asrSettings, saveProjectAsrSettings, saveTeamAsrSettings, startAsr]
+    [asrSettings, saveProjectAsrSettings, startAsr]
   );
 
   const handleAsrClose = useCallback(() => {

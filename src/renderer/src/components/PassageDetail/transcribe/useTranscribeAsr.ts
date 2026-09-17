@@ -28,8 +28,7 @@ export function useTranscribeAsr({
   onTextAdd,
   getCurrentText,
 }: UseTranscribeAsrProps) {
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
+  const { getAsrSettings, saveProjectAsrSettings } = useGetAsrSettings(team);
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
 
@@ -90,17 +89,18 @@ export function useTranscribeAsr({
   ]);
 
   const handleAsrLanguageClose = useCallback(
-    (cancel: boolean, asrState?: IAsrState, setAsTeamDefault?: boolean) => {
+    (cancel: boolean, asrState?: IAsrState, isTeamDefault?: boolean) => {
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
       if (isLangSet(asr?.asrIso)) {
-        if (setAsTeamDefault) saveTeamAsrSettings(asr);
-        else saveProjectAsrSettings(asr);
+        // These settings are the team default already; a project default would
+        // shadow it.
+        if (!isTeamDefault) saveProjectAsrSettings(asr);
         startAsr(asr);
       }
     },
-    [asrSettings, saveTeamAsrSettings, saveProjectAsrSettings, startAsr]
+    [asrSettings, saveProjectAsrSettings, startAsr]
   );
 
   const handleAutoTranscribe = useCallback(

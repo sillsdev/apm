@@ -332,8 +332,7 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
+  const { getAsrSettings, saveProjectAsrSettings } = useGetAsrSettings(team);
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
@@ -1295,14 +1294,15 @@ export function Transcriber(props: IProps) {
   const handleAsrLanguageClose = (
     cancel: boolean,
     asrState?: IAsrState,
-    setAsTeamDefault?: boolean
+    isTeamDefault?: boolean
   ) => {
     setAsrLangVisible(false);
     if (cancel) return;
     const asr = asrState ?? asrSettings;
     if (isLangSet(asr?.asrIso)) {
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
+      // These settings are the team default already; a project default would
+      // shadow it.
+      if (!isTeamDefault) saveProjectAsrSettings(asr);
       startAsr(asr);
     }
   };
