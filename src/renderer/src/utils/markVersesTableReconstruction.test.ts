@@ -34,11 +34,7 @@ const rowCells = (row: string[], first = false): ICell[] =>
       width: widths[index],
       readOnly: first || readOnlys[index],
       className: first ? 'cTitle' : cClass[index],
-      status: isRef
-        ? isBadRef
-          ? RefStatus.Err
-          : RefStatus.Valid
-        : undefined,
+      status: isRef ? (isBadRef ? RefStatus.Err : RefStatus.Valid) : undefined,
     } as ICell;
   });
 
@@ -63,7 +59,12 @@ const getRefs = (value: string): string[] => {
     const lastIndex = refs.length - 1;
     const startSuffix = parsed.start.verseLetterSuffix;
     const endSuffix = parsed.end.verseLetterSuffix;
-    if (lastIndex === 0 && startSuffix && endSuffix && startSuffix !== endSuffix) {
+    if (
+      lastIndex === 0 &&
+      startSuffix &&
+      endSuffix &&
+      startSuffix !== endSuffix
+    ) {
       refs[0] = `${refs[0]}${startSuffix}-${endSuffix}`;
     } else {
       if (startSuffix && lastIndex > 0) refs[0] = `${refs[0]}${startSuffix}`;
@@ -106,11 +107,7 @@ const rows = (data: ICell[][]): [string, string][] =>
       `${row[ColName.Ref].value}`,
     ]);
 
-const rebuild = (
-  regions: IRegion[],
-  previousData: ICell[][],
-  init = false
-) =>
+const rebuild = (regions: IRegion[], previousData: ICell[][], init = false) =>
   rebuildMarkVersesTable({
     regions,
     previousData,

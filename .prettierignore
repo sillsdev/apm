@@ -1,2 +1,8 @@
 # minified files aren't supposed to be Prettier
 *.min.*
+# generated files aren't supposed to be checked
+index-*.js
+strings*.json
+exported-strings-name.json
+model.tsx
+reducers.tsx
