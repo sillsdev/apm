@@ -294,7 +294,7 @@ export function PassageDetailArtifacts() {
   }, [artifactTypes, offlineOnly]);
 
   const resourcePendingRestore = useCallback(() => {
-    if (resourceTypeRef.current === ResourceTypeEnum.projectResource) {
+    if (resourceKindRef.current === ResourceTypeEnum.projectResource) {
       return buildResourcePendingRestore({
         resourceType: ResourceTypeEnum.projectResource,
         sectionId: section.id,
@@ -308,7 +308,7 @@ export function PassageDetailArtifacts() {
     if (!step?.id) return undefined;
     pendingResourceSeqRef.current += 1;
     return buildResourcePendingRestore({
-      resourceType: resourceTypeRef.current,
+      resourceType: resourceKindRef.current,
       sectionId: section.id,
       passageId: passage.id,
       description: descriptionRef.current || null,
