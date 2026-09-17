@@ -62,6 +62,12 @@ export const AddResource = (props: IProps) => {
           <ListItemText>{t.addAudio}</ListItemText>
         </StyledMenuItem>
         <StyledMenuItem
+          id="pdfResource"
+          onClick={handle(AddResourceAction.Pdf)}
+        >
+          <ListItemText>{t.addPdf}</ListItemText>
+        </StyledMenuItem>
+        <StyledMenuItem
           id="textResource"
           onClick={handle(AddResourceAction.Text)}
         >

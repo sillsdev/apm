@@ -5404,6 +5404,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaUpload.pdfResourceTitle">
+         <segment>
+            <source>Upload PDF Resource</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaUpload.preview">
          <segment>
             <source>Preview</source>
@@ -5412,7 +5418,7 @@
       </unit>
       <unit id="mediaUpload.projectResourceTask">
          <segment>
-            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
             <target/>
          </segment>
       </unit>
@@ -5430,7 +5436,7 @@
       </unit>
       <unit id="mediaUpload.resourceTask">
          <segment>
-            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
             <target/>
          </segment>
       </unit>
@@ -5653,6 +5659,12 @@
       <unit id="passageDetailArtifacts.addLinked">
          <segment>
             <source>Linked Resource...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addPdf">
+         <segment>
+            <source>PDF...</source>
             <target/>
          </segment>
       </unit>

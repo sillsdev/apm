@@ -70,6 +70,8 @@ function MediaUpload(props: IProps) {
     t.linkTitle,
     t.markdownTitle,
     t.faithbridgeTitle.replace('{0}', FaithBridge),
+    '', // Burrito
+    t.pdfResourceTitle,
   ];
   const handleCancel = () => {
     if (cancelMethod) {

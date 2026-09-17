@@ -47,32 +47,34 @@ const HiddenInput = styled('input')(() => ({
 // Accepted file formats, indexed by UploadType
 const uploadExtensions = [
   '.mp3, .m4a, .wav, .ogg', // Media
-  '.mp3, .m4a, .wav, .ogg, .pdf', // Resource
+  '.mp3, .m4a, .wav, .ogg', // Resource
   '.itf', // ITF
   '.ptf', // PTF
   '.jpg, .jpeg, .svg, .png', // LOGO
-  '.mp3, .m4a, .wav, .ogg, .pdf', // ProjectResource
+  '.mp3, .m4a, .wav, .ogg', // ProjectResource
   '.mp3, .m4a, .wav, .ogg, .pdf, .png, .jpg, .jpeg', // IntellectualProperty
   '.png, .jpg, .jpeg, .webp', // Graphic
   '', // Link
   '', // MarkDown
   '', // FaithbridgeLink
   '', // Burrito
+  '.pdf', // PdfResource
 ];
 
 const uploadMimeTypes = [
   'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg', // Media
-  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf', // Resource
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg', // Resource
   'application/itf', // ITF
   'application/ptf', // PTF
   'image/jpeg, image/jpeg, image/svg+xml, image/png', // LOGO
-  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf', // ProjectResource
+  'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg', // ProjectResource
   'audio/mpeg, audio/wav, audio/x-m4a, audio/ogg, application/pdf, image/png, image/jpeg, image/jpeg', // IntellectualProperty
   'image/png, image/jpeg, image/jpeg, image/webp', // Graphic
   '', // Link
   '', // MarkDown
   '', // FaithbridgeLink
   '', // Burrito
+  'application/pdf', // PdfResource
 ];
 
 const audioOnlyType = UploadType.Media;
@@ -222,6 +224,8 @@ function MediaUploadContent(props: IProps) {
     t.linkTask,
     t.markdownTask,
     t.faithbridgeTitle,
+    '', // Burrito
+    '', // PdfResource
   ];
 
   const handleAddOrSave = async () => {

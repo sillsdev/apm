@@ -6303,6 +6303,13 @@
                <context context-type="sourcefile">MediaUpload.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaUpload.pdfResourceTitle">
+            <source>Upload PDF Resource</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaUpload.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mediaUpload.preview">
             <source>Preview</source>
             <target/>
@@ -6311,7 +6318,7 @@
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.projectResourceTask">
-      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">MediaUpload.tsx</context>
@@ -6332,7 +6339,7 @@
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.resourceTask">
-      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">MediaUpload.tsx</context>
@@ -6593,6 +6600,13 @@
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.addLinked">
       		<source>Linked Resource...</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addPdf">
+      		<source>PDF...</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">AddResource.tsx</context>

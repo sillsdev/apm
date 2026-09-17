@@ -179,7 +179,7 @@ export function PassageDetailArtifacts() {
   const [link, setLink] = useState<string>();
   const [markDown, setMarkDoan] = useState('');
   const [audioScriptureVisible, setAudioScriptureVisible] = useState(false);
-  const [nonAudio, setNonAudio] = useState(false);
+  const [allowProject, setAllowProject] = useState(true);
   const [sharedResourceVisible, setSharedResourceVisible] = useState(false);
   const [projectResourceVisible, setProjectResourceVisible] = useState(false);
   const [projResPassageVisible, setProjResPassageVisible] = useState(false);
@@ -277,7 +277,7 @@ export function PassageDetailArtifacts() {
     [passage, rowData]
   );
 
-  const handleNonAudio = (value: boolean) => setNonAudio(value);
+  const handleNonAudio = (value: boolean) => setAllowProject(!value);
 
   const isPassageResource = () =>
     resourceKindRef.current === ResourceTypeEnum.passageResource;
@@ -509,6 +509,7 @@ export function PassageDetailArtifacts() {
     setInitDescription('');
     setAIGenerated(false);
     setAudioUploadOrRecord(false);
+    setAllowProject(true);
     setEditAudio(false);
   };
   const handleEditResourceVisible = (v: boolean) => {
@@ -598,6 +599,13 @@ export function PassageDetailArtifacts() {
     } else if (what === AddResourceAction.Link) {
       setUploadType(UploadType.Link);
       syncResourceReady(UploadType.Link, descriptionRef.current);
+      setAudioUploadOrRecord(false);
+      setUploadVisible(true);
+    } else if (what === AddResourceAction.Pdf) {
+      mediaRef.current = undefined;
+      setUploadType(UploadType.PdfResource);
+      syncResourceReady(UploadType.PdfResource, descriptionRef.current);
+      setAllowProject(false);
       setAudioUploadOrRecord(false);
       setUploadVisible(true);
     } else if (what === AddResourceAction.Text) {
@@ -1099,7 +1107,7 @@ export function PassageDetailArtifacts() {
             catRequired={false}
             resourceKind={resourceKind}
             onPassResChange={handlePassRes}
-            allowProject={!nonAudio}
+            allowProject={allowProject}
             sectDesc={sectDesc}
             passDesc={passDesc}
           />

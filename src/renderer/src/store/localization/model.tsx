@@ -1049,6 +1049,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "linkTitle": string;
     "markdownTask": string;
     "markdownTitle": string;
+    "pdfResourceTitle": string;
     "preview": string;
     "projectResourceTask": string;
     "PTFtask": string;
@@ -1103,6 +1104,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "addAudio": string;
     "addAudioResource": string;
     "addLinked": string;
+    "addPdf": string;
     "addText": string;
     "addUrl": string;
     "allLevel": string;
