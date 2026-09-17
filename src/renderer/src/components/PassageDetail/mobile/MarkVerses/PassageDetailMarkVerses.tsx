@@ -65,7 +65,6 @@ import {
   createMarkVersesUndoStack,
   type MarkVersesSnapshot,
 } from '../../../../utils/markVersesUndoStack';
-import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
 import {
   shouldAutoRenumberAfterEdit,
   evaluateMarkVersesReferenceStatus,
@@ -86,6 +85,10 @@ const widths = [150, 150];
 const cClass = ['lim', 'ref'];
 
 type IVrs = [string, number[]];
+
+/** `6:3a`, `6:3a-c` -> `6:3`: the verse a reference starts in, without subparts. */
+const baseVerseRef = (reference: string) =>
+  reference.replace(/^(\d+:\d+).*$/, '$1');
 
 export interface ICell {
   value: any;
@@ -1223,11 +1226,30 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       });
 
       const refs = collectRefs(newData);
-      previousData.slice(newData.length).forEach((existingRow) => {
-        const reference = existingRow[ColName.Ref] as ICell;
-        if (reference.value !== '' && !refs.includes(reference.value)) {
-          newData.push(rowCells(['', `${reference.value ?? ''}`]));
-        }
+      const versesCovered = new Set(refs.map(baseVerseRef));
+      const previousRefs = collectRefs(previousData);
+
+      // When the last marked row ends part-way through a verse (e.g. `1:3a`),
+      // the derived rows pick up with the rest of that verse (`1:3b`) before
+      // the remaining whole verses, unless a row for it already exists.
+      const lastMarkedRef = refs[refs.length - 1] ?? '';
+      const trailingRef = lastMarkedRef
+        ? markVersesRenumberLeadingRef(lastMarkedRef, passage)
+        : undefined;
+      if (
+        trailingRef &&
+        !refs.includes(trailingRef) &&
+        !previousRefs.includes(trailingRef)
+      ) {
+        newData.push(rowCells(['', trailingRef]));
+      }
+
+      previousData.slice(1).forEach((existingRow, index) => {
+        const reference = `${(existingRow[ColName.Ref] as ICell).value ?? ''}`;
+        if (!reference || refs.includes(reference)) return;
+        if (index < newData.length - 1 && versesCovered.has(baseVerseRef(reference)))
+          return;
+        newData.push(rowCells(['', reference]));
       });
 
       // Ill-formatted refs were already flagged by rowCells; this adds the
@@ -1505,37 +1527,25 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged, scheduleAutosave]);
 
-  const validationInput = useCallback(
-    () => ({
-      rows: dataRef.current
-        .filter((_, index) => index > 0)
-        .map((row) => ({
-          limits: `${(row[ColName.Limits] as ICell).value ?? ''}`,
-          ref: `${(row[ColName.Ref] as ICell).value ?? ''}`,
-        })),
-      expandedRefs: collectRefs(dataRef.current),
-      passageRefs: passageRefs.current,
-      hasBtRecordings,
-      strings: t,
-    }),
-    [collectRefs, hasBtRecordings, t]
-  );
-
-  const checkAutosaveBlockers = useCallback(
-    () => getMarkVersesAutosaveBlockers(validationInput()),
-    [validationInput]
+  const isAnyRowInvalid = useMemo(
+    () =>
+      data.some(
+        (row, index) =>
+          index > 0 && (row[ColName.Ref] as ICell).status !== RefStatus.Valid
+      ),
+    [data]
   );
 
   useEffect(() => {
     if (!hasChanged || !hasPermission || savingRef.current) return;
-    if (checkAutosaveBlockers().length > 0) return;
+    if (isAnyRowInvalid) return;
     scheduleAutosave();
   }, [
     toolsChanged,
+    isAnyRowInvalid,
     hasChanged,
     hasPermission,
     scheduleAutosave,
-    checkAutosaveBlockers,
   ]);
 
   const resetSave = () => {
