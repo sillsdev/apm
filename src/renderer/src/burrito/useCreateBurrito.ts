@@ -333,8 +333,7 @@ export const useCreateBurrito = (teamId: string) => {
     const convertToMp3 =
       (
         getOrgDefault(burritoFormat, teamId) as
-          | { convertToMp3?: boolean }
-          | undefined
+          { convertToMp3?: boolean } | undefined
       )?.convertToMp3 === true;
     await ipc?.createFolder(path.dirname(metaName));
     let metaData = getMetadata(languages);

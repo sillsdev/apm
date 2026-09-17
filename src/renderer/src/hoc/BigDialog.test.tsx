@@ -21,12 +21,7 @@ jest.mock('./SnackBar', () => ({
 }));
 
 jest.mock('../control', () => ({
-  Button: ({
-    children,
-    ...rest
-  }: {
-    children: React.ReactNode;
-  }) => (
+  Button: ({ children, ...rest }: { children: React.ReactNode }) => (
     <button type="button" {...rest}>
       {children}
     </button>

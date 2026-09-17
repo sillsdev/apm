@@ -348,9 +348,11 @@ export function createWavRecorder(
       return convertAudioDataToWav();
     })();
     inFlightStop = pending;
-    void pending.finally(() => {
-      if (inFlightStop === pending) inFlightStop = undefined;
-    }).catch(() => undefined);
+    void pending
+      .finally(() => {
+        if (inFlightStop === pending) inFlightStop = undefined;
+      })
+      .catch(() => undefined);
     return pending;
   }
 

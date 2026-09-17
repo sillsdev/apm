@@ -119,8 +119,7 @@ const PlanProvider = (props: IProps) => {
 
   useEffect(() => {
     const map = getProjectDefault(projDefSectionMap) as
-      | SectionArray
-      | undefined;
+      SectionArray | undefined;
     const next = map?.length ? map : EMPTY_SECTION_ARR;
     setSectionArrState((prev) =>
       JSON.stringify(prev) === JSON.stringify(next) ? prev : next
@@ -137,8 +136,7 @@ const PlanProvider = (props: IProps) => {
       });
       // Persist outside the updater. Empty map stays [] (do not delete the key).
       const prev = getProjectDefault(projDefSectionMap) as
-        | SectionArray
-        | undefined;
+        SectionArray | undefined;
       const prevNorm = prev?.length ? prev : EMPTY_SECTION_ARR;
       if (JSON.stringify(prevNorm) === JSON.stringify(next)) return;
       setProjectDefault(projDefSectionMap, next);

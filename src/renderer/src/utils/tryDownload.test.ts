@@ -54,8 +54,7 @@ describe('tryDownload', () => {
         exists = true;
       },
     });
-    const url =
-      'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+    const url = 'https://host/media/clip.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
     const result = await mod.tryDownload(url);
 
@@ -72,8 +71,7 @@ describe('tryDownload', () => {
         throw new Error('network');
       },
     });
-    const url =
-      'https://host/media/fail.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+    const url = 'https://host/media/fail.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
     const result = await mod.tryDownload(url);
 
@@ -87,8 +85,7 @@ describe('tryDownload', () => {
       existsImpl: async () => false,
       downloadFileImpl: async () => undefined,
     });
-    const url =
-      'https://host/media/ghost.mp3?AWSAccessKeyId=xxx&Signature=yyy';
+    const url = 'https://host/media/ghost.mp3?AWSAccessKeyId=xxx&Signature=yyy';
 
     const result = await mod.tryDownload(url);
 

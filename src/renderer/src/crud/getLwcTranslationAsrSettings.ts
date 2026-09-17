@@ -246,8 +246,7 @@ export function boldClauseTranscriptionHasAsrLanguage(
   }
   if (recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech) {
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      | ILanguage
-      | undefined;
+      ILanguage | undefined;
     return isLangSet(orgLang?.bcp47);
   }
   return false;
@@ -330,8 +329,7 @@ export function upstreamRecordingHasAsrLanguage(
   }
   if (recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech) {
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      | ILanguage
-      | undefined;
+      ILanguage | undefined;
     return isLangSet(orgLang?.bcp47);
   }
   return false;

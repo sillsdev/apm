@@ -285,16 +285,14 @@ export const mediaArtifacts = ({
       'passage',
       related(m, 'passage')
     ) as Passage;
-    if (
-      !(
-        orgWorkflowSteps &&
-        afterStep({
-          psgCompleted: getStepComplete(passRec),
-          target,
-          orgWorkflowSteps,
-        })
-      )
-    )
+    if (!(
+      orgWorkflowSteps &&
+      afterStep({
+        psgCompleted: getStepComplete(passRec),
+        target,
+        orgWorkflowSteps,
+      })
+    ))
       return;
     const secRec =
       passRec &&
@@ -310,4 +308,3 @@ export const mediaArtifacts = ({
     ?.filter((m) => key.get(m.id))
     .sort((i, j) => ((key.get(i.id) || '') <= (key.get(j.id) || '') ? -1 : 1));
 };
-

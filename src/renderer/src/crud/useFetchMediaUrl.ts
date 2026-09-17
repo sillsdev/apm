@@ -14,10 +14,10 @@ const ipc = window?.api as MainAPI;
 // See: https://www.smashingmagazine.com/2020/07/custom-react-hook-fetch-cache-data/
 
 export enum MediaSt {
-  'IDLE',
-  'PENDING',
-  'FETCHED',
-  'ERROR',
+  IDLE,
+  PENDING,
+  FETCHED,
+  ERROR,
 }
 
 export interface IMediaState {

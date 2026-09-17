@@ -147,8 +147,7 @@ export function ConsultantCheck({ width }: IProps) {
     setApproved(newApproved);
     try {
       const pasRec = findRecord(memory, 'passage', passage?.id) as
-        | PassageD
-        | undefined;
+        PassageD | undefined;
       const stepComplete = pasRec?.attributes?.stepComplete
         ? JSON.parse(pasRec?.attributes?.stepComplete)
         : {
@@ -184,8 +183,7 @@ export function ConsultantCheck({ width }: IProps) {
       let newApproved: ArtifactTypeSlug[] = [];
       try {
         const pasRec = findRecord(memory, 'passage', passage?.id) as
-          | Passage
-          | undefined;
+          Passage | undefined;
         const result =
           pasRec?.attributes?.stepComplete &&
           JSON.parse(pasRec?.attributes?.stepComplete).approved;
@@ -203,8 +201,7 @@ export function ConsultantCheck({ width }: IProps) {
       let newItems: ArtifactTypeSlug[] = [];
       workflow.forEach((wf) => {
         const wfRec = findRecord(memory, 'orgworkflowstep', wf.id) as
-          | OrgWorkflowStep
-          | undefined;
+          OrgWorkflowStep | undefined;
         let tool = undefined;
         try {
           const toolData = wfRec?.attributes.tool;

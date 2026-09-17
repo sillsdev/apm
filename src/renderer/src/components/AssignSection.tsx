@@ -178,8 +178,7 @@ function AssignSection(props: IProps) {
 
   const handleAdd = async () => {
     let schemeRec = schemes.find((s) => s.id === scheme) as
-      | OrganizationSchemeD
-      | undefined;
+      OrganizationSchemeD | undefined;
     if (schemeRec !== undefined) {
       // update name if changed
       if (schemeName !== schemeRec?.attributes?.name) {

@@ -4,11 +4,11 @@ import { useGlobal } from '../context/useGlobal';
 import { loadBlob } from '../utils/loadBlob';
 
 export enum BlobStatus {
-  'IDLE',
-  'PENDING',
-  'RESET', // 403 when getting blob
-  'FETCHED',
-  'ERROR',
+  IDLE,
+  PENDING,
+  RESET, // 403 when getting blob
+  FETCHED,
+  ERROR,
 }
 export interface IBlobState extends IMediaState {
   blob: Blob;

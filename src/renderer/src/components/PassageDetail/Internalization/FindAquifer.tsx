@@ -144,12 +144,13 @@ interface ISort {
   asc: boolean;
 }
 
-const sortAccessor: Record<SortKey, (d: AquiferSearch) => string | undefined> = {
-  name: (d) => d.localizedName,
-  mediaType: (d) => d.mediaType,
-  groupingType: (d) => d.grouping?.type,
-  groupingName: (d) => d.grouping?.name,
-};
+const sortAccessor: Record<SortKey, (d: AquiferSearch) => string | undefined> =
+  {
+    name: (d) => d.localizedName,
+    mediaType: (d) => d.mediaType,
+    groupingType: (d) => d.grouping?.type,
+    groupingName: (d) => d.grouping?.name,
+  };
 
 const sortValue = (d: AquiferSearch, key: SortKey): string =>
   sortAccessor[key](d) ?? '';

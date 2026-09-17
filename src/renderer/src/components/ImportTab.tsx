@@ -496,8 +496,7 @@ export function ImportTab(props: IProps) {
         }
 
         const projects = memory.cache.query((q) => q.findRecords('project')) as
-          | Project[]
-          | undefined;
+          Project[] | undefined;
 
         const embeddedGuid =
           remoteIdGuid('project', embedded.id, memory.keyMap as RecordKeyMap) ||

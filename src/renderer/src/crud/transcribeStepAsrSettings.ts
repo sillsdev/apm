@@ -244,8 +244,7 @@ export function hasTranscribeStepLanguageSettings(
 ): boolean {
   const hasOrgVernacular = () => {
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      | ILanguage
-      | undefined;
+      ILanguage | undefined;
     return isLangSet(orgLang?.bcp47);
   };
 
@@ -281,8 +280,7 @@ export function transcribeSettingsNeedSisterLanguage(
   let primaryBcp: string;
   if (artifactUsesOrgVernacularLanguage(slug)) {
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      | ILanguage
-      | undefined;
+      ILanguage | undefined;
     primaryBcp = orgLang?.bcp47 ?? 'und';
   } else {
     const { bcp47 } = parseStepLanguageField(settings.language);
@@ -317,8 +315,7 @@ export function buildVernacularAsrState(
   projectLang?: ILanguage
 ): IAsrState {
   const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-    | ILanguage
-    | undefined;
+    ILanguage | undefined;
   const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
   const sister = parseStepLanguageField(settings?.sisterlanguage);
 

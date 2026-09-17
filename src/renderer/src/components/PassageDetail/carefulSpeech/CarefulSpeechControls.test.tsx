@@ -242,7 +242,9 @@ describe('CarefulSpeechControls linked note play-only (TT-5873)', () => {
         showRecorder
       />
     );
-    expect(container.querySelector('[data-testid="media-record"]')).toBeTruthy();
+    expect(
+      container.querySelector('[data-testid="media-record"]')
+    ).toBeTruthy();
     expect(container.querySelector('#careful-speech-prev-unit')).toBeTruthy();
     expect(container.querySelector('#careful-speech-next-unit')).toBeTruthy();
     expect(queryByText('Start Recording')).toBeNull();

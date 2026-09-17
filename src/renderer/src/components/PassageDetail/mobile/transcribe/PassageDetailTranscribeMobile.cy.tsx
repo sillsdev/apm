@@ -1693,7 +1693,10 @@ describe('PassageDetailTranscribeMobile', () => {
 
       triggerSegmentChange();
 
-      cy.get('@saveCompleted').should('have.been.calledWith', 'step-transcribe');
+      cy.get('@saveCompleted').should(
+        'have.been.calledWith',
+        'step-transcribe'
+      );
     });
 
     it('does not complete step or navigate when segment save fails before submit', () => {

@@ -7,8 +7,7 @@
 
 /** Swapped per test; read lazily by the useGlobal mock below. */
 let mockKeyMap:
-  | { idToKey: (...args: string[]) => string | undefined }
-  | undefined;
+  { idToKey: (...args: string[]) => string | undefined } | undefined;
 jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
   shallowEqual: jest.fn(),

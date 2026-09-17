@@ -17,11 +17,7 @@ export function RoleAvatar(props: IProps) {
   const source = useAvatarSource(roleRec.attributes.roleName, roleRec);
 
   return source ? (
-    <Avatar
-      alt={roleRec.attributes.roleName}
-      src={source}
-      sx={avatarSize()}
-    />
+    <Avatar alt={roleRec.attributes.roleName} src={source} sx={avatarSize()} />
   ) : roleRec.attributes && roleRec.attributes.roleName !== '' ? (
     <Avatar sx={avatarSize()}>
       {makeAbbr(localizeRole(roleRec.attributes.roleName, ts))}

@@ -62,8 +62,7 @@ export const useBurritoText = (teamId: string) => {
     const textOutputFormat = parseBurritoTextOutputFormat(
       (
         getOrgDefault(burritoFormat, teamId) as
-          | { textOutputFormat?: unknown }
-          | undefined
+          { textOutputFormat?: unknown } | undefined
       )?.textOutputFormat
     );
 

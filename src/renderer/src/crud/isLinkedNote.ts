@@ -4,10 +4,7 @@ function sourcePassageId(
   sharedResource: SharedResourceD | undefined | null
 ): string | undefined {
   const data = sharedResource?.relationships?.passage?.data as
-    | { id?: string }
-    | unknown[]
-    | null
-    | undefined;
+    { id?: string } | unknown[] | null | undefined;
   if (!data || Array.isArray(data)) return undefined;
   return data.id;
 }

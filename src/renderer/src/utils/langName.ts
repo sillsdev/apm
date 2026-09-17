@@ -11,17 +11,7 @@ import ta from '../assets/ta.json';
 import zh from '../assets/zh.json';
 
 export type UiLoc =
-  | 'en'
-  | 'fr'
-  | 'ar'
-  | 'es'
-  | 'ha'
-  | 'id'
-  | 'ru'
-  | 'sw'
-  | 'pt'
-  | 'ta'
-  | 'zh';
+  'en' | 'fr' | 'ar' | 'es' | 'ha' | 'id' | 'ru' | 'sw' | 'pt' | 'ta' | 'zh';
 
 interface ILangDes {
   type: string;

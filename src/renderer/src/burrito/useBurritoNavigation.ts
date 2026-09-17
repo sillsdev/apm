@@ -118,8 +118,7 @@ export const useBurritoNavigation = (teamId: string) => {
     ) as ProjectD;
     if (projRec) {
       const sectionArr = getProjectDefault(projDefSectionMap, projRec) as
-        | SectionArray
-        | undefined;
+        SectionArray | undefined;
       if (sectionArr) {
         sectionMap.current = new Map(sectionArr);
       }
@@ -393,8 +392,7 @@ export const useBurritoNavigation = (teamId: string) => {
         const fullSizeStr = `${FullSize}`;
         const apmDimStr = `${ApmDim}`;
         const imgInfo = (info[fullSizeStr] || info[apmDimStr]) as
-          | CompressedImages
-          | undefined;
+          CompressedImages | undefined;
         if (!imgInfo?.content) return false;
         const ext = imgInfo.type?.split('/')[1] || 'png';
         const resNum = getResourceNum(g);

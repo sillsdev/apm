@@ -1,7 +1,11 @@
 import { buildSelectSectionRows } from './buildSelectSectionRows';
 import { PassageD, SectionD } from '../../../model';
 
-const section = (id: string, sequencenum: number, planId = 'plan-1'): SectionD =>
+const section = (
+  id: string,
+  sequencenum: number,
+  planId = 'plan-1'
+): SectionD =>
   ({
     type: 'section',
     id,
@@ -52,11 +56,7 @@ describe('buildSelectSectionRows', () => {
     });
     expect(rows).toHaveLength(3);
     expect(rows.map((r) => r.recId)).toEqual(['s1', 'p1', 'p2']);
-    expect(rows.map((r) => r.kind)).toEqual([
-      'section',
-      'passage',
-      'passage',
-    ]);
+    expect(rows.map((r) => r.kind)).toEqual(['section', 'passage', 'passage']);
     expect(rows[1].parentId).toBe('s1');
     expect(rows[2].parentId).toBe('s1');
   });
@@ -64,10 +64,7 @@ describe('buildSelectSectionRows', () => {
   it('ignores BOOK passages without creating title rows', () => {
     const rows = buildSelectSectionRows({
       sections: [section('s1', 1)],
-      passages: [
-        passage('book', 's1', 0, 'BOOK'),
-        passage('p1', 's1', 1),
-      ],
+      passages: [passage('book', 's1', 0, 'BOOK'), passage('p1', 's1', 1)],
       bookData: [],
       planId: 'plan-1',
       isFlat: false,

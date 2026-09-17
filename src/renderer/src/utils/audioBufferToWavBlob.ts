@@ -1,9 +1,7 @@
 import { convertToWav } from './wav';
 
 /** Encodes an AudioBuffer to a WAV Blob. */
-export async function audioBufferToWavBlob(
-  buffer: AudioBuffer
-): Promise<Blob> {
+export async function audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
   if (buffer.length === 0) {
     return new Blob([], { type: 'audio/wav' });
   }
