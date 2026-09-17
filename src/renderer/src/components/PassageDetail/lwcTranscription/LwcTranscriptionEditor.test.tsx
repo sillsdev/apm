@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ToolSlug } from '../../../crud/toolSlug';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
@@ -139,9 +139,14 @@ jest.mock('../../../selector', () => ({
 
 jest.mock('../../../hoc/BigDialog', () => ({
   __esModule: true,
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="asr-progress-dialog">{children}</div>
-  ),
+  default: ({
+    children,
+    isOpen,
+  }: {
+    children: React.ReactNode;
+    isOpen?: boolean;
+  }) =>
+    isOpen ? <div data-testid="asr-progress-dialog">{children}</div> : null,
 }));
 
 jest.mock('react-redux', () => ({
@@ -151,6 +156,7 @@ jest.mock('react-redux', () => ({
     }
     if (selector.name === 'wsAudioPlayerSelector') {
       return {
+        autoTranscription: 'Auto Transcription...',
         recognizeProgress: 'Auto Transcription in Progress',
         recognizeSpeech: 'Auto Transcription {0}',
         recognizeSpeechSettings: 'Speech Settings',
@@ -196,13 +202,23 @@ jest.mock('../../../control', () => ({
   Button: ({
     children,
     id,
+    title,
     disabled,
+    onClick,
   }: {
     children: React.ReactNode;
     id?: string;
+    title?: string;
     disabled?: boolean;
+    onClick?: () => void;
   }) => (
-    <button type="button" id={id} disabled={disabled}>
+    <button
+      type="button"
+      id={id}
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+    >
       {children}
     </button>
   ),
@@ -216,34 +232,6 @@ jest.mock('../../../control', () => ({
     <div>
       <div data-testid="asr-tooltip">{title}</div>
       {children}
-    </div>
-  ),
-}));
-
-jest.mock('../../../control/ConfButton', () => ({
-  __esModule: true,
-  default: ({
-    children,
-    id,
-    disabled,
-    showSettings = true,
-    onSettings,
-  }: {
-    children: React.ReactNode;
-    id?: string;
-    disabled?: boolean;
-    showSettings?: boolean;
-    onSettings?: () => void;
-  }) => (
-    <div>
-      <button type="button" id={id} disabled={disabled}>
-        {children}
-      </button>
-      {showSettings && (
-        <button type="button" id={`${id}-settings`} onClick={onSettings}>
-          settings
-        </button>
-      )}
     </div>
   ),
 }));
@@ -312,26 +300,24 @@ describe('BoldClauseTranscriptionEditor', () => {
     });
   });
 
-  it('disables Auto Translation when text is present', () => {
+  it('disables Auto Transcription when text is present', () => {
     render(
       <BoldClauseTranscriptionEditor {...baseProps} text="existing text" />
     );
     expect(
-      screen.getByRole('button', { name: /Auto Translation/i })
+      screen.getByRole('button', { name: /Auto Transcription/i })
     ).toBeDisabled();
   });
 
-  it('enables Auto Translation when text is empty', () => {
+  it('enables Auto Transcription when text is empty', () => {
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
     expect(
-      screen.getByRole('button', { name: /Auto Translation/i })
+      screen.getByRole('button', { name: /Auto Transcription/i })
     ).not.toBeDisabled();
-    expect(
-      screen.queryByRole('button', { name: 'settings' })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('SettingsIcon')).not.toBeInTheDocument();
   });
 
-  it('shows language settings gear when ASR language is not ready', () => {
+  it('opens ASR language settings from the button when the language is not ready', () => {
     mockUseBoldClauseTranscriptionAsrSettings.mockReturnValueOnce({
       asrSettings: {
         target: 'language',
@@ -342,12 +328,13 @@ describe('BoldClauseTranscriptionEditor', () => {
     });
 
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
-    expect(
-      screen.getByRole('button', { name: /Auto Translation/i })
-    ).not.toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'settings' })
-    ).toBeInTheDocument();
+    const asrButton = screen.getByRole('button', {
+      name: /Auto Transcription/i,
+    });
+    expect(asrButton).not.toBeDisabled();
+    expect(screen.queryByTestId('select-asr-language')).not.toBeInTheDocument();
+    fireEvent.click(asrButton);
+    expect(screen.getByTestId('select-asr-language')).toBeInTheDocument();
   });
 
   it('caps transcription field height so long text scrolls inside (TT-7516)', () => {
@@ -371,10 +358,11 @@ describe('BoldClauseTranscriptionEditor', () => {
       language: 'Tamil|ta',
     };
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
-    const tip = screen.getByTestId('asr-tooltip');
-    expect(tip).toHaveTextContent(/Auto Transcription/);
-    expect(tip).toHaveTextContent(/Tamil/);
-    expect(tip).toHaveTextContent(/AI/);
+    const tip = screen.getByRole('button', {
+      name: /Auto Transcription/i,
+    }).title;
+    expect(tip).toMatch(/Auto Transcription/);
+    expect(tip).toMatch(/Tamil/);
   });
 
   it('shows primary and sister language in tooltip when sister is used for ASR (TT-7514)', () => {
@@ -392,8 +380,10 @@ describe('BoldClauseTranscriptionEditor', () => {
       needsSisterLanguage: () => false,
     });
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
-    const tip = screen.getByTestId('asr-tooltip');
-    expect(tip).toHaveTextContent(/Kannada/);
-    expect(tip).toHaveTextContent(/English/);
+    const tip = screen.getByRole('button', {
+      name: /Auto Transcription/i,
+    }).title;
+    expect(tip).toMatch(/Kannada/);
+    expect(tip).toMatch(/English/);
   });
 });

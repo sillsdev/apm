@@ -11056,6 +11056,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.autoTranscription">
+         <segment>
+            <source>Auto Transcription...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginVoiceConvert">
          <segment>
             <source>Beginning voice conversion...</source>
@@ -11232,7 +11238,7 @@
       </unit>
       <unit id="wsAudioPlayer.recognizeSpeechSettings">
          <segment>
-            <source>Auto Transcription Settings</source>
+            <source>Auto Transcription</source>
             <target/>
          </segment>
       </unit>

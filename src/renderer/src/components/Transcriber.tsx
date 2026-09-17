@@ -27,15 +27,7 @@ import {
   SectionD,
   MediaFileD,
 } from '../model';
-import {
-  Badge,
-  Grid,
-  Paper,
-  Typography,
-  IconButton,
-  Box,
-  Stack,
-} from '@mui/material';
+import { Grid, Paper, Typography, IconButton, Box, Stack } from '@mui/material';
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
@@ -121,8 +113,6 @@ import Settings from '@mui/icons-material/Settings';
 import { EditorSettings } from './Team/ProjectDialog';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
-import AsrButton from '../control/ConfButton';
-import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
@@ -149,6 +139,7 @@ import {
   IProjectDialog,
 } from './Team/ProjectDialog/projectDialogTypes';
 import { SaveSegments } from './PassageDetail/SaveSegments';
+import { HistoryEdu } from '@mui/icons-material';
 
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
@@ -342,10 +333,8 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
+  const { getAsrSettings } = useGetAsrSettings(team);
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
-  const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
     shallowEqual
@@ -1247,20 +1236,6 @@ export function Transcriber(props: IProps) {
     toolChanged(toolId, true);
   };
 
-  const hasAiTasks = useMemo(() => {
-    const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
-    return (
-      getSegments(
-        NamedRegions.TRTask,
-        mediaRec?.attributes?.segments || '{}'
-      ) !== '{}'
-    );
-  }, [playerMediafile, mediarecs]);
-
-  const hasTranscription = useMemo(
-    () => textValue !== '' && verseLabels.length <= contentVerses.length,
-    [textValue, verseLabels.length, contentVerses.length]
-  );
   const asrSettings = useMemo(
     () => getAsrSettings(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1313,27 +1288,17 @@ export function Transcriber(props: IProps) {
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (isLangSet(asrSettings?.asrIso)) {
-        startAsr(asrSettings);
-        return;
-      }
       openAsrLanguageSettings();
     });
   };
 
-  const handleAsrLanguageClose = (
-    cancel: boolean,
-    asrState?: IAsrState,
-    setAsTeamDefault?: boolean
-  ) => {
+  const handleAsrLanguageCancel = () => {
     setAsrLangVisible(false);
-    if (cancel) return;
-    const asr = asrState ?? asrSettings;
-    if (isLangSet(asr?.asrIso)) {
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
-      startAsr(asr);
-    }
+  };
+
+  const handleAsrLanguageRun = (asr: IAsrState) => {
+    setAsrLangVisible(false);
+    startAsr(asr);
   };
 
   const handleAsrProgressVisible = (v: boolean) => {
@@ -1448,39 +1413,15 @@ export function Transcriber(props: IProps) {
                           </Grid>
                         )}
                       {features?.aiTranscribe && !offline && role && (
-                        <LightTooltip
-                          title={
-                            <Badge badgeContent={sharedStr.ai}>
-                              {asrTip ?? ''}
-                            </Badge>
-                          }
+                        <Button
+                          id="asrButton"
+                          title={asrTip}
+                          startIcon={<HistoryEdu />}
+                          disabled={role !== 'transcriber'}
+                          onClick={handleTranscribe}
                         >
-                          <span>
-                            <AsrButton
-                              id="asrButton"
-                              onClick={handleTranscribe}
-                              onSettings={openAsrLanguageSettings}
-                              showSettings={false}
-                              disabled={role !== 'transcriber'}
-                            >
-                              {!hasTranscription &&
-                              hasAiTasks &&
-                              role === 'transcriber' ? (
-                                <Badge variant="dot" color="primary">
-                                  <TranscriptionLogo
-                                    disabled={role !== 'transcriber'}
-                                    sx={{ height: 18, width: 18 }}
-                                  />
-                                </Badge>
-                              ) : (
-                                <TranscriptionLogo
-                                  disabled={role !== 'transcriber'}
-                                  sx={{ height: 18, width: 18 }}
-                                />
-                              )}
-                            </AsrButton>
-                          </span>
-                        </LightTooltip>
+                          {tPlayer.autoTranscription}
+                        </Button>
                       )}
                     </>
                   }
@@ -1640,13 +1581,13 @@ export function Transcriber(props: IProps) {
         <BigDialog
           title={tPlayer.recognizeSpeechSettings}
           isOpen={asrLangVisible}
-          onOpen={() => handleAsrLanguageClose(true)}
+          onOpen={handleAsrLanguageCancel}
           bp={BigDialogBp.sm}
         >
           <SelectAsrLanguage
             key={asrLangVisible ? 'open' : 'closed'}
             team={team}
-            onClose={handleAsrLanguageClose}
+            onRun={handleAsrLanguageRun}
           />
         </BigDialog>
         {asrProgressVisible && (
