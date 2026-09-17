@@ -15,6 +15,7 @@ import {
   segmentPeakCount,
 } from './extractSilenceRegions';
 import { useTheme } from '@mui/material';
+import { ttTrace } from '../utils/tt7621trace';
 
 export type RegionColorRole = 'base' | 'current' | 'new';
 
@@ -397,6 +398,11 @@ export function useWaveSurferRegions(
       // Emit the region's *sorted index* alongside its bounds so downstream
       // consumers (currentSegmentIndex, the Mark Verses table) can trust the
       // waveform's exact selection instead of re-deriving it from time ranges.
+      ttTrace('useWavesurferRegions.setCurrentRegion', {
+        index: r ? regionIndexInSorted(r) : undefined,
+        regionStart: r?.start,
+        numRegions: numRegions(),
+      });
       onCurrentRegion &&
         onCurrentRegion(
           r ? { start: r.start, end: r.end } : undefined,

@@ -105,6 +105,7 @@ import BigDialogBp from '../hoc/BigDialogBp';
 import { MainAPI } from '@model/main-api';
 import { AudioDownloadView } from './AudioDownload';
 import { useAudioDownload } from './useAudioDownload';
+import { ttRender, ttTrace, ttEffect, ttShort } from '../utils/tt7621trace';
 const ipc = window?.api as MainAPI;
 
 const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
@@ -411,6 +412,13 @@ function WSAudioPlayer(props: IProps) {
     onRecordingCleared,
     onBeforeStartRecord,
   } = props;
+
+  ttRender('WSAudioPlayer', {
+    instance: props.id ?? '(no-id)',
+    allowRecord,
+    blob: ttShort(blob),
+    loading,
+  });
 
   const audioDownload = useAudioDownload(mediaId ?? '');
 
@@ -1091,6 +1099,11 @@ function WSAudioPlayer(props: IProps) {
   }, [blob, setBlobReady]);
 
   useEffect(() => {
+    ttEffect('WSAudioPlayer [blob, doReset]', {
+      blob: ttShort(blob),
+      doReset,
+      reloading: Boolean(blob),
+    });
     setDuration(0);
     setProgress(0);
     setHasRegion(0);
@@ -1366,6 +1379,7 @@ function WSAudioPlayer(props: IProps) {
   }
 
   function onWSReady(duration: number, loadingAnother: boolean) {
+    ttTrace('WSAudioPlayer ws ready', { duration, blob: ttShort(blob) });
     // Safety guard: peaks preview loads suppress 'ready' during recording, so
     // this should not fire mid-recording anymore; if a stray ready arrives,
     // ignore it — the rec timer drives duration/progress while recording.

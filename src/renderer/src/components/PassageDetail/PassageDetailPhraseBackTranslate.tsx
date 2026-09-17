@@ -18,6 +18,7 @@ import {
 } from './guidedPhraseRecord/types';
 import { phraseBackTranslationGuidedSelector } from '../../selector';
 import { IPhraseBackTranslationGuidedStrings } from '../../model';
+import { ttRender, ttShort } from '../../utils/tt7621trace';
 
 function phraseBackNamedRegionFromSettings(
   parsed: Record<string, unknown> | null
@@ -62,6 +63,7 @@ export function PassageDetailPhraseBackTranslate({ width }: IProps) {
   useRenderProfiler('PassageDetailPhraseBackTranslate');
   const [memory] = useGlobal('memory');
   const { currentstep } = usePassageDetailContext();
+  ttRender('PhraseBackTranslate', { currentstep: ttShort(currentstep) });
   const { settings } = useStepTool(currentstep);
   const { slugFromId } = useArtifactType();
   const guidedStrings = useSelector(

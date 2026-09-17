@@ -40,6 +40,7 @@ import { ToolSlug, useStepTool } from '../../crud';
 import { SaveSegments } from './SaveSegments';
 import { IMarker } from '../../crud/useWaveSurfer';
 import { Button } from '../../control/Button';
+import { ttRender, ttTrace, ttShort } from '../../utils/tt7621trace';
 export const PLAYER_HEIGHT = 120 + 80;
 
 export interface IPlayerState {
@@ -244,6 +245,11 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setPlaying = setPlayingOverride;
   }
 
+  ttRender('PassageDetailPlayer', {
+    mediafileId: ttShort(playerMediafile?.id),
+    loading,
+  });
+
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const [showTranscriptionId, setShowTranscriptionId] = useState('');
   const segmentsRef = useRef('');
@@ -344,6 +350,10 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
           )
         )
         .then(() => {
+          ttTrace('PassageDetailPlayer forceRefresh', {
+            duration,
+            mediafileId: ttShort(mediafileRef.current?.id),
+          });
           if (forceRefresh) forceRefresh();
         });
     }
@@ -427,6 +437,12 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const handleCloseTranscription = () => {
     setShowTranscriptionId('');
   };
+
+  ttTrace('PassageDetailPlayer -> WSAudioPlayer props', {
+    blob: ttShort(audioBlob),
+    loading,
+    busy: pdBusy,
+  });
 
   return (
     <Box

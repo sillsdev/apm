@@ -18,6 +18,7 @@ import {
 } from './carefulSpeechBoundary';
 import { MediaFileD } from '../../../model';
 import { useProjectSegmentSave } from '../Internalization/useProjectSegmentSave';
+import { ttShort, ttTrace } from '../../../utils/tt7621trace';
 
 export interface GuidedPhraseSegmentsOptions {
   /** Named-region bucket key (may be `BT:en`, not only NamedRegions enum). */
@@ -90,6 +91,7 @@ export function useGuidedPhraseSegments(
 
   const resetForMediafile = useCallback(
     (mediafileId: string | undefined) => {
+      ttTrace('resetForMediafile', { mediafileId: ttShort(mediafileId) });
       if (mediafileIdRef.current === mediafileId) return;
       mediafileIdRef.current = mediafileId;
       bootstrapInProgress.current = false;
@@ -132,8 +134,19 @@ export function useGuidedPhraseSegments(
 
   /** Returns true when phrase regions exist on the player (created or loaded from storage). */
   const ensureSegments = useCallback(async (): Promise<boolean> => {
+    ttTrace('ensureSegments entry', {
+      ready: controlsRef.current?.isReady?.(),
+      hasMediafile: !!mediafile,
+      bootstrapped,
+      inProgress: bootstrapInProgress.current,
+    });
     const ctrl = controlsRef.current;
     if (!ctrl?.isReady() || !mediafile || bootstrapInProgress.current) {
+      ttTrace('ensureSegments guard short-circuit', {
+        ready: ctrl?.isReady?.(),
+        hasMediafile: !!mediafile,
+        inProgress: bootstrapInProgress.current,
+      });
       return false;
     }
     if (bootstrapped && hasPhraseRegions(phraseSegString)) {
@@ -168,6 +181,7 @@ export function useGuidedPhraseSegments(
           const count = await ctrl.runAutoSegment?.(
             boldDefaultSegParams as IRegionParams
           );
+          ttTrace('ensureSegments autoSegment result', { count });
           regionJson = ctrl.getRegionsJson?.() ?? '{}';
           if (!hasPhraseRegions(regionJson) && (count ?? 0) <= 0) {
             // Claude's suggestion for possible future implementation: auto-segment can legitimately yield nothing (e.g. audio
@@ -184,6 +198,10 @@ export function useGuidedPhraseSegments(
           );
           regionJson = toSave;
         }
+        ttTrace('ensureSegments before persist', {
+          namedRegion,
+          regionJsonLen: regionJson.length,
+        });
         allSegs =
           (await persistSegmentBucket(namedRegion, regionJson, allSegs)) ??
           allSegs;

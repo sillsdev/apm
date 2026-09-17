@@ -8,6 +8,14 @@ import React, {
 } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
+// TT-7621 TEMPORARY hang tracing — remove before merge
+import {
+  ttTrace,
+  ttEffect,
+  ttRender,
+  ttShort,
+  ttStack,
+} from '../utils/tt7621trace';
 import { useRenderProfiler } from '../utils/perf';
 import { useParams } from 'react-router-dom';
 import { shallowEqual } from 'react-redux';
@@ -259,6 +267,7 @@ interface IProps {
 }
 const PassageDetailProvider = (props: IProps) => {
   useRenderProfiler('PassageDetailProvider');
+  ttRender('PassageDetailProvider');
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -347,6 +356,12 @@ const PassageDetailProvider = (props: IProps) => {
   const handleSetCurrentStep = (stepId: string) => {
     const step = state.orgWorkflowSteps.find((s) => s.id === stepId);
     const tool = getTool(step?.attributes?.tool) as ToolSlug;
+    ttTrace('handleSetCurrentStep', {
+      from: ttShort(state.currentstep),
+      to: ttShort(stepId),
+      tool,
+      name: step?.attributes?.name,
+    });
     setCurrentSegment(undefined, 0);
     // Clear discussion locate without handleHighlightDiscussion — that helper
     // no-ops while settingSegmentRef is set (mid-locate/play), which is exactly
@@ -409,6 +424,11 @@ const PassageDetailProvider = (props: IProps) => {
 
   const forceRefresh = (rowData?: IRow[]) => {
     refreshRef.current = refreshRef.current + 1;
+    ttTrace('forceRefresh', {
+      count: refreshRef.current,
+      withRowData: rowData !== undefined,
+      caller: ttStack(2),
+    });
     setState((state: ICtxState) => {
       return {
         ...state,
@@ -690,6 +710,10 @@ const PassageDetailProvider = (props: IProps) => {
     complete: boolean,
     psgCompleted?: StepComplete[]
   ) => {
+    ttTrace('setStepComplete (→ orbit write)', {
+      stepid: ttShort(stepid),
+      complete,
+    });
     if (stepid === '') return;
     const completed = psgCompleted ?? [...state.psgCompleted];
     const remId =
@@ -894,6 +918,10 @@ const PassageDetailProvider = (props: IProps) => {
         blobState.id !== r.mediafile.id &&
         fetching.current !== r.mediafile.id
       ) {
+        ttTrace('setSelected → fetchBlob (spinner ON)', {
+          id: ttShort(r.mediafile.id),
+          prevBlobId: ttShort(blobState.id),
+        });
         fetching.current = r.mediafile.id;
         fetchBlob(r.mediafile.id);
         resetBlob = true;
@@ -1018,6 +1046,16 @@ const PassageDetailProvider = (props: IProps) => {
       currentSegmentRef.current !== segment ||
       currentSegmentIndexRef.current !== currentSegmentIndex
     ) {
+      const segChanged = currentSegmentRef.current !== segment;
+      ttTrace('setCurrentSegment MUTATE (→ seq bump → Provider setState)', {
+        fromIndex: currentSegmentIndexRef.current,
+        toIndex: currentSegmentIndex,
+        segChanged, // false = INDEX-ONLY bump (the numbering-collision loop)
+        fromSegStart: currentSegmentRef.current?.start,
+        toSegStart: segment?.start,
+        seq: currentSegmentSeqRef.current + 1,
+        caller: ttStack(3),
+      });
       currentSegmentRef.current = segment;
       currentSegmentIndexRef.current = currentSegmentIndex;
       currentSegmentSeqRef.current += 1;
@@ -1053,6 +1091,10 @@ const PassageDetailProvider = (props: IProps) => {
     a.stepid > b.stepid ? 1 : -1;
 
   useEffect(() => {
+    ttEffect('ctx psgCompleted-sync-from-orbit', {
+      passagesLen: passages.length,
+      sectionsLen: sections.length,
+    });
     const passageId =
       remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
       pasId ||
@@ -1109,7 +1151,12 @@ const PassageDetailProvider = (props: IProps) => {
   }, [lang, booksLoaded, allBookData]);
 
   useEffect(() => {
+    ttEffect('ctx blob-result', {
+      id: ttShort(blobState.id),
+      blobStat: blobState.blobStat,
+    });
     if (blobState.blobStat === BlobStatus.FETCHED) {
+      ttTrace('ctx blob FETCHED (spinner OFF)', { id: ttShort(blobState.id) });
       setState((state: ICtxState) => {
         return {
           ...state,
@@ -1120,6 +1167,10 @@ const PassageDetailProvider = (props: IProps) => {
       });
       fetching.current = '';
     } else if (blobState.blobStat === BlobStatus.ERROR) {
+      ttTrace('ctx blob ERROR (spinner OFF)', {
+        id: ttShort(blobState.id),
+        error: blobState?.error,
+      });
       const errText = blobState?.error || 'Blob loading error';
       if (errText.startsWith('no offline file'))
         showMessage(sharedStr.fileNotFound);
@@ -1148,6 +1199,10 @@ const PassageDetailProvider = (props: IProps) => {
   }, [saveResult]);
 
   useEffect(() => {
+    ttEffect('ctx rowData-rebuild', {
+      mediafilesLen: mediafiles.length,
+      sectionResourcesLen: sectionResources.length,
+    });
     const passageId =
       remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
       pasId ||
@@ -1207,6 +1262,10 @@ const PassageDetailProvider = (props: IProps) => {
       });
 
       if (willSetSelected) {
+        ttTrace('ctx rowData-rebuild → setSelected', {
+          mediafileId: ttShort(mediafileId),
+          tool: state.tool,
+        });
         setSelected(mediafileId, PlayInPlayer.yes, newData);
       }
     });
@@ -1244,6 +1303,11 @@ const PassageDetailProvider = (props: IProps) => {
   }, [state.orgWorkflowSteps]);
 
   useEffect(() => {
+    ttEffect('ctx auto-select-first-step', {
+      currentstep: ttShort(state.currentstep),
+      psgCompletedLen: state.psgCompleted.length,
+      stepsLen: state.orgWorkflowSteps.length,
+    });
     if (state.currentstep === '' && state.orgWorkflowSteps.length > 0) {
       const next = getNextStep(state);
       if (state.currentstep !== next) {

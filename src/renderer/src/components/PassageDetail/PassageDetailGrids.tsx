@@ -42,6 +42,7 @@ import DiscussionPanel from '../Discussions/DiscussionPanel';
 import { usePaneWidth } from '../usePaneWidth';
 import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
+import { ttTrace, ttRender, ttShort } from '../../utils/tt7621trace';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
@@ -100,6 +101,7 @@ const PassageDetailGrids = () => {
   } = ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
+  ttRender('PassageDetailGrids', { currentstep: ttShort(currentstep), tool });
   const { slugFromId } = useArtifactType();
   const stepSettingsParsed = useMemo(
     () => parseStepSettings(settings),
@@ -263,6 +265,14 @@ const PassageDetailGrids = () => {
       }
       contentSx={{ maxWidth: '100%' }}
     >
+      {(() => {
+        ttTrace('Grids route', {
+          currentstep: ttShort(currentstep),
+          tool,
+          isBoldWorkflow,
+        });
+        return null;
+      })()}
       {tool === ToolSlug.Resource && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', minWidth: 0 }}>
           <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />

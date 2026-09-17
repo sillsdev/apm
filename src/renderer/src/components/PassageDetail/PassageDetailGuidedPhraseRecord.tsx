@@ -88,6 +88,7 @@ import {
 import { createPhraseSegmentUndoStack } from '../../utils/phraseSegmentUndoStack';
 import Confirm from '../AlertDialog';
 import { Button } from '../../control/Button';
+import { ttEffect, ttRender, ttShort, ttTrace } from '../../utils/tt7621trace';
 
 interface IProps {
   width: number;
@@ -105,11 +106,13 @@ interface IProps {
 const SPURIOUS_STOP_WINDOW_MS = 250;
 
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
-  return clauseRegions.findIndex(
+  const result = clauseRegions.findIndex(
     (r) =>
       Math.abs(r.start - region.start) < 0.05 &&
       Math.abs(r.end - region.end) < 0.05
   );
+  ttTrace('findClauseIndex', { start: region.start, result });
+  return result;
 }
 
 export function PassageDetailGuidedPhraseRecord({
@@ -151,6 +154,10 @@ export function PassageDetailGuidedPhraseRecord({
     setStepComplete,
     stepComplete,
   } = usePassageDetailContext();
+  ttRender('GuidedPhraseRecord', {
+    mediafileId: ttShort(mediafileId),
+    currentstep: ttShort(currentstep),
+  });
   useWhyRender('PassageDetailGuidedPhraseRecord', {
     passage,
     playerMediafile,
@@ -578,6 +585,9 @@ export function PassageDetailGuidedPhraseRecord({
   }, []);
 
   useEffect(() => {
+    ttEffect('mediaReset allowSourcePlayer', {
+      mediafileId: ttShort(mediafileId),
+    });
     setAllowSourcePlayer(false);
     setPlaying(false);
     const frame = requestAnimationFrame(() => {
@@ -825,6 +835,9 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   useLayoutEffect(() => {
+    ttEffect('mediaReset playerPlaying', {
+      mediafileId: ttShort(mediafileId),
+    });
     setPlayerPlaying(false);
     setPlaying(false);
     // setPlaying is not stable; only reset when mediafile changes.
@@ -832,6 +845,7 @@ export function PassageDetailGuidedPhraseRecord({
   }, [mediafileId]);
 
   useEffect(() => {
+    ttEffect('mediaReset full', { mediafileId: ttShort(mediafileId) });
     // StrictMode double-invokes effects on mount (setup → cleanup → setup) and
     // refs persist across that re-run. Without this guard the second invocation
     // re-resets recordingPassStarted to false and clears initialPositionDoneRef
@@ -873,10 +887,15 @@ export function PassageDetailGuidedPhraseRecord({
   }, [mediafileId]);
 
   useEffect(() => {
+    ttEffect('bootstrap effect', {
+      mediafileId: ttShort(mediafileId),
+      stepEnabled,
+    });
     if (!mediafileId || !stepEnabled) return;
 
     const stopPoll = () => {
       if (bootstrapPollRef.current) {
+        ttTrace('bootstrapPoll clear');
         clearInterval(bootstrapPollRef.current);
         bootstrapPollRef.current = null;
       }
@@ -896,7 +915,12 @@ export function PassageDetailGuidedPhraseRecord({
     };
 
     void tryBootstrap();
+    ttTrace('bootstrapPoll setup');
     bootstrapPollRef.current = setInterval(() => {
+      ttTrace('bootstrapPoll tick', {
+        ready: playerControlsRef.current?.isReady?.(),
+        bootstrapDone: bootstrapCompletedRef.current,
+      });
       void tryBootstrap();
     }, 250);
 
@@ -913,6 +937,12 @@ export function PassageDetailGuidedPhraseRecord({
   }, [bootstrapped, clauseSegString, clearSegmentUndo]);
 
   useEffect(() => {
+    ttEffect('initialPosition effect', {
+      bootstrapped,
+      stepEnabled,
+      allowSourcePlayer,
+      mediafileId: ttShort(mediafileId),
+    });
     if (!bootstrapped || !stepEnabled || !allowSourcePlayer) {
       return;
     }
@@ -981,13 +1011,20 @@ export function PassageDetailGuidedPhraseRecord({
 
     if (runInitialPosition()) return;
 
+    ttTrace('initialPositionPoll setup');
     const pollRef = setInterval(() => {
-      if (runInitialPosition()) {
+      const ready = playerControlsRef.current?.isReady?.();
+      const done = runInitialPosition();
+      ttTrace('initialPositionPoll tick', { ready, done });
+      if (done) {
         clearInterval(pollRef);
       }
     }, 250);
 
-    return () => clearInterval(pollRef);
+    return () => {
+      ttTrace('initialPositionPoll clear');
+      clearInterval(pollRef);
+    };
   }, [
     bootstrapped,
     stepEnabled,
@@ -1126,6 +1163,12 @@ export function PassageDetailGuidedPhraseRecord({
   }, [bootstrapped, entryPositioned, recordingPassStarted]);
 
   useEffect(() => {
+    ttEffect('navEffect recording pass', {
+      currentSegmentSeq,
+      currentSegmentIndex,
+      currentIndex,
+      clauseRegionsLength: clauseRegions.length,
+    });
     const seg = getCurrentSegment();
     if (!seg || clauseRegions.length === 0 || !recordingPassStarted) return;
     if (!entryPositioned) return;
@@ -1151,6 +1194,10 @@ export function PassageDetailGuidedPhraseRecord({
       if (playerControlsRef.current?.isPlaying?.()) {
         playerControlsRef.current.setPlay(false);
       }
+      ttTrace(
+        'navEffect recording pass -> setCurrentSegment (overshoot swallow)',
+        { idx, currentIndex }
+      );
       setCurrentSegment(clauseRegions[currentIndex], currentIndex);
       void snapToClauseStart(currentIndex);
       return;
@@ -1162,6 +1209,10 @@ export function PassageDetailGuidedPhraseRecord({
       }
       if (indexChanged) {
         // TT-7552: clear prior take from MediaRecord when changing segments.
+        ttTrace('navEffect recording pass -> setCurrentIndex (completed)', {
+          idx,
+          currentIndex,
+        });
         setResetMedia(true);
         setCurrentIndex(idx);
         setCurrentSegment(clauseRegions[idx], idx);
@@ -1187,6 +1238,10 @@ export function PassageDetailGuidedPhraseRecord({
     pendingOvershootSwallowRef.current = false;
 
     // TT-7552: clear prior take so Segment N+1 starts empty (same as Next Clause).
+    ttTrace('navEffect recording pass -> setCurrentIndex/playCurrentClause', {
+      idx,
+      currentIndex,
+    });
     setResetMedia(true);
     setCurrentIndex(idx);
     setCurrentSegment(clauseRegions[idx], idx);
@@ -1224,6 +1279,12 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   useEffect(() => {
+    ttEffect('navEffect listen pass', {
+      currentSegmentSeq,
+      currentSegmentIndex,
+      currentIndex,
+      clauseRegionsLength: clauseRegions.length,
+    });
     const seg = getCurrentSegment();
     if (!seg || clauseRegions.length === 0 || recordingPassStarted) return;
     if (!entryPositioned) return;
@@ -1233,6 +1294,10 @@ export function PassageDetailGuidedPhraseRecord({
     if (playerControlsRef.current?.isPlaying?.()) {
       playerControlsRef.current.setPlay(false);
     }
+    ttTrace('navEffect listen pass -> setCurrentIndex/playCurrentClause', {
+      idx,
+      currentIndex,
+    });
     setCurrentIndex(idx);
     setCurrentSegment(clauseRegions[idx], idx);
     if (!consumeSuppressClauseAutoPlay()) {

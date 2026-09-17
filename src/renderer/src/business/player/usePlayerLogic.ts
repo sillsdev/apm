@@ -7,6 +7,7 @@ import {
   parseRegions,
 } from '../../crud/useWavesurferRegions';
 import { MediaFile } from '../../model';
+import { ttTrace, ttStack } from '../../utils/tt7621trace';
 
 export interface RequestPlay {
   play: boolean | undefined;
@@ -135,6 +136,12 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     } else {
       if (setSegmentToWhole()) return;
     }
+    ttTrace('usePlayerLogic.onCurrentSegment -> setCurrentSegment (1-based)', {
+      sortedIndex,
+      index,
+      segStart: segment?.start,
+      caller: ttStack(2),
+    });
     setCurrentSegment && setCurrentSegment(segment, index);
   };
 

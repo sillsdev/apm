@@ -8,6 +8,7 @@ import { useSnackBar } from '../../hoc/SnackBar';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
 import { useWfLabel } from '../../utils/useWfLabel';
+import { ttTrace, ttShort } from '../../utils/tt7621trace';
 
 export function WorkflowSteps() {
   const {
@@ -89,14 +90,27 @@ export function WorkflowSteps() {
   };
 
   const handleSelect = (item: string) => {
-    if (recording || commentRecording) return;
+    ttTrace('WorkflowSteps click', {
+      from: ttShort(currentstep),
+      to: ttShort(item),
+    });
+    if (recording || commentRecording) {
+      ttTrace('WorkflowSteps swallow: recording/commentRecording');
+      return;
+    }
     if (getGlobal('remoteBusy')) {
+      ttTrace('WorkflowSteps swallow: remoteBusy');
       showMessage(ts.wait);
       return;
     }
     if (item === currentstep) {
+      ttTrace('WorkflowSteps swallow: same-step');
       //do nothing;
     } else {
+      ttTrace('WorkflowSteps setCurrentStep', {
+        from: ttShort(currentstep),
+        to: ttShort(item),
+      });
       setCurrentStep(item);
     }
   };

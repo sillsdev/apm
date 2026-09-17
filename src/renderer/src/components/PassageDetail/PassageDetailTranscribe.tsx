@@ -41,6 +41,7 @@ import {
 } from './carefulSpeech/matchesGuidedOutputRow';
 import { hasIncompletePhraseSegmentRecordings } from './phraseSegmentRecordingComplete';
 import StepMessage from './boldClause/StepMessage';
+import { ttTrace, ttRender, ttShort } from '../../utils/tt7621trace';
 
 const TranscriberContainer = styled(Box)<BoxProps>(() => ({
   zIndex: 1,
@@ -68,6 +69,10 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     passage,
     sharedResource,
   } = usePassageDetailContext();
+  ttRender('Transcribe', {
+    mediafileId: ttShort(mediafileId),
+    artifactTypeId,
+  });
   useWhyRender('PassageDetailTranscribe', {
     mediafileId,
     section,
@@ -247,10 +252,10 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     return isPhraseSegmentArtifact(slug) ? slug : null;
   }, [artifactTypeId, slugFromId]);
 
-  const mediafile = useMemo(
-    () => mediafiles.find((m) => m.id === mediafileId),
-    [mediafiles, mediafileId]
-  );
+  const mediafile = useMemo(() => {
+    ttTrace('Transcribe media memo', { mediafileId: ttShort(mediafileId) });
+    return mediafiles.find((m) => m.id === mediafileId);
+  }, [mediafiles, mediafileId]);
 
   const phraseRegions = useMemo(() => {
     if (!phraseArtifactSlug || !mediafile) return [];
