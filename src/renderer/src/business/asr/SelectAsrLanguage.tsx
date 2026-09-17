@@ -1,35 +1,29 @@
-import * as React from 'react';
-import { Button, columnSx, rowSx, spreadSx } from '../../control';
+import { useState, useEffect } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import { Box } from '@mui/material';
+import { Button, columnSx, rowSx, spreadSx } from '../../control';
 import {
   ISharedStrings,
   ITranscriberStrings,
   OrganizationD,
 } from '../../model';
-import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
+import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { isLangSet } from '../../utils/langTag';
+import { useCheckOnline } from '../../utils/useCheckOnline';
 import { AsrSettings } from './AsrSettings';
-import { asrStatesEqual, IAsrState } from './asrState';
+import { AsrTarget } from './AsrTarget';
 import {
   getPreferredAsrMethod,
   isoFromBcp47,
   needsSisterLanguage,
 } from './asrLanguages';
-import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
+import { asrStatesEqual, IAsrState } from './asrState';
 import { useRecommendAsrLanguage } from './useRecommendAsrLanguage';
-import { useCheckOnline } from '../../utils/useCheckOnline';
-import { isLangSet } from '../../utils/langTag';
-import { useSnackBar } from '../../hoc/SnackBar';
-import { AsrTarget } from './AsrTarget';
 
 interface ISelectAsrLanguage {
   team?: OrganizationD;
-  /**
-   * cancel=true dismisses; otherwise returns the run-time ASR override.
-   * isTeamDefault says the returned settings are the org (team) default —
-   * either already saved there or just saved from this dialog — so the caller
-   * must not also write them as the project default, which would shadow it.
-   */
   onClose: (
     cancel: boolean,
     asrState?: IAsrState,
@@ -41,11 +35,11 @@ export default function SelectAsrLanguage({
   team,
   onClose,
 }: ISelectAsrLanguage) {
-  const [asrState, setAsrState] = React.useState<IAsrState>();
-  const [vernacularBcp47, setVernacularBcp47] = React.useState('und');
+  const [asrState, setAsrState] = useState<IAsrState>();
+  const [vernacularBcp47, setVernacularBcp47] = useState('und');
   // The settings currently saved as the team default (seeded from the org on
   // mount), so the button is enabled only while the settings differ from them.
-  const [teamDefaultAsr, setTeamDefaultAsr] = React.useState<IAsrState>();
+  const [teamDefaultAsr, setTeamDefaultAsr] = useState<IAsrState>();
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const {
@@ -85,7 +79,7 @@ export default function SelectAsrLanguage({
     });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const asr = getAsrSettings();
     setTeamDefaultAsr(getTeamAsrSettings());
     setAsrState({
