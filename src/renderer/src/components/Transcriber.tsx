@@ -139,6 +139,7 @@ import {
   IProjectDialog,
 } from './Team/ProjectDialog/projectDialogTypes';
 import { SaveSegments } from './PassageDetail/SaveSegments';
+import { HistoryEdu } from '@mui/icons-material';
 
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
@@ -1415,6 +1416,7 @@ export function Transcriber(props: IProps) {
                         <Button
                           id="asrButton"
                           title={asrTip}
+                          startIcon={<HistoryEdu />}
                           disabled={role !== 'transcriber'}
                           onClick={handleTranscribe}
                         >

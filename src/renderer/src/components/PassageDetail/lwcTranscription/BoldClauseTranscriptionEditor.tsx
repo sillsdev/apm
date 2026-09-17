@@ -8,6 +8,7 @@ import {
   type MutableRefObject,
 } from 'react';
 import { Box, Stack } from '@mui/material';
+import { HistoryEdu } from '@mui/icons-material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledTextAreaAutosize } from '../../../control/WebFontStyles';
 import { Button } from '../../../control';
@@ -350,6 +351,7 @@ export default function BoldClauseTranscriptionEditor({
             <Button
               id={`${idPrefix}-asr`}
               title={asrTip}
+              startIcon={<HistoryEdu />}
               disabled={runAsrDisabled}
               onClick={handleAutoTranslation}
             >
