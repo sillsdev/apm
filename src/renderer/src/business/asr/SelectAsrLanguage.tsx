@@ -1,13 +1,6 @@
 import * as React from 'react';
-import { ActionRow, Button, rowSx } from '../../control';
-import {
-  styled,
-  Box,
-  BoxProps,
-  Checkbox,
-  Divider,
-  FormControlLabel,
-} from '@mui/material';
+import { Button, columnSx, rowSx, spreadSx } from '../../control';
+import { Box, Checkbox, FormControlLabel } from '@mui/material';
 import {
   ISharedStrings,
   ITranscriberStrings,
@@ -28,13 +21,6 @@ import { useCheckOnline } from '../../utils/useCheckOnline';
 import { isLangSet } from '../../utils/langTag';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { AsrTarget } from './AsrTarget';
-
-const StyledBox = styled(Box)<BoxProps>(() => ({
-  '& * > .MuiBox-root': {
-    display: 'inline-flex',
-    alignItems: 'center',
-  },
-}));
 
 interface ISelectAsrLanguage {
   team?: OrganizationD;
@@ -116,7 +102,7 @@ export default function SelectAsrLanguage({
   }, []);
 
   return (
-    <StyledBox sx={{ minWidth: 120 }}>
+    <Box sx={columnSx}>
       {asrState && (
         <AsrSettings
           asr={asrState}
@@ -127,20 +113,20 @@ export default function SelectAsrLanguage({
           error={error}
         />
       )}
-      {showTeamDefault && (
-        <FormControlLabel
-          sx={{ ml: 1 }}
-          control={
-            <Checkbox
-              checked={setAsTeamDefault}
-              onChange={(_e, checked) => setSetAsTeamDefault(checked)}
+      <Box sx={spreadSx}>
+        <Box sx={rowSx}>
+          {showTeamDefault && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={setAsTeamDefault}
+                  onChange={(_e, checked) => setSetAsTeamDefault(checked)}
+                />
+              }
+              label={ts.teamDefault}
             />
-          }
-          label={ts.teamDefault}
-        />
-      )}
-      <Divider sx={{ pt: 2 }} />
-      <ActionRow>
+          )}
+        </Box>
         <Box sx={rowSx}>
           <Button onClick={() => onClose(true)}>{ts.cancel}</Button>
           <Button
@@ -155,7 +141,7 @@ export default function SelectAsrLanguage({
             {t.run}
           </Button>
         </Box>
-      </ActionRow>
-    </StyledBox>
+      </Box>
+    </Box>
   );
 }
