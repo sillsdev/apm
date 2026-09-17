@@ -41,7 +41,6 @@ import {
   findRecord,
   useStepTool,
 } from '../../../crud';
-import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
@@ -134,7 +133,6 @@ export default function BoldClauseTranscriptionEditor({
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { saveProjectAsrSettings } = useGetAsrSettings(team);
   const { getOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
     { aiTranscribe?: boolean } | undefined;
@@ -295,18 +293,16 @@ export default function BoldClauseTranscriptionEditor({
     [asrSettings, onAsrActiveChange]
   );
 
-  const handleAsrLanguageClose = useCallback(
-    (cancel: boolean, asrState?: IAsrState, isTeamDefault?: boolean) => {
+  const handleAsrLanguageCancel = useCallback(() => {
+    setAsrLangVisible(false);
+  }, []);
+
+  const handleAsrLanguageRun = useCallback(
+    (asr: IAsrState) => {
       setAsrLangVisible(false);
-      if (cancel) return;
-      const asr = asrState ?? asrSettings;
-      if (!isLangSet(asr?.asrIso)) return;
-      // These settings are the team default already; a project default would
-      // shadow it.
-      if (!isTeamDefault) saveProjectAsrSettings(asr);
       startAsr(asr);
     },
-    [asrSettings, saveProjectAsrSettings, startAsr]
+    [startAsr]
   );
 
   const handleAsrClose = useCallback(() => {
@@ -416,7 +412,7 @@ export default function BoldClauseTranscriptionEditor({
       <BigDialog
         title={tPlayer.recognizeSpeechSettings}
         isOpen={asrLangVisible}
-        onOpen={() => handleAsrLanguageClose(true)}
+        onOpen={handleAsrLanguageCancel}
         bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
         mobileNoHorizontalScroll={isMobile}
         mobilePaperWidth={
@@ -427,7 +423,7 @@ export default function BoldClauseTranscriptionEditor({
         <SelectAsrLanguage
           key={asrLangVisible ? 'open' : 'closed'}
           team={team}
-          onClose={handleAsrLanguageClose}
+          onRun={handleAsrLanguageRun}
         />
       </BigDialog>
     </Box>

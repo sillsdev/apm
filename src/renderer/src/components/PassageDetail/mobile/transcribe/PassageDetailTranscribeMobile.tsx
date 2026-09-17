@@ -936,13 +936,13 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       <BigDialog
         title={tPlayer.recognizeSpeechSettings}
         isOpen={asr.asrLangVisible}
-        onOpen={() => asr.handleAsrLanguageClose(true)}
+        onOpen={asr.handleAsrLanguageCancel}
         bp={BigDialogBp.mobile}
       >
         <SelectAsrLanguage
           key={asr.asrLangVisible ? 'open' : 'closed'}
           team={team}
-          onClose={asr.handleAsrLanguageClose}
+          onRun={asr.handleAsrLanguageRun}
         />
       </BigDialog>
 

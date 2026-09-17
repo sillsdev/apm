@@ -24,17 +24,10 @@ import { useRecommendAsrLanguage } from './useRecommendAsrLanguage';
 
 interface ISelectAsrLanguage {
   team?: OrganizationD;
-  onClose: (
-    cancel: boolean,
-    asrState?: IAsrState,
-    isTeamDefault?: boolean
-  ) => void;
+  onRun: (asrState: IAsrState) => void;
 }
 
-export default function SelectAsrLanguage({
-  team,
-  onClose,
-}: ISelectAsrLanguage) {
+export default function SelectAsrLanguage({ team, onRun }: ISelectAsrLanguage) {
   const [asrState, setAsrState] = useState<IAsrState>();
   const [vernacularBcp47, setVernacularBcp47] = useState('und');
   // The settings currently saved as the team default (seeded from the org on
@@ -50,6 +43,7 @@ export default function SelectAsrLanguage({
     canSetTeamAsrDefault,
     getTeamAsrSettings,
     saveTeamAsrSettings,
+    saveProjectAsrSettings,
   } = useGetAsrSettings(team);
   const { suggestions, loading, error, fetchRecommendations, seedSuggestions } =
     useRecommendAsrLanguage();
@@ -70,12 +64,17 @@ export default function SelectAsrLanguage({
   };
 
   const handleRun = () => {
+    if (!asrState || !isLangSet(asrState.asrIso)) return;
     checkOnline((online) => {
       if (!online) {
         showMessage(ts.mustBeOnline);
         return;
       }
-      onClose(false, asrState, showTeamDefault && teamDefaultSaved);
+      // Settings already saved as the team default need no project default —
+      // that would shadow the team default the user just asked for.
+      if (!(showTeamDefault && teamDefaultSaved))
+        saveProjectAsrSettings(asrState);
+      onRun(asrState);
     });
   };
 

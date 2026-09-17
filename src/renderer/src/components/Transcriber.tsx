@@ -332,7 +332,7 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, saveProjectAsrSettings } = useGetAsrSettings(team);
+  const { getAsrSettings } = useGetAsrSettings(team);
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
@@ -1291,20 +1291,13 @@ export function Transcriber(props: IProps) {
     });
   };
 
-  const handleAsrLanguageClose = (
-    cancel: boolean,
-    asrState?: IAsrState,
-    isTeamDefault?: boolean
-  ) => {
+  const handleAsrLanguageCancel = () => {
     setAsrLangVisible(false);
-    if (cancel) return;
-    const asr = asrState ?? asrSettings;
-    if (isLangSet(asr?.asrIso)) {
-      // These settings are the team default already; a project default would
-      // shadow it.
-      if (!isTeamDefault) saveProjectAsrSettings(asr);
-      startAsr(asr);
-    }
+  };
+
+  const handleAsrLanguageRun = (asr: IAsrState) => {
+    setAsrLangVisible(false);
+    startAsr(asr);
   };
 
   const handleAsrProgressVisible = (v: boolean) => {
@@ -1586,13 +1579,13 @@ export function Transcriber(props: IProps) {
         <BigDialog
           title={tPlayer.recognizeSpeechSettings}
           isOpen={asrLangVisible}
-          onOpen={() => handleAsrLanguageClose(true)}
+          onOpen={handleAsrLanguageCancel}
           bp={BigDialogBp.sm}
         >
           <SelectAsrLanguage
             key={asrLangVisible ? 'open' : 'closed'}
             team={team}
-            onClose={handleAsrLanguageClose}
+            onRun={handleAsrLanguageRun}
           />
         </BigDialog>
         {asrProgressVisible && (
