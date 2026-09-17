@@ -433,8 +433,20 @@ export default function EditReferenceDropdown({
       fullWidth
       maxWidth="xs"
     >
-      <DialogTitle id="edit-reference-dialog-title">
-        {`${title} ${limits}`}
+      <DialogTitle
+        id="edit-reference-dialog-title"
+        sx={{
+          // Slightly smaller than the default h6 so the common
+          // "Edit Reference for 124.7-425.2" fits on one line on a phone.
+          fontSize: '1.1rem',
+        }}
+      >
+        {title}{' '}
+        {/* Keep the time-limit range together so it never breaks mid-number
+            (e.g. "124.7-" / "425.2") when it has three digits (TT-7623). */}
+        <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+          {limits}
+        </Box>
       </DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
         <Box
