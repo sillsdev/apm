@@ -135,7 +135,6 @@ export default function SelectAsrLanguage({
         <Box sx={rowSx}>
           {showTeamDefault && (
             <Button
-              variant="outlined"
               disabled={incomplete || teamDefaultSaved}
               onClick={handleTeamDefault}
             >
