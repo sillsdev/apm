@@ -2,9 +2,34 @@ import path from 'path-browserify';
 import type { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
+function decodeFilePathname(pathname: string): string {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return pathname;
+  }
+}
+
+function isFileUrl(target: string): boolean {
+  return /^file:/i.test(target);
+}
+
 /** Filesystem path for Electron shell.openPath (not a file:// URL). */
 export function launchFilePath(target: string): string {
-  return decodeURIComponent(target.replace(/^file:\/+/i, ''));
+  if (!isFileUrl(target)) return target;
+  try {
+    const u = new URL(target);
+    const pathname = decodeFilePathname(u.pathname);
+    if (/^\/[a-zA-Z]:/.test(pathname)) return pathname.slice(1);
+    if (u.hostname && u.hostname !== 'localhost') {
+      return `//${u.hostname}${pathname}`;
+    }
+    return pathname.startsWith('/') ? pathname : `/${pathname}`;
+  } catch {
+    const rest = target.replace(/^file:\/\//i, '');
+    if (/^\/?[a-zA-Z]:/.test(rest)) return rest.replace(/^\//, '');
+    return rest.startsWith('/') ? rest : `/${rest}`;
+  }
 }
 
 export const launch = async (
@@ -22,15 +47,16 @@ export const launch = async (
     return;
   }
   if (online) {
-    ipc?.openExternal(
-      target.startsWith('file:') ? target : `file://${filePath}`
-    );
+    ipc?.openExternal(isFileUrl(target) ? target : `file://${filePath}`);
     return;
   }
-  const cmd = /\.sh/i.test(filePath) ? '' : 'xdg-open ';
-  ipc?.exeCmd(`${cmd}${filePath}`, {
-    env: { ...{ ...process }.env, DISPLAY: ':0' },
-  });
+  if (/\.sh$/i.test(filePath)) {
+    ipc?.exec('sh', [filePath], {
+      env: { ...{ ...process }.env, DISPLAY: ':0' },
+    });
+    return;
+  }
+  ipc?.openPath(filePath);
 };
 
 export const launchCmd = async (target: string): Promise<void> => {
