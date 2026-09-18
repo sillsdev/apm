@@ -92,4 +92,5 @@ export * from './urlToFile';
 export * from './getUrlNameAndExt';
 export * from './mimeTypes';
 export * from './handleUnauthorized';
+export * from './recoverBackupSyncFail';
 export * from './needItfSync';
