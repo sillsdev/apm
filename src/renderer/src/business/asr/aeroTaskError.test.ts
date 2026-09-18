@@ -39,6 +39,25 @@ describe('transcriptionPollError', () => {
     expect(transcriptionPollError({ status: 'pending' })).toBeUndefined();
     expect(transcriptionPollError({})).toBeUndefined();
   });
+
+  it('ignores an envelope that already has result while still PENDING', () => {
+    expect(
+      transcriptionPollError({
+        state: 'PENDING',
+        result: { items: [{ clip: 'a.wav', state: 'PENDING', segments: [] }] },
+        progress: { completed: 0, total: 1 },
+      })
+    ).toBeUndefined();
+  });
+
+  it('reads FAILURE from the envelope error object', () => {
+    expect(
+      transcriptionPollError({
+        state: 'FAILURE',
+        error: { message: 'Aero task failed: clip exploded' },
+      })
+    ).toBe('Aero task failed: clip exploded');
+  });
 });
 
 describe('axiosErrorMessage', () => {
