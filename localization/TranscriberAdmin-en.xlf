@@ -5950,6 +5950,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.selectAllPassages">
+         <segment>
+            <source>Select all passages in {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.selectBook">
          <segment>
             <source>Select Book</source>
@@ -5965,6 +5971,12 @@
       <unit id="passageDetailArtifacts.selectPassagesSub">
          <segment>
             <source>Select this resource's passages.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.selectSection">
+         <segment>
+            <source>Select {0}</source>
             <target/>
          </segment>
       </unit>

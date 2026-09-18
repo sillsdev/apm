@@ -1152,9 +1152,11 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "resource": string;
     "resources": string;
     "resourcesDeleted": string;
+    "selectAllPassages": string;
     "selectBook": string;
     "selectOne": string;
     "selectPassagesSub": string;
+    "selectSection": string;
     "sharedResource": string;
     "source": string;
     "startStop": string;

@@ -43,7 +43,6 @@ import {
   useArtifactCategory,
   IArtifactCategory,
   ArtifactCategoryType,
-  mediaFileName,
   usePlanType,
   usePlan,
 } from '../../../crud';
@@ -101,6 +100,10 @@ import { PassageTypeEnum } from '../../../model/passageType';
 import { VertListDnd } from '../../../hoc/VertListDnd';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { LaunchLink } from '../../../control/LaunchLink';
+import {
+  getProjectResourceAssignments,
+  removeUnselectedProjectResourceAssignments,
+} from './projectResourceAssignments';
 import FindTabs from './FindTabs';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
@@ -208,6 +211,8 @@ export function PassageDetailArtifacts() {
     ResourceTypeEnum.sectionResource
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
+  /** Every passage/section the selection dialog offered; scopes cleanup. */
+  const projCandidateRef = useRef<RecordIdentity[]>([]);
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   // True when the general-resource wizard was entered by adding a new audio
   // resource ("Add Audio Resource"); false when configuring/editing an existing
@@ -436,12 +441,27 @@ export function PassageDetailArtifacts() {
     ) as SectionResourceD;
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
       MediaFileD | undefined;
+    const sourceMedia = mediafiles.find(
+      (m) => m.id === related(mf, 'sourceMedia')
+    );
+    // Resolve to the root general resource. When a derived copy is clicked, edit
+    // its source; only fall back to the clicked media when it is itself the
+    // general resource. Derived copies use the `resource` type (not
+    // `projectresource`), so in practice only one branch matches, but preferring
+    // the source guards against ever treating a derived copy as a new source
+    // (which would spawn a second-generation chain).
+    const projectMedia =
+      sourceMedia && related(sourceMedia, 'artifactType') === projResourceType
+        ? sourceMedia
+        : mf && related(mf, 'artifactType') === projResourceType
+          ? mf
+          : undefined;
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
-    if (mf && related(mf, 'artifactType') === projResourceType) {
+    if (projectMedia) {
       resourceTypeRef.current = ResourceTypeEnum.projectResource;
       isAddingAudioResourceRef.current = false;
-      handleSelectProjectResource(mf);
+      handleSelectProjectResource(projectMedia);
       return;
     }
     setEditResource(secRes);
@@ -822,6 +842,15 @@ export function PassageDetailArtifacts() {
       cnt += 1;
       setComplete(Math.min((cnt * 100) / total, 100));
     }
+    await removeUnselectedProjectResourceAssignments({
+      memory,
+      sourceMedia: projMediaRef.current,
+      selectedItems: items,
+      mediafiles,
+      sectionResources,
+      resourceTypeId: resourceType,
+      candidateItems: projCandidateRef.current,
+    });
     // Ensure setComplete(0) is always called after processing
     setComplete(0);
   };
@@ -853,8 +882,12 @@ export function PassageDetailArtifacts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projResSetup]);
 
-  const handleSelectProjectResourcePassage = (items: RecordIdentity[]) => {
+  const handleSelectProjectResourcePassage = (
+    items: RecordIdentity[],
+    candidates: RecordIdentity[]
+  ) => {
     projIdentRef.current = items;
+    projCandidateRef.current = candidates;
     if (isVisual(projMediaRef.current)) {
       writeVisualResource(items).then(() => {
         setProjResPassageVisible(false);
@@ -930,7 +963,7 @@ export function PassageDetailArtifacts() {
 
   return (
     <>
-      <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
+      <Stack sx={{ width: '100%', my: 2, pl: 2 }} direction="row" spacing={1}>
         <Grid
           container
           size={12}
@@ -1124,12 +1157,19 @@ export function PassageDetailArtifacts() {
         isOpen={projResPassageVisible}
         onOpen={handleProjResPassageVisible}
         disableBackdropClose
+        showTopCloseButton={false}
       >
         {projResPassageVisible ? (
           <SelectSections
-            title={mediaFileName(projMediaRef.current) ?? ''}
+            initialItems={getProjectResourceAssignments(
+              projMediaRef.current,
+              mediafiles,
+              sectionResources,
+              resourceType
+            )}
             visual={visual}
             onSelect={handleSelectProjectResourcePassage}
+            onCancel={() => handleProjResPassageVisible(false)}
           />
         ) : (
           <></>
@@ -1153,6 +1193,8 @@ export function PassageDetailArtifacts() {
             width={1000}
             media={projMediaRef.current}
             items={projIdentRef.current}
+            candidateItems={projCandidateRef.current}
+            resourceTypeId={resourceType}
             onOpen={handleProjResWizVisible}
           />
         ) : (
