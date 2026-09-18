@@ -29,6 +29,7 @@ export interface ParsedAeroTranscriptionPoll {
   terminal: boolean;
   failed: boolean;
   progress?: AeroProgress;
+  error?: unknown;
 }
 
 export function normalizeAeroState(state: unknown): string {
@@ -112,7 +113,26 @@ export function formatSegmentTranscription(
   verse: string
 ): string {
   if (!verse) return text;
-  return ` \\v ${verse} ${text}`;
+  return `\\v ${verse} ${text}`;
+}
+
+/** One string for `setTranscription` so replace-style callers keep every segment. */
+export function clipTranscription(
+  clip: AeroPollClip | undefined,
+  phonetic: boolean,
+  verses: AeroVerseTiming[],
+  skipVerses?: string[]
+): string {
+  if (clip?.state !== 'SUCCESS') return '';
+  const parts: string[] = [];
+  clip.segments.forEach((segment, segIx) => {
+    const text = transcriptionText(segment.transcription, phonetic);
+    if (text === undefined || !text.trim()) return;
+    const verse = verseForSegment(segment.start, segIx, verses);
+    if (verse && skipVerses?.includes(verse)) return;
+    parts.push(formatSegmentTranscription(text.trim(), verse));
+  });
+  return parts.join(' ');
 }
 
 const parseSegment = (value: unknown): AeroPollSegment | undefined => {
@@ -162,10 +182,13 @@ export function parseAeroTranscriptionPoll(
   const body = response as Record<string, unknown>;
   const clip = firstClipFromResult(body.result);
   const clipState = clip?.state;
+  const topFailed = normalizeAeroState(body.state) === 'FAILURE';
+  const clipFailed = normalizeAeroState(clipState) === 'FAILURE';
   return {
     clip,
-    terminal: isSettledClipState(clipState),
-    failed: normalizeAeroState(clipState) === 'FAILURE',
+    terminal: topFailed || isSettledClipState(clipState),
+    failed: topFailed || clipFailed,
     progress: clip?.progress,
+    error: clip?.error ?? body.error,
   };
 }

@@ -1,5 +1,6 @@
 import {
   aeroProgressPercent,
+  clipTranscription,
   formatSegmentTranscription,
   parseAeroTranscriptionPoll,
   transcriptionText,
@@ -71,6 +72,24 @@ describe('parseAeroTranscriptionPoll', () => {
           },
         })
       ).failed
+    ).toBe(true);
+  });
+
+  it('treats top-level FAILURE as clip failure even if the clip stays PENDING', () => {
+    const parsed = parseAeroTranscriptionPoll(
+      envelope({
+        state: 'FAILURE',
+        error: { message: 'job exploded' },
+        result: {
+          items: [{ clip: 'a.wav', state: 'PENDING', segments: [] }],
+        },
+      })
+    );
+    expect(parsed.failed).toBe(true);
+    expect(parsed.terminal).toBe(true);
+    expect(parsed.error).toEqual({ message: 'job exploded' });
+    expect(
+      parseAeroTranscriptionPoll(envelope({ state: 'FAILURE' })).failed
     ).toBe(true);
   });
 
@@ -218,6 +237,62 @@ describe('verse matching', () => {
     expect(verseForSegment(12.5, 0, verses)).toBe('2');
     expect(verseForSegment(99, 0, verses)).toBe('1');
     expect(verseFromLabel('1:3')).toBe('3');
-    expect(formatSegmentTranscription('hi', '3')).toBe(' \\v 3 hi');
+    expect(formatSegmentTranscription('hi', '3')).toBe('\\v 3 hi');
+  });
+});
+
+describe('clipTranscription', () => {
+  it('joins successful clip segments into one string', () => {
+    expect(
+      clipTranscription(
+        {
+          clip: 'a.wav',
+          state: 'SUCCESS',
+          segments: [
+            {
+              start: 0,
+              end: 5,
+              transcription: { sister_transcription: 'one' },
+            },
+            {
+              start: 5,
+              end: 10,
+              transcription: { sister_transcription: 'two' },
+            },
+          ],
+        },
+        false,
+        []
+      )
+    ).toBe('one two');
+  });
+
+  it('skips verses already in the transcription', () => {
+    expect(
+      clipTranscription(
+        {
+          clip: 'a.wav',
+          state: 'SUCCESS',
+          segments: [
+            {
+              start: 0,
+              end: 5,
+              transcription: { sister_transcription: 'one' },
+            },
+            {
+              start: 5,
+              end: 10,
+              transcription: { sister_transcription: 'two' },
+            },
+          ],
+        },
+        false,
+        [
+          { start: 0, verse: '1' },
+          { start: 5, verse: '2' },
+        ],
+        ['1']
+      )
+    ).toBe('\\v 2 two');
   });
 });

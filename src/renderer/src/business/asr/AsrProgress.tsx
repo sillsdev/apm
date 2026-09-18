@@ -43,10 +43,9 @@ import {
   AeroProgress,
   AeroVerseTiming,
   aeroProgressPercent,
-  formatSegmentTranscription,
+  clipTranscription,
   parseAeroTranscriptionPoll,
   transcriptionText,
-  verseForSegment,
   verseFromLabel,
 } from './aeroTranscriptionPoll';
 import { Stack, Typography } from '@mui/material';
@@ -89,6 +88,7 @@ export default function AsrProgress({
   const [pollClip, setPollClip] = React.useState<AeroPollClip>();
   const verseTimingsRef = React.useRef<AeroVerseTiming[]>([]);
   const appliedKeysRef = React.useRef<Set<string>>(new Set());
+  const cleanupErrorShownRef = React.useRef(false);
   const taskTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const checkingRef = React.useRef(false);
   const timerDelay = 5000; //5 seconds
@@ -142,10 +142,30 @@ export default function AsrProgress({
     console.log(logMessage ?? (typeof message === 'string' ? message : ''));
   };
 
-  const showTaskFailure = async (message: string) => {
-    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
-    logError(Severity.error, errorReporter, new Error(message));
+  const clearTrTasks = async () => {
+    const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+      | MediaFileD
+      | undefined;
+    if (!mediaRec) throw new Error('Mediafile not found');
+    const segments = updateSegments(
+      NamedRegions.TRTask,
+      mediaRec.attributes?.segments ?? '[]',
+      ''
+    );
+    await projectSegmentSave({ media: mediaRec, segments });
+  };
+
+  const finishRun = async () => {
     await clearTrTasks();
+    setTaskId('');
+  };
+
+  const reportCleanupFailure = (err: unknown) => {
+    logError(Severity.error, errorReporter, err as Error);
+    if (cleanupErrorShownRef.current) return;
+    cleanupErrorShownRef.current = true;
+    const message = axiosErrorMessage(err);
+    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
     status(
       <AeroTaskErrorMessage
         summary={summary}
@@ -155,42 +175,40 @@ export default function AsrProgress({
       AlertSeverity.Error,
       message
     );
-    setTaskId('');
   };
 
-  const clearTrTasks = async () => {
-    const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-      | MediaFileD
-      | undefined;
-    if (!mediaRec) return;
-    const segments = updateSegments(
-      NamedRegions.TRTask,
-      mediaRec.attributes?.segments ?? '[]',
-      ''
+  const showTaskFailure = async (message: string) => {
+    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
+    logError(Severity.error, errorReporter, new Error(message));
+    status(
+      <AeroTaskErrorMessage
+        summary={summary}
+        details={details}
+        detailsLabel={tm.details}
+      />,
+      AlertSeverity.Error,
+      message
     );
     try {
-      await projectSegmentSave({ media: mediaRec, segments });
+      await finishRun();
     } catch (err) {
-      logError(Severity.error, errorReporter, err as Error);
+      reportCleanupFailure(err);
     }
   };
 
   const applyClip = (clip: AeroPollClip | undefined) => {
     if (clip?.state !== 'SUCCESS') return;
-    clip.segments.forEach((segment, segIx) => {
-      const text = transcriptionText(segment.transcription, phonetic);
-      if (text === undefined || !text.trim()) return;
-      const key = `${clip.clip}|${segIx}|${segment.start}`;
-      if (appliedKeysRef.current.has(key)) return;
-      appliedKeysRef.current.add(key);
-      const verse = verseForSegment(
-        segment.start,
-        segIx,
-        verseTimingsRef.current
-      );
-      if (verse && contentVerses?.includes(verse)) return;
-      setTranscription(formatSegmentTranscription(text, verse));
-    });
+    const key = clip.clip || 'clip';
+    if (appliedKeysRef.current.has(key)) return;
+    const text = clipTranscription(
+      clip,
+      phonetic,
+      verseTimingsRef.current,
+      contentVerses
+    );
+    if (!text) return;
+    appliedKeysRef.current.add(key);
+    setTranscription(text);
   };
 
   const checkTask = async () => {
@@ -210,7 +228,9 @@ export default function AsrProgress({
       applyClip(parsed.clip);
       if (parsed.failed) {
         await showTaskFailure(
-          aeroErrorMessage(parsed.clip?.error) ?? t.aiAsrFailed
+          aeroErrorMessage(parsed.clip?.error) ??
+            aeroErrorMessage(parsed.error) ??
+            t.aiAsrFailed
         );
         return;
       }
@@ -221,8 +241,12 @@ export default function AsrProgress({
               .length > 0
         );
         if (!hasText) status(t.noAsrTranscription);
-        await clearTrTasks();
-        setTaskId('');
+        try {
+          await finishRun();
+        } catch (err) {
+          reportCleanupFailure(err);
+          setWorking(true);
+        }
         return;
       }
       console.log(`${current} not done`, response);
@@ -266,6 +290,7 @@ export default function AsrProgress({
       const mediaRec = response?.data.data as MediaFileD;
       loadVerseTimings(mediaRec);
       appliedKeysRef.current = new Set();
+      cleanupErrorShownRef.current = false;
       const nextTaskId = storedTaskId(mediaRec);
       if (nextTaskId) {
         onPullTasks(remId);
@@ -283,7 +308,11 @@ export default function AsrProgress({
         errorReporter,
         infoMsg(error, summary + (details ? `: ${details}` : ''))
       );
-      await clearTrTasks();
+      try {
+        await clearTrTasks();
+      } catch (err) {
+        logError(Severity.error, errorReporter, err as Error);
+      }
       status(
         <AeroTaskErrorMessage
           summary={summary || t.aiAsrFailed}
@@ -315,6 +344,7 @@ export default function AsrProgress({
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
     loadVerseTimings(mediaRec);
     appliedKeysRef.current = new Set();
+    cleanupErrorShownRef.current = false;
     const storedId = storedTaskId(mediaRec);
     if (
       !storedId &&
