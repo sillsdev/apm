@@ -99,6 +99,18 @@ describe('recoverBackupSyncFail', () => {
     expect(skip).toHaveBeenCalled();
   });
 
+  it('propagates skip failure so the blocking strategy does not look recovered', async () => {
+    const skipErr = new Error('Processing cancelled via `TaskQueue#skip`');
+    const { backup } = mockBackup({
+      isDBOpen: false,
+      skip: jest.fn().mockRejectedValue(skipErr),
+    });
+
+    await expect(recoverBackupSyncFail(backup, notOpen())).rejects.toBe(
+      skipErr
+    );
+  });
+
   it('rethrows storage errors after reopen instead of dropping the backup write', async () => {
     const quota = new Error('QuotaExceededError');
     const { backup, skip } = mockBackup({

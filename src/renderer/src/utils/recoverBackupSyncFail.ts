@@ -31,5 +31,5 @@ export async function recoverBackupSyncFail(
       throw retryError;
     }
   }
-  await queue.skip().catch(() => {});
+  return queue.skip();
 }
