@@ -1,21 +1,36 @@
 import path from 'path-browserify';
-import { MainAPI } from '@model/main-api';
+import type { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
+
+/** Filesystem path for Electron shell.openPath (not a file:// URL). */
+export function launchFilePath(target: string): string {
+  return decodeURIComponent(target.replace(/^file:\/+/i, ''));
+}
 
 export const launch = async (
   target: string,
   online: boolean
 ): Promise<void> => {
-  if (/\.pdf|\.jpg|\.jpeg|\.png$/i.test(target)) target = target.slice(18);
-  if (online) ipc?.openExternal(target);
-  else if (await ipc?.isWindows()) ipc?.openPath('file:///' + target);
-  else {
-    console.log(`launching ${target}`);
-    const cmd = /\.sh/i.test(target) ? '' : 'xdg-open ';
-    ipc?.exeCmd(`${cmd}${target}`, {
-      env: { ...{ ...process }.env, DISPLAY: ':0' },
-    });
+  if (/^https?:\/\//i.test(target)) {
+    ipc?.openExternal(target);
+    return;
   }
+  const filePath = launchFilePath(target);
+  // Electron shell.openPath requires a filesystem path on Windows, not file://
+  if (await ipc?.isWindows()) {
+    ipc?.openPath(filePath);
+    return;
+  }
+  if (online) {
+    ipc?.openExternal(
+      target.startsWith('file:') ? target : `file://${filePath}`
+    );
+    return;
+  }
+  const cmd = /\.sh/i.test(filePath) ? '' : 'xdg-open ';
+  ipc?.exeCmd(`${cmd}${filePath}`, {
+    env: { ...{ ...process }.env, DISPLAY: ':0' },
+  });
 };
 
 export const launchCmd = async (target: string): Promise<void> => {
