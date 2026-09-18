@@ -221,6 +221,15 @@ function MediaRecord(props: IProps) {
   const [filetype, setFiletype] = useState('');
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
+  /** The take handed to the save in flight, so a failure knows what it queued. */
+  const submittedBlobRef = useRef<Blob | undefined>(undefined);
+  /**
+   * TT-7365: the take a failed desktop save left in the Pending Media Uploads
+   * queue. Saving it again unchanged would stage a second pending row for the
+   * same recording, so Save stays off until the waveform holds a different take
+   * (which uploads as a new version).
+   */
+  const queuedTakeRef = useRef<Blob | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   /**
    * True only while handleLoadAudio is fetching a take. Deliberately not a
@@ -357,11 +366,15 @@ function MediaRecord(props: IProps) {
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
     if (!mediaId) {
+      // isElectron means the take was written to disk and queued for retry
+      // rather than lost, so it must not be submitted a second time (TT-7365).
+      queuedTakeRef.current = isElectron ? submittedBlobRef.current : undefined;
       const message = failureMessage();
       showMessage(message);
       setStatusText(message);
       saveCompleted(toolId, message);
     } else {
+      queuedTakeRef.current = undefined;
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
     }
@@ -471,7 +484,14 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     const wantsSave = wantsSaveVisible && !saveRef.current;
-    const needsSave = wantsSave && blobReady && waveformDuration > 0 && !tooBig;
+    const alreadyQueued =
+      audioBlob !== undefined && audioBlob === queuedTakeRef.current;
+    const needsSave =
+      wantsSave &&
+      blobReady &&
+      waveformDuration > 0 &&
+      !tooBig &&
+      !alreadyQueued;
     setCanSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -484,6 +504,7 @@ function MediaRecord(props: IProps) {
     recording,
     toolsChanged,
     waveformDuration,
+    audioBlob,
   ]);
 
   useEffect(() => {
@@ -556,6 +577,7 @@ function MediaRecord(props: IProps) {
         if (audioBlob && waveformDuration > 0) {
           onSaving && onSaving();
           saveRef.current = true;
+          submittedBlobRef.current = audioBlob;
           setLoading(true);
           if (mimeType !== 'audio/wav') {
             // Convert to target format

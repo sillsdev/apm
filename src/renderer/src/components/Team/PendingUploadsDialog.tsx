@@ -21,6 +21,7 @@ import { MainAPI } from '../../model/main-api';
 import {
   loadPendingMediaUploads,
   removePendingMediaUpload,
+  subscribePendingMediaUploads,
   type PendingUploadRecord,
 } from '../../store/upload/pendingMediaUploads';
 import { formatUploadTerminalFailureMessage } from '../../store/upload/uploadTerminalMessages';
@@ -69,8 +70,15 @@ export function PendingUploadsDialog(props: IProps) {
     setItems(loadPendingMediaUploads());
   }, []);
 
+  // `nextUpload` drops the pending row *after* awaiting its success callback,
+  // and that callback is what runs `finishOrContinue` -> `refresh()`. Reading
+  // the list on that signal alone therefore always reads it one step stale, and
+  // the retried row stays on screen for the user to click Retry again
+  // (TT-7363). Subscribe instead, so the removal itself refreshes the list.
   useEffect(() => {
-    if (open) refresh();
+    if (!open) return;
+    refresh();
+    return subscribePendingMediaUploads(refresh);
   }, [open, refresh]);
 
   const showNoConnectionMessage = useCallback(() => {
