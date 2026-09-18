@@ -26,8 +26,10 @@ export async function recoverBackupSyncFail(
       await queue.retry();
       return;
     }
-  } catch {
-    // still closed or retry failed — skip so loading is not stuck
+  } catch (retryError) {
+    if (!isIndexedDbNotOpen(retryError)) {
+      throw retryError;
+    }
   }
   await queue.skip().catch(() => {});
 }

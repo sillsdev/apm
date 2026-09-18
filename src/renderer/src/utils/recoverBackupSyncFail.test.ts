@@ -88,7 +88,7 @@ describe('recoverBackupSyncFail', () => {
     expect(skip).toHaveBeenCalled();
   });
 
-  it('skips when retry fails so the blocking strategy does not hang', async () => {
+  it('skips when retry still reports a closed IndexedDB so loading can continue', async () => {
     const { backup, skip } = mockBackup({
       isDBOpen: true,
       retry: jest.fn().mockRejectedValue(notOpen()),
@@ -97,6 +97,17 @@ describe('recoverBackupSyncFail', () => {
     await recoverBackupSyncFail(backup, notOpen());
 
     expect(skip).toHaveBeenCalled();
+  });
+
+  it('rethrows storage errors after reopen instead of dropping the backup write', async () => {
+    const quota = new Error('QuotaExceededError');
+    const { backup, skip } = mockBackup({
+      isDBOpen: true,
+      retry: jest.fn().mockRejectedValue(quota),
+    });
+
+    await expect(recoverBackupSyncFail(backup, notOpen())).rejects.toBe(quota);
+    expect(skip).not.toHaveBeenCalled();
   });
 
   it('does nothing when the sync queue is empty', async () => {
