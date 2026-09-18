@@ -15,6 +15,7 @@ import {
   MediaFileD,
   SectionResource,
   BookName,
+  IState,
 } from '../../../model';
 import {
   Box,
@@ -24,7 +25,6 @@ import {
   Table,
   TableBody,
   TextField,
-  debounce,
   styled,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
@@ -37,6 +37,8 @@ import { cleanClipboard } from '../../../utils/cleanClipboard';
 import { NamedRegions, updateSegments } from '../../../utils/namedSegments';
 import { findRecord } from '../../../crud/tryFindRecord';
 import { related } from '../../../crud/related';
+import { useOrganizedBy } from '../../../crud/useOrganizedBy';
+import { sectionLabel, passageLabel } from './internalizeLabels';
 import {
   resourceSelector,
   sharedSelector,
@@ -54,8 +56,6 @@ import { useOrbitData } from '../../../hoc/useOrbitData';
 import Confirm from '../../AlertDialog';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
-const NotTable = 420;
-
 const wizToolId = 'ProjResWizard';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
@@ -64,6 +64,10 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
+  // Fill the dialog's flex column and scroll internally so the action buttons
+  // below stay pinned to the dialog bottom regardless of content size.
+  flex: '1 1 auto',
+  minHeight: 0,
   overflow: 'auto',
   display: 'flex',
   flexDirection: 'column',
@@ -84,8 +88,16 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
     className={className}
     variant="striped"
     sx={{
-      '& .cell': {
-        height: 48,
+      // react-datasheet's default cell font is cramped; use the theme body size
+      // so the rows read as balanced.
+      fontSize: (theme) => theme.typography.body1.fontSize,
+      // react-datasheet's own `.data-grid-container .data-grid .cell` rule (3
+      // classes) beats any `& .cell` override here and forces height:17px /
+      // padding:0. The inner `.value-viewer` span has no competing padding
+      // rule, so padding it is what actually gives each row its height.
+      '& .value-viewer': {
+        py: 1.25,
+        px: 1.5,
       },
       // react-datasheet tints read-only cells with their own grey background;
       // clear it on the body rows so each row's stripe shows uniformly (the
@@ -93,10 +105,12 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
       '& > tbody > tr:not(:first-of-type) > .cell.read-only': {
         backgroundColor: 'transparent',
       },
-      // react-datasheet also dims read-only cells to grey text; keep every cell
-      // (header row and the read-only Reference column) at normal text color.
+      // react-datasheet dims read-only cells to grey text via its own
+      // `.data-grid .cell.read-only` rule (higher specificity than ours); every
+      // cell in this display-only sheet is read-only, so override with
+      // !important to keep the text normal black.
       '& .cell.read-only': {
-        color: 'text.primary',
+        color: (theme) => `${theme.palette.text.primary} !important`,
       },
       '& .cTitle': {
         fontWeight: 'bold',
@@ -124,6 +138,14 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
 
 interface ICell {
   value: any;
+  /**
+   * When set, the cell shows a localized label derived from this row's
+   * passage/section at render time (see `handleValueRenderer`) instead of
+   * `value`. Kept as the source (not a pre-rendered string) so the label
+   * follows a runtime language change; `value` keeps the original reference
+   * string used to build the saved resource topic.
+   */
+  info?: IInfo;
   readOnly?: boolean;
   width?: number;
   className?: string;
@@ -158,9 +180,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const [suffix, setSuffix] = useState('');
   const [numSegments, setNumSegments] = useState(0);
   const [pastedSegments, setPastedSegments] = useState('');
-  const [heightStyle, setHeightStyle] = useState({
-    maxHeight: `${window.innerHeight - NotTable}px`,
-  });
   const dataRef = useRef<ICell[][]>([]);
   const infoRef = useRef<IInfo[]>([]);
   const segmentsRef = useRef('{}');
@@ -174,6 +193,12 @@ export const ProjectResourceConfigure = (props: IProps) => {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const { getOrganizedBy } = useOrganizedBy();
+  const organizedBy = getOrganizedBy(true);
+  const reduxBookData = useSelector((state: IState) => state.books.bookData);
+  // Match useFullReference's book-data resolution so the display label uses the
+  // same source as the (unchanged) stored reference.
+  const labelBookData = props.bookData ?? reduxBookData;
   const {
     toolChanged,
     toolsChanged,
@@ -191,7 +216,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
 
-  const readOnlys = [false, true, false];
+  // Only the Description column is editable. Segment limits come from the audio
+  // player (not typed here) and the Reference is a derived label, so both stay
+  // read-only; the header row is fully read-only.
   // Description has no fixed width so it stretches to fill the full-width sheet.
   const widths = [150, 200, undefined];
   const cClass = ['lim', 'ref', 'des'];
@@ -201,30 +228,13 @@ export const ProjectResourceConfigure = (props: IProps) => {
     Ref,
     Desc,
   }
-  const setDimensions = () => {
-    setHeightStyle({
-      maxHeight: `${window.innerHeight - NotTable}px`,
-    });
-  };
-
-  useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   const rowCells = (row: string[], first = false) =>
     row.map(
       (v, i) =>
         ({
           value: v,
           width: widths[i],
-          readOnly: first || readOnlys[i],
+          readOnly: first || i !== ColName.Desc,
           className: first ? 'cTitle' : cClass[i],
         }) as ICell
     );
@@ -259,7 +269,12 @@ export const ProjectResourceConfigure = (props: IProps) => {
         }
       });
       newInfo.forEach((v) => {
-        newData.push(rowCells(['', fullReference(v), '']));
+        // `value` keeps the original reference (feeds the saved topic, copy, and
+        // paste-matching); `info` drives the localized row label rendered on
+        // screen, recomputed per render so it tracks language changes.
+        const cells = rowCells(['', fullReference(v), '']);
+        cells[ColName.Ref].info = v;
+        newData.push(cells);
       });
       infoRef.current = newInfo;
       setData(newData);
@@ -502,11 +517,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   const handleCellsChanged = (changes: Array<ICellChange>) => {
+    if (changes.length === 0) return;
     const newData = dataRef.current.map((r) => r);
     changes.forEach((c) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
+    // Editing a Description marks the wizard dirty so Save gating and the
+    // discard-on-close prompt work (same tracking handleSegment uses).
+    if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
   const handleSegment = (segments: string, init: boolean) => {
@@ -589,17 +608,37 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setSuffix(e.target.value);
   };
 
-  const handleValueRenderer = (cell: ICell) => cell.value;
+  // Reference cells carry their row's `info`; derive the localized label here so
+  // it recomputes on each render and follows a runtime language change. Fall
+  // back to the stored reference text if the label can't be resolved, so a row
+  // with missing info never shows a blank/"undefined" cell.
+  const handleValueRenderer = (cell: ICell) => {
+    if (!cell.info) return cell.value;
+    const label = cell.info.passage
+      ? passageLabel(cell.info.passage, labelBookData)
+      : sectionLabel(cell.info.section, organizedBy);
+    return label || cell.value;
+  };
 
   return (
-    <Box>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        // Fill the dialog's (flex-column) content area so the sheet grows and
+        // the footer buttons stay pinned to the bottom. Relies on the BigDialog
+        // passing a flex-column dialogContentSx for this wizard.
+        flex: '1 1 auto',
+        minHeight: 0,
+      }}
+    >
       <PassageDetailPlayer
         width={width}
         allowSegment={NamedRegions.ProjectResource}
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
       />
-      <StyledPaper id="proj-res-sheet" style={heightStyle}>
+      <StyledPaper id="proj-res-sheet">
         <Box sx={{ p: 2 }}>
           <Box data-testid="proj-res-sheet">
             <DataSheet
@@ -614,6 +653,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
             <TextField
               label={t.suffix}
               variant="outlined"
+              size="small"
+              sx={{ width: 240 }}
               value={suffix}
               onChange={handleSuffix}
             />
@@ -630,29 +671,34 @@ export const ProjectResourceConfigure = (props: IProps) => {
           </Stack>
         </Box>
       </StyledPaper>
-      <ActionRow>
-        <Button
-          id="copy-configure"
-          sx={{ mr: 'auto' }}
-          disabled={numSegments === 0}
-          onClick={handleCopy}
-        >
-          {ts.clipboardCopy}
-        </Button>
-        <Box sx={rowSx}>
+      {/* Fixed footer: keeps the action buttons pinned to the dialog bottom
+          while the sheet above scrolls. Wrapping ActionRow in a non-growing
+          Box neutralizes its flexGrow:1 inside this flex column. */}
+      <Box sx={{ flexShrink: 0 }}>
+        <ActionRow>
           <Button
-            id="res-create"
-            color="primary"
-            disabled={numSegments === 0 || savingRef.current}
-            onClick={handleCreate}
+            id="copy-configure"
+            sx={{ mr: 'auto' }}
+            disabled={numSegments === 0}
+            onClick={handleCopy}
           >
-            {t.createResources}
+            {ts.clipboardCopy}
           </Button>
-          <Button id="res-create-cancel" onClick={handleCancel}>
-            {ts.cancel}
-          </Button>
-        </Box>
-      </ActionRow>
+          <Box sx={rowSx}>
+            <Button
+              id="res-create"
+              color="primary"
+              disabled={numSegments === 0 || savingRef.current}
+              onClick={handleCreate}
+            >
+              {t.createResources}
+            </Button>
+            <Button id="res-create-cancel" onClick={handleCancel}>
+              {ts.cancel}
+            </Button>
+          </Box>
+        </ActionRow>
+      </Box>
       {showConfirmClose && (
         <Confirm
           title={t.confirmCloseTitle}
