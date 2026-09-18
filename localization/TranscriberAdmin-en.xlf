@@ -1498,6 +1498,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="category.editRemoved">
+         <segment>
+            <source>The category you were editing was removed.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="category.ignoreInvalid">
          <segment>
             <source>Ignoring invalid category change '{0}'.</source>

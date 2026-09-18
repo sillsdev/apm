@@ -248,6 +248,7 @@ const mockCategoryStrings = new LocalizedStrings({
     resources: 'resource(s)',
     apply: 'Apply',
     edit: 'Edit',
+    editRemoved: 'The category you were editing was removed.',
   },
 });
 
@@ -555,6 +556,67 @@ describe('CategoryListEdit (TT-7627)', () => {
     cy.get('#cat1adornment').should('have.value', 'Category 2');
     cy.get('#catSave').should('not.be.disabled').click();
     cy.get('@onClose').should('have.been.called');
+  });
+
+  /**
+   * Synced deletion of the row being edited must not trap the panel. The row
+   * carries the only edit Cancel, so when it disappears every surviving
+   * control (row Edit/Delete, dialog Cancel/Save) is still gated on a stale
+   * `editingId` and there is no way out of the panel.
+   */
+  it('releases the edit lock when sync removes the category being edited', () => {
+    mountList();
+
+    cy.get('#cat-edit-cat1', { timeout: 10000 }).click();
+    cy.get('#cat1adornment')
+      .should('not.be.disabled')
+      .clear()
+      .type('Edited While Sync Deletes');
+
+    cy.then(() => {
+      delete memory._records['artifactcategory:cat1'];
+      memory._notify('artifactcategory');
+    });
+
+    cy.get('#cat1adornment', { timeout: 10000 }).should('not.exist');
+    // The edited row took its own Cancel with it; only the rest can free us.
+    cy.get('#cat-cancel-edit-cat1').should('not.exist');
+    cy.get('#cat-edit-cat2').should('not.be.disabled');
+    cy.get('#cat-delete-cat2').should('not.be.disabled');
+    cy.get('#catCancel').should('not.be.disabled');
+
+    // Discriminating: not merely enabled, but usable again end to end.
+    // (#catSave stays disabled here because nothing has been applied.)
+    cy.get('#cat-edit-cat2').click();
+    cy.get('#cat2adornment').should('not.be.disabled');
+    cy.get('#cat-cancel-edit-cat2').click();
+    cy.get('#catCancel').click();
+    cy.get('@onClose').should('have.been.called');
+  });
+
+  /**
+   * Guard against an over-broad fix: clearing `editingId` on every refresh
+   * would also discard edits whose category is untouched by the sync.
+   */
+  it('keeps the in-progress edit when sync removes a different category', () => {
+    mountList();
+
+    cy.get('#cat-edit-cat1', { timeout: 10000 }).click();
+    cy.get('#cat1adornment')
+      .should('not.be.disabled')
+      .clear()
+      .type('Survives Unrelated Delete');
+
+    cy.then(() => {
+      delete memory._records['artifactcategory:cat2'];
+      memory._notify('artifactcategory');
+    });
+
+    cy.get('#cat2adornment', { timeout: 10000 }).should('not.exist');
+    cy.get('#cat1adornment').should('have.value', 'Survives Unrelated Delete');
+    cy.get('#cat-apply-cat1').should('not.be.disabled').click();
+    cy.get('#cat-edit-cat1').should('be.visible');
+    cy.get('#cat1adornment').should('have.value', 'Survives Unrelated Delete');
   });
 
   /**

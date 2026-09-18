@@ -1746,6 +1746,13 @@
                <context context-type="sourcefile">CategoryListEdit.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="category.editRemoved">
+            <source>The category you were editing was removed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CategoryListEdit.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="category.ignoreInvalid">
             <source>Ignoring invalid category change '{0}'.</source>
             <target/>

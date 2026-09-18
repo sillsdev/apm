@@ -284,6 +284,7 @@ export interface ICategoryStrings extends Localize.LocalizedStringsMethods {
     "duplicate": string;
     "discussions": string;
     "edit": string;
+    "editRemoved": string;
     "ignoreInvalid": string;
     "inUseBy": string;
     "note": string;
