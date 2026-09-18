@@ -8224,6 +8224,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.loadError">
+         <segment>
+            <source>The passage has not properly loaded. You can verify that the passage has audio or continue waiting.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.loading">
          <segment>
             <source>Loading...</source>
