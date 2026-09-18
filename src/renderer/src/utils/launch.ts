@@ -14,9 +14,16 @@ function isFileUrl(target: string): boolean {
   return /^file:/i.test(target);
 }
 
-/** Absolute URI that is not a file: URL or a Windows drive path (C:/...). */
-function isExternalUri(target: string): boolean {
-  return /^[a-z][a-z0-9+.-]+:/i.test(target) && !isFileUrl(target);
+function isAllowedExternalUri(target: string): boolean {
+  return /^(https?|mailto):/i.test(target);
+}
+
+function isUnknownUri(target: string): boolean {
+  return (
+    /^[a-z][a-z0-9+.-]+:/i.test(target) &&
+    !isFileUrl(target) &&
+    !isAllowedExternalUri(target)
+  );
 }
 
 /** Filesystem path for Electron shell.openPath (not a file:// URL). */
@@ -41,10 +48,11 @@ export const launch = async (
   target: string,
   online: boolean
 ): Promise<void> => {
-  if (isExternalUri(target)) {
+  if (isAllowedExternalUri(target)) {
     ipc?.openExternal(target);
     return;
   }
+  if (isUnknownUri(target)) return;
   const filePath = launchFilePath(target);
   // Electron shell.openPath requires a filesystem path on Windows, not file://
   if (await ipc?.isWindows()) {
