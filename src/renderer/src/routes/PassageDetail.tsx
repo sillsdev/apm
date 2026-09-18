@@ -11,7 +11,6 @@ import {
 import StickyRedirect from '../components/StickyRedirect';
 import {
   ToolSlug,
-  toolAllowsEmptyVernacularAudio,
   useProjectType,
   useStepTool,
   useUrlContext,
@@ -167,20 +166,9 @@ const MobileStep = () => {
 
 const MobileDetail = () => {
   const { isMobileWidth } = useMobile();
-  const { discussOpen, rowData, currentstep } = useContext(PassageDetailContext)
-    ?.state ?? {
+  const { discussOpen } = useContext(PassageDetailContext)?.state ?? {
     discussOpen: false,
-    rowData: [],
-    currentstep: '',
   };
-  const { tool } = useStepTool(currentstep);
-  const currentVersion = useMemo(() => rowData[0]?.version ?? 0, [rowData]);
-  /** Policy lives here (with step tool); the layout component only branches on the result. */
-  const showNoAudioPlaceholder = useMemo(
-    () => currentVersion === 0 && !toolAllowsEmptyVernacularAudio(tool),
-    [currentVersion, tool]
-  );
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const showSideBySide = useMemo(() => !isMobileWidth, [isMobileWidth]);
   const flushDiscussionLeft = useMemo(
@@ -190,13 +178,11 @@ const MobileDetail = () => {
 
   return (
     <PassageDetailMobileDetail
-      showNoAudioPlaceholder={showNoAudioPlaceholder}
       showSideBySide={showSideBySide}
       flushDiscussionLeft={flushDiscussionLeft}
       // Always mount MobileStep on narrow mobile while discussion is open; unmounting
       // drops PassageDetailRecord/MediaRecord state and clears an in-progress recording.
       recordContent={<MobileStep />}
-      noAudioText={ts.noAudio}
     />
   );
 };

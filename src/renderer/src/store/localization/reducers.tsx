@@ -1702,6 +1702,7 @@ const initialState = {
 			"launchAudacity": "Launch Audacity",
 			"leaveUnsavedChanges": "You have unsaved changes that will be lost if you leave this page. Leave anyway?",
 			"loadFromFile": "Load from file...",
+			"loadError": "The passage has not finished loading. You can verify that the passage has audio or continue waiting.",
 			"loading": "Loading...",
 			"mediaAttached": "Audio Attached",
 			"mediaDetached": "Audio Detached",

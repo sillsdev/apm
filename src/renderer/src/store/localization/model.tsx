@@ -1615,6 +1615,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "launchAudacity": string;
     "leaveUnsavedChanges": string;
     "loadFromFile": string;
+    "loadError": string;
     "loading": string;
     "mediaAttached": string;
     "mediaDetached": string;
