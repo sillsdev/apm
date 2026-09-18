@@ -80,6 +80,10 @@ import { discussionCardSelector, sharedSelector } from '../../selector';
 import { CommentEditor } from './CommentEditor';
 import { useSaveComment } from '../../crud/useSaveComment';
 import { useRecordComment } from './useRecordComment';
+import {
+  audioCommentPendingRestore,
+  startAudioCommentSave,
+} from './startAudioCommentSave';
 import BigDialog from '../../hoc/BigDialog';
 import { DiscussionMove } from './DiscussionMove';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -331,19 +335,16 @@ export const DiscussionCard = (props: IProps) => {
     }
   };
   const pendingRestore = () =>
-    discussion.id
-      ? {
-          kind: 'comment' as const,
-          discussionId: discussion.id,
-          text: commentText.current,
-          visible: computeCommentVisibleString({
-            isCIT: hasPermission(PermissionName.CIT),
-            isMentor: hasPermission(PermissionName.Mentor),
-            authorId:
-              remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
-          }),
-        }
-      : undefined;
+    audioCommentPendingRestore({
+      discussionId: discussion.id,
+      commentText: commentText.current,
+      visible: computeCommentVisibleString({
+        isCIT: hasPermission(PermissionName.CIT),
+        isMentor: hasPermission(PermissionName.Mentor),
+        authorId:
+          remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
+      }),
+    });
   const saveMyComment = async () => {
     if (discussion.id && (commentText.current || commentMediaId.current)) {
       await saveComment(
@@ -828,22 +829,20 @@ export const DiscussionCard = (props: IProps) => {
     const hasPendingAudio =
       (canSaveRecording || hasAudioDraft) && !commentMediaId.current;
     if (hasPendingAudio) {
-      // hasAudioDraft is set on pause before canSaveRecording; MediaRecord
-      // completes save immediately if startSave runs without a blob.
-      if (hasAudioDraft && !canSaveRecordingRef.current) {
-        try {
-          await waitForIt(
+      const started = await startAudioCommentSave({
+        isBlobReady: () => !hasAudioDraft || canSaveRecordingRef.current,
+        waitForBlob: () =>
+          waitForIt(
             'audio comment blob ready',
             () => canSaveRecordingRef.current,
             () => false,
             30
-          );
-        } catch {
-          cardSavingRef.current = false;
-          return;
-        }
-      }
-      startSave(NewCommentToolId);
+          ),
+        discussionId: () => discussion.id,
+        saveDiscussion,
+        startSave: () => startSave(NewCommentToolId),
+      });
+      if (!started) cardSavingRef.current = false;
       //we'll do the rest in afterUpload
       return;
     } else if (mediafileId && myChanged) {

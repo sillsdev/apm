@@ -394,6 +394,48 @@ describe('MediaRecord save gating', () => {
     await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
   });
 
+  // TT-7365: on desktop the failed take is already queued as a pending media
+  // upload, so re-arming Save lets the user submit the identical recording
+  // again and stage a second pending row for the same section. Greg
+  // (2026-09-15): "once the save is clicked, it should be disabled until the
+  // save operation is complete. If the current version ends up pending, the
+  // audio can't be saved without changing it (in which case it is saved as a
+  // new version)."
+  it('keeps save off for a take already queued as a pending upload', async () => {
+    mockEnv.isElectron = true;
+    const setCanSave = jest.fn();
+    await failASave(setCanSave);
+
+    // saveCompleted has cleared the request; the same take is still loaded.
+    mockSaveRequested = () => false;
+    act(() => {
+      latestWsProps?.setChanged?.(true);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+  });
+
+  // The latch is per take, not a blanket disable: re-recording produces a new
+  // blob that is not the queued one, and that is saveable as a new version.
+  it('re-enables save once the queued take is re-recorded', async () => {
+    mockEnv.isElectron = true;
+    const setCanSave = jest.fn();
+    await failASave(setCanSave);
+
+    mockSaveRequested = () => false;
+    act(() => {
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(2000)], { type: 'audio/ogg' })
+      );
+      latestWsProps?.setChanged?.(true);
+    });
+
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
+  });
+
   // On desktop the take survives as a pending media upload, so a network loss
   // tells the user it is queued rather than that the save failed.
   it('tells electron users the take is queued when the network is lost', async () => {
