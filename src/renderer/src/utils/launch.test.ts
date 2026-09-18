@@ -106,6 +106,17 @@ describe('launch external URI schemes', () => {
     expect(api.openExternal).not.toHaveBeenCalled();
     expect(api.openPath).toHaveBeenCalledWith(jpg);
   });
+
+  it('does not forward arbitrary protocol handlers to the OS', async () => {
+    jest.resetModules();
+    const api = mockApi(true);
+    const { launch } = require('./launch');
+    await launch('ms-msdt:foo', true);
+    await launch('smb://evil/share', true);
+    await launch('javascript:alert(1)', true);
+    expect(api.openExternal).not.toHaveBeenCalled();
+    expect(api.openPath).not.toHaveBeenCalled();
+  });
 });
 
 describe('launch Linux online local file', () => {
