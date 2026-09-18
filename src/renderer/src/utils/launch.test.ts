@@ -1,4 +1,4 @@
-import { launchFilePath } from './launch';
+import { launch, launchFilePath } from './launch';
 
 const jpg = 'C:/Users/shent/transcriber/media/WEB-0013_agama_lizard.jpg';
 
@@ -67,9 +67,7 @@ describe('launchFilePath', () => {
 
 describe('launch Windows local image', () => {
   it('uses openPath with the filesystem path even when online', async () => {
-    jest.resetModules();
     const api = mockApi(true);
-    const { launch } = require('./launch');
     await launch(`file://${jpg}`, true);
     expect(api.openExternal).not.toHaveBeenCalled();
     expect(api.exeCmd).not.toHaveBeenCalled();
@@ -79,9 +77,7 @@ describe('launch Windows local image', () => {
 
 describe('launch external URI schemes', () => {
   it('opens mailto with openExternal on Windows, not as a local path', async () => {
-    jest.resetModules();
     const api = mockApi(true);
-    const { launch } = require('./launch');
     const mailto = 'mailto:support@example.org';
     await launch(mailto, true);
     expect(api.openPath).not.toHaveBeenCalled();
@@ -89,9 +85,7 @@ describe('launch external URI schemes', () => {
   });
 
   it('opens mailto with openExternal on Linux, without a file:// prefix', async () => {
-    jest.resetModules();
     const api = mockApi(false);
-    const { launch } = require('./launch');
     const mailto = 'mailto:support@example.org';
     await launch(mailto, true);
     expect(api.openPath).not.toHaveBeenCalled();
@@ -99,18 +93,14 @@ describe('launch external URI schemes', () => {
   });
 
   it('does not treat a Windows drive path as a URI scheme', async () => {
-    jest.resetModules();
     const api = mockApi(true);
-    const { launch } = require('./launch');
     await launch(jpg, true);
     expect(api.openExternal).not.toHaveBeenCalled();
     expect(api.openPath).toHaveBeenCalledWith(jpg);
   });
 
   it('does not forward arbitrary protocol handlers to the OS', async () => {
-    jest.resetModules();
     const api = mockApi(true);
-    const { launch } = require('./launch');
     await launch('ms-msdt:foo', true);
     await launch('smb://evil/share', true);
     await launch('javascript:alert(1)', true);
@@ -121,9 +111,7 @@ describe('launch external URI schemes', () => {
 
 describe('launch Linux online local file', () => {
   it('does not double-prefix mixed-case file URLs', async () => {
-    jest.resetModules();
     const api = mockApi(false);
-    const { launch } = require('./launch');
     const url = 'FILE:///home/user/media/photo.jpg';
     await launch(url, true);
     expect(api.openPath).not.toHaveBeenCalled();
@@ -133,18 +121,14 @@ describe('launch Linux online local file', () => {
 
 describe('launch Linux offline local file', () => {
   it('opens a jpg with openPath, not a shell command string', async () => {
-    jest.resetModules();
     const api = mockApi(false);
-    const { launch } = require('./launch');
     await launch(`file:///home/user/media/photo.jpg`, false);
     expect(api.exeCmd).not.toHaveBeenCalled();
     expect(api.openPath).toHaveBeenCalledWith('/home/user/media/photo.jpg');
   });
 
   it('runs a .sh script via exec argv, not concatenated exeCmd', async () => {
-    jest.resetModules();
     const api = mockApi(false);
-    const { launch } = require('./launch');
     const sh = '/opt/apm/resources/resetData.sh';
     await launch(sh, false);
     expect(api.exeCmd).not.toHaveBeenCalled();
@@ -152,9 +136,7 @@ describe('launch Linux offline local file', () => {
   });
 
   it('passes a filename with shell syntax as a single argument', async () => {
-    jest.resetModules();
     const api = mockApi(false);
-    const { launch } = require('./launch');
     const evil = '/tmp/x; touch /tmp/pwned.sh';
     await launch(evil, false);
     expect(api.exeCmd).not.toHaveBeenCalled();
