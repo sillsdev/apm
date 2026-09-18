@@ -20,6 +20,7 @@ import {
 } from '../../model';
 import {
   getSegments,
+  getSortedRegions,
   NamedRegions,
   updateSegments,
 } from '../../utils/namedSegments';
@@ -32,21 +33,26 @@ import {
 } from '../../selector';
 import AeroTaskErrorMessage from './AeroTaskErrorMessage';
 import {
+  aeroErrorMessage,
   aeroTaskErrorParts,
   axiosErrorMessage,
   transcriptionPollError,
 } from './aeroTaskError';
+import {
+  AeroPollClip,
+  AeroProgress,
+  AeroVerseTiming,
+  aeroProgressPercent,
+  clipTranscription,
+  parseAeroTranscriptionPoll,
+  transcriptionText,
+  verseFromLabel,
+} from './aeroTranscriptionPoll';
 import { Stack, Typography } from '@mui/material';
 import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
-
-export interface VerseTask {
-  taskId: string;
-  verse: string;
-  complete: boolean;
-}
 
 interface AsrProgressProps {
   mediaId: string;
@@ -78,7 +84,11 @@ export default function AsrProgress({
   const { showMessage } = useSnackBar();
   const [taskId, setTaskIdx] = React.useState('');
   const taskIdRef = React.useRef('');
-  const [tasks, setTasks] = React.useState<VerseTask[]>();
+  const [pollProgress, setPollProgress] = React.useState<AeroProgress>();
+  const [pollClip, setPollClip] = React.useState<AeroPollClip>();
+  const verseTimingsRef = React.useRef<AeroVerseTiming[]>([]);
+  const appliedKeysRef = React.useRef<Set<string>>(new Set());
+  const cleanupErrorShownRef = React.useRef(false);
   const taskTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const checkingRef = React.useRef(false);
   const timerDelay = 5000; //5 seconds
@@ -88,40 +98,36 @@ export default function AsrProgress({
   const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [errorReporter] = useGlobal('errorReporter');
 
-  const getTasks = (mediaRec: MediaFileD | undefined) => {
+  const loadVerseTimings = (mediaRec: MediaFileD | undefined) => {
+    const segs = getSortedRegions(
+      getSegments(NamedRegions.Verse, mediaRec?.attributes?.segments || '{}')
+    );
+    verseTimingsRef.current = segs
+      .map((region) => ({
+        start: region.start,
+        verse: verseFromLabel(region.label),
+      }))
+      .filter((v) => v.verse);
+  };
+
+  const storedTaskId = (mediaRec: MediaFileD | undefined) => {
     const regionstr = getSegments(
       NamedRegions.TRTask,
       mediaRec?.attributes?.segments || '{}'
     );
     const segs = JSON.parse(regionstr ?? '{}');
-    const tsks: VerseTask[] = [];
-    if (Array.isArray(segs?.regions)) {
-      (segs?.regions as Array<any>).forEach((region) => {
-        const part: string[] = region.label.split('|');
-        tsks.push({
-          taskId: part[0] ?? '',
-          verse: part[1] ?? '', //undefined if no timing
-          complete: contentVerses?.includes(part[1] ?? 'no-verses') ?? false,
-        });
-      });
-      return tsks;
-    } else {
-      return undefined;
-    }
-  };
-
-  const getTaskId = (
-    mediaRec: MediaFileD | undefined
-  ): [string | undefined, VerseTask[] | undefined] => {
-    const tsks = getTasks(mediaRec);
-    if (tsks && !tasks) setTasks(tsks);
-    return [tsks?.find((tasks) => !tasks.complete)?.taskId, tsks];
+    const label = segs?.regions?.[0]?.label;
+    if (typeof label !== 'string') return '';
+    return label.split('|')[0] ?? '';
   };
 
   const setTaskId = (taskId: string) => {
     setTaskIdx(taskId);
     taskIdRef.current = taskId;
-    if (taskId === '') setTasks(undefined);
+    if (taskId === '') {
+      setPollProgress(undefined);
+      setPollClip(undefined);
+    }
   };
   const setTranscribing = (adding: boolean) => {
     addingRef.current = adding;
@@ -136,10 +142,30 @@ export default function AsrProgress({
     console.log(logMessage ?? (typeof message === 'string' ? message : ''));
   };
 
-  const showTaskFailure = async (message: string) => {
-    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
-    logError(Severity.error, errorReporter, new Error(message));
+  const clearTrTasks = async () => {
+    const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+      | MediaFileD
+      | undefined;
+    if (!mediaRec) throw new Error('Mediafile not found');
+    const segments = updateSegments(
+      NamedRegions.TRTask,
+      mediaRec.attributes?.segments ?? '[]',
+      ''
+    );
+    await projectSegmentSave({ media: mediaRec, segments });
+  };
+
+  const finishRun = async () => {
     await clearTrTasks();
+    setTaskId('');
+  };
+
+  const reportCleanupFailure = (err: unknown) => {
+    logError(Severity.error, errorReporter, err as Error);
+    if (cleanupErrorShownRef.current) return;
+    cleanupErrorShownRef.current = true;
+    const message = axiosErrorMessage(err);
+    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
     status(
       <AeroTaskErrorMessage
         summary={summary}
@@ -149,23 +175,40 @@ export default function AsrProgress({
       AlertSeverity.Error,
       message
     );
-    setTaskId('');
   };
 
-  const clearTrTasks = async () => {
-    const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-      MediaFileD | undefined;
-    if (!mediaRec) return;
-    const segments = updateSegments(
-      NamedRegions.TRTask,
-      mediaRec.attributes?.segments ?? '[]',
-      ''
+  const showTaskFailure = async (message: string) => {
+    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
+    logError(Severity.error, errorReporter, new Error(message));
+    status(
+      <AeroTaskErrorMessage
+        summary={summary}
+        details={details}
+        detailsLabel={tm.details}
+      />,
+      AlertSeverity.Error,
+      message
     );
     try {
-      await projectSegmentSave({ media: mediaRec, segments });
+      await finishRun();
     } catch (err) {
-      logError(Severity.error, errorReporter, err as Error);
+      reportCleanupFailure(err);
     }
+  };
+
+  const applyClip = (clip: AeroPollClip | undefined) => {
+    if (clip?.state !== 'SUCCESS') return;
+    const key = clip.clip || 'clip';
+    if (appliedKeysRef.current.has(key)) return;
+    const text = clipTranscription(
+      clip,
+      phonetic,
+      verseTimingsRef.current,
+      contentVerses
+    );
+    if (!text) return;
+    appliedKeysRef.current.add(key);
+    setTranscription(text);
   };
 
   const checkTask = async () => {
@@ -179,28 +222,35 @@ export default function AsrProgress({
         await showTaskFailure(pollError);
         return;
       }
-      if (response?.transcription) {
-        let verse = '';
-        let nextTask = '';
-        if (tasks) {
-          const ix = tasks.findIndex((t) => t.taskId === current);
-          if (ix >= 0) {
-            if (typeof tasks[ix]?.verse === 'string')
-              verse = ` \\v ${tasks[ix].verse} `;
-            tasks[ix].complete = true;
-            nextTask =
-              ix < tasks.length - 1 ? (tasks[ix + 1]?.taskId ?? '') : '';
-          }
-        }
-        setTranscription(verse + response?.transcription);
-        setTaskId(nextTask);
-      } else if (response?.transcription === '') {
-        status(t.noAsrTranscription);
-        setTaskId('');
-      } else {
-        console.log(`${current} not done`, response);
-        setWorking(true);
+      const parsed = parseAeroTranscriptionPoll(response);
+      setPollProgress(parsed.progress);
+      setPollClip(parsed.clip);
+      applyClip(parsed.clip);
+      if (parsed.failed) {
+        await showTaskFailure(
+          aeroErrorMessage(parsed.clip?.error) ??
+            aeroErrorMessage(parsed.error) ??
+            t.aiAsrFailed
+        );
+        return;
       }
+      if (parsed.terminal) {
+        const hasText = parsed.clip?.segments.some(
+          (seg) =>
+            (transcriptionText(seg.transcription, phonetic) ?? '').trim()
+              .length > 0
+        );
+        if (!hasText) status(t.noAsrTranscription);
+        try {
+          await finishRun();
+        } catch (err) {
+          reportCleanupFailure(err);
+          setWorking(true);
+        }
+        return;
+      }
+      console.log(`${current} not done`, response);
+      setWorking(true);
     } catch (errResult: unknown) {
       await showTaskFailure(axiosErrorMessage(errResult));
     } finally {
@@ -238,11 +288,13 @@ export default function AsrProgress({
         token
       )) as { data: { data: MediaFileD } };
       const mediaRec = response?.data.data as MediaFileD;
-      const tasks = getTasks(mediaRec);
-      if (tasks) {
+      loadVerseTimings(mediaRec);
+      appliedKeysRef.current = new Set();
+      cleanupErrorShownRef.current = false;
+      const nextTaskId = storedTaskId(mediaRec);
+      if (nextTaskId) {
         onPullTasks(remId);
-        if (tasks.length > 1) setTasks(tasks);
-        setTaskId(tasks[0]?.taskId ?? '');
+        setTaskId(nextTaskId);
       } else {
         status(t.aiAsrFailed);
         closing();
@@ -256,7 +308,11 @@ export default function AsrProgress({
         errorReporter,
         infoMsg(error, summary + (details ? `: ${details}` : ''))
       );
-      await clearTrTasks();
+      try {
+        await clearTrTasks();
+      } catch (err) {
+        logError(Severity.error, errorReporter, err as Error);
+      }
       status(
         <AeroTaskErrorMessage
           summary={summary || t.aiAsrFailed}
@@ -286,15 +342,18 @@ export default function AsrProgress({
     setTranscribing(true);
     setWorking(false);
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
-    const [taskId, tasks] = getTaskId(mediaRec);
+    loadVerseTimings(mediaRec);
+    appliedKeysRef.current = new Set();
+    cleanupErrorShownRef.current = false;
+    const storedId = storedTaskId(mediaRec);
     if (
-      (!tasks || !taskId) &&
+      !storedId &&
       ignoreVs((mediaRec?.attributes?.transcription ?? '').trim())
     ) {
       status(t.transcriptionExists);
       closing();
-    } else if (taskId && !force) {
-      setTaskId(taskId);
+    } else if (storedId && !force) {
+      setTaskId(storedId);
     } else {
       postTranscribe();
     }
@@ -317,7 +376,41 @@ export default function AsrProgress({
       }}
     >
       <Stack spacing={1} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
-        <LinearProgress />
+        {pollProgress && pollProgress.total > 0 ? (
+          <LinearProgress
+            id="asr-clip-progress"
+            variant="determinate"
+            value={aeroProgressPercent(pollProgress)}
+          />
+        ) : (
+          <LinearProgress />
+        )}
+        {pollProgress && pollProgress.total > 0 && (
+          <Typography id="asr-progress-count">
+            {pollProgress.completed}/{pollProgress.total}
+          </Typography>
+        )}
+        {pollClip && (
+          <Box id="asr-clip-0">
+            <Typography>
+              {[pollClip.clip, pollClip.state].filter(Boolean).join(' — ')}
+            </Typography>
+            {pollClip.state === 'FAILURE' && (
+              <Typography color="error">
+                {aeroErrorMessage(pollClip.error) ?? t.aiAsrFailed}
+              </Typography>
+            )}
+            {pollClip.state === 'SUCCESS' &&
+              pollClip.segments.map((segment, segIx) => (
+                <Typography
+                  key={`${segment.start}-${segIx}`}
+                  id={`asr-segment-0-${segIx}`}
+                >
+                  {transcriptionText(segment.transcription, phonetic) ?? ''}
+                </Typography>
+              ))}
+          </Box>
+        )}
         {(working || Boolean(taskId)) && (
           <Typography
             sx={{

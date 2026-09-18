@@ -21,6 +21,20 @@ export function aeroTaskErrorParts(
 const errorText = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
+/** String form of Aero `error` which may be a string or `{ message, detail }`. */
+export function aeroErrorMessage(value: unknown): string | undefined {
+  const asString = errorText(value);
+  if (asString) return asString;
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Record<string, unknown>;
+  return (
+    errorText(raw.message) ??
+    errorText(raw.detail) ??
+    errorText(raw.error) ??
+    undefined
+  );
+}
+
 /** Aero poll payloads that mean the task failed (not still pending). */
 export function transcriptionPollError(response: unknown): string | undefined {
   if (response == null) return undefined;
@@ -30,9 +44,19 @@ export function transcriptionPollError(response: unknown): string | undefined {
   }
   if (typeof response !== 'object') return undefined;
   const body = response as Record<string, unknown>;
+  const state = typeof body.state === 'string' ? body.state.toUpperCase() : '';
+  // Envelope: keep polling until top-level SUCCESS/FAILURE. `result` is not done.
+  if (state === 'PENDING' || state === 'STARTED' || state === 'SUCCESS') {
+    return undefined;
+  }
+  if (state === 'FAILURE') {
+    return (
+      aeroErrorMessage(body.error) ?? errorText(body.message) ?? 'Task failed'
+    );
+  }
   const message = errorText(body.message);
   if (message?.toLowerCase().startsWith(AERO_TASK_FAILED)) return message;
-  const error = errorText(body.error);
+  const error = aeroErrorMessage(body.error);
   if (error) return error;
   const detail = errorText(body.detail);
   if (detail) return detail;
