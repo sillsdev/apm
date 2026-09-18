@@ -39,6 +39,7 @@ import {
   needItfSync,
   shouldRunItfSync,
   clearNeedItfSync,
+  recoverBackupSyncFail,
 } from './utils';
 import { isUnauthorized, isFetchNetworkError } from './utils/httpError';
 import { removeOrbitRemote } from './utils/removeOrbitRemote';
@@ -295,6 +296,8 @@ const sourcesImpl = async (
         source: 'memory',
         target: 'backup',
         blocking: true,
+        // deactivate() can close IndexedDB under an in-flight backup sync.
+        catch: (error) => recoverBackupSyncFail(backup, error),
       })
     );
   if (!coordinator.strategyNames.includes('logging'))
