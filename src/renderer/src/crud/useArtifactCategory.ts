@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/immutability */
 import { useRef, useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import {
@@ -80,12 +79,27 @@ export const useArtifactCategory = (teamId?: string) => {
     return cleanFileName(orgRec?.attributes?.slug + 'cat' + name) ?? '';
   };
 
-  const AddOrgNoteCategoryOps = (t: RecordTransformBuilder, orgId?: string) => {
-    if (offlineOnly) return [];
-    // Add default note categories
+  const noteSpecialsPresent = (recs: ArtifactCategoryD[]) => {
+    const present = new Set<string>();
+    for (const r of recs) {
+      if (!r.attributes?.note) continue;
+      const su = r.attributes.specialuse ?? '';
+      if (su) present.add(su);
+    }
+    return present;
+  };
 
+  const AddOrgNoteCategoryOps = (
+    t: RecordTransformBuilder,
+    orgId?: string,
+    onlySpecials?: string[]
+  ) => {
+    if (offlineOnly) return [];
+    // Add default note categories (or only the missing specialuses when bootstrapping).
+
+    const toAdd = onlySpecials ?? specialNoteCategories;
     const opArray: RecordOperation[] = [];
-    specialNoteCategories.forEach((category) => {
+    toAdd.forEach((category) => {
       const noteCategory: ArtifactCategoryD = {
         type: 'artifactcategory',
         attributes: {
@@ -112,12 +126,36 @@ export const useArtifactCategory = (teamId?: string) => {
     return opArray;
   };
 
-  const AddOrgNoteCategories = async (orgId?: string) => {
+  const AddOrgNoteCategories = async (
+    orgId?: string,
+    onlySpecials?: string[]
+  ) => {
     if (offlineOnly) return;
     // Add default note categories
 
-    await memory.update((t) => AddOrgNoteCategoryOps(t, orgId));
+    await memory.update((t) => AddOrgNoteCategoryOps(t, orgId, onlySpecials));
   };
+
+  /** Keep one row per non-empty specialuse (prefer remoteId when both exist). */
+  const dedupeNoteSpecials = (recs: ArtifactCategoryD[]) => {
+    const sorted = [...recs].sort((a, b) => {
+      const aR = a.keys?.remoteId ? 0 : 1;
+      const bR = b.keys?.remoteId ? 0 : 1;
+      return aR - bR;
+    });
+    const seen = new Set<string>();
+    const out: ArtifactCategoryD[] = [];
+    for (const r of sorted) {
+      const su = r.attributes?.specialuse ?? '';
+      if (su) {
+        if (seen.has(su)) continue;
+        seen.add(su);
+      }
+      out.push(r);
+    }
+    return out;
+  };
+
   const getArtifactCategorys = async (type: ArtifactCategoryType) => {
     const categorys: IArtifactCategory[] = [];
     // Read from the local Orbit cache only. Waiting on the remote request
@@ -137,19 +175,18 @@ export const useArtifactCategory = (teamId?: string) => {
       (r) => Boolean(r.keys?.remoteId) !== offlineOnly
     );
     if (!offlineOnly && type === ArtifactCategoryType.Note && curOrg) {
-      // Detect chapter against unfiltered cache so an unsynced local special
-      // (no remoteId yet) still counts and is not created again.
-      const hasChapterSpecial = allOrgRecs.some(
-        (r) =>
-          r.attributes.note &&
-          r.attributes.specialuse === specialNoteCategories[0]
-      );
-      if (!hasChapterSpecial && !specialBootstrapOrgs.current.has(curOrg)) {
+      // Detect specials against unfiltered cache so an unsynced local special
+      // (no remoteId yet) still counts and is not created again (TT-7656).
+      // Create each missing specialuse individually so chapter-only orgs still
+      // get title (TT-7702).
+      const present = noteSpecialsPresent(allOrgRecs);
+      const missing = specialNoteCategories.filter((s) => !present.has(s));
+      if (missing.length > 0 && !specialBootstrapOrgs.current.has(curOrg)) {
         specialBootstrapOrgs.current.add(curOrg);
         // Fire-and-forget: liveQuery refreshes the picker when records land,
         // and specials are filtered out of the dropdown anyway. On failure,
         // clear the marker so a later read can retry.
-        void AddOrgNoteCategories(curOrg).catch((err: Error) => {
+        void AddOrgNoteCategories(curOrg, missing).catch((err: Error) => {
           specialBootstrapOrgs.current.delete(curOrg);
           logError(Severity.error, errorReporter, err);
         });
@@ -160,8 +197,9 @@ export const useArtifactCategory = (teamId?: string) => {
       orgrecs = orgrecs.filter((r) => r.attributes.resource);
     else if (type === ArtifactCategoryType.Discussion)
       orgrecs = orgrecs.filter((r) => r.attributes.discussion);
-    else if (type === ArtifactCategoryType.Note)
-      orgrecs = orgrecs.filter((r) => r.attributes.note);
+    else if (type === ArtifactCategoryType.Note) {
+      orgrecs = dedupeNoteSpecials(orgrecs.filter((r) => r.attributes.note));
+    }
 
     orgrecs.forEach((r) =>
       categorys.push({
