@@ -77,6 +77,37 @@ describe('launch Windows local image', () => {
   });
 });
 
+describe('launch external URI schemes', () => {
+  it('opens mailto with openExternal on Windows, not as a local path', async () => {
+    jest.resetModules();
+    const api = mockApi(true);
+    const { launch } = require('./launch');
+    const mailto = 'mailto:support@example.org';
+    await launch(mailto, true);
+    expect(api.openPath).not.toHaveBeenCalled();
+    expect(api.openExternal).toHaveBeenCalledWith(mailto);
+  });
+
+  it('opens mailto with openExternal on Linux, without a file:// prefix', async () => {
+    jest.resetModules();
+    const api = mockApi(false);
+    const { launch } = require('./launch');
+    const mailto = 'mailto:support@example.org';
+    await launch(mailto, true);
+    expect(api.openPath).not.toHaveBeenCalled();
+    expect(api.openExternal).toHaveBeenCalledWith(mailto);
+  });
+
+  it('does not treat a Windows drive path as a URI scheme', async () => {
+    jest.resetModules();
+    const api = mockApi(true);
+    const { launch } = require('./launch');
+    await launch(jpg, true);
+    expect(api.openExternal).not.toHaveBeenCalled();
+    expect(api.openPath).toHaveBeenCalledWith(jpg);
+  });
+});
+
 describe('launch Linux online local file', () => {
   it('does not double-prefix mixed-case file URLs', async () => {
     jest.resetModules();

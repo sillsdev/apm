@@ -14,6 +14,11 @@ function isFileUrl(target: string): boolean {
   return /^file:/i.test(target);
 }
 
+/** Absolute URI that is not a file: URL or a Windows drive path (C:/...). */
+function isExternalUri(target: string): boolean {
+  return /^[a-z][a-z0-9+.-]+:/i.test(target) && !isFileUrl(target);
+}
+
 /** Filesystem path for Electron shell.openPath (not a file:// URL). */
 export function launchFilePath(target: string): string {
   if (!isFileUrl(target)) return target;
@@ -36,7 +41,7 @@ export const launch = async (
   target: string,
   online: boolean
 ): Promise<void> => {
-  if (/^https?:\/\//i.test(target)) {
+  if (isExternalUri(target)) {
     ipc?.openExternal(target);
     return;
   }
