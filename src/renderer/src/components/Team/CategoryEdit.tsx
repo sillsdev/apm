@@ -19,7 +19,10 @@ import GraphicsIcon from '@mui/icons-material/Image';
 import MediaTitle from '../../control/MediaTitle';
 import Colorful, { ColorfulProps } from '@uiw/react-color-colorful';
 import { useSelector, shallowEqual } from 'react-redux';
-import GraphicPicker, { type GraphicPickerProps } from '../GraphicPicker';
+import GraphicPicker, {
+  NOTE_CATEGORY_STYLE,
+  type GraphicPickerProps,
+} from '../GraphicPicker';
 import { useGraphicPicker } from '../useGraphicPicker';
 import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -298,6 +301,7 @@ const CategoryEdit = forwardRef<CategoryEditHandle, IProps>(
               !offline && (
                 <Picker
                   scripture={false}
+                  defaultSelectedStyles={[NOTE_CATEGORY_STYLE]}
                   teamId={teamId}
                   isOpen={graphicPicker.isOpen}
                   onOpen={graphicPicker.onOpen}
