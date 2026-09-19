@@ -5,6 +5,7 @@ import { debounce, Menu, MenuItem } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { layoutGap } from '../theme';
 import {
   GridRowId,
   type GridColDef,
@@ -752,14 +753,14 @@ export function TranscriptionTab(props: IProps) {
         inDialog
           ? (theme) => ({
               backgroundColor: 'background.paper',
-              pt: theme.layout.gap,
+              pt: layoutGap(theme),
               px: 0,
             })
           : undefined
       }
       drawBottomBorder={!inDialog}
       contentSx={(theme) => ({
-        p: inDialog ? 0 : theme.layout.gap,
+        p: inDialog ? 0 : layoutGap(theme),
       })}
     >
       <Box

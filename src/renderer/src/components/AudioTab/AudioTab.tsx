@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
 import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { layoutGap } from '../../theme';
 import JSONAPISource from '@orbit/jsonapi';
 import Memory from '@orbit/memory';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
@@ -372,7 +373,7 @@ export function AudioTab() {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      contentSx={(theme) => ({ p: layoutGap(theme) })}
     >
       <Box width="100%">
         {autoMatch && (

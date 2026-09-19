@@ -6,6 +6,7 @@ import { IState, IWelcomeStrings, User, OfflineProject, UserD } from '../model';
 import { InitializedRecord, RecordTransformBuilder } from '@orbit/records';
 import * as action from '../store';
 import { Typography, Grid, Box, BoxProps, SxProps, Theme } from '@mui/material';
+import { layoutP } from '../theme';
 import {
   useCheckOnline,
   localeDefault,
@@ -45,7 +46,7 @@ const actionSx: SxProps<Theme> = (theme) => ({
   p: 2,
   display: 'flex',
   flexWrap: 'wrap',
-  gap: theme.layout.p,
+  gap: layoutP(theme),
   justifyContent: 'center',
   alignItems: 'center',
   alignSelf: 'center',

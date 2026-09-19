@@ -16,6 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { layoutGap } from '../theme';
 import {
   GridColumnVisibilityModel,
   GridRenderCellParams,
@@ -542,7 +543,7 @@ export function AssignmentTable() {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      contentSx={(theme) => ({ p: layoutGap(theme) })}
     >
       <AssignmentDiv ref={boxRef} id="AssignmentTable">
         <TreeDataGrid

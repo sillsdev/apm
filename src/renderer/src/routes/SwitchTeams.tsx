@@ -12,6 +12,7 @@ import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { layoutGap, layoutP } from '../theme';
 import { DialogMode } from '../model';
 import { Button, columnSx, rowSx, spreadSx } from '../control';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -253,7 +254,7 @@ export const SwitchTeamsInner = () => {
           </Box>
         }
         drawBottomBorder
-        contentSx={{ p: theme.layout.gap }}
+        contentSx={{ p: layoutGap(theme) }}
       >
         <Box
           id="TeamsScreen"
@@ -263,7 +264,7 @@ export const SwitchTeamsInner = () => {
             mx: 'auto',
           }}
         >
-          <Box sx={[columnSx, { p: theme.layout.p }]}>
+          <Box sx={[columnSx, { p: layoutP(theme) }]}>
             <TeamSection
               icon={<PersonIcon />}
               title={t?.personal}

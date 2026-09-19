@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Box, Divider, useTheme } from '@mui/material';
 import { RecordKeyMap } from '@orbit/records';
+import { layoutGap } from '../theme';
 import AppLayout from '../components/App/AppLayout';
 import StickyRedirect from '../components/StickyRedirect';
 import { TeamProjects } from '../components/Team';
@@ -83,15 +84,15 @@ export const TeamScreen = () => {
           sx={{
             display: 'flex',
             height: '100%',
-            gap: theme.layout.gap,
+            gap: layoutGap(theme),
           }}
         >
           <Box
             sx={[
               rigidSx,
               {
-                py: theme.layout.gap,
-                pl: theme.layout.gap,
+                py: layoutGap(theme),
+                pl: layoutGap(theme),
               },
             ]}
           >
@@ -103,8 +104,8 @@ export const TeamScreen = () => {
               flexibleSx,
               {
                 overflow: 'auto',
-                py: theme.layout.gap,
-                pr: theme.layout.gap,
+                py: layoutGap(theme),
+                pr: layoutGap(theme),
               },
             ]}
           >

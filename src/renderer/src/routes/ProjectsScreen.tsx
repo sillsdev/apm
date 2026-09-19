@@ -2,6 +2,7 @@ import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { Box, Typography, Grid, useTheme } from '@mui/material';
+import { layoutGap, layoutP } from '../theme';
 import { DialogMode, ICardsStrings, VProject } from '../model';
 import { cardsSelector } from '../selector';
 import AppLayout from '../components/App/AppLayout';
@@ -221,7 +222,7 @@ export const ProjectsScreenInner = () => {
             </Box>
           }
           drawBottomBorder
-          contentSx={{ p: theme.layout.gap }}
+          contentSx={{ p: layoutGap(theme) }}
         >
           <Box
             id="ProjectsScreen"
@@ -230,11 +231,11 @@ export const ProjectsScreenInner = () => {
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
-              p: theme.layout.p,
+              p: layoutP(theme),
             }}
           >
             <CardSizeProvider>
-              <Grid container spacing={theme.layout.gap}>
+              <Grid container spacing={layoutGap(theme)}>
                 {projects.map((p) => (
                   <ProjectCard key={p.id} project={p} />
                 ))}
