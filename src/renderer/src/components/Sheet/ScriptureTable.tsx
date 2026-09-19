@@ -107,6 +107,7 @@ import {
 import { useComputeRef } from '../../components/PassageDetail/Internalization/useComputeRef';
 import Confirm from '../AlertDialog';
 import ContentLayout from '../App/ContentLayout';
+import { layoutGap } from '../../theme';
 import AssignSection from '../AssignSection';
 import VersionDlg from '../AudioTab/VersionDlg';
 import { apmGraphic } from '../apmGraphic';
@@ -2138,7 +2139,7 @@ export function ScriptureTable(props: IProps) {
             />
           }
           drawBottomBorder={true}
-          contentSx={(theme) => ({ p: theme.layout.gap })}
+          contentSx={(theme) => ({ p: layoutGap(theme) })}
         >
           <PlanView
             rowInfo={rowinfo}

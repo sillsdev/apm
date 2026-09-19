@@ -1,4 +1,5 @@
 import { Box, SxProps, Theme } from '@mui/material';
+import { layoutGap } from '../../theme';
 
 // Normalize sx (object | callback | array | undefined) to an array so it can be spread after base styles
 const asSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : [sx]);
@@ -47,8 +48,8 @@ export default function ContentLayout({
             alignItems: 'center',
             flexShrink: 0,
             minWidth: 0,
-            px: theme.layout.gap,
-            pb: theme.layout.gap,
+            px: layoutGap(theme),
+            pb: layoutGap(theme),
             backgroundColor: 'custom.headerBackground',
             ...(drawBottomBorder && {
               borderBottom: '1px solid',

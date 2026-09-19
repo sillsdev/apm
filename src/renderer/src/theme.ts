@@ -56,6 +56,14 @@ declare module '@mui/material/styles' {
 export const LAYOUT_GAP = 1.5;
 export const LAYOUT_P: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
 
+/** Safe access: default MUI themes have no custom `layout` (TT-7708). */
+export const layoutGap = (theme: { layout?: { gap?: number } }) =>
+  theme.layout?.gap ?? LAYOUT_GAP;
+
+export const layoutP = (theme: {
+  layout?: { p?: ResponsiveStyleValue<number> };
+}) => theme.layout?.p ?? LAYOUT_P;
+
 const colors = {
   primary: '#135cb9',
   secondary: '#00a7e1',

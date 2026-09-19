@@ -69,6 +69,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { layoutP } from '../../../theme';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import { PassageResourceButton } from './PassageResourceButton';
 import ProjectResourceConfigure from './ProjectResourceConfigure';
@@ -983,7 +984,7 @@ export function PassageDetailArtifacts() {
         <Grid
           container
           size={12}
-          spacing={theme.layout.p}
+          spacing={layoutP(theme)}
           wrap="nowrap"
           sx={{
             display: 'flex',

@@ -1,15 +1,16 @@
 import { Theme } from '@mui/material';
+import { layoutGap } from '../theme';
 
 export const rowSx = (theme: Theme) => ({
   display: 'flex',
-  gap: theme.layout.gap,
+  gap: layoutGap(theme),
   minWidth: 0,
 });
 
 export const columnSx = (theme: Theme) => ({
   display: 'flex',
   flexDirection: 'column' as const,
-  gap: theme.layout.gap,
+  gap: layoutGap(theme),
 });
 
 export const spreadSx = (theme: Theme) => ({

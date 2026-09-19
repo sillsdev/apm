@@ -5,6 +5,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { AppBar, LinearProgress, Box, IconButton } from '@mui/material';
 import JSONAPISource from '@orbit/jsonapi';
 import { isElectron } from '../../../api-variable';
+import { layoutGap } from '../../theme';
 import { IState, IViewModeStrings } from '../../model';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -331,7 +332,7 @@ export function AppHead({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        p: theme.layout.gap,
+        p: layoutGap(theme),
         backgroundColor: 'custom.headerBackground',
         ...(drawBottomBorder && {
           borderBottom: '1px solid',
