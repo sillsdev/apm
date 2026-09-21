@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { Box, Stack } from '@mui/material';
+import { HistoryEdu } from '@mui/icons-material';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ActivityStates,
@@ -74,7 +75,6 @@ import { useStepPermissions } from '../../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../../crud/isLinkedNote';
 import { isLangSet, JSONParse, toCamel } from '../../../../utils';
 import { Button } from '../../../../control/Button';
-import TranscriptionLogo from '../../../../control/TranscriptionLogo';
 import { StyledTextAreaAutosize } from '../../../../control/WebFontStyles';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { SaveSegments } from '../../SaveSegments';
@@ -789,20 +789,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         >
           <Button
             id="asrButton"
-            variant="outlined"
-            onClick={asr.handleTranscribe}
-            startIcon={<TranscriptionLogo />}
+            startIcon={<HistoryEdu />}
             disabled={isReadOnly}
-            sx={{
-              textTransform: 'none',
-              borderColor: 'divider',
-              color: 'text.primary',
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-            }}
+            onClick={asr.handleTranscribe}
           >
-            {tPlayer.recognizeSpeech || 'Auto Transcription...'}
+            {tPlayer.autoTranscription}
           </Button>
         </Box>
       )}
