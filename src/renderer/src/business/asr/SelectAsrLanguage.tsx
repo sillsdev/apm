@@ -43,7 +43,6 @@ export default function SelectAsrLanguage({ team, onRun }: ISelectAsrLanguage) {
     canSetTeamAsrDefault,
     getTeamAsrSettings,
     saveTeamAsrSettings,
-    saveProjectAsrSettings,
   } = useGetAsrSettings(team);
   const { suggestions, loading, error, fetchRecommendations, seedSuggestions } =
     useRecommendAsrLanguage();
@@ -70,10 +69,6 @@ export default function SelectAsrLanguage({ team, onRun }: ISelectAsrLanguage) {
         showMessage(ts.mustBeOnline);
         return;
       }
-      // Settings already saved as the team default need no project default —
-      // that would shadow the team default the user just asked for.
-      if (!(showTeamDefault && teamDefaultSaved))
-        saveProjectAsrSettings(asrState);
       onRun(asrState);
     });
   };
