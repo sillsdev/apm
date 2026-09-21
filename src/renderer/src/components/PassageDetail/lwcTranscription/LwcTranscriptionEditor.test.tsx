@@ -235,11 +235,6 @@ jest.mock('../../../control', () => ({
   ),
 }));
 
-jest.mock('../../../control/TranscriptionLogo', () => ({
-  __esModule: true,
-  default: () => <span>logo</span>,
-}));
-
 jest.mock('../../../business/asr/AsrProgress', () => ({
   __esModule: true,
   default: () => null,
