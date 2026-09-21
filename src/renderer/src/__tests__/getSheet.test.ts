@@ -16,7 +16,7 @@ import { getSheet } from '../components/Sheet/getSheet';
 import { InitializedRecord } from '@orbit/records';
 import { ISTFilterState } from '../components/Sheet/filterMenu';
 import { PassageTypeEnum } from '../model/passageType';
-import { BookSeq } from '../model/section';
+import { BookSeq, AltBkSeq } from '../model/section';
 import { PublishDestinationEnum } from '../crud/usePublishDestination';
 import { OrganizationSchemeStepD } from '../model/organizationSchemeStep';
 
@@ -1290,4 +1290,106 @@ test('merge updates section graphic when sectionUpdated is newer', () => {
   expect(merged[0].graphicFullSizeUrl).toBe('new-full.png');
   expect(merged[0].graphicRights).toBe('SIL');
   expect(merged[0].sectionUpdated).toBe('2021-09-16');
+});
+
+// TT-7648: after login, Orbit syncs publishing sections in a later wave.
+// Merge via `current` must not leave Book/AltBook appended after S1 (or
+// between S1 and S2) — order must follow sectionSeq like a cold rebuild.
+test('merge late Book/AltBook/S2 into current sorts by sectionSeq (TT-7648)', () => {
+  const wave1 = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: false,
+  } as any);
+  expect(wave1.map((r) => r.sectionId?.id ?? r.passage?.id)).toEqual([
+    's1',
+    'pa1',
+  ]);
+
+  const bookSec = {
+    ...s1,
+    id: 'bk1',
+    attributes: {
+      ...s1.attributes,
+      sequencenum: BookSeq,
+      name: 'Luke',
+      level: SheetLevel.Book,
+    },
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [] },
+    },
+  } as SectionD;
+  const altBookSec = {
+    ...s1,
+    id: 'ab1',
+    attributes: {
+      ...s1.attributes,
+      sequencenum: AltBkSeq,
+      name: 'Luke Alternate Name',
+      level: SheetLevel.Book,
+    },
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [] },
+    },
+  } as SectionD;
+
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    // Arrival order mimics late publishing rows + S2 after S1 was already merged
+    sections: [s1, bookSec, altBookSec, s2],
+    passages: [pa1, pa4],
+    flat: false,
+    current: wave1.map((r) => ({ ...r })),
+  } as any);
+
+  expect(
+    merged.map((r) => ({
+      id: r.sectionId?.id ?? r.passage?.id,
+      sectionSeq: r.sectionSeq,
+      passageType: r.passageType,
+      kind: r.kind,
+    }))
+  ).toEqual([
+    {
+      id: 'bk1',
+      sectionSeq: BookSeq,
+      passageType: PassageTypeEnum.BOOK,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 'ab1',
+      sectionSeq: AltBkSeq,
+      passageType: PassageTypeEnum.ALTBOOK,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 's1',
+      sectionSeq: 1,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 'pa1',
+      sectionSeq: 1,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Passage,
+    },
+    {
+      id: 's2',
+      sectionSeq: 2,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 'pa4',
+      sectionSeq: 2,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Passage,
+    },
+  ]);
 });

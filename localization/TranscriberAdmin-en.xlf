@@ -1498,6 +1498,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="category.editRemoved">
+         <segment>
+            <source>The category you were editing was removed.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="category.ignoreInvalid">
          <segment>
             <source>Ignoring invalid category change '{0}'.</source>
@@ -5404,6 +5410,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaUpload.pdfResourceTitle">
+         <segment>
+            <source>Upload PDF Resource</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaUpload.preview">
          <segment>
             <source>Preview</source>
@@ -5412,7 +5424,7 @@
       </unit>
       <unit id="mediaUpload.projectResourceTask">
          <segment>
-            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
             <target/>
          </segment>
       </unit>
@@ -5430,7 +5442,7 @@
       </unit>
       <unit id="mediaUpload.resourceTask">
          <segment>
-            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
             <target/>
          </segment>
       </unit>
@@ -5653,6 +5665,12 @@
       <unit id="passageDetailArtifacts.addLinked">
          <segment>
             <source>Linked Resource...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addPdf">
+         <segment>
+            <source>PDF...</source>
             <target/>
          </segment>
       </unit>
@@ -5950,6 +5968,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.selectAllPassages">
+         <segment>
+            <source>Select all passages in {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.selectBook">
          <segment>
             <source>Select Book</source>
@@ -5965,6 +5989,12 @@
       <unit id="passageDetailArtifacts.selectPassagesSub">
          <segment>
             <source>Select this resource's passages.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.selectSection">
+         <segment>
+            <source>Select {0}</source>
             <target/>
          </segment>
       </unit>
@@ -8197,6 +8227,12 @@
       <unit id="shared.loadFromFile">
          <segment>
             <source>Load from file...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.loadError">
+         <segment>
+            <source>The passage has not properly loaded. You can verify that the passage has audio or continue waiting.</source>
             <target/>
          </segment>
       </unit>

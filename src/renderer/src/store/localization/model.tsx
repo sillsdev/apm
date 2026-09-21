@@ -284,6 +284,7 @@ export interface ICategoryStrings extends Localize.LocalizedStringsMethods {
     "duplicate": string;
     "discussions": string;
     "edit": string;
+    "editRemoved": string;
     "ignoreInvalid": string;
     "inUseBy": string;
     "note": string;
@@ -1049,6 +1050,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "linkTitle": string;
     "markdownTask": string;
     "markdownTitle": string;
+    "pdfResourceTitle": string;
     "preview": string;
     "projectResourceTask": string;
     "PTFtask": string;
@@ -1103,6 +1105,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "addAudio": string;
     "addAudioResource": string;
     "addLinked": string;
+    "addPdf": string;
     "addText": string;
     "addUrl": string;
     "allLevel": string;
@@ -1152,9 +1155,11 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "resource": string;
     "resources": string;
     "resourcesDeleted": string;
+    "selectAllPassages": string;
     "selectBook": string;
     "selectOne": string;
     "selectPassagesSub": string;
+    "selectSection": string;
     "sharedResource": string;
     "source": string;
     "startStop": string;
@@ -1611,6 +1616,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "launchAudacity": string;
     "leaveUnsavedChanges": string;
     "loadFromFile": string;
+    "loadError": string;
     "loading": string;
     "mediaAttached": string;
     "mediaDetached": string;

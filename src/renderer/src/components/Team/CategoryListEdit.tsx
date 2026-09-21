@@ -65,6 +65,9 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
   const media = useOrbitData('mediafile') as MediaFileD[];
   const discussions = useOrbitData('discussion') as Discussion[];
   const sharedResources = useOrbitData('sharedresource') as SharedResource[];
+  // TT-7702: reload when bootstrap/sync adds special note categories (same
+  // pattern as SelectArtifactCategory).
+  const artifactCategories = useOrbitData('artifactcategory');
   const {
     getArtifactCategorys,
     localizedArtifactCategory,
@@ -154,7 +157,32 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
       setOrgCategories(cats);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, refresh]);
+  }, [type, refresh, artifactCategories]);
+
+  // TT-7702: sync can remove a category that is being edited or has staged
+  // changes. The removed row takes its own Cancel/Apply with it, so a stale
+  // editingId leaves every surviving control disabled (row Edit/Delete and the
+  // dialog Cancel/Save) with no way out; a stale `edited` entry would write the
+  // rename back onto a record that no longer exists. Drop only what the refresh
+  // removed — an edit whose category survived must be preserved.
+  useEffect(() => {
+    const live = new Set(orgCategories.map((c) => c.id));
+    if (editingId !== '' && !live.has(editingId)) {
+      categoryEditRef.current?.discardPendingGraphic();
+      setEditingId('');
+      setDraft(null);
+      showMessage(tc.editRemoved);
+    }
+    setEdited((prior) => {
+      const kept = prior.filter(([id]) => live.has(id));
+      return kept.length === prior.length ? prior : kept;
+    });
+    setDeleted((prior) => {
+      const kept = prior.filter((id) => live.has(id));
+      return kept.length === prior.length ? prior : kept;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgCategories, editingId]);
 
   const handleClose = () => onClose && onClose();
 
@@ -256,7 +284,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
             const isEditing = editingId === c.id;
             return (
               <ListItem
-                key={c.slug}
+                key={c.id}
                 secondaryAction={
                   <IconButton
                     id={`cat-delete-${c.id}`}
@@ -343,7 +371,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
           <Typography variant="body2">{t.builtIn}</Typography>
           <List dense={true}>
             {builtIn.map((c) => (
-              <ListItem key={c.slug}>
+              <ListItem key={c.id}>
                 <TextField
                   sx={{ flexGrow: 1 }}
                   variant="outlined"

@@ -53,6 +53,9 @@ import { useGlobal } from '../context/useGlobal';
 
 const DEFAULT_EXCLUDED_STYLES = ['maps', 'diagram'];
 
+/** Style name applied as Default when editing team category graphics (TT-7703). */
+export const NOTE_CATEGORY_STYLE = 'Note Category';
+
 export interface GraphicPickerImage {
   id: string;
   url?: string;
@@ -206,6 +209,18 @@ function parseStyleResponse(data: unknown): string[] {
   return [];
 }
 
+/** Map requested style names onto the API's canonical casing when available. */
+export function matchStylesToAvailable(
+  requested: string[],
+  available: string[]
+): string[] {
+  if (requested.length === 0 || available.length === 0) return requested;
+  return requested.map((req) => {
+    const lower = req.toLocaleLowerCase();
+    return available.find((a) => a.toLocaleLowerCase() === lower) ?? req;
+  });
+}
+
 function runBibleFetch<T>({
   getUrl,
   parse,
@@ -286,6 +301,11 @@ export interface GraphicPickerProps {
   refString?: string;
   /** Whether the project is a Scripture-type plan; controls Scripture filter */
   scripture?: boolean;
+  /**
+   * Styles selected on open and Reset to Default (e.g. Edit Team Categories
+   * passes `['Note Category']`). Scripture-plan call sites leave this unset.
+   */
+  defaultSelectedStyles?: string[];
   /** Filter state passed to getSearchUrl (style/keyword) */
   filterState?: GraphicFilterState;
   /** Images for the Custom tab */
@@ -312,6 +332,7 @@ export function GraphicPicker({
   bookCode = '',
   refString = '',
   scripture = true,
+  defaultSelectedStyles = [],
   customImages = [],
   currentUrl,
   currentRights,
@@ -385,7 +406,7 @@ export function GraphicPicker({
   const [filterSortBy, setFilterSortBy] =
     useState<GraphicImageSortBy>('newest');
   const [filterSelectedStyles, setFilterSelectedStyles] = useState<string[]>(
-    []
+    () => [...defaultSelectedStyles]
   );
   const [filterSelectedKeywords, setFilterSelectedKeywords] = useState<
     string[]
@@ -427,8 +448,10 @@ export function GraphicPicker({
       (!prevScriptureResetInputs.isOpen ||
         scripture !== prevScriptureResetInputs.scripture);
     setPrevScriptureResetInputs({ isOpen, scripture });
-    if (resetScriptureFilter)
+    if (resetScriptureFilter) {
       setFilterScriptureRefChecked(defaultScriptureRefChecked);
+      setFilterSelectedStyles([...defaultSelectedStyles]);
+    }
   }
   const { getOrganizedBy } = useOrganizedBy();
   const bookData = useSelector((state: IState) => state.books.bookData);
@@ -497,10 +520,24 @@ export function GraphicPicker({
     runBibleFetch({
       getUrl: () => getStyleUrl({ page: 1, limit: 100 }),
       parse: parseStyleResponse,
-      onSuccess: (items) =>
-        setFilterStyles(
-          items.filter((s) => !excludedStyles.includes(s.toLocaleLowerCase()))
-        ),
+      onSuccess: (items) => {
+        const visible = items.filter(
+          (s) => !excludedStyles.includes(s.toLocaleLowerCase())
+        );
+        setFilterStyles(visible);
+        // API casing may differ from defaultSelectedStyles (e.g. "Note category"
+        // vs "Note Category"); rematch so checkboxes and search use the API name.
+        setFilterSelectedStyles((prev) => {
+          const next = matchStylesToAvailable(prev, visible);
+          if (
+            next.length === prev.length &&
+            next.every((s, i) => s === prev[i])
+          ) {
+            return prev;
+          }
+          return next;
+        });
+      },
       onFailure: () => setFilterStyles([]),
       setLoading: setBibleLoading,
       setError: setBibleError,
@@ -573,7 +610,9 @@ export function GraphicPicker({
   const handleFilterResetToDefault = useCallback(() => {
     setExcludedStyles([...DEFAULT_EXCLUDED_STYLES]);
     setFilterSortBy('newest');
-    setFilterSelectedStyles([]);
+    setFilterSelectedStyles(
+      matchStylesToAvailable([...defaultSelectedStyles], filterStyles)
+    );
     setFilterSelectedKeywords([]);
     setFilterScriptureRefChecked({ ...defaultScriptureRefChecked });
     setQBook(undefined);
@@ -583,7 +622,7 @@ export function GraphicPicker({
     didShowKeywordSearchAlertRef.current = false;
     setKeywordsListSearchResetKey((k) => k + 1);
     setFilterPanelOpen(false);
-  }, [defaultScriptureRefChecked]);
+  }, [defaultScriptureRefChecked, defaultSelectedStyles, filterStyles]);
 
   const handleFilterOpenChange = useCallback((open: boolean) => {
     setFilterPanelOpen(open);

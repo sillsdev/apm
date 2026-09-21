@@ -1746,6 +1746,13 @@
                <context context-type="sourcefile">CategoryListEdit.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="category.editRemoved">
+            <source>The category you were editing was removed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CategoryListEdit.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="category.ignoreInvalid">
             <source>Ignoring invalid category change '{0}'.</source>
             <target/>
@@ -6303,6 +6310,13 @@
                <context context-type="sourcefile">MediaUpload.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaUpload.pdfResourceTitle">
+            <source>Upload PDF Resource</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaUpload.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mediaUpload.preview">
             <source>Preview</source>
             <target/>
@@ -6311,7 +6325,7 @@
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.projectResourceTask">
-      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">MediaUpload.tsx</context>
@@ -6332,7 +6346,7 @@
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.resourceTask">
-      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
+      		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">MediaUpload.tsx</context>
@@ -6593,6 +6607,13 @@
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.addLinked">
       		<source>Linked Resource...</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addPdf">
+      		<source>PDF...</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">AddResource.tsx</context>
@@ -6941,6 +6962,13 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.selectAllPassages">
+            <source>Select all passages in {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectSections.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="passageDetailArtifacts.selectBook">
       		<source>Select Book</source>
       		<target/>
@@ -6962,6 +6990,13 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.selectSection">
+            <source>Select {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectSections.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="passageDetailArtifacts.sharedResource">
       		<source>Link Shared</source>
       		<target/>
@@ -9565,6 +9600,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="shared.loadError">
+            <source>The passage has not properly loaded. You can verify that the passage has audio or continue waiting.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMobileDetail.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="shared.loading">

@@ -36,7 +36,22 @@ const createMockQueryBuilder = (records: RecordsByKey) => ({
     records[`${type}:${id}`],
 });
 
-const createMockMemory = (records: RecordsByKey = {}): Memory => {
+const createMockMemory = (
+  records: RecordsByKey = {}
+): Memory & {
+  _notify: (model?: string) => void;
+  _records: RecordsByKey;
+} => {
+  const subscribersByModel: Record<string, Set<() => void>> = {};
+  const notify = (model?: string) => {
+    if (model) {
+      subscribersByModel[model]?.forEach((cb) => cb());
+      return;
+    }
+    Object.values(subscribersByModel).forEach((set) =>
+      set.forEach((cb) => cb())
+    );
+  };
   const runQuery = (
     queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
   ) => queryFn(createMockQueryBuilder(records));
@@ -45,17 +60,43 @@ const createMockMemory = (records: RecordsByKey = {}): Memory => {
       query: runQuery,
       liveQuery: (
         queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
-      ) => ({
-        subscribe: () => () => {},
-        query: () => runQuery(queryFn),
-      }),
+      ) => {
+        // Discover which model this liveQuery watches (useOrbitData passes
+        // q.findRecords(model)). Keep subscribers per model so notifying
+        // artifactcategory does not falsely refresh via mediafile/etc.
+        let model = '';
+        queryFn({
+          findRecords: (type: string) => {
+            model = type;
+            return [];
+          },
+          findRecord: () => undefined,
+        } as unknown as ReturnType<typeof createMockQueryBuilder>);
+        return {
+          subscribe: (cb: () => void) => {
+            if (!subscribersByModel[model]) {
+              subscribersByModel[model] = new Set();
+            }
+            subscribersByModel[model].add(cb);
+            return () => {
+              subscribersByModel[model]?.delete(cb);
+            };
+          },
+          query: () => runQuery(queryFn),
+        };
+      },
     },
     query: async (
       queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
     ) => runQuery(queryFn),
     update: cy.stub().as('memoryUpdate').resolves(),
     keyMap: { idToKey: () => undefined, keyToId: () => undefined },
-  } as unknown as Memory;
+    _notify: notify,
+    _records: records,
+  } as unknown as Memory & {
+    _notify: (model?: string) => void;
+    _records: RecordsByKey;
+  };
 };
 
 const discussionCategories: RecordsByKey = {
@@ -138,6 +179,57 @@ const noteCategories: RecordsByKey = {
   },
 };
 
+const noteSpecial = (
+  id: string,
+  categoryname: string,
+  specialuse: string
+): RecordsByKey[string] => ({
+  id,
+  type: 'artifactcategory',
+  attributes: {
+    categoryname,
+    discussion: false,
+    resource: false,
+    note: true,
+    color: '#ed071d',
+    specialuse,
+  },
+  relationships: {
+    organization: { data: { type: 'organization', id: TEAM_ID } },
+    titleMediafile: { data: null },
+  },
+});
+
+/** TT-7702: slug + localized chapter both display as "Chapter Number". */
+const duplicateChapterNotes: RecordsByKey = {
+  [`organization:${TEAM_ID}`]: {
+    id: TEAM_ID,
+    type: 'organization',
+    attributes: { name: 'Test Team', slug: 'test-team' },
+  },
+  'artifactcategory:ch-slug': noteSpecial('ch-slug', 'chapter', 'chapter'),
+  'artifactcategory:ch-loc': noteSpecial('ch-loc', 'Chapter Number', 'chapter'),
+  'artifactcategory:title-1': noteSpecial('title-1', 'title', 'title'),
+};
+
+const properSpecialNotes: RecordsByKey = {
+  [`organization:${TEAM_ID}`]: {
+    id: TEAM_ID,
+    type: 'organization',
+    attributes: { name: 'Test Team', slug: 'test-team' },
+  },
+  'artifactcategory:ch-1': noteSpecial('ch-1', 'chapter', 'chapter'),
+  'artifactcategory:title-1': noteSpecial('title-1', 'title', 'title'),
+};
+
+const orgOnlyNotes: RecordsByKey = {
+  [`organization:${TEAM_ID}`]: {
+    id: TEAM_ID,
+    type: 'organization',
+    attributes: { name: 'Test Team', slug: 'test-team' },
+  },
+};
+
 const mockCategoryStrings = new LocalizedStrings({
   en: {
     builtIn: 'System Categories',
@@ -156,6 +248,7 @@ const mockCategoryStrings = new LocalizedStrings({
     resources: 'resource(s)',
     apply: 'Apply',
     edit: 'Edit',
+    editRemoved: 'The category you were editing was removed.',
   },
 });
 
@@ -291,7 +384,10 @@ const mockUnsavedState = {
 } as UnsavedState;
 
 describe('CategoryListEdit (TT-7627)', () => {
-  let memory: Memory;
+  let memory: Memory & {
+    _notify: (model?: string) => void;
+    _records: RecordsByKey;
+  };
   let onClose: ReturnType<typeof cy.stub>;
 
   const createInitialState = (overrides = {}) => ({
@@ -463,6 +559,67 @@ describe('CategoryListEdit (TT-7627)', () => {
   });
 
   /**
+   * Synced deletion of the row being edited must not trap the panel. The row
+   * carries the only edit Cancel, so when it disappears every surviving
+   * control (row Edit/Delete, dialog Cancel/Save) is still gated on a stale
+   * `editingId` and there is no way out of the panel.
+   */
+  it('releases the edit lock when sync removes the category being edited', () => {
+    mountList();
+
+    cy.get('#cat-edit-cat1', { timeout: 10000 }).click();
+    cy.get('#cat1adornment')
+      .should('not.be.disabled')
+      .clear()
+      .type('Edited While Sync Deletes');
+
+    cy.then(() => {
+      delete memory._records['artifactcategory:cat1'];
+      memory._notify('artifactcategory');
+    });
+
+    cy.get('#cat1adornment', { timeout: 10000 }).should('not.exist');
+    // The edited row took its own Cancel with it; only the rest can free us.
+    cy.get('#cat-cancel-edit-cat1').should('not.exist');
+    cy.get('#cat-edit-cat2').should('not.be.disabled');
+    cy.get('#cat-delete-cat2').should('not.be.disabled');
+    cy.get('#catCancel').should('not.be.disabled');
+
+    // Discriminating: not merely enabled, but usable again end to end.
+    // (#catSave stays disabled here because nothing has been applied.)
+    cy.get('#cat-edit-cat2').click();
+    cy.get('#cat2adornment').should('not.be.disabled');
+    cy.get('#cat-cancel-edit-cat2').click();
+    cy.get('#catCancel').click();
+    cy.get('@onClose').should('have.been.called');
+  });
+
+  /**
+   * Guard against an over-broad fix: clearing `editingId` on every refresh
+   * would also discard edits whose category is untouched by the sync.
+   */
+  it('keeps the in-progress edit when sync removes a different category', () => {
+    mountList();
+
+    cy.get('#cat-edit-cat1', { timeout: 10000 }).click();
+    cy.get('#cat1adornment')
+      .should('not.be.disabled')
+      .clear()
+      .type('Survives Unrelated Delete');
+
+    cy.then(() => {
+      delete memory._records['artifactcategory:cat2'];
+      memory._notify('artifactcategory');
+    });
+
+    cy.get('#cat2adornment', { timeout: 10000 }).should('not.exist');
+    cy.get('#cat1adornment').should('have.value', 'Survives Unrelated Delete');
+    cy.get('#cat-apply-cat1').should('not.be.disabled').click();
+    cy.get('#cat-edit-cat1').should('be.visible');
+    cy.get('#cat1adornment').should('have.value', 'Survives Unrelated Delete');
+  });
+
+  /**
    * Copilot review: Note color/graphic controls must honor exclusive-edit
    * `disabled` (not only MediaTitle).
    */
@@ -500,5 +657,136 @@ describe('CategoryListEdit (TT-7627)', () => {
     cy.get('#cat-edit-cat1').should('be.visible');
     // Preview discarded; no Orbit graphic existed, so back to icon button
     cy.get('#cat-graphic-cat1').should('match', 'button');
+  });
+});
+
+describe('CategoryListEdit (TT-7702 Audio Note specials)', () => {
+  let memory: Memory & {
+    _notify: (model?: string) => void;
+    _records: RecordsByKey;
+  };
+  let onClose: ReturnType<typeof cy.stub>;
+
+  const createInitialState = (overrides = {}) => ({
+    coordinator: {
+      getSource: () => undefined,
+    } as unknown as Coordinator,
+    errorReporter: bugsnagClient,
+    fingerprint: 'test-fingerprint',
+    memory,
+    latestVersion: '',
+    loadComplete: true,
+    offlineOnly: true,
+    organization: TEAM_ID,
+    releaseDate: '',
+    user: 'test-user-id',
+    alertOpen: false,
+    autoOpenAddMedia: false,
+    changed: false,
+    connected: true,
+    dataChangeCount: 0,
+    developer: false,
+    enableOffsite: false,
+    home: false,
+    importexportBusy: false,
+    orbitRetries: 0,
+    orgRole: undefined,
+    plan: '',
+    playingMediaId: '',
+    progress: 0,
+    project: '',
+    projectsLoaded: [],
+    projType: '',
+    remoteBusy: false,
+    saveResult: undefined,
+    snackAlert: undefined,
+    snackMessage: (<></>) as React.JSX.Element,
+    offline: false,
+    mobileView: false,
+    addStoryOrPassage: false,
+    ...overrides,
+  });
+
+  const mountList = (records: RecordsByKey) => {
+    memory = createMockMemory(records);
+    onClose = cy.stub().as('onClose');
+    cy.mount(
+      <Provider store={mockStore}>
+        <GlobalProvider init={createInitialState()}>
+          <DataProvider dataStore={memory}>
+            <SnackBarProvider>
+              <UnsavedContext.Provider
+                value={{ state: mockUnsavedState, setState: cy.stub() }}
+              >
+                <CategoryGraphicPickerContext.Provider
+                  value={CategoryGraphicPickerHarness}
+                >
+                  <CategoryListEdit
+                    type={ArtifactCategoryType.Note}
+                    teamId={TEAM_ID}
+                    onClose={onClose}
+                  />
+                </CategoryGraphicPickerContext.Provider>
+              </UnsavedContext.Provider>
+            </SnackBarProvider>
+          </DataProvider>
+        </GlobalProvider>
+      </Provider>
+    );
+  };
+
+  it('shows Title and Chapter Number once when slug and localized chapter both exist', () => {
+    // Discriminating: without specialuse dedupe both chapter rows render.
+    mountList(duplicateChapterNotes);
+    // Prefer remoteId when deduping; neither has one, so first slug row is kept.
+    cy.get('#ch-slugadornment', { timeout: 10000 }).should(
+      'have.value',
+      'Chapter Number'
+    );
+    cy.get('#title-1adornment').should('have.value', 'Title');
+    cy.get('#ch-locadornment').should('not.exist');
+  });
+
+  it('shows Title and Chapter Number once for proper special note categories', () => {
+    mountList(properSpecialNotes);
+    cy.get('#ch-1adornment', { timeout: 10000 }).should(
+      'have.value',
+      'Chapter Number'
+    );
+    cy.get('#title-1adornment').should('have.value', 'Title');
+  });
+
+  it('refreshes the Note list when artifact categories land in Orbit', () => {
+    // Greg / TT-7702: Edit list must reload when bootstrap/sync adds specials
+    // (SelectArtifactCategory already does via useOrbitData).
+    mountList(orgOnlyNotes);
+
+    // Wait for the initial getArtifactCategorys([]) to settle before seeding,
+    // otherwise a late first query races the mutation and false-greens without
+    // an artifactcategory subscription.
+    cy.get('#new-artifact-cat', { timeout: 10000 }).should('be.visible');
+    cy.get('#catCancel').should('be.visible');
+    cy.get('#ch-1adornment').should('not.exist');
+    cy.wait(100);
+
+    cy.then(() => {
+      memory._records['artifactcategory:ch-1'] = noteSpecial(
+        'ch-1',
+        'chapter',
+        'chapter'
+      );
+      memory._records['artifactcategory:title-1'] = noteSpecial(
+        'title-1',
+        'title',
+        'title'
+      );
+      memory._notify('artifactcategory');
+    });
+
+    cy.get('#ch-1adornment', { timeout: 10000 }).should(
+      'have.value',
+      'Chapter Number'
+    );
+    cy.get('#title-1adornment').should('have.value', 'Title');
   });
 });

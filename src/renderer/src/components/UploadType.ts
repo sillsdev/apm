@@ -11,4 +11,5 @@ export enum UploadType {
   MarkDown = 9,
   FaithbridgeLink = 10,
   Burrito = 11,
+  PdfResource = 12,
 }

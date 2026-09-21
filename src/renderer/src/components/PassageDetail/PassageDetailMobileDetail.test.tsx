@@ -17,11 +17,12 @@ jest.mock('../../context/usePassageDetailContext', () => () => ({
 }));
 
 jest.mock('../../crud', () => {
-  const { ToolSlug: Slug } = jest.requireActual<
+  const { ToolSlug: Slug, toolAllowsEmptyVernacularAudio } = jest.requireActual<
     typeof import('../../crud/toolSlug')
   >('../../crud/toolSlug');
   return {
     ToolSlug: Slug,
+    toolAllowsEmptyVernacularAudio,
     useStepTool: (...args: unknown[]) => mockUseStepTool(...args),
   };
 });
@@ -52,6 +53,15 @@ jest.mock('../Discussions/DiscussionPanel', () => ({
   default: () => <div data-cy="discussion-panel">Discussion</div>,
 }));
 
+jest.mock('react-redux', () => ({
+  useSelector: (selector: { name?: string }) => {
+    if (selector.name === 'sharedSelector') {
+      return { noAudio: 'No audio', loadError: 'Error description' };
+    }
+  },
+  shallowEqual: jest.fn(),
+}));
+
 import { ToolSlug } from '../../crud';
 import PassageDetailMobileDetail from './PassageDetailMobileDetail';
 
@@ -64,10 +74,8 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
   it('uses a fixed discussion column width when side-by-side', () => {
     const { container } = render(
       <PassageDetailMobileDetail
-        showNoAudioPlaceholder={false}
         showSideBySide={true}
         recordContent={<div data-cy="record-content">Waveform</div>}
-        noAudioText="No audio"
       />
     );
 
@@ -88,10 +96,8 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
   it('stacks discussion below content when not side-by-side', () => {
     const { container } = render(
       <PassageDetailMobileDetail
-        showNoAudioPlaceholder={false}
         showSideBySide={false}
         recordContent={<div data-cy="record-content">Waveform</div>}
-        noAudioText="No audio"
       />
     );
 
@@ -109,10 +115,8 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
 
     const { container } = render(
       <PassageDetailMobileDetail
-        showNoAudioPlaceholder={false}
         showSideBySide={false}
         recordContent={<div data-cy="record-content">Artifacts</div>}
-        noAudioText="No audio"
       />
     );
 

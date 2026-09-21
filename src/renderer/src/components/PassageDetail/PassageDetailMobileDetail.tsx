@@ -1,42 +1,67 @@
-import { Box, Paper, Stack, SxProps, Typography } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import {
+  Backdrop,
+  Box,
+  CircularProgress,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 import PassageDetailLayout from './PassageDetailLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
 import PassageDetailMobileFooter from './mobile/PassageDetailMobileFooter';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
-import { useStepTool, ToolSlug } from '../../crud';
+import {
+  useStepTool,
+  ToolSlug,
+  toolAllowsEmptyVernacularAudio,
+} from '../../crud';
 import { useRole } from '../../crud/useRole';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { ISharedStrings } from '@model/index';
+import { sharedSelector } from '../../selector';
 
 interface Props {
-  /** When true, show the no-audio message instead of step content (Discuss, playback, etc.). */
-  showNoAudioPlaceholder: boolean;
   showSideBySide: boolean;
   flushDiscussionLeft?: boolean;
   recordContent: React.ReactNode;
-  noAudioText: string;
 }
 
-const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
+const noAudioGraceMs = 5000;
 
 export default function PassageDetailMobileDetail({
-  showNoAudioPlaceholder,
   showSideBySide,
   flushDiscussionLeft,
   recordContent,
-  noAudioText,
 }: Props) {
   const {
     currentstep,
     section,
+    mediafileId,
     discussionSize,
     promptDockedRecordButton,
     promptDockedRecordFooterVersion,
     setDiscussOpen,
     hideMobileHeader,
+    passage,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const isWaitingForAudio = useMemo(() => {
+    return !mediafileId && !toolAllowsEmptyVernacularAudio(tool);
+  }, [mediafileId, tool]);
+  const passageId = passage?.id;
+  const [graceExpired, setGraceExpired] = useState(false);
+
+  useEffect(() => {
+    setGraceExpired(false);
+    const timer = setTimeout(() => setGraceExpired(true), noAudioGraceMs);
+    return () => clearTimeout(timer);
+  }, [passageId, tool]);
+
+  const showLoading = isWaitingForAudio && !graceExpired;
   // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
   const showDiscussion = tool !== ToolSlug.Resource;
   const markVersesLayout = tool === ToolSlug.Verses;
@@ -122,7 +147,7 @@ export default function PassageDetailMobileDetail({
         ...contentSx,
       }}
     >
-      {!showNoAudioPlaceholder ? (
+      {!isWaitingForAudio ? (
         <>
           {showSideBySide && showDiscussion ? (
             <Box
@@ -188,10 +213,23 @@ export default function PassageDetailMobileDetail({
             </Stack>
           )}
         </>
+      ) : showLoading ? (
+        <Backdrop
+          open
+          sx={{
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            position: 'absolute',
+          }}
+        >
+          <CircularProgress color="inherit" size={50} />
+        </Backdrop>
       ) : (
-        <Paper sx={paperProps}>
-          <Typography variant="h2" align="center">
-            {noAudioText}
+        <Paper sx={{ p: 4 }}>
+          <Typography variant="h4" align="left">
+            {ts.noAudio}
+          </Typography>
+          <Typography variant="h5" align="left" sx={{ py: 1 }}>
+            {ts.loadError}
           </Typography>
         </Paper>
       )}
