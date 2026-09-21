@@ -186,7 +186,7 @@ function Invite(props: IProps) {
       .map((m) => related(m, 'user'));
     return users
       .filter((u) => orgUserIds.includes(u.id))
-      .map((u) => u.attributes.email.trim().toLowerCase());
+      .map((u) => u.attributes?.email?.trim().toLowerCase());
   }, [members, users, organization]);
 
   const hasInviteForEmail = (email: string) => {
