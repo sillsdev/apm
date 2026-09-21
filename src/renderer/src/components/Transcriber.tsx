@@ -1280,8 +1280,6 @@ export function Transcriber(props: IProps) {
   };
 
   // Confirm step-resolved ASR settings; user may override for this run only.
-  // When the resolved settings are already usable (a valid ASR language is
-  // known from saved org/project settings), skip the dialog and start directly.
   const handleTranscribe = () => {
     checkOnline((online) => {
       if (!online) {
