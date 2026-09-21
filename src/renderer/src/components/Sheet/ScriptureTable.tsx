@@ -90,11 +90,11 @@ import {
 } from '../../utils';
 import { addPt } from '../../utils/addPt';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
-import { getLastVerse } from '../../business/localParatext/getLastVerse';
 import {
   isPublishingTitle,
   passageTypeFromRef,
 } from '../../control/passageTypeFromRef';
+import { resolveSheetStartChapter } from './resolveSheetStartChapter';
 import BigDialog from '../../hoc/BigDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -1912,21 +1912,7 @@ export function ScriptureTable(props: IProps) {
   const doPublish = async () => {
     let currentChapter = 0;
 
-    const startChapter = (s: ISheet) => {
-      const startchap = s.passage?.attributes?.startChapter ?? 0;
-      const endchap = s.passage?.attributes?.endChapter ?? 0;
-      if (startchap > 0 && startchap !== endchap) {
-        const lastverse = getLastVerse(s.book ?? '', startchap) ?? 0;
-        if (lastverse > 0) {
-          const startverse = s.passage?.attributes.startVerse ?? 0;
-          const endverse = s.passage?.attributes.endVerse ?? 0;
-          if (endverse > lastverse - startverse + 1) {
-            return endchap;
-          }
-        }
-      }
-      return startchap;
-    };
+    const startChapter = (s: ISheet) => resolveSheetStartChapter(s);
 
     const chapterChanged = (s: ISheet) =>
       s.passageType === PassageTypeEnum.PASSAGE &&
