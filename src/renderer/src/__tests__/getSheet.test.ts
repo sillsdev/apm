@@ -10,9 +10,11 @@ import {
   SheetLevel,
   IwsKind,
   IMediaShare,
+  SharedResourceD,
 } from '../model';
 import Memory from '@orbit/memory';
 import { getSheet } from '../components/Sheet/getSheet';
+import { isPassageUpdated } from '../components/Sheet/isSectionPassageUpdated';
 import { InitializedRecord } from '@orbit/records';
 import { ISTFilterState } from '../components/Sheet/filterMenu';
 import { PassageTypeEnum } from '../model/passageType';
@@ -1392,4 +1394,217 @@ test('merge late Book/AltBook/S2 into current sorts by sectionSeq (TT-7648)', ()
       kind: IwsKind.Passage,
     },
   ]);
+});
+
+// TT-7713: leaving the Sections & Passages page and coming back rebuilds the
+// sheet with no `current` to merge from, so a passage whose stored reference
+// is a bare 'NOTE' loses the category name and image. The shared resource's
+// artifactCategory is the durable source of truth for a note's category.
+const noteSharedRes = {
+  type: 'sharedresource',
+  id: 'sr1',
+  attributes: { title: 'a note', note: true },
+  relationships: {
+    passage: { data: { type: 'passage', id: 'pn1' } },
+    artifactCategory: { data: { type: 'artifactcategory', id: 'ac1' } },
+  },
+} as unknown as SharedResourceD;
+
+const noteSection = {
+  ...s1,
+  relationships: {
+    ...s1.relationships,
+    passages: { data: [{ type: 'passage', id: 'pn1' }] },
+  },
+} as SectionD;
+
+const notePassage = (reference: string) =>
+  ({
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference,
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+  }) as PassageD;
+
+const noteGraphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+  ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+
+test('fresh build names a note from its shared resource category when orbit has a bare NOTE', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE')],
+    current: undefined, // page was remounted: nothing to merge from
+    getSharedResource: () => noteSharedRes,
+    noteCategory: (sr?: SharedResourceD) =>
+      sr?.id === 'sr1' ? 'Devotional' : undefined,
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+  //the row's passage snapshot stays in step with the repaired reference
+  expect(merged[1].passage?.attributes.reference).toBe('NOTE|Devotional');
+});
+
+test('fresh build prefers the shared resource category over a stale note reference', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Hymn')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: (sr?: SharedResourceD) =>
+      sr?.id === 'sr1' ? 'Devotional' : undefined,
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+});
+
+test('fresh build keeps the stored note reference when no category can be resolved', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Devotional')],
+    current: undefined,
+    getSharedResource: () => undefined,
+    noteCategory: () => undefined,
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+});
+
+test('fresh build leaves a non-note reference alone', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('1:1-4')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('1:1-4');
+});
+
+// The category lives on the shared resource, so another user can change it (or
+// a language switch can rename it) without touching passage.dateUpdated. The
+// merge repairs the reference either way, so the artwork must follow it.
+const noteCurrent = (reference: string) =>
+  [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference,
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: notePassage(reference),
+      graphicUri: 'hymn.png',
+      graphicRights: 'Hymnal',
+      color: '#111111',
+    },
+  ] as ISheet[];
+
+test('merge refreshes note artwork when the category changed without a passage update', () => {
+  const paNote = notePassage('NOTE|Hymn');
+  paNote.attributes.dateUpdated = '2021-09-15'; //passage itself never changed
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [paNote],
+    current: noteCurrent('NOTE|Hymn'),
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  //the row must not keep the previous category's artwork
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});
+
+test('merge refreshes note artwork when only the localized category name changes', () => {
+  const paNote = notePassage('NOTE|Devotional');
+  paNote.attributes.dateUpdated = '2021-09-15';
+  const esGraphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devocional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [paNote],
+    current: noteCurrent('NOTE|Devotional'),
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devocional', //same category, language switched
+    graphicFind: esGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devocional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});
+
+// A stored reference with no category at all is the TT-7713 corruption, and the
+// repair should reach the database. A reference that merely names the category
+// differently (a rename, or another reader's language) must NOT be flagged, or
+// readers in different languages would rewrite each other's rows on every save.
+test('a repaired bare NOTE row is flagged so the next save writes it back', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(isPassageUpdated(merged[1], '2021-09-17')).toBe(true);
+});
+
+test('a note whose category name only changed is not flagged for saving', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Hymn')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(isPassageUpdated(merged[1], '2021-09-17')).toBe(false);
+});
+
+test('a note needing no repair is not flagged for saving', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Devotional')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(isPassageUpdated(merged[1], '2021-09-17')).toBe(false);
 });

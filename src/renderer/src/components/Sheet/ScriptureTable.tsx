@@ -63,6 +63,7 @@ import {
   useGraphicUpdate,
   useGraphicFind,
   useSharedResRead,
+  useNoteCategory,
   PublishDestinationEnum,
   usePublishDestination,
   useNotes,
@@ -332,6 +333,7 @@ export function ScriptureTable(props: IProps) {
     setLocalDefault,
   } = useProjectDefaults();
   const { getSharedResource } = useSharedResRead();
+  const noteCategory = useNoteCategory();
   const orgSteps = useFilteredSteps();
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
@@ -1455,6 +1457,7 @@ export function ScriptureTable(props: IProps) {
         getPublishTo,
         publishStatus,
         getSharedResource,
+        noteCategory,
         user,
         myGroups,
         isDeveloper: developer,
@@ -1478,6 +1481,7 @@ export function ScriptureTable(props: IProps) {
     getPublishTo,
     publishStatus,
     getSharedResource,
+    noteCategory,
     user,
     myGroups,
     developer,
@@ -1631,6 +1635,9 @@ export function ScriptureTable(props: IProps) {
     lastSaved,
     hidePublishing,
     scripture,
+    //note rows show their category name, which noteCategory localizes, so a
+    //language switch alone has to rebuild the sheet (no refresh allowed)
+    lang,
   ]);
 
   // Reset column widths based on sheet content

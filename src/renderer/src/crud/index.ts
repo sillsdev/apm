@@ -101,6 +101,7 @@ export * from './useMediaUpload';
 export * from './pullTableList';
 export * from './useSharedResCreate';
 export * from './useSharedResRead';
+export * from './useNoteCategory';
 export * from './useSharedResUpdate';
 export * from './useSharedResDelete';
 export * from './useUpdateRecord';
