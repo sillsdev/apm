@@ -51,6 +51,7 @@ export default function SelectAsrLanguage({ team, onRun }: ISelectAsrLanguage) {
   const showTeamDefault = canSetTeamAsrDefault();
   const incomplete =
     !asrState?.target ||
+    !isLangSet(asrState?.asrIso) ||
     (asrState?.target === AsrTarget.alphabet &&
       !isLangSet(asrState?.language?.bcp47));
   const teamDefaultSaved = asrStatesEqual(teamDefaultAsr, asrState);
