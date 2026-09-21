@@ -488,7 +488,6 @@ export const getSheet = ({
   // Late Orbit waves append new sections via shtSectionAdd; restore cold-build
   // order so Book/AltBook/Movement land by sequencenum (TT-7648).
   return myWork.sort(
-    (i, j) =>
-      i.sectionSeq - j.sectionSeq || i.passageSeq - j.passageSeq
+    (i, j) => i.sectionSeq - j.sectionSeq || i.passageSeq - j.passageSeq
   );
 };
