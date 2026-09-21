@@ -13,7 +13,7 @@ export function resolveSheetStartChapter(s: ISheet): number {
     parseRef(s.passage);
   }
   let startchap = s.passage?.attributes?.startChapter ?? 0;
-  let endchap = s.passage?.attributes?.endChapter ?? 0;
+  const endchap = s.passage?.attributes?.endChapter ?? 0;
   if (!startchap) {
     startchap = getStartChapter(s.reference);
   }
