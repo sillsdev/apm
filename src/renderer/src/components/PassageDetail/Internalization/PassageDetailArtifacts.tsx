@@ -535,7 +535,7 @@ export function PassageDetailArtifacts() {
     setEditAudio(false);
   };
   const handleEditResourceVisible = (v: boolean) => {
-    // The X and the backdrop both route here; always confirm before discarding.
+    // The X routes here (backdrop close is disabled); always confirm before discarding.
     if (!v) {
       setCloseConfirm('edit');
     }
@@ -1260,6 +1260,7 @@ export function PassageDetailArtifacts() {
         onCancel={handleEditCancel}
         bp={BigDialogBp.sm}
         showBottomCancelButton={false}
+        disableBackdropClose
       >
         <ResourceData
           media={mediaRef.current}
