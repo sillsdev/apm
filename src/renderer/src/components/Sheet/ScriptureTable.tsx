@@ -138,6 +138,7 @@ import { getDefaultName } from './getDefaultName';
 import { PlanBar } from './PlanBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import { PlanView } from './PlanView';
+import { runTitleMediaUpdate } from './runTitleMediaUpdate';
 
 const SaveWait = 500;
 
@@ -199,6 +200,9 @@ export function ScriptureTable(props: IProps) {
   const myChangedRef = useRef(false);
   const savingRef = useRef(false);
   const updateRef = useRef(false);
+  const titleSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
   const doForceDataChanges = useRef(false);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
@@ -1142,40 +1146,46 @@ export function ScriptureTable(props: IProps) {
   };
 
   const updateTitleMedia = async (index: number, mediaId: string) => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    setUpdate(true);
-    const newsht = [...sheetRef.current];
-    const { ws, i } = getByIndex(newsht, index);
-    if (ws) {
-      if (isSectionRow(ws)) {
-        const sectionUpdated = currentDateTime();
-        newsht[i] = {
-          ...ws,
-          titleMediaId: mediaId
-            ? { type: 'mediafile', id: mediaId }
-            : undefined,
-          sectionUpdated,
-        } as ISheet;
-        setSheet(newsht);
-        setChanged(true);
-      }
-      // Used for recording chapter numbers (CHNUM)
-      if (isPassageRow(ws)) {
-        const passageUpdated = currentDateTime();
-        newsht[i] = {
-          ...ws,
-          mediaId: mediaId ? { type: 'mediafile', id: mediaId } : undefined,
-          passageUpdated,
-        } as ISheet;
-        setSheet(newsht);
-        setChanged(true);
-      }
-    }
-    setUpdate(false);
-    setTimeout(() => startSave(), 1000);
+    runTitleMediaUpdate({
+      isBusy: () => savingRef.current || updateRef.current,
+      whenIdle: (fn) =>
+        runWhenSheetIdle('finish save or update before title media', fn),
+      apply: () => {
+        setUpdate(true);
+        const newsht = [...sheetRef.current];
+        const { ws, i } = getByIndex(newsht, index);
+        if (ws) {
+          if (isSectionRow(ws)) {
+            const sectionUpdated = currentDateTime();
+            newsht[i] = {
+              ...ws,
+              titleMediaId: mediaId
+                ? { type: 'mediafile', id: mediaId }
+                : undefined,
+              sectionUpdated,
+            } as ISheet;
+            setSheet(newsht);
+            setChanged(true);
+          }
+          // Used for recording chapter numbers (CHNUM)
+          if (isPassageRow(ws)) {
+            const passageUpdated = currentDateTime();
+            newsht[i] = {
+              ...ws,
+              mediaId: mediaId ? { type: 'mediafile', id: mediaId } : undefined,
+              passageUpdated,
+            } as ISheet;
+            setSheet(newsht);
+            setChanged(true);
+          }
+        }
+        setUpdate(false);
+      },
+      requestSave: () => {
+        if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current);
+        titleSaveTimer.current = setTimeout(() => startSave(), 1000);
+      },
+    });
   };
 
   const saveIfChanged = (cb: () => void) => {
