@@ -174,10 +174,11 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
       <MobileGrid>
         <StyledGrid size={{ xs: 12 }}>
-          {tool !== ToolSlug.KeyTerm && (
+          {tool !== ToolSlug.KeyTerm && mediaId && (
             <PassageDetailPlayer
               width={Math.round(Math.max(playerWidth, width))}
-              allowZoomAndSpeed={true}
+              allowZoomAndSpeed={false}
+              showTranscriptionButton={false}
               playerState={{
                 loading,
                 pdBusy,

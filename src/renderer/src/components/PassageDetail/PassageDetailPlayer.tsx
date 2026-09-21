@@ -244,8 +244,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       discussionMarkers = playerState.discussionMarkers;
     if (playerState.handleHighlightDiscussion)
       handleHighlightDiscussion = playerState.handleHighlightDiscussion;
-    if (playerState.playerMediafile)
-      playerMediafile = playerState.playerMediafile;
+    // Always apply (including undefined) so a resource player does not inherit
+    // vernacular media from context when no resource mediafile is selected.
+    playerMediafile = playerState.playerMediafile;
     if (playerState.forceRefresh) forceRefresh = playerState.forceRefresh;
   }
 
