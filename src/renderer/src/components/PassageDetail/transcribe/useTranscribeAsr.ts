@@ -6,7 +6,6 @@ import {
 } from '../../../model';
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
-import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState } from '../../../business/asr/asrState';
@@ -73,18 +72,12 @@ export function useTranscribeAsr({
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (isLangSet(asrSettings?.asrIso)) {
-        startAsr(asrSettings);
-        return;
-      }
       openAsrLanguageSettings();
     });
   }, [
     checkOnline,
     showMessage,
     sharedStr.mustBeOnline,
-    asrSettings,
-    startAsr,
     openAsrLanguageSettings,
   ]);
 
