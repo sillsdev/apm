@@ -170,6 +170,12 @@ interface IProps {
   titleVariant?: TypographyProps['variant'];
   showTopCloseButton?: boolean;
   showBottomCloseButton?: boolean;
+  /**
+   * Whether the bottom "Cancel" button is rendered when `onCancel` is set.
+   * Defaults to true. Set false to keep the cancel behavior wired to the
+   * top-right X (via `onCancel`) while hiding the redundant bottom button.
+   */
+  showBottomCancelButton?: boolean;
   bottomCloseLabel?: string;
   paperOutlineColor?: string;
   mobileThickScrollbar?: boolean;
@@ -194,6 +200,7 @@ export function BigDialog({
   titleVariant,
   showTopCloseButton = true,
   showBottomCloseButton = false,
+  showBottomCancelButton = true,
   bottomCloseLabel,
   paperOutlineColor,
   mobileThickScrollbar = false,
@@ -230,6 +237,14 @@ export function BigDialog({
     onOpen && onOpen(false);
     onCancel && onCancel();
   };
+
+  // Which footer buttons render. `showCancel` also gates the actions row so a
+  // dialog whose cancel is wired to the top X (showBottomCancelButton=false)
+  // and has no save/close doesn't render an empty row.
+  const showClose = showBottomCloseButton;
+  const showCancel = Boolean(onCancel) && showBottomCancelButton;
+  const showSave = Boolean(onSave);
+  const showActions = showClose || showCancel || showSave;
 
   return (
     <StyledDialog
@@ -286,20 +301,20 @@ export function BigDialog({
         {description}
       </DialogTitle>
       <DialogContent sx={dialogContentSx}>{children}</DialogContent>
-      {(showBottomCloseButton || onCancel || onSave) && (
+      {showActions && (
         <DialogActions sx={{ justifyContent: 'center' }}>
           <Box sx={rowSx}>
-            {showBottomCloseButton && (
+            {showClose && (
               <Button id="bigCloseBottom" onClick={handleClose}>
                 {bottomCloseLabel || ts.close}
               </Button>
             )}
-            {onCancel && (
+            {showCancel && (
               <Button id="bigCancel" sx={{ color: 'grey' }} onClick={onCancel}>
                 {ts.cancel}
               </Button>
             )}
-            {onSave && (
+            {showSave && (
               <Button color="primary" onClick={onSave}>
                 {ts.save}
               </Button>

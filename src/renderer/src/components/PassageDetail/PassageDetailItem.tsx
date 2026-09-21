@@ -387,6 +387,7 @@ export function PassageDetailItem(props: IProps) {
                 <PassageDetailPlayer
                   width={paneWidth - 40}
                   allowSegment={segments}
+                  allowSegmentNav={segments !== undefined}
                   allowAutoSegment={segments !== undefined}
                   saveSegments={
                     segments !== undefined && editStep

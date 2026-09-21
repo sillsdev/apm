@@ -759,10 +759,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     >
       <PassageDetailPlayer
         width={width}
-        layoutMode="mobileTranscribe"
+        layoutMode="transport"
         allowSegment={
           !isReadOnly && hasPermission ? NamedRegions.Transcription : undefined
         }
+        allowSegmentNav={!isReadOnly && hasPermission}
         allowAutoSegment={!isReadOnly && hasPermission}
         saveSegments={
           !isReadOnly && hasPermission

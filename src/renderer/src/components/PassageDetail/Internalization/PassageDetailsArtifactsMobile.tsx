@@ -231,6 +231,15 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
   const [biblebrainClose, setBiblebrainClose] = useState(false);
+  const [wizCloseRequested, setWizCloseRequested] = useState(false);
+  // Confirm-before-discard for the passage-select and edit dialogs. Closing any
+  // step of this wizard flow always prompts, since it discards everything
+  // entered on this and prior steps.
+  // Which dialog's close is awaiting confirmation ('passage' vs 'edit' differ
+  // only in what discarding tears down); null when no prompt is showing.
+  const [closeConfirm, setCloseConfirm] = useState<null | 'passage' | 'edit'>(
+    null
+  );
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
@@ -409,18 +418,32 @@ export function PassageDetailArtifactsMobile() {
   };
 
   const handleProjResPassageVisible = (v: boolean) => {
+    // Closing (X or Escape) always prompts; discarding loses this wizard step.
+    if (!v) {
+      setCloseConfirm('passage');
+      return;
+    }
     setProjResPassageVisible(v);
+  };
+  const handlePassageDiscard = () => {
+    setCloseConfirm(null);
+    setProjResPassageVisible(false);
   };
 
   const handleProjResWizVisible = (v: boolean) => {
     if (v) {
       setProjResWizVisible(v);
     } else {
-      waitForSave(undefined, 200).then(() => {
-        setProjResWizVisible(v);
-        projMediaRef.current = undefined;
-        setVisual(false);
-      });
+      waitForSave(undefined, 200)
+        .then(() => {
+          setProjResWizVisible(v);
+          projMediaRef.current = undefined;
+          setVisual(false);
+        })
+        // The X's close request may race the tool-changed clear; a timed-out
+        // wait is expected there (the child's cancel flow drives the real
+        // close) and must not surface as an unhandled rejection.
+        .catch(() => {});
     }
   };
 
@@ -500,7 +523,9 @@ export function PassageDetailArtifactsMobile() {
     setEditAudio(false);
   };
   const handleEditResourceVisible = (v: boolean) => {
-    if (!v) resetEdit();
+    if (!v) {
+      setCloseConfirm('edit');
+    }
   };
   const handleEditSave = async () => {
     // Create the category now (at save) if the user typed a new one; on blur it
@@ -562,6 +587,10 @@ export function PassageDetailArtifactsMobile() {
     resetEdit();
   };
   const handleEditCancel = () => {
+    setCloseConfirm('edit');
+  };
+  const handleEditDiscard = () => {
+    setCloseConfirm(null);
     resetEdit();
   };
   const syncResourceReady = (type: UploadType, desc: string) => {
@@ -1038,6 +1067,8 @@ export function PassageDetailArtifactsMobile() {
       </Box>
       <Uploader
         audioUploadOrRecord={audioUploadOrRecord}
+        hideUploadCancel
+        confirmOnClose
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}
@@ -1153,7 +1184,6 @@ export function PassageDetailArtifactsMobile() {
         isOpen={projResPassageVisible}
         onOpen={handleProjResPassageVisible}
         disableBackdropClose
-        showTopCloseButton={false}
       >
         {projResPassageVisible ? (
           <SelectSections
@@ -1165,7 +1195,6 @@ export function PassageDetailArtifactsMobile() {
             )}
             visual={visual}
             onSelect={handleSelectProjectResourcePassage}
-            onCancel={() => handleProjResPassageVisible(false)}
           />
         ) : (
           <></>
@@ -1177,6 +1206,7 @@ export function PassageDetailArtifactsMobile() {
         onOpen={handleProjResWizVisible}
         bp={BigDialogBp.md}
         disableBackdropClose
+        setCloseRequested={setWizCloseRequested}
       >
         {projResWizVisible ? (
           <ProjectResourceConfigure
@@ -1186,6 +1216,8 @@ export function PassageDetailArtifactsMobile() {
             candidateItems={projCandidateRef.current}
             resourceTypeId={resourceType}
             onOpen={handleProjResWizVisible}
+            closeRequested={wizCloseRequested}
+            resetCloseRequested={() => setWizCloseRequested(false)}
           />
         ) : (
           <></>
@@ -1198,6 +1230,7 @@ export function PassageDetailArtifactsMobile() {
         onSave={allowEditSave ? handleEditSave : undefined}
         onCancel={handleEditCancel}
         bp={BigDialogBp.mobile}
+        showBottomCancelButton={false}
       >
         <ResourceData
           media={mediaRef.current}
@@ -1223,6 +1256,21 @@ export function PassageDetailArtifactsMobile() {
           text={t.deleteConfirm}
           yesResponse={handleDeleteConfirmed}
           noResponse={handleDeleteRefused}
+        />
+      )}
+      {closeConfirm && (
+        <Confirm
+          title={t.confirmCloseTitle}
+          text={t.confirmClose}
+          no={t.keepOpen}
+          primaryButton="no"
+          yes={t.discardAndClose}
+          noResponse={() => setCloseConfirm(null)}
+          yesResponse={
+            closeConfirm === 'passage'
+              ? handlePassageDiscard
+              : handleEditDiscard
+          }
         />
       )}
       {displayId && (

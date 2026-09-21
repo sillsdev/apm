@@ -1177,6 +1177,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "tip2b": string;
     "unusedSegment": string;
     "upload": string;
+    "uploadAsResources": string;
     "uploadProject": string;
     "uploadTab": string;
     "verseLevel": string;

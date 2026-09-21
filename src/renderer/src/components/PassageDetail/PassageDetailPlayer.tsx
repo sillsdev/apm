@@ -62,6 +62,9 @@ export interface IPlayerState {
 export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
   saveSegments?: SaveSegments | undefined;
+  /** Show the loop toggle and prev/next segment-navigation arrows. */
+  allowSegmentNav?: boolean;
+  /** Show the auto-segment (barcode) button and its parameters dialog. */
   allowAutoSegment?: boolean;
   /** Hide the generic Add/Remove Segment and Reset controls (Careful Speech
    * supplies its own Split/Combine controls). */
@@ -132,12 +135,13 @@ export interface DetailPlayerProps {
    * Set false where the button isn't wanted (e.g. Mark Verses Mobile). */
   showTranscriptionButton?: boolean;
   hideZoom?: boolean;
-  layoutMode?: 'default' | 'mobileTranscribe';
+  layoutMode?: 'default' | 'transport';
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
   const {
     allowSegment,
+    allowSegmentNav,
     allowAutoSegment,
     hideSegmentControls,
     isSegmentRecorded,
@@ -471,6 +475,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         loading={loading}
         busy={pdBusy}
         allowSegment={allowSegment}
+        allowSegmentNav={allowSegmentNav}
         allowAutoSegment={allowAutoSegment}
         layoutMode={layoutMode}
         hideSegmentControls={hideSegmentControls}

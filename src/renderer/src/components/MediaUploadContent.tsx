@@ -177,6 +177,8 @@ interface IProps {
    * but don't have time to check all the usages now. */
 
   noWrapper?: boolean | undefined;
+  /** Hide the bottom "Cancel" button (cancel is reached via the dialog's X). */
+  hideCancel?: boolean | undefined;
 }
 
 function MediaUploadContent(props: IProps) {
@@ -201,6 +203,7 @@ function MediaUploadContent(props: IProps) {
     controlsRef,
     onSaveDisabled,
     noWrapper,
+    hideCancel,
   } = props;
   const [name, setName] = useState('');
   const [files, setFilesx] = useState<File[]>([]);
@@ -434,14 +437,16 @@ function MediaUploadContent(props: IProps) {
       </DialogContent>
       {!controlsRef && (
         <DialogActions>
-          <Button
-            id="uploadCancel"
-            onClick={handleCancel}
-            variant="outlined"
-            color="primary"
-          >
-            {cancelLabel || t.cancel}
-          </Button>
+          {!hideCancel && (
+            <Button
+              id="uploadCancel"
+              onClick={handleCancel}
+              variant="outlined"
+              color="primary"
+            >
+              {cancelLabel || t.cancel}
+            </Button>
+          )}
           <Button
             id="uploadSave"
             onClick={handleAddOrSave}

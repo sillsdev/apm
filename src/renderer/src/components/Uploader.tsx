@@ -79,6 +79,10 @@ interface IProps {
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   uploadDialogBp?: BigDialogBp;
+  /** Hide the upload dialog's bottom "Cancel" button (cancel via the dialog X). */
+  hideUploadCancel?: boolean | undefined;
+  /** Prompt before discarding on close when a file/recording is staged. */
+  confirmOnClose?: boolean | undefined;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
 }
@@ -113,6 +117,8 @@ export const Uploader = (props: IProps) => {
     audioOnly,
     finish,
     uploadDialogBp,
+    hideUploadCancel,
+    confirmOnClose,
     pendingRestore,
   } = props;
   const { metaData, ready, beforeUpload } = props;
@@ -511,6 +517,7 @@ export const Uploader = (props: IProps) => {
           audioOnly={audioOnly}
           pendingRestore={pendingRestore}
           beforeUpload={beforeUpload}
+          confirmOnClose={confirmOnClose}
         />
       )}
       {!audioUploadOrRecord && !hasImport && (
@@ -522,6 +529,8 @@ export const Uploader = (props: IProps) => {
           multiple={multiple}
           uploadMethod={uploadMedia}
           cancelMethod={uploadCancel}
+          hideCancel={hideUploadCancel}
+          confirmOnClose={confirmOnClose}
           metaData={metaData}
           ready={ready}
           speaker={performedBy}

@@ -64,11 +64,12 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
-  // Fill the dialog's flex column and scroll internally so the action buttons
-  // below stay pinned to the dialog bottom regardless of content size.
+  // Fill the dialog's flex column. The paper itself does NOT scroll; only the
+  // inner table region does, so the suffix field below stays visible and the
+  // action buttons stay pinned to the dialog bottom regardless of content size.
   flex: '1 1 auto',
   minHeight: 0,
-  overflow: 'auto',
+  overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
 }));
@@ -99,6 +100,19 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
         py: 1.25,
         px: 1.5,
       },
+      // While editing, react-datasheet swaps the value-viewer span for an
+      // `<input class="data-editor">` that has no padding, so typed text jams
+      // against the cell's left border. Give it the same horizontal padding as
+      // the viewer so text stays aligned when entering/leaving edit mode.
+      // The library's own `.cell > input` rule (3 classes + child selector)
+      // forces `text-align:right`, which beats a single-class override — so the
+      // input renders right-aligned mid-edit and only snaps left once the
+      // value-viewer takes over on blur. `!important` is required to win.
+      '& .data-editor': {
+        px: 1.5,
+        boxSizing: 'border-box',
+        textAlign: 'left !important',
+      },
       // react-datasheet tints read-only cells with their own grey background;
       // clear it on the body rows so each row's stripe shows uniformly (the
       // header row, the first tr, keeps the library default).
@@ -112,8 +126,22 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
       '& .cell.read-only': {
         color: (theme) => `${theme.palette.text.primary} !important`,
       },
+      // Header row: slightly darker grey. Every cell here is read-only, so the
+      // grey needs !important to beat the library's own cell background.
       '& .cTitle': {
         fontWeight: 'bold',
+        backgroundColor: (theme) => `${theme.palette.grey[300]} !important`,
+      },
+      // Black rule dividing the header from the first body row. Uses the same
+      // `> tbody > tr > td.cell` specificity as the column dividers below so it
+      // beats react-datasheet's own light cell border under border-collapse.
+      '& > tbody > tr:first-of-type > td.cell': {
+        borderBottom: (theme) => `1px solid ${theme.palette.common.black}`,
+      },
+      // Black vertical dividers between columns (right edge of every cell except
+      // the last column, on every row).
+      '& > tbody > tr > td.cell:not(:last-of-type)': {
+        borderRight: (theme) => `1px solid ${theme.palette.common.black}`,
       },
       '& .lim': {
         verticalAlign: 'inherit !important',
@@ -167,11 +195,27 @@ interface IProps {
   /** Artifact type id of a derived resource copy (`resource` slug). */
   resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
+  /**
+   * Set true by the enclosing BigDialog's top-right X so it runs the same
+   * cancel flow as before (confirm-before-discard + clearing the tool's changed
+   * state). Reset via `resetCloseRequested`.
+   */
+  closeRequested?: boolean;
+  resetCloseRequested?: () => void;
   bookData?: BookName[];
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { width, media, items, candidateItems, resourceTypeId, onOpen } = props;
+  const {
+    width,
+    media,
+    items,
+    candidateItems,
+    resourceTypeId,
+    onOpen,
+    closeRequested,
+    resetCloseRequested,
+  } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -370,6 +414,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
+  // Mark the tool changed for the lifetime of the dialog. The BigDialog's X
+  // asks the parent to close, which waits for save before hiding the dialog;
+  // keeping the tool "changed" makes that wait reject so the dialog stays open
+  // long enough for the confirm below (cleared by doClose on discard/save).
+  useEffect(() => {
+    toolChanged(wizToolId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const doClose = () => {
     toolChanged(wizToolId, false);
     onOpen && onOpen(false);
@@ -381,18 +434,26 @@ export const ProjectResourceConfigure = (props: IProps) => {
       canceling.current = true;
       return;
     }
-    // Prompt before discarding unsaved configuration; otherwise close directly.
-    if (isChanged(wizToolId)) {
-      setShowConfirmClose(true);
-      return;
-    }
-    doClose();
+    // Always confirm before closing (the X or Escape routes here).
+    setShowConfirmClose(true);
   };
 
   const handleDiscardClose = () => {
     setShowConfirmClose(false);
     doClose();
   };
+
+  // The BigDialog top-right X flips `closeRequested`; route it through the
+  // cancel flow so it always prompts before discarding (this is a wizard step —
+  // closing loses everything entered on prior steps too). Reset the flag first
+  // so a later X click can re-trigger this after "Keep open".
+  useEffect(() => {
+    if (closeRequested) {
+      resetCloseRequested && resetCloseRequested();
+      handleCancel();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeRequested]);
 
   const handleCopy = () => {
     const config: string[] = [];
@@ -635,21 +696,45 @@ export const ProjectResourceConfigure = (props: IProps) => {
       <PassageDetailPlayer
         width={width}
         allowSegment={NamedRegions.ProjectResource}
+        allowSegmentNav
+        layoutMode="transport"
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
       />
-      <StyledPaper id="proj-res-sheet">
-        <Box sx={{ p: 2 }}>
-          <Box data-testid="proj-res-sheet">
-            <DataSheet
-              data={data}
-              valueRenderer={handleValueRenderer}
-              onCellsChanged={handleCellsChanged}
-              parsePaste={handleParsePaste}
-              sheetRenderer={ProjectResourceTable}
-            />
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }}>
+      <StyledPaper id="proj-res-sheet" elevation={0}>
+        {/* Only the table scrolls; it fills the region edge-to-edge (no padding
+            frame) and carries a border so the scroll area is outlined. The
+            suffix row below stays pinned/visible. */}
+        <Box
+          data-testid="proj-res-sheet"
+          sx={{
+            // `0 1 auto`: size to the table's content so the black outline hugs
+            // it (empty paper space falls below the outline). When the table is
+            // taller than the available space, flex-shrink caps the box and it
+            // scrolls internally.
+            flex: '0 1 auto',
+            minHeight: 0,
+            overflow: 'auto',
+            border: 1,
+            borderColor: 'common.black',
+          }}
+        >
+          <DataSheet
+            data={data}
+            valueRenderer={handleValueRenderer}
+            onCellsChanged={handleCellsChanged}
+            parsePaste={handleParsePaste}
+            sheetRenderer={ProjectResourceTable}
+          />
+        </Box>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ flexShrink: 0, px: 0, py: 1.5 }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
             <TextField
               label={t.suffix}
               variant="outlined"
@@ -669,32 +754,28 @@ export const ProjectResourceConfigure = (props: IProps) => {
               />
             </LightTooltip>
           </Stack>
-        </Box>
+          <Button
+            id="copy-configure"
+            disabled={numSegments === 0}
+            onClick={handleCopy}
+          >
+            {ts.clipboardCopy}
+          </Button>
+        </Stack>
       </StyledPaper>
       {/* Fixed footer: keeps the action buttons pinned to the dialog bottom
           while the sheet above scrolls. Wrapping ActionRow in a non-growing
           Box neutralizes its flexGrow:1 inside this flex column. */}
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
-          <Button
-            id="copy-configure"
-            sx={{ mr: 'auto' }}
-            disabled={numSegments === 0}
-            onClick={handleCopy}
-          >
-            {ts.clipboardCopy}
-          </Button>
-          <Box sx={rowSx}>
+          <Box sx={{ ...rowSx, ml: 'auto' }}>
             <Button
               id="res-create"
               color="primary"
               disabled={numSegments === 0 || savingRef.current}
               onClick={handleCreate}
             >
-              {t.createResources}
-            </Button>
-            <Button id="res-create-cancel" onClick={handleCancel}>
-              {ts.cancel}
+              {t.uploadAsResources.replace('{0}', items.length.toString())}
             </Button>
           </Box>
         </ActionRow>
@@ -704,6 +785,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
           title={t.confirmCloseTitle}
           text={t.confirmClose}
           no={t.keepOpen}
+          primaryButton="no"
           yes={t.discardAndClose}
           noResponse={() => setShowConfirmClose(false)}
           yesResponse={handleDiscardClose}

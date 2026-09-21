@@ -1399,6 +1399,7 @@ export function Transcriber(props: IProps) {
                 <PassageDetailPlayer
                   width={paperStyle.width}
                   position={defaultPosition}
+                  allowSegmentNav={true}
                   allowAutoSegment={true}
                   saveSegments={
                     allowSegment ? SaveSegments.saveButNoButton : undefined
