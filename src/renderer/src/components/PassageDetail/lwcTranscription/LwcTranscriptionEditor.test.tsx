@@ -46,7 +46,6 @@ jest.mock('../../../hoc/useOrbitData', () => ({
 
 jest.mock('../../../crud/useGetAsrSettings', () => ({
   useGetAsrSettings: () => ({
-    saveProjectAsrSettings: jest.fn(),
     saveTeamAsrSettings: jest.fn(),
   }),
 }));
