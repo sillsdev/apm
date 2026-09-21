@@ -1394,6 +1394,8 @@ test('merge late Book/AltBook/S2 into current sorts by sectionSeq (TT-7648)', ()
       kind: IwsKind.Passage,
     },
   ]);
+});
+
 // TT-7713: leaving the Sections & Passages page and coming back rebuilds the
 // sheet with no `current` to merge from, so a passage whose stored reference
 // is a bare 'NOTE' loses the category name and image. The shared resource's
