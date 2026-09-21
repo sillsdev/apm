@@ -182,12 +182,13 @@ function Invite(props: IProps) {
 
   const orgEmails = React.useMemo(() => {
     const orgUserIds = members
-    .filter((m) => related(m, 'organization') === organization)
-    .map((m) => related(m, 'user'));
-  return users
-    .filter((u) => orgUserIds.includes(u.id))
-    .map((u) => u.attributes?.email?.trim().toLowerCase())
-    .filter((email): email is string => Boolean(email));
+      .filter((m) => related(m, 'organization') === organization)
+      .map((m) => related(m, 'user'));
+    return users
+      .filter((u) => orgUserIds.includes(u.id))
+      .map((u) => u.attributes?.email?.trim().toLowerCase())
+      .filter((email): email is string => Boolean(email));
+  }, [members, users, organization]);
 
   const hasInviteForEmail = (email: string) => {
     return (
