@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import {
   IState,
@@ -50,7 +50,16 @@ export const useArtifactCategory = (teamId?: string) => {
   const [errorReporter] = useGlobal('errorReporter');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const t: IArtifactCategoryStrings = useSelector(stringSelector, shallowEqual);
-  const [fromLocal] = useState<ISwitches>({});
+  // Rebuilt whenever the strings change: localStrings hands out a new identity
+  // per language, and a map cached from the first language would answer a
+  // switched-to name with itself instead of its slug (TT-7713).
+  const fromLocal = useMemo(() => {
+    const map: ISwitches = {};
+    for (const [key, value] of Object.entries(t)) {
+      map[value] = key;
+    }
+    return map;
+  }, [t]);
   const specialNoteCategories = ['chapter', 'title'];
   // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
   const specialBootstrapOrgs = useRef<Set<string>>(new Set());
@@ -58,14 +67,7 @@ export const useArtifactCategory = (teamId?: string) => {
     return (t as ISwitches)[val] || val;
   };
 
-  const fromLocalizedArtifactCategory = (val: string) => {
-    if (Object.entries(fromLocal).length === 0) {
-      for (const [key, value] of Object.entries(t)) {
-        fromLocal[value] = key;
-      }
-    }
-    return fromLocal[val] || val;
-  };
+  const fromLocalizedArtifactCategory = (val: string) => fromLocal[val] || val;
 
   const slugFromId = (id: string) => {
     let aRec = {} as ArtifactCategory;

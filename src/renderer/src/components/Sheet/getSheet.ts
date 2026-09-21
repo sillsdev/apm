@@ -31,6 +31,8 @@ import { isPublishingTitle } from '../../control/passageTypeFromRef';
 import { InitializedRecord, RecordIdentity } from '@orbit/records';
 import { PublishDestinationEnum } from '../../crud';
 import { addPt } from '../../utils/addPt';
+import { noteCategoryOf, noteCategoryRef } from './noteCategoryRef';
+import { currentDateTime } from '../../utils/currentDateTime';
 import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
 
 const shtSectionUpdate = (item: ISheet, rec: ISheet) => {
@@ -63,7 +65,7 @@ const shtSectionAdd = (sheet: ISheet[], item: ISheet) => {
 };
 
 const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
-  if (!item.passage) return false;
+  if (!item.passage) return { touched: false, refChanged: false };
   const touched = Boolean(
     item.passageUpdated &&
     rec.passageUpdated &&
@@ -93,10 +95,15 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
   rec.assign = item.assign;
   rec.discussionCount = item.discussionCount;
   //if it's a note with a category and the new reference doesn't have a category, keep the original reference
+  const priorRef = rec.reference;
   rec.reference =
     rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
       ? rec.reference
       : item.reference;
+  //a note's category lives on the shared resource, so it can change (or be
+  //renamed by a language switch) without moving passage.dateUpdated; the
+  //artwork is chosen from the reference, so it has to be recomputed too
+  const refChanged = rec.reference !== priorRef;
   if (
     rec.passage &&
     rec.reference &&
@@ -109,7 +116,7 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
   }
 
   rec.passageUpdated = item.passageUpdated;
-  return touched;
+  return { touched, refChanged };
 };
 
 const shtPassageAdd = (
@@ -123,8 +130,8 @@ const shtPassageAdd = (
     if (item.kind === IwsKind.SectionPassage) {
       shtSectionUpdate(item, rec);
     }
-    const updated = shtPassageUpdate(item, rec);
-    return { rec, touched: updated };
+    const { touched, refChanged } = shtPassageUpdate(item, rec);
+    return { rec, touched, refChanged };
   } else if (sectionIndex && sectionIndex >= 0) {
     let indexAt = sectionIndex + 1;
     while (indexAt < sheet.length) {
@@ -143,10 +150,10 @@ const shtPassageAdd = (
       indexAt += 1;
     }
     sheet.push(item);
-    return { rec: inserted, touched: true };
+    return { rec: inserted, touched: true, refChanged: false };
   }
   sheet.push(item);
-  return { rec: item, touched: true };
+  return { rec: item, touched: true, refChanged: false };
 };
 
 const initItem = {} as ISheet;
@@ -236,6 +243,7 @@ export interface GetSheetProps {
   ) => PublishDestinationEnum[];
   publishStatus: (destinations: PublishDestinationEnum[]) => string;
   getSharedResource: (p: PassageD) => SharedResourceD | undefined;
+  noteCategory?: (sr?: SharedResourceD) => string | undefined;
   current?: ISheet[];
   user: string;
   myGroups: GroupD[];
@@ -262,6 +270,7 @@ export const getSheet = ({
   getPublishTo,
   publishStatus,
   getSharedResource,
+  noteCategory,
   current,
   user,
   myGroups,
@@ -372,6 +381,27 @@ export const getSheet = ({
         item.passage = passage;
         item.passageType = passageTypeFromRef(passAttr.reference, flat);
         item.sharedResource = getSharedResource(passage);
+        //the passage reference only caches NOTE|{category}; the shared resource
+        //knows the real category, so a rebuild cannot lose it (TT-7713)
+        const noteRef = noteCategoryRef(
+          item.reference,
+          noteCategory?.(item.sharedResource)
+        );
+        if (noteRef && noteRef !== item.reference) {
+          //a stored reference carrying no category at all is the TT-7713
+          //corruption, so flag the row and let the next sheet save write the
+          //repair back. A reference that only names the category differently
+          //(a rename, or the reader's language) is left unflagged, or readers
+          //in different languages would rewrite each other's rows.
+          const wasBare = noteCategoryOf(item.reference) === '';
+          item.reference = noteRef;
+          //keep the row's passage snapshot in step, as the merge path does
+          item.passage = {
+            ...passage,
+            attributes: { ...passage.attributes, reference: noteRef },
+          } as PassageD;
+          if (wasBare) item.passageUpdated = currentDateTime();
+        }
         let mediaRec: MediaFileD | null;
         if (item.sharedResource) {
           mediaRec =
@@ -454,9 +484,13 @@ export const getSheet = ({
             myGroups
           );
       }
-      const { rec, touched } = shtPassageAdd(myWork, item, sectionIndex);
+      const { rec, touched, refChanged } = shtPassageAdd(
+        myWork,
+        item,
+        sectionIndex
+      );
       if (
-        touched &&
+        (touched || refChanged) &&
         [PassageTypeEnum.NOTE, PassageTypeEnum.CHAPTERNUMBER].includes(
           rec.passageType
         ) &&
