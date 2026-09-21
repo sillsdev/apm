@@ -72,6 +72,7 @@ jest.mock('@uiw/react-color-colorful', () => ({
 jest.mock('../GraphicPicker', () => ({
   __esModule: true,
   default: () => <div data-testid="graphic-picker" />,
+  NOTE_CATEGORY_STYLE: 'Note Category',
 }));
 
 jest.mock('../useGraphicPicker', () => ({
