@@ -19,7 +19,7 @@ import {
   LocalKey,
 } from '../utils';
 import { isUnauthorized } from '../utils/httpError';
-import { Button, rowSx } from '../control';
+import { Button } from '../control';
 import { TokenContext } from '../context/TokenProvider';
 import { mainSelector } from '../selector';
 import { useGlobal } from '../context/useGlobal';
@@ -27,6 +27,15 @@ import JSONAPISource from '@orbit/jsonapi';
 import { useRouteError } from 'react-router-dom';
 import { isElectron } from '../../api-variable';
 import { useLogoutResets } from '../utils/useLogoutResets';
+
+// TT-7708: the problem is where rowSx gets used: ModalMessage
+// applies it to a Box, and ModalMessage is rendered by ErrorBoundary,
+//  which sits above App in the tree. So we create a local copy.
+const rowSx = () => ({
+  display: 'flex',
+  gap: 1.5,
+  minWidth: 0,
+});
 
 const ModalDiv = styled('div')(() => ({
   position: 'fixed' /* Stay in place */,
