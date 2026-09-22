@@ -1,13 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { useSelector, shallowEqual } from 'react-redux';
-import { passageDetailArtifactsSelector } from '../../../selector';
+import {
+  passageDetailArtifactsSelector,
+  sharedSelector,
+} from '../../../selector';
 import {
   IState,
   PassageD,
   SectionD,
   Plan,
   IPassageDetailArtifactsStrings,
+  ISharedStrings,
 } from '../../../model';
 import {
   Box,
@@ -47,6 +51,13 @@ interface IProps {
   /** Visual resources are written immediately, so the button says so. */
   visual?: boolean;
   /**
+   * True when clicking Next now performs the (deferred) media upload — the
+   * new-add general-resource flow. The button then reads "Upload" instead of
+   * "Next". Editing an existing resource leaves this false (Next just advances
+   * to the configure step; the media already exists).
+   */
+  uploadsOnNext?: boolean;
+  /**
    * `candidates` is every identity offered by the dialog; the caller needs it to
    * limit cleanup of unselected assignments to what the user could actually see.
    */
@@ -54,7 +65,7 @@ interface IProps {
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, onSelect } = props;
+  const { initialItems, visual, uploadsOnNext, onSelect } = props;
   const initialSelectionKey = (initialItems ?? [])
     .map((item) => `${item.type}:${item.id}`)
     .join('|');
@@ -73,6 +84,7 @@ export function SelectSections(props: IProps) {
     passageDetailArtifactsSelector,
     shallowEqual
   );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const setDimensions = () => {
@@ -268,7 +280,7 @@ export function SelectSections(props: IProps) {
             onClick={handleSelected}
             disabled={selected.size === 0}
           >
-            {visual ? ta.createResources : ta.next}
+            {visual ? ta.createResources : uploadsOnNext ? ts.upload : ta.next}
           </Button>
         </Box>
       </ActionRow>

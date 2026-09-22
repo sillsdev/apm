@@ -85,6 +85,14 @@ interface IProps {
   confirmOnClose?: boolean | undefined;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
+  /**
+   * When set, the Add Audio Resource dialog's Next stages the prepared file(s)
+   * via `onStageFiles` instead of uploading them. The general-resource flow
+   * uses this to defer the upload until the user picks passages/sections; the
+   * actual upload is then driven through `importList`.
+   */
+  deferUpload?: boolean | undefined;
+  onStageFiles?: ((files: File[]) => void) | undefined;
 }
 
 export const Uploader = (props: IProps) => {
@@ -120,6 +128,8 @@ export const Uploader = (props: IProps) => {
     hideUploadCancel,
     confirmOnClose,
     pendingRestore,
+    deferUpload,
+    onStageFiles,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -440,6 +450,17 @@ export const Uploader = (props: IProps) => {
     restoreScroll();
   };
 
+  // When deferring, the dialog's Next hands the prepared file(s) up to be
+  // uploaded later (driven through `importList` once passages are chosen)
+  // rather than uploading now. Returning true lets the dialog clear its
+  // selection just as a real upload would.
+  const stageFiles = (files: File[]) => {
+    onStageFiles?.(files);
+    return true;
+  };
+  const deferring = Boolean(deferUpload && onStageFiles);
+  const effectiveUploadMethod = deferring ? stageFiles : uploadMedia;
+
   useEffect(() => {
     if (uploadError && uploadError !== '') {
       let msg = uploadError;
@@ -510,7 +531,8 @@ export const Uploader = (props: IProps) => {
           onSpeaker={handleSpeakerChange}
           team={team}
           uploadType={uploadType || UploadType.Media}
-          uploadMethod={uploadMedia}
+          uploadMethod={effectiveUploadMethod}
+          onStageFile={deferring ? onStageFiles : undefined}
           multiple={multiple}
           inValue={inValue}
           onNonAudio={onNonAudio}

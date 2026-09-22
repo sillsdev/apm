@@ -722,7 +722,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
               disabled={numSegments === 0 || savingRef.current}
               onClick={handleCreate}
             >
-              {t.uploadAsResources.replace('{0}', items.length.toString())}
+              {t.createXResources.replace('{0}', items.length.toString())}
             </Button>
           </Box>
         </ActionRow>

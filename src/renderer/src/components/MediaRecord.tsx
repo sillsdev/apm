@@ -59,6 +59,13 @@ interface IProps {
    * `pendingRestore` can include newly created category ids.
    */
   beforeUpload?: () => Promise<void>;
+  /**
+   * When set, `doUpload` hands the finished (already converted) take here and
+   * returns instead of calling `uploadMedia` — the general-resource flow defers
+   * the upload until the user has chosen passages/sections (SelectSections).
+   * When absent, a saved take uploads immediately as usual.
+   */
+  onStageFile?: ((files: File[]) => void) | undefined;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -148,6 +155,7 @@ function MediaRecord(props: IProps) {
     afterUploadCb,
     pendingRestore,
     beforeUpload,
+    onStageFile,
     setCanSave,
     setCanCancel,
     setStatusText,
@@ -528,17 +536,28 @@ function MediaRecord(props: IProps) {
 
   const doUpload = useCallback(
     async (blob: Blob, mimeType: string, filetype: string) => {
-      setUploading(true);
-      setStatusText(t.saving);
       const files = [
         new File([blob], defaultFilename + '.' + filetype, {
           type: mimeType,
         }),
       ];
+      if (onStageFile) {
+        // General-resource flow: hand the finished (already converted) take up
+        // to be uploaded later — after the user picks passages/sections — and
+        // clear the save state so the recorder returns to idle. The caller's
+        // .then still runs (setLoading(false)/convertComplete/onReady).
+        onStageFile(files);
+        saveRef.current = false;
+        saveCompleted(toolId);
+        setStatusText('');
+        return;
+      }
+      setUploading(true);
+      setStatusText(t.saving);
       await uploadMedia(files);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [defaultFilename, uploadMedia]
+    [defaultFilename, uploadMedia, onStageFile, toolId]
   );
 
   const convertComplete = () => {
