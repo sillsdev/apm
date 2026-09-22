@@ -348,7 +348,7 @@ export function ConsultantCheck({ width }: IProps) {
       <BigDialog
         title={t.compareItems}
         isOpen={open}
-        onOpen={() => handleCompareOpen(false)}
+        onClose={() => handleCompareOpen(false)}
       >
         <ConsultantCheckCompare
           compare={compare}

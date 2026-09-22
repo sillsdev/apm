@@ -184,7 +184,8 @@ interface IProps {
   dialogContentSx?: SxProps;
   children: React.JSX.Element;
   isOpen: boolean;
-  onOpen: (isOpen: boolean) => void;
+  /** Called when the dialog requests to close (top X, backdrop, or escape). */
+  onClose: () => void;
   onCancel?: (() => void) | undefined;
   onSave?: (() => void) | undefined;
   bp?: BigDialogBp | undefined;
@@ -209,7 +210,7 @@ export function BigDialog({
   dialogContentSx,
   children,
   isOpen,
-  onOpen,
+  onClose,
   onCancel,
   onSave,
   bp,
@@ -234,7 +235,7 @@ export function BigDialog({
     }
     setCloseRequested && setCloseRequested(true);
     if (enableOffsite) setEnableOffsite(false);
-    onOpen && onOpen(false);
+    onClose && onClose();
     onCancel && onCancel();
   };
 

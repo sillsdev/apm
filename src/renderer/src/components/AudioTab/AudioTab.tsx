@@ -400,7 +400,7 @@ export function AudioTab() {
             <BigDialog
               title={t.choosePassage}
               isOpen={attachVisible || false}
-              onOpen={setAttachVisible}
+              onClose={() => setAttachVisible(false)}
               onCancel={handleAttachCancel}
             >
               <PassageChooser

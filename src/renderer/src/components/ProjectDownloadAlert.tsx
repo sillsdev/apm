@@ -384,7 +384,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
         <BigDialog
           title={t.download}
           isOpen={alert}
-          onOpen={handleClose(true)}
+          onClose={handleClose(true)}
           bp={BigDialogBp.sm}
           description={
             <Typography sx={{ fontSize: 'small' }}>
@@ -579,7 +579,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
       <BigDialog
         title={t.missingFiles}
         isOpen={showMissingFiles}
-        onOpen={() => setShowMissingFiles(false)}
+        onClose={() => setShowMissingFiles(false)}
         bp={BigDialogBp.md}
       >
         <Box>

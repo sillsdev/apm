@@ -2339,7 +2339,7 @@ export function ScriptureTable(props: IProps) {
       <BigDialog
         title={ts.versionHistory}
         isOpen={versionRow !== undefined}
-        onOpen={handleVerHistClose}
+        onClose={handleVerHistClose}
       >
         <VersionDlg
           passId={versionRow?.passage?.id || ''}
@@ -2357,7 +2357,7 @@ export function ScriptureTable(props: IProps) {
               : ts.versionHistory
         }
         isOpen={editRow !== undefined}
-        onOpen={handleEditClose}
+        onClose={handleEditClose}
       >
         {editRow && (shared || isNote) ? (
           <ResourceTabs

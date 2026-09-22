@@ -1865,7 +1865,7 @@ function WSAudioPlayer(props: IProps) {
         </Typography>
       }
       isOpen={voiceVisible}
-      onOpen={handleCloseVoice}
+      onClose={handleCloseVoice}
       bp={effectiveMobileView ? BigDialogBp.mobile : BigDialogBp.sm}
       mobileNoHorizontalScroll={effectiveMobileView}
       mobilePaperWidth={

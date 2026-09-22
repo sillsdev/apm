@@ -120,7 +120,7 @@ export const VoiceStatement = ({
       <BigDialog
         title={t.personalizeTitle}
         isOpen={Boolean(showPersonalize)}
-        onOpen={() => setShowPersonalize(undefined)}
+        onClose={() => setShowPersonalize(undefined)}
         onCancel={() => {
           setState && setState(showPersonalize as IVoicePerm);
           setShowPersonalize(undefined);

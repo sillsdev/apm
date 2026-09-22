@@ -293,7 +293,7 @@ function FilterContent(props: FilterProps) {
   return (
     <BigDialog
       isOpen={filterVisible}
-      onOpen={handleDialogOpenChange}
+      onClose={() => handleDialogOpenChange(false)}
       title={filterStrings.title.replace('{0}', filterData.label)}
       bp={BigDialogBp.sm}
     >

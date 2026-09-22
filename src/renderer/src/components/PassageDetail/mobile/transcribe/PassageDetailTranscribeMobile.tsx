@@ -937,7 +937,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       <BigDialog
         title={tPlayer.recognizeSpeechSettings}
         isOpen={asr.asrLangVisible}
-        onOpen={() => asr.handleAsrLanguageClose(true)}
+        onClose={() => asr.handleAsrLanguageClose(true)}
         bp={BigDialogBp.mobile}
       >
         <SelectAsrLanguage
@@ -951,7 +951,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         <BigDialog
           title={tPlayer.recognizeProgress}
           isOpen={asr.asrProgressVisible}
-          onOpen={asr.setAsrProgressVisible}
+          onClose={() => asr.setAsrProgressVisible(false)}
           bp={BigDialogBp.mobile}
           mobileNoHorizontalScroll={true}
           mobilePaperWidth="min(356px, calc(100vw - 4px))"

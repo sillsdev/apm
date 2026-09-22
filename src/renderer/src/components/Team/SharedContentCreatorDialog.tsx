@@ -33,7 +33,7 @@ export const SharedContentCreatorDialog = ({
 }: IProps) => (
   <BigDialog
     isOpen={isOpen}
-    onOpen={onOpen}
+    onClose={() => onOpen(false)}
     onSave={onSave}
     onCancel={onCancel}
     title={title}

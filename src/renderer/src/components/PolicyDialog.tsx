@@ -19,7 +19,7 @@ export const PolicyDialog = (props: PolicyDialogProps) => {
     <BigDialog
       title=""
       isOpen={isOpen}
-      onOpen={onClose}
+      onClose={onClose}
       bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
       mobileNoHorizontalScroll
     >

@@ -490,7 +490,7 @@ export default function MediaTitle(props: IProps) {
         <BigDialog
           title={t.provideAudio.replace('{0}', curText)}
           isOpen={showRecorder}
-          onOpen={handleNoClose}
+          onClose={handleNoClose}
         >
           <TitleTabs
             onRecording={onMyRecording}

@@ -465,7 +465,7 @@ export const PassageDataTable = (props: IProps) => {
             </Typography>
           }
           isOpen={termsCheck !== undefined}
-          onOpen={handleTermsCancel}
+          onClose={handleTermsCancel}
         >
           <>
             <Typography>{termsOfUse(curTermsCheck)}</Typography>

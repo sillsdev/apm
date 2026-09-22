@@ -242,7 +242,7 @@ export const OrgHead = () => {
           orgRec?.attributes?.name || ''
         )}
         isOpen={openMember}
-        onOpen={setOpenMember}
+        onClose={() => setOpenMember(false)}
         bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
       >
         <GroupTabs />
@@ -261,7 +261,7 @@ export const OrgHead = () => {
                 )
           }
           isOpen={workflowVisible}
-          onOpen={handleWorkflowClose}
+          onClose={() => handleWorkflowClose(false)}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
         >
           <StepEditor
@@ -274,7 +274,7 @@ export const OrgHead = () => {
         <BigDialog
           title={cardStrings?.sortProjects}
           isOpen={sortVisible}
-          onOpen={setSortVisible}
+          onClose={() => setSortVisible(false)}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
         >
           <ProjectSort teamId={orgId} onClose={() => setSortVisible(false)} />

@@ -1229,7 +1229,7 @@ export const DiscussionCard = (props: IProps) => {
           />
         )}
         {showMove && (
-          <BigDialog title={t.move} isOpen={showMove} onOpen={moveClose}>
+          <BigDialog title={t.move} isOpen={showMove} onClose={moveClose}>
             <DiscussionMove onSelect={handleDoMove} />
           </BigDialog>
         )}

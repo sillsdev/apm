@@ -428,9 +428,7 @@ export default function BoldClauseTranscriptionEditor({
         <BigDialog
           title={tPlayer.recognizeProgress}
           isOpen={asrVisible}
-          onOpen={(open) => {
-            if (!open) handleAsrClose();
-          }}
+          onClose={() => handleAsrClose()}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
           mobileNoHorizontalScroll={isMobile}
           mobilePaperWidth={
@@ -455,7 +453,7 @@ export default function BoldClauseTranscriptionEditor({
       <BigDialog
         title={tPlayer.recognizeSpeechSettings}
         isOpen={asrLangVisible}
-        onOpen={() => handleAsrLanguageClose(true)}
+        onClose={() => handleAsrLanguageClose(true)}
         bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
         mobileNoHorizontalScroll={isMobile}
         mobilePaperWidth={

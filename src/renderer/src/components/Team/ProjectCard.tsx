@@ -680,7 +680,7 @@ export const ProjectCard = (props: IProps) => {
       <BigDialog
         title={tpb.integrationsTitle.replace('{0}', getPlanName(project.id))}
         isOpen={openIntegration}
-        onOpen={setOpenIntegration}
+        onClose={() => setOpenIntegration(false)}
       >
         {openIntegration ? (
           <IntegrationTab
@@ -695,7 +695,7 @@ export const ProjectCard = (props: IProps) => {
       <BigDialog
         title={tpb.exportTitle.replace('{0}', getPlanName(project.id))}
         isOpen={openExport}
-        onOpen={setOpenExport}
+        onClose={() => setOpenExport(false)}
         dialogContentSx={{ display: 'flex', flexDirection: 'column' }}
       >
         <ExportTab
@@ -722,7 +722,7 @@ export const ProjectCard = (props: IProps) => {
             : t.editPersonalCategory
         }
         isOpen={openCategory}
-        onOpen={setOpenCategory}
+        onClose={() => setOpenCategory(false)}
       >
         <CategoryTabs
           teamId={related(project, 'organization') as string}

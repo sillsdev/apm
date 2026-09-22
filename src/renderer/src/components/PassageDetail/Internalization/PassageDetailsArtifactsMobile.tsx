@@ -1213,7 +1213,7 @@ export function PassageDetailArtifactsMobile() {
           </Typography>
         }
         isOpen={findOpen}
-        onOpen={handleFindVisible}
+        onClose={() => handleFindVisible(false)}
         bp={BigDialogBp.mobile}
         mobilePaperWidth="min(356px, calc(100vw - 4px))"
         dialogContentSx={{
@@ -1240,7 +1240,7 @@ export function PassageDetailArtifactsMobile() {
             : t.passageResource
         )}
         isOpen={sharedResourceVisible}
-        onOpen={handleSharedResourceVisible}
+        onClose={() => handleSharedResourceVisible(false)}
         bp={BigDialogBp.mobile}
       >
         <SelectSharedResource
@@ -1255,7 +1255,7 @@ export function PassageDetailArtifactsMobile() {
         bp={BigDialogBp.mobile}
         title={t.generalResources}
         isOpen={projectResourceVisible}
-        onOpen={handleProjectResourceVisible}
+        onClose={() => handleProjectResourceVisible(false)}
       >
         <SelectProjectResource
           onSelect={(m) => {
@@ -1277,7 +1277,7 @@ export function PassageDetailArtifactsMobile() {
           </Typography>
         }
         isOpen={projResPassageVisible}
-        onOpen={handleProjResPassageVisible}
+        onClose={() => handleProjResPassageVisible(false)}
         disableBackdropClose
       >
         {projResPassageVisible ? (
@@ -1300,7 +1300,7 @@ export function PassageDetailArtifactsMobile() {
       <BigDialog
         title={t.projectResourceConfigure}
         isOpen={projResWizVisible}
-        onOpen={handleProjResWizVisible}
+        onClose={() => handleProjResWizVisible(false)}
         bp={BigDialogBp.md}
         disableBackdropClose
       >
@@ -1320,7 +1320,7 @@ export function PassageDetailArtifactsMobile() {
       <BigDialog
         title={editAudio ? t.editAudioResource : t.editResource}
         isOpen={Boolean(editResource)}
-        onOpen={handleEditResourceVisible}
+        onClose={() => handleEditResourceVisible(false)}
         onSave={allowEditSave ? handleEditSave : undefined}
         onCancel={handleEditCancel}
         bp={BigDialogBp.mobile}
@@ -1384,7 +1384,7 @@ export function PassageDetailArtifactsMobile() {
           mobileThickScrollbar
           mobileNoHorizontalScroll
           isOpen={Boolean(markDown)}
-          onOpen={() => {
+          onClose={() => {
             setMarkDoan('');
             setMarkDownTitle('');
           }}
@@ -1397,7 +1397,7 @@ export function PassageDetailArtifactsMobile() {
         <BigDialog
           title={t.audioScripture}
           isOpen={Boolean(audioScriptureVisible)}
-          onOpen={() => setAudioScriptureVisible(false)}
+          onClose={() => setAudioScriptureVisible(false)}
           bp={BigDialogBp.mobile}
           setCloseRequested={setBiblebrainClose}
         >

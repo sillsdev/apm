@@ -248,7 +248,7 @@ export function TeamSettings(props: IProps) {
       <BigDialog
         title={t.convertVoiceSettings}
         isOpen={voiceVisible}
-        onOpen={() => setVoiceVisible(false)}
+        onClose={() => setVoiceVisible(false)}
         description={<Typography>{t.convertPrompt}</Typography>}
         bp={BigDialogBp.sm}
       >

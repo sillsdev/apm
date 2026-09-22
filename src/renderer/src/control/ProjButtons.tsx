@@ -145,14 +145,14 @@ export const ProjButtons = (props: IProps) => {
       <BigDialog
         title={t.integrationsTitle.replace('{0}', planName)}
         isOpen={openIntegration}
-        onOpen={setOpenIntegration}
+        onClose={() => setOpenIntegration(false)}
       >
         {openIntegration ? <IntegrationTab isPermitted={true} /> : <></>}
       </BigDialog>
       <BigDialog
         title={t.exportTitle.replace('{0}', planName)}
         isOpen={openExport}
-        onOpen={setOpenExport}
+        onClose={() => setOpenExport(false)}
         dialogContentSx={{ display: 'flex', flexDirection: 'column' }}
       >
         <ExportTab

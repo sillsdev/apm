@@ -1243,7 +1243,7 @@ export function PassageDetailArtifacts() {
         title={t.findResource.replace('{0}', passageRef(passage) || '')}
         description={<Typography>{t.findResourceDesc}</Typography>}
         isOpen={findOpen}
-        onOpen={handleFindVisible}
+        onClose={() => handleFindVisible(false)}
         bp={BigDialogBp.sm}
       >
         <FindTabs
@@ -1260,7 +1260,7 @@ export function PassageDetailArtifacts() {
             : t.passageResource
         )}
         isOpen={sharedResourceVisible}
-        onOpen={handleSharedResourceVisible}
+        onClose={() => handleSharedResourceVisible(false)}
         bp={BigDialogBp.md}
       >
         <SelectSharedResource
@@ -1275,7 +1275,7 @@ export function PassageDetailArtifacts() {
         bp={BigDialogBp.lg}
         title={t.generalResources}
         isOpen={projectResourceVisible}
-        onOpen={handleProjectResourceVisible}
+        onClose={() => handleProjectResourceVisible(false)}
       >
         <SelectProjectResource
           onSelect={(m) => {
@@ -1297,7 +1297,7 @@ export function PassageDetailArtifacts() {
           </Typography>
         }
         isOpen={projResPassageVisible}
-        onOpen={handleProjResPassageVisible}
+        onClose={() => handleProjResPassageVisible(false)}
         disableBackdropClose
       >
         {projResPassageVisible ? (
@@ -1324,7 +1324,7 @@ export function PassageDetailArtifacts() {
             : t.editAudioResource
         }
         isOpen={projResWizVisible}
-        onOpen={handleProjResWizVisible}
+        onClose={() => handleProjResWizVisible(false)}
         bp={BigDialogBp.md}
         disableBackdropClose
         // Flex column so ProjectResourceConfigure can fill the height and pin
@@ -1349,7 +1349,7 @@ export function PassageDetailArtifacts() {
       <BigDialog
         title={editAudio ? t.editAudioResource : t.editResource}
         isOpen={Boolean(editResource)}
-        onOpen={handleEditResourceVisible}
+        onClose={() => handleEditResourceVisible(false)}
         onSave={allowEditSave ? handleEditSave : undefined}
         onCancel={handleEditCancel}
         bp={BigDialogBp.sm}
@@ -1405,7 +1405,7 @@ export function PassageDetailArtifacts() {
         <BigDialog
           title={t.textResource}
           isOpen={Boolean(markDown)}
-          onOpen={() => setMarkDoan('')}
+          onClose={() => setMarkDoan('')}
           bp={BigDialogBp.sm}
         >
           <MarkDownView value={markDown} />
@@ -1415,7 +1415,7 @@ export function PassageDetailArtifacts() {
         <BigDialog
           title={t.audioScripture}
           isOpen={Boolean(audioScriptureVisible)}
-          onOpen={() => setAudioScriptureVisible(false)}
+          onClose={() => setAudioScriptureVisible(false)}
           bp={BigDialogBp.sm}
           setCloseRequested={setBiblebrainClose}
         >

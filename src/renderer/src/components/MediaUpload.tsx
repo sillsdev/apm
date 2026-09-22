@@ -112,7 +112,7 @@ function MediaUpload(props: IProps) {
   return (
     <BigDialog
       isOpen={visible}
-      onOpen={handleCancel}
+      onClose={handleCancel}
       title={title[uploadType] ?? ''}
       bp={isMobile ? BigDialogBp.mobile : (bp ?? BigDialogBp.sm)}
     >

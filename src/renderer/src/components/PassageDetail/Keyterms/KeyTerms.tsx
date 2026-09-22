@@ -171,7 +171,7 @@ const KeyTerms = ({ width }: IProps) => {
       <BigDialog
         title={t.termDetail}
         isOpen={Boolean(term)}
-        onOpen={handleClose}
+        onClose={handleClose}
       >
         <KeyTermDetail
           term={term as IKeyTerm & ILocalTerm}

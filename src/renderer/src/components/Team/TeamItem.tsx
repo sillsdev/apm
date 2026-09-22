@@ -157,7 +157,7 @@ export const TeamItem = (props: IProps) => {
       <BigDialog
         title={t.members.replace('{0}', team?.attributes?.name || '')}
         isOpen={openMember}
-        onOpen={setOpenMember}
+        onClose={() => setOpenMember(false)}
         bp={BigDialogBp.md}
       >
         <GroupTabs />
@@ -168,14 +168,14 @@ export const TeamItem = (props: IProps) => {
           `- ${team?.attributes?.name || ''}`
         )}
         isOpen={showWorkflow}
-        onOpen={handleWorkflow}
+        onClose={() => handleWorkflow(false)}
       >
         <StepEditor process={stepEditorProcess} org={team.id} />
       </BigDialog>
       <BigDialog
         title={t.sortProjects}
         isOpen={sortVisible}
-        onOpen={() => setSortVisible(false)}
+        onClose={() => setSortVisible(false)}
       >
         <ProjectSort teamId={team.id} onClose={() => setSortVisible(false)} />
       </BigDialog>
