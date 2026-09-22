@@ -1217,7 +1217,7 @@ const initialState = {
 			"selectAllPassages": "Select all passages in {0}",
 			"selectBook": "Select Book",
 			"selectOne": "Only the first selected note is used",
-			"selectPassagesSub": "Select the sections and passages contained by this resource.",
+			"selectPassagesSub": "Select the {0} and passages contained by this resource.",
 			"selectSection": "Select {0}",
 			"sharedResource": "Link Shared",
 			"source": "Source",

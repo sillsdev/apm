@@ -5988,7 +5988,7 @@
       </unit>
       <unit id="passageDetailArtifacts.selectPassagesSub">
          <segment>
-            <source>Select the sections and passages contained by this resource.</source>
+            <source>Select the {0} and passages contained by this resource.</source>
             <target/>
          </segment>
       </unit>

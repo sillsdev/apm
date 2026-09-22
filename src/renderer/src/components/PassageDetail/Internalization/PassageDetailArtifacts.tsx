@@ -1198,7 +1198,7 @@ export function PassageDetailArtifacts() {
         }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
-            {t.selectPassagesSub}
+            {t.selectPassagesSub.replace('{0}', getOrganizedBy(false))}
           </Typography>
         }
         isOpen={projResPassageVisible}

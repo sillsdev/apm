@@ -6984,7 +6984,7 @@
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.selectPassagesSub">
-      		<source>Select the sections and passages contained by this resource.</source>
+      		<source>Select the {0} and passages contained by this resource.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
