@@ -7116,13 +7116,13 @@
                <context context-type="sourcefile">PassageMedia.tsx</context>
             </context-group>
          </trans-unit>
-      	<trans-unit id="passageDetailArtifacts.uploadAsResources">
-      		<source>Upload as {0} resources</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">ProjectResourceConfigure.tsx</context>
-      		</context-group>
-      	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.uploadAsResources">
+            <source>Upload as {0} resources</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectResourceConfigure.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="passageDetailArtifacts.uploadProject">
       		<source>Multiple {0} or Passages (General Resource)</source>
       		<target/>
