@@ -18,6 +18,7 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { related } from '../../crud/related';
+import { findRecord } from '../../crud/tryFindRecord';
 import { UpdateRelatedPassageOps } from '../../crud/updatePassageState';
 import { isPassageRow, isSectionRow } from './isSectionPassage';
 import {
@@ -63,10 +64,19 @@ export const useWfLocalSave = (props: IProps) => {
         if (isSectionUpdated(item, lastSaved)) {
           if (!isSectionAdding(item) && !item.deleted) {
             const itemId = item?.sectionId?.id || '';
-            const curSec = sections.filter((s) => s.id === itemId)[0];
+            const published = item.published || [];
+            const curSec =
+              (itemId
+                ? (findRecord(memory, 'section', itemId) as SectionD | undefined)
+                : undefined) || sections.filter((s) => s.id === itemId)[0];
+            if (!curSec) {
+              throw new Error(
+                `localSave: section not found for ${itemId || item.title}`
+              );
+            }
             forceUpdate =
               forceUpdate ||
-              curSec.attributes.publishTo !== setPublishTo(item.published);
+              curSec.attributes.publishTo !== setPublishTo(published);
             const secRec: SectionD = {
               ...curSec,
               attributes: {
@@ -74,8 +84,8 @@ export const useWfLocalSave = (props: IProps) => {
                 sequencenum: item.sectionSeq,
                 name: item.title || '',
                 level: item.level,
-                published: isPublished(item.published),
-                publishTo: setPublishTo(item.published),
+                published: isPublished(published),
+                publishTo: setPublishTo(published),
                 state: item.level < 3 ? (item.reference ?? '') : '',
               },
             };

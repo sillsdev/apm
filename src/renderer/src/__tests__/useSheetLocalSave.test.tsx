@@ -327,3 +327,104 @@ test('no update if same date', async () => {
   // console.log(JSON.stringify(updateCalls, null, 2));
   expect(updateCalls.length).toBe(0);
 });
+
+test('persists titleMediafile for all three section title recordings', async () => {
+  (memory.update as jest.Mock).mockClear();
+
+  const globals = {
+    plan: 'p1',
+    user: 'u1',
+    offlineOnly: false,
+    memory,
+  } as GlobalState;
+
+  const setComplete = jest.fn((val: number) => {});
+  const worksheet: ISheet[] = [
+    {
+      ...defaultSheet,
+      kind: IwsKind.Section,
+      level: SheetLevel.Book,
+      sectionSeq: -2,
+      title: 'Luke',
+      sectionId: { type: 'section', id: 's-book' },
+      sectionUpdated: '2021-09-22',
+      passageSeq: 0,
+      reference: '',
+      titleMediaId: { type: 'mediafile', id: 'media-title-1' },
+      deleted: false,
+    },
+    {
+      ...defaultSheet,
+      kind: IwsKind.Section,
+      level: SheetLevel.Movement,
+      sectionSeq: -1,
+      title: 'Movement 1',
+      sectionId: { type: 'section', id: 's-mov' },
+      sectionUpdated: '2021-09-22',
+      passageSeq: 0,
+      reference: '',
+      titleMediaId: { type: 'mediafile', id: 'media-title-2' },
+      deleted: false,
+    },
+    {
+      ...defaultSheet,
+      kind: IwsKind.Section,
+      level: SheetLevel.Section,
+      sectionSeq: 1,
+      title: 'Section 1',
+      sectionId: { type: 'section', id: 's-sec' },
+      sectionUpdated: '2021-09-22',
+      passageSeq: 0,
+      reference: '',
+      titleMediaId: { type: 'mediafile', id: 'media-title-3' },
+      deleted: false,
+    },
+  ];
+
+  const sections = worksheet.map(
+    (w) =>
+      ({
+        type: 'section',
+        id: w.sectionId!.id,
+        attributes: {
+          sequencenum: w.sectionSeq,
+          name: 'old',
+          graphics: '{}',
+          published: false,
+          level: w.level,
+          dateCreated: '2021-09-21',
+          dateUpdated: '2021-09-21',
+          lastModifiedBy: 1,
+        },
+      }) as SectionD
+  );
+
+  const localSave = setup({ globals, setComplete });
+
+  await localSave(worksheet, sections, [], '2021-09-21');
+
+  expect(setComplete).toHaveBeenCalled();
+  const updateCalls = (memory.update as jest.Mock).mock.calls;
+  expect(updateCalls.length).toBe(3);
+
+  const relatedMediaIds = updateCalls.flatMap((call) => {
+    const ops = call[0] as Array<{
+      op?: string;
+      relationship?: string;
+      relatedRecord?: { type?: string; id?: string };
+    }>;
+    return ops
+      .filter(
+        (op) =>
+          op.op === 'replaceRelatedRecord' &&
+          op.relationship === 'titleMediafile'
+      )
+      .map((op) => op.relatedRecord?.id);
+  });
+
+  expect(relatedMediaIds).toEqual([
+    'media-title-1',
+    'media-title-2',
+    'media-title-3',
+  ]);
+});
