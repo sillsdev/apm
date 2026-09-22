@@ -103,7 +103,7 @@ interface IProps {
    * here as a staged file rather than uploaded — the deferred general-resource
    * flow. The upload tab stages through `uploadMethod` instead.
    */
-  onStageFile?: ((files: File[]) => void) | undefined;
+  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
 }
 
 function PassageRecordDlg(props: IProps) {

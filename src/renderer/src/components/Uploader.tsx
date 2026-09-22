@@ -92,7 +92,7 @@ interface IProps {
    * actual upload is then driven through `importList`.
    */
   deferUpload?: boolean | undefined;
-  onStageFiles?: ((files: File[]) => void) | undefined;
+  onStageFiles?: ((files: File[]) => void | Promise<void>) | undefined;
 }
 
 export const Uploader = (props: IProps) => {
@@ -452,11 +452,16 @@ export const Uploader = (props: IProps) => {
 
   // When deferring, the dialog's Next hands the prepared file(s) up to be
   // uploaded later (driven through `importList` once passages are chosen)
-  // rather than uploading now. Returning true lets the dialog clear its
-  // selection just as a real upload would.
-  const stageFiles = (files: File[]) => {
-    onStageFiles?.(files);
-    return true;
+  // rather than uploading now. `onStageFiles` is async (it awaits category
+  // creation), so await it and return false on failure — that keeps the dialog
+  // selection and re-enables it, instead of leaking an unhandled rejection.
+  const stageFiles = async (files: File[]) => {
+    try {
+      await onStageFiles?.(files);
+      return true;
+    } catch {
+      return false;
+    }
   };
   const deferring = Boolean(deferUpload && onStageFiles);
   const effectiveUploadMethod = deferring ? stageFiles : uploadMedia;

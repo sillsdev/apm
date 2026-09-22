@@ -65,7 +65,7 @@ interface IProps {
    * the upload until the user has chosen passages/sections (SelectSections).
    * When absent, a saved take uploads immediately as usual.
    */
-  onStageFile?: ((files: File[]) => void) | undefined;
+  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -544,9 +544,12 @@ function MediaRecord(props: IProps) {
       if (onStageFile) {
         // General-resource flow: hand the finished (already converted) take up
         // to be uploaded later — after the user picks passages/sections — and
-        // clear the save state so the recorder returns to idle. The caller's
-        // .then still runs (setLoading(false)/convertComplete/onReady).
-        onStageFile(files);
+        // clear the save state so the recorder returns to idle. `onStageFile` is
+        // async (it awaits category creation); await it so a failure rejects
+        // into the caller's `.catch(handleSaveFailed)` instead of being swallowed
+        // while the save is reported complete. The caller's `.then` still runs
+        // (setLoading(false)/convertComplete/onReady).
+        await onStageFile(files);
         saveRef.current = false;
         saveCompleted(toolId);
         setStatusText('');

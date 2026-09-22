@@ -196,6 +196,17 @@ export function PassageDetailArtifactsMobile() {
   // resource (title "Add Audio Resource"); false when configuring/editing an
   // existing one ("Edit Audio Resource").
   const isAddingAudioResourceRef = useRef<boolean>(false);
+  // Deferred general-resource upload: the prepared file(s) are held here and not
+  // uploaded until the user picks passages/sections on SelectSections.
+  const stagedResourceFilesRef = useRef<File[] | undefined>(undefined);
+  // True between SelectSections' Upload and the upload completing, so afterUpload
+  // routes straight to the configure step (or visual write) instead of
+  // re-opening SelectSections.
+  const sectionsPreselectedRef = useRef(false);
+  // Drives the deferred (headless) upload through the always-mounted Uploader.
+  const [resourceImportList, setResourceImportList] = useState<
+    File[] | undefined
+  >(undefined);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
@@ -775,9 +786,36 @@ export function PassageDetailArtifactsMobile() {
       }
       if (projRes.length === 1) {
         isAddingAudioResourceRef.current = true;
-        setProjResSetup(projRes);
+        if (sectionsPreselectedRef.current) {
+          // Deferred flow: passages/sections were already chosen on
+          // SelectSections, so go straight to the configure step (or write
+          // visual resources directly) instead of re-opening SelectSections.
+          const media = projRes[0] as MediaFileD;
+          projMediaRef.current = media;
+          sectionsPreselectedRef.current = false;
+          stagedResourceFilesRef.current = undefined;
+          setResourceImportList(undefined);
+          if (isVisual(media)) {
+            await writeVisualResource(projIdentRef.current);
+            setProjResPassageVisible(false);
+            setVisual(false);
+          } else {
+            setProjResWizVisible(true);
+          }
+        } else {
+          setProjResSetup(projRes);
+        }
       }
       resetEdit();
+    }
+    // A deferred upload that produced no media (the upload failed) would
+    // otherwise strand the user: SelectSections was closed to start it and no
+    // wizard opens. Reopen SelectSections with the staged file intact so they
+    // can click Upload again to retry.
+    if (sectionsPreselectedRef.current && projRes.length === 0) {
+      sectionsPreselectedRef.current = false;
+      setResourceImportList(undefined);
+      setProjResPassageVisible(true);
     }
   };
 
@@ -824,6 +862,34 @@ export function PassageDetailArtifactsMobile() {
     projMediaRef.current = m;
     setVisual(isVisual(m));
     setProjectResourceVisible(false);
+    setProjResPassageVisible(true);
+  };
+
+  // Deferred general-resource add: the Add Audio Resource dialog's Next hands
+  // the prepared file(s) here instead of uploading. We keep the file(s), open
+  // SelectSections, and defer the real upload to that dialog's Upload button
+  // (handleSelectProjectResourcePassage). No media exists yet, so there are no
+  // existing assignments to pre-check.
+  const handleStageResourceFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+    // Commit a newly-typed artifact category now, while the dialog's metaData is
+    // still mounted; the deferred upload runs after it unmounts. Null the ref so
+    // the later upload's beforeUpload does not create a second category.
+    pendingResourceSeqRef.current = 0;
+    if (addCatCommitRef.current) {
+      catIdRef.current = await addCatCommitRef.current();
+      addCatCommitRef.current = null;
+    }
+    stagedResourceFilesRef.current = files;
+    cancelled.current = false;
+    isAddingAudioResourceRef.current = true;
+    projMediaRef.current = undefined;
+    // Derive visual from the staged file (no media record yet). The audio-add
+    // path is always non-visual, but keep this general for safety.
+    setVisual(
+      Boolean(files[0] && !(files[0] as File).type.startsWith('audio'))
+    );
+    setUploadVisible(false);
     setProjResPassageVisible(true);
   };
 
@@ -891,6 +957,17 @@ export function PassageDetailArtifactsMobile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projResPassageVisible, projResWizVisible]);
 
+  // If SelectSections closes without starting the deferred upload (the user
+  // discarded/closed it before clicking Upload), drop the staged file(s).
+  // Otherwise a later SelectSections run — e.g. configuring an existing general
+  // resource — would see stale files and wrongly upload them. When the upload
+  // has started, sectionsPreselectedRef is true and afterUpload clears them.
+  useEffect(() => {
+    if (!projResPassageVisible && !sectionsPreselectedRef.current) {
+      stagedResourceFilesRef.current = undefined;
+    }
+  }, [projResPassageVisible]);
+
   useEffect(() => {
     if (projResSetup.length) {
       handleSelectProjectResource(projResSetup[0] as MediaFileD);
@@ -904,6 +981,16 @@ export function PassageDetailArtifactsMobile() {
   ) => {
     projIdentRef.current = items;
     projCandidateRef.current = candidates;
+    if (stagedResourceFilesRef.current) {
+      // Deferred new-add flow: the file has not been uploaded yet. Upload it now
+      // (headlessly, through the always-mounted Uploader's importList), then
+      // afterUpload routes to the configure step / visual write using these
+      // selections.
+      sectionsPreselectedRef.current = true;
+      setProjResPassageVisible(false);
+      setResourceImportList(stagedResourceFilesRef.current);
+      return;
+    }
     if (isVisual(projMediaRef.current)) {
       writeVisualResource(items).then(() => {
         setProjResPassageVisible(false);
@@ -1085,6 +1172,9 @@ export function PassageDetailArtifactsMobile() {
         eafUrl={aiGenerated ? AIGenerated : ''}
         defaultFilename={filename}
         pendingRestore={resourcePendingRestore}
+        importList={resourceImportList}
+        deferUpload={uploadType === UploadType.ProjectResource}
+        onStageFiles={handleStageResourceFiles}
         metaData={
           <ResourceData
             uploadType={uploadType}
@@ -1188,6 +1278,7 @@ export function PassageDetailArtifactsMobile() {
               resourceType
             )}
             visual={visual}
+            uploadsOnNext={isAddingAudioResourceRef.current}
             onSelect={handleSelectProjectResourcePassage}
           />
         ) : (

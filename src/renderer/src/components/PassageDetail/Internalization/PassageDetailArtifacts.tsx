@@ -831,6 +831,15 @@ export function PassageDetailArtifacts() {
       await memory.update(removeMedia);
     }
     cancelled.current = false;
+    // A deferred upload that produced no media (the upload failed) would
+    // otherwise strand the user: SelectSections was closed to start it and no
+    // wizard opens. Reopen SelectSections with the staged file intact so they
+    // can click Upload again to retry.
+    if (sectionsPreselectedRef.current && projRes.length === 0) {
+      sectionsPreselectedRef.current = false;
+      setResourceImportList(undefined);
+      setProjResPassageVisible(true);
+    }
   };
 
   const resourceSourcePassages = useMemo(() => {
@@ -970,6 +979,17 @@ export function PassageDetailArtifacts() {
       setProjResSetup(projResSetup.filter((m) => m !== projMediaRef.current));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projResPassageVisible, projResWizVisible]);
+
+  // If SelectSections closes without starting the deferred upload (the user
+  // discarded/closed it before clicking Upload), drop the staged file(s).
+  // Otherwise a later SelectSections run — e.g. configuring an existing general
+  // resource — would see stale files and wrongly upload them. When the upload
+  // has started, sectionsPreselectedRef is true and afterUpload clears them.
+  useEffect(() => {
+    if (!projResPassageVisible && !sectionsPreselectedRef.current) {
+      stagedResourceFilesRef.current = undefined;
+    }
+  }, [projResPassageVisible]);
 
   useEffect(() => {
     if (projResSetup.length) {
