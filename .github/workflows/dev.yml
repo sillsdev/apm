@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - main
+      - notify-failure
   pull_request:
     branches:
       - develop
@@ -210,3 +211,20 @@ jobs:
         if: always()
         run: |
           pkill -f node || true
+  notify-failure:
+    needs: build
+    if: failure() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo ${{ github.repository }} \
+            --title "CI failed on ${{ github.ref_name }} — ${{ github.sha }}" \
+            --body "@gtryus Dev Build failed after merge to \`${{ github.ref_name }}\`.
+
+          Commit: ${{ github.sha }}
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
