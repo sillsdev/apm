@@ -53,7 +53,6 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
-import Confirm from '../../AlertDialog';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
 const wizToolId = 'ProjResWizard';
@@ -195,27 +194,11 @@ interface IProps {
   /** Artifact type id of a derived resource copy (`resource` slug). */
   resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
-  /**
-   * Set true by the enclosing BigDialog's top-right X so it runs the same
-   * cancel flow as before (confirm-before-discard + clearing the tool's changed
-   * state). Reset via `resetCloseRequested`.
-   */
-  closeRequested?: boolean;
-  resetCloseRequested?: () => void;
   bookData?: BookName[];
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const {
-    width,
-    media,
-    items,
-    candidateItems,
-    resourceTypeId,
-    onOpen,
-    closeRequested,
-    resetCloseRequested,
-  } = props;
+  const { width, media, items, candidateItems, resourceTypeId, onOpen } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -254,7 +237,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const savingRef = useRef(false);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
   const canceling = useRef(false);
   const projectResourceSave = useProjectResourceSave();
   const projectSegmentSave = useProjectSegmentSave();
@@ -414,49 +396,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
-  // Mark the tool changed for the lifetime of the dialog. The BigDialog's X
-  // asks the parent to close, which waits for save before hiding the dialog;
-  // keeping the tool "changed" makes that wait reject so the dialog stays open
-  // long enough for the confirm below (cleared by doClose on discard/save).
+  // The tool is marked changed only by real edits (see the description edit and
+  // paste handlers); closing is owned by the confirm-on-close flow below, not by
+  // a lifetime dirty-flag latch. Clear any dirty flag on unmount so an unexpected
+  // teardown (route change, parent removal) can't leave UnsavedContext stuck and
+  // block later close/nav.
   useEffect(() => {
-    toolChanged(wizToolId);
-    // Clear the changed flag on unmount so an unexpected teardown (route change,
-    // parent removal) doesn't leave UnsavedContext stuck and block later close/nav.
     return () => toolChanged(wizToolId, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const doClose = () => {
-    toolChanged(wizToolId, false);
-    onOpen && onOpen(false);
-  };
-
-  const handleCancel = () => {
-    if (savingRef.current) {
-      showMessage(t.canceling);
-      canceling.current = true;
-      return;
-    }
-    // Always confirm before closing (the X or Escape routes here).
-    setShowConfirmClose(true);
-  };
-
-  const handleDiscardClose = () => {
-    setShowConfirmClose(false);
-    doClose();
-  };
-
-  // The BigDialog top-right X flips `closeRequested`; route it through the
-  // cancel flow so it always prompts before discarding (this is a wizard step —
-  // closing loses everything entered on prior steps too). Reset the flag first
-  // so a later X click can re-trigger this after "Keep open".
-  useEffect(() => {
-    if (closeRequested) {
-      resetCloseRequested && resetCloseRequested();
-      handleCancel();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeRequested]);
 
   const handleCopy = () => {
     const config: string[] = [];
@@ -783,17 +731,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
           </Box>
         </ActionRow>
       </Box>
-      {showConfirmClose && (
-        <Confirm
-          title={t.confirmCloseTitle}
-          text={t.confirmClose}
-          no={t.keepOpen}
-          primaryButton="no"
-          yes={t.discardAndClose}
-          noResponse={() => setShowConfirmClose(false)}
-          yesResponse={handleDiscardClose}
-        />
-      )}
     </Box>
   );
 };

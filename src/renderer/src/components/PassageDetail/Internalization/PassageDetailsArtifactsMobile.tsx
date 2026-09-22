@@ -1,11 +1,4 @@
-import {
-  useState,
-  useContext,
-  useMemo,
-  useRef,
-  useEffect,
-  useCallback,
-} from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
@@ -64,7 +57,6 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import ProjectResourceConfigure from './ProjectResourceConfigure';
 import { useProjectResourceSave } from './useProjectResourceSave';
-import { UnsavedContext } from '../../../context/UnsavedContext';
 import Confirm from '../../AlertDialog';
 import {
   getSegments,
@@ -207,7 +199,6 @@ export function PassageDetailArtifactsMobile() {
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
-  const { waitForSave } = useContext(UnsavedContext).state;
   const [mediaStart, setMediaStart] = useState<number | undefined>();
   const [mediaEnd, setMediaEnd] = useState<number | undefined>();
   const [performedBy, setPerformedBy] = useState('');
@@ -231,15 +222,13 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
   const [biblebrainClose, setBiblebrainClose] = useState(false);
-  const [wizCloseRequested, setWizCloseRequested] = useState(false);
   // Confirm-before-discard for the passage-select and edit dialogs. Closing any
   // step of this wizard flow always prompts, since it discards everything
   // entered on this and prior steps.
   // Which dialog's close is awaiting confirmation ('passage' vs 'edit' differ
   // only in what discarding tears down); null when no prompt is showing.
-  const [closeConfirm, setCloseConfirm] = useState<null | 'passage' | 'edit'>(
-    null
-  );
+  const [dialogPendingCloseConfirmation, setDialogPendingCloseConfirmation] =
+    useState<null | 'passage' | 'edit' | 'wiz'>(null);
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
@@ -420,31 +409,36 @@ export function PassageDetailArtifactsMobile() {
   const handleProjResPassageVisible = (v: boolean) => {
     // Closing (X or Escape) always prompts; discarding loses this wizard step.
     if (!v) {
-      setCloseConfirm('passage');
+      setDialogPendingCloseConfirmation('passage');
       return;
     }
     setProjResPassageVisible(v);
   };
   const handlePassageDiscard = () => {
-    setCloseConfirm(null);
+    setDialogPendingCloseConfirmation(null);
     setProjResPassageVisible(false);
   };
 
+  // The wizard's X routes here (like the passage-select dialog): a close request
+  // opens the shared discard confirm; opening just shows the dialog.
   const handleProjResWizVisible = (v: boolean) => {
-    if (v) {
-      setProjResWizVisible(v);
-    } else {
-      waitForSave(undefined, 200)
-        .then(() => {
-          setProjResWizVisible(v);
-          projMediaRef.current = undefined;
-          setVisual(false);
-        })
-        // The X's close request may race the tool-changed clear; a timed-out
-        // wait is expected there (the child's cancel flow drives the real
-        // close) and must not surface as an unhandled rejection.
-        .catch(() => {});
+    if (!v) {
+      setDialogPendingCloseConfirmation('wiz');
+      return;
     }
+    setProjResWizVisible(v);
+  };
+  // Actually hide the wizard dialog. Called on discard (handleWizDiscard) and
+  // when a save finishes (ProjectResourceConfigure's onOpen). Confirm-on-close is
+  // parent-owned via dialogPendingCloseConfirmation='wiz'.
+  const closeProjResWiz = () => {
+    setProjResWizVisible(false);
+    projMediaRef.current = undefined;
+    setVisual(false);
+  };
+  const handleWizDiscard = () => {
+    setDialogPendingCloseConfirmation(null);
+    closeProjResWiz();
   };
 
   const handleAllResources = () => {
@@ -524,7 +518,7 @@ export function PassageDetailArtifactsMobile() {
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) {
-      setCloseConfirm('edit');
+      setDialogPendingCloseConfirmation('edit');
     }
   };
   const handleEditSave = async () => {
@@ -587,10 +581,10 @@ export function PassageDetailArtifactsMobile() {
     resetEdit();
   };
   const handleEditCancel = () => {
-    setCloseConfirm('edit');
+    setDialogPendingCloseConfirmation('edit');
   };
   const handleEditDiscard = () => {
-    setCloseConfirm(null);
+    setDialogPendingCloseConfirmation(null);
     resetEdit();
   };
   const syncResourceReady = (type: UploadType, desc: string) => {
@@ -1206,7 +1200,6 @@ export function PassageDetailArtifactsMobile() {
         onOpen={handleProjResWizVisible}
         bp={BigDialogBp.md}
         disableBackdropClose
-        setCloseRequested={setWizCloseRequested}
       >
         {projResWizVisible ? (
           <ProjectResourceConfigure
@@ -1215,9 +1208,7 @@ export function PassageDetailArtifactsMobile() {
             items={projIdentRef.current}
             candidateItems={projCandidateRef.current}
             resourceTypeId={resourceType}
-            onOpen={handleProjResWizVisible}
-            closeRequested={wizCloseRequested}
-            resetCloseRequested={() => setWizCloseRequested(false)}
+            onOpen={closeProjResWiz}
           />
         ) : (
           <></>
@@ -1258,18 +1249,20 @@ export function PassageDetailArtifactsMobile() {
           noResponse={handleDeleteRefused}
         />
       )}
-      {closeConfirm && (
+      {dialogPendingCloseConfirmation && (
         <Confirm
           title={t.confirmCloseTitle}
           text={t.confirmClose}
           no={t.keepOpen}
           primaryButton="no"
           yes={t.discardAndClose}
-          noResponse={() => setCloseConfirm(null)}
+          noResponse={() => setDialogPendingCloseConfirmation(null)}
           yesResponse={
-            closeConfirm === 'passage'
+            dialogPendingCloseConfirmation === 'passage'
               ? handlePassageDiscard
-              : handleEditDiscard
+              : dialogPendingCloseConfirmation === 'wiz'
+                ? handleWizDiscard
+                : handleEditDiscard
           }
         />
       )}
