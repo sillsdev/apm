@@ -205,7 +205,7 @@ export function SelectSections(props: IProps) {
         <Table
           size="small"
           variant="striped"
-          sx={{ tableLayout: 'fixed', border: '1px solid black' }}
+          sx={{ tableLayout: 'fixed', border: 1, borderColor: 'custom.black' }}
         >
           <TableBody>
             {data.map((row) => (
@@ -215,7 +215,8 @@ export function SelectSections(props: IProps) {
                   sx={{
                     width: 52,
                     p: 0.5,
-                    borderRight: '1px solid black',
+                    borderRight: 1,
+                    borderColor: 'custom.black',
                     borderBottom: 0,
                   }}
                 >
