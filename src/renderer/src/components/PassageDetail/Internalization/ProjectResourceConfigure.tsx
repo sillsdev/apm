@@ -237,7 +237,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const savingRef = useRef(false);
-  const canceling = useRef(false);
   const projectResourceSave = useProjectResourceSave();
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
@@ -318,7 +317,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
         const d = dataRef.current;
         const total = infoRef.current.length;
         for (const i of infoRef.current) {
-          if (canceling.current) break;
           if (i?.section?.id === undefined) continue;
           ix += 1;
           let row = d[ix];
@@ -346,19 +344,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
           }
           setComplete(Math.min((ix * 100) / total, 100));
         }
-        // A cancelled save never wrote the new assignments, so leave the
-        // existing ones alone rather than deleting the unselected ones.
-        if (!canceling.current) {
-          await removeUnselectedProjectResourceAssignments({
-            memory,
-            sourceMedia: media,
-            selectedItems: items,
-            mediafiles,
-            sectionResources,
-            resourceTypeId,
-            candidateItems,
-          });
-        }
+        await removeUnselectedProjectResourceAssignments({
+          memory,
+          sourceMedia: media,
+          selectedItems: items,
+          mediafiles,
+          sectionResources,
+          resourceTypeId,
+          candidateItems,
+        });
         projectSegmentSave({
           media,
           segments: updateSegments(
@@ -376,7 +370,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
           })
           .finally(() => {
             savingRef.current = false;
-            canceling.current = false;
             setComplete(0);
             onOpen && onOpen(false);
           });
@@ -396,11 +389,11 @@ export const ProjectResourceConfigure = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
-  // The tool is marked changed only by real edits (see the description edit and
-  // paste handlers); closing is owned by the confirm-on-close flow below, not by
-  // a lifetime dirty-flag latch. Clear any dirty flag on unmount so an unexpected
-  // teardown (route change, parent removal) can't leave UnsavedContext stuck and
-  // block later close/nav.
+  // Real edits mark the tool dirty (see the Description and segment handlers) so
+  // a browser/app close mid-edit fires the beforeunload "unsaved changes" warning
+  // (AppHead reads the global `changed` flag). The dialog's own close is
+  // confirm-gated by the parent; clear the flag on unmount so a normal
+  // discard/save close doesn't leak it into the rest of the app.
   useEffect(() => {
     return () => toolChanged(wizToolId, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -535,8 +528,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
-    // Editing a Description marks the wizard dirty so Save gating and the
-    // discard-on-close prompt work (same tracking handleSegment uses).
+    // Editing a Description marks the wizard dirty so a browser/app close warns
+    // (same tracking the segment handler uses).
     if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
@@ -618,6 +611,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
 
   const handleSuffix = (e: ChangeEvent<HTMLInputElement>) => {
     setSuffix(e.target.value);
+    // The suffix feeds the saved topic, so editing it marks the wizard dirty too
+    // (so a browser/app close mid-edit warns).
+    if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
