@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaUploadStrings, IPassageDetailArtifactsStrings } from '../model';
 import { mediaUploadSelector, resourceSelector } from '../selector';
@@ -39,7 +39,7 @@ interface IProps {
   // I think we are moving towards using the dialog's X as the standard way to cancel instead of an explicit Cancel button.
   // hopefully in the future we can remove the explicit Cancel button entirely.
   hideCancel?: boolean | undefined;
-  /** Prompt before discarding when a file is staged (or a link/text entered). */
+  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
   confirmOnClose?: boolean | undefined;
 }
 
@@ -73,6 +73,12 @@ function MediaUpload(props: IProps) {
     shallowEqual
   );
   const [showConfirm, setShowConfirm] = useState(false);
+  // The dialog stays mounted across open/close, so a discard prompt left showing
+  // when `visible` flips off externally would reappear over the next upload.
+  // Clear it whenever the dialog is hidden.
+  useEffect(() => {
+    if (!visible) setShowConfirm(false);
+  }, [visible]);
   const title = [
     t.title,
     t.resourceTitle,

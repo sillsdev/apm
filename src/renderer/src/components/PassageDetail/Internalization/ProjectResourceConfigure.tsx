@@ -420,6 +420,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
   // long enough for the confirm below (cleared by doClose on discard/save).
   useEffect(() => {
     toolChanged(wizToolId);
+    // Clear the changed flag on unmount so an unexpected teardown (route change,
+    // parent removal) doesn't leave UnsavedContext stuck and block later close/nav.
+    return () => toolChanged(wizToolId, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
