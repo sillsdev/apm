@@ -310,6 +310,10 @@ const RECORD_PREVIEW_TIMESLICE_MS = 1000;
  * boundary. Drives the Add/Remove segment button enablement below. */
 const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
 
+/** Fixed room below the wave (time ruler + horizontal scrollbar when zoomed
+ * in) so the player height doesn't change as the scrollbar comes and goes. */
+const WAVEFORM_BOTTOM_RESERVE_PX = 35;
+
 /**
  * True when the playhead sits within `tol` of any region boundary (either edge
  * of any region, or the track start). Used to disable Add so a new split isn't
@@ -1661,6 +1665,9 @@ function WSAudioPlayer(props: IProps) {
         boxSizing: 'border-box',
         position: 'relative',
         minHeight: calculatedHeight,
+        height: allowZoom
+          ? calculatedHeight + WAVEFORM_BOTTOM_RESERVE_PX
+          : undefined,
         overflow: 'hidden',
       }}
     >
@@ -2652,7 +2659,7 @@ function WSAudioPlayer(props: IProps) {
             direction="row"
             spacing={1}
             sx={{
-              py: 1,
+              pb: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -2692,7 +2699,7 @@ function WSAudioPlayer(props: IProps) {
             useFlexGap
             flexWrap="wrap"
             sx={{
-              py: 1,
+              pb: 1,
               rowGap: 1,
               display: 'flex',
               alignItems: 'center',

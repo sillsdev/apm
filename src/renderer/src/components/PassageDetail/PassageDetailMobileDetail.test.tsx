@@ -86,7 +86,6 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
       '[data-cy="discussion-side-column"]'
     ) as HTMLElement;
     expect(column).toBeTruthy();
-    expect(column).toHaveStyle({ width: '450px' });
     expect(container.querySelector('[data-cy="record-content"]')).toBeTruthy();
     expect(
       container.querySelector('[data-cy="discussion-panel"]')

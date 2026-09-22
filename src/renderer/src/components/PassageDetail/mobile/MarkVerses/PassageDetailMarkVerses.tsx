@@ -946,6 +946,9 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     if (rowIndex <= 0 || skipScrollIntoViewRef.current) return;
     const rowEl = tableRowRefs.current[rowIndex - 1];
     if (rowEl && typeof rowEl.scrollIntoView === 'function') {
+      const playerHeight =
+        document.getElementById('detailplayer')?.offsetHeight ?? 0;
+      rowEl.style.scrollMarginTop = `${playerHeight}px`;
       rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, []);

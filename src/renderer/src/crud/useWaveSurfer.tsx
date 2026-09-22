@@ -24,7 +24,6 @@ import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions, useMobile } from '../utils';
 import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
-import { waveformHeightForZoom } from './waveformZoomHeight';
 
 const noop = () => {};
 
@@ -538,10 +537,6 @@ export function useWaveSurfer(
       if (onZoom) {
         wavesurfer.on('zoom', function (px: number) {
           onZoom(px);
-          // Restore height on fit/zoom-out; never collapse short players to 0
-          wavesurfer.setOptions({
-            height: waveformHeightForZoom(height, px, fillpxRef.current),
-          });
         });
       }
       if (blobToLoad.current) {
