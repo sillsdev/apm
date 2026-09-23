@@ -152,6 +152,8 @@ export const useWfLocalSave = (props: IProps) => {
         if (!isPassageAdding(item) && !item.deleted) {
           const itemId = item?.passage?.id || '';
           const curPass = passages.filter((p) => p.id === itemId)[0];
+          const referenceChanged =
+            curPass.attributes.reference !== item.reference;
           const passRec = {
             ...curPass,
             attributes: {
@@ -160,6 +162,19 @@ export const useWfLocalSave = (props: IProps) => {
               book: item.book,
               reference: item.reference,
               title: item.comment,
+              // TT-7704b: the cached startChapter/endChapter/startVerse/endVerse
+              // were calculated for the old reference. Clear them here (not just
+              // on the sheet row's ws.passage) so a refresh recomputes them
+              // instead of trusting stale values (parseRef skips recalculation
+              // once startChapter is already a number).
+              ...(referenceChanged
+                ? {
+                    startChapter: undefined,
+                    endChapter: undefined,
+                    startVerse: undefined,
+                    endVerse: undefined,
+                  }
+                : {}),
             },
           } as PassageD;
           const t = new RecordTransformBuilder();

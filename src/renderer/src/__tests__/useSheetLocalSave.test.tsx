@@ -428,3 +428,101 @@ test('persists titleMediafile for all three section title recordings', async () 
     'media-title-3',
   ]);
 });
+
+// TT-7704b: editing a passage reference must invalidate the persisted
+// startChapter/endChapter/startVerse/endVerse, not just the in-memory sheet
+// row's copy, or a refresh reads the old chapter (parseRef skips
+// recalculation once startChapter is already a number).
+test('save after reference edit clears stale parsed chapter/verse fields', async () => {
+  (memory.update as jest.Mock).mockClear();
+
+  const globals = {
+    plan: 'p1',
+    user: 'u1',
+    offlineOnly: false,
+    memory,
+  } as GlobalState;
+
+  const setComplete = jest.fn((val: number) => {});
+  const worksheet: ISheet[] = [
+    {
+      ...defaultSheet,
+      kind: IwsKind.SectionPassage,
+      sectionSeq: 1,
+      title: 'The Temptation of Jesus',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-22',
+      passageSeq: 1,
+      book: 'MAT',
+      reference: '3:1-4', // changed from 1:1-4 to 3:1-4
+      comment: '',
+      passage: { type: 'passage', id: 'pa1' } as PassageD,
+      passageUpdated: '2021-09-22',
+      deleted: false,
+      mediaShared: IMediaShare.NotPublic,
+    },
+  ];
+
+  const sections = [
+    {
+      type: 'section',
+      id: 's1',
+      attributes: {
+        sequencenum: 1,
+        name: 'The Temptation of Jesus',
+        graphics: '{}',
+        published: false,
+        level: 1,
+        dateCreated: '2021-09-21',
+        dateUpdated: '2021-09-21',
+        lastModifiedBy: 1,
+      },
+    } as SectionD,
+  ];
+
+  const passages: PassageD[] = [
+    {
+      type: 'passage',
+      id: 'pa1',
+      attributes: {
+        sequencenum: 1,
+        book: 'MAT',
+        reference: '1:1-4', // stale reference before the edit
+        title: '',
+        state: '',
+        lastComment: '',
+        hold: false,
+        dateCreated: '2021-09-21',
+        dateUpdated: '2021-09-21',
+        lastModifiedBy: 1,
+        // stale parsed fields calculated for the OLD reference (chapter 1)
+        startChapter: 1,
+        endChapter: 1,
+        startVerse: 1,
+        endVerse: 4,
+      },
+    } as PassageD,
+  ];
+
+  const localSave = setup({ globals, setComplete });
+
+  await localSave(worksheet, sections, passages, '2021-09-21');
+
+  expect(setComplete).toHaveBeenCalled();
+  const updateCalls = (memory.update as jest.Mock).mock.calls;
+  const passageUpdateOps = updateCalls[1][0] as Array<{
+    op?: string;
+    record?: { type?: string; attributes?: Record<string, unknown> };
+  }>;
+  const updateRecordOp = passageUpdateOps.find(
+    (op) => op.op === 'updateRecord' && op.record?.type === 'passage'
+  );
+
+  expect(updateRecordOp).toBeDefined();
+  expect(updateRecordOp?.record?.attributes?.reference).toBe('3:1-4');
+  // Stale chapter 1 must not survive an edit to a reference now in chapter 3.
+  expect(updateRecordOp?.record?.attributes?.startChapter).not.toBe(1);
+  expect(updateRecordOp?.record?.attributes?.endChapter).not.toBe(1);
+  expect(updateRecordOp?.record?.attributes?.startVerse).toBeUndefined();
+  expect(updateRecordOp?.record?.attributes?.endVerse).toBeUndefined();
+});
