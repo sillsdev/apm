@@ -58,9 +58,12 @@ function sectionFixture(): SectionD {
   } as unknown as SectionD;
 }
 
-function passageFixture(attrs: Partial<PassageD['attributes']> = {}): PassageD {
+function passageFixture(
+  attrs: Partial<PassageD['attributes']> = {},
+  id = 'pas-1'
+): PassageD {
   return {
-    id: 'pas-1',
+    id,
     type: 'passage',
     attributes: {
       sequencenum: 1,
@@ -78,9 +81,12 @@ function passageFixture(attrs: Partial<PassageD['attributes']> = {}): PassageD {
   } as unknown as PassageD;
 }
 
-function mediaFixture(attrs: Partial<MediaFileD['attributes']>): MediaFileD {
+function mediaFixture(
+  attrs: Partial<MediaFileD['attributes']>,
+  opts: { id?: string; passageId?: string } = {}
+): MediaFileD {
   return {
-    id: 'med-1',
+    id: opts.id ?? 'med-1',
     type: 'mediafile',
     attributes: {
       versionNumber: 1,
@@ -89,7 +95,7 @@ function mediaFixture(attrs: Partial<MediaFileD['attributes']>): MediaFileD {
     } as MediaFileD['attributes'],
     relationships: {
       plan: { data: { id: planId } },
-      passage: { data: { id: 'pas-1' } },
+      passage: { data: { id: opts.passageId ?? 'pas-1' } },
     },
   } as unknown as MediaFileD;
 }
@@ -427,5 +433,91 @@ describe('useBurritoText', () => {
     expect(metadata.ingredients[ingredientKey].scope).toEqual({
       GEN: ['1', '2'],
     });
+  });
+
+  it('keeps \\c markers per version when a version skips the cross-chapter passage', async () => {
+    // Passage A (1:28-2:3) has only the newest take → burrito slot 0 (GENv1).
+    // Passage B (2:4) has two takes → slots 0 and 1. Slot 1 must still get \\c 2
+    // (and \\id) even though the shared export cursor already advanced to chapter 2.
+    const ipc = makeIpc();
+    const pasA = passageFixture(
+      {
+        sequencenum: 1,
+        reference: '1:28-2:3',
+        startChapter: 1,
+        startVerse: 28,
+        endChapter: 2,
+        endVerse: 3,
+      },
+      'pas-a'
+    );
+    const pasB = passageFixture(
+      {
+        sequencenum: 2,
+        reference: '2:4',
+        startChapter: 2,
+        startVerse: 4,
+        endChapter: 2,
+        endVerse: 4,
+      },
+      'pas-b'
+    );
+    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {
+      passages: [pasA, pasB],
+      mediafiles: [
+        mediaFixture(
+          { versionNumber: 2, transcription: 'Be fruitful' },
+          { id: 'med-a2', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { versionNumber: 2, transcription: 'These are the generations' },
+          { id: 'med-b2', passageId: 'pas-b' }
+        ),
+        mediaFixture(
+          { versionNumber: 1, transcription: 'Generations sparse take' },
+          { id: 'med-b1', passageId: 'pas-b' }
+        ),
+      ],
+      getOrgDefaultImpl: (key: string) => {
+        if (key === 'burritoVersions') return '2';
+        if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
+        return undefined;
+      },
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const writeV2 = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv2.usfm')
+    );
+    expect(writeV2).toBeDefined();
+    const sparseUsfm = writeV2![1] as string;
+    expect(sparseUsfm.split('\n')[0]).toBe('\\id GEN');
+    expect(sparseUsfm).toContain('\\c 2');
+    const c2Idx = sparseUsfm.indexOf('\\c 2');
+    const v4Idx = sparseUsfm.indexOf('\\v 4 Generations sparse take');
+    expect(v4Idx).toBeGreaterThan(-1);
+    expect(c2Idx).toBeGreaterThan(-1);
+    expect(c2Idx).toBeLessThan(v4Idx);
+
+    const writeV1 = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv1.usfm')
+    );
+    expect(writeV1).toBeDefined();
+    const denseUsfm = writeV1![1] as string;
+    expect(denseUsfm).toContain('\\c 2');
+    expect(denseUsfm).toContain('\\v 1-3');
+    expect(denseUsfm).toContain('\\v 4 These are the generations');
   });
 });
