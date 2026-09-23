@@ -46,7 +46,11 @@ export const useTeamDelete = () => {
         q.findRecords('organizationmembership')
       ) as OrganizationMembershipD[]
     ).filter((g) => related(g, 'organization') === teamid);
-    /* remove the memberships first so that refreshing happens before projects and teams disappear and causes problems */
+    /* Remove the memberships first, deliberately: dropping the membership makes
+       the team disappear from the UI at once, so it cannot be messed with while
+       the one-project-at-a-time deletes below are still running. Refreshing
+       therefore happens before projects and teams disappear. Removing the
+       projects first has caused problems. See useTeamDelete.test.ts. */
     let ops: RecordOperation[] = [];
     const t: RecordTransformBuilder = new RecordTransformBuilder();
     teamoms.forEach((gm) => ops.push(t.removeRecord(gm).toOperation()));
