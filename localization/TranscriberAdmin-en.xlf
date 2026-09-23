@@ -7132,6 +7132,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="profile.deleteFailed">
+         <segment>
+            <source>Could not delete your account. Try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="profile.deleteUser">
          <segment>
             <source>Delete User</source>
@@ -9727,6 +9733,12 @@
       <unit id="usertable.delete">
          <segment>
             <source>Delete</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="usertable.deleteFailed">
+         <segment>
+            <source>Could not remove this member. Try again.</source>
             <target/>
          </segment>
       </unit>
