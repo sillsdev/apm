@@ -30,7 +30,7 @@ import JSONAPISource from '@orbit/jsonapi';
 import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
-import { Online } from '../../utils';
+import { useCheckOnline } from '../../utils/useCheckOnline';
 import { Button } from '../../control/Button';
 import { completePendingUploadRetry } from '../../store/upload/completePendingUploadRetry';
 import { withPendingRetryBusyRelease } from '../../store/upload/withPendingRetryBusyRelease';
@@ -47,16 +47,18 @@ export function PendingUploadsDialog(props: IProps) {
   const t = useSelector(mediaTabSelector, shallowEqual);
   const ts = useSelector(sharedSelector, shallowEqual);
   const dispatch = useDispatch();
-  const { showMessage } = useSnackBar();
+  const { showMessage, messageReset } = useSnackBar();
   const [reporter] = useGlobal('errorReporter');
   const [coordinator] = useGlobal('coordinator');
   const [connected] = useGlobal('connected');
   const [offline] = useGlobal('offline');
   const [user] = useGlobal('user');
+  const [, setSaveResult] = useGlobal('saveResult');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const getGlobal = useGetGlobal();
+  const checkOnline = useCheckOnline('PendingUploads');
   const accessToken = useContext(TokenContext)?.state?.accessToken ?? '';
   const [items, setItems] = useState<PendingUploadRecord[]>([]);
   const [busy, setBusy] = useState(false);
@@ -65,6 +67,12 @@ export function PendingUploadsDialog(props: IProps) {
   const retryClaimedRef = useRef(false);
 
   const retryDisabled = busy || !connected || offline;
+
+  const clearStaleOfflineSaveSnack = useCallback(() => {
+    // TT-7720: drop leftover offline-queue saveResult / snack before Record remount.
+    setSaveResult('');
+    messageReset();
+  }, [messageReset, setSaveResult]);
 
   const refresh = useCallback(() => {
     setItems(loadPendingMediaUploads());
@@ -96,16 +104,18 @@ export function PendingUploadsDialog(props: IProps) {
 
   const assertCanRetry = useCallback(
     (cb: () => void, onRejected: () => void) => {
-      Online(true, (isConnected) => {
+      // forceCheck so Retry clears stale orbit network error while already
+      // connected (TT-7720) via useCheckOnline's errorReset.
+      checkOnline((isConnected) => {
         if (!isConnected) {
           showMessage(t.pendingUploadRetryLater, AlertSeverity.Warning);
           onRejected();
           return;
         }
         cb();
-      });
+      }, true);
     },
-    [showMessage, t.pendingUploadRetryLater]
+    [checkOnline, showMessage, t.pendingUploadRetryLater]
   );
 
   async function dispatchOne(entry: PendingUploadRecord): Promise<void> {
@@ -117,6 +127,7 @@ export function PendingUploadsDialog(props: IProps) {
       } else {
         retryClaimedRef.current = false;
         setBusy(false);
+        clearStaleOfflineSaveSnack();
       }
     };
 
@@ -206,10 +217,15 @@ export function PendingUploadsDialog(props: IProps) {
     refresh();
   };
 
+  const handleClose = () => {
+    clearStaleOfflineSaveSnack();
+    onClose();
+  };
+
   if (!isElectron) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t.pendingUploadTitle}</DialogTitle>
       <DialogContent>
         {items.length === 0 ? (
@@ -265,7 +281,7 @@ export function PendingUploadsDialog(props: IProps) {
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>{ts.close}</Button>
+        <Button onClick={handleClose}>{ts.close}</Button>
         <Button
           variant="contained"
           disabled={retryDisabled || items.length === 0}

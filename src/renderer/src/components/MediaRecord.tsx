@@ -372,7 +372,12 @@ function MediaRecord(props: IProps) {
       const message = failureMessage();
       showMessage(message);
       setStatusText(message);
-      saveCompleted(toolId, message);
+      // Electron queue is a successful local save, not a tool saveError.
+      // Passing the queue text into saveCompleted left global `saveResult` as
+      // `"…Teams screen.;"` (UnsavedContext appends `;`), which survived a
+      // trip to Teams and was re-snacked by PassageDetailContext on Record
+      // remount while already online (TT-7720).
+      saveCompleted(toolId, isElectron ? undefined : message);
     } else {
       queuedTakeRef.current = undefined;
       setStatusText(getCompressedStatusMessage());

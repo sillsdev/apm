@@ -2,7 +2,7 @@ import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import * as actions from '../store';
 import Axios from 'axios';
 import JSONAPISource from '@orbit/jsonapi';
-import { API_CONFIG } from '../../api-variable';
+import { API_CONFIG, OrbitNetworkErrorRetries } from '../../api-variable';
 import { useDispatch } from 'react-redux';
 import { LocalKey } from '../utils';
 import Bugsnag from '@bugsnag/js';
@@ -40,6 +40,9 @@ export const useCheckOnline = (label: string) => {
   const errorReset = async () => {
     dispatch(resetOrbitError());
     await orbitReset(remote, setOrbitRetries);
+    // queue.retry() can re-dispatch ORBIT_RETRY via Sources updateError; clear
+    // again so a later Record remount does not re-snack (TT-7720).
+    dispatch(resetOrbitError());
   };
 
   const checkOnline = (
@@ -65,14 +68,22 @@ export const useCheckOnline = (label: string) => {
     };
     //console.log('Checking online status for ' + label);
     Online(forceCheck || !getGlobal('offline'), (result) => {
-      if (getGlobal('connected') !== result) {
-        if (result) {
+      // TT-7720: clear stale orbit network-error snack when AmIOnline succeeds
+      // even if `connected` is already true (Pending Retry / CloudOff paths).
+      // Only run full orbitReset (queue.retry) on a false→true edge — retrying
+      // the queue while already online re-fires non-network failures (e.g. 403
+      // on passagestatechanges) and can surface a spurious API Error 500 page.
+      if (result) {
+        if (getGlobal('connected') !== result) {
           errorReset().finally(() => {
             statusChange(result);
           });
         } else {
-          statusChange(result);
+          dispatch(resetOrbitError());
+          setOrbitRetries(OrbitNetworkErrorRetries);
         }
+      } else if (getGlobal('connected') !== result) {
+        statusChange(result);
       }
       cb(result);
     });

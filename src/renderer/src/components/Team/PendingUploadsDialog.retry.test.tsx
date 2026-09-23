@@ -4,6 +4,10 @@
  * removed from the Pending Files dialog. As a result, the user can click Retry
  * multiple times for the same file."
  *
+ * TT-7720: Retry while online goes through useCheckOnline (forceCheck) so orbit
+ * status clears; batch-complete clears leftover saveResult / snack.
+ * (Hook behavior is covered in useCheckOnline.test.ts.)
+ *
  * Drives the **real** `nextUpload` thunk from the dialog's Retry button (axios
  * POST and the XHR PUT are stubbed to succeed) and asserts against the real
  * localStorage-backed `pendingMediaUploads` store, so the test sees the same
@@ -18,6 +22,7 @@
  */
 import Axios from 'axios';
 import { UploadType } from '../UploadType';
+import { RESET_ORBIT_ERROR } from '../../store/orbit/types';
 
 jest.mock('axios');
 jest.mock('../../auth/bugsnagClient', () => ({}));
@@ -32,9 +37,14 @@ jest.mock('../../utils/typeLimit', () => ({
   typeLimit: () => 500,
 }));
 
-jest.mock('../../utils', () => ({
-  // PendingUploadsDialog
+const mockOrbitDispatches: unknown[] = [];
+const mockCheckOnline = jest.fn();
+jest.mock('../../utils/useCheckOnline', () => ({
+  useCheckOnline: () => mockCheckOnline,
   Online: (_force: boolean, cb: (connected: boolean) => void) => cb(true),
+}));
+
+jest.mock('../../utils', () => ({
   // actions.tsx / writeFileLocal
   dataPath: jest.fn(
     async (_url: string, _type: unknown, local: { localname: string }) => {
@@ -109,9 +119,15 @@ const globals: Record<string, unknown> = {
   offline: false,
   user: 'user-1',
   importexportBusy: false,
+  saveResult: '',
 };
 jest.mock('../../context/useGlobal', () => ({
-  useGlobal: (key: string) => [globals[key], jest.fn()],
+  useGlobal: (key: string) => [
+    globals[key],
+    jest.fn((v: unknown) => {
+      globals[key] = v;
+    }),
+  ],
   useGetGlobal: () => (key: string) => globals[key],
 }));
 
@@ -125,8 +141,12 @@ jest.mock('../../context/TokenProvider', () => {
 });
 
 const mockShowMessage = jest.fn();
+const mockMessageReset = jest.fn();
 jest.mock('../../hoc/SnackBar', () => ({
-  useSnackBar: () => ({ showMessage: mockShowMessage }),
+  useSnackBar: () => ({
+    showMessage: mockShowMessage,
+    messageReset: mockMessageReset,
+  }),
   AlertSeverity: { Warning: 'warning', Error: 'error', Info: 'info' },
 }));
 
@@ -147,12 +167,20 @@ const vndResponse = {
   },
 };
 
-describe('PendingUploadsDialog Retry (TT-7363)', () => {
+describe('PendingUploadsDialog Retry (TT-7363 / TT-7720)', () => {
   let writtenPaths: Set<string>;
 
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    mockOrbitDispatches.length = 0;
+    mockCheckOnline.mockImplementation(
+      (cb: (connected: boolean) => void, _forceCheck?: boolean) => {
+        // Mirror useCheckOnline errorReset when AmIOnline succeeds (TT-7720).
+        mockOrbitDispatches.push({ type: RESET_ORBIT_ERROR });
+        cb(true);
+      }
+    );
     localStorage.clear();
 
     writtenPaths = new Set<string>(['C:/mock/media/comment.mp3']);
@@ -240,6 +268,13 @@ describe('PendingUploadsDialog Retry (TT-7363)', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
     });
+
+    // TT-7720: Retry force-checks online (clears orbit via useCheckOnline) and
+    // batch-complete clears leftover saveResult / snack.
+    expect(mockCheckOnline).toHaveBeenCalledWith(expect.any(Function), true);
+    expect(mockOrbitDispatches).toContainEqual({ type: RESET_ORBIT_ERROR });
+    expect(mockMessageReset).toHaveBeenCalled();
+    expect(globals.saveResult).toBe('');
 
     // The store is the source of truth: the upload succeeded, so the row is gone.
     expect(pending.loadPendingMediaUploads()).toHaveLength(0);
