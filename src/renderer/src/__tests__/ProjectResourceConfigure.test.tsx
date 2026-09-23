@@ -140,6 +140,7 @@ jest.mock('react-redux', () => ({
     suffix: 'Suffix',
     suffixTip: 'Suffix Tip',
     unusedSegment: 'Unused Segment',
+    uploadAsResources: 'Upload as {0} resources',
   }),
   shallowEqual: jest.fn(),
 }));
