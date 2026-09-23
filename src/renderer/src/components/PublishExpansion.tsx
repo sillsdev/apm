@@ -165,7 +165,11 @@ export function PublishExpansion(props: IProps) {
     const newId = (event.target.value as string).toLocaleUpperCase();
     setBibleIdError(bibleIdIsValid(newId));
     setBibleId(newId);
-    if (bible?.attributes?.bibleId !== newId) setValue('bibleId', newId);
+    // Always report the current id. Skipping this when it matches the saved
+    // bible leaves TeamDialog on the truncated value from a delete, and Save
+    // persists that shorter id. The third arg only skips marking the form
+    // dirty when the text is already the saved id.
+    setValue('bibleId', newId, bible?.attributes?.bibleId === newId);
     return '';
   };
   const handleChangeBibleName = (value: string) => {

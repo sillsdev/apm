@@ -220,3 +220,50 @@ describe('PublishExpansion bibleId ownership validation (TT-7681)', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true');
   });
 });
+
+describe('PublishExpansion owned bible id restore', () => {
+  beforeEach(() => {
+    mockGetBibleMediaPlan.mockReset();
+    mockGetBibleMediaPlan.mockResolvedValue({ id: 'plan-1' });
+  });
+
+  const ownBible = {
+    id: 'bible-own-team',
+    type: 'bible',
+    attributes: { bibleId: 'SEHSUS', bibleName: '', description: '' },
+  } as Bible;
+
+  const lastReportedBibleId = (setValue: jest.Mock): string | undefined =>
+    setValue.mock.calls
+      .filter(([what]) => what === 'bibleId')
+      .map(([, value]) => value)
+      .pop();
+
+  it('reports the restored bible id after deleting and retyping the last character', async () => {
+    const setValue = jest.fn();
+    render(
+      <PublishExpansion
+        t={t}
+        team={team}
+        bible={ownBible}
+        setValue={setValue}
+        onChanged={jest.fn()}
+        onRecording={jest.fn()}
+        bibles={[ownBible]}
+      />
+    );
+    await waitFor(() => expect(capturedCanRecord).toBeDefined());
+
+    const input = document.getElementById('bibleid') as HTMLInputElement;
+    expect(input.value).toBe('SEHSUS');
+
+    // TeamDialog saves whatever bible id was last reported. Skipping the
+    // report when the text matches the saved id leaves the parent on the
+    // truncated value from the delete, and Save persists that.
+    fireEvent.change(input, { target: { value: 'SEHSU' } });
+    fireEvent.change(input, { target: { value: 'SEHSUS' } });
+
+    expect(input.value).toBe('SEHSUS');
+    expect(lastReportedBibleId(setValue)).toBe('SEHSUS');
+  });
+});
