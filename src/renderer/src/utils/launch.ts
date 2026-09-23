@@ -56,7 +56,7 @@ export const launch = async (
   const filePath = launchFilePath(target);
   // Electron shell.openPath requires a filesystem path on Windows, not file://
   if (await ipc()?.isWindows()) {
-    ipc()?.openPath(filePath);
+    await ipc()?.openPath(filePath);
     return;
   }
   if (online) {
@@ -69,7 +69,7 @@ export const launch = async (
     });
     return;
   }
-  ipc()?.openPath(filePath);
+  await ipc()?.openPath(filePath);
 };
 
 export const launchCmd = async (target: string): Promise<void> => {
