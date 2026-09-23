@@ -335,6 +335,7 @@ test('paste hieararchical', () => {
     ...i,
     passageUpdated,
     sectionUpdated,
+    rowKey: expect.any(String),
   }));
   expect(hookResult?.addedWorkflow).toEqual(testVal);
 });
@@ -424,7 +425,12 @@ test('paste flat', () => {
         reference: '5:17-26',
       },
     ] as ISheet[]
-  ).map((i) => ({ ...i, passageUpdated, sectionUpdated }));
+  ).map((i) => ({
+    ...i,
+    passageUpdated,
+    sectionUpdated,
+    rowKey: expect.any(String),
+  }));
   expect(hookResult?.addedWorkflow).toEqual(testValue);
 });
 
@@ -500,7 +506,12 @@ test('paste flat data into hierarchy', () => {
         reference: '4:31-37',
       },
     ] as ISheet[]
-  ).map((i) => ({ ...i, passageUpdated, sectionUpdated }));
+  ).map((i) => ({
+    ...i,
+    passageUpdated,
+    sectionUpdated,
+    rowKey: expect.any(String),
+  }));
   expect(hookResult?.addedWorkflow).toEqual(testValue);
 });
 
