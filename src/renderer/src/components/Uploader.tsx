@@ -64,6 +64,7 @@ interface IProps {
   multiple?: boolean | undefined;
   mediaId?: string | undefined;
   importList?: File[] | undefined;
+  onFiles?: ((files: File[]) => void) | undefined;
   artifactState?: { id?: string | null } | undefined;
   passageId?: string | undefined;
   planId?: string | undefined;
@@ -79,6 +80,7 @@ interface IProps {
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   uploadDialogBp?: BigDialogBp;
+  validationMessage?: string | undefined;
   /** Hide the upload dialog's bottom "Cancel" button (cancel via the dialog X). */
   hideUploadCancel?: boolean | undefined;
   /** Prompt before discarding on close when a file/recording is staged. */
@@ -109,6 +111,7 @@ export const Uploader = (props: IProps) => {
     cancelReset,
     multiple,
     importList,
+    onFiles,
     artifactState,
     passageId,
     planId,
@@ -125,6 +128,7 @@ export const Uploader = (props: IProps) => {
     audioOnly,
     finish,
     uploadDialogBp,
+    validationMessage,
     hideUploadCancel,
     confirmOnClose,
     pendingRestore,
@@ -550,9 +554,11 @@ export const Uploader = (props: IProps) => {
           uploadMethod={effectiveUploadMethod}
           onStageFile={deferring ? onStageFiles : undefined}
           multiple={multiple}
+          onFiles={onFiles}
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
+          validationMessage={validationMessage}
           pendingRestore={pendingRestore}
           beforeUpload={beforeUpload}
           confirmOnClose={confirmOnClose}

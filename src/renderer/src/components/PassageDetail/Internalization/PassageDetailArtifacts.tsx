@@ -182,6 +182,7 @@ export function PassageDetailArtifacts() {
   >();
   const [allowEditSave, setAllowEditSave] = useState(false);
   const [resourceReady, setResourceReady] = useState(true);
+  const [resourceUploadFiles, setResourceUploadFiles] = useState<File[]>([]);
   const [artifactState] = useState<{ id?: string | null }>({});
   // const [artifactTypeId, setArtifactTypeId] = useState<string>();
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
@@ -615,12 +616,27 @@ export function PassageDetailArtifacts() {
     setDialogPendingCloseConfirmation(null);
     resetEdit();
   };
-  const syncResourceReady = (type: UploadType, desc: string) => {
-    if (descriptionRequiredForResource(undefined, type)) {
-      setResourceReady(Boolean(desc.trim()));
-    } else {
-      setResourceReady(true);
-    }
+  const hasGeneralResourceUploadConflict = (
+    files: File[] = resourceUploadFiles,
+    kind: ResourceTypeEnum = resourceKindRef.current
+  ) => kind === ResourceTypeEnum.projectResource && files.length > 1;
+  const resourceUploadValidationMessage = hasGeneralResourceUploadConflict(
+    resourceUploadFiles,
+    resourceKind
+  )
+    ? 'General resources should be uploaded individually'
+    : '';
+  const syncResourceReady = (
+    type: UploadType,
+    desc: string,
+    files: File[] = resourceUploadFiles
+  ) => {
+    const descriptionReady = descriptionRequiredForResource(undefined, type)
+      ? Boolean(desc.trim())
+      : true;
+    setResourceReady(
+      descriptionReady && !hasGeneralResourceUploadConflict(files)
+    );
   };
 
   const handleAction = (what: AddResourceAction) => {
@@ -1039,6 +1055,11 @@ export function PassageDetailArtifacts() {
     catIdRef.current = categoryId;
   };
 
+  const handleResourceUploadFiles = (files: File[]) => {
+    setResourceUploadFiles(files);
+    syncResourceReady(uploadType, descriptionRef.current, files);
+  };
+
   const handleDescription = (desc: string) => {
     descriptionRef.current = desc;
     const ct = mediaContentType(mediaRef.current);
@@ -1052,8 +1073,8 @@ export function PassageDetailArtifacts() {
           isUrl,
         })
       );
-    } else if (descriptionRequiredForResource(undefined, uploadType)) {
-      setResourceReady(Boolean(desc.trim()));
+    } else {
+      syncResourceReady(uploadType, desc);
     }
   };
 
@@ -1219,8 +1240,10 @@ export function PassageDetailArtifacts() {
         defaultFilename={filename}
         pendingRestore={resourcePendingRestore}
         importList={resourceImportList}
+        onFiles={handleResourceUploadFiles}
         deferUpload={uploadType === UploadType.ProjectResource}
         onStageFiles={handleStageAudioFiles}
+        validationMessage={resourceUploadValidationMessage}
         metaData={
           <ResourceData
             uploadType={uploadType}
