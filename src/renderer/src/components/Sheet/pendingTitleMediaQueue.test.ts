@@ -133,4 +133,83 @@ describe('createPendingTitleMediaQueue', () => {
     expect(applied.map((a) => a.mediaId)).toEqual(['media-row-1']);
     expect(saves).toHaveLength(1);
   });
+
+  it('coalesces id-less updates by rowKey across shifting visible indexes', async () => {
+    let busy = true;
+    const applied: TitleMediaPending[] = [];
+    const saves: number[] = [];
+
+    const queue = createPendingTitleMediaQueue({
+      isBusy: () => busy,
+      whenIdle: (fn) => {
+        setTimeout(() => {
+          busy = false;
+          fn();
+        }, 10);
+      },
+      applyOne: (item) => applied.push(item),
+      requestSave: () => saves.push(1),
+    });
+
+    // Same unsaved row recorded twice while an insert shifted its visible index.
+    queue.enqueue({
+      index: 1,
+      mediaId: 'media-first',
+      rowKey: 'row-a',
+      label: 'Unsaved A',
+    });
+    queue.enqueue({
+      index: 2,
+      mediaId: 'media-last',
+      rowKey: 'row-a',
+      label: 'Unsaved A',
+    });
+
+    await waitUntil(() => applied.length === 1, 'single apply for rowKey');
+
+    expect(applied.map((a) => a.mediaId)).toEqual(['media-last']);
+    expect(applied[0].rowKey).toBe('row-a');
+    expect(saves).toHaveLength(1);
+  });
+
+  it('keeps separate id-less rows that briefly share a visible index', async () => {
+    let busy = true;
+    const applied: TitleMediaPending[] = [];
+    const saves: number[] = [];
+
+    const queue = createPendingTitleMediaQueue({
+      isBusy: () => busy,
+      whenIdle: (fn) => {
+        setTimeout(() => {
+          busy = false;
+          fn();
+        }, 10);
+      },
+      applyOne: (item) => applied.push(item),
+      requestSave: () => saves.push(1),
+    });
+
+    // Two different unsaved rows both seen at visible index 1 at enqueue time.
+    queue.enqueue({
+      index: 1,
+      mediaId: 'media-a',
+      rowKey: 'row-a',
+    });
+    queue.enqueue({
+      index: 1,
+      mediaId: 'media-b',
+      rowKey: 'row-b',
+    });
+
+    await waitUntil(
+      () => applied.length === 2,
+      'two applies for distinct keys'
+    );
+
+    expect(applied.map((a) => a.mediaId).sort()).toEqual([
+      'media-a',
+      'media-b',
+    ]);
+    expect(saves).toHaveLength(1);
+  });
 });

@@ -20,19 +20,25 @@ export function getSheetRowByVisibleIndex(
 
 /**
  * Resolve where a queued title-media update should apply.
- * Prefer stable section/passage ids. Fall back to visible index only when no
- * id was captured (unsaved rows). Never retarget an identified update to a
+ * Prefer stable section/passage ids, then client rowKey. Fall back to visible
+ * index only when none were captured. Never retarget an identified update to a
  * different row at the same index after a refresh (TT-7660).
  */
 export function resolveTitleMediaRowIndex(
   sheet: ISheet[],
-  pending: Pick<TitleMediaPending, 'index' | 'sectionId' | 'passageId'>
+  pending: Pick<
+    TitleMediaPending,
+    'index' | 'sectionId' | 'passageId' | 'rowKey'
+  >
 ): number {
   if (pending.sectionId) {
     return sheet.findIndex((r) => r.sectionId?.id === pending.sectionId);
   }
   if (pending.passageId) {
     return sheet.findIndex((r) => r.passage?.id === pending.passageId);
+  }
+  if (pending.rowKey) {
+    return sheet.findIndex((r) => r.rowKey === pending.rowKey);
   }
   return getSheetRowByVisibleIndex(sheet, pending.index);
 }

@@ -87,6 +87,7 @@ import {
   useCanPublish,
   useMobile,
   refNumPat,
+  generateUUID,
 } from '../../utils';
 import { addPt } from '../../utils/addPt';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
@@ -825,6 +826,8 @@ export function ScriptureTable(props: IProps) {
       color: undefined,
       deleted: false,
       filtered: false,
+      // Must not inherit neighbor rowKey from the spread above.
+      rowKey: generateUUID(),
     } as ISheet;
 
     if (flat && isSectionRow(myWorkflow[index] as ISheet)) {
@@ -886,6 +889,7 @@ export function ScriptureTable(props: IProps) {
       published: [] as PublishDestinationEnum[],
       book: scripture ? firstBook : '',
       sectionUpdated: currentDateTime(),
+      rowKey: generateUUID(),
     } as ISheet;
     return newRow;
   };
@@ -1259,6 +1263,7 @@ export function ScriptureTable(props: IProps) {
       mediaId,
       sectionId: ws?.sectionId?.id,
       passageId: ws?.passage?.id,
+      rowKey: ws?.rowKey,
       label: ws?.title,
     };
     getTitleMediaQueue().enqueue(pending);
@@ -1975,6 +1980,7 @@ export function ScriptureTable(props: IProps) {
         reference: publishingTitle(passageType),
         title,
         passageType: passageType,
+        rowKey: generateUUID(),
       } as ISheet;
       return newsht.concat([newRow]);
     }

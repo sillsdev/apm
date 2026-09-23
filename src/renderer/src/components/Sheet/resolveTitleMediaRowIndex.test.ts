@@ -103,6 +103,31 @@ describe('resolveTitleMediaRowIndex', () => {
     expect(resolveTitleMediaRowIndex(sheet, { index: 1 })).toBe(1);
   });
 
+  it('resolves an unsaved row by rowKey after a preceding insert shifts its visible index', () => {
+    // Queued while unsavedA was at visible index 1; insert moved it to 2.
+    // Index fallback would attach the recording to `inserted` instead.
+    const unsavedA = {
+      ...sectionRow('a', 'Unsaved A'),
+      sectionId: undefined,
+      rowKey: 'row-a',
+    };
+    const sheet = [
+      sectionRow('book', 'Book'),
+      { ...sectionRow('ins', 'Inserted'), sectionId: undefined },
+      unsavedA,
+      sectionRow('b', 'Section B'),
+    ];
+
+    const i = resolveTitleMediaRowIndex(sheet, {
+      index: 1,
+      rowKey: 'row-a',
+    });
+
+    expect(i).toBe(2);
+    expect(sheet[i].rowKey).toBe('row-a');
+    expect(sheet[1].title).toBe('Inserted');
+  });
+
   it('skips deleted and filtered rows when using visible index', () => {
     const sheet = [
       sectionRow('gone', 'Gone', { deleted: true }),

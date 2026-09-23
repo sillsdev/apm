@@ -1,9 +1,11 @@
 export type TitleMediaPending = {
-  /** Visible sheet index at enqueue time (fallback if ids missing). */
+  /** Visible sheet index at enqueue time (fallback if ids/rowKey missing). */
   index: number;
   mediaId: string;
   sectionId?: string;
   passageId?: string;
+  /** Client row identity for unsaved rows (preferred over index). */
+  rowKey?: string;
   label?: string;
 };
 
@@ -23,7 +25,7 @@ export type PendingTitleMediaQueue = {
 };
 
 const pendingKey = (p: TitleMediaPending) =>
-  p.sectionId || p.passageId || `idx:${p.index}`;
+  p.sectionId || p.passageId || p.rowKey || `idx:${p.index}`;
 
 /**
  * Coalesce title-media changes by stable section/passage id and flush them
