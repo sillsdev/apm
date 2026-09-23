@@ -16,6 +16,7 @@ import {
 import {
   Box,
   Checkbox,
+  CircularProgress,
   debounce,
   Paper,
   PaperProps,
@@ -58,6 +59,13 @@ interface IProps {
    */
   uploadsOnNext?: boolean;
   /**
+   * True while the deferred upload triggered by this dialog's Upload button is
+   * in flight. The dialog stays open (so selections survive) with the button
+   * disabled and a spinner; on success the caller advances to the configure
+   * step, on failure it re-enables so the user can retry without re-selecting.
+   */
+  uploading?: boolean;
+  /**
    * `candidates` is every identity offered by the dialog; the caller needs it to
    * limit cleanup of unselected assignments to what the user could actually see.
    */
@@ -65,7 +73,7 @@ interface IProps {
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, uploadsOnNext, onSelect } = props;
+  const { initialItems, visual, uploadsOnNext, uploading, onSelect } = props;
   const initialSelectionKey = (initialItems ?? [])
     .map((item) => `${item.type}:${item.id}`)
     .join('|');
@@ -273,12 +281,13 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
-        <Box sx={{ ...rowSx, ml: 'auto' }}>
+        <Box sx={{ ...rowSx, ml: 'auto', alignItems: 'center', gap: 1 }}>
+          {uploading && <CircularProgress size={20} color="primary" />}
           <Button
             id="select-sections-next"
             color="primary"
             onClick={handleSelected}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || uploading}
           >
             {visual ? ta.createResources : uploadsOnNext ? ts.upload : ta.next}
           </Button>

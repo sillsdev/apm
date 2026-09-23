@@ -207,6 +207,10 @@ export function PassageDetailArtifactsMobile() {
   const [resourceImportList, setResourceImportList] = useState<
     File[] | undefined
   >(undefined);
+  // True while the general-resource upload runs. SelectSections stays open
+  // (selections preserved) with its Upload button disabled/spinner until the
+  // upload succeeds (advance to the wizard) or fails (re-enable for retry).
+  const [uploading, setUploading] = useState(false);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
@@ -788,16 +792,18 @@ export function PassageDetailArtifactsMobile() {
         isAddingAudioResourceRef.current = true;
         if (sectionsPreselectedRef.current) {
           // Deferred flow: passages/sections were already chosen on
-          // SelectSections, so go straight to the configure step (or write
-          // visual resources directly) instead of re-opening SelectSections.
+          // SelectSections (which stayed open during the upload). The upload
+          // succeeded, so close it now and go to the configure step, or write
+          // visual resources directly.
           const media = projRes[0] as MediaFileD;
           projMediaRef.current = media;
           sectionsPreselectedRef.current = false;
           stagedResourceFilesRef.current = undefined;
           setResourceImportList(undefined);
+          setUploading(false);
+          setProjResPassageVisible(false);
           if (isVisual(media)) {
             await writeVisualResource(projIdentRef.current);
-            setProjResPassageVisible(false);
             setVisual(false);
           } else {
             setProjResWizVisible(true);
@@ -808,14 +814,14 @@ export function PassageDetailArtifactsMobile() {
       }
       resetEdit();
     }
-    // A deferred upload that produced no media (the upload failed) would
-    // otherwise strand the user: SelectSections was closed to start it and no
-    // wizard opens. Reopen SelectSections with the staged file intact so they
-    // can click Upload again to retry.
+    // Deferred upload produced no media (the upload failed). SelectSections is
+    // still open with the user's selection intact, so just re-enable its Upload
+    // button (the error was already surfaced by the uploader) and keep the
+    // staged file so they can retry without re-selecting.
     if (sectionsPreselectedRef.current && projRes.length === 0) {
       sectionsPreselectedRef.current = false;
       setResourceImportList(undefined);
-      setProjResPassageVisible(true);
+      setUploading(false);
     }
   };
 
@@ -983,11 +989,12 @@ export function PassageDetailArtifactsMobile() {
     projCandidateRef.current = candidates;
     if (stagedResourceFilesRef.current) {
       // Deferred new-add flow: the file has not been uploaded yet. Upload it now
-      // (headlessly, through the always-mounted Uploader's importList), then
-      // afterUpload routes to the configure step / visual write using these
-      // selections.
+      // (headlessly, through the always-mounted Uploader's importList) while
+      // SelectSections stays open with its button spinner. afterUpload advances
+      // to the configure step on success, or re-enables the button on failure
+      // so the user can retry without losing this selection.
       sectionsPreselectedRef.current = true;
-      setProjResPassageVisible(false);
+      setUploading(true);
       setResourceImportList(stagedResourceFilesRef.current);
       return;
     }
@@ -1279,6 +1286,7 @@ export function PassageDetailArtifactsMobile() {
             )}
             visual={visual}
             uploadsOnNext={isAddingAudioResourceRef.current}
+            uploading={uploading}
             onSelect={handleSelectProjectResourcePassage}
           />
         ) : (
