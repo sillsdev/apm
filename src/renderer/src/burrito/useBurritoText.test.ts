@@ -1,3 +1,6 @@
+/// <reference types="node" />
+import '@testing-library/jest-dom';
+import type { MainAPI } from '../model/main-api';
 import type { Burrito } from './data/types';
 import type { MediaFileD, PassageD, SectionD } from '../model';
 
@@ -55,9 +58,12 @@ function sectionFixture(): SectionD {
   } as unknown as SectionD;
 }
 
-function passageFixture(): PassageD {
+function passageFixture(
+  attrs: Partial<PassageD['attributes']> = {},
+  id = 'pas-1'
+): PassageD {
   return {
-    id: 'pas-1',
+    id,
     type: 'passage',
     attributes: {
       sequencenum: 1,
@@ -66,6 +72,7 @@ function passageFixture(): PassageD {
       startVerse: 1,
       endChapter: 1,
       endVerse: 1,
+      ...attrs,
     },
     relationships: {
       section: { data: { id: 'sec-1' } },
@@ -74,9 +81,12 @@ function passageFixture(): PassageD {
   } as unknown as PassageD;
 }
 
-function mediaFixture(attrs: Partial<MediaFileD['attributes']>): MediaFileD {
+function mediaFixture(
+  attrs: Partial<MediaFileD['attributes']>,
+  opts: { id?: string; passageId?: string } = {}
+): MediaFileD {
   return {
-    id: 'med-1',
+    id: opts.id ?? 'med-1',
     type: 'mediafile',
     attributes: {
       versionNumber: 1,
@@ -85,7 +95,7 @@ function mediaFixture(attrs: Partial<MediaFileD['attributes']>): MediaFileD {
     } as MediaFileD['attributes'],
     relationships: {
       plan: { data: { id: planId } },
-      passage: { data: { id: 'pas-1' } },
+      passage: { data: { id: opts.passageId ?? 'pas-1' } },
     },
   } as unknown as MediaFileD;
 }
@@ -103,12 +113,17 @@ type LoadOpts = {
   getOrgDefaultImpl?: (key: string, teamId?: string) => unknown;
 };
 
-function loadTextForApi(api: typeof window.api, opts: LoadOpts = {}) {
+/**
+ * `useBurritoText` reads `window.api` at module load. `jest.isolateModules`
+ * would give the hook a second React copy and break hooks; `resetModules` +
+ * requiring RTL before the hook keeps a single React for `renderHook`.
+ */
+function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
+  /* eslint-disable @typescript-eslint/no-require-imports -- resetModules + RTL pure + hook in one registry cycle */
   jest.resetModules();
-  (window as unknown as { api?: typeof api }).api = api;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  (window as unknown as { api?: MainAPI }).api = api;
+  // `react` entry registers Jest hooks; `pure` does not (invalid inside `it`).
   const { renderHook, act } = require('@testing-library/react/pure');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useOrgDefaults } = require('../crud/useOrgDefaults');
   const defaultGetOrg = (key: string) => {
     if (key === 'burritoVersions') return '1';
@@ -124,20 +139,18 @@ function loadTextForApi(api: typeof window.api, opts: LoadOpts = {}) {
     setDefault: jest.fn(),
     canSetOrgDefault: true,
   });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useOrbitData } = require('../hoc/useOrbitData');
   useOrbitData.mockImplementation((key: string) => {
     if (key === 'mediafile') return opts.mediafiles ?? [];
     if (key === 'passage') return opts.passages ?? [];
     return [];
   });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { convertBurritoText } = require('./usfmTextConvert');
   convertBurritoText.mockImplementation((content: string, fmt: string) =>
     Promise.resolve(`${fmt}:${content}`)
   );
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useBurritoText } = require('./useBurritoText');
+  /* eslint-enable @typescript-eslint/no-require-imports */
   return { renderHook, act, useBurritoText, convertBurritoText };
 }
 
@@ -316,5 +329,195 @@ describe('useBurritoText', () => {
     expect(metadata.type?.flavorType?.flavor?.name).toBe('textTranslation');
     expect(ipc.write).not.toHaveBeenCalled();
     expect(Object.keys(metadata.ingredients)).toHaveLength(0);
+  });
+
+  it('synthesizes valid USFM for cross-chapter when start verse is last of chapter (JON 1:17-2:10)', async () => {
+    const ipc = makeIpc();
+    const jonBookPath = '/data/burrito/JON';
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [
+          passageFixture({
+            reference: '1:17-2:10',
+            startChapter: 1,
+            startVerse: 17,
+            endChapter: 2,
+            endVerse: 10,
+          }),
+        ],
+        mediafiles: [mediaFixture({ transcription: 'Jonah prayed' })],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usj' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'JON',
+        bookPath: jonBookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    expect(convertBurritoText).toHaveBeenCalled();
+    const usfmArg = (convertBurritoText as jest.Mock).mock
+      .calls[0][0] as string;
+    expect(usfmArg).not.toMatch(/\\v\s+\d+-\d+:\d+/);
+    expect(usfmArg).toContain('\\c 1');
+    expect(usfmArg).toContain('\\v 17 Jonah prayed');
+    expect(usfmArg).not.toContain('\\v 17-17');
+    expect(usfmArg).toContain('\\c 2');
+    expect(usfmArg).toContain('\\v 1-10');
+    expect(usfmArg.match(/Jonah prayed/g)).toHaveLength(1);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('JONv1.usj')
+    )!;
+    expect(metadata.ingredients[ingredientKey].scope).toEqual({
+      JON: ['1', '2'],
+    });
+  });
+
+  it('synthesizes start-chapter verse range through last verse (GEN 1:28-2:3)', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [
+          passageFixture({
+            reference: '1:28-2:3',
+            startChapter: 1,
+            startVerse: 28,
+            endChapter: 2,
+            endVerse: 3,
+          }),
+        ],
+        mediafiles: [mediaFixture({ transcription: 'Be fruitful' })],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usx' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const usfmArg = (convertBurritoText as jest.Mock).mock
+      .calls[0][0] as string;
+    expect(usfmArg).not.toMatch(/\\v\s+\d+-\d+:\d+/);
+    expect(usfmArg).toContain('\\v 28-31 Be fruitful');
+    expect(usfmArg).toContain('\\c 2');
+    expect(usfmArg).toContain('\\v 1-3');
+    expect(usfmArg.match(/Be fruitful/g)).toHaveLength(1);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('GENv1.usx')
+    )!;
+    expect(metadata.ingredients[ingredientKey].scope).toEqual({
+      GEN: ['1', '2'],
+    });
+  });
+
+  it('keeps \\c markers per version when a version skips the cross-chapter passage', async () => {
+    // Passage A (1:28-2:3) has only the newest take → burrito slot 0 (GENv1).
+    // Passage B (2:4) has two takes → slots 0 and 1. Slot 1 must still get \\c 2
+    // (and \\id) even though the shared export cursor already advanced to chapter 2.
+    const ipc = makeIpc();
+    const pasA = passageFixture(
+      {
+        sequencenum: 1,
+        reference: '1:28-2:3',
+        startChapter: 1,
+        startVerse: 28,
+        endChapter: 2,
+        endVerse: 3,
+      },
+      'pas-a'
+    );
+    const pasB = passageFixture(
+      {
+        sequencenum: 2,
+        reference: '2:4',
+        startChapter: 2,
+        startVerse: 4,
+        endChapter: 2,
+        endVerse: 4,
+      },
+      'pas-b'
+    );
+    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {
+      passages: [pasA, pasB],
+      mediafiles: [
+        mediaFixture(
+          { versionNumber: 2, transcription: 'Be fruitful' },
+          { id: 'med-a2', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { versionNumber: 2, transcription: 'These are the generations' },
+          { id: 'med-b2', passageId: 'pas-b' }
+        ),
+        mediaFixture(
+          { versionNumber: 1, transcription: 'Generations sparse take' },
+          { id: 'med-b1', passageId: 'pas-b' }
+        ),
+      ],
+      getOrgDefaultImpl: (key: string) => {
+        if (key === 'burritoVersions') return '2';
+        if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
+        return undefined;
+      },
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const writeV2 = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv2.usfm')
+    );
+    expect(writeV2).toBeDefined();
+    const sparseUsfm = writeV2![1] as string;
+    expect(sparseUsfm.split('\n')[0]).toBe('\\id GEN');
+    expect(sparseUsfm).toContain('\\c 2');
+    const c2Idx = sparseUsfm.indexOf('\\c 2');
+    const v4Idx = sparseUsfm.indexOf('\\v 4 Generations sparse take');
+    expect(v4Idx).toBeGreaterThan(-1);
+    expect(c2Idx).toBeGreaterThan(-1);
+    expect(c2Idx).toBeLessThan(v4Idx);
+
+    const writeV1 = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv1.usfm')
+    );
+    expect(writeV1).toBeDefined();
+    const denseUsfm = writeV1![1] as string;
+    expect(denseUsfm).toContain('\\c 2');
+    expect(denseUsfm).toContain('\\v 1-3');
+    expect(denseUsfm).toContain('\\v 4 These are the generations');
   });
 });

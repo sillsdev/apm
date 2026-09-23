@@ -12,6 +12,7 @@ import { PassageTypeEnum } from '../model/passageType';
 import { sortChapters } from '../utils/sort';
 import { MainAPI } from '@model/main-api';
 import { sectionDescription } from '../crud/section';
+import { getLastVerse } from '../business/localParatext/getLastVerse';
 import {
   burritoFormat,
   BurritoTextOutputFormat,
@@ -51,11 +52,12 @@ export const useBurritoText = (teamId: string) => {
     const chapters = new Set<string>();
     const textNameMap = new Map<number, string>();
     const textMap = new Map<number, string[]>();
+    // Chapter cursor is per burrito version slot — shared state wrongly
+    // suppresses \\c for versions absent on a cross-chapter passage.
+    const chapterByVersion = new Map<number, number>();
 
-    let chapter = 0;
     let sectionId = '';
     let initialText = new Array<string>();
-    initialText.push(`\\id ${book}`);
     const versions = parseInt(
       (getOrgDefault('burritoVersions', teamId) || '1') as string
     );
@@ -85,11 +87,6 @@ export const useBurritoText = (teamId: string) => {
         const mediaSectionId = related(p, 'section');
         parseRef(p);
         const { startChapter, startVerse, endChapter, endVerse } = p.attributes;
-        if (startChapter && startChapter !== chapter) {
-          chapter = startChapter;
-          initialText.push(`\\c ${chapter.toString()}`);
-          chapters.add(chapter.toString());
-        }
         if (sectionId !== mediaSectionId) {
           sectionId = mediaSectionId;
           initialText.push(
@@ -121,11 +118,20 @@ export const useBurritoText = (teamId: string) => {
             textNameMap.set(i, `${book}v${i + 1}.${textOutputFormat}`);
           }
 
+          const versionPrefix: string[] = [];
+          if (!textMap.has(i)) {
+            versionPrefix.push(`\\id ${book}`);
+          }
+          const versionChapter = chapterByVersion.get(i) ?? 0;
+          if (startChapter && startChapter !== versionChapter) {
+            versionPrefix.push(`\\c ${startChapter.toString()}`);
+            chapterByVersion.set(i, startChapter);
+            chapters.add(startChapter.toString());
+          }
+
           textMap.set(
             i,
-            textMap.has(i)
-              ? (textMap.get(i) || []).concat(initialText)
-              : initialText
+            (textMap.get(i) ?? []).concat(versionPrefix, initialText)
           );
 
           // get the transcription for the usfm file
@@ -139,11 +145,28 @@ export const useBurritoText = (teamId: string) => {
               if (!/\\v/.test(verseRange)) {
                 let ref = startVerse?.toString();
                 if (endChapter && endChapter !== startChapter) {
-                  ref = `${ref}-${endChapter}:${endVerse?.toString()}`;
-                } else if (endVerse && endVerse !== startVerse) {
-                  ref = `${ref}-${endVerse?.toString()}`;
+                  const lastVerseInChapter =
+                    startChapter != null
+                      ? getLastVerse(book, startChapter)
+                      : null;
+                  if (
+                    lastVerseInChapter != null &&
+                    startVerse != null &&
+                    startVerse < lastVerseInChapter
+                  ) {
+                    ref = `${startVerse}-${lastVerseInChapter}`;
+                  }
+                  const endRef =
+                    endVerse != null && endVerse > 1 ? `1-${endVerse}` : '1';
+                  verseRange = `\\v ${ref} ${attr.transcription}\n\\c ${endChapter}\n\\v ${endRef}`;
+                  chapters.add(endChapter.toString());
+                  chapterByVersion.set(i, endChapter);
+                } else {
+                  if (endVerse && endVerse !== startVerse) {
+                    ref = `${ref}-${endVerse?.toString()}`;
+                  }
+                  verseRange = `\\v ${ref} ${attr.transcription}`;
                 }
-                verseRange = `\\v ${ref} ${attr.transcription}`;
               }
               text.push(verseRange);
               textMap.set(i, text);
