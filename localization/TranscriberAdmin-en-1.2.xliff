@@ -5393,6 +5393,13 @@
                <context context-type="sourcefile">UserMenu.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.networkRetrySoon">
+            <source>Network problem - will try again soon.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Sources.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.NoLoadOffline">
             <source>Unable to load audio project data offline.</source>
             <target/>
@@ -5580,6 +5587,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">apphead.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="main.updateFailedNetwork">
+            <source>Could not reach the server to save your last change. It was undone - please check your connection and try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Sources.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="main.upload">

@@ -95,7 +95,7 @@ export function Loading() {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [fingerprint] = useGlobal('fingerprint');
   const [user, setUser] = useGlobal('user');
-  const [orbitRetries, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
+  const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
   const [, setRemoteBusy] = useGlobal('remoteBusy');
   const [errorReporter] = useGlobal('errorReporter');
   const [, setProjectsLoaded] = useGlobal('projectsLoaded');
@@ -122,6 +122,11 @@ export function Loading() {
   const [, setPlan] = useGlobal('plan');
   const [view, setView] = useState('');
   const [inviteError, setInviteError] = useState('');
+  // Sources() runs once per login, so anything passed by value would be frozen
+  // at that moment. Hand it a getter over a ref instead, so orbit's messages
+  // follow a runtime language switch (docs/ai/localization.md).
+  const tRef = useRef(t);
+  tRef.current = t;
   const mounted = useRef(0);
   const authFailureHandled = useRef(false);
   const getGlobal = useGetGlobal();
@@ -229,7 +234,6 @@ export function Loading() {
       tokenCtx,
       fingerprint,
       errorReporter,
-      orbitRetries,
       setUser,
       setProjectsLoaded,
       setOrbitRetries,
@@ -237,6 +241,7 @@ export function Loading() {
       offlineSetup,
       showMessage,
       forceDataChanges,
+      getStrings: () => tRef.current,
     });
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [accessToken, offline]);

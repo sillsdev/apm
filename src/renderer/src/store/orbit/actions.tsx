@@ -17,7 +17,7 @@ import {
   handleUnauthorized,
 } from '../../utils';
 import { isUnauthorized } from '../../utils/httpError';
-import { OfflineProject, Plan, VProject } from '../../model';
+import { OfflineProject, Plan, VProject, IMainStrings } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';
 
@@ -62,7 +62,6 @@ export interface IFetchOrbitData {
   tokenCtx: ITokenContext;
   fingerprint: string;
   errorReporter: any;
-  orbitRetries: number;
   setUser: (id: string) => void;
   setProjectsLoaded: (value: string[]) => void;
   setOrbitRetries: (r: number) => void;
@@ -70,6 +69,8 @@ export interface IFetchOrbitData {
   offlineSetup: () => Promise<void>;
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   forceDataChanges: () => Promise<void>;
+  /** Read at call time so orbit messages follow a runtime language switch. */
+  getStrings: () => IMainStrings;
 }
 
 const fetchOrbitDataFailed = (): IFetchResults => ({
@@ -84,7 +85,6 @@ export const fetchOrbitData =
     tokenCtx,
     fingerprint,
     errorReporter,
-    orbitRetries,
     setUser,
     setProjectsLoaded,
     setOrbitRetries,
@@ -92,6 +92,7 @@ export const fetchOrbitData =
     offlineSetup,
     showMessage,
     forceDataChanges,
+    getStrings,
   }: IFetchOrbitData) =>
   (dispatch: any) => {
     Sources(
@@ -99,7 +100,6 @@ export const fetchOrbitData =
       tokenCtx,
       fingerprint,
       errorReporter,
-      orbitRetries,
       setUser,
       setProjectsLoaded,
       (ex: IApiError) => dispatch(orbitError(ex)),
@@ -107,7 +107,8 @@ export const fetchOrbitData =
       getOfflineProject,
       offlineSetup,
       showMessage,
-      forceDataChanges
+      forceDataChanges,
+      getStrings
     )
       .then((fr) => {
         dispatch({ type: FETCH_ORBIT_DATA, payload: fr });

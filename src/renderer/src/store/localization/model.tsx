@@ -907,6 +907,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "media": string;
     "mobileView": string;
     "myAccount": string;
+    "networkRetrySoon": string;
     "NoLoadOffline": string;
     "oops": string;
     "openContent": string;
@@ -934,6 +935,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "unexpectedError": string;
     "UnsavedData": string;
     "updateAvailable": string;
+    "updateFailedNetwork": string;
     "upload": string;
     "version": string;
     "videos": string;

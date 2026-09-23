@@ -7,6 +7,8 @@ export const useVProjectDelete = () => {
 
   return async (vProject: VProject) => {
     const id = related(vProject, 'project');
-    projectDelete(id);
+    // TT-6952: await, so TeamContext.projectDelete's resetProject() cannot run
+    // (and redirect) while the removals are still in flight.
+    await projectDelete(id);
   };
 };

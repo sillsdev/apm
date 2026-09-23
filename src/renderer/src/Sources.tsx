@@ -6,6 +6,7 @@ import {
   VProject,
   ExportType,
   UserD,
+  IMainStrings,
 } from './model';
 import Coordinator, {
   RequestStrategy,
@@ -17,23 +18,15 @@ import Bugsnag from '@bugsnag/js';
 import IndexedDBSource from '@orbit/indexeddb';
 import IndexedDBBucket from '@orbit/indexeddb-bucket';
 import JSONAPISource from '@orbit/jsonapi';
-import { RecordOperation, RecordTransform } from '@orbit/records';
 import { Bucket } from '@orbit/core';
 import Memory from '@orbit/memory';
 import { ITokenContext } from './context/TokenProvider';
-import {
-  API_CONFIG,
-  isElectron,
-  OrbitNetworkErrorRetries,
-} from '../api-variable';
+import { API_CONFIG, isElectron } from '../api-variable';
 import {
   logError,
   infoMsg,
   Severity,
   LocalKey,
-  orbitErr,
-  orbitRetry,
-  handleUnauthorized,
   resetUnauthorizedRetry,
   skipRemoteQueue,
   needItfSync,
@@ -41,7 +34,12 @@ import {
   clearNeedItfSync,
   recoverBackupSyncFail,
 } from './utils';
-import { isUnauthorized, isFetchNetworkError } from './utils/httpError';
+import { isUnauthorized } from './utils/httpError';
+import {
+  queryError,
+  datachangesQueryError,
+  updateError,
+} from './utils/orbitStrategyErrors';
 import { removeOrbitRemote } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';
@@ -53,25 +51,6 @@ import { requestedSchema } from './schema';
 import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
 type StategyError = (...args: unknown[]) => unknown;
-
-interface PullStratErrProps {
-  tokenCtx: ITokenContext;
-  orbitError: (ex: IApiError) => void;
-  setOrbitRetries: (r: number) => void;
-  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
-  memory: Memory;
-  coordinator: Coordinator;
-  fingerprint: string;
-  orbitRetries: number;
-  errorReporter: typeof Bugsnag | undefined;
-}
-interface QueryStratErrProps {
-  tokenCtx: ITokenContext;
-  orbitError: (ex: IApiError) => void;
-  coordinator: Coordinator;
-  fingerprint: string;
-  setOrbitRetries: (r: number) => void;
-}
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
   if (!coordinator.strategyNames.includes('remote-request'))
@@ -107,137 +86,6 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
     );
 };
 
-const queryError =
-  ({
-    tokenCtx,
-    orbitError,
-    coordinator,
-    fingerprint,
-    setOrbitRetries,
-  }: QueryStratErrProps) =>
-  (transform: RecordTransform, ex: unknown) => {
-    const remote = coordinator?.getSource('remote') as JSONAPISource;
-    console.log('***** api query fail', transform, ex);
-    if (isUnauthorized(ex)) {
-      return handleUnauthorized(
-        tokenCtx,
-        coordinator,
-        fingerprint,
-        setOrbitRetries
-      );
-    } else if (isFetchNetworkError(ex)) {
-      orbitError(ex as IApiError);
-      //signal to datachanges that we've had a network error
-      setOrbitRetries(OrbitNetworkErrorRetries - 1);
-    }
-    return remote.requestQueue.retry();
-  };
-
-const datachangesQueryError =
-  ({
-    tokenCtx,
-    coordinator,
-    fingerprint,
-    setOrbitRetries,
-  }: QueryStratErrProps) =>
-  (transform: RecordTransform, ex: unknown) => {
-    const datachangeremote = coordinator?.getSource(
-      'datachanges'
-    ) as JSONAPISource;
-    console.log('***** datachanges query fail', transform, ex);
-    if (isUnauthorized(ex)) {
-      return handleUnauthorized(
-        tokenCtx,
-        coordinator,
-        fingerprint,
-        setOrbitRetries,
-        'datachanges'
-      );
-    } else if (isFetchNetworkError(ex)) {
-      //signal to datachanges that we've had a network error
-      setOrbitRetries(OrbitNetworkErrorRetries - 1);
-    }
-    return datachangeremote.requestQueue.skip();
-  };
-
-const updateError =
-  ({
-    tokenCtx,
-    orbitError,
-    setOrbitRetries,
-    showMessage,
-    memory,
-    coordinator,
-    fingerprint,
-    orbitRetries,
-  }: PullStratErrProps) =>
-  (transform: RecordTransform, ex: unknown) => {
-    const remote = coordinator?.getSource('remote') as JSONAPISource;
-    console.log('***** api update fail', transform, ex);
-    if (isUnauthorized(ex)) {
-      return handleUnauthorized(
-        tokenCtx,
-        coordinator,
-        fingerprint,
-        setOrbitRetries
-      );
-    } else if (isFetchNetworkError(ex)) {
-      if (orbitRetries > 0) {
-        setOrbitRetries(orbitRetries - 1);
-        // When network errors are encountered, try again in 3s
-        orbitError(orbitRetry(null, 'NetworkError - will try again soon'));
-        setTimeout(() => {
-          remote.requestQueue.retry();
-        }, 3000);
-      } else {
-        //ran out of retries -- bucket will retry later
-      }
-    } else {
-      // When non-network errors occur, notify the user and
-      // reset state.
-      const data = (
-        ex as { data: { errors: Array<{ meta: { stackTrace: string[] } }> } }
-      ).data;
-      const detail =
-        data?.errors && Array.isArray(data.errors) && data.errors.length > 0
-          ? data.errors[0]?.meta && data.errors[0]?.meta?.stackTrace?.[0]
-          : undefined;
-
-      if (detail?.includes('Entity has been deleted')) {
-        console.log('***attempt to update deleted record');
-        showMessage(detail);
-      } else {
-        const response = (ex as { response: { url: string } }).response;
-        const url: string = response?.url ?? '';
-        const myOp = transform.operations;
-        const firstOp = Array.isArray(myOp)
-          ? (myOp[0] as RecordOperation)
-          : myOp;
-        const label =
-          (transform?.options?.label ||
-            firstOp.op + (url ? ` in ` + url.split('/').pop() + `: ` : '')) +
-          (detail ?? '');
-        orbitError(
-          orbitErr(
-            ex as IApiError | Error | null,
-            `Unable to complete "${label}"`
-          )
-        );
-      }
-
-      // Roll back memory to position before transform
-      if (memory.transformLog.contains(transform.id)) {
-        //don't do this -- resets error to 0 and takes user away from continue/logout screen
-        //orbitError(
-        //  orbitInfo(null, 'Rolling back - transform:' + transform.id)
-        //);
-        memory.rollback(transform.id, -1);
-      }
-
-      return remote.requestQueue.skip();
-    }
-  };
-
 interface SourcesReturn {
   syncBuffer: Buffer | undefined;
   syncFile: string;
@@ -260,7 +108,6 @@ const sourcesImpl = async (
   tokenCtx: ITokenContext,
   fingerprint: string,
   errorReporter: typeof Bugsnag | undefined,
-  orbitRetries: number,
   setUser: (id: string) => void,
   setProjectsLoaded: (value: string[]) => void,
   orbitError: (ex: IApiError) => void,
@@ -268,7 +115,8 @@ const sourcesImpl = async (
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject,
   offlineSetup: () => Promise<void>,
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void,
-  forceDataChanges: () => Promise<void>
+  forceDataChanges: () => Promise<void>,
+  getStrings: () => IMainStrings
 ): Promise<SourcesReturn> => {
   const memory = coordinator?.getSource('memory') as Memory;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -384,8 +232,8 @@ const sourcesImpl = async (
             memory,
             coordinator,
             fingerprint,
-            orbitRetries,
             errorReporter,
+            getStrings,
           }) as unknown as StategyError,
           blocking: true,
         })
