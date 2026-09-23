@@ -7132,6 +7132,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="profile.deleteFailed">
+         <segment>
+            <source>Could not delete your account. Try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="profile.deleteUser">
          <segment>
             <source>Delete User</source>
