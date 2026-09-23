@@ -136,6 +136,8 @@ export interface DetailPlayerProps {
   showTranscriptionButton?: boolean;
   hideZoom?: boolean;
   layoutMode?: 'default' | 'transport';
+  /** Stick the player to the top of the scrolling content area. */
+  docked?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -185,6 +187,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     showTranscriptionButton = true,
     hideZoom,
     layoutMode,
+    docked,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -453,6 +456,12 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         maxWidth: '100%',
         minWidth: 0,
         boxSizing: 'border-box',
+        ...(docked && {
+          position: 'sticky',
+          top: 0,
+          zIndex: 3,
+          bgcolor: 'background.default',
+        }),
       }}
     >
       <WSAudioPlayer

@@ -32,7 +32,7 @@ interface Props {
 const noAudioGraceMs = 5000;
 
 export default function PassageDetailMobileDetail({
-  showSideBySide,
+  showSideBySide: areDiscussionsSideBySide,
   flushDiscussionLeft,
   recordContent,
 }: Props) {
@@ -40,7 +40,6 @@ export default function PassageDetailMobileDetail({
     currentstep,
     section,
     mediafileId,
-    discussionSize,
     promptDockedRecordButton,
     promptDockedRecordFooterVersion,
     setDiscussOpen,
@@ -63,29 +62,12 @@ export default function PassageDetailMobileDetail({
 
   const showLoading = isWaitingForAudio && !graceExpired;
   // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
-  const showDiscussion = tool !== ToolSlug.Resource;
-  const markVersesLayout = tool === ToolSlug.Verses;
+  const doesStepSupportDiscussions = tool !== ToolSlug.Resource;
   const contentSx = useMemo(
     () => ({
       ...(flushDiscussionLeft ? { pl: 0 } : {}),
-      ...(markVersesLayout
-        ? {
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            minHeight: 0,
-            flex: 1,
-            // Let the Mark Verses table grow and scroll inside this flex column
-            '& > *': {
-              flex: 1,
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          }
-        : {}),
     }),
-    [flushDiscussionLeft, markVersesLayout]
+    [flushDiscussionLeft]
   );
   const { userIsAdmin } = useRole();
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
@@ -142,31 +124,30 @@ export default function PassageDetailMobileDetail({
       contentSx={{
         backgroundColor: 'background.default',
         px: 1.5,
-        pt: 1.5,
         pb: 1.5,
         ...contentSx,
       }}
     >
       {!isWaitingForAudio ? (
         <>
-          {showSideBySide && showDiscussion ? (
+          {areDiscussionsSideBySide && doesStepSupportDiscussions ? (
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 5,
+                pt: 1.5,
                 width: '100%',
                 minWidth: 0,
-                overflow: 'hidden',
+                overflow: 'clip',
               }}
               data-cy="discussion-side-by-side"
             >
-              <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <Box sx={{ flex: 1, minWidth: 0, overflow: 'clip' }}>
                 {recordContent}
               </Box>
               <Box
                 sx={{
-                  width: discussionSize.width,
                   flexShrink: 0,
                   minWidth: 0,
                   overflow: 'hidden',
@@ -180,32 +161,23 @@ export default function PassageDetailMobileDetail({
             <Stack
               spacing={1}
               sx={{
+                pt: 1.5,
                 width: '100%',
                 maxWidth: '100%',
                 minWidth: 0,
-                overflowX: 'hidden',
+                overflowX: 'clip',
               }}
             >
               <Box
                 sx={
                   flushDiscussionLeft
                     ? { display: 'none' }
-                    : markVersesLayout
-                      ? {
-                          flex: 1,
-                          minHeight: 0,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          overflow: 'hidden',
-                          minWidth: 0,
-                          width: '100%',
-                        }
-                      : { minWidth: 0, width: '100%' }
+                    : { minWidth: 0, width: '100%' }
                 }
               >
                 {recordContent}
               </Box>
-              {showDiscussion && (
+              {doesStepSupportDiscussions && (
                 <Box sx={{ width: '100%', minWidth: 0 }}>
                   <DiscussionPanel />
                 </Box>
@@ -224,7 +196,7 @@ export default function PassageDetailMobileDetail({
           <CircularProgress color="inherit" size={50} />
         </Backdrop>
       ) : (
-        <Paper sx={{ p: 4 }}>
+        <Paper sx={{ p: 4, mt: 1.5 }}>
           <Typography variant="h4" align="left">
             {ts.noAudio}
           </Typography>

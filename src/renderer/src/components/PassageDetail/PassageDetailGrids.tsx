@@ -284,7 +284,7 @@ const PassageDetailGrids = () => {
                 width: '100%',
                 maxWidth: paneWidth,
                 minWidth: 0,
-                ...(clipsStepContent ? { overflow: 'hidden' } : {}),
+                ...(clipsStepContent ? { overflow: 'clip' } : {}),
               }}
             >
               <PassageDetailChooser width={paneWidth} />

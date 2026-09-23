@@ -946,6 +946,9 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     if (rowIndex <= 0 || skipScrollIntoViewRef.current) return;
     const rowEl = tableRowRefs.current[rowIndex - 1];
     if (rowEl && typeof rowEl.scrollIntoView === 'function') {
+      const playerHeight =
+        document.getElementById('detailplayer')?.offsetHeight ?? 0;
+      rowEl.style.scrollMarginTop = `${playerHeight}px`;
       rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, []);
@@ -1540,7 +1543,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         flexDirection: 'column',
         flex: 1,
         minHeight: 0,
-        overflow: 'hidden',
+        overflow: 'clip',
         // Constrain the column to the player's width so the table and action
         // row line up with the waveform's right edge (the player is sized to
         // `width`, which already accounts for the pane's fit margin/scrollbar).
@@ -1551,6 +1554,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       <PassageDetailPlayer
         key={`mark-verses-player-${mediafileId}-${playerResetKey}`}
         width={width}
+        docked
         data-testid="player"
         allowSegment={NamedRegions.Verse}
         onSegment={handleSegment}

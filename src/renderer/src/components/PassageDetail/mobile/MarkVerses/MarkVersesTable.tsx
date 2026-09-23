@@ -86,9 +86,6 @@ export default function MarkVersesTable({
       data-testid="verse-sheet"
       sx={{
         mt: 0.5,
-        flex: '1 1 auto',
-        minHeight: 0,
-        overflowY: 'auto',
         width: '100%',
         maxWidth: 800,
         mx: 'auto',
