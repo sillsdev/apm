@@ -23,7 +23,7 @@ import { TokenContext } from '../context/TokenProvider';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import PassageRecordDlg from './PassageRecordDlg';
-import { restoreScroll } from '../utils';
+import { infoMsg, logError, restoreScroll, Severity } from '../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { NextUploadProps } from '../store';
 import { useDispatch } from 'react-redux';
@@ -459,7 +459,18 @@ export const Uploader = (props: IProps) => {
     try {
       await onStageFiles?.(files);
       return true;
-    } catch {
+    } catch (err) {
+      // Surface the failure (e.g. category creation) rather than silently
+      // re-enabling the dialog with no feedback, and log it for diagnosis.
+      showMessage(
+        err instanceof Error ? err.message : String(err),
+        AlertSeverity.Error
+      );
+      logError(
+        Severity.error,
+        errorReporter,
+        infoMsg(err as Error, 'resource staging failed')
+      );
       return false;
     }
   };
