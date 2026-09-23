@@ -110,6 +110,8 @@ const mockSetCurrentStep = jest.fn();
 const mockSetCurrentSegment = jest.fn();
 let mockPlayerAction: ((segment: string, init: boolean) => void) | undefined;
 let mockClearSegments: (() => void | Promise<void>) | undefined;
+/** `suggestedSegments` captured each time the player mounts. */
+const suggestedSegmentsOnPlayerMount: string[] = [];
 /** The colour callback the tool hands the waveform, captured from the player props. */
 let mockApplyRegionColor: ApplyRegionColor | undefined;
 /** The waveform repaint the tool triggers when the set of marked verses changes. */
@@ -165,9 +167,15 @@ const mockOrgWorkflowStep = {
   },
 } as OrgWorkflowStepD;
 
-jest.mock('../../../../context/usePassageDetailContext', () => () => ({
+/** Mutable passage-detail context. Passage updates before its mediafile. */
+const mockDetailState = {
   mediafileId: mockMediafileId,
   passage: mockPassage,
+};
+
+jest.mock('../../../../context/usePassageDetailContext', () => () => ({
+  mediafileId: mockDetailState.mediafileId,
+  passage: mockDetailState.passage,
   currentstep: mockCurrentStep,
   currentSegment: '',
   currentSegmentIndex: -1,
@@ -197,7 +205,14 @@ jest.mock('../../PassageDetailPlayer', () => {
     hasSegmentUndo,
     onSegmentUndo,
     applyRegionColor,
+    suggestedSegments,
   }: DetailPlayerProps) => {
+    const recordedSegments = React.useRef<string | undefined>(undefined);
+    const nextSegments = suggestedSegments ?? '';
+    if (recordedSegments.current !== nextSegments) {
+      recordedSegments.current = nextSegments;
+      suggestedSegmentsOnPlayerMount.push(nextSegments);
+    }
     mockPlayerAction = onSegment;
     mockClearSegments = onClearSegments;
     mockApplyRegionColor = applyRegionColor;
@@ -457,8 +472,24 @@ const clickMarkVersesRowByLimitsText = async (
   await user.click(row);
 };
 
-afterEach(() => {
+afterEach(async () => {
   mockPassage.attributes = { ...passageAttributes } as any;
+  mockDetailState.mediafileId = mockMediafileId;
+  mockDetailState.passage = mockPassage;
+  suggestedSegmentsOnPlayerMount.length = 0;
+  for (const id of ['mv-p1-media', 'mv-p2-media']) {
+    let rec: unknown;
+    try {
+      rec = mockMemory.cache.query((q) =>
+        q.findRecord({ type: 'mediafile', id })
+      );
+    } catch {
+      rec = undefined;
+    }
+    if (rec) {
+      await mockMemory.update((t) => t.removeRecord({ type: 'mediafile', id }));
+    }
+  }
   cleanup();
   jest.clearAllMocks();
 });
@@ -511,6 +542,107 @@ test('covers the last verse subparts as a range when the passage ends mid-verse 
   expect(screen.getByLabelText('verse-reference-3')).toHaveTextContent(
     '7:4a-b'
   );
+});
+
+test('does not keep the previous passage verse markings after navigation', async () => {
+  // Saved verse segments live on each passage's own mediafile. Context publishes
+  // the new passage before that passage's mediafile id, and Mark Verses must not
+  // paint the previous mediafile's markings onto the new passage.
+  const verseSegments = JSON.stringify({
+    regions: JSON.stringify([
+      { start: 0, end: 10, label: '2:8' },
+      { start: 10, end: 20, label: '2:9' },
+    ]),
+  });
+  const passageOne = {
+    ...mockPassage,
+    id: 'mv-p1',
+    attributes: {
+      ...passageAttributes,
+      reference: '2:8-15',
+      startChapter: 2,
+      startVerse: 8,
+      endChapter: 2,
+      endVerse: 15,
+    },
+  } as PassageD;
+  const passageTwo = {
+    ...mockPassage,
+    id: 'mv-p2',
+    attributes: {
+      ...passageAttributes,
+      reference: '2:16-19',
+      startChapter: 2,
+      startVerse: 16,
+      endChapter: 2,
+      endVerse: 19,
+    },
+  } as PassageD;
+
+  await mockMemory.update((t) => [
+    t.addRecord({
+      type: 'mediafile',
+      id: 'mv-p1-media',
+      attributes: {
+        segments: JSON.stringify([
+          { name: 'Verse', regionInfo: verseSegments },
+        ]),
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'mv-p1' } },
+      },
+    }),
+    t.addRecord({
+      type: 'mediafile',
+      id: 'mv-p2-media',
+      attributes: { segments: '[]' },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'mv-p2' } },
+      },
+    }),
+  ]);
+
+  mockDetailState.mediafileId = 'mv-p1-media';
+  mockDetailState.passage = passageOne;
+  const { rerender } = runTest({ width: 375 });
+
+  await waitFor(() => {
+    expect(verseReference(1)).toHaveTextContent('2:8');
+  });
+  expect(within(markVersesTbody()).getByText(lim(0, 10))).toBeInTheDocument();
+
+  const tree = (
+    <UnsavedProvider>
+      <HotKeyProvider>
+        <PassageDetailMarkVerses width={375} />
+      </HotKeyProvider>
+    </UnsavedProvider>
+  );
+
+  // Passage first, while the player is still on passage 1's mediafile.
+  // `''` would leave the mounted waveform's regions in place; the clear has
+  // to be an explicit empty-region payload.
+  mockDetailState.passage = passageTwo;
+  rerender(tree);
+  expect(suggestedSegmentsOnPlayerMount.at(-1)).toBe(
+    JSON.stringify({ regions: [] })
+  );
+
+  mockDetailState.mediafileId = 'mv-p2-media';
+  rerender(tree);
+
+  await waitFor(() => {
+    expect(verseReference(1)).toHaveTextContent('2:16');
+  });
+  expect(verseReference(2)).toHaveTextContent('2:17');
+  expect(verseReference(3)).toHaveTextContent('2:18');
+  expect(verseReference(4)).toHaveTextContent('2:19');
+  expect(within(markVersesTbody()).queryByText('2:8')).not.toBeInTheDocument();
+  expect(within(markVersesTbody()).queryByText('2:9')).not.toBeInTheDocument();
+  expect(
+    within(markVersesTbody()).queryByText(lim(0, 10))
+  ).not.toBeInTheDocument();
+  expect(suggestedSegmentsOnPlayerMount.at(-1) ?? '').not.toContain('2:8');
 });
 
 test('updates timestamp rows when the player emits verse markers', async () => {

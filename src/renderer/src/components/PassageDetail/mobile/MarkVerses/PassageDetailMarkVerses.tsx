@@ -12,6 +12,7 @@ import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import { passageTypeFromRef } from '../../../../control/passageTypeFromRef';
+import { related } from '../../../../crud/related';
 import { findRecord } from '../../../../crud/tryFindRecord';
 import { parseRef } from '../../../../crud/passage';
 import { ArtifactTypeSlug } from '../../../../crud/artifactTypeSlug';
@@ -177,6 +178,29 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   /** mediafileId the waveform's `suggestedSegments` have been seeded for, so the
    * seed runs once per media rather than reloading the waveform on every save. */
   const waveformSeededForMediaRef = useRef<string | undefined>(undefined);
+  // Conditional setState so this is safe during render.
+  // `''` means "no override": a remounted player loads the mediafile's saved
+  // segments. `emptySegments` is an explicit clear for the player that stays
+  // mounted (its key is still the previous mediafileId) while the passage
+  // changes first — an empty string does not replace `defaultSegments`.
+  const resetLoadedVerseMarkings = (suggestedSegments = '') => {
+    segmentsRef.current = '{}';
+    waveformSeededForMediaRef.current = undefined;
+    suppressVerseResyncFromMediaRef.current = false;
+    prevRegionCountRef.current = 0;
+    undoStackRef.current.clear();
+    if (pastedSegments !== suggestedSegments)
+      setPastedSegments(suggestedSegments);
+    if (waveSegmentsJson !== '{}') setWaveSegmentsJson('{}');
+    if (numSegments !== 0) setNumSegments(0);
+    if (undoAvailable) setUndoAvailable(false);
+    if (editReferenceDialog) setEditReferenceDialog(undefined);
+  };
+  const seenMediafileIdRef = useRef(mediafileId);
+  if (seenMediafileIdRef.current !== mediafileId) {
+    seenMediafileIdRef.current = mediafileId;
+    resetLoadedVerseMarkings();
+  }
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission =
     canDoSectionStep(currentstep, section) &&
@@ -211,14 +235,6 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       setEngVrs(new Map<string, number[]>(module.default as IVrs[]));
     });
   }, []);
-
-  useEffect(() => {
-    segmentsRef.current = '{}';
-    setNumSegments(0);
-    setPastedSegments('');
-    suppressVerseResyncFromMediaRef.current = false;
-    waveformSeededForMediaRef.current = undefined;
-  }, [mediafileId]);
 
   const rowCells = useCallback(
     (row: string[], first = false) =>
@@ -441,7 +457,21 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     [getPassageRefs, passage]
   );
 
+  const passageId = passage?.id ?? '';
+  const appliedPassageIdRef = useRef(passageId);
+
   useEffect(() => {
+    if (appliedPassageIdRef.current !== passageId) {
+      appliedPassageIdRef.current = passageId;
+      const mediaPassageId = related(media, 'passage');
+      // Still showing the previous file: tell the mounted player to drop its
+      // regions. Once this passage's mediafile is current, `''` lets that
+      // player load the file's saved segments.
+      const clearMountedPlayer =
+        Boolean(mediaPassageId) && mediaPassageId !== passageId;
+      resetLoadedVerseMarkings(clearMountedPlayer ? emptySegments : '');
+      setCurrentSegment(undefined, -1);
+    }
     const refs = getPassageRefs(passage);
     if (refs.length > 0) {
       setupData(refs);
@@ -450,7 +480,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     }
     // setupData is intentionally local to keep the mobile render simple.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getPassageRefs, passage]);
+  }, [getPassageRefs, passage, passageId]);
 
   const collectRefs = useCallback(
     (tableData: ICell[][]) => {
@@ -1252,6 +1282,8 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   useEffect(() => {
     if (!mediafileId) return;
     if (suppressVerseResyncFromMediaRef.current) return;
+    const mediaPassageId = related(media, 'passage');
+    if (mediaPassageId && passageId && mediaPassageId !== passageId) return;
     const regions = getSortedRegions(savedVerseSegmentsJson);
     if (regions.length === 0) return;
     if (!passageRefsKey) return;
@@ -1266,7 +1298,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       waveformSeededForMediaRef.current = mediafileId;
       setPastedSegments(savedVerseSegmentsJson);
     }
-  }, [mediafileId, passageRefsKey, savedVerseSegmentsJson]);
+  }, [media, mediafileId, passageId, passageRefsKey, savedVerseSegmentsJson]);
 
   const setSegments = useCallback(() => {
     const regions: IRegion[] = [];
