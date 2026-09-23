@@ -9,6 +9,7 @@ import {
 import { useWfPaste } from '../components/Sheet/useSheetPaste';
 import { act } from 'react';
 import { PublishDestinationEnum } from '../crud';
+import { PassageTypeEnum } from '../model/passageType';
 
 interface IPasteResult {
   valid: boolean;
@@ -39,6 +40,7 @@ const secDef = {
   comment: '',
   deleted: false,
   published: [] as PublishDestinationEnum[],
+  passageType: PassageTypeEnum.PASSAGE,
 };
 const pasDef = {
   level: SheetLevel.Passage,
@@ -50,6 +52,7 @@ const pasDef = {
   comment: '',
   deleted: false,
   mediaShared: IMediaShare.NotPublic,
+  passageType: PassageTypeEnum.PASSAGE,
 };
 const flatDef = {
   level: SheetLevel.Passage,
@@ -60,6 +63,7 @@ const flatDef = {
   comment: '',
   deleted: false,
   mediaShared: IMediaShare.NotPublic,
+  passageType: PassageTypeEnum.PASSAGE,
 };
 
 const t = {
@@ -337,6 +341,74 @@ test('paste hieararchical', () => {
     sectionUpdated,
   }));
   expect(hookResult?.addedWorkflow).toEqual(testVal);
+});
+
+test('pasted passage rows are recognized as PASSAGE type before the first save (TT-7704 follow-up)', () => {
+  // Reproduces the reported bug: paste a sheet, then immediately run
+  // Update Publishing Rows (doPublish) without an intervening save/reload.
+  // doPublish finds passage rows via `r.passageType === PassageTypeEnum.PASSAGE`
+  // (both to locate a section's first verse and to decide a chapter number
+  // changed) and getSheet.ts derives that same field from the reference on
+  // every reload. If paste never sets it, every freshly pasted row looks
+  // like neither a passage nor a chapter change, and no CHNUM row is ever
+  // inserted until the page happens to reload from saved data.
+  const pasted = [
+    [
+      'Set #',
+      "Title in Translator's Notes",
+      'Passage',
+      'Book',
+      'Breaks',
+      'Description',
+    ],
+    [
+      '1',
+      'Luke wrote this book about Jesus for Theophilus',
+      '',
+      'Luk',
+      'Section 1:1–4',
+      '',
+    ],
+    ['', '', '1', 'Luk', '1:1-4', ''],
+  ];
+  const colNames = [
+    'sectionSeq',
+    'title',
+    'passageSeq',
+    'book',
+    'reference',
+    'comment',
+  ];
+  const { result } = renderHook(() =>
+    useWfPaste({
+      secNumCol: colNames.indexOf('sectionSeq'),
+      passNumCol: colNames.indexOf('passageSeq'),
+      scripture: true,
+      flat: false,
+      shared: false,
+      colNames,
+      findBook,
+      t,
+    })
+  );
+  let hookResult: IPasteResult | undefined;
+  act(() => {
+    hookResult = result.current(pasted);
+  });
+  const passageRow = hookResult?.addedWorkflow.find(
+    (r) => r.reference === '1:1-4'
+  );
+  expect(passageRow?.passageType).toBe(PassageTypeEnum.PASSAGE);
+
+  // The exact predicate doPublish uses to find a section's first verse.
+  const vernpsg = hookResult?.addedWorkflow.findIndex(
+    (r) =>
+      !r.deleted &&
+      r.passageType === PassageTypeEnum.PASSAGE &&
+      r.sectionSeq === 1 &&
+      r.passageSeq > 0
+  );
+  expect(vernpsg).toBeGreaterThan(0);
 });
 
 test('paste flat', () => {
