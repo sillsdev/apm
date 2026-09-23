@@ -30,6 +30,7 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import SpeakerName from './SpeakerName';
 import { Button } from '../control';
 import Busy from './Busy';
+import Confirm from './AlertDialog';
 
 const audioDlgWidth = 'min(680px, calc(100vw - 32px))';
 const audioDlgHeight = 'min(700px, calc(100dvh - 32px))';
@@ -95,6 +96,8 @@ interface IProps {
   audioOnly?: boolean | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
+  /** When set, always prompt to confirm before discarding on close. */
+  confirmOnClose?: boolean | undefined;
 }
 
 function PassageRecordDlg(props: IProps) {
@@ -122,6 +125,7 @@ function PassageRecordDlg(props: IProps) {
     audioOnly,
     pendingRestore,
     beforeUpload,
+    confirmOnClose,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -138,10 +142,13 @@ function PassageRecordDlg(props: IProps) {
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
-  const [canCancel, setCanCancel] = useState(false);
+  // canCancel value is unused now that the record-mode Cancel button is gone,
+  // but MediaRecord still drives the setter.
+  const [, setCanCancel] = useState(false);
   const [hasRights, setHasRights] = useState(false);
   const [recording, setRecording] = useState(false);
   const [dialogWidth, setDialogWidth] = useState(0);
+  const [showConfirm, setShowConfirm] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const myToolId = 'PassageRecordDlg';
 
@@ -149,6 +156,7 @@ function PassageRecordDlg(props: IProps) {
     if (visible) {
       setMode('upload');
       setRecording(false);
+      setShowConfirm(false);
     }
   }, [visible]);
 
@@ -189,17 +197,28 @@ function PassageRecordDlg(props: IProps) {
     if (!busy) onVisible(false);
   };
 
+  const doClose = () => {
+    if (mode === 'record') {
+      handleCancel();
+    } else {
+      onCancel();
+    }
+  };
+
   const requestClose = (
     _event?: object,
     reason?: 'backdropClick' | 'escapeKeyDown'
   ) => {
     // outside click should not close dialog
     if (reason === 'backdropClick') return;
-    if (mode === 'record') {
-      handleCancel();
-    } else {
-      onCancel();
+    // Can't close mid-recording (matches handleCancel's own guard).
+    if (recording) return;
+    // Always confirm first: this is a wizard step and closing discards it.
+    if (confirmOnClose) {
+      setShowConfirm(true);
+      return;
     }
+    doClose();
   };
 
   const handleMode = (nextMode: AudioAddMode) => {
@@ -299,13 +318,6 @@ function PassageRecordDlg(props: IProps) {
           <DialogActions>
             <StatusMessage variant="caption">{statusText}</StatusMessage>
             <Button
-              id="rec-cancel"
-              disabled={!canCancel || recording}
-              onClick={handleCancel}
-            >
-              {recordStrings.cancel}
-            </Button>
-            <Button
               id="rec-save"
               sx={{ m: 1, minWidth: '96px' }}
               color="primary"
@@ -319,6 +331,7 @@ function PassageRecordDlg(props: IProps) {
       ) : (
         <MediaUploadContent
           noWrapper
+          hideCancel
           onVisible={onVisible}
           uploadType={uploadType}
           saveText={saveText}
@@ -336,6 +349,20 @@ function PassageRecordDlg(props: IProps) {
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
+        />
+      )}
+      {showConfirm && (
+        <Confirm
+          title={resourceStrings.confirmCloseTitle}
+          text={resourceStrings.confirmClose}
+          no={resourceStrings.keepOpen}
+          primaryButton="no"
+          yes={resourceStrings.discardAndClose}
+          noResponse={() => setShowConfirm(false)}
+          yesResponse={() => {
+            setShowConfirm(false);
+            doClose();
+          }}
         />
       )}
     </RecordDialog>

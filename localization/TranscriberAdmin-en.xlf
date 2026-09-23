@@ -5988,7 +5988,7 @@
       </unit>
       <unit id="passageDetailArtifacts.selectPassagesSub">
          <segment>
-            <source>Select this resource's passages.</source>
+            <source>Select the {0} and passages contained by this resource.</source>
             <target/>
          </segment>
       </unit>
@@ -6097,6 +6097,12 @@
       <unit id="passageDetailArtifacts.upload">
          <segment>
             <source>Uploads</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.uploadAsResources">
+         <segment>
+            <source>Upload as {0} resources</source>
             <target/>
          </segment>
       </unit>

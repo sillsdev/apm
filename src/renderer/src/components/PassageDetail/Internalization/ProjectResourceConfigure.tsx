@@ -53,7 +53,6 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
-import Confirm from '../../AlertDialog';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
 const wizToolId = 'ProjResWizard';
@@ -64,11 +63,12 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
-  // Fill the dialog's flex column and scroll internally so the action buttons
-  // below stay pinned to the dialog bottom regardless of content size.
+  // Fill the dialog's flex column. The paper itself does NOT scroll; only the
+  // inner table region does, so the suffix field below stays visible and the
+  // action buttons stay pinned to the dialog bottom regardless of content size.
   flex: '1 1 auto',
   minHeight: 0,
-  overflow: 'auto',
+  overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
 }));
@@ -99,6 +99,19 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
         py: 1.25,
         px: 1.5,
       },
+      // While editing, react-datasheet swaps the value-viewer span for an
+      // `<input class="data-editor">` that has no padding, so typed text jams
+      // against the cell's left border. Give it the same horizontal padding as
+      // the viewer so text stays aligned when entering/leaving edit mode.
+      // The library's own `.cell > input` rule (3 classes + child selector)
+      // forces `text-align:right`, which beats a single-class override — so the
+      // input renders right-aligned mid-edit and only snaps left once the
+      // value-viewer takes over on blur. `!important` is required to win.
+      '& .data-editor': {
+        px: 1.5,
+        boxSizing: 'border-box',
+        textAlign: 'left !important',
+      },
       // react-datasheet tints read-only cells with their own grey background;
       // clear it on the body rows so each row's stripe shows uniformly (the
       // header row, the first tr, keeps the library default).
@@ -112,8 +125,22 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
       '& .cell.read-only': {
         color: (theme) => `${theme.palette.text.primary} !important`,
       },
+      // Header row: slightly darker grey. Every cell here is read-only, so the
+      // grey needs !important to beat the library's own cell background.
       '& .cTitle': {
         fontWeight: 'bold',
+        backgroundColor: (theme) => `${theme.palette.grey[300]} !important`,
+      },
+      // Black rule dividing the header from the first body row. Uses the same
+      // `> tbody > tr > td.cell` specificity as the column dividers below so it
+      // beats react-datasheet's own light cell border under border-collapse.
+      '& > tbody > tr:first-of-type > td.cell': {
+        borderBottom: (theme) => `1px solid ${theme.palette.common.black}`,
+      },
+      // Black vertical dividers between columns (right edge of every cell except
+      // the last column, on every row).
+      '& > tbody > tr > td.cell:not(:last-of-type)': {
+        borderRight: (theme) => `1px solid ${theme.palette.common.black}`,
       },
       '& .lim': {
         verticalAlign: 'inherit !important',
@@ -210,8 +237,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const savingRef = useRef(false);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const canceling = useRef(false);
   const projectResourceSave = useProjectResourceSave();
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
@@ -292,7 +317,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
         const d = dataRef.current;
         const total = infoRef.current.length;
         for (const i of infoRef.current) {
-          if (canceling.current) break;
           if (i?.section?.id === undefined) continue;
           ix += 1;
           let row = d[ix];
@@ -320,19 +344,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
           }
           setComplete(Math.min((ix * 100) / total, 100));
         }
-        // A cancelled save never wrote the new assignments, so leave the
-        // existing ones alone rather than deleting the unselected ones.
-        if (!canceling.current) {
-          await removeUnselectedProjectResourceAssignments({
-            memory,
-            sourceMedia: media,
-            selectedItems: items,
-            mediafiles,
-            sectionResources,
-            resourceTypeId,
-            candidateItems,
-          });
-        }
+        await removeUnselectedProjectResourceAssignments({
+          memory,
+          sourceMedia: media,
+          selectedItems: items,
+          mediafiles,
+          sectionResources,
+          resourceTypeId,
+          candidateItems,
+        });
         projectSegmentSave({
           media,
           segments: updateSegments(
@@ -350,7 +370,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
           })
           .finally(() => {
             savingRef.current = false;
-            canceling.current = false;
             setComplete(0);
             onOpen && onOpen(false);
           });
@@ -370,29 +389,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
-  const doClose = () => {
-    toolChanged(wizToolId, false);
-    onOpen && onOpen(false);
-  };
-
-  const handleCancel = () => {
-    if (savingRef.current) {
-      showMessage(t.canceling);
-      canceling.current = true;
-      return;
-    }
-    // Prompt before discarding unsaved configuration; otherwise close directly.
-    if (isChanged(wizToolId)) {
-      setShowConfirmClose(true);
-      return;
-    }
-    doClose();
-  };
-
-  const handleDiscardClose = () => {
-    setShowConfirmClose(false);
-    doClose();
-  };
+  // Real edits mark the tool dirty (see the Description and segment handlers) so
+  // a browser/app close mid-edit fires the beforeunload "unsaved changes" warning
+  // (AppHead reads the global `changed` flag). The dialog's own close is
+  // confirm-gated by the parent; clear the flag on unmount so a normal
+  // discard/save close doesn't leak it into the rest of the app.
+  useEffect(() => {
+    return () => toolChanged(wizToolId, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCopy = () => {
     const config: string[] = [];
@@ -523,8 +528,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
-    // Editing a Description marks the wizard dirty so Save gating and the
-    // discard-on-close prompt work (same tracking handleSegment uses).
+    // Editing a Description marks the wizard dirty so a browser/app close warns
+    // (same tracking the segment handler uses).
     if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
@@ -606,6 +611,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
 
   const handleSuffix = (e: ChangeEvent<HTMLInputElement>) => {
     setSuffix(e.target.value);
+    // The suffix feeds the saved topic, so editing it marks the wizard dirty too
+    // (so a browser/app close mid-edit warns).
+    if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
@@ -635,21 +643,45 @@ export const ProjectResourceConfigure = (props: IProps) => {
       <PassageDetailPlayer
         width={width}
         allowSegment={NamedRegions.ProjectResource}
+        allowSegmentNav
+        layoutMode="transport"
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
       />
-      <StyledPaper id="proj-res-sheet">
-        <Box sx={{ p: 2 }}>
-          <Box data-testid="proj-res-sheet">
-            <DataSheet
-              data={data}
-              valueRenderer={handleValueRenderer}
-              onCellsChanged={handleCellsChanged}
-              parsePaste={handleParsePaste}
-              sheetRenderer={ProjectResourceTable}
-            />
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }}>
+      <StyledPaper id="proj-res-sheet" elevation={0}>
+        {/* Only the table scrolls; it fills the region edge-to-edge (no padding
+            frame) and carries a border so the scroll area is outlined. The
+            suffix row below stays pinned/visible. */}
+        <Box
+          data-testid="proj-res-sheet"
+          sx={{
+            // `0 1 auto`: size to the table's content so the black outline hugs
+            // it (empty paper space falls below the outline). When the table is
+            // taller than the available space, flex-shrink caps the box and it
+            // scrolls internally.
+            flex: '0 1 auto',
+            minHeight: 0,
+            overflow: 'auto',
+            border: 1,
+            borderColor: 'common.black',
+          }}
+        >
+          <DataSheet
+            data={data}
+            valueRenderer={handleValueRenderer}
+            onCellsChanged={handleCellsChanged}
+            parsePaste={handleParsePaste}
+            sheetRenderer={ProjectResourceTable}
+          />
+        </Box>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ flexShrink: 0, px: 0, py: 1.5 }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
             <TextField
               label={t.suffix}
               variant="outlined"
@@ -669,46 +701,32 @@ export const ProjectResourceConfigure = (props: IProps) => {
               />
             </LightTooltip>
           </Stack>
-        </Box>
+          <Button
+            id="copy-configure"
+            disabled={numSegments === 0}
+            onClick={handleCopy}
+          >
+            {ts.clipboardCopy}
+          </Button>
+        </Stack>
       </StyledPaper>
       {/* Fixed footer: keeps the action buttons pinned to the dialog bottom
           while the sheet above scrolls. Wrapping ActionRow in a non-growing
           Box neutralizes its flexGrow:1 inside this flex column. */}
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
-          <Button
-            id="copy-configure"
-            sx={{ mr: 'auto' }}
-            disabled={numSegments === 0}
-            onClick={handleCopy}
-          >
-            {ts.clipboardCopy}
-          </Button>
-          <Box sx={rowSx}>
+          <Box sx={{ ...rowSx, ml: 'auto' }}>
             <Button
               id="res-create"
               color="primary"
               disabled={numSegments === 0 || savingRef.current}
               onClick={handleCreate}
             >
-              {t.createResources}
-            </Button>
-            <Button id="res-create-cancel" onClick={handleCancel}>
-              {ts.cancel}
+              {t.uploadAsResources.replace('{0}', items.length.toString())}
             </Button>
           </Box>
         </ActionRow>
       </Box>
-      {showConfirmClose && (
-        <Confirm
-          title={t.confirmCloseTitle}
-          text={t.confirmClose}
-          no={t.keepOpen}
-          yes={t.discardAndClose}
-          noResponse={() => setShowConfirmClose(false)}
-          yesResponse={handleDiscardClose}
-        />
-      )}
     </Box>
   );
 };

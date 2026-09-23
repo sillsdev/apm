@@ -37,6 +37,8 @@ interface IProps {
   yesResponse: () => void;
   noOnLeft?: boolean;
   isDelete?: boolean;
+  /** Which action button is styled as primary (emphasized). Defaults to neither. */
+  primaryButton?: 'yes' | 'no';
 }
 
 function AlertDialog(props: IProps) {
@@ -50,6 +52,7 @@ function AlertDialog(props: IProps) {
     noResponse,
     noOnLeft,
     isDelete,
+    primaryButton,
   } = props;
   const t: IAlertStrings = useSelector(alertSelector, shallowEqual);
   const [open, setOpen] = useState(true);
@@ -106,11 +109,19 @@ function AlertDialog(props: IProps) {
         </DialogContentText>
       </DialogContent>
       <StyledDialogActions noOnLeft={noOnLeft}>
-        <Button id="alertNo" onClick={handleNo}>
+        <Button
+          id="alertNo"
+          color={primaryButton === 'no' ? 'primary' : undefined}
+          onClick={handleNo}
+        >
           {no || t.no}
         </Button>
         {yes !== '' && (
-          <Button id="alertYes" onClick={handleYes}>
+          <Button
+            id="alertYes"
+            color={primaryButton === 'yes' ? 'primary' : undefined}
+            onClick={handleYes}
+          >
             {yes || t.yes}
           </Button>
         )}

@@ -8,7 +8,6 @@ import {
   SectionD,
   Plan,
   IPassageDetailArtifactsStrings,
-  ISharedStrings,
 } from '../../../model';
 import {
   Box,
@@ -23,7 +22,6 @@ import {
   TableRow,
 } from '@mui/material';
 import { findRecord, useOrganizedBy, usePlanType } from '../../../crud';
-import { sharedSelector } from '../../../selector';
 import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { ActionRow, rowSx } from '../../../control';
@@ -40,7 +38,6 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
     borderRadius: '8px',
   },
   overflow: 'auto',
-  paddingTop: theme.spacing(2),
 }));
 
 type IRow = SelectSectionRow;
@@ -54,11 +51,10 @@ interface IProps {
    * limit cleanup of unselected assignments to what the user could actually see.
    */
   onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
-  onCancel?: () => void;
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, onSelect, onCancel } = props;
+  const { initialItems, visual, onSelect } = props;
   const initialSelectionKey = (initialItems ?? [])
     .map((item) => `${item.type}:${item.id}`)
     .join('|');
@@ -73,7 +69,6 @@ export function SelectSections(props: IProps) {
   const { getOrganizedBy } = useOrganizedBy();
   // User cannot change the language while dialog is open, so for now it should be okay if this component does not
   // respond to changes in the language setting until the dialog is reopened.
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const ta: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
@@ -207,7 +202,11 @@ export function SelectSections(props: IProps) {
         {/* Plain striped table (theme MuiTable variant="striped"); no row-hover
             tint, so hovering a row never greys it. The checkbox hover feedback
             is unaffected. */}
-        <Table size="small" variant="striped" sx={{ tableLayout: 'fixed' }}>
+        <Table
+          size="small"
+          variant="striped"
+          sx={{ tableLayout: 'fixed', border: 1, borderColor: 'custom.black' }}
+        >
           <TableBody>
             {data.map((row) => (
               <TableRow key={row.id} sx={{ height: 40 }}>
@@ -217,8 +216,8 @@ export function SelectSections(props: IProps) {
                     width: 52,
                     p: 0.5,
                     borderRight: 1,
+                    borderColor: 'custom.black',
                     borderBottom: 0,
-                    borderColor: 'divider',
                   }}
                 >
                   {row.kind === 'section' ? (
@@ -262,10 +261,7 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
-        <Box sx={rowSx}>
-          <Button id="select-sections-cancel" onClick={onCancel}>
-            {ts.cancel}
-          </Button>
+        <Box sx={{ ...rowSx, ml: 'auto' }}>
           <Button
             id="select-sections-next"
             color="primary"

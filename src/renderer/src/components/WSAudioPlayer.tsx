@@ -130,6 +130,9 @@ interface IProps {
   mediaId?: string;
   planId?: string;
   allowSegment?: NamedRegions | undefined;
+  /** Show the loop toggle and prev/next segment-navigation arrows. */
+  allowSegmentNav?: boolean;
+  /** Show the auto-segment (barcode) button and its parameters dialog. */
   allowAutoSegment?: boolean;
   /** When true, hide the generic segment-edit controls (Add/Remove Segment and
    * Reset) even though segments are shown/colored/navigable. Used by Careful
@@ -192,7 +195,10 @@ interface IProps {
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
   allowNoNoise?: boolean;
-  layoutMode?: 'default' | 'mobileTranscribe';
+  /** 'transport' packs the transport (play/loop/timestamps/rate) and segment
+   * navigation into single-line rows; 'default' stacks a full toolbar with a
+   * centered record button. Layout only — not tied to mobile or transcribe. */
+  layoutMode?: 'default' | 'transport';
   /** From Record step toolSettings; when omitted, echo cancellation is off (higher-fidelity default). */
   captureEchoCancellation?: boolean;
   /** From Record step toolSettings; when omitted, noise suppression is off (higher-fidelity default). */
@@ -351,6 +357,7 @@ function WSAudioPlayer(props: IProps) {
     mediaId,
     planId,
     allowSegment,
+    allowSegmentNav,
     allowAutoSegment,
     hideSegmentControls,
     allowSpeed,
@@ -2357,9 +2364,9 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const isMobileTranscribe = layoutMode === 'mobileTranscribe';
+  const isTransportLayout = layoutMode === 'transport';
 
-  const loopNode = allowAutoSegment && (
+  const loopNode = allowSegmentNav && (
     <LightTooltip
       id="wsAudioLoopTip"
       title={looping ? (t.loopon ?? '') : (t.loopoff ?? '')}
@@ -2367,7 +2374,7 @@ function WSAudioPlayer(props: IProps) {
       <span>
         <ToggleButton
           id="wsAudioLoop"
-          sx={{ mx: isMobileTranscribe ? 0 : 1, p: 0.5 }}
+          sx={{ mx: isTransportLayout ? 0 : 1, p: 0.5 }}
           value="loop"
           selected={looping}
           onChange={handleToggleLoop}
@@ -2379,7 +2386,7 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const prevRegionNode = allowAutoSegment && (
+  const prevRegionNode = allowSegmentNav && (
     <LightTooltip
       id="wsPrevTip"
       title={
@@ -2400,7 +2407,7 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const nextRegionNode = allowAutoSegment && (
+  const nextRegionNode = allowSegmentNav && (
     <LightTooltip
       id="wsNextTip"
       title={
@@ -2540,7 +2547,7 @@ function WSAudioPlayer(props: IProps) {
       style={style}
     >
       <Stack>
-        {!hideToolbar && isMobileTranscribe ? (
+        {!hideToolbar && isTransportLayout ? (
           <Stack
             direction="row"
             spacing={1}
@@ -2560,7 +2567,7 @@ function WSAudioPlayer(props: IProps) {
               sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {playNode}
-              {allowAutoSegment && loopNode}
+              {allowSegmentNav && loopNode}
               {positionDurationNode}
               {rateNode}
             </Stack>
@@ -2570,7 +2577,7 @@ function WSAudioPlayer(props: IProps) {
               spacing={0.5}
               sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
-              {allowAutoSegment && (
+              {allowSegmentNav && (
                 <>
                   {prevRegionNode}
                   {nextRegionNode}
@@ -2640,7 +2647,7 @@ function WSAudioPlayer(props: IProps) {
           </Box>
         )}
 
-        {!hideControls && isMobileTranscribe ? (
+        {!hideControls && isTransportLayout ? (
           <Stack
             direction="row"
             spacing={1}
@@ -2722,9 +2729,8 @@ function WSAudioPlayer(props: IProps) {
                   )}
                 </Stack>
               )}
-              {/* Segment navigation and loop only make sense for the transcriber
-                  (allowAutoSegment) */}
-              {allowAutoSegment && !isMobileView && (
+              {/* Loop + prev/next segment navigation. */}
+              {allowSegmentNav && !isMobileView && (
                 <>
                   {allowSegment && <VertDivider id="wsAudioSegDiv" />}
                   {loopNode}

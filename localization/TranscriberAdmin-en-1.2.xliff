@@ -6984,7 +6984,7 @@
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.selectPassagesSub">
-      		<source>Select this resource's passages.</source>
+      		<source>Select the {0} and passages contained by this resource.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
@@ -7114,6 +7114,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageMedia.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.uploadAsResources">
+            <source>Upload as {0} resources</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectResourceConfigure.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="passageDetailArtifacts.uploadProject">
