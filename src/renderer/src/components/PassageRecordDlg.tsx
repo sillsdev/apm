@@ -96,7 +96,7 @@ interface IProps {
   audioOnly?: boolean | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
-  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
+  /** When set, always prompt to confirm before discarding on close. */
   confirmOnClose?: boolean | undefined;
 }
 
