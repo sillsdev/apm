@@ -11353,6 +11353,13 @@
                <context context-type="sourcefile">UserTable.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="usertable.deleteFailed">
+            <source>Could not remove this member. Try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">UserTable.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="usertable.email">
             <source>Email</source>
             <target/>

@@ -2025,6 +2025,7 @@ const initialState = {
 			"cancel": "Cancel",
 			"continue": "Continue",
 			"delete": "Delete",
+			"deleteFailed": "Could not remove this member. Try again.",
 			"email": "Email",
 			"filter": "Filter",
 			"invite": "Invite",

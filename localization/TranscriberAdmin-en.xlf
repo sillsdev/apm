@@ -9730,6 +9730,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="usertable.deleteFailed">
+         <segment>
+            <source>Could not remove this member. Try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="usertable.email">
          <segment>
             <source>Email</source>

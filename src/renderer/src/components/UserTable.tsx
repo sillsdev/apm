@@ -14,6 +14,7 @@ import Box from '@mui/material/Box';
 import AddIcon from '@mui/icons-material/Add';
 import { useGlobal } from '../context/useGlobal';
 import { localizeRole, LocalKey, localUserKey, restoreScroll } from '../utils';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import Invite from './Invite';
 import Confirm from './AlertDialog';
 import UserAdd from './UserAdd';
@@ -70,6 +71,8 @@ export function UserTable() {
   const { userIsAdmin } = useRole();
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [deleteItem, setDeleteItem] = useState('');
+  const [confirmKey, setConfirmKey] = useState(0);
+  const { showMessage } = useSnackBar();
   const [dialogVisible, setDialogVisible] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<string | undefined>();
@@ -141,8 +144,12 @@ export function UserTable() {
         teamDelete
       );
       localStorage.setItem(localUserKey(LocalKey.url), '/');
-    } finally {
       setDeleteItem('');
+    } catch {
+      showMessage(t.deleteFailed, AlertSeverity.Error);
+      // AlertDialog closes itself without awaiting. Remount so the same
+      // member can be confirmed again.
+      setConfirmKey((n) => n + 1);
     }
   };
 
@@ -285,6 +292,7 @@ export function UserTable() {
       />
       {deleteItem !== '' ? (
         <Confirm
+          key={confirmKey}
           text={''}
           yesResponse={handleDeleteConfirmed}
           noResponse={handleDeleteRefused}

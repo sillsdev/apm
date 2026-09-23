@@ -130,6 +130,61 @@ describe('RemoveUserFromOrg self-delete', () => {
     expect(memberships.map((m) => m.id)).toEqual(['om-admin']);
   });
 
+  it('rejects when orphan team deletion fails', async () => {
+    const memory = new MemorySource({ schema });
+    await seed(memory, { email: 'me@example.com' });
+    await memory.update((t) =>
+      t.removeRecord({ type: 'organizationmembership', id: 'om-admin' })
+    );
+    const me = memory.cache.query((q) =>
+      q.findRecord({ type: 'user', id: 'me' })
+    ) as Parameters<typeof RemoveUserFromOrg>[1];
+    const teamDelete = jest
+      .fn()
+      .mockRejectedValue(new Error('backup sync failed'));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(
+      RemoveUserFromOrg(memory, me, 'org1', 'me', teamDelete)
+    ).rejects.toThrow('backup sync failed');
+    expect(teamDelete).toHaveBeenCalledWith('org1');
+    errorSpy.mockRestore();
+  });
+
+  it('rejects a failed membership update and removes the member on retry', async () => {
+    const memory = new MemorySource({ schema });
+    await seed(memory, { email: 'me@example.com' });
+    const me = memory.cache.query((q) =>
+      q.findRecord({ type: 'user', id: 'me' })
+    ) as Parameters<typeof RemoveUserFromOrg>[1];
+    const teamDelete = jest.fn();
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const update = jest
+      .spyOn(memory, 'update')
+      .mockRejectedValueOnce(new Error('update failed'));
+    const membershipIds = () =>
+      (
+        memory.cache.query((q) => q.findRecords('organizationmembership')) as {
+          id: string;
+        }[]
+      )
+        .map((m) => m.id)
+        .sort();
+    try {
+      await expect(
+        RemoveUserFromOrg(memory, me, 'org1', 'me', teamDelete)
+      ).rejects.toThrow('update failed');
+      expect(teamDelete).not.toHaveBeenCalled();
+      expect(membershipIds()).toEqual(['om-admin', 'om-me']);
+
+      update.mockRestore();
+      await RemoveUserFromOrg(memory, me, 'org1', 'me', jest.fn());
+      expect(membershipIds()).toEqual(['om-admin']);
+    } finally {
+      update.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
   it('still removes membership when an invitation has no attributes', async () => {
     const memory = new MemorySource({ schema });
     await seed(memory);

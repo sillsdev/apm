@@ -56,7 +56,7 @@ export async function RemoveUserFromOrg(
   deletedUser: User,
   organization: string | undefined,
   user: string,
-  teamDelete: (id: string) => void
+  teamDelete: (id: string) => Promise<void>
 ) {
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
@@ -150,7 +150,7 @@ export async function RemoveUserFromOrg(
       ) as OrganizationMembership[]
     ).map((om) => related(om, 'organization'));
     const orphaned = organizationIds.filter((o) => !orgWithMembers.includes(o));
-    orphaned.forEach((o) => teamDelete(o));
+    await Promise.all(orphaned.map((o) => teamDelete(o)));
   } catch (err) {
     // A thrown update never reaches the remote queue. Surface it; callers await this.
     console.error('RemoveUserFromOrg failed', err);

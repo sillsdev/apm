@@ -1920,6 +1920,7 @@ export interface IUsertableStrings extends Localize.LocalizedStringsMethods {
     "cancel": string;
     "continue": string;
     "delete": string;
+    "deleteFailed": string;
     "email": string;
     "filter": string;
     "invite": string;
