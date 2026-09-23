@@ -1,3 +1,6 @@
+/// <reference types="node" />
+import '@testing-library/jest-dom';
+import type { MainAPI } from '../model/main-api';
 import type { Burrito } from './data/types';
 import type { MediaFileD, PassageD, SectionD } from '../model';
 
@@ -55,7 +58,7 @@ function sectionFixture(): SectionD {
   } as unknown as SectionD;
 }
 
-function passageFixture(): PassageD {
+function passageFixture(attrs: Partial<PassageD['attributes']> = {}): PassageD {
   return {
     id: 'pas-1',
     type: 'passage',
@@ -66,6 +69,7 @@ function passageFixture(): PassageD {
       startVerse: 1,
       endChapter: 1,
       endVerse: 1,
+      ...attrs,
     },
     relationships: {
       section: { data: { id: 'sec-1' } },
@@ -103,12 +107,17 @@ type LoadOpts = {
   getOrgDefaultImpl?: (key: string, teamId?: string) => unknown;
 };
 
-function loadTextForApi(api: typeof window.api, opts: LoadOpts = {}) {
+/**
+ * `useBurritoText` reads `window.api` at module load. `jest.isolateModules`
+ * would give the hook a second React copy and break hooks; `resetModules` +
+ * requiring RTL before the hook keeps a single React for `renderHook`.
+ */
+function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
+  /* eslint-disable @typescript-eslint/no-require-imports -- resetModules + RTL pure + hook in one registry cycle */
   jest.resetModules();
-  (window as unknown as { api?: typeof api }).api = api;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  (window as unknown as { api?: MainAPI }).api = api;
+  // `react` entry registers Jest hooks; `pure` does not (invalid inside `it`).
   const { renderHook, act } = require('@testing-library/react/pure');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useOrgDefaults } = require('../crud/useOrgDefaults');
   const defaultGetOrg = (key: string) => {
     if (key === 'burritoVersions') return '1';
@@ -124,20 +133,18 @@ function loadTextForApi(api: typeof window.api, opts: LoadOpts = {}) {
     setDefault: jest.fn(),
     canSetOrgDefault: true,
   });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useOrbitData } = require('../hoc/useOrbitData');
   useOrbitData.mockImplementation((key: string) => {
     if (key === 'mediafile') return opts.mediafiles ?? [];
     if (key === 'passage') return opts.passages ?? [];
     return [];
   });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { convertBurritoText } = require('./usfmTextConvert');
   convertBurritoText.mockImplementation((content: string, fmt: string) =>
     Promise.resolve(`${fmt}:${content}`)
   );
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useBurritoText } = require('./useBurritoText');
+  /* eslint-enable @typescript-eslint/no-require-imports */
   return { renderHook, act, useBurritoText, convertBurritoText };
 }
 
@@ -316,5 +323,109 @@ describe('useBurritoText', () => {
     expect(metadata.type?.flavorType?.flavor?.name).toBe('textTranslation');
     expect(ipc.write).not.toHaveBeenCalled();
     expect(Object.keys(metadata.ingredients)).toHaveLength(0);
+  });
+
+  it('synthesizes valid USFM for cross-chapter when start verse is last of chapter (JON 1:17-2:10)', async () => {
+    const ipc = makeIpc();
+    const jonBookPath = '/data/burrito/JON';
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [
+          passageFixture({
+            reference: '1:17-2:10',
+            startChapter: 1,
+            startVerse: 17,
+            endChapter: 2,
+            endVerse: 10,
+          }),
+        ],
+        mediafiles: [mediaFixture({ transcription: 'Jonah prayed' })],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usj' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'JON',
+        bookPath: jonBookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    expect(convertBurritoText).toHaveBeenCalled();
+    const usfmArg = (convertBurritoText as jest.Mock).mock
+      .calls[0][0] as string;
+    expect(usfmArg).not.toMatch(/\\v\s+\d+-\d+:\d+/);
+    expect(usfmArg).toContain('\\c 1');
+    expect(usfmArg).toContain('\\v 17 Jonah prayed');
+    expect(usfmArg).not.toContain('\\v 17-17');
+    expect(usfmArg).toContain('\\c 2');
+    expect(usfmArg).toContain('\\v 1-10');
+    expect(usfmArg.match(/Jonah prayed/g)).toHaveLength(1);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('JONv1.usj')
+    )!;
+    expect(metadata.ingredients[ingredientKey].scope).toEqual({
+      JON: ['1', '2'],
+    });
+  });
+
+  it('synthesizes start-chapter verse range through last verse (GEN 1:28-2:3)', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [
+          passageFixture({
+            reference: '1:28-2:3',
+            startChapter: 1,
+            startVerse: 28,
+            endChapter: 2,
+            endVerse: 3,
+          }),
+        ],
+        mediafiles: [mediaFixture({ transcription: 'Be fruitful' })],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usx' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const usfmArg = (convertBurritoText as jest.Mock).mock
+      .calls[0][0] as string;
+    expect(usfmArg).not.toMatch(/\\v\s+\d+-\d+:\d+/);
+    expect(usfmArg).toContain('\\v 28-31 Be fruitful');
+    expect(usfmArg).toContain('\\c 2');
+    expect(usfmArg).toContain('\\v 1-3');
+    expect(usfmArg.match(/Be fruitful/g)).toHaveLength(1);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('GENv1.usx')
+    )!;
+    expect(metadata.ingredients[ingredientKey].scope).toEqual({
+      GEN: ['1', '2'],
+    });
   });
 });

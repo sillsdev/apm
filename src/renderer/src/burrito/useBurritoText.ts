@@ -12,6 +12,7 @@ import { PassageTypeEnum } from '../model/passageType';
 import { sortChapters } from '../utils/sort';
 import { MainAPI } from '@model/main-api';
 import { sectionDescription } from '../crud/section';
+import { getLastVerse } from '../business/localParatext/getLastVerse';
 import {
   burritoFormat,
   BurritoTextOutputFormat,
@@ -139,11 +140,28 @@ export const useBurritoText = (teamId: string) => {
               if (!/\\v/.test(verseRange)) {
                 let ref = startVerse?.toString();
                 if (endChapter && endChapter !== startChapter) {
-                  ref = `${ref}-${endChapter}:${endVerse?.toString()}`;
-                } else if (endVerse && endVerse !== startVerse) {
-                  ref = `${ref}-${endVerse?.toString()}`;
+                  const lastVerseInChapter =
+                    startChapter != null
+                      ? getLastVerse(book, startChapter)
+                      : null;
+                  if (
+                    lastVerseInChapter != null &&
+                    startVerse != null &&
+                    startVerse < lastVerseInChapter
+                  ) {
+                    ref = `${startVerse}-${lastVerseInChapter}`;
+                  }
+                  const endRef =
+                    endVerse != null && endVerse > 1 ? `1-${endVerse}` : '1';
+                  verseRange = `\\v ${ref} ${attr.transcription}\n\\c ${endChapter}\n\\v ${endRef}`;
+                  chapters.add(endChapter.toString());
+                  chapter = endChapter;
+                } else {
+                  if (endVerse && endVerse !== startVerse) {
+                    ref = `${ref}-${endVerse?.toString()}`;
+                  }
+                  verseRange = `\\v ${ref} ${attr.transcription}`;
                 }
-                verseRange = `\\v ${ref} ${attr.transcription}`;
               }
               text.push(verseRange);
               textMap.set(i, text);
