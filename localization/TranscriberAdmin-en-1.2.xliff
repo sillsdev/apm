@@ -8321,6 +8321,13 @@
                <context context-type="sourcefile">ProfileDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="profile.deleteFailed">
+            <source>Could not delete your account. Try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProfileDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="profile.deleteUser">
             <source>Delete User</source>
             <target/>

@@ -1391,6 +1391,7 @@ export interface IProfileStrings extends Localize.LocalizedStringsMethods {
     "defaultLocale": string;
     "defaultTimezone": string;
     "deleteExplained": string;
+    "deleteFailed": string;
     "deleteUser": string;
     "deleteWarning": string;
     "discardChanges": string;

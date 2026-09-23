@@ -29,7 +29,7 @@ import {
 import Confirm from '../components/AlertDialog';
 import Typography, { TypographyProps } from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
-import { useSnackBar } from '../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { langName, UiLoc } from '../utils/langName';
 import { localeDefault } from '../utils/localeDefault';
 import { LocalKey, localUserKey } from '../utils/localUserKey';
@@ -642,19 +642,24 @@ export function ProfileDialog(props: ProfileDialogProps) {
   };
   const handleDeleteConfirmed = async () => {
     const deleteRec = getUserRec(deleteItem);
-    await waitForRemoteQueue('wait for any changes to finish');
-    await RemoveUserFromOrg(memory, deleteRec, undefined, user, teamDelete);
-    await memory.update((tb) =>
-      tb.removeRecord({ type: 'user', id: deleteItem })
-    );
-    //wait to be sure orbit remote is done also
     try {
-      await waitForRemoteQueue('logout after user delete');
+      await waitForRemoteQueue('wait for any changes to finish');
+      await RemoveUserFromOrg(memory, deleteRec, undefined, user, teamDelete);
+      await memory.update((tb) =>
+        tb.removeRecord({ type: 'user', id: deleteItem })
+      );
+      //wait to be sure orbit remote is done also
+      try {
+        await waitForRemoteQueue('logout after user delete');
+      } catch {
+        //well we tried...
+      }
+      localStorage.removeItem(LocalKey.userId);
+      setView('Logout');
     } catch {
-      //well we tried...
+      showMessage(tp.deleteFailed, AlertSeverity.Error);
+      setDeleteItem('');
     }
-    localStorage.removeItem(LocalKey.userId);
-    setView('Logout');
   };
 
   const handleDeleteRefused = () => {
