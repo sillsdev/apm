@@ -860,7 +860,11 @@ const PassageDetailProvider = (props: IProps) => {
     let newRows: IRow[] = [];
 
     if (i < 0) {
-      const media = mediafiles.find((m) => m.id === selected);
+      // useOrbitData's snapshot can lag a just-created mediafile (deferred
+      // general-resource upload → configure). Fall back to the cache.
+      const media =
+        mediafiles.find((m) => m.id === selected) ??
+        (findRecord(memory, 'mediafile', selected) as MediaFileD | undefined);
       if (media) {
         newRows = oneMediaRow({
           newRow: state.rowData,

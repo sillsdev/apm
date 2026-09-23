@@ -842,6 +842,9 @@ export function PassageDetailArtifacts() {
             await writeVisualResource(projIdentRef.current);
             setVisual(false);
           } else {
+            // The configure step plays the context's playerMediafile; load it here
+            // since this path bypasses handleSelectProjectResource.
+            setSelected(media.id, PlayInPlayer.yes);
             setProjResWizVisible(true);
           }
         } else {
