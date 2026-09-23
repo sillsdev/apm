@@ -6,7 +6,6 @@ import {
 } from '../../../model';
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
-import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState } from '../../../business/asr/asrState';
@@ -28,8 +27,7 @@ export function useTranscribeAsr({
   onTextAdd,
   getCurrentText,
 }: UseTranscribeAsrProps) {
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
+  const { getAsrSettings } = useGetAsrSettings(team);
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
 
@@ -74,33 +72,25 @@ export function useTranscribeAsr({
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (isLangSet(asrSettings?.asrIso)) {
-        startAsr(asrSettings);
-        return;
-      }
       openAsrLanguageSettings();
     });
   }, [
     checkOnline,
     showMessage,
     sharedStr.mustBeOnline,
-    asrSettings,
-    startAsr,
     openAsrLanguageSettings,
   ]);
 
-  const handleAsrLanguageClose = useCallback(
-    (cancel: boolean, asrState?: IAsrState, setAsTeamDefault?: boolean) => {
+  const handleAsrLanguageCancel = useCallback(() => {
+    setAsrLangVisible(false);
+  }, []);
+
+  const handleAsrLanguageRun = useCallback(
+    (asr: IAsrState) => {
       setAsrLangVisible(false);
-      if (cancel) return;
-      const asr = asrState ?? asrSettings;
-      if (isLangSet(asr?.asrIso)) {
-        if (setAsTeamDefault) saveTeamAsrSettings(asr);
-        else saveProjectAsrSettings(asr);
-        startAsr(asr);
-      }
+      startAsr(asr);
     },
-    [asrSettings, saveTeamAsrSettings, saveProjectAsrSettings, startAsr]
+    [startAsr]
   );
 
   const handleAutoTranscribe = useCallback(
@@ -126,7 +116,8 @@ export function useTranscribeAsr({
     asrOverride,
     phonetic,
     handleTranscribe,
-    handleAsrLanguageClose,
+    handleAsrLanguageCancel,
+    handleAsrLanguageRun,
     handleAutoTranscribe,
   };
 }
