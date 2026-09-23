@@ -840,7 +840,9 @@ export function PassageDetailArtifacts() {
     // Deferred upload produced no media (the upload failed). SelectSections is
     // still open with the user's selection intact, so just re-enable its Upload
     // button (the error was already surfaced by the uploader) and keep the
-    // staged file so they can retry without re-selecting.
+    // staged file so they can retry without re-selecting. (A general resource is
+    // a single configured source; adding several at once is unsupported and is
+    // prevented in the UI, so only the single-media path is handled here.)
     if (sectionsPreselectedRef.current && projRes.length === 0) {
       sectionsPreselectedRef.current = false;
       setResourceImportList(undefined);
@@ -895,12 +897,13 @@ export function PassageDetailArtifacts() {
   };
 
   // Deferred general-resource add: the Add Audio Resource dialog's Next hands
-  // the prepared file(s) here instead of uploading. We keep the file(s), open
+  // the prepared file here instead of uploading. We keep the file, open
   // SelectSections, and defer the real upload to that dialog's Upload button
   // (handleSelectProjectResourcePassage). No media exists yet, so there are no
   // existing assignments to pre-check.
-  const handleStageResourceFiles = async (files: File[]) => {
-    if (!files || files.length === 0) return;
+  const handleStageAudioFiles = async (files: File[]) => {
+    // we should only have one file if going through the general resource flow
+    if (!files || files.length !== 1) return;
     // Commit a newly-typed artifact category now, while the dialog's metaData is
     // still mounted; the deferred upload runs after it unmounts. Null the ref so
     // the later upload's beforeUpload does not create a second category.
@@ -913,11 +916,12 @@ export function PassageDetailArtifacts() {
     cancelled.current = false;
     isAddingAudioResourceRef.current = true;
     projMediaRef.current = undefined;
-    // Derive visual from the staged file (no media record yet). The audio-add
-    // path is always non-visual, but keep this general for safety.
-    setVisual(
-      Boolean(files[0] && !(files[0] as File).type.startsWith('audio'))
-    );
+    // Staging only happens for the "Add Audio Resource" → General Resource flow,
+    // which is always audio, so this is never a visual resource. (Visual general
+    // resources are reached by selecting an existing project-resource media, not
+    // through staging.) The visual-vs-wizard routing in afterUpload keys off the
+    // uploaded media's own type, so this only sets the SelectSections label.
+    setVisual(false);
     setUploadVisible(false);
     setProjResPassageVisible(true);
   };
@@ -1216,7 +1220,7 @@ export function PassageDetailArtifacts() {
         pendingRestore={resourcePendingRestore}
         importList={resourceImportList}
         deferUpload={uploadType === UploadType.ProjectResource}
-        onStageFiles={handleStageResourceFiles}
+        onStageFiles={handleStageAudioFiles}
         metaData={
           <ResourceData
             uploadType={uploadType}
