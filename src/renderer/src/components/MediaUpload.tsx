@@ -35,6 +35,7 @@ interface IProps {
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
+  validationMessage?: string | undefined;
   /** Hide the bottom "Cancel" button (cancel is reached via the dialog's X). */
   // I think we are moving towards using the dialog's X as the standard way to cancel instead of an explicit Cancel button.
   // hopefully in the future we can remove the explicit Cancel button entirely.
@@ -63,6 +64,7 @@ function MediaUpload(props: IProps) {
     onValue,
     onNonAudio,
     audioOnly,
+    validationMessage,
     hideCancel,
     confirmOnClose,
   } = props;
@@ -134,6 +136,7 @@ function MediaUpload(props: IProps) {
           onValue={onValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
+          validationMessage={validationMessage}
           hideCancel={hideCancel}
         />
         {showConfirm && (

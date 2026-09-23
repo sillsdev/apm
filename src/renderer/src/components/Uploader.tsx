@@ -588,6 +588,8 @@ export const Uploader = (props: IProps) => {
           team={team}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
+          onFiles={onFiles}
+          validationMessage={validationMessage}
         />
       )}
     </Box>
