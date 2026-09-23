@@ -37,6 +37,7 @@ import { Button } from '../../control/Button';
 import JSONAPISource from '@orbit/jsonapi';
 import { recToMemory } from '../../crud/syncToMemory';
 import { useCategoryGraphicEdit } from './useCategoryGraphicEdit';
+import { compressedImageDisplayUrl } from '../../utils/compressedImageDisplayUrl';
 
 const StyledColorful = styled(Colorful)<ColorfulProps>(() => ({
   '& .w-color-alpha': {
@@ -183,11 +184,7 @@ const CategoryEdit = forwardRef<CategoryEditHandle, IProps>(
     useEffect(() => {
       if (pending?.images[0]?.content) {
         const img = pending.images[0];
-        setGraphicUri(
-          img.content.startsWith('data:')
-            ? img.content
-            : `data:${img.type};base64,${img.content}`
-        );
+        setGraphicUri(compressedImageDisplayUrl(img));
         return;
       }
       if (graphicRec) {
