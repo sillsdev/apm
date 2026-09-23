@@ -47,7 +47,7 @@ describe('BigDialog title (TT-7538)', () => {
     const longTitle =
       'Provide audio for Matthew 1:1-25 — a very long dialog title';
     render(
-      <BigDialog title={longTitle} isOpen={true} onOpen={() => {}}>
+      <BigDialog title={longTitle} isOpen={true} onClose={() => {}}>
         <div>body</div>
       </BigDialog>
     );
