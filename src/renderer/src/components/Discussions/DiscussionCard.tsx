@@ -328,6 +328,8 @@ export const DiscussionCard = (props: IProps) => {
   const afterUploadCb = async (mediaId: string | undefined) => {
     commentMediaId.current = mediaId;
     if (!mediaId) {
+      // Release Add/Cancel latch before saveCompleted re-renders (TT-7717).
+      cardSavingRef.current = false;
       saveCompleted(NewCommentToolId, ts.NoSaveWoMedia);
     } else {
       await saveDiscussion();
@@ -970,7 +972,6 @@ export const DiscussionCard = (props: IProps) => {
       <>
         <StyledCard
           ref={cardRef}
-          key={discussion.id}
           id={id}
           resolved={discussion.attributes.resolved}
           highlight={Boolean(

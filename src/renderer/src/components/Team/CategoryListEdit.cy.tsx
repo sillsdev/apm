@@ -42,6 +42,11 @@ const createMockMemory = (
   _notify: (model?: string) => void;
   _records: RecordsByKey;
 } => {
+  // Each mount owns its own copy: tests mutate `memory._records` (sync adds
+  // and deletes), and the fixtures are module-level objects shared by every
+  // test in the file. Without this clone a delete in one test permanently
+  // removes the record for the tests that follow.
+  const data: RecordsByKey = structuredClone(records);
   const subscribersByModel: Record<string, Set<() => void>> = {};
   const notify = (model?: string) => {
     if (model) {
@@ -54,7 +59,7 @@ const createMockMemory = (
   };
   const runQuery = (
     queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
-  ) => queryFn(createMockQueryBuilder(records));
+  ) => queryFn(createMockQueryBuilder(data));
   return {
     cache: {
       query: runQuery,
@@ -92,7 +97,7 @@ const createMockMemory = (
     update: cy.stub().as('memoryUpdate').resolves(),
     keyMap: { idToKey: () => undefined, keyToId: () => undefined },
     _notify: notify,
-    _records: records,
+    _records: data,
   } as unknown as Memory & {
     _notify: (model?: string) => void;
     _records: RecordsByKey;
