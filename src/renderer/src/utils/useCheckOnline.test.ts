@@ -80,6 +80,7 @@ describe('useCheckOnline (TT-7720)', () => {
   it('clears orbit error status when already connected without queue.retry', async () => {
     globals.orbitRetries = 2;
     const { useCheckOnline } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('./useCheckOnline') as typeof import('./useCheckOnline');
 
     const { result } = renderHook(() => useCheckOnline('TT-7720'));
@@ -104,6 +105,7 @@ describe('useCheckOnline (TT-7720)', () => {
   it('runs full orbitReset and sets connected when coming back online', async () => {
     globals.connected = false;
     const { useCheckOnline } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('./useCheckOnline') as typeof import('./useCheckOnline');
 
     const { result } = renderHook(() => useCheckOnline('TT-7720'));
