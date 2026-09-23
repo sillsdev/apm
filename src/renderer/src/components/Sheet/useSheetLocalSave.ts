@@ -67,7 +67,8 @@ export const useWfLocalSave = (props: IProps) => {
             const published = item.published || [];
             const curSec =
               (itemId
-                ? (findRecord(memory, 'section', itemId) as SectionD | undefined)
+                ? (findRecord(memory, 'section', itemId) as
+                    SectionD | undefined)
                 : undefined) || sections.filter((s) => s.id === itemId)[0];
             if (!curSec) {
               throw new Error(

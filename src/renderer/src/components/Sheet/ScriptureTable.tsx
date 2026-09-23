@@ -140,6 +140,7 @@ import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import { PlanView } from './PlanView';
 import { createPendingTitleMediaQueue } from './pendingTitleMediaQueue';
 import type { TitleMediaPending } from './pendingTitleMediaQueue';
+import { resolveTitleMediaRowIndex } from './resolveTitleMediaRowIndex';
 
 const SaveWait = 500;
 
@@ -1165,15 +1166,11 @@ export function ScriptureTable(props: IProps) {
     // isSectionUpdated uses strict `>`; equal timestamps skip persist (TT-7660).
     if (floor && stamp <= floor) {
       const nextMs = Date.parse(floor) + 1;
-      stamp = Number.isFinite(nextMs)
-        ? new Date(nextMs).toISOString()
-        : stamp;
+      stamp = Number.isFinite(nextMs) ? new Date(nextMs).toISOString() : stamp;
     }
     if (prev && stamp <= prev) {
       const nextMs = Date.parse(prev) + 1;
-      stamp = Number.isFinite(nextMs)
-        ? new Date(nextMs).toISOString()
-        : stamp;
+      stamp = Number.isFinite(nextMs) ? new Date(nextMs).toISOString() : stamp;
     }
     return stamp;
   };
@@ -1181,15 +1178,7 @@ export function ScriptureTable(props: IProps) {
   titleMediaApplyRef.current = (pending: TitleMediaPending) => {
     setUpdate(true);
     const newsht = [...sheetRef.current];
-    let i = -1;
-    if (pending.sectionId) {
-      i = newsht.findIndex((r) => r.sectionId?.id === pending.sectionId);
-    } else if (pending.passageId) {
-      i = newsht.findIndex((r) => r.passage?.id === pending.passageId);
-    }
-    if (i < 0) {
-      i = getByIndex(newsht, pending.index).i;
-    }
+    const i = resolveTitleMediaRowIndex(newsht, pending);
     const ws = i >= 0 && i < newsht.length ? newsht[i] : undefined;
     if (!ws) {
       setUpdate(false);

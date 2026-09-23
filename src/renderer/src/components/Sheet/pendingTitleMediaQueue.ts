@@ -62,7 +62,10 @@ export function createPendingTitleMediaQueue(
       waiting = false;
       flush();
     });
-    if (result != null && typeof (result as Promise<void>).then === 'function') {
+    if (
+      result != null &&
+      typeof (result as Promise<void>).then === 'function'
+    ) {
       (result as Promise<void>).catch(() => {
         waiting = false;
         if (pending.size > 0) schedule();
