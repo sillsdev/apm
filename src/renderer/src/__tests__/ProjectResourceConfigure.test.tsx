@@ -128,7 +128,7 @@ jest.mock('react-redux', () => ({
     cantCopy: "Can't Copy",
     clipboard: 'Clipboard',
     clipboardCopy: 'Copy to Clipboard',
-    createResources: 'Create Resources',
+    createXResources: 'Create {0} resources',
     description: 'Description',
     noData: 'No Data {0}',
     pasteError: 'Paste Errors {0}, Updated {1}',
