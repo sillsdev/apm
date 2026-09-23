@@ -178,16 +178,19 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   /** mediafileId the waveform's `suggestedSegments` have been seeded for, so the
    * seed runs once per media rather than reloading the waveform on every save. */
   const waveformSeededForMediaRef = useRef<string | undefined>(undefined);
-  // Conditional setState so this is safe during render. Passage context updates
-  // before the new mediafile; clearing here means the remounted player does not
-  // hydrate the previous passage's verse regions.
-  const resetLoadedVerseMarkings = () => {
+  // Conditional setState so this is safe during render.
+  // `''` means "no override": a remounted player loads the mediafile's saved
+  // segments. `emptySegments` is an explicit clear for the player that stays
+  // mounted (its key is still the previous mediafileId) while the passage
+  // changes first — an empty string does not replace `defaultSegments`.
+  const resetLoadedVerseMarkings = (suggestedSegments = '') => {
     segmentsRef.current = '{}';
     waveformSeededForMediaRef.current = undefined;
     suppressVerseResyncFromMediaRef.current = false;
     prevRegionCountRef.current = 0;
     undoStackRef.current.clear();
-    if (pastedSegments !== '') setPastedSegments('');
+    if (pastedSegments !== suggestedSegments)
+      setPastedSegments(suggestedSegments);
     if (waveSegmentsJson !== '{}') setWaveSegmentsJson('{}');
     if (numSegments !== 0) setNumSegments(0);
     if (undoAvailable) setUndoAvailable(false);
@@ -460,7 +463,13 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   useEffect(() => {
     if (appliedPassageIdRef.current !== passageId) {
       appliedPassageIdRef.current = passageId;
-      resetLoadedVerseMarkings();
+      const mediaPassageId = related(media, 'passage');
+      // Still showing the previous file: tell the mounted player to drop its
+      // regions. Once this passage's mediafile is current, `''` lets that
+      // player load the file's saved segments.
+      const clearMountedPlayer =
+        Boolean(mediaPassageId) && mediaPassageId !== passageId;
+      resetLoadedVerseMarkings(clearMountedPlayer ? emptySegments : '');
       setCurrentSegment(undefined, -1);
     }
     const refs = getPassageRefs(passage);

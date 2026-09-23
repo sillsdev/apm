@@ -207,10 +207,11 @@ jest.mock('../../PassageDetailPlayer', () => {
     applyRegionColor,
     suggestedSegments,
   }: DetailPlayerProps) => {
-    const recordedMount = React.useRef(false);
-    if (!recordedMount.current) {
-      recordedMount.current = true;
-      suggestedSegmentsOnPlayerMount.push(suggestedSegments ?? '');
+    const recordedSegments = React.useRef<string | undefined>(undefined);
+    const nextSegments = suggestedSegments ?? '';
+    if (recordedSegments.current !== nextSegments) {
+      recordedSegments.current = nextSegments;
+      suggestedSegmentsOnPlayerMount.push(nextSegments);
     }
     mockPlayerAction = onSegment;
     mockClearSegments = onClearSegments;
@@ -486,9 +487,7 @@ afterEach(async () => {
       rec = undefined;
     }
     if (rec) {
-      await mockMemory.update((t) =>
-        t.removeRecord({ type: 'mediafile', id })
-      );
+      await mockMemory.update((t) => t.removeRecord({ type: 'mediafile', id }));
     }
   }
   cleanup();
@@ -621,8 +620,13 @@ test('does not keep the previous passage verse markings after navigation', async
   );
 
   // Passage first, while the player is still on passage 1's mediafile.
+  // `''` would leave the mounted waveform's regions in place; the clear has
+  // to be an explicit empty-region payload.
   mockDetailState.passage = passageTwo;
   rerender(tree);
+  expect(suggestedSegmentsOnPlayerMount.at(-1)).toBe(
+    JSON.stringify({ regions: [] })
+  );
 
   mockDetailState.mediafileId = 'mv-p2-media';
   rerender(tree);
