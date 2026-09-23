@@ -96,8 +96,14 @@ interface IProps {
   audioOnly?: boolean | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
-  /** When set, always prompt to confirm before discarding on close. */
+  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
   confirmOnClose?: boolean | undefined;
+  /**
+   * Forwarded to MediaRecord (the record tab): when set, a saved take is handed
+   * here as a staged file rather than uploaded — the deferred general-resource
+   * flow. The upload tab stages through `uploadMethod` instead.
+   */
+  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
 }
 
 function PassageRecordDlg(props: IProps) {
@@ -126,6 +132,7 @@ function PassageRecordDlg(props: IProps) {
     pendingRestore,
     beforeUpload,
     confirmOnClose,
+    onStageFile,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -311,6 +318,7 @@ function PassageRecordDlg(props: IProps) {
                 onRecording={setRecording}
                 pendingRestore={pendingRestore}
                 beforeUpload={beforeUpload}
+                onStageFile={onStageFile}
               />
             </Box>
             {metaData}

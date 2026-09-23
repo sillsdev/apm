@@ -5776,6 +5776,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.createXResources">
+         <segment>
+            <source>Create {0} resources</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.currentResource">
          <segment>
             <source>Current {0}</source>

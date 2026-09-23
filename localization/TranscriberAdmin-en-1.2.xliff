@@ -6738,6 +6738,13 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.createXResources">
+      		<source>Create {0} resources</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">ProjectResourceConfigure.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.currentResource">
       		<source>Current {0}</source>
       		<target/>

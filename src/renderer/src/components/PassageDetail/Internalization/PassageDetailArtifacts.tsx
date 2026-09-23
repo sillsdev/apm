@@ -216,6 +216,21 @@ export function PassageDetailArtifacts() {
   // resource ("Add Audio Resource"); false when configuring/editing an existing
   // one ("Edit Audio Resource").
   const isAddingAudioResourceRef = useRef<boolean>(false);
+  // Deferred general-resource upload: the prepared file(s) are held here and not
+  // uploaded until the user picks passages/sections on SelectSections.
+  const stagedResourceFilesRef = useRef<File[] | undefined>(undefined);
+  // True between SelectSections' Upload and the upload completing, so afterUpload
+  // routes straight to the configure step (or visual write) instead of
+  // re-opening SelectSections.
+  const sectionsPreselectedRef = useRef(false);
+  // Drives the deferred (headless) upload through the always-mounted Uploader.
+  const [resourceImportList, setResourceImportList] = useState<
+    File[] | undefined
+  >(undefined);
+  // True while the general-resource upload runs. SelectSections stays open
+  // (selections preserved) with its Upload button disabled/spinner until the
+  // upload succeeds (advance to the wizard) or fails (re-enable for retry).
+  const [uploading, setUploading] = useState(false);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
@@ -794,7 +809,27 @@ export function PassageDetailArtifacts() {
       }
       if (projRes.length === 1) {
         isAddingAudioResourceRef.current = true;
-        setProjResSetup(projRes);
+        if (sectionsPreselectedRef.current) {
+          // Deferred flow: passages/sections were already chosen on
+          // SelectSections (which stayed open during the upload). The upload
+          // succeeded, so close it now and go to the configure step, or write
+          // visual resources directly.
+          const media = projRes[0] as MediaFileD;
+          projMediaRef.current = media;
+          sectionsPreselectedRef.current = false;
+          stagedResourceFilesRef.current = undefined;
+          setResourceImportList(undefined);
+          setUploading(false);
+          setProjResPassageVisible(false);
+          if (isVisual(media)) {
+            await writeVisualResource(projIdentRef.current);
+            setVisual(false);
+          } else {
+            setProjResWizVisible(true);
+          }
+        } else {
+          setProjResSetup(projRes);
+        }
       }
       resetEdit();
     }
@@ -802,6 +837,17 @@ export function PassageDetailArtifacts() {
       await memory.update(removeMedia);
     }
     cancelled.current = false;
+    // Deferred upload produced no media (the upload failed). SelectSections is
+    // still open with the user's selection intact, so just re-enable its Upload
+    // button (the error was already surfaced by the uploader) and keep the
+    // staged file so they can retry without re-selecting. (A general resource is
+    // a single configured source; adding several at once is unsupported and is
+    // prevented in the UI, so only the single-media path is handled here.)
+    if (sectionsPreselectedRef.current && projRes.length === 0) {
+      sectionsPreselectedRef.current = false;
+      setResourceImportList(undefined);
+      setUploading(false);
+    }
   };
 
   const resourceSourcePassages = useMemo(() => {
@@ -847,6 +893,36 @@ export function PassageDetailArtifacts() {
     projMediaRef.current = m;
     setVisual(isVisual(m));
     setProjectResourceVisible(false);
+    setProjResPassageVisible(true);
+  };
+
+  // Deferred general-resource add: the Add Audio Resource dialog's Next hands
+  // the prepared file here instead of uploading. We keep the file, open
+  // SelectSections, and defer the real upload to that dialog's Upload button
+  // (handleSelectProjectResourcePassage). No media exists yet, so there are no
+  // existing assignments to pre-check.
+  const handleStageAudioFiles = async (files: File[]) => {
+    // we should only have one file if going through the general resource flow
+    if (!files || files.length !== 1) return;
+    // Commit a newly-typed artifact category now, while the dialog's metaData is
+    // still mounted; the deferred upload runs after it unmounts. Null the ref so
+    // the later upload's beforeUpload does not create a second category.
+    pendingResourceSeqRef.current = 0;
+    if (addCatCommitRef.current) {
+      catIdRef.current = await addCatCommitRef.current();
+      addCatCommitRef.current = null;
+    }
+    stagedResourceFilesRef.current = files;
+    cancelled.current = false;
+    isAddingAudioResourceRef.current = true;
+    projMediaRef.current = undefined;
+    // Staging only happens for the "Add Audio Resource" → General Resource flow,
+    // which is always audio, so this is never a visual resource. (Visual general
+    // resources are reached by selecting an existing project-resource media, not
+    // through staging.) The visual-vs-wizard routing in afterUpload keys off the
+    // uploaded media's own type, so this only sets the SelectSections label.
+    setVisual(false);
+    setUploadVisible(false);
     setProjResPassageVisible(true);
   };
 
@@ -914,6 +990,17 @@ export function PassageDetailArtifacts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projResPassageVisible, projResWizVisible]);
 
+  // If SelectSections closes without starting the deferred upload (the user
+  // discarded/closed it before clicking Upload), drop the staged file(s).
+  // Otherwise a later SelectSections run — e.g. configuring an existing general
+  // resource — would see stale files and wrongly upload them. When the upload
+  // has started, sectionsPreselectedRef is true and afterUpload clears them.
+  useEffect(() => {
+    if (!projResPassageVisible && !sectionsPreselectedRef.current) {
+      stagedResourceFilesRef.current = undefined;
+    }
+  }, [projResPassageVisible]);
+
   useEffect(() => {
     if (projResSetup.length) {
       handleSelectProjectResource(projResSetup[0] as MediaFileD);
@@ -927,6 +1014,17 @@ export function PassageDetailArtifacts() {
   ) => {
     projIdentRef.current = items;
     projCandidateRef.current = candidates;
+    if (stagedResourceFilesRef.current) {
+      // Deferred new-add flow: the file has not been uploaded yet. Upload it now
+      // (headlessly, through the always-mounted Uploader's importList) while
+      // SelectSections stays open with its button spinner. afterUpload advances
+      // to the configure step on success, or re-enables the button on failure
+      // so the user can retry without losing this selection.
+      sectionsPreselectedRef.current = true;
+      setUploading(true);
+      setResourceImportList(stagedResourceFilesRef.current);
+      return;
+    }
     if (isVisual(projMediaRef.current)) {
       writeVisualResource(items).then(() => {
         setProjResPassageVisible(false);
@@ -1120,6 +1218,9 @@ export function PassageDetailArtifacts() {
         eafUrl={aiGenerated ? AIGenerated : ''}
         defaultFilename={filename}
         pendingRestore={resourcePendingRestore}
+        importList={resourceImportList}
+        deferUpload={uploadType === UploadType.ProjectResource}
+        onStageFiles={handleStageAudioFiles}
         metaData={
           <ResourceData
             uploadType={uploadType}
@@ -1208,6 +1309,8 @@ export function PassageDetailArtifacts() {
               resourceType
             )}
             visual={visual}
+            uploadsOnNext={isAddingAudioResourceRef.current}
+            uploading={uploading}
             onSelect={handleSelectProjectResourcePassage}
           />
         ) : (

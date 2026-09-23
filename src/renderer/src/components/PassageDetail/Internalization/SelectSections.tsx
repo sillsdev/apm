@@ -1,17 +1,22 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { useSelector, shallowEqual } from 'react-redux';
-import { passageDetailArtifactsSelector } from '../../../selector';
+import {
+  passageDetailArtifactsSelector,
+  sharedSelector,
+} from '../../../selector';
 import {
   IState,
   PassageD,
   SectionD,
   Plan,
   IPassageDetailArtifactsStrings,
+  ISharedStrings,
 } from '../../../model';
 import {
   Box,
   Checkbox,
+  CircularProgress,
   debounce,
   Paper,
   PaperProps,
@@ -47,6 +52,20 @@ interface IProps {
   /** Visual resources are written immediately, so the button says so. */
   visual?: boolean;
   /**
+   * True when clicking Next now performs the (deferred) media upload — the
+   * new-add general-resource flow. The button then reads "Upload" instead of
+   * "Next". Editing an existing resource leaves this false (Next just advances
+   * to the configure step; the media already exists).
+   */
+  uploadsOnNext?: boolean;
+  /**
+   * True while the deferred upload triggered by this dialog's Upload button is
+   * in flight. The dialog stays open (so selections survive) with the button
+   * disabled and a spinner; on success the caller advances to the configure
+   * step, on failure it re-enables so the user can retry without re-selecting.
+   */
+  uploading?: boolean;
+  /**
    * `candidates` is every identity offered by the dialog; the caller needs it to
    * limit cleanup of unselected assignments to what the user could actually see.
    */
@@ -54,7 +73,7 @@ interface IProps {
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, onSelect } = props;
+  const { initialItems, visual, uploadsOnNext, uploading, onSelect } = props;
   const initialSelectionKey = (initialItems ?? [])
     .map((item) => `${item.type}:${item.id}`)
     .join('|');
@@ -73,6 +92,7 @@ export function SelectSections(props: IProps) {
     passageDetailArtifactsSelector,
     shallowEqual
   );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const setDimensions = () => {
@@ -261,14 +281,15 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
-        <Box sx={{ ...rowSx, ml: 'auto' }}>
+        <Box sx={{ ...rowSx, ml: 'auto', alignItems: 'center', gap: 1 }}>
+          {uploading && <CircularProgress size={20} color="primary" />}
           <Button
             id="select-sections-next"
             color="primary"
             onClick={handleSelected}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || uploading}
           >
-            {visual ? ta.createResources : ta.next}
+            {visual ? ta.createResources : uploadsOnNext ? ts.upload : ta.next}
           </Button>
         </Box>
       </ActionRow>

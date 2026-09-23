@@ -23,7 +23,7 @@ import { TokenContext } from '../context/TokenProvider';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import PassageRecordDlg from './PassageRecordDlg';
-import { restoreScroll } from '../utils';
+import { infoMsg, logError, restoreScroll, Severity } from '../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { NextUploadProps } from '../store';
 import { useDispatch } from 'react-redux';
@@ -85,6 +85,14 @@ interface IProps {
   confirmOnClose?: boolean | undefined;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
+  /**
+   * When set, the Add Audio Resource dialog's Next stages the prepared file(s)
+   * via `onStageFiles` instead of uploading them. The general-resource flow
+   * uses this to defer the upload until the user picks passages/sections; the
+   * actual upload is then driven through `importList`.
+   */
+  deferUpload?: boolean | undefined;
+  onStageFiles?: ((files: File[]) => void | Promise<void>) | undefined;
 }
 
 export const Uploader = (props: IProps) => {
@@ -120,6 +128,8 @@ export const Uploader = (props: IProps) => {
     hideUploadCancel,
     confirmOnClose,
     pendingRestore,
+    deferUpload,
+    onStageFiles,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -440,6 +450,33 @@ export const Uploader = (props: IProps) => {
     restoreScroll();
   };
 
+  // When deferring, the dialog's Next hands the prepared file(s) up to be
+  // uploaded later (driven through `importList` once passages are chosen)
+  // rather than uploading now. `onStageFiles` is async (it awaits category
+  // creation), so await it and return false on failure — that keeps the dialog
+  // selection and re-enables it, instead of leaking an unhandled rejection.
+  const stageFiles = async (files: File[]) => {
+    try {
+      await onStageFiles?.(files);
+      return true;
+    } catch (err) {
+      // Surface the failure (e.g. category creation) rather than silently
+      // re-enabling the dialog with no feedback, and log it for diagnosis.
+      showMessage(
+        err instanceof Error ? err.message : String(err),
+        AlertSeverity.Error
+      );
+      logError(
+        Severity.error,
+        errorReporter,
+        infoMsg(err as Error, 'resource staging failed')
+      );
+      return false;
+    }
+  };
+  const deferring = Boolean(deferUpload && onStageFiles);
+  const effectiveUploadMethod = deferring ? stageFiles : uploadMedia;
+
   useEffect(() => {
     if (uploadError && uploadError !== '') {
       let msg = uploadError;
@@ -510,7 +547,8 @@ export const Uploader = (props: IProps) => {
           onSpeaker={handleSpeakerChange}
           team={team}
           uploadType={uploadType || UploadType.Media}
-          uploadMethod={uploadMedia}
+          uploadMethod={effectiveUploadMethod}
+          onStageFile={deferring ? onStageFiles : undefined}
           multiple={multiple}
           inValue={inValue}
           onNonAudio={onNonAudio}

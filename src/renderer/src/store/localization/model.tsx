@@ -1123,6 +1123,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "confirmClose": string;
     "confirmCloseTitle": string;
     "createResources": string;
+    "createXResources": string;
     "currentResource": string;
     "deleteConfirm": string;
     "description": string;
