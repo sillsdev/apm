@@ -87,6 +87,7 @@ import {
   useCanPublish,
   useMobile,
   refNumPat,
+  generateUUID,
 } from '../../utils';
 import { addPt } from '../../utils/addPt';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
@@ -138,7 +139,9 @@ import { getDefaultName } from './getDefaultName';
 import { PlanBar } from './PlanBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import { PlanView } from './PlanView';
-import { runTitleMediaUpdate } from './runTitleMediaUpdate';
+import { createPendingTitleMediaQueue } from './pendingTitleMediaQueue';
+import type { TitleMediaPending } from './pendingTitleMediaQueue';
+import { resolveTitleMediaRowIndex } from './resolveTitleMediaRowIndex';
 
 const SaveWait = 500;
 
@@ -203,7 +206,16 @@ export function ScriptureTable(props: IProps) {
   const titleSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
+  const lastSavedRef = useRef<string | undefined>(undefined);
+  const titleMediaApplyRef = useRef<(pending: TitleMediaPending) => void>(
+    () => undefined
+  );
+  const titleMediaQueueRef = useRef<ReturnType<
+    typeof createPendingTitleMediaQueue
+  > | null>(null);
   const doForceDataChanges = useRef(false);
+  /** Prevents overlapping sheet-save pipelines when toolsChanged re-fires (TT-7660). */
+  const sheetSavePipelineRef = useRef(false);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
   const ctx = React.useContext(PlanContext);
@@ -234,7 +246,11 @@ export function ScriptureTable(props: IProps) {
   const [confirmPublishingVisible, setConfirmPublishingVisible] =
     useState(false);
   const [view, setView] = useState('');
-  const [lastSaved, setLastSaved] = useState<string>();
+  const [lastSaved, setLastSavedx] = useState<string>();
+  const setLastSaved = (value: string | undefined) => {
+    lastSavedRef.current = value;
+    setLastSavedx(value);
+  };
   const toolId = 'scriptureTable';
   const {
     saveRequested,
@@ -810,6 +826,8 @@ export function ScriptureTable(props: IProps) {
       color: undefined,
       deleted: false,
       filtered: false,
+      // Must not inherit neighbor rowKey from the spread above.
+      rowKey: generateUUID(),
     } as ISheet;
 
     if (flat && isSectionRow(myWorkflow[index] as ISheet)) {
@@ -871,6 +889,7 @@ export function ScriptureTable(props: IProps) {
       published: [] as PublishDestinationEnum[],
       book: scripture ? firstBook : '',
       sectionUpdated: currentDateTime(),
+      rowKey: generateUUID(),
     } as ISheet;
     return newRow;
   };
@@ -1145,47 +1164,109 @@ export function ScriptureTable(props: IProps) {
     applyCellChanges(changes);
   };
 
+  const bumpUpdatedStamp = (prev?: string) => {
+    let stamp = currentDateTime();
+    const floor = lastSavedRef.current;
+    // isSectionUpdated uses strict `>`; equal timestamps skip persist (TT-7660).
+    if (floor && stamp <= floor) {
+      const nextMs = Date.parse(floor) + 1;
+      stamp = Number.isFinite(nextMs) ? new Date(nextMs).toISOString() : stamp;
+    }
+    if (prev && stamp <= prev) {
+      const nextMs = Date.parse(prev) + 1;
+      stamp = Number.isFinite(nextMs) ? new Date(nextMs).toISOString() : stamp;
+    }
+    return stamp;
+  };
+
+  titleMediaApplyRef.current = (pending: TitleMediaPending) => {
+    setUpdate(true);
+    const newsht = [...sheetRef.current];
+    const i = resolveTitleMediaRowIndex(newsht, pending);
+    const ws = i >= 0 && i < newsht.length ? newsht[i] : undefined;
+    if (!ws) {
+      setUpdate(false);
+      return;
+    }
+    if (isSectionRow(ws)) {
+      const sectionUpdated = bumpUpdatedStamp(ws.sectionUpdated);
+      newsht[i] = {
+        ...ws,
+        titleMediaId: pending.mediaId
+          ? { type: 'mediafile', id: pending.mediaId }
+          : undefined,
+        sectionUpdated,
+      } as ISheet;
+      setSheet(newsht);
+      setChanged(true);
+    } else if (isPassageRow(ws)) {
+      // CHNUM / passage-only rows — do not run after section branch:
+      // SectionPassage would otherwise overwrite titleMediaId (TT-7660).
+      const passageUpdated = bumpUpdatedStamp(ws.passageUpdated);
+      newsht[i] = {
+        ...ws,
+        mediaId: pending.mediaId
+          ? { type: 'mediafile', id: pending.mediaId }
+          : undefined,
+        passageUpdated,
+      } as ISheet;
+      setSheet(newsht);
+      setChanged(true);
+    }
+    setUpdate(false);
+  };
+
+  const getTitleMediaQueue = () => {
+    if (!titleMediaQueueRef.current) {
+      titleMediaQueueRef.current = createPendingTitleMediaQueue({
+        isBusy: () => savingRef.current || updateRef.current,
+        whenIdle: (fn) => {
+          // Retry forever on wait timeout — never drop title-media updates (TT-7660).
+          const tryWait = (): Promise<void> => {
+            if (!savingRef.current && !updateRef.current) {
+              fn();
+              return Promise.resolve();
+            }
+            return waitForIt(
+              'finish save or update before title media',
+              () => !savingRef.current && !updateRef.current,
+              () => false,
+              50
+            )
+              .then(() => {
+                fn();
+              })
+              .catch(() => {
+                showMessage(t.saving);
+                return tryWait();
+              });
+          };
+          return tryWait();
+        },
+        applyOne: (item) => titleMediaApplyRef.current(item),
+        requestSave: () => {
+          if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current);
+          // Only the sheet tool — bare startSave() marks every dirty tool,
+          // including MediaTitle-*rec mid-recording, which surfaces as
+          // NoSaveWoMedia ("check your internet") with no failed network call.
+          titleSaveTimer.current = setTimeout(() => startSave(toolId), 1000);
+        },
+      });
+    }
+    return titleMediaQueueRef.current;
+  };
+
   const updateTitleMedia = async (index: number, mediaId: string) => {
-    runTitleMediaUpdate({
-      isBusy: () => savingRef.current || updateRef.current,
-      whenIdle: (fn) =>
-        runWhenSheetIdle('finish save or update before title media', fn),
-      apply: () => {
-        setUpdate(true);
-        const newsht = [...sheetRef.current];
-        const { ws, i } = getByIndex(newsht, index);
-        if (ws) {
-          if (isSectionRow(ws)) {
-            const sectionUpdated = currentDateTime();
-            newsht[i] = {
-              ...ws,
-              titleMediaId: mediaId
-                ? { type: 'mediafile', id: mediaId }
-                : undefined,
-              sectionUpdated,
-            } as ISheet;
-            setSheet(newsht);
-            setChanged(true);
-          }
-          // Used for recording chapter numbers (CHNUM)
-          if (isPassageRow(ws)) {
-            const passageUpdated = currentDateTime();
-            newsht[i] = {
-              ...ws,
-              mediaId: mediaId ? { type: 'mediafile', id: mediaId } : undefined,
-              passageUpdated,
-            } as ISheet;
-            setSheet(newsht);
-            setChanged(true);
-          }
-        }
-        setUpdate(false);
-      },
-      requestSave: () => {
-        if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current);
-        titleSaveTimer.current = setTimeout(() => startSave(), 1000);
-      },
-    });
+    const { ws } = getByIndex(sheetRef.current, index);
+    const pending: TitleMediaPending = {
+      index,
+      mediaId,
+      sectionId: ws?.sectionId?.id,
+      passageId: ws?.passage?.id,
+      rowKey: ws?.rowKey,
+      label: ws?.title,
+    };
+    getTitleMediaQueue().enqueue(pending);
   };
 
   const saveIfChanged = (cb: () => void) => {
@@ -1519,10 +1600,18 @@ export function ScriptureTable(props: IProps) {
       }
       setComplete(10);
       const saveFn = async (sheet: ISheet[]) => {
+        // Prefer Orbit cache over closed-over React lists — publishing rows
+        // can exist on the sheet before the sections prop catches up (TT-7660).
+        const freshSections = memory.cache.query((q) =>
+          q.findRecords('section')
+        ) as SectionD[];
+        const freshPassages = memory.cache.query((q) =>
+          q.findRecords('passage')
+        ) as PassageD[];
         if (!offlineOnly && numChanges > 10) {
           return await onlineSave(sheet, prevSave);
         }
-        await localSave(sheet, sections, passages, prevSave);
+        await localSave(sheet, freshSections, freshPassages, prevSave);
         return false;
       };
       if (numChanges > 50) setBusy(true);
@@ -1540,6 +1629,7 @@ export function ScriptureTable(props: IProps) {
       saveCompleted(toolId);
       setComplete(100);
       setUpdate(false);
+      sheetSavePipelineRef.current = false;
     };
     const doneSavingFailure = (saveErr: string) => {
       setSaving(false);
@@ -1548,6 +1638,7 @@ export function ScriptureTable(props: IProps) {
       saveCompleted(toolId, saveErr);
       setComplete(100);
       showMessage(saveErr);
+      sheetSavePipelineRef.current = false;
     };
     const finishAfterSave = () => {
       if (doForceDataChanges.current) {
@@ -1584,6 +1675,11 @@ export function ScriptureTable(props: IProps) {
     };
     myChangedRef.current = isChanged(toolId);
     if (saveRequested(toolId)) {
+      // MediaTitle (and other tools) clearing dirty state re-fires toolsChanged
+      // while scriptureTable startSave is still set — without this guard we
+      // launch a second save with the same prevSave (TT-7660).
+      if (sheetSavePipelineRef.current) return;
+      sheetSavePipelineRef.current = true;
       //wait a beat for the save to register
       setTimeout(() => {
         waitForIt(
@@ -1601,6 +1697,7 @@ export function ScriptureTable(props: IProps) {
                 showMessage(ts.NoSaveOffline);
                 setSaving(false);
                 setUpdate(false);
+                sheetSavePipelineRef.current = false;
               } else {
                 save();
               }
@@ -1883,6 +1980,7 @@ export function ScriptureTable(props: IProps) {
         reference: publishingTitle(passageType),
         title,
         passageType: passageType,
+        rowKey: generateUUID(),
       } as ISheet;
       return newsht.concat([newRow]);
     }

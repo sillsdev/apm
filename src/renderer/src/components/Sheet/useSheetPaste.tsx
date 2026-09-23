@@ -7,6 +7,7 @@ import {
 } from '../../model';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { currentDateTime } from '../../utils/currentDateTime';
+import { generateUUID } from '../../utils/generateUUID';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { PublishDestinationEnum } from '../../crud';
 
@@ -178,7 +179,7 @@ export const useWfPaste = (props: IProps) => {
             isPositiveInteger(row2[passNumCol])
         )
         .forEach((r) => {
-          const ws = { deleted: false } as MySheet;
+          const ws = { deleted: false, rowKey: generateUUID() } as MySheet;
           colNames.forEach((c, i) => {
             const val = r[i];
             if (c === 'book') ws.book = findBook(val);

@@ -11,7 +11,7 @@ export enum PublishDestinationEnum {
 export const usePublishDestination = () => {
   const isPublished = (destinations: PublishDestinationEnum[]) => {
     return (
-      destinations.filter(
+      (destinations || []).filter(
         (p) =>
           p !== PublishDestinationEnum.PublishDestinationSetByUser &&
           p !== PublishDestinationEnum.PropagateSection
@@ -58,7 +58,7 @@ export const usePublishDestination = () => {
   };
   const setPublishTo = (destinations: PublishDestinationEnum[]) => {
     const json: { [key: string]: string } = {}; // Add type annotation here
-    destinations.forEach((destination) => {
+    (destinations || []).forEach((destination) => {
       switch (destination) {
         case PublishDestinationEnum.AkuoBeta:
           json['Beta'] = 'true';

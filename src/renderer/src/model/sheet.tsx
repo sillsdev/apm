@@ -55,6 +55,8 @@ export interface ISheet {
   color?: string | undefined;
   titleMediaId?: RecordIdentity | undefined;
   myWork?: boolean | undefined;
+  /** Stable client identity for unsaved rows (title-media queue). */
+  rowKey?: string | undefined;
 }
 
 export const flatScrColNames = [
