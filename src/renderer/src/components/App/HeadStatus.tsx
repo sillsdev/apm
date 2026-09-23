@@ -11,7 +11,7 @@ import { useGlobal, useGetGlobal } from '../../context/useGlobal';
 import { isElectron } from '../../../api-variable';
 import { LocalKey } from '../../utils/localUserKey';
 import { markNeedItfSync } from '../../utils/needItfSync';
-import { Online } from '../../utils/useCheckOnline';
+import { useCheckOnline } from '../../utils/useCheckOnline';
 import { mainSelector, sharedSelector } from '../../selector';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -41,8 +41,9 @@ export const HeadStatus = (props: IProps) => {
   const { handleMenu, onUpdateTipOpen } = props;
   const { pathname } = useLocation();
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
-  const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
+  const [connected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
   const getGlobal = useGetGlobal();
+  const checkOnline = useCheckOnline('HeadStatus');
   const offlineProjects = useOrbitData<OfflineProject[]>('offlineproject');
   const [hasOfflineProjects, setHasOfflineProjects] = useState(false);
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -85,17 +86,15 @@ export const HeadStatus = (props: IProps) => {
   };
 
   const handleSetOnline = (cb?: () => void) => {
-    Online(true, (isConnected) => {
-      if (getGlobal('connected') !== isConnected) {
-        localStorage.setItem(LocalKey.connected, isConnected.toString());
-        setConnected(isConnected);
-      }
+    // useCheckOnline clears stale orbit network error when AmIOnline succeeds
+    // (TT-7720), including CloudOff → online while connected was already true.
+    checkOnline((isConnected) => {
       if (!isConnected) {
         showMessage(ts.mustBeOnline);
         return;
       }
       cb && cb();
-    });
+    }, true);
   };
 
   useEffect(() => {

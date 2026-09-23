@@ -27,6 +27,7 @@ let mockConvertToFormat: jest.Mock;
 let capturedAfterUploadCb: ((mediaId: string) => Promise<void>) | undefined;
 const mockEnv = { isElectron: false, online: true };
 const mockShowMessage = jest.fn();
+const mockSaveCompleted = jest.fn();
 
 jest.mock('../../api-variable', () => ({
   get isElectron() {
@@ -86,7 +87,7 @@ jest.mock('../context/UnsavedContext', () => {
       state: {
         toolsChanged: 0,
         saveRequested: () => mockSaveRequested(),
-        saveCompleted: jest.fn(),
+        saveCompleted: (...args: unknown[]) => mockSaveCompleted(...args),
         clearRequested: () => false,
         clearCompleted: jest.fn(),
       },
@@ -445,6 +446,13 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() =>
       expect(mockShowMessage).toHaveBeenLastCalledWith('Queued for upload')
+    );
+    // Must not pass the queue text as saveError — that becomes global
+    // saveResult ("…;") and re-snacks on Record remount (TT-7720).
+    expect(mockSaveCompleted).toHaveBeenCalledWith('record-tool', undefined);
+    expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+      'record-tool',
+      'Queued for upload'
     );
   });
 

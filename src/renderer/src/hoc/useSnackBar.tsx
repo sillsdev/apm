@@ -13,6 +13,7 @@ export const useSnackBar = () => {
 
   const messageReset = () => {
     setMessage(<></>);
+    setAlert(undefined);
   };
 
   const showMessage = (
