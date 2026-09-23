@@ -188,6 +188,12 @@ test('paste hieararchical', () => {
   );
   const passageUpdated = hookResult?.addedWorkflow[0].passageUpdated;
   const sectionUpdated = passageUpdated;
+  const rowKeys = hookResult?.addedWorkflow.map((r) => r.rowKey);
+  rowKeys?.forEach((rowKey) =>
+    expect(rowKey).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    )
+  );
   const testVal = (
     [
       {
@@ -331,10 +337,11 @@ test('paste hieararchical', () => {
         reference: '1:67-80',
       },
     ] as ISheet[]
-  ).map((i) => ({
+  ).map((i, idx) => ({
     ...i,
     passageUpdated,
     sectionUpdated,
+    rowKey: rowKeys?.[idx],
   }));
   expect(hookResult?.addedWorkflow).toEqual(testVal);
 });
@@ -386,6 +393,7 @@ test('paste flat', () => {
   );
   const passageUpdated = hookResult?.addedWorkflow[0].passageUpdated;
   const sectionUpdated = passageUpdated;
+  const rowKeys = hookResult?.addedWorkflow.map((r) => r.rowKey);
   const testValue = (
     [
       {
@@ -424,7 +432,12 @@ test('paste flat', () => {
         reference: '5:17-26',
       },
     ] as ISheet[]
-  ).map((i) => ({ ...i, passageUpdated, sectionUpdated }));
+  ).map((i, idx) => ({
+    ...i,
+    passageUpdated,
+    sectionUpdated,
+    rowKey: rowKeys?.[idx],
+  }));
   expect(hookResult?.addedWorkflow).toEqual(testValue);
 });
 
@@ -471,6 +484,7 @@ test('paste flat data into hierarchy', () => {
   );
   const passageUpdated = hookResult?.addedWorkflow[0].passageUpdated;
   const sectionUpdated = passageUpdated;
+  const rowKeys = hookResult?.addedWorkflow.map((r) => r.rowKey);
   const testValue = (
     [
       {
@@ -500,7 +514,12 @@ test('paste flat data into hierarchy', () => {
         reference: '4:31-37',
       },
     ] as ISheet[]
-  ).map((i) => ({ ...i, passageUpdated, sectionUpdated }));
+  ).map((i, idx) => ({
+    ...i,
+    passageUpdated,
+    sectionUpdated,
+    rowKey: rowKeys?.[idx],
+  }));
   expect(hookResult?.addedWorkflow).toEqual(testValue);
 });
 
