@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
+import { useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
   Passage,
@@ -43,7 +43,6 @@ import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
-import SelectProjectResource from './SelectProjectResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
@@ -73,7 +72,6 @@ import {
   removeExtension,
   isVisual,
   isUrl,
-  useMobile,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -148,7 +146,6 @@ export function PassageDetailArtifacts() {
     forceRefresh,
     handleItemPlayEnd,
     handleItemTogglePlay,
-    getProjectResources,
     sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
@@ -173,7 +170,6 @@ export function PassageDetailArtifacts() {
   const [audioScriptureVisible, setAudioScriptureVisible] = useState(false);
   const [allowProject, setAllowProject] = useState(true);
   const [sharedResourceVisible, setSharedResourceVisible] = useState(false);
-  const [projectResourceVisible, setProjectResourceVisible] = useState(false);
   const [projResPassageVisible, setProjResPassageVisible] = useState(false);
   const [projResWizVisible, setProjResWizVisible] = useState(false);
   const [projResSetup, setProjResSetup] = useState(new Array<MediaFileD>());
@@ -265,7 +261,6 @@ export function PassageDetailArtifacts() {
   // only in what discarding tears down); null when no prompt is showing.
   const [dialogPendingCloseConfirmation, setDialogPendingCloseConfirmation] =
     useState<null | 'passage' | 'edit' | 'wiz'>(null);
-  const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
 
@@ -426,13 +421,6 @@ export function PassageDetailArtifacts() {
 
   const handleSharedResourceVisible = (v: boolean) => {
     setSharedResourceVisible(v);
-  };
-
-  const handleProjectResourceVisible = (v: boolean) => {
-    const complete = getGlobal('progress');
-    if (complete === 0 || complete === 100) {
-      setProjectResourceVisible(v);
-    }
   };
 
   const handleProjResPassageVisible = (v: boolean) => {
@@ -912,7 +900,6 @@ export function PassageDetailArtifacts() {
     setSelected(m.id, PlayInPlayer.yes);
     projMediaRef.current = m;
     setVisual(isVisual(m));
-    setProjectResourceVisible(false);
     setProjResPassageVisible(true);
   };
 
@@ -1109,14 +1096,6 @@ export function PassageDetailArtifacts() {
     }
   };
 
-  const [hasProjRes, setHasProjRes] = useState(false);
-  const { isMobileWidth } = useMobile();
-
-  useEffect(() => {
-    getProjectResources().then((res) => setHasProjRes(res.length > 0));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles]);
-
   const isScripture = useMemo(
     () => planType(plan)?.scripture,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1151,13 +1130,6 @@ export function PassageDetailArtifacts() {
               <Grid sx={{ flexShrink: 0 }}>
                 <AddResource action={handleAction} />
               </Grid>
-              {hasProjRes && !isMobileWidth && (
-                <Grid sx={{ flexShrink: 0 }}>
-                  <Button onClick={() => setProjectResourceVisible(true)}>
-                    {t.configure}
-                  </Button>
-                </Grid>
-              )}
             </>
           )}
           {playItem !== '' && (
@@ -1296,20 +1268,6 @@ export function PassageDetailArtifacts() {
           onScope={setResourceKind}
           onSelect={handleSelectShared}
           onOpen={handleSharedResourceVisible}
-        />
-      </BigDialog>
-      <BigDialog
-        bp={BigDialogBp.lg}
-        title={t.generalResources}
-        isOpen={projectResourceVisible}
-        onOpen={handleProjectResourceVisible}
-      >
-        <SelectProjectResource
-          onSelect={(m) => {
-            isAddingAudioResourceRef.current = false;
-            handleSelectProjectResource(m);
-          }}
-          onOpen={handleProjectResourceVisible}
         />
       </BigDialog>
       <BigDialog

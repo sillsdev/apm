@@ -172,7 +172,6 @@ const initState = {
   pdBusy: false,
   setPDBusy: (_pdBusy: boolean) => {},
   allBookData: Array<BookName>(),
-  getProjectResources: async () => [] as MediaFileD[],
   workflow: Array<SimpleWf>(),
   psgCompleted: [] as StepComplete[],
   setStepComplete: async (
@@ -1301,7 +1300,6 @@ const PassageDetailProvider = (props: IProps) => {
           setCommentPlaying,
           setCommentPlayId,
           setPDBusy,
-          getProjectResources,
           setCurrentSegment,
           getCurrentSegment,
           setPlayerSegments,

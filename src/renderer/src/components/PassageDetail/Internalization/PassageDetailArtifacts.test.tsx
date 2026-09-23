@@ -266,7 +266,6 @@ jest.mock('../../MediaUpload', () => ({
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
-jest.mock('./SelectProjectResource', () => () => null);
 jest.mock('./SelectSections', () => () => null);
 jest.mock('./ProjectResourceConfigure', () => () => null);
 jest.mock('../../AlertDialog', () => () => null);
@@ -305,7 +304,6 @@ describe('PassageDetailArtifacts general resource uploads', () => {
       forceRefresh: jest.fn(),
       handleItemPlayEnd: jest.fn(),
       handleItemTogglePlay: jest.fn(),
-      getProjectResources: jest.fn().mockResolvedValue([]),
       sharedResource: undefined,
     } as never);
   });
