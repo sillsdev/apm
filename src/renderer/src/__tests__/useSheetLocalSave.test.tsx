@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
+import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import { GlobalProvider, GlobalState } from '../context/GlobalContext';
 import {
@@ -11,10 +12,11 @@ import {
   PassageD,
 } from '../model';
 import { useWfLocalSave } from '../components/Sheet/useSheetLocalSave';
-import { memory } from '../schema';
+import { memory, keyMap } from '../schema';
 import { PassageTypeEnum } from '../model/passageType';
 import DataProvider from '../hoc/DataProvider';
 import { PublishDestinationEnum } from '../crud/usePublishDestination';
+import { getSerializer } from '../serializers/getSerializer';
 
 const defaultSheet: ISheet = {
   level: SheetLevel.Section,
@@ -429,11 +431,13 @@ test('persists titleMediafile for all three section title recordings', async () 
   ]);
 });
 
-// TT-7704b: editing a passage reference must invalidate the persisted
-// startChapter/endChapter/startVerse/endVerse, not just the in-memory sheet
-// row's copy, or a refresh reads the old chapter (parseRef skips
-// recalculation once startChapter is already a number).
-test('save after reference edit clears stale parsed chapter/verse fields', async () => {
+// TT-7704b / PR #675 review: editing a passage reference must invalidate the
+// persisted startChapter/endChapter/startVerse/endVerse, not just the
+// in-memory sheet row's copy, and must recompute them immediately via
+// parseRef rather than leaving them undefined (parseRef skips recalculation
+// once startChapter is already a number, and an undefined value never
+// reaches the online db — see the serializer test below).
+test('save after reference edit recomputes stale parsed chapter/verse fields', async () => {
   (memory.update as jest.Mock).mockClear();
 
   const globals = {
@@ -520,9 +524,117 @@ test('save after reference edit clears stale parsed chapter/verse fields', async
 
   expect(updateRecordOp).toBeDefined();
   expect(updateRecordOp?.record?.attributes?.reference).toBe('3:1-4');
-  // Stale chapter 1 must not survive an edit to a reference now in chapter 3.
-  expect(updateRecordOp?.record?.attributes?.startChapter).not.toBe(1);
-  expect(updateRecordOp?.record?.attributes?.endChapter).not.toBe(1);
-  expect(updateRecordOp?.record?.attributes?.startVerse).toBeUndefined();
-  expect(updateRecordOp?.record?.attributes?.endVerse).toBeUndefined();
+  // Stale chapter 1 must not survive an edit to a reference now in chapter 3;
+  // it must be recomputed to the real chapter 3, not merely cleared.
+  expect(updateRecordOp?.record?.attributes?.startChapter).toBe(3);
+  expect(updateRecordOp?.record?.attributes?.endChapter).toBe(3);
+  expect(updateRecordOp?.record?.attributes?.startVerse).toBe(1);
+  expect(updateRecordOp?.record?.attributes?.endVerse).toBe(4);
+});
+
+// PR #675 review (r4087346106): same comment repeated on this file — "It
+// would be better to parseRef immediately instead of setting these to
+// undefined". Root cause: JSONAPIResourceSerializer.serializeAttribute skips
+// any attribute whose value is `undefined` when building the outgoing PATCH
+// (@orbit/jsonapi), so clearing startChapter/etc to undefined never reaches
+// the online db — the stale chapter (1) survives there and reappears on the
+// next refetch. Prove it by serializing the exact record this hook persists.
+test('save after reference edit produces attributes the online db will actually receive', async () => {
+  (memory.update as jest.Mock).mockClear();
+
+  const globals = {
+    plan: 'p1',
+    user: 'u1',
+    offlineOnly: false,
+    memory,
+  } as GlobalState;
+
+  const setComplete = jest.fn((val: number) => {});
+  const worksheet: ISheet[] = [
+    {
+      ...defaultSheet,
+      kind: IwsKind.SectionPassage,
+      sectionSeq: 1,
+      title: 'The Temptation of Jesus',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-22',
+      passageSeq: 1,
+      book: 'MAT',
+      reference: '3:1-4', // changed from 1:1-4 to 3:1-4
+      comment: '',
+      passage: { type: 'passage', id: 'pa1' } as PassageD,
+      passageUpdated: '2021-09-22',
+      deleted: false,
+      mediaShared: IMediaShare.NotPublic,
+    },
+  ];
+
+  const sections = [
+    {
+      type: 'section',
+      id: 's1',
+      attributes: {
+        sequencenum: 1,
+        name: 'The Temptation of Jesus',
+        graphics: '{}',
+        published: false,
+        level: 1,
+        dateCreated: '2021-09-21',
+        dateUpdated: '2021-09-21',
+        lastModifiedBy: 1,
+      },
+    } as SectionD,
+  ];
+
+  const passages: PassageD[] = [
+    {
+      type: 'passage',
+      id: 'pa1',
+      attributes: {
+        sequencenum: 1,
+        book: 'MAT',
+        reference: '1:1-4', // stale reference before the edit
+        title: '',
+        state: '',
+        lastComment: '',
+        hold: false,
+        dateCreated: '2021-09-21',
+        dateUpdated: '2021-09-21',
+        lastModifiedBy: 1,
+        // stale parsed fields calculated for the OLD reference (chapter 1)
+        startChapter: 1,
+        endChapter: 1,
+        startVerse: 1,
+        endVerse: 4,
+      },
+    } as PassageD,
+  ];
+
+  const localSave = setup({ globals, setComplete });
+
+  await localSave(worksheet, sections, passages, '2021-09-21');
+
+  const updateCalls = (memory.update as jest.Mock).mock.calls;
+  const passageUpdateOps = updateCalls[1][0] as Array<{
+    op?: string;
+    record?: PassageD;
+  }>;
+  const updateRecordOp = passageUpdateOps.find(
+    (op) => op.op === 'updateRecord' && op.record?.type === 'passage'
+  );
+  expect(updateRecordOp?.record).toBeDefined();
+
+  const resource = getSerializer({
+    schema: memory.schema,
+    keyMap,
+  } as unknown as Parameters<typeof getSerializer>[0]).serialize(
+    updateRecordOp!.record!
+  );
+
+  // The online db must receive the recomputed chapter 3, not silence
+  // (an omitted attribute), or it keeps reporting the stale chapter 1.
+  expect(resource.attributes?.['start-chapter']).toBe(3);
+  expect(resource.attributes?.['end-chapter']).toBe(3);
+  expect(resource.attributes?.['start-verse']).toBe(1);
+  expect(resource.attributes?.['end-verse']).toBe(4);
 });
