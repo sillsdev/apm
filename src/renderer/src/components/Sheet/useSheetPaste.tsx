@@ -10,6 +10,7 @@ import { currentDateTime } from '../../utils/currentDateTime';
 import { generateUUID } from '../../utils/generateUUID';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { PublishDestinationEnum } from '../../crud';
+import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 
 interface MySheet extends ISheet {
   [key: string]: any;
@@ -205,6 +206,11 @@ export const useWfPaste = (props: IProps) => {
               ws.passageUpdated = updatedAt;
             }
           }
+          // getSheet.ts derives passageType from the reference the same way
+          // on reload; doing it here too means a pasted-but-unsaved sheet
+          // classifies passage rows correctly before the first save (Update
+          // Publishing Rows reads passageType to find/insert CHNUM rows).
+          ws.passageType = passageTypeFromRef(ws.reference, flat);
           addedWorkflow.push(ws);
         });
     }

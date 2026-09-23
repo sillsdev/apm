@@ -20,6 +20,7 @@ import {
 import { related } from '../../crud/related';
 import { findRecord } from '../../crud/tryFindRecord';
 import { UpdateRelatedPassageOps } from '../../crud/updatePassageState';
+import { parseRef } from '../../crud/passage';
 import { isPassageRow, isSectionRow } from './isSectionPassage';
 import {
   isPassageAdding,
@@ -152,6 +153,8 @@ export const useWfLocalSave = (props: IProps) => {
         if (!isPassageAdding(item) && !item.deleted) {
           const itemId = item?.passage?.id || '';
           const curPass = passages.filter((p) => p.id === itemId)[0];
+          const referenceChanged =
+            curPass.attributes.reference !== item.reference;
           const passRec = {
             ...curPass,
             attributes: {
@@ -162,6 +165,20 @@ export const useWfLocalSave = (props: IProps) => {
               title: item.comment,
             },
           } as PassageD;
+          if (referenceChanged) {
+            // TT-7704b / PR #675 review: the cached startChapter/endChapter/
+            // startVerse/endVerse were calculated for the old reference.
+            // Clear them (not just on the sheet row's ws.passage) and run
+            // parseRef immediately rather than leaving them undefined —
+            // JSONAPIResourceSerializer skips undefined attributes when
+            // building the outgoing PATCH, so an undefined value would never
+            // overwrite the stale number already stored in the online db.
+            passRec.attributes.startChapter = undefined;
+            passRec.attributes.endChapter = undefined;
+            passRec.attributes.startVerse = undefined;
+            passRec.attributes.endVerse = undefined;
+            parseRef(passRec);
+          }
           const t = new RecordTransformBuilder();
           const ops = UpdateRecord(t, passRec, user);
           if (lastSec.id !== related(curPass, 'section'))

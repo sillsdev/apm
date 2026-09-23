@@ -96,6 +96,7 @@ import {
   passageTypeFromRef,
 } from '../../control/passageTypeFromRef';
 import { resolveSheetStartChapter } from './resolveSheetStartChapter';
+import { withUpdatedReference } from './withUpdatedReference';
 import BigDialog from '../../hoc/BigDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -705,12 +706,7 @@ export function ScriptureTable(props: IProps) {
     passageRow.reference = val;
     passageRow.passageUpdated = currentDateTime();
     passageRow.sharedResource = sr;
-    if (passageRow.passage) {
-      passageRow.passage = {
-        ...passageRow.passage,
-        attributes: { ...passageRow.passage.attributes, reference: val },
-      };
-    }
+    passageRow.passage = withUpdatedReference(passageRow.passage, val);
     if (passageRow.passageType === PassageTypeEnum.NOTE && passageRow.passage) {
       const gr = graphicFind(passageRow.passage, val);
       passageRow.graphicUri = gr?.uri;
@@ -1132,6 +1128,10 @@ export function ScriptureTable(props: IProps) {
           name === 'reference'
             ? passageTypeFromRef(c.value as string, flat)
             : ws?.passageType;
+        const passage =
+          name === 'reference'
+            ? withUpdatedReference(ws?.passage, c.value as string)
+            : ws?.passage;
 
         newsht[i] = {
           ...ws,
@@ -1141,6 +1141,7 @@ export function ScriptureTable(props: IProps) {
           sectionUpdated,
           passageUpdated,
           passageType,
+          passage,
         } as ISheet;
       }
     });
