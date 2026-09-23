@@ -89,6 +89,8 @@ export * from './useNum2BookCode';
 export * from './refNumPat';
 export * from './blobToBase64';
 export * from './urlToFile';
+export * from './libraryGraphicToCompressedImages';
+export * from './compressedImageDisplayUrl';
 export * from './getUrlNameAndExt';
 export * from './mimeTypes';
 export * from './handleUnauthorized';

@@ -42,10 +42,8 @@ import { GraphicUploader } from './GraphicUploader';
 import GraphicRights from './GraphicRights';
 import { UploadType } from './UploadType';
 import { getRefFilter } from './getRefFilter';
-import { getUrlNameAndExt } from '../utils/getUrlNameAndExt';
-import { urlToFile } from '../utils/urlToFile';
-import { CompressedImages, useCompression } from '../utils/useCompression';
-import { mimeMap } from '../utils/loadBlob';
+import { CompressedImages } from '../utils/useCompression';
+import { libraryGraphicToCompressedImages } from '../utils/libraryGraphicToCompressedImages';
 import { useOrganizedBy } from '../crud';
 import { VertScrollBox } from '../control/VertScrollBox';
 import logError, { Severity } from '../utils/logErrorService';
@@ -60,6 +58,8 @@ export interface GraphicPickerImage {
   id: string;
   url?: string;
   thumbnailUrl?: string;
+  /** Prefer for ApmDim (40) slots; falls back to thumbnailUrl / url. */
+  thumbnailUrlSmall?: string;
   label?: string;
   keywords?: string[];
   styles?: string[];
@@ -168,6 +168,7 @@ function bibleImageToPickerImage(b: BibleImage): GraphicPickerImage {
     id: b.uuid,
     url: b.orig_url,
     thumbnailUrl: b.thumb_url_large,
+    thumbnailUrlSmall: b.thumb_url_small,
     label: b.title,
     keywords: b.keywords,
     styles: b.styles,
@@ -411,13 +412,6 @@ export function GraphicPicker({
   const [filterSelectedKeywords, setFilterSelectedKeywords] = useState<
     string[]
   >([]);
-  const { uploadMedia } = useCompression({
-    showMessage,
-    dimension,
-    defaultFilename,
-    finish,
-    onOpen,
-  });
   const defaultScriptureRefChecked: ScriptureRefChecked = useMemo(
     () =>
       scripture
@@ -739,25 +733,32 @@ export function GraphicPicker({
       if (tabValue === 0 && onSelectedRights) {
         onSelectedRights(img.copyright);
       }
-      const { base, ext } = getUrlNameAndExt(img.url);
-      const mimeType = mimeMap[ext.toLowerCase()] || 'image/jpeg';
-      urlToFile(img.url, `${base}.${ext}`, mimeType)
-        .then((file) => {
-          uploadMedia([file]);
-        })
-        .catch((error: unknown) => {
-          logError(
-            Severity.error,
-            errorReporter,
-            `Error uploading graphic: ${error}`
-          );
-        })
-        .finally(() => {
-          setSelectedId(null);
-        });
+      // Store CDN URLs — avoid fetch(orig_url) CORS failures (TT-7725).
+      const compressed = libraryGraphicToCompressedImages(img, dimension);
+      if (compressed.length === 0) {
+        logError(
+          Severity.error,
+          errorReporter,
+          'Error uploading graphic: selected image has no URL'
+        );
+        onOpen(false);
+        setSelectedId(null);
+        return;
+      }
+      finish(compressed);
+      onOpen(false);
+      setSelectedId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabValue, selectedId, images, onOpen, onSelectedRights]);
+  }, [
+    tabValue,
+    selectedId,
+    images,
+    onOpen,
+    onSelectedRights,
+    dimension,
+    finish,
+  ]);
 
   const handleTabChange = useCallback(
     (_event: React.SyntheticEvent, newValue: number) => {
