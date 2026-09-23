@@ -130,11 +130,20 @@ export function UserTable() {
   const handleDelete = (value: string) => () => {
     setDeleteItem(value);
   };
-  const handleDeleteConfirmed = () => {
+  const handleDeleteConfirmed = async () => {
     const deleteRec = getUserRec(deleteItem);
-    RemoveUserFromOrg(memory, deleteRec, organization, user, teamDelete);
-    localStorage.setItem(localUserKey(LocalKey.url), '/');
-    setDeleteItem('');
+    try {
+      await RemoveUserFromOrg(
+        memory,
+        deleteRec,
+        organization,
+        user,
+        teamDelete
+      );
+      localStorage.setItem(localUserKey(LocalKey.url), '/');
+    } finally {
+      setDeleteItem('');
+    }
   };
 
   const handleDeleteRefused = () => {

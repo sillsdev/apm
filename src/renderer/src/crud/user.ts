@@ -87,7 +87,7 @@ export async function RemoveUserFromOrg(
 
   const inviteRec = invites.filter(
     (i) =>
-      i.attributes.email?.toLowerCase() ===
+      i.attributes?.email?.toLowerCase() ===
         deletedUser.attributes?.email?.toLowerCase() &&
       organizationIds.includes(related(i, 'organization'))
   );
@@ -150,9 +150,10 @@ export async function RemoveUserFromOrg(
       ) as OrganizationMembership[]
     ).map((om) => related(om, 'organization'));
     const orphaned = organizationIds.filter((o) => !orgWithMembers.includes(o));
-    console.log(orphaned);
     orphaned.forEach((o) => teamDelete(o));
-  } catch {
-    //ignore it
+  } catch (err) {
+    // A thrown update never reaches the remote queue. Surface it; callers await this.
+    console.error('RemoveUserFromOrg failed', err);
+    throw err;
   }
 }
