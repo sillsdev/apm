@@ -1,9 +1,13 @@
 import React from 'react';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
 import { UploadType } from '../../UploadType';
 import PassageDetailArtifacts from './PassageDetailArtifacts';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import { createAppTheme } from '../../../theme';
+
+const theme = createAppTheme('en');
 
 jest.mock('array-move', () => ({
   arrayMoveImmutable: jest.fn((items: unknown[]) => items),
@@ -84,6 +88,8 @@ jest.mock('../../../crud', () => ({
   ArtifactCategoryType: { Resource: 'resource' },
   usePlanType: () => () => ({ scripture: false, flat: false }),
   usePlan: () => ({ getPlan: jest.fn(() => null) }),
+  useArtifactType: () => ({ getTypeId: jest.fn(() => '') }),
+  ArtifactTypeSlug: { Resource: 'resource' },
 }));
 
 // Stable module-level arrays: the real useOrbitData hook returns the same
@@ -219,10 +225,21 @@ jest.mock('../../Uploader', () => ({
   },
 }));
 
+jest.mock('../../MediaUpload', () => ({
+  MarkDownType: 'text/markdown',
+  UriLinkType: 'text/uri-list',
+}));
+jest.mock('../../../control/MarkDownView', () => ({
+  MarkDownView: () => null,
+}));
+jest.mock('./usePassageRef', () => ({
+  usePassageRef: () => ({ passageRef: jest.fn(() => '') }),
+}));
 jest.mock('./SortableHeader', () => () => null);
 jest.mock('.', () => ({
   AIGenerated: 'ai-generated',
   SortableItem: () => null,
+  useFullReference: () => jest.fn(() => ''),
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
@@ -268,7 +285,11 @@ describe('PassageDetailArtifacts general resource uploads', () => {
   });
 
   it('disables Next and shows the validation message for multi-file general uploads', () => {
-    render(<PassageDetailArtifacts />);
+    render(
+      <ThemeProvider theme={theme}>
+        <PassageDetailArtifacts />
+      </ThemeProvider>
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
     fireEvent.change(screen.getByLabelText('Description'), {
