@@ -151,7 +151,10 @@ describe('useSectionIdDescription', () => {
     const description = getSectionDescription(mockRow);
 
     expect(findRecord).toHaveBeenCalledWith(mockMemory, 'section', '');
-    expect(sectionNameOrNumber).toHaveBeenCalledWith(undefined, expect.any(Map));
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Map)
+    );
     expect(description).toBe('');
   });
 
@@ -169,7 +172,10 @@ describe('useSectionIdDescription', () => {
     const description = getSectionDescription(mockRow);
 
     expect(findRecord).toHaveBeenCalledWith(mockMemory, 'section', '');
-    expect(sectionNameOrNumber).toHaveBeenCalledWith(undefined, expect.any(Map));
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Map)
+    );
     expect(description).toBe('');
   });
 
@@ -191,7 +197,10 @@ describe('useSectionIdDescription', () => {
       'section',
       'nonexistent-section'
     );
-    expect(sectionNameOrNumber).toHaveBeenCalledWith(undefined, expect.any(Map));
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Map)
+    );
     expect(description).toBe('');
   });
 
