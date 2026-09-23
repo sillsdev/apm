@@ -96,7 +96,7 @@ interface IProps {
   audioOnly?: boolean | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
-  /** Prompt before discarding when a file is staged or a recording exists. */
+  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
   confirmOnClose?: boolean | undefined;
 }
 
