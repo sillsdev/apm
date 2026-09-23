@@ -543,6 +543,7 @@ export function PassageDetailArtifacts() {
     setAudioUploadOrRecord(false);
     setAllowProject(true);
     setEditAudio(false);
+    setResourceUploadFiles([]);
   };
   const handleEditResourceVisible = (v: boolean) => {
     // The X routes here (backdrop close is disabled); always confirm before discarding.
@@ -624,7 +625,7 @@ export function PassageDetailArtifacts() {
     resourceUploadFiles,
     resourceKind
   )
-    ? 'General resources should be uploaded individually'
+    ? t.generalResourcesIndividually
     : '';
   const syncResourceReady = (
     type: UploadType,

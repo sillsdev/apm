@@ -37,6 +37,8 @@ jest.mock('react-redux', () => ({
     findResourceDesc: 'Find resource description',
     sharedResource: 'Shared {0}',
     generalResources: 'General Resources',
+    generalResourcesIndividually:
+      'General resources should be uploaded individually',
     editAudioResource: 'Edit Audio Resource',
     editResource: 'Edit Resource',
     selectPassagesSub: 'Select passages for {0}',
@@ -84,18 +86,27 @@ jest.mock('../../../crud', () => ({
   usePlan: () => ({ getPlan: jest.fn(() => null) }),
 }));
 
+// Stable module-level arrays: the real useOrbitData hook returns the same
+// reference until the underlying data changes, so a mock that hands back a
+// fresh array literal on every call would falsely destabilize useMemo/useEffect
+// deps keyed on these results (e.g. resourceType/projResourceType above).
+// Names are prefixed with `mock` so babel-plugin-jest-hoist allows referencing
+// them from inside the hoisted jest.mock() factory below.
+const mockArtifactTypesResult = [
+  { id: 'resource-type', attributes: { typename: 'resource' } },
+  {
+    id: 'project-resource-type',
+    attributes: { typename: 'projectresource' },
+  },
+];
+const mockEmptyOrbitResult: unknown[] = [];
+
 jest.mock('../../../hoc/useOrbitData', () => ({
   useOrbitData: (type: string) => {
     if (type === 'artifacttype') {
-      return [
-        { id: 'resource-type', attributes: { typename: 'resource' } },
-        {
-          id: 'project-resource-type',
-          attributes: { typename: 'projectresource' },
-        },
-      ];
+      return mockArtifactTypesResult;
     }
-    return [];
+    return mockEmptyOrbitResult;
   },
 }));
 

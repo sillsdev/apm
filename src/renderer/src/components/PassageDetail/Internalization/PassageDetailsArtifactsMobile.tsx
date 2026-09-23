@@ -531,6 +531,7 @@ export function PassageDetailArtifactsMobile() {
     setAudioUploadOrRecord(false);
     setAllowProject(true);
     setEditAudio(false);
+    setResourceUploadFiles([]);
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) {
@@ -611,7 +612,7 @@ export function PassageDetailArtifactsMobile() {
     resourceUploadFiles,
     resourceKind
   )
-    ? 'General resources should be uploaded individually'
+    ? t.generalResourcesIndividually
     : '';
   const syncResourceReady = (
     type: UploadType,

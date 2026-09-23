@@ -1195,6 +1195,7 @@ const initialState = {
 			"findResource": "Find Resource for {0}",
 			"findResourceDesc": "Create (using artificial intelligence -- AI) resources for internalizing scripture.",
 			"generalResources": "General Resources",
+			"generalResourcesIndividually": "General resources should be uploaded individually",
 			"keepOpen": "Keep Open",
 			"keywords": "Keywords",
 			"language": "Language",

@@ -234,6 +234,10 @@ function PassageRecordDlg(props: IProps) {
 
   const handleMode = (nextMode: AudioAddMode) => {
     if (recording && nextMode === 'upload') return;
+    // Switching to record abandons any file selection made on the upload tab.
+    // Clear it so a stale multi-file general-resource selection can't keep
+    // blocking save once the user records instead.
+    if (nextMode === 'record') onFiles?.([]);
     setMode(nextMode);
   };
 

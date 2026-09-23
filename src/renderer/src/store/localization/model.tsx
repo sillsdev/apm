@@ -1136,6 +1136,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "findResource": string;
     "findResourceDesc": string;
     "generalResources": string;
+    "generalResourcesIndividually": string;
     "keepOpen": string;
     "keywords": string;
     "language": string;
