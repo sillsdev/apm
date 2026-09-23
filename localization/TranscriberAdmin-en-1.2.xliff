@@ -6829,6 +6829,13 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.generalResourcesIndividually">
+      		<source>General resources should be uploaded individually</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageDetailArtifacts.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.keepOpen">
       		<source>Keep Open</source>
       		<target/>

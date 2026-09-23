@@ -87,6 +87,7 @@ interface IProps {
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   team?: string | undefined;
+  onFiles?: ((files: File[]) => void) | undefined;
   uploadType: UploadType;
   uploadMethod:
     ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
@@ -94,6 +95,7 @@ interface IProps {
   inValue?: string | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
+  validationMessage?: string | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
   /** When set, always prompt to confirm before discarding on close (X/backdrop). */
@@ -123,12 +125,14 @@ function PassageRecordDlg(props: IProps) {
     speaker,
     onSpeaker,
     team,
+    onFiles,
     uploadType,
     uploadMethod,
     multiple,
     inValue,
     onNonAudio,
     audioOnly,
+    validationMessage,
     pendingRestore,
     beforeUpload,
     confirmOnClose,
@@ -230,6 +234,10 @@ function PassageRecordDlg(props: IProps) {
 
   const handleMode = (nextMode: AudioAddMode) => {
     if (recording && nextMode === 'upload') return;
+    // Switching to record abandons any file selection made on the upload tab.
+    // Clear it so a stale multi-file general-resource selection can't keep
+    // blocking save once the user records instead.
+    if (nextMode === 'record') onFiles?.([]);
     setMode(nextMode);
   };
 
@@ -354,9 +362,11 @@ function PassageRecordDlg(props: IProps) {
           // so hasRights stays true and the file drop target is clickable.
           onSpeaker={uploadType === UploadType.Media ? onSpeaker : undefined}
           team={team}
+          onFiles={onFiles}
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
+          validationMessage={validationMessage}
         />
       )}
       {showConfirm && (

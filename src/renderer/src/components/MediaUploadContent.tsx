@@ -8,6 +8,7 @@ import {
   DialogContentText,
   LinearProgress,
   styled,
+  Typography,
 } from '@mui/material';
 import path from 'path-browserify';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -168,6 +169,7 @@ interface IProps {
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   saveText?: string | undefined;
+  validationMessage?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
   /** When true, render `DialogContent`/`DialogActions` without the wrapping Box
@@ -200,6 +202,7 @@ function MediaUploadContent(props: IProps) {
     onNonAudio,
     audioOnly,
     saveText,
+    validationMessage,
     controlsRef,
     onSaveDisabled,
     noWrapper,
@@ -446,6 +449,15 @@ function MediaUploadContent(props: IProps) {
             >
               {cancelLabel || t.cancel}
             </Button>
+          )}
+          {validationMessage && (
+            <Typography
+              variant="body2"
+              color="error"
+              sx={{ mr: 1, textAlign: 'right' }}
+            >
+              {validationMessage}
+            </Typography>
           )}
           <Button
             id="uploadSave"

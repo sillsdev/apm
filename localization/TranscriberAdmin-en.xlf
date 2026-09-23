@@ -5854,6 +5854,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.generalResourcesIndividually">
+         <segment>
+            <source>General resources should be uploaded individually</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.keepOpen">
          <segment>
             <source>Keep Open</source>
