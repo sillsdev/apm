@@ -1,6 +1,7 @@
 import {
   useState,
   useEffect,
+  useMemo,
   useRef,
   useContext,
   ChangeEvent,
@@ -609,6 +610,23 @@ export const ProjectResourceConfigure = (props: IProps) => {
     }
   };
 
+  // The Create button must promise what `writeResources` will actually save: a
+  // row only becomes a resource when it has both a segment (Limits, set from
+  // the player's regions) and a Reference, so count those rows rather than every
+  // selected passage/section. Rows for unused segments (blank Reference) and
+  // unsegmented items (blank Limits) are excluded, matching the save condition.
+  const numResourcesToCreate = useMemo(
+    () =>
+      data.filter(
+        (row, i) =>
+          i > 0 &&
+          Boolean(row[ColName.Limits].value) &&
+          Boolean(row[ColName.Ref].value)
+      ).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data]
+  );
+
   const handleSuffix = (e: ChangeEvent<HTMLInputElement>) => {
     setSuffix(e.target.value);
     // The suffix feeds the saved topic, so editing it marks the wizard dirty too
@@ -722,10 +740,13 @@ export const ProjectResourceConfigure = (props: IProps) => {
             <Button
               id="res-create"
               color="primary"
-              disabled={numSegments === 0 || savingRef.current}
+              disabled={numResourcesToCreate === 0 || savingRef.current}
               onClick={handleCreate}
             >
-              {t.createXResources.replace('{0}', items.length.toString())}
+              {t.createXResources.replace(
+                '{0}',
+                numResourcesToCreate.toString()
+              )}
             </Button>
           </Box>
         </ActionRow>
