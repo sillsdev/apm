@@ -493,7 +493,7 @@ export function PassageDetailRecord(props: IProps) {
       <BigDialog
         title={ts.versionHistory}
         isOpen={versionVisible}
-        onOpen={handleVerHistClose}
+        onClose={handleVerHistClose}
         bp={isMobileView ? BigDialogBp.mobile : undefined}
       >
         <VersionDlg

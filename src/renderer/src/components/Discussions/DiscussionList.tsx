@@ -622,7 +622,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
         <BigDialog
           title={t.categoryList}
           isOpen={categoryOpen}
-          onOpen={handleCategory}
+          onClose={handleCategory}
           onCancel={() => {
             handleCatFilter(initCatFilter);
             setCategoryOpen(false);

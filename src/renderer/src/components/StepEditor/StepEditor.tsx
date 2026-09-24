@@ -593,7 +593,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           isOpen={
             (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
           }
-          onOpen={setToolSettingsOpen}
+          onClose={() => setToolSettingsOpen(false)}
           bp={BigDialogBp.sm}
         >
           <TranscribeStepSettings
@@ -612,7 +612,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           isOpen={
             (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Paratext
           }
-          onOpen={setToolSettingsOpen}
+          onClose={() => setToolSettingsOpen(false)}
           bp={BigDialogBp.sm}
         >
           <ParatextStepSettings
@@ -625,7 +625,7 @@ export const StepEditor = ({ process, org }: IProps) => {
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
           isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Discuss}
-          onOpen={setToolSettingsOpen}
+          onClose={() => setToolSettingsOpen(false)}
           bp={BigDialogBp.sm}
         >
           <DiscussStepSettings
@@ -639,7 +639,7 @@ export const StepEditor = ({ process, org }: IProps) => {
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
           isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Record}
-          onOpen={setToolSettingsOpen}
+          onClose={() => setToolSettingsOpen(false)}
           bp={BigDialogBp.sm}
         >
           <RecordStepSettings
@@ -656,7 +656,7 @@ export const StepEditor = ({ process, org }: IProps) => {
             (rows[toolSettingsRow] as IStepRow).tool ===
             ToolSlug.PhraseBackTranslate
           }
-          onOpen={setToolSettingsOpen}
+          onClose={() => setToolSettingsOpen(false)}
           bp={BigDialogBp.sm}
         >
           <PhraseBackTranslateStepSettings

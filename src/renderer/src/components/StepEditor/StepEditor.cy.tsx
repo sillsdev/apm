@@ -180,7 +180,7 @@ function StepEditorInDialog({ org }: { org: string }) {
     <BigDialog
       title="Edit Workflow — Test"
       isOpen={open}
-      onOpen={setOpen}
+      onClose={() => setOpen(false)}
       bp={BigDialogBp.md}
     >
       <StepEditor org={org} />

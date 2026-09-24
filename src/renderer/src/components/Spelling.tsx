@@ -60,7 +60,7 @@ export const Spelling = () => {
         <BigDialog
           title={t.spellingLangs}
           isOpen={open}
-          onOpen={setOpen}
+          onClose={() => setOpen(false)}
           onSave={handleSave}
           onCancel={handleCancel}
         >

@@ -272,7 +272,7 @@ export const ProjectsScreenInner = () => {
           `- ${thisTeam?.attributes?.name || ''}`
         )}
         isOpen={showWorkflow}
-        onOpen={handleWorkflowOpen}
+        onClose={() => handleWorkflowOpen(false)}
       >
         {/* Use defaultWorkflow, same as TeamItem */}
         <StepEditor process={workflowEditProcess} org={thisTeam?.id} />

@@ -123,14 +123,14 @@ export const PersonalItem = () => {
       <BigDialog
         title={t.editWorkflow.replace('{0}', `- ${t.personalProjects}`)}
         isOpen={showWorkflow}
-        onOpen={handleWorkflow}
+        onClose={() => handleWorkflow(false)}
       >
         <StepEditor process={defaultWorkflow} org={workflowOrg} />
       </BigDialog>
       <BigDialog
         title={t.sortProjects}
         isOpen={sortVisible}
-        onOpen={() => setSortVisible(false)}
+        onClose={() => setSortVisible(false)}
       >
         <ProjectSort onClose={() => setSortVisible(false)} />
       </BigDialog>

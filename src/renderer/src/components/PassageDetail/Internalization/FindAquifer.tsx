@@ -486,9 +486,9 @@ export default function FindAquifer({ onClose }: IProps) {
         </Typography>
       }
       isOpen={previewOpen}
-      onOpen={(isOpen: boolean) => {
-        setPreviewOpen(isOpen);
-        if (!isOpen) setPreviewItem(null);
+      onClose={() => {
+        setPreviewOpen(false);
+        setPreviewItem(null);
       }}
       bp={isMobileWidth ? BigDialogBp.mobile : BigDialogBp.sm}
       mobileNoHorizontalScroll

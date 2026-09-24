@@ -1631,7 +1631,7 @@ export function Transcriber(props: IProps) {
         <BigDialog
           title={vProjectStrings.editorSettings}
           isOpen={showSettings}
-          onOpen={handleEditorSettings}
+          onClose={() => handleEditorSettings(false)}
         >
           <EditorSettings
             state={settingsState ?? initProjectState}
@@ -1641,7 +1641,7 @@ export function Transcriber(props: IProps) {
         <BigDialog
           title={tPlayer.recognizeSpeechSettings}
           isOpen={asrLangVisible}
-          onOpen={() => handleAsrLanguageClose(true)}
+          onClose={() => handleAsrLanguageClose(true)}
           bp={BigDialogBp.sm}
         >
           <SelectAsrLanguage
@@ -1654,7 +1654,7 @@ export function Transcriber(props: IProps) {
           <BigDialog
             title={tPlayer.recognizeProgress}
             isOpen={asrProgressVisible}
-            onOpen={handleAsrProgressVisible}
+            onClose={() => handleAsrProgressVisible(false)}
             bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
             mobileNoHorizontalScroll={isMobile}
             mobilePaperWidth={

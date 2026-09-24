@@ -184,7 +184,8 @@ interface IProps {
   dialogContentSx?: SxProps;
   children: React.JSX.Element;
   isOpen: boolean;
-  onOpen: (isOpen: boolean) => void;
+  /** Called when the dialog requests to close (top X, backdrop, or escape). */
+  onClose: () => void;
   onCancel?: (() => void) | undefined;
   onSave?: (() => void) | undefined;
   bp?: BigDialogBp | undefined;
@@ -209,7 +210,20 @@ export function BigDialog({
   dialogContentSx,
   children,
   isOpen,
-  onOpen,
+  // Future cleanup to do: BigDialog has three
+  // dismiss paths that behave inconsistently. The bottom Cancel button
+  // (onClick={onCancel}, below) bypasses handleClose entirely, so it skips the
+  // importexportBusy guard, setCloseRequested(true), the enableOffsite reset,
+  // AND the now-required onClose() — unlike the X / backdrop / escape / bottom
+  // Close button, which all route through here. onCancel is also overloaded:
+  // it both renders the Cancel button and acts as a second dismiss callback.
+  // Collapse this to a single dismiss path: route the Cancel button through
+  // handleClose too (Cancel-vs-Close becomes a pure label choice), make
+  // onClose the one teardown handler, and keep a separate onCancel only if
+  // "cancel" must mean something different from "dismiss" (and if so, route
+  // the X through it consistently). Behavioral change — touches ~8 onCancel
+  // callers; needs its own PR + per-dialog testing.
+  onClose,
   onCancel,
   onSave,
   bp,
@@ -234,7 +248,11 @@ export function BigDialog({
     }
     setCloseRequested && setCloseRequested(true);
     if (enableOffsite) setEnableOffsite(false);
-    onOpen && onOpen(false);
+    // Dismissing the dialog (top X, backdrop, or escape) runs BOTH onClose and
+    // onCancel; onCancel is also wired to the bottom Cancel button, so a caller
+    // that wants distinct close-vs-cancel handling must not rely on onCancel
+    // firing only on the explicit Cancel action.
+    onClose();
     onCancel && onCancel();
   };
 
