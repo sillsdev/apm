@@ -82,7 +82,7 @@ interface ISheetRendererProps {
 // react-datasheet's sheetRenderer: renders the grid as a real MUI Table so it
 // picks up the theme's `variant="striped"` (even rows tinted with
 // action.hover) instead of duplicating that striping CSS here. The sheet spans
-// the full dialog width (MUI Table defaults to width:100%); the Description
+// the full dialog width (MUI Table defaults to width:100%); the Title
 // column (no fixed width) absorbs the extra space.
 const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
   <Table
@@ -152,7 +152,7 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
       '& .ref': {
         verticalAlign: 'inherit !important',
       },
-      '& .des': {
+      '& .ttl': {
         verticalAlign: 'inherit !important',
         '& .value-viewer': {
           textAlign: 'left',
@@ -242,17 +242,19 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
 
-  // Only the Description column is editable. Segment limits come from the audio
+  // Only the Title column is editable. Segment limits come from the audio
   // player (not typed here) and the Reference is a derived label, so both stay
   // read-only; the header row is fully read-only.
-  // Description has no fixed width so it stretches to fill the full-width sheet.
+  // Title has no fixed width so it stretches to fill the full-width sheet.
   const widths = [150, 200, undefined];
-  const cClass = ['lim', 'ref', 'des'];
+  const cClass = ['lim', 'ref', 'ttl'];
 
+  // User-facing this column is "Title", but it is saved as the media `topic`
+  // and as the section resource `description` (see useProjectResourceSave).
   enum ColName {
     Limits,
     Ref,
-    Desc,
+    Title,
   }
   const rowCells = (row: string[], first = false) =>
     row.map(
@@ -260,13 +262,13 @@ export const ProjectResourceConfigure = (props: IProps) => {
         ({
           value: v,
           width: widths[i],
-          readOnly: first || i !== ColName.Desc,
+          readOnly: first || i !== ColName.Title,
           className: first ? 'cTitle' : cClass[i],
         }) as ICell
     );
 
   const emptyTable = () => [
-    rowCells([t.startStop, t.reference, t.description], true),
+    rowCells([t.startStop, t.reference, t.title], true),
   ];
 
   const setData = (newData: ICell[][]) => {
@@ -330,7 +332,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
           const topic = `${
             media.attributes.topic ? media.attributes.topic + ' -' : ''
           }${
-            row[ColName.Desc].value ? row[ColName.Desc].value : refValue
+            row[ColName.Title].value ? row[ColName.Title].value : refValue
           } ${suffix}`;
           if (limitValue && refValue) {
             await projectResourceSave({
@@ -390,7 +392,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
-  // Real edits mark the tool dirty (see the Description and segment handlers) so
+  // Real edits mark the tool dirty (see the Title and segment handlers) so
   // a browser/app close mid-edit fires the beforeunload "unsaved changes" warning
   // (AppHead reads the global `changed` flag). The dialog's own close is
   // confirm-gated by the parent; clear the flag on unmount so a normal
@@ -407,7 +409,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
       .forEach((row) => {
         config.push(
           `${row[ColName.Limits].value}\t${row[ColName.Ref].value}\t${
-            row[ColName.Desc].value
+            row[ColName.Title].value
           }`
         );
       });
@@ -504,7 +506,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
       changed = true;
       if (rawWidth === 3) return rowCells(raw);
       if (isCol0Ref) return rowCells([row[ColName.Limits].value].concat(raw));
-      return rowCells(raw.concat([row[ColName.Desc].value]));
+      return rowCells(raw.concat([row[ColName.Title].value]));
     });
     if (!changed) {
       showMessage(t.pasteNoChange);
@@ -529,7 +531,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
-    // Editing a Description marks the wizard dirty so a browser/app close warns
+    // Editing a Title marks the wizard dirty so a browser/app close warns
     // (same tracking the segment handler uses).
     if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
@@ -662,6 +664,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
         width={width}
         allowSegment={NamedRegions.ProjectResource}
         allowSegmentNav
+        allowZoom
         layoutMode="transport"
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
