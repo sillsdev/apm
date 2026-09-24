@@ -57,6 +57,7 @@ interface IProps {
   fileName: string;
   cancelOnlyIfChanged?: boolean;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  pendingRestore?: import('../../../store/upload/pendingMediaUploads').PendingRestoreInput;
   passageId: string;
   row: IKeyTermRow;
   onOk: (row: IKeyTermRow) => void;
@@ -73,6 +74,7 @@ export default function TargetWordAdd(props: IProps) {
     word,
     fileName,
     afterUploadCb,
+    pendingRestore,
     passageId,
     onOk,
     onCancel,
@@ -211,7 +213,6 @@ export default function TargetWordAdd(props: IProps) {
         doRecordRef.current = true;
         setStartRecord(false);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startRecord, playing, itemPlaying, commentPlaying]);
 
   useEffect(() => {
@@ -297,6 +298,7 @@ export default function TargetWordAdd(props: IProps) {
           toolId={toolId}
           onRecording={onRecording}
           afterUploadCb={afterUploadCb}
+          pendingRestore={pendingRestore}
           passageId={passageId}
           artifactId={keyTermId}
           defaultFilename={fileName}
