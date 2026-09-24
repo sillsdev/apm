@@ -444,6 +444,11 @@ export function PassageDetailArtifacts() {
   const handlePassageDiscard = () => {
     setDialogPendingCloseConfirmation(null);
     setProjResPassageVisible(false);
+    // A genuine abandon (not a Back), unlike handleWizBack/handlePassageBack — clear
+    // the restore state so the next fresh Add Audio Resource does not inherit it.
+    catIdRef.current = undefined;
+    descriptionRef.current = '';
+    setResourceUploadFiles([]);
   };
 
   // The wizard's X routes here (like the passage-select dialog): a close request
