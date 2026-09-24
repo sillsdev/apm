@@ -100,7 +100,7 @@ jest.mock('../../../crud', () => ({
   ArtifactCategoryType: { Resource: 'resource' },
   usePlanType: () => () => ({ scripture: false, flat: false }),
   usePlan: () => ({ getPlan: jest.fn(() => null) }),
-  useArtifactType: () => ({ getTypeId: jest.fn() }),
+  useArtifactType: () => ({ getTypeId: jest.fn(() => '') }),
 }));
 
 // Stable module-level arrays: the real useOrbitData hook returns the same
