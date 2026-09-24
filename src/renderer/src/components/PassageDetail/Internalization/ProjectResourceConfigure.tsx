@@ -679,7 +679,10 @@ export const ProjectResourceConfigure = (props: IProps) => {
           spacing={1}
           alignItems="center"
           justifyContent="space-between"
-          sx={{ flexShrink: 0, px: 0, py: 1.5 }}
+          // `mt: 'auto'` soaks up the leftover paper space when the table is
+          // short, so the suffix field and copy button hug the bottom instead
+          // of leaving a gap above the dialog's action row.
+          sx={{ flexShrink: 0, px: 0, py: 1.5, mt: 'auto' }}
         >
           <Stack direction="row" spacing={1} alignItems="center">
             <TextField
