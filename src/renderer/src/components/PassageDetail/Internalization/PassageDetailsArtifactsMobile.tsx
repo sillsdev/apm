@@ -166,7 +166,6 @@ export function PassageDetailArtifactsMobile() {
   const [artifactState] = useState<{ id?: string | null }>({});
   // const [artifactTypeId, setArtifactTypeId] = useState<string>();
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
-  const [initDescription, setInitDescription] = useState<string>('');
   const [audioUploadOrRecord, setAudioUploadOrRecord] =
     useState<boolean>(false);
   const [editAudio, setEditAudio] = useState<boolean>(false);
@@ -451,6 +450,12 @@ export function PassageDetailArtifactsMobile() {
     setProjResWizVisible(false);
     projMediaRef.current = undefined;
     setVisual(false);
+    // The wizard is truly done (save or discard) — no more Back is possible, so
+    // clear the category/description/filename restore state kept alive by
+    // resetEdit's preserveResourceForm since the upload succeeded.
+    catIdRef.current = undefined;
+    descriptionRef.current = '';
+    setResourceUploadFiles([]);
   };
   const handleWizDiscard = () => {
     setDialogPendingCloseConfirmation(null);
@@ -468,12 +473,6 @@ export function PassageDetailArtifactsMobile() {
     setProjResPassageVisible(true);
   };
 
-  // SelectSections "Back" (add flow only): return to the upload/record dialog to
-  // change the audio file. If a media was already uploaded (the user reached
-  // here from the configure step's Back), it is now superseded, so delete it and
-  // its pending-config entry — no orphaned general resource is left. The staged
-  // file is dropped by the projResPassageVisible effect, so the uploader reopens
-  // for a fresh pick/record; a second upload creates the replacement.
   const handlePassageBack = () => {
     // Back to the upload/record dialog to change the audio file. A media already
     // uploaded (reached here from the configure step's Back) is left in place;
@@ -554,19 +553,24 @@ export function PassageDetailArtifactsMobile() {
       })
     );
   };
-  const resetEdit = () => {
+  // preserveResourceForm: skip clearing the category/description/filename restore
+  // state. Used when the deferred general-resource upload succeeds and the wizard
+  // advances to the configure step — Back/Back from there must still return the
+  // user to an upload dialog seeded with what they already entered.
+  const resetEdit = (preserveResourceForm = false) => {
     setEditResource(undefined);
-    catIdRef.current = undefined;
-    descriptionRef.current = '';
+    if (!preserveResourceForm) {
+      catIdRef.current = undefined;
+      descriptionRef.current = '';
+      setResourceUploadFiles([]);
+    }
     setResourceKind(ResourceTypeEnum.sectionResource);
     setUploadVisible(false);
     setMarkdownValue('');
-    setInitDescription('');
     setAIGenerated(false);
     setAudioUploadOrRecord(false);
     setAllowProject(true);
     setEditAudio(false);
-    setResourceUploadFiles([]);
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) {
@@ -701,7 +705,6 @@ export function PassageDetailArtifactsMobile() {
     audioUrl: string,
     transcript: string
   ) => {
-    setInitDescription(query);
     descriptionRef.current = query;
     const nextType = audioUrl
       ? UploadType.FaithbridgeLink
@@ -840,6 +843,11 @@ export function PassageDetailArtifactsMobile() {
           projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
         }
       }
+      // Set when advancing to the configure step, which still offers Back to the
+      // upload dialog — resetEdit must then preserve the category/description/
+      // filename restore state instead of clearing it (closeProjResWiz clears it
+      // once that step actually finishes).
+      let preserveResourceForm = false;
       if (projRes.length === 1) {
         isAddingAudioResourceRef.current = true;
         if (sectionsPreselectedRef.current) {
@@ -862,12 +870,13 @@ export function PassageDetailArtifactsMobile() {
             // since this path bypasses handleSelectProjectResource.
             setSelected(media.id, PlayInPlayer.yes);
             setProjResWizVisible(true);
+            preserveResourceForm = true;
           }
         } else {
           setProjResSetup(projRes);
         }
       }
-      resetEdit();
+      resetEdit(preserveResourceForm);
     }
     // Deferred upload produced no media (the upload failed). SelectSections is
     // still open with the user's selection intact, so just re-enable its Upload
@@ -945,6 +954,10 @@ export function PassageDetailArtifactsMobile() {
       addCatCommitRef.current = null;
     }
     stagedResourceFilesRef.current = files;
+    // Also seed the upload-tab restore state (normally set by handleResourceUploadFiles
+    // via onFiles) so a recorded take — which bypasses that callback — is still
+    // pre-selected if the user Backs out to the upload dialog and returns.
+    setResourceUploadFiles(files);
     cancelled.current = false;
     isAddingAudioResourceRef.current = true;
     projMediaRef.current = undefined;
@@ -1257,10 +1270,12 @@ export function PassageDetailArtifactsMobile() {
           <ResourceData
             uploadType={uploadType}
             catAllowNew={true} //if they can upload they can add cat
-            initCategory=""
+            // Restores a category/description already entered before the user
+            // stepped Back to change the file (both refs are blank on a fresh add).
+            initCategory={catIdRef.current || ''}
             onCategoryChange={handleCategory}
             catCommitRef={addCatCommitRef}
-            initDescription={initDescription}
+            initDescription={descriptionRef.current}
             onDescriptionChange={handleDescription}
             catRequired={false}
             resourceKind={resourceKind}
