@@ -108,7 +108,6 @@ import { MarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { buildResourcePendingRestore } from './buildResourcePendingRestore';
-import { removePendingProjectResourceConfigs } from '../../../store/upload/pendingProjectResourceConfig';
 import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 import { AddResourceAction } from './AddResourceAction';
 
@@ -487,14 +486,14 @@ export function PassageDetailArtifacts() {
   // its pending-config entry — no orphaned general resource is left. The staged
   // file is dropped by the projResPassageVisible effect, so the uploader reopens
   // for a fresh pick/record; a second upload creates the replacement.
-  const handlePassageBack = async () => {
-    const superseded = projMediaRef.current;
+  const handlePassageBack = () => {
+    // Back to the upload/record dialog to change the audio file. A media already
+    // uploaded (reached here from the configure step's Back) is left in place;
+    // uploading a replacement creates a new general resource and leaves the prior
+    // one — the same outcome as cancelling from the configure step. Preventing
+    // these orphans is not priority for us at this time.
     setProjResPassageVisible(false);
-    if (superseded) {
-      removePendingProjectResourceConfigs([superseded.id]);
-      await memory.update((t) => t.removeRecord(superseded));
-      projMediaRef.current = undefined;
-    }
+    projMediaRef.current = undefined;
     // Reopen the Add Audio Resource upload dialog in general-resource mode, the
     // same state the user staged the file from.
     setResourceKind(ResourceTypeEnum.projectResource);
@@ -1284,6 +1283,8 @@ export function PassageDetailArtifacts() {
         pendingRestore={resourcePendingRestore}
         importList={resourceImportList}
         onFiles={handleResourceUploadFiles}
+        // When returning here via the back button, display the previously selected files
+        initialFiles={resourceUploadFiles}
         deferUpload={uploadType === UploadType.ProjectResource}
         onStageFiles={handleStageAudioFiles}
         validationMessage={resourceUploadValidationMessage}
