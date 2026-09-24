@@ -38,6 +38,7 @@ import {
   ArtifactCategoryType,
   usePlanType,
   usePlan,
+  mediaFileName,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
@@ -93,7 +94,11 @@ import { LaunchLink } from '../../../control/LaunchLink';
 import {
   getProjectResourceAssignments,
   removeUnselectedProjectResourceAssignments,
+  getGeneralResourceSource,
+  countProjectResourceCopies,
+  removeProjectResource,
 } from './projectResourceAssignments';
+import GeneralResourceDeleteDialog from './GeneralResourceDeleteDialog';
 import FindTabs from './FindTabs';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
@@ -411,6 +416,42 @@ export function PassageDetailArtifacts() {
     setConfirm('');
     setBusy(false);
   };
+  // When the row being deleted is a copy of a general resource, the user
+  // chooses between deleting just this copy and the whole general resource.
+  const confirmGeneralSource = useMemo(
+    () =>
+      confirm
+        ? getGeneralResourceSource(
+            mediafiles.find((m) => m.id === confirm),
+            mediafiles,
+            projResourceType
+          )
+        : undefined,
+    [confirm, mediafiles, projResourceType]
+  );
+  const confirmGeneralCopies = countProjectResourceCopies(
+    confirmGeneralSource,
+    mediafiles,
+    resourceType
+  );
+  const handleDeleteGeneralResource = async () => {
+    const sourceMedia = confirmGeneralSource;
+    removeKey(confirm);
+    setConfirm('');
+    if (!sourceMedia) return;
+    setBusy(true);
+    try {
+      await removeProjectResource({
+        memory,
+        sourceMedia,
+        mediafiles,
+        sectionResources,
+        resourceTypeId: resourceType,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
   const handleUploadVisible = (v: boolean) => {
     setUploadVisible(v);
   };
@@ -467,21 +508,13 @@ export function PassageDetailArtifacts() {
     ) as SectionResourceD;
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
       MediaFileD | undefined;
-    const sourceMedia = mediafiles.find(
-      (m) => m.id === related(mf, 'sourceMedia')
+    // Resolve to the root general resource so a derived copy is never treated
+    // as a new source (which would spawn a second-generation chain).
+    const projectMedia = getGeneralResourceSource(
+      mf,
+      mediafiles,
+      projResourceType
     );
-    // Resolve to the root general resource. When a derived copy is clicked, edit
-    // its source; only fall back to the clicked media when it is itself the
-    // general resource. Derived copies use the `resource` type (not
-    // `projectresource`), so in practice only one branch matches, but preferring
-    // the source guards against ever treating a derived copy as a new source
-    // (which would spawn a second-generation chain).
-    const projectMedia =
-      sourceMedia && related(sourceMedia, 'artifactType') === projResourceType
-        ? sourceMedia
-        : mf && related(mf, 'artifactType') === projResourceType
-          ? mf
-          : undefined;
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
@@ -1359,13 +1392,28 @@ export function PassageDetailArtifacts() {
           passDesc={passDesc}
         />
       </BigDialog>
-      {confirm && (
-        <Confirm
-          text={t.deleteConfirm}
-          yesResponse={handleDeleteConfirmed}
-          noResponse={handleDeleteRefused}
-        />
-      )}
+      {confirm &&
+        (confirmGeneralSource && confirmGeneralCopies > 1 ? (
+          <GeneralResourceDeleteDialog
+            fileName={mediaFileName(confirmGeneralSource)}
+            count={confirmGeneralCopies}
+            onCancel={handleDeleteRefused}
+            onDeleteAll={handleDeleteGeneralResource}
+            onDeleteOne={handleDeleteConfirmed}
+          />
+        ) : (
+          <Confirm
+            text={t.deleteConfirm}
+            // Deleting the last copy of a general resource takes its source
+            // with it; nothing else in the UI can reach an unassigned source.
+            yesResponse={
+              confirmGeneralSource
+                ? handleDeleteGeneralResource
+                : handleDeleteConfirmed
+            }
+            noResponse={handleDeleteRefused}
+          />
+        ))}
       {dialogPendingCloseConfirmation && (
         <Confirm
           title={t.confirmCloseTitle}
