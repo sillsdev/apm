@@ -900,7 +900,8 @@ const PassageDetailProvider = (props: IProps) => {
         return;
       }
     }
-    const r = rowData[i] as IRow;
+    // i indexes newRows when a row was just built for this media.
+    const r = (newRows.length > 0 ? newRows : rowData)[i] as IRow;
     let resetBlob = false;
     //if this is a file that will be played in the wavesurfer..fetch it
     if (inPlayer === PlayInPlayer.yes) {
