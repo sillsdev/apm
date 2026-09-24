@@ -55,8 +55,7 @@ export const config: JestConfigWithTsJest = {
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS files
     '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.ts', // Mock image files
-    '^../api-variable$': '<rootDir>/__mocks__/api-variable.tsx', // Mock api-variable
-    '^../../api-variable$': '<rootDir>/__mocks__/api-variable.tsx', // Mock api-variable
+    '^(\\.\\./)+api-variable$': '<rootDir>/__mocks__/api-variable.tsx', // Mock api-variable, any relative depth
     '^@model/(.*)$': '<rootDir>/src/model/$1', // Mock model imports
     '^burrito/(.*)$': '<rootDir>/src/burrito/$1', // Mock burrito imports
   },

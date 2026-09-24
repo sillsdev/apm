@@ -1,9 +1,13 @@
 import React from 'react';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
 import { UploadType } from '../../UploadType';
 import PassageDetailArtifacts from './PassageDetailArtifacts';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import { createAppTheme } from '../../../theme';
+
+const theme = createAppTheme('en');
 
 jest.mock('array-move', () => ({
   arrayMoveImmutable: jest.fn((items: unknown[]) => items),
@@ -61,6 +65,18 @@ jest.mock('../../../selector', () => ({
 }));
 
 jest.mock('../../../crud', () => ({
+  ArtifactTypeSlug: {
+    Vernacular: 'vernacular',
+    WholeBackTranslation: 'wholebacktranslation',
+    PhraseBackTranslation: 'backtranslation',
+    CarefulSpeech: 'carefulspeech',
+    Retell: 'retell',
+    QandA: 'qanda',
+    Comment: 'comment',
+    Activity: 'activity',
+    Resource: 'resource',
+    SharedResource: 'sharedresource',
+  },
   remoteIdGuid: jest.fn(),
   useSecResCreate: () => ({
     AddSectionResource: jest.fn(),
@@ -84,6 +100,7 @@ jest.mock('../../../crud', () => ({
   ArtifactCategoryType: { Resource: 'resource' },
   usePlanType: () => () => ({ scripture: false, flat: false }),
   usePlan: () => ({ getPlan: jest.fn(() => null) }),
+  useArtifactType: () => ({ getTypeId: jest.fn() }),
 }));
 
 // Stable module-level arrays: the real useOrbitData hook returns the same
@@ -127,6 +144,10 @@ jest.mock('../../../context/useGlobal', () => ({
     if (key === 'progress') return 0;
     return undefined;
   }),
+}));
+
+jest.mock('./usePassageRef', () => ({
+  usePassageRef: () => ({ passageRef: jest.fn(() => '') }),
 }));
 
 jest.mock('../../../utils/useStepPermission', () => ({
@@ -223,6 +244,25 @@ jest.mock('./SortableHeader', () => () => null);
 jest.mock('.', () => ({
   AIGenerated: 'ai-generated',
   SortableItem: () => null,
+  useFullReference: () => jest.fn(() => ''),
+}));
+jest.mock('../../../control/LinkEdit', () => ({
+  LinkEdit: () => null,
+}));
+
+jest.mock('../../../control/MarkDownEdit', () => ({
+  MarkDownEdit: () => null,
+}));
+
+jest.mock('../../../control/MarkDownView', () => ({
+  MarkDownView: () => null,
+}));
+
+jest.mock('../../MediaUpload', () => ({
+  __esModule: true,
+  UriLinkType: 'text/uri-list',
+  MarkDownType: 'text/markdown',
+  FaithbridgeType: 'audio/mpeg/s3link',
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
@@ -236,9 +276,12 @@ jest.mock('../../LimitedMediaPlayer', () => () => null);
 jest.mock('./PassageResourceButton', () => ({
   PassageResourceButton: () => null,
 }));
-jest.mock('../../Sheet/SelectArtifactCategory', () => () => (
-  <div>category-select</div>
-));
+jest.mock('../../Sheet/SelectArtifactCategory', () => {
+  const MockSelectArtifactCategory = (): React.ReactElement => (
+    <div>category-select</div>
+  );
+  return MockSelectArtifactCategory;
+});
 
 const mockUsePassageDetailContext =
   usePassageDetailContext as jest.MockedFunction<
@@ -268,7 +311,11 @@ describe('PassageDetailArtifacts general resource uploads', () => {
   });
 
   it('disables Next and shows the validation message for multi-file general uploads', () => {
-    render(<PassageDetailArtifacts />);
+    render(
+      <ThemeProvider theme={theme}>
+        <PassageDetailArtifacts />
+      </ThemeProvider>
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
     fireEvent.change(screen.getByLabelText('Description'), {

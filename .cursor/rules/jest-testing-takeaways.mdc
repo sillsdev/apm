@@ -135,6 +135,31 @@ window?.api`) so tests can `import { launch }` and stub `window.api` in
   excludes `null`/`undefined`). Index into `mock.calls[N][0]` directly instead
   of asserting the full call signature.
 
+## Give mocked components a `displayName`
+
+- When a `jest.mock(...)` factory defines a **named function component** to
+  stand in for the real one (as opposed to an inline arrow passed straight to
+  `jest.mock`, e.g. `jest.mock('./Foo', () => () => null)`), assign
+  **`.displayName`** on it before returning/exporting it, e.g.:
+
+  ```ts
+  jest.mock('./WSAudioPlayer', () => {
+    const MockWSAudioPlayer = (props: WsAudioPlayerProps) => { ... };
+    MockWSAudioPlayer.displayName = 'MockWSAudioPlayer';
+    return { __esModule: true, default: MockWSAudioPlayer };
+  });
+  ```
+
+- **Why:** satisfies `react/display-name` (anonymous components assigned to a
+  `const` still trip the lint rule), and makes the component identifiable in
+  React DevTools / test-failure component stacks instead of showing up as
+  `Anonymous` or a generic mock name.
+- Widely used across this repo's specs — see `MediaRecord.test.tsx`,
+  `MediaPlayer.test.tsx`, `LimitedMediaPlayer.test.tsx`,
+  `ConsultantCheck.test.tsx`, `ProfileDialog.test.tsx`,
+  `ResourceOverview.test.tsx` — follow the `Mock<Name>` / `Mocked<Name>`
+  naming convention already used there.
+
 ## Running a New Jest Test Module
 
 Run Jest from `src/renderer` (required for this repo).
