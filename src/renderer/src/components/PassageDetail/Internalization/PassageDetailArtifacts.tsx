@@ -74,6 +74,7 @@ import {
   isVisual,
   isUrl,
   useMobile,
+  fileNameOnly,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -215,7 +216,7 @@ export function PassageDetailArtifacts() {
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   // True when the general-resource wizard was entered by adding a new audio
   // resource ("Add Audio Resource"); false when configuring/editing an existing
-  // one ("Edit Audio Resource").
+  // one ("Edit General Resource").
   const isAddingAudioResourceRef = useRef<boolean>(false);
   // Deferred general-resource upload: the prepared file(s) are held here and not
   // uploaded until the user picks passages/sections on SelectSections.
@@ -1316,11 +1317,16 @@ export function PassageDetailArtifacts() {
         title={
           isAddingAudioResourceRef.current
             ? t.addAudioResource
-            : t.editAudioResource
+            : t.editGeneralResource
         }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
-            {t.selectPassagesSub.replace('{0}', getOrganizedBy(false))}
+            {isAddingAudioResourceRef.current
+              ? t.selectPassagesSub.replace('{0}', getOrganizedBy(false))
+              : t.editingFile.replace(
+                  '{0}',
+                  fileNameOnly(projMediaRef.current?.attributes?.originalFile)
+                )}
           </Typography>
         }
         isOpen={projResPassageVisible}
@@ -1348,7 +1354,7 @@ export function PassageDetailArtifacts() {
         title={
           isAddingAudioResourceRef.current
             ? t.addAudioResource
-            : t.editAudioResource
+            : t.editGeneralResource
         }
         isOpen={projResWizVisible}
         onOpen={handleProjResWizVisible}
@@ -1374,7 +1380,7 @@ export function PassageDetailArtifacts() {
         )}
       </BigDialog>
       <BigDialog
-        title={editAudio ? t.editAudioResource : t.editResource}
+        title={editAudio ? t.editGeneralResource : t.editResource}
         isOpen={Boolean(editResource)}
         onOpen={handleEditResourceVisible}
         onSave={allowEditSave ? handleEditSave : undefined}

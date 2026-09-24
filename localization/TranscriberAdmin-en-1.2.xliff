@@ -6787,8 +6787,8 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.editAudioResource">
-      		<source>Edit Audio Resource</source>
+      	<trans-unit id="passageDetailArtifacts.editGeneralResource">
+      		<source>Edit General Resource</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
@@ -6801,6 +6801,13 @@
                <context context-type="sourcefile">PassageMedia.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="passageDetailArtifacts.editingFile">
+      		<source>You are editing {0}</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageDetailArtifacts.tsx</context>
+      		</context-group>
+      	</trans-unit>
          <trans-unit id="passageDetailArtifacts.find">
             <source>Find</source>
             <target/>

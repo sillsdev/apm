@@ -5818,15 +5818,21 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.editAudioResource">
+      <unit id="passageDetailArtifacts.editGeneralResource">
          <segment>
-            <source>Edit Audio Resource</source>
+            <source>Edit General Resource</source>
             <target/>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.editResource">
          <segment>
             <source>Edit Resource</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.editingFile">
+         <segment>
+            <source>You are editing {0}</source>
             <target/>
          </segment>
       </unit>

@@ -65,6 +65,7 @@ import {
   isVisual,
   isUrl,
   useMobile,
+  fileNameOnly,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -195,7 +196,7 @@ export function PassageDetailArtifactsMobile() {
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   // True when the general-resource wizard was entered by adding a new audio
   // resource (title "Add Audio Resource"); false when configuring/editing an
-  // existing one ("Edit Audio Resource").
+  // existing one ("Edit General Resource").
   const isAddingAudioResourceRef = useRef<boolean>(false);
   // Deferred general-resource upload: the prepared file(s) are held here and not
   // uploaded until the user picks passages/sections on SelectSections.
@@ -1296,11 +1297,16 @@ export function PassageDetailArtifactsMobile() {
         title={
           isAddingAudioResourceRef.current
             ? t.addAudioResource
-            : t.editAudioResource
+            : t.editGeneralResource
         }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
-            {t.selectPassagesSub.replace('{0}', getOrganizedBy(false))}
+            {isAddingAudioResourceRef.current
+              ? t.selectPassagesSub.replace('{0}', getOrganizedBy(false))
+              : t.editingFile.replace(
+                  '{0}',
+                  fileNameOnly(projMediaRef.current?.attributes?.originalFile)
+                )}
           </Typography>
         }
         isOpen={projResPassageVisible}
@@ -1345,7 +1351,7 @@ export function PassageDetailArtifactsMobile() {
         )}
       </BigDialog>
       <BigDialog
-        title={editAudio ? t.editAudioResource : t.editResource}
+        title={editAudio ? t.editGeneralResource : t.editResource}
         isOpen={Boolean(editResource)}
         onOpen={handleEditResourceVisible}
         onSave={allowEditSave ? handleEditSave : undefined}
