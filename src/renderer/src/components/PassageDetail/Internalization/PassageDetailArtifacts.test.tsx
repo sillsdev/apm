@@ -65,6 +65,18 @@ jest.mock('../../../selector', () => ({
 }));
 
 jest.mock('../../../crud', () => ({
+  ArtifactTypeSlug: {
+    Vernacular: 'vernacular',
+    WholeBackTranslation: 'wholebacktranslation',
+    PhraseBackTranslation: 'backtranslation',
+    CarefulSpeech: 'carefulspeech',
+    Retell: 'retell',
+    QandA: 'qanda',
+    Comment: 'comment',
+    Activity: 'activity',
+    Resource: 'resource',
+    SharedResource: 'sharedresource',
+  },
   remoteIdGuid: jest.fn(),
   useSecResCreate: () => ({
     AddSectionResource: jest.fn(),
@@ -89,7 +101,6 @@ jest.mock('../../../crud', () => ({
   usePlanType: () => () => ({ scripture: false, flat: false }),
   usePlan: () => ({ getPlan: jest.fn(() => null) }),
   useArtifactType: () => ({ getTypeId: jest.fn(() => '') }),
-  ArtifactTypeSlug: { Resource: 'resource' },
 }));
 
 // Stable module-level arrays: the real useOrbitData hook returns the same
@@ -133,6 +144,10 @@ jest.mock('../../../context/useGlobal', () => ({
     if (key === 'progress') return 0;
     return undefined;
   }),
+}));
+
+jest.mock('./usePassageRef', () => ({
+  usePassageRef: () => ({ passageRef: jest.fn(() => '') }),
 }));
 
 jest.mock('../../../utils/useStepPermission', () => ({
@@ -225,21 +240,29 @@ jest.mock('../../Uploader', () => ({
   },
 }));
 
-jest.mock('../../MediaUpload', () => ({
-  MarkDownType: 'text/markdown',
-  UriLinkType: 'text/uri-list',
-}));
-jest.mock('../../../control/MarkDownView', () => ({
-  MarkDownView: () => null,
-}));
-jest.mock('./usePassageRef', () => ({
-  usePassageRef: () => ({ passageRef: jest.fn(() => '') }),
-}));
 jest.mock('./SortableHeader', () => () => null);
 jest.mock('.', () => ({
   AIGenerated: 'ai-generated',
   SortableItem: () => null,
   useFullReference: () => jest.fn(() => ''),
+}));
+jest.mock('../../../control/LinkEdit', () => ({
+  LinkEdit: () => null,
+}));
+
+jest.mock('../../../control/MarkDownEdit', () => ({
+  MarkDownEdit: () => null,
+}));
+
+jest.mock('../../../control/MarkDownView', () => ({
+  MarkDownView: () => null,
+}));
+
+jest.mock('../../MediaUpload', () => ({
+  __esModule: true,
+  UriLinkType: 'text/uri-list',
+  MarkDownType: 'text/markdown',
+  FaithbridgeType: 'audio/mpeg/s3link',
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
@@ -253,9 +276,12 @@ jest.mock('../../LimitedMediaPlayer', () => () => null);
 jest.mock('./PassageResourceButton', () => ({
   PassageResourceButton: () => null,
 }));
-jest.mock('../../Sheet/SelectArtifactCategory', () => () => (
-  <div>category-select</div>
-));
+jest.mock('../../Sheet/SelectArtifactCategory', () => {
+  const MockSelectArtifactCategory = (): React.ReactElement => (
+    <div>category-select</div>
+  );
+  return MockSelectArtifactCategory;
+});
 
 const mockUsePassageDetailContext =
   usePassageDetailContext as jest.MockedFunction<
