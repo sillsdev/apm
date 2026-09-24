@@ -1,7 +1,7 @@
 import { useContext, useMemo } from 'react';
 import { ISheet, SectionD } from '../../model';
 import { useGlobal } from '../../context/useGlobal';
-import { findRecord, sectionDescription } from '../../crud';
+import { findRecord, sectionNameOrNumber } from '../../crud';
 import { PlanContext } from '../../context/PlanContext';
 
 export const useSectionIdDescription = () => {
@@ -14,7 +14,7 @@ export const useSectionIdDescription = () => {
     findRecord(memory, 'section', id) as SectionD | undefined;
 
   return (row: ISheet) => {
-    return sectionDescription(
+    return sectionNameOrNumber(
       getSectionRec(row.sectionId?.id || '') as SectionD,
       sectionMap
     );

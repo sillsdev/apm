@@ -5,7 +5,7 @@
  * a formatted section description by:
  * 1. Extracting the sectionId from the row
  * 2. Finding the section record in memory
- * 3. Using the sectionDescription utility with a section map
+ * 3. Using the sectionNameOrNumber utility (name if given, else the ident) with a section map
  *
  * The hook uses useMemo to optimize the section map creation.
  */
@@ -26,7 +26,7 @@ jest.mock('../../context/useGlobal', () => ({
 
 jest.mock('../../crud', () => ({
   findRecord: jest.fn(),
-  sectionDescription: jest.fn(),
+  sectionNameOrNumber: jest.fn(),
 }));
 
 jest.mock('../../context/PlanContext', () => ({
@@ -46,7 +46,7 @@ import {
 // Get references to the mocked functions
 const { useContext, useMemo } = React;
 import { useGlobal } from '../../context/useGlobal';
-import { findRecord, sectionDescription } from '../../crud';
+import { findRecord, sectionNameOrNumber } from '../../crud';
 
 describe('useSectionIdDescription', () => {
   const mockMemory = {
@@ -95,7 +95,7 @@ describe('useSectionIdDescription', () => {
     (useGlobal as jest.Mock).mockReturnValue([mockMemory, jest.fn()]);
     (useContext as jest.Mock).mockReturnValue(mockPlanContext);
     (findRecord as jest.Mock).mockReturnValue(undefined);
-    (sectionDescription as jest.Mock).mockReturnValue(
+    (sectionNameOrNumber as jest.Mock).mockReturnValue(
       'Mocked Section Description'
     );
 
@@ -122,7 +122,7 @@ describe('useSectionIdDescription', () => {
     });
 
     (findRecord as jest.Mock).mockReturnValue(mockSection);
-    (sectionDescription as jest.Mock).mockReturnValue('1  Test Section');
+    (sectionNameOrNumber as jest.Mock).mockReturnValue('1  Test Section');
 
     const { result } = renderHook(() => useSectionIdDescription());
 
@@ -130,7 +130,7 @@ describe('useSectionIdDescription', () => {
     const description = getSectionDescription(mockRow);
 
     expect(findRecord).toHaveBeenCalledWith(mockMemory, 'section', 'section-1');
-    expect(sectionDescription).toHaveBeenCalledWith(
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
       mockSection,
       expect.any(Map)
     );
@@ -143,7 +143,7 @@ describe('useSectionIdDescription', () => {
     });
 
     (findRecord as jest.Mock).mockReturnValue(undefined);
-    (sectionDescription as jest.Mock).mockReturnValue('');
+    (sectionNameOrNumber as jest.Mock).mockReturnValue('');
 
     const { result } = renderHook(() => useSectionIdDescription());
 
@@ -151,7 +151,10 @@ describe('useSectionIdDescription', () => {
     const description = getSectionDescription(mockRow);
 
     expect(findRecord).toHaveBeenCalledWith(mockMemory, 'section', '');
-    expect(sectionDescription).toHaveBeenCalledWith(undefined, expect.any(Map));
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Map)
+    );
     expect(description).toBe('');
   });
 
@@ -161,7 +164,7 @@ describe('useSectionIdDescription', () => {
     });
 
     (findRecord as jest.Mock).mockReturnValue(undefined);
-    (sectionDescription as jest.Mock).mockReturnValue('');
+    (sectionNameOrNumber as jest.Mock).mockReturnValue('');
 
     const { result } = renderHook(() => useSectionIdDescription());
 
@@ -169,7 +172,10 @@ describe('useSectionIdDescription', () => {
     const description = getSectionDescription(mockRow);
 
     expect(findRecord).toHaveBeenCalledWith(mockMemory, 'section', '');
-    expect(sectionDescription).toHaveBeenCalledWith(undefined, expect.any(Map));
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Map)
+    );
     expect(description).toBe('');
   });
 
@@ -179,7 +185,7 @@ describe('useSectionIdDescription', () => {
     });
 
     (findRecord as jest.Mock).mockReturnValue(undefined);
-    (sectionDescription as jest.Mock).mockReturnValue('');
+    (sectionNameOrNumber as jest.Mock).mockReturnValue('');
 
     const { result } = renderHook(() => useSectionIdDescription());
 
@@ -191,7 +197,10 @@ describe('useSectionIdDescription', () => {
       'section',
       'nonexistent-section'
     );
-    expect(sectionDescription).toHaveBeenCalledWith(undefined, expect.any(Map));
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
+      undefined,
+      expect.any(Map)
+    );
     expect(description).toBe('');
   });
 
@@ -228,16 +237,16 @@ describe('useSectionIdDescription', () => {
     });
 
     (findRecord as jest.Mock).mockReturnValue(mockSection);
-    (sectionDescription as jest.Mock).mockReturnValue(
+    (sectionNameOrNumber as jest.Mock).mockReturnValue(
       'Description with updated map'
     );
 
     const getSectionDescription = result.current;
     getSectionDescription(mockRow);
 
-    // Verify that sectionDescription was called with the expected Map
-    const callArgs = (sectionDescription as jest.Mock).mock.calls[
-      (sectionDescription as jest.Mock).mock.calls.length - 1
+    // Verify that sectionNameOrNumber was called with the expected Map
+    const callArgs = (sectionNameOrNumber as jest.Mock).mock.calls[
+      (sectionNameOrNumber as jest.Mock).mock.calls.length - 1
     ];
     const passedMap = callArgs[1] as Map<number, string>;
     expect(passedMap.size).toBe(updatedSectionArr.length);
@@ -245,7 +254,7 @@ describe('useSectionIdDescription', () => {
     expect(passedMap.get(2)).toBe('New Section');
   });
 
-  it('should pass the correct parameters to sectionDescription', () => {
+  it('should pass the correct parameters to sectionNameOrNumber', () => {
     const mockRow = createMockRow({
       sectionId: { type: 'section', id: 'section-1' },
     });
@@ -257,13 +266,13 @@ describe('useSectionIdDescription', () => {
     const getSectionDescription = result.current;
     getSectionDescription(mockRow);
 
-    expect(sectionDescription).toHaveBeenCalledWith(
+    expect(sectionNameOrNumber).toHaveBeenCalledWith(
       mockSection,
       expect.any(Map)
     );
 
     // Verify the Map contains the expected values
-    const callArgs = (sectionDescription as jest.Mock).mock.calls[0];
+    const callArgs = (sectionNameOrNumber as jest.Mock).mock.calls[0];
     const passedMap = callArgs[1] as Map<number, string>;
     expect(passedMap.get(1)).toBe('Section One');
     expect(passedMap.get(2)).toBe('Section Two');

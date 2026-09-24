@@ -36,17 +36,18 @@ export function PassageCard(props: IProps) {
   const getDescription = useSectionIdDescription();
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const noteTitle = cardInfo?.sharedResource?.attributes.title;
-  const ref = noteTitle || cardInfo.passage?.attributes.reference;
+  // Unsaved rows have no passage record yet, so fall back to the row fields.
+  const ref =
+    noteTitle || cardInfo.passage?.attributes.reference || cardInfo.reference;
 
   const comment =
     cardInfo?.sharedResource?.attributes.description ||
     (noteTitle ? cardInfo.reference?.split('|')[1] : '') ||
     cardInfo.comment;
 
-  const psgType = passageTypeFromRef(
-    cardInfo.passage?.attributes.reference,
-    false
-  );
+  const psgType = cardInfo.passage
+    ? passageTypeFromRef(cardInfo.passage.attributes.reference, false)
+    : cardInfo.passageType;
 
   const handlePlayEnd = () => {
     if (isPlaying) {

@@ -63,6 +63,15 @@ export function sectionRef(
     : undefined;
 }
 
+/* Show the section name if given, otherwise fall back to the sequence (e.g. M3 S1) */
+export function sectionNameOrNumber(
+  section: Section,
+  sectionMap?: Map<number, string>
+) {
+  const name = section?.attributes?.name?.trim();
+  return name || sectionNumber(section, sectionMap).trim();
+}
+
 /* build the section name = sequence + name */
 export function sectionDescription(
   section: Section,
