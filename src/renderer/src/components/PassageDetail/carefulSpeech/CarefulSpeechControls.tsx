@@ -1,8 +1,6 @@
 import { Box, IconButton, Stack, TextField, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import UndoIcon from '@mui/icons-material/Undo';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Button } from '../../../control';
 import MediaRecord from '../../MediaRecord';
 import { formatClauseRange } from './carefulSpeechFormat';
@@ -78,12 +76,6 @@ interface Props {
   strings: IGuidedPhraseRecordControlStrings;
   showBoundaryTools: boolean;
   controlIdPrefix?: string;
-  /** Phrase BT: prev/next flanking Record; hide first-incomplete Next. */
-  sequentialUnitNavAroundRecord?: boolean;
-  onPrevUnit?: () => void;
-  onNextUnitSequential?: () => void;
-  canPrevUnit?: boolean;
-  canNextUnit?: boolean;
   /** Linked notes: play existing takes, do not record or edit. */
   readOnly?: boolean;
 }
@@ -134,11 +126,6 @@ export default function CarefulSpeechControls({
   strings,
   showBoundaryTools,
   controlIdPrefix = 'careful-speech',
-  sequentialUnitNavAroundRecord = false,
-  onPrevUnit,
-  onNextUnitSequential,
-  canPrevUnit = false,
-  canNextUnit = false,
   readOnly = false,
 }: Props) {
   useRenderProfiler('CarefulSpeechControls');
@@ -184,34 +171,18 @@ export default function CarefulSpeechControls({
     () => showBoundaryTools && !readOnly && recordingPassStarted,
     [showBoundaryTools, readOnly, recordingPassStarted]
   );
-  const showNextClause = useMemo(
-    () => phase === 'recorded' && !sequentialUnitNavAroundRecord,
-    [phase, sequentialUnitNavAroundRecord]
-  );
+  const showNextClause = useMemo(() => phase === 'recorded', [phase]);
   const showDockedRecordButton = useMemo(
     () =>
       recordingPassStarted &&
       showRecorder &&
       phase !== 'bootstrapping' &&
-      (sequentialUnitNavAroundRecord || phase !== 'recorded'),
-    [recordingPassStarted, showRecorder, phase, sequentialUnitNavAroundRecord]
+      phase !== 'recorded',
+    [recordingPassStarted, showRecorder, phase]
   );
   const showRecordNavRow = useMemo(
     () => showDockedRecordButton || showNextClause,
     [showDockedRecordButton, showNextClause]
-  );
-  const navLocked = useMemo(
-    () => phase === 'recording' || savingRecording,
-    [phase, savingRecording]
-  );
-  /** After save settles on a completed segment, nudge the user to advance. */
-  const highlightNextUnit = useMemo(
-    () =>
-      sequentialUnitNavAroundRecord &&
-      phase === 'recorded' &&
-      !savingRecording &&
-      canNextUnit,
-    [sequentialUnitNavAroundRecord, phase, savingRecording, canNextUnit]
   );
   const [dockedRecordButton, setDockedRecordButton] =
     useState<ReactNode | null>(null);
@@ -387,21 +358,9 @@ export default function CarefulSpeechControls({
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: 2,
-                pt: 1,
               }}
               data-cy={`${controlIdPrefix}-docked-record`}
             >
-              {sequentialUnitNavAroundRecord && (
-                <IconButton
-                  id={`${controlIdPrefix}-prev-unit`}
-                  aria-label="Previous segment"
-                  onClick={onPrevUnit}
-                  disabled={!canPrevUnit || navLocked}
-                  size="small"
-                >
-                  <ChevronLeftIcon />
-                </IconButton>
-              )}
               {showNextClause ? (
                 <Button
                   id={`${controlIdPrefix}-next`}
@@ -413,27 +372,6 @@ export default function CarefulSpeechControls({
                 </Button>
               ) : (
                 <Box>{dockedRecordButton}</Box>
-              )}
-              {sequentialUnitNavAroundRecord && (
-                <IconButton
-                  id={`${controlIdPrefix}-next-unit`}
-                  aria-label="Next segment"
-                  onClick={onNextUnitSequential}
-                  disabled={!canNextUnit || navLocked}
-                  size="small"
-                  data-highlighted={highlightNextUnit ? 'true' : undefined}
-                  sx={
-                    highlightNextUnit
-                      ? {
-                          bgcolor: 'primary.main',
-                          color: 'primary.contrastText',
-                          '&:hover': { bgcolor: 'primary.dark' },
-                        }
-                      : undefined
-                  }
-                >
-                  <ChevronRightIcon />
-                </IconButton>
               )}
             </Box>
           )}
