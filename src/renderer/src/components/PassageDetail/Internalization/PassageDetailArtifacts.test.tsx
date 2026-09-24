@@ -236,9 +236,10 @@ jest.mock('../../LimitedMediaPlayer', () => () => null);
 jest.mock('./PassageResourceButton', () => ({
   PassageResourceButton: () => null,
 }));
-jest.mock('../../Sheet/SelectArtifactCategory', () => () => (
-  <div>category-select</div>
-));
+jest.mock('../../Sheet/SelectArtifactCategory', () => {
+  const MockSelectArtifactCategory = () => <div>category-select</div>;
+  return MockSelectArtifactCategory;
+});
 
 const mockUsePassageDetailContext =
   usePassageDetailContext as jest.MockedFunction<
