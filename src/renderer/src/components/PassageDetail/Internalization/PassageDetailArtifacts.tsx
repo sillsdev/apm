@@ -74,7 +74,7 @@ import {
   isVisual,
   isUrl,
   useMobile,
-  fileNameOnly,
+  safeFileBasename,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -1325,7 +1325,9 @@ export function PassageDetailArtifacts() {
               ? t.selectPassagesSub.replace('{0}', getOrganizedBy(false))
               : t.editingFile.replace(
                   '{0}',
-                  fileNameOnly(projMediaRef.current?.attributes?.originalFile)
+                  safeFileBasename(
+                    projMediaRef.current?.attributes?.originalFile
+                  )
                 )}
           </Typography>
         }
