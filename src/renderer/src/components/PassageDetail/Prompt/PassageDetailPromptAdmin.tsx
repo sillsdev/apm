@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -30,6 +31,7 @@ import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
 import { useSecResCreate, useSecResDelete } from '../../../crud';
 import { usePromptSectionResource } from './usePromptSectionResource';
+import { promptPendingRestore } from './promptPendingRestore';
 import { SectionResourceD } from '../../../model';
 import { promptSelector, sharedSelector } from '../../../selector';
 import { IPromptStrings, ISharedStrings } from '../../../model';
@@ -184,6 +186,15 @@ export default function PassageDetailPromptAdmin(props: IProps) {
     setPreload((p) => p + 1);
   };
 
+  const pendingRestore = useCallback(
+    () =>
+      promptPendingRestore({
+        sectionId: section.id,
+        orgWorkflowStepId: currentstep,
+      }),
+    [section.id, currentstep]
+  );
+
   const handleTrackRecorder = (state: IMediaState) => setRecorderState(state);
 
   const handleRecording = (recording: boolean) => {
@@ -243,6 +254,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
           artifactId={resourceArtifactId}
           passageId={undefined}
           afterUploadCb={afterUploadCb}
+          pendingRestore={pendingRestore}
           mediaId={promptMediaId}
           onSaving={onSaving}
           onReady={onReady}

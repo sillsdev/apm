@@ -87,6 +87,26 @@ const schema = new RecordSchema({
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
+    organization: {
+      attributes: { name: { type: 'string' } },
+      relationships: {
+        lastModifiedByUser: { kind: 'hasOne', type: 'user' },
+      },
+    },
+    orgkeytermtarget: {
+      attributes: {
+        term: { type: 'string' },
+        termIndex: { type: 'number' },
+        target: { type: 'string' },
+        dateCreated: { type: 'string' },
+        dateUpdated: { type: 'string' },
+      },
+      relationships: {
+        organization: { kind: 'hasOne', type: 'organization' },
+        mediafile: { kind: 'hasOne', type: 'mediafile' },
+        lastModifiedByUser: { kind: 'hasOne', type: 'user' },
+      },
+    },
   },
 });
 
@@ -132,12 +152,22 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
     await memory.update((t) => [
       t.addRecord({ type: 'user', id: user, attributes: {} }),
       t.addRecord({
+        type: 'organization',
+        id: 'org-1',
+        attributes: { name: 'Org 1' },
+      }),
+      t.addRecord({
         type: 'section',
         id: 'sec-1',
         attributes: { name: 'Section 1' },
       }),
       t.addRecord({ type: 'passage', id: 'pas-1', attributes: {} }),
       t.addRecord({ type: 'orgworkflowstep', id: 'ows-1', attributes: {} }),
+      t.addRecord({
+        type: 'orgworkflowstep',
+        id: 'prompt-step',
+        attributes: {},
+      }),
       t.addRecord({
         type: 'artifacttype',
         id: 'res-art',
@@ -178,6 +208,28 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         relationships: {
           artifactType: { data: { type: 'artifacttype', id: 'lwc-art' } },
           passage: { data: { type: 'passage', id: 'pas-1' } },
+        },
+      }),
+      t.addRecord({
+        type: 'mediafile',
+        id: 'keyterm-media-1',
+        attributes: {
+          originalFile: 'keyterm.mp3',
+          versionNumber: 1,
+        },
+        relationships: {
+          passage: { data: { type: 'passage', id: 'pas-1' } },
+        },
+      }),
+      t.addRecord({
+        type: 'mediafile',
+        id: 'prompt-media-1',
+        attributes: {
+          originalFile: 'prompt.mp3',
+          versionNumber: 1,
+        },
+        relationships: {
+          artifactType: { data: { type: 'artifacttype', id: 'res-art' } },
         },
       }),
     ]);
@@ -491,6 +543,80 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       expect(
         getRecordingForClause([row], 'lwc-art', 1, clauseRegion, 'vern-1')?.id
       ).toBe('lwc-row');
+    });
+  });
+
+  /**
+   * TT-7721: Term Verify Audio Translation never staged pendingRestore, so
+   * Retry re-uploaded the mediafile with no orgkeytermtarget chip.
+   */
+  describe('Term Verify Audio Translation — orgkeytermtarget secondary link', () => {
+    it('creates orgkeytermtarget linked to organization and mediafile', async () => {
+      const restore: PendingUploadRestore = {
+        kind: 'orgkeytermtarget',
+        term: 'grace',
+        termIndex: 0,
+        target: 'favor',
+        organizationId: 'org-1',
+      };
+
+      await restoreAfterPendingUpload({
+        mediaId: 'keyterm-media-1',
+        restore,
+        memory,
+        user,
+      });
+
+      const targets = memory.cache.query((q) =>
+        q.findRecords('orgkeytermtarget')
+      ) as unknown as Array<{
+        attributes?: { term?: string; termIndex?: number; target?: string };
+      }>;
+      expect(targets).toHaveLength(1);
+      expect(targets[0].attributes?.term).toBe('grace');
+      expect(targets[0].attributes?.termIndex).toBe(0);
+      expect(targets[0].attributes?.target).toBe('favor');
+      expect(related(targets[0], 'organization')).toBe('org-1');
+      expect(related(targets[0], 'mediafile')).toBe('keyterm-media-1');
+    });
+  });
+
+  /**
+   * TT-7724: Prompt recordings must stage sectionresource restore meta
+   * (description null, sequence 0, no passage) so findPromptRow sees them
+   * after Retry.
+   */
+  describe('Prompt audio — sectionresource secondary link', () => {
+    it('creates section-level sectionresource that findPromptRow would use', async () => {
+      const restore: PendingUploadRestore = {
+        kind: 'sectionresource',
+        sectionId: 'sec-1',
+        description: null,
+        sequenceNum: 0,
+        orgWorkflowStepId: 'prompt-step',
+      };
+
+      await restoreAfterPendingUpload({
+        mediaId: 'prompt-media-1',
+        restore,
+        memory,
+        user,
+      });
+
+      const sectionResources = memory.cache.query((q) =>
+        q.findRecords('sectionresource')
+      ) as unknown as Array<{
+        id: string;
+        attributes?: { sequenceNum?: number; description?: string };
+      }>;
+      expect(sectionResources).toHaveLength(1);
+      expect(related(sectionResources[0], 'section')).toBe('sec-1');
+      expect(related(sectionResources[0], 'mediafile')).toBe('prompt-media-1');
+      expect(related(sectionResources[0], 'orgWorkflowStep')).toBe(
+        'prompt-step'
+      );
+      expect(related(sectionResources[0], 'passage')).toBeFalsy();
+      expect(sectionResources[0].attributes?.sequenceNum).toBe(0);
     });
   });
 });

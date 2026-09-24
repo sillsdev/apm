@@ -15,6 +15,7 @@ import { keyTermsSelector, sharedSelector } from '../../../selector';
 import TargetWord from './TargetWordAdd';
 import { useKeyTermSave } from '../../../crud/useKeyTermSave';
 import KeyTermChip from './KeyTermChip';
+import { keyTermPendingRestore } from './keyTermPendingRestore';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
@@ -92,6 +93,7 @@ export default function KeyTermTable({
   const { saveCompleted } = React.useContext(UnsavedContext).state;
   const { canDoSectionStep } = useStepPermissions();
   const [reporter] = useGlobal('errorReporter');
+  const [org] = useGlobal('organization');
   const {
     setSelected,
     commentPlaying,
@@ -139,6 +141,17 @@ export default function KeyTermTable({
       saveCompleted(`${rowRef.current?.index}`, ts.NoSaveOffline);
     }
   };
+
+  const pendingRestore = useCallback(() => {
+    if (!rowRef.current) return undefined;
+    const { term, index } = rowRef.current;
+    return keyTermPendingRestore({
+      term,
+      termIndex: index,
+      target: targetText,
+      organizationId: org,
+    });
+  }, [targetText, org]);
 
   const handleTermClick = (term: number) => () => {
     termClick && termClick(term);
@@ -312,6 +325,7 @@ export default function KeyTermTable({
                       fileName={getFilename(row)}
                       passageId={passage.id}
                       afterUploadCb={afterUploadCb}
+                      pendingRestore={pendingRestore}
                       row={row}
                       onOk={onOk}
                       onCancel={onCancel}

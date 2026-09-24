@@ -64,6 +64,17 @@ export type PendingUploadRestore =
       kind: 'projectresource';
       topic?: string;
       artifactCategoryId?: string;
+    }
+  | {
+      /**
+       * Term Verify Audio Translation: recreate orgkeytermtarget after Retry
+       * (TT-7721). Mirrors useKeyTermSave create path.
+       */
+      kind: 'orgkeytermtarget';
+      term: string;
+      termIndex: number;
+      target: string;
+      organizationId: string;
     };
 
 export type PendingRestoreInput =

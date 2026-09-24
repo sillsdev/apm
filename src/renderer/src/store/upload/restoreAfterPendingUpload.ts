@@ -20,6 +20,8 @@ import {
   CommentD,
   IntellectualProperty,
   MediaFileD,
+  OrgKeytermTarget,
+  OrgKeytermTargetD,
   SectionD,
   SectionResource,
 } from '../../model';
@@ -91,6 +93,14 @@ export async function restoreAfterPendingUpload({
       return;
     case 'projectresource':
       await restoreProjectResource({
+        mediaId: localMediaId,
+        restore,
+        memory,
+        user,
+      });
+      return;
+    case 'orgkeytermtarget':
+      await restoreOrgKeytermTarget({
         mediaId: localMediaId,
         restore,
         memory,
@@ -453,4 +463,54 @@ async function restoreProjectResource({
   }
 
   appendPendingProjectResourceConfig(mediaId);
+}
+
+/**
+ * Mirrors useKeyTermSave create path: orgkeytermtarget + organization + mediafile.
+ */
+async function restoreOrgKeytermTarget({
+  mediaId,
+  restore,
+  memory,
+  user,
+}: {
+  mediaId: string;
+  restore: Extract<PendingUploadRestore, { kind: 'orgkeytermtarget' }>;
+  memory: Memory;
+  user: string;
+}): Promise<void> {
+  const mediafile = findRecord(memory, 'mediafile', mediaId) as
+    MediaFileD | undefined;
+  if (!mediafile?.id) return;
+
+  const t = new RecordTransformBuilder();
+  const termTargetRec = {
+    type: 'orgkeytermtarget',
+    attributes: {
+      term: restore.term,
+      termIndex: restore.termIndex,
+      target: restore.target,
+    },
+  } as OrgKeytermTarget & UninitializedRecord;
+
+  const ops: RecordOperation[] = [
+    ...AddRecord(t, termTargetRec, user, memory),
+    ...ReplaceRelatedRecord(
+      t,
+      termTargetRec as RecordIdentity,
+      'organization',
+      'organization',
+      restore.organizationId
+    ),
+    ...UpdateRelatedRecord(
+      t,
+      termTargetRec as OrgKeytermTargetD,
+      'mediafile',
+      'mediafile',
+      mediafile.id,
+      user
+    ),
+  ];
+
+  await memory.update(ops);
 }
