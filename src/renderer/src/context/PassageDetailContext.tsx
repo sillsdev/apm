@@ -860,7 +860,11 @@ const PassageDetailProvider = (props: IProps) => {
     let newRows: IRow[] = [];
 
     if (i < 0) {
-      const media = mediafiles.find((m) => m.id === selected);
+      // useOrbitData's snapshot can lag a just-created mediafile (deferred
+      // general-resource upload → configure). Fall back to the cache.
+      const media =
+        mediafiles.find((m) => m.id === selected) ??
+        (findRecord(memory, 'mediafile', selected) as MediaFileD | undefined);
       if (media) {
         newRows = oneMediaRow({
           newRow: state.rowData,
@@ -896,7 +900,8 @@ const PassageDetailProvider = (props: IProps) => {
         return;
       }
     }
-    const r = rowData[i] as IRow;
+    // i indexes newRows when a row was just built for this media.
+    const r = (newRows.length > 0 ? newRows : rowData)[i] as IRow;
     let resetBlob = false;
     //if this is a file that will be played in the wavesurfer..fetch it
     if (inPlayer === PlayInPlayer.yes) {
