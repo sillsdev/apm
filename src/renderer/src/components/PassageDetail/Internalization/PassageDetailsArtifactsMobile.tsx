@@ -98,6 +98,7 @@ import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { buildResourcePendingRestore } from './buildResourcePendingRestore';
+import { removePendingProjectResourceConfigs } from '../../../store/upload/pendingProjectResourceConfig';
 import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 import { AddResourceAction } from './AddResourceAction';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
@@ -455,6 +456,41 @@ export function PassageDetailArtifactsMobile() {
   const handleWizDiscard = () => {
     setDialogPendingCloseConfirmation(null);
     closeProjResWiz();
+  };
+
+  // Configure step "Back" (add flow only): return to passage selection keeping
+  // the uploaded media (unlike closeProjResWiz, which discards it). No confirm —
+  // going back is not a close; the wizard clears its own dirty flag on unmount,
+  // and the prior selection is re-checked via SelectSections' initialItems
+  // (projIdentRef). Coming forward again just re-opens the wizard (no re-upload,
+  // since the media already exists).
+  const handleWizBack = () => {
+    setProjResWizVisible(false);
+    setProjResPassageVisible(true);
+  };
+
+  // SelectSections "Back" (add flow only): return to the upload/record dialog to
+  // change the audio file. If a media was already uploaded (the user reached
+  // here from the configure step's Back), it is now superseded, so delete it and
+  // its pending-config entry — no orphaned general resource is left. The staged
+  // file is dropped by the projResPassageVisible effect, so the uploader reopens
+  // for a fresh pick/record; a second upload creates the replacement.
+  const handlePassageBack = async () => {
+    const superseded = projMediaRef.current;
+    setProjResPassageVisible(false);
+    if (superseded) {
+      removePendingProjectResourceConfigs([superseded.id]);
+      await memory.update((t) => t.removeRecord(superseded));
+      projMediaRef.current = undefined;
+    }
+    // Reopen the Add Audio Resource upload dialog in general-resource mode, the
+    // same state the user staged the file from.
+    setResourceKind(ResourceTypeEnum.projectResource);
+    artifactState.id = projResourceType ?? null;
+    setUploadType(UploadType.ProjectResource);
+    syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
+    setAudioUploadOrRecord(true);
+    setUploadVisible(true);
   };
 
   const handleAllResources = () => {
@@ -913,6 +949,9 @@ export function PassageDetailArtifactsMobile() {
     cancelled.current = false;
     isAddingAudioResourceRef.current = true;
     projMediaRef.current = undefined;
+    // Fresh add: no prior selection to pre-check on SelectSections. (A Back from
+    // the configure step repopulates projIdentRef, so only clear it here.)
+    projIdentRef.current = [];
     // Staging only happens for the "Add Audio Resource" → General Resource flow,
     // which is always audio, so this is never a visual resource. (Visual general
     // resources are reached by selecting an existing project-resource media, not
@@ -1309,16 +1348,31 @@ export function PassageDetailArtifactsMobile() {
       >
         {projResPassageVisible ? (
           <SelectSections
-            initialItems={getProjectResourceAssignments(
-              projMediaRef.current,
-              mediafiles,
-              sectionResources,
-              resourceType
-            )}
+            initialItems={
+              // Returning here via the configure step's Back re-checks the prior
+              // selection (the media has no saved assignments yet). Other entry
+              // points read the media's existing assignments.
+              isAddingAudioResourceRef.current &&
+              projIdentRef.current.length > 0
+                ? projIdentRef.current
+                : getProjectResourceAssignments(
+                    projMediaRef.current,
+                    mediafiles,
+                    sectionResources,
+                    resourceType
+                  )
+            }
             visual={visual}
-            uploadsOnNext={isAddingAudioResourceRef.current}
+            // The button uploads only when a media has not been created yet;
+            // after a Back from configure the media exists, so it just advances.
+            uploadsOnNext={
+              isAddingAudioResourceRef.current && !projMediaRef.current
+            }
             uploading={uploading}
             onSelect={handleSelectProjectResourcePassage}
+            onBack={
+              isAddingAudioResourceRef.current ? handlePassageBack : undefined
+            }
           />
         ) : (
           <></>
@@ -1339,6 +1393,9 @@ export function PassageDetailArtifactsMobile() {
             candidateItems={projCandidateRef.current}
             resourceTypeId={resourceType}
             onOpen={closeProjResWiz}
+            onBack={
+              isAddingAudioResourceRef.current ? handleWizBack : undefined
+            }
           />
         ) : (
           <></>
