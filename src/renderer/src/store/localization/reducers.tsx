@@ -1189,6 +1189,7 @@ const initialState = {
 			"deleteConfirm": "Delete Resource?",
 			"description": "Description",
 			"discardAndClose": "Discard and Close",
+			"editAudioResource": "Edit Audio Resource",
 			"editGeneralResource": "Edit General Resource",
 			"editResource": "Edit Resource",
 			"editingFile": "You are editing {0}",

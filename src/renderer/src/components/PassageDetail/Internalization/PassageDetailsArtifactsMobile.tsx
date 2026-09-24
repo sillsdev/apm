@@ -1351,7 +1351,7 @@ export function PassageDetailArtifactsMobile() {
         )}
       </BigDialog>
       <BigDialog
-        title={editAudio ? t.editGeneralResource : t.editResource}
+        title={editAudio ? t.editAudioResource : t.editResource}
         isOpen={Boolean(editResource)}
         onOpen={handleEditResourceVisible}
         onSave={allowEditSave ? handleEditSave : undefined}

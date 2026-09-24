@@ -43,6 +43,7 @@ jest.mock('react-redux', () => ({
     generalResources: 'General Resources',
     generalResourcesIndividually:
       'General resources should be uploaded individually',
+    editAudioResource: 'Edit Audio Resource',
     editGeneralResource: 'Edit General Resource',
     editResource: 'Edit Resource',
     editingFile: 'You are editing {0}',

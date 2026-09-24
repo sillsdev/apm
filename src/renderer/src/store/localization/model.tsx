@@ -1130,6 +1130,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "deleteConfirm": string;
     "description": string;
     "discardAndClose": string;
+    "editAudioResource": string;
     "editGeneralResource": string;
     "editResource": string;
     "editingFile": string;
