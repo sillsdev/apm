@@ -1,14 +1,9 @@
-import path from 'path-browserify';
 import { MediaFileD } from '@model/mediafile';
 import { removeExtension } from './removeExtension';
 import cleanFileName from './cleanFileName';
+import { safeFileBasename } from './safeFileBasename';
 
 const MAX_STEM_LEN = 100;
-
-const safeBasename = (originalFile: string): string => {
-  const noQuery = (originalFile || '').split('?')[0] ?? '';
-  return path.basename(noQuery.replace(/\\/g, '/'));
-};
 
 const looksLikeHttpUrl = (s: string): boolean =>
   /^https?:\/\//i.test((s || '').trim());
@@ -32,7 +27,7 @@ const inlineTextShouldUseIdStem = (m: MediaFileD): boolean => {
   const raw = m.attributes.originalFile || '';
   if (raw.length > MAX_STEM_LEN) return true;
   if (/[\r\n]/.test(raw)) return true;
-  const base = safeBasename(raw);
+  const base = safeFileBasename(raw);
   // Reasonable uploaded filename: short basename with a normal extension
   if (
     base.length <= MAX_STEM_LEN &&
@@ -56,7 +51,7 @@ export const getBurritoMediaExportStem = (m: MediaFileD): string => {
   if (looksLikeHttpUrl(raw)) {
     try {
       const u = new URL(raw.trim());
-      const fromPath = safeBasename(u.pathname);
+      const fromPath = safeFileBasename(u.pathname);
       if (
         fromPath &&
         fromPath !== '/' &&
@@ -77,7 +72,7 @@ export const getBurritoMediaExportStem = (m: MediaFileD): string => {
     return idStem(m);
   }
 
-  const base = safeBasename(raw);
+  const base = safeFileBasename(raw);
   const { name } = removeExtension(base);
   const stem = name || 'media';
 

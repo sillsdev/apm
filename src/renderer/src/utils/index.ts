@@ -92,6 +92,7 @@ export * from './urlToFile';
 export * from './libraryGraphicToCompressedImages';
 export * from './compressedImageDisplayUrl';
 export * from './getUrlNameAndExt';
+export * from './safeFileBasename';
 export * from './mimeTypes';
 export * from './handleUnauthorized';
 export * from './recoverBackupSyncFail';
