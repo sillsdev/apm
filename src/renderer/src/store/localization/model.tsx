@@ -1129,6 +1129,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "currentResource": string;
     "deleteConfirm": string;
     "description": string;
+    "deselectAll": string;
     "discardAndClose": string;
     "editAudioResource": string;
     "editResource": string;
@@ -1159,6 +1160,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "resource": string;
     "resources": string;
     "resourcesDeleted": string;
+    "selectAll": string;
     "selectAllPassages": string;
     "selectBook": string;
     "selectOne": string;

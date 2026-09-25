@@ -5812,6 +5812,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.discardAndClose">
          <segment>
             <source>Discard and Close</source>
@@ -5989,6 +5995,12 @@
       <unit id="passageDetailArtifacts.resourcesDeleted">
          <segment>
             <source> ({0} resources will be deleted.)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.selectAll">
+         <segment>
+            <source>Select All</source>
             <target/>
          </segment>
       </unit>

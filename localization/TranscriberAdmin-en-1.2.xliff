@@ -6780,6 +6780,13 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.deselectAll">
+      		<source>Deselect All</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">SelectSections.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.discardAndClose">
       		<source>Discard and Close</source>
       		<target/>
@@ -6990,6 +6997,13 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.selectAll">
+            <source>Select All</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectSections.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.selectAllPassages">
             <source>Select all passages in {0}</source>
             <target/>

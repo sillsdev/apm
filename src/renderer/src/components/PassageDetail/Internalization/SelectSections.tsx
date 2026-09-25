@@ -192,6 +192,17 @@ export function SelectSections(props: IProps) {
   const isSectionSelected = (sectionId: string) =>
     selected.has(`section:${sectionId}`);
 
+  const allSelected = data.length > 0 && selected.size === data.length;
+
+  /** Tick every row's box, or clear them all when everything is already ticked. */
+  const toggleAll = () => {
+    setSelected(
+      allSelected
+        ? new Set<string>()
+        : new Set(data.map((row) => `${row.kind}:${row.recId}`))
+    );
+  };
+
   const handleSelected = () => {
     const identities = (rows: IRow[]) =>
       rows.map((row) => ({
@@ -214,6 +225,15 @@ export function SelectSections(props: IProps) {
       id="SelectSections"
       sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
     >
+      <Box sx={{ ...rowSx, justifyContent: 'flex-start', pb: 1 }}>
+        <Button
+          id="select-sections-all"
+          onClick={toggleAll}
+          disabled={data.length === 0 || uploading}
+        >
+          {allSelected ? ta.deselectAll : ta.selectAll}
+        </Button>
+      </Box>
       <StyledPaper
         id="PassageList"
         style={heightStyle}
