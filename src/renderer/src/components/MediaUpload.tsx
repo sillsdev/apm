@@ -42,6 +42,10 @@ interface IProps {
   hideCancel?: boolean | undefined;
   /** When set, always prompt to confirm before discarding on close (X/backdrop). */
   confirmOnClose?: boolean | undefined;
+  /** Pre-select these files when the dialog opens (see MediaUploadContent). */
+  initialFiles?: File[] | undefined;
+  /** Keep the selection after submit instead of clearing it (see MediaUploadContent). */
+  keepFilesAfterSubmit?: boolean | undefined;
 }
 
 function MediaUpload(props: IProps) {
@@ -67,6 +71,8 @@ function MediaUpload(props: IProps) {
     validationMessage,
     hideCancel,
     confirmOnClose,
+    initialFiles,
+    keepFilesAfterSubmit,
   } = props;
   const { isMobile } = useMobile();
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
@@ -138,6 +144,8 @@ function MediaUpload(props: IProps) {
           audioOnly={audioOnly}
           validationMessage={validationMessage}
           hideCancel={hideCancel}
+          initialFiles={initialFiles}
+          keepFilesAfterSubmit={keepFilesAfterSubmit}
         />
         {showConfirm && (
           <Confirm
