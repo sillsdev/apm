@@ -1,5 +1,5 @@
-import { ArtifactType, MediaFileD } from '../../../model';
-import { related } from '../../../crud';
+import { ArtifactType, MediaFile } from '../../../model';
+import { related } from '../../../crud/related';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
 /**
@@ -30,16 +30,21 @@ export const projectResourceTypeIds = (
  * This is the same resolution the Edit (pencil) action uses to decide whether
  * to reopen the general-resource wizard, so the "General" type label and badge
  * always agree with what Edit does.
+ *
+ * `includeSelf: false` drops the media-is-itself-the-general-resource fallback,
+ * for callers (Delete) that only ever act on derived copies: rows never show
+ * the general resource itself, so resolving one to itself would be wrong there.
  */
-export const generalResourceMedia = (
-  media: MediaFileD | undefined,
-  mediafiles: MediaFileD[],
-  projResourceTypeIds: (string | undefined)[]
-): MediaFileD | undefined => {
+export const generalResourceMedia = <T extends MediaFile>(
+  media: T | undefined,
+  mediafiles: T[],
+  projResourceTypeIds: (string | null | undefined)[],
+  { includeSelf = true }: { includeSelf?: boolean } = {}
+): T | undefined => {
   // Ignore blank ids on both sides, so media without an artifactType never
   // matches a type record that happens to have no id.
   const typeIds = projResourceTypeIds.filter(Boolean);
-  const isProjectType = (m: MediaFileD | undefined) => {
+  const isProjectType = (m: T | undefined) => {
     const typeId = m ? related(m, 'artifactType') : undefined;
     return Boolean(typeId) && typeIds.includes(typeId);
   };
@@ -48,7 +53,7 @@ export const generalResourceMedia = (
   );
   return isProjectType(sourceMedia)
     ? sourceMedia
-    : isProjectType(media)
+    : includeSelf && isProjectType(media)
       ? media
       : undefined;
 };

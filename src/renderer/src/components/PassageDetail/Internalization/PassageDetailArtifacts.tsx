@@ -95,7 +95,6 @@ import { LaunchLink } from '../../../control/LaunchLink';
 import {
   getProjectResourceAssignments,
   removeUnselectedProjectResourceAssignments,
-  getGeneralResourceSource,
   countProjectResourceCopies,
   removeProjectResource,
 } from './projectResourceAssignments';
@@ -105,7 +104,10 @@ import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import { generalResourceMedia } from './generalResourceMedia';
+import {
+  generalResourceMedia,
+  projectResourceTypeIds,
+} from './generalResourceMedia';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -308,6 +310,14 @@ export function PassageDetailArtifacts() {
     return resourceType?.id;
   }, [artifactTypes, offlineOnly]);
 
+  // Both projectresource type records (offline + remote); used to resolve
+  // general resources for the type label, Edit, and Delete (see
+  // [[generalResourceMedia]]).
+  const projResourceTypeIds = useMemo(
+    () => projectResourceTypeIds(artifactTypes),
+    [artifactTypes]
+  );
+
   const resourcePendingRestore = useCallback(() => {
     if (resourceKindRef.current === ResourceTypeEnum.projectResource) {
       return buildResourcePendingRestore({
@@ -422,13 +432,16 @@ export function PassageDetailArtifacts() {
   const confirmGeneralSource = useMemo(
     () =>
       confirm
-        ? getGeneralResourceSource(
+        ? generalResourceMedia(
             mediafiles.find((m) => m.id === confirm),
             mediafiles,
-            projResourceType
+            projResourceTypeIds,
+            // Rows never show the general resource itself, so a row being
+            // deleted is only ever a derived copy of one.
+            { includeSelf: false }
           )
         : undefined,
-    [confirm, mediafiles, projResourceType]
+    [confirm, mediafiles, projResourceTypeIds]
   );
   const confirmGeneralCopies = countProjectResourceCopies(
     confirmGeneralSource,
@@ -549,9 +562,11 @@ export function PassageDetailArtifacts() {
       MediaFileD | undefined;
     // Resolve to the root general resource; the same resolution decides the
     // "General" type label and mobile badge (see [[generalResourceMedia]]).
-    const projectMedia = generalResourceMedia(mf, mediafiles, [
-      projResourceType,
-    ]);
+    const projectMedia = generalResourceMedia(
+      mf,
+      mediafiles,
+      projResourceTypeIds
+    );
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {

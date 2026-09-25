@@ -2,7 +2,6 @@ import type Memory from '@orbit/memory';
 import type { MediaFileD, SectionResourceD } from '../../../model';
 import {
   countProjectResourceCopies,
-  getGeneralResourceSource,
   getProjectResourceAssignments,
   removeProjectResource,
   removeUnselectedProjectResourceAssignments,
@@ -171,29 +170,6 @@ describe('project resource assignments', () => {
     });
 
     expect(removeRecord).not.toHaveBeenCalled();
-  });
-
-  it('resolves a derived copy to its general resource source', () => {
-    const generalSource = {
-      ...source,
-      relationships: {
-        artifactType: relationship('artifacttype', 'proj-type'),
-      },
-    } as MediaFileD;
-    const copy = passageMedia('copy', 'passage-1');
-    const mediafiles = [generalSource, copy];
-
-    expect(getGeneralResourceSource(copy, mediafiles, 'proj-type')).toBe(
-      generalSource
-    );
-    // Rows never show the general resource itself, so it has no source.
-    expect(
-      getGeneralResourceSource(generalSource, mediafiles, 'proj-type')
-    ).toBe(undefined);
-    // Copies of some other (non-general) source are not general resources.
-    expect(getGeneralResourceSource(copy, [source, copy], 'proj-type')).toBe(
-      undefined
-    );
   });
 
   it('counts every media derived from the source', () => {
