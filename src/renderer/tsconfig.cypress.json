@@ -1,6 +1,7 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "./tsconfig.app.json",
   "compilerOptions": {
+    "composite": false,
     "types": ["cypress", "node", "@testing-library/cypress"],
     "noEmit": true
   },

@@ -1,6 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
-import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 
 const discussionSize = { width: 450, height: 900 };

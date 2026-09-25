@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 
 type ShouldBlock = (args: { nextLocation: { pathname: string } }) => boolean;

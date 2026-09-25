@@ -1,7 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { MetadataView } from './MetadataView';
 import { wrapperBuilder } from './data/wrapperBuilder';
 
