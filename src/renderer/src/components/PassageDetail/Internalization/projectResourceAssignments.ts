@@ -140,3 +140,69 @@ export const removeUnselectedProjectResourceAssignments = async ({
     );
   }
 };
+
+/**
+ * Resolves the general (project) resource behind a resource row.
+ *
+ * A row shows a derived copy whose `sourceMedia` is the general
+ * resource. Returns that source, or undefined when the row is not such a copy.
+ */
+export const getGeneralResourceSource = <T extends MediaFile>(
+  media: T | undefined,
+  mediafiles: T[],
+  projResourceTypeId?: string | null
+): T | undefined => {
+  if (!media || !projResourceTypeId) return undefined;
+  const sourceMedia = mediafiles.find(
+    (m) => m.id === related(media, 'sourceMedia')
+  );
+  return sourceMedia &&
+    related(sourceMedia, 'artifactType') === projResourceTypeId
+    ? sourceMedia
+    : undefined;
+};
+
+/**
+ * Number of passage/section copies a general resource was split into: every
+ * media whose `sourceMedia` is the general resource — the same set
+ * {@link removeProjectResource} deletes.
+ */
+export const countProjectResourceCopies = (
+  sourceMedia: MediaFile | undefined,
+  mediafiles: MediaFile[]
+) => (sourceMedia ? derivedResourceMedia(sourceMedia, mediafiles).length : 0);
+
+interface RemoveProjectResourceProps {
+  memory: Memory;
+  sourceMedia: MediaFileD;
+  mediafiles: MediaFile[];
+  sectionResources: SectionResource[];
+}
+
+/**
+ * Deletes an entire general resource: every media whose `sourceMedia` is the
+ * general resource (and its SectionResource), then the source media itself.
+ *
+ * Returns the ids of the removed copies.
+ */
+export const removeProjectResource = async ({
+  memory,
+  sourceMedia,
+  mediafiles,
+  sectionResources,
+}: RemoveProjectResourceProps): Promise<string[]> => {
+  const copies = derivedResourceMedia(sourceMedia, mediafiles);
+  const records: Array<MediaFileD | SectionResourceD> = [];
+  copies.forEach((media) => {
+    const sectionResource = sectionResources.find(
+      (resource) => related(resource, 'mediafile') === media.id
+    ) as SectionResourceD | undefined;
+    if (sectionResource) records.push(sectionResource);
+    records.push(media as MediaFileD);
+  });
+  records.push(sourceMedia);
+  await memory.update((transform) =>
+    records.map((record) => transform.removeRecord(record))
+  );
+  return copies.map((media) => media.id as string);
+};

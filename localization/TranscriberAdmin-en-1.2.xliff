@@ -6752,6 +6752,13 @@
       			<context context-type="sourcefile">ProjectResourceConfigure.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.confirmDeleteTitle">
+      		<source>Confirm Delete</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.createResources">
       		<source>Create Resources</source>
       		<target/>
@@ -6773,11 +6780,32 @@
       			<context context-type="sourcefile">ResourceData.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.deleteAll">
+      		<source>Delete All {0}</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.deleteConfirm">
       		<source>Delete Resource?</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.deleteGeneralResource">
+      		<source>Do you want to delete the entire general resource or just this one?</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.deleteJustThisOne">
+      		<source>Delete Just This One</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.description">
@@ -6848,6 +6876,13 @@
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.generalResourceSplit">
+      		<source>{0} is split into {1} resources</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.generalResourcesIndividually">
