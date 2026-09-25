@@ -15,7 +15,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.jest.json'],
+    project: ['./tsconfig.app.json', './tsconfig.jest.json'],
   },
   plugins: ['@typescript-eslint', 'implicit-dependencies', 'no-only-tests'],
   settings: {

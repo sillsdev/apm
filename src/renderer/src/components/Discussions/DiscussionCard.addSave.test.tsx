@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 /**
  * TT-7717: Add Discussion with topic + text + paused audio → Add.
  *

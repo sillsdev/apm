@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 import { render, screen, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import EditReferenceDropdown, {

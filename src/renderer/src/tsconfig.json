@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "composite": false,
     "target": "esnext",
     "lib": ["esnext", "dom"]
   },
@@ -12,5 +13,5 @@
     "**/*.cy.ts",
     "**/*.cy.tsx"
   ],
-  "extends": "../tsconfig.json"
+  "extends": "../tsconfig.app.json"
 }

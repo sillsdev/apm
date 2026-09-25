@@ -1,7 +1,8 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "./tsconfig.app.json",
   "exclude": ["**/cypress.d.ts", "**/cypress", "**/*.cy.ts*"],
   "compilerOptions": {
+    "composite": true,
     "types": [
       "jest",
       "@testing-library/jest-dom",
@@ -18,5 +19,11 @@
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ESNext"]
   },
-  "include": ["src/**/*.ts*", "**/*.test.ts*", "**/*.pacttest.ts*", "**/*.d.ts"]
+  "include": [
+    "src/**/*.ts*",
+    "**/*.test.ts*",
+    "**/*.pacttest.ts*",
+    "**/*.d.ts",
+    "api-variable.tsx"
+  ]
 }

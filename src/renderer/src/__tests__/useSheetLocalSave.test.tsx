@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
-import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import { GlobalProvider, GlobalState } from '../context/GlobalContext';
 import {

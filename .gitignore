@@ -25,6 +25,7 @@ migration-data
 tmp-burrito
 errorLog
 tsconfig.tsbuildinfo
+*.tsbuildinfo
 .claude
 *.lscache
 playwright-results

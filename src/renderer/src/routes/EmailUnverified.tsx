@@ -80,7 +80,7 @@ export const EmailUnverified = () => {
       (async () => {
         const token = await getAccessTokenSilently();
         if (!isMounted()) return;
-        setAuthSession(user, token);
+        setAuthSession(user, token ?? '');
         setView('Loading');
       })();
     }
