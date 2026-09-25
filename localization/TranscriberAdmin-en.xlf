@@ -5722,6 +5722,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.back">
+         <segment>
+            <source>Back</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.bookLevel">
          <segment>
             <source>{0} for the Book</source>

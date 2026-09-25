@@ -1173,6 +1173,7 @@ const initialState = {
 			"allLevel": "All {0}",
 			"allResources": "Show resources for all passages",
 			"audioScripture": "Audio Scripture",
+			"back": "Back",
 			"bookLevel": "{0} for the Book",
 			"bookResource": "Book",
 			"canceling": "Canceling resource creation",

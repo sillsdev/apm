@@ -106,6 +106,10 @@ interface IProps {
    * flow. The upload tab stages through `uploadMethod` instead.
    */
   onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
+  /** Pre-select these files on the upload tab (see MediaUploadContent). */
+  initialFiles?: File[] | undefined;
+  /** Keep the upload-tab selection after submit instead of clearing it (see MediaUploadContent). */
+  keepFilesAfterSubmit?: boolean | undefined;
 }
 
 function PassageRecordDlg(props: IProps) {
@@ -137,6 +141,8 @@ function PassageRecordDlg(props: IProps) {
     beforeUpload,
     confirmOnClose,
     onStageFile,
+    initialFiles,
+    keepFilesAfterSubmit,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -363,6 +369,8 @@ function PassageRecordDlg(props: IProps) {
           onSpeaker={uploadType === UploadType.Media ? onSpeaker : undefined}
           team={team}
           onFiles={onFiles}
+          initialFiles={initialFiles}
+          keepFilesAfterSubmit={keepFilesAfterSubmit}
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}

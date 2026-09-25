@@ -6675,6 +6675,13 @@
                <context context-type="sourcefile">AddResource.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="passageDetailArtifacts.back">
+      		<source>Back</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">SelectSections.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.bookLevel">
       		<source>{0} for the Book</source>
       		<target/>

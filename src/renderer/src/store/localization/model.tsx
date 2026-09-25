@@ -1114,6 +1114,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "allLevel": string;
     "allResources": string;
     "audioScripture": string;
+    "back": string;
     "bookLevel": string;
     "bookResource": string;
     "canceling": string;

@@ -70,10 +70,17 @@ interface IProps {
    * limit cleanup of unselected assignments to what the user could actually see.
    */
   onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
+  /**
+   * When set, a "Back" button (the reverse of Next/Upload) is shown. The add
+   * flow wires this to reopen the upload dialog; leaving it undefined hides the
+   * button for entry points that have no previous step here.
+   */
+  onBack?: () => void;
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, uploadsOnNext, uploading, onSelect } = props;
+  const { initialItems, visual, uploadsOnNext, uploading, onSelect, onBack } =
+    props;
   const initialSelectionKey = (initialItems ?? [])
     .map((item) => `${item.type}:${item.id}`)
     .join('|');
@@ -304,6 +311,15 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
+        {onBack && (
+          <Button
+            id="select-sections-back"
+            onClick={onBack}
+            disabled={uploading}
+          >
+            {ta.back}
+          </Button>
+        )}
         <Box sx={{ ...rowSx, ml: 'auto', alignItems: 'center', gap: 1 }}>
           {uploading && <CircularProgress size={20} color="primary" />}
           <Button
