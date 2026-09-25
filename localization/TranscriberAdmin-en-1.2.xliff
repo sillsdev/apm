@@ -7075,7 +7075,7 @@
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.suffixTip">
-      		<source>A Suffix is added to the end of the Reference (if there is no Description to override it).</source>
+      		<source>A Suffix is added to the end of the Reference (if there is no Title to override it).</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>

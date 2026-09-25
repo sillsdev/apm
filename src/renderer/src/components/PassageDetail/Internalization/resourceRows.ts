@@ -63,13 +63,21 @@ export const oneMediaRow = ({
   // Derived copies of a general resource carry the plain `resource` type, so
   // the general-resource label comes from the same source-media resolution the
   // Edit action uses (see [[generalResourceMedia]]).
-  const isGeneralResource = Boolean(
-    generalResourceMedia(
-      media,
-      mediafiles,
-      projectResourceTypeIds(artifactTypes)
-    )
-  );
+  //
+  // The row's own type is checked too: back translations, consultant checks and
+  // offline copies also point at their source through `sourceMedia` (see
+  // derivedResourceMedia in projectResourceAssignments), and those are not
+  // general resources even when that source happens to be one.
+  const isGeneralResource =
+    (typeNameSlug === ArtifactTypeSlug.Resource ||
+      typeNameSlug === ArtifactTypeSlug.ProjectResource) &&
+    Boolean(
+      generalResourceMedia(
+        media,
+        mediafiles,
+        projectResourceTypeIds(artifactTypes)
+      )
+    );
   const catId = related(media, 'artifactCategory');
   const category = categories.find((c) => c.id === catId);
   const catNameSlug = category?.attributes?.categoryname || '';

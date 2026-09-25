@@ -1230,7 +1230,7 @@ const initialState = {
 			"source": "Source",
 			"startStop": "Start - Stop",
 			"suffix": "Suffix",
-			"suffixTip": "A Suffix is added to the end of the Reference (if there is no Description to override it).",
+			"suffixTip": "A Suffix is added to the end of the Reference (if there is no Title to override it).",
 			"termsOfUse": "Terms of Use",
 			"termsReview": "Review the Terms of Use",
 			"textResource": "Text Resource",

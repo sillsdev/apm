@@ -6066,7 +6066,7 @@
       </unit>
       <unit id="passageDetailArtifacts.suffixTip">
          <segment>
-            <source>A Suffix is added to the end of the Reference (if there is no Description to override it).</source>
+            <source>A Suffix is added to the end of the Reference (if there is no Title to override it).</source>
             <target/>
          </segment>
       </unit>
