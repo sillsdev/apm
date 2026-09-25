@@ -28,7 +28,7 @@ jest.mock('../../../context/usePassageDetailContext', () => ({
 jest.mock('react-redux', () => ({
   shallowEqual: (a: unknown, b: unknown) => a === b,
   useSelector: () => ({
-    description: 'Description',
+    title: 'Title',
     addAudioResource: 'Add Audio Resource',
     uploadProject: 'Upload {0}',
     currentResource: 'Current {0}',
@@ -44,7 +44,9 @@ jest.mock('react-redux', () => ({
     generalResourcesIndividually:
       'General resources should be uploaded individually',
     editAudioResource: 'Edit Audio Resource',
+    editGeneralResource: 'Edit General Resource',
     editResource: 'Edit Resource',
+    editingFile: 'You are editing {0}',
     selectPassagesSub: 'Select passages for {0}',
     confirmCloseTitle: 'Confirm Close',
     confirmClose: 'Discard changes?',
@@ -169,6 +171,8 @@ jest.mock('../../../utils', () => ({
   isVisual: jest.fn(() => false),
   isUrl: jest.fn(() => true),
   useMobile: () => ({ isMobileWidth: false }),
+  safeFileBasename: jest.requireActual('../../../utils/safeFileBasename')
+    .safeFileBasename,
 }));
 
 jest.mock('../../../control', () => ({
@@ -318,7 +322,7 @@ describe('PassageDetailArtifacts general resource uploads', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
-    fireEvent.change(screen.getByLabelText('Description'), {
+    fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: 'Resource description' },
     });
     fireEvent.click(screen.getByLabelText('Upload Project'));
