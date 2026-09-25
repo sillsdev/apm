@@ -67,6 +67,7 @@ export interface IArtifactTypeStrings extends Localize.LocalizedStringsMethods {
     "graphic": string;
     "intellectualproperty": string;
     "keyterm": string;
+    "linked": string;
     "projectresource": string;
     "qanda": string;
     "resource": string;
@@ -1134,6 +1135,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "deleteGeneralResource": string;
     "deleteJustThisOne": string;
     "description": string;
+    "deselectAll": string;
     "discardAndClose": string;
     "editAudioResource": string;
     "editGeneralResource": string;
@@ -1142,6 +1144,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "find": string;
     "findResource": string;
     "findResourceDesc": string;
+    "general": string;
     "generalResources": string;
     "generalResourceSplit": string;
     "generalResourcesIndividually": string;
@@ -1167,6 +1170,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "resource": string;
     "resources": string;
     "resourcesDeleted": string;
+    "selectAll": string;
     "selectAllPassages": string;
     "selectBook": string;
     "selectOne": string;

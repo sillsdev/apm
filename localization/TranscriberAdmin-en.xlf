@@ -322,6 +322,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="artifactType.linked">
+         <segment>
+            <source>Linked</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="artifactType.projectresource">
          <segment>
             <source>General Resource</source>
@@ -5842,6 +5848,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.discardAndClose">
          <segment>
             <source>Discard and Close</source>
@@ -5887,6 +5899,12 @@
       <unit id="passageDetailArtifacts.findResourceDesc">
          <segment>
             <source>Create (using artificial intelligence -- AI) resources for internalizing scripture.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.general">
+         <segment>
+            <source>General</source>
             <target/>
          </segment>
       </unit>
@@ -6040,6 +6058,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.selectAll">
+         <segment>
+            <source>Select All</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.selectAllPassages">
          <segment>
             <source>Select all passages in {0}</source>
@@ -6096,7 +6120,7 @@
       </unit>
       <unit id="passageDetailArtifacts.suffixTip">
          <segment>
-            <source>A Suffix is added to the end of the Reference (if there is no Description to override it).</source>
+            <source>A Suffix is added to the end of the Reference (if there is no Title to override it).</source>
             <target/>
          </segment>
       </unit>

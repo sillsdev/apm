@@ -373,6 +373,13 @@
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="artifactType.linked">
+            <source>Linked</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">resourceRows.ts</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="artifactType.projectresource">
       		<source>General Resource</source>
       		<target/>
@@ -6815,6 +6822,13 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.deselectAll">
+      		<source>Deselect All</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">SelectSections.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.discardAndClose">
       		<source>Discard and Close</source>
       		<target/>
@@ -6871,6 +6885,13 @@
                <context context-type="sourcefile">PassageMedia.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="passageDetailArtifacts.general">
+      		<source>General</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageDetailsArtifactsMobile.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.generalResources">
       		<source>General Resources</source>
       		<target/>
@@ -7046,6 +7067,13 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.selectAll">
+            <source>Select All</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectSections.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.selectAllPassages">
             <source>Select all passages in {0}</source>
             <target/>
@@ -7110,7 +7138,7 @@
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.suffixTip">
-      		<source>A Suffix is added to the end of the Reference (if there is no Description to override it).</source>
+      		<source>A Suffix is added to the end of the Reference (if there is no Title to override it).</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>

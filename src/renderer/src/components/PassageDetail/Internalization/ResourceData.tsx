@@ -12,15 +12,8 @@ import {
 import React, { useEffect, useState, type RefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
-import {
-  IPassageDetailArtifactsStrings,
-  ISharedStrings,
-  MediaFileD,
-} from '../../../model';
-import {
-  passageDetailArtifactsSelector,
-  sharedSelector,
-} from '../../../selector';
+import { IPassageDetailArtifactsStrings, MediaFileD } from '../../../model';
+import { passageDetailArtifactsSelector } from '../../../selector';
 import SelectArtifactCategory from '../../Sheet/SelectArtifactCategory';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
@@ -95,7 +88,6 @@ export function ResourceData(props: IProps) {
     passageDetailArtifactsSelector,
     shallowEqual
   );
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const descriptionRequired = descriptionRequiredForResource(
     mediaContentType(media),
     uploadType,
@@ -134,7 +126,8 @@ export function ResourceData(props: IProps) {
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             id="description"
-            label={ts.description}
+            // Labeled "Title" for users, though it is stored in the description field.
+            label={t.title}
             value={description || ''}
             onChange={handleChangeDescription}
             required={descriptionRequired}

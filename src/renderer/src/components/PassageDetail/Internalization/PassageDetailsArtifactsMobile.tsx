@@ -39,6 +39,8 @@ import {
   ArtifactCategoryType,
   usePlanType,
   usePlan,
+  useRole,
+  ArtifactTypeSlug,
   mediaFileName,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
@@ -87,7 +89,6 @@ import FindTabs from './FindTabs';
 import {
   getProjectResourceAssignments,
   removeUnselectedProjectResourceAssignments,
-  getGeneralResourceSource,
   countProjectResourceCopies,
   removeProjectResource,
 } from './projectResourceAssignments';
@@ -96,6 +97,10 @@ import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
+import {
+  generalResourceMedia,
+  projectResourceTypeIds,
+} from './generalResourceMedia';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -239,6 +244,18 @@ export function PassageDetailArtifactsMobile() {
     () => hasPermission && (!offline || offlineOnly),
     [hasPermission, offline, offlineOnly]
   );
+  const { userIsAdmin } = useRole();
+  // Admins see badges for resources that are linked (shared) or general; other users don't.
+  const typeBadge = (row: IRow) =>
+    !userIsAdmin
+      ? undefined
+      : // The badge stays short: "General" where the Type column says
+        // "General Resource".
+        row.isGeneralResource
+        ? t.general
+        : row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
+          ? row.artifactType
+          : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   // Confirm-before-discard for the passage-select and edit dialogs. Closing any
   // step of this wizard flow always prompts, since it discards everything
@@ -291,6 +308,14 @@ export function PassageDetailArtifactsMobile() {
     );
     return resourceType?.id;
   }, [artifactTypes, offlineOnly]);
+
+  // Both projectresource type records (offline + remote); used to resolve
+  // general resources for the type label, Edit, and Delete (see
+  // [[generalResourceMedia]]).
+  const projResourceTypeIds = useMemo(
+    () => projectResourceTypeIds(artifactTypes),
+    [artifactTypes]
+  );
 
   const resourcePendingRestore = useCallback(() => {
     if (resourceKindRef.current === ResourceTypeEnum.projectResource) {
@@ -409,13 +434,16 @@ export function PassageDetailArtifactsMobile() {
   const confirmGeneralSource = useMemo(
     () =>
       confirm
-        ? getGeneralResourceSource(
+        ? generalResourceMedia(
             mediafiles.find((m) => m.id === confirm),
             mediafiles,
-            projResourceType
+            projResourceTypeIds,
+            // Rows never show the general resource itself, so a row being
+            // deleted is only ever a derived copy of one.
+            { includeSelf: false }
           )
         : undefined,
-    [confirm, mediafiles, projResourceType]
+    [confirm, mediafiles, projResourceTypeIds]
   );
   const confirmGeneralCopies = countProjectResourceCopies(
     confirmGeneralSource,
@@ -535,12 +563,12 @@ export function PassageDetailArtifactsMobile() {
     ) as SectionResourceD;
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
       MediaFileD | undefined;
-    // Resolve to the root general resource so a derived copy is never treated
-    // as a new source (which would spawn a second-generation chain).
-    const projectMedia = getGeneralResourceSource(
+    // Resolve to the root general resource; the same resolution decides the
+    // "General" type label and mobile badge (see [[generalResourceMedia]]).
+    const projectMedia = generalResourceMedia(
       mf,
       mediafiles,
-      projResourceType
+      projResourceTypeIds
     );
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
@@ -1202,6 +1230,7 @@ export function PassageDetailArtifactsMobile() {
                 <AudioResourceCard
                   row={value}
                   subtitle={value.artifactCategory || undefined}
+                  badge={typeBadge(value)}
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
                   expandedId={expandedArtifactNameId}
@@ -1216,6 +1245,7 @@ export function PassageDetailArtifactsMobile() {
                 <TextResourceCard
                   row={value}
                   subtitle={value.artifactCategory || undefined}
+                  badge={typeBadge(value)}
                   expandedId={expandedArtifactNameId}
                   setExpandedId={setExpandedArtifactNameId}
                   onView={

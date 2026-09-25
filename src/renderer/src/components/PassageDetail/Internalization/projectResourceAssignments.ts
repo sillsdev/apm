@@ -142,27 +142,6 @@ export const removeUnselectedProjectResourceAssignments = async ({
 };
 
 /**
- * Resolves the general (project) resource behind a resource row.
- *
- * A row shows a derived copy whose `sourceMedia` is the general
- * resource. Returns that source, or undefined when the row is not such a copy.
- */
-export const getGeneralResourceSource = <T extends MediaFile>(
-  media: T | undefined,
-  mediafiles: T[],
-  projResourceTypeId?: string | null
-): T | undefined => {
-  if (!media || !projResourceTypeId) return undefined;
-  const sourceMedia = mediafiles.find(
-    (m) => m.id === related(media, 'sourceMedia')
-  );
-  return sourceMedia &&
-    related(sourceMedia, 'artifactType') === projResourceTypeId
-    ? sourceMedia
-    : undefined;
-};
-
-/**
  * Number of passage/section copies a general resource was split into: every
  * media whose `sourceMedia` is the general resource — the same set
  * {@link removeProjectResource} deletes.

@@ -113,6 +113,10 @@ export interface IRow {
   playItem: string;
   artifactName: string;
   artifactType: string;
+  /** Raw artifact type slug (e.g. 'resource', 'sharedresource') behind artifactType. */
+  artifactTypeSlug: string;
+  /** Media is (or derives from) a general/project resource -- see generalResourceMedia. */
+  isGeneralResource: boolean;
   artifactCategory: string;
   done: boolean;
   editAction: React.JSX.Element | null;
@@ -870,6 +874,7 @@ const PassageDetailProvider = (props: IProps) => {
           r: null,
           media,
           sourceversion: 0,
+          mediafiles,
           artifactTypes,
           categories,
           userResources,
