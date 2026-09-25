@@ -1,4 +1,5 @@
 import React, { PropsWithChildren } from 'react';
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FaithbridgeIframe } from '../components/PassageDetail/Internalization/FaithbridgeIframe';
 import type { FaithbridgeData } from '../components/PassageDetail/Internalization/useFaithbridgeResult';
