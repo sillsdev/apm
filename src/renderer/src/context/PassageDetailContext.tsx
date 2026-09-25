@@ -842,7 +842,7 @@ const PassageDetailProvider = (props: IProps) => {
     return wfStr.incompleteStepNavigate.replace('{0}', label);
   })();
 
-  const getProjectResources = async () => {
+  const getProjectResources = () => {
     const typeId = getTypeId(ArtifactTypeSlug.ProjectResource);
     return mediafiles.filter(
       (m) =>
@@ -1182,49 +1182,48 @@ const PassageDetailProvider = (props: IProps) => {
       localizedCategory: localizedArtifactCategory,
       localizedType: localizedArtifactType,
     };
-    getProjectResources().then((pres) => {
-      let newData = mediaRows({
+    const pres = getProjectResources();
+    let newData = mediaRows({
+      artifactTypes,
+      categories,
+      userResources,
+      mediafiles: allMedia.concat(pres) as MediaFileD[],
+      user,
+      ...localize,
+    });
+
+    const sectId = related(passRec, 'section');
+    const res = getResources(sectionResources, mediafiles, sectId);
+    newData = newData.concat(
+      resourceRows({
         artifactTypes,
         categories,
         userResources,
-        mediafiles: allMedia.concat(pres) as MediaFileD[],
+        mediafiles,
+        res,
         user,
         ...localize,
-      });
+      }).sort((i, j) => i.sequenceNum - j.sequenceNum)
+    );
 
-      const sectId = related(passRec, 'section');
-      const res = getResources(sectionResources, mediafiles, sectId);
-      newData = newData.concat(
-        resourceRows({
-          artifactTypes,
-          categories,
-          userResources,
-          mediafiles,
-          res,
-          user,
-          ...localize,
-        }).sort((i, j) => i.sequenceNum - j.sequenceNum)
-      );
-
-      const mediafileId =
-        newData.length > 0 && (newData[0] as IRow).isVernacular
-          ? (newData[0] as IRow).id
-          : '';
-      const i = state.selected
-        ? newData.findIndex((r) => r.mediafile.id === state.selected)
-        : state.index;
-      const willSetSelected =
-        state.tool !== ToolSlug.Resource &&
-        state.tool !== ToolSlug.Transcribe &&
-        mediafileId !== state.playerMediafile?.id;
-      setState((state: ICtxState) => {
-        return { ...state, rowData: newData, index: i, mediafileId };
-      });
-
-      if (willSetSelected) {
-        setSelected(mediafileId, PlayInPlayer.yes, newData);
-      }
+    const mediafileId =
+      newData.length > 0 && (newData[0] as IRow).isVernacular
+        ? (newData[0] as IRow).id
+        : '';
+    const i = state.selected
+      ? newData.findIndex((r) => r.mediafile.id === state.selected)
+      : state.index;
+    const willSetSelected =
+      state.tool !== ToolSlug.Resource &&
+      state.tool !== ToolSlug.Transcribe &&
+      mediafileId !== state.playerMediafile?.id;
+    setState((state: ICtxState) => {
+      return { ...state, rowData: newData, index: i, mediafileId };
     });
+
+    if (willSetSelected) {
+      setSelected(mediafileId, PlayInPlayer.yes, newData);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionResources, mediafiles, pasId, userResources]);
 
