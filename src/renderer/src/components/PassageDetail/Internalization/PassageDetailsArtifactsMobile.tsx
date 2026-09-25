@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
+import { useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
   Passage,
@@ -41,12 +41,12 @@ import {
   usePlan,
   useRole,
   ArtifactTypeSlug,
+  mediaFileName,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
-import SelectProjectResource from './SelectProjectResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
@@ -89,7 +89,11 @@ import FindTabs from './FindTabs';
 import {
   getProjectResourceAssignments,
   removeUnselectedProjectResourceAssignments,
+  getGeneralResourceSource,
+  countProjectResourceCopies,
+  removeProjectResource,
 } from './projectResourceAssignments';
+import GeneralResourceDeleteDialog from './GeneralResourceDeleteDialog';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
@@ -131,7 +135,6 @@ export function PassageDetailArtifactsMobile() {
     toggleDone,
     forceRefresh,
     handleItemPlayEnd,
-    getProjectResources,
     sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
@@ -157,7 +160,6 @@ export function PassageDetailArtifactsMobile() {
   const [audioScriptureVisible, setAudioScriptureVisible] = useState(false);
   const [allowProject, setAllowProject] = useState(true);
   const [sharedResourceVisible, setSharedResourceVisible] = useState(false);
-  const [projectResourceVisible, setProjectResourceVisible] = useState(false);
   const [projResPassageVisible, setProjResPassageVisible] = useState(false);
   const [projResWizVisible, setProjResWizVisible] = useState(false);
   const [projResSetup, setProjResSetup] = useState(new Array<MediaFileD>());
@@ -260,7 +262,6 @@ export function PassageDetailArtifactsMobile() {
   // only in what discarding tears down); null when no prompt is showing.
   const [dialogPendingCloseConfirmation, setDialogPendingCloseConfirmation] =
     useState<null | 'passage' | 'edit' | 'wiz'>(null);
-  const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
   const { isMobileWidth } = useMobile();
@@ -418,6 +419,40 @@ export function PassageDetailArtifactsMobile() {
     setConfirm('');
     setBusy(false);
   };
+  // When the row being deleted is a copy of a general resource, the user
+  // chooses between deleting just this copy and the whole general resource.
+  const confirmGeneralSource = useMemo(
+    () =>
+      confirm
+        ? getGeneralResourceSource(
+            mediafiles.find((m) => m.id === confirm),
+            mediafiles,
+            projResourceType
+          )
+        : undefined,
+    [confirm, mediafiles, projResourceType]
+  );
+  const confirmGeneralCopies = countProjectResourceCopies(
+    confirmGeneralSource,
+    mediafiles
+  );
+  const handleDeleteGeneralResource = async () => {
+    const sourceMedia = confirmGeneralSource;
+    removeKey(confirm);
+    setConfirm('');
+    if (!sourceMedia) return;
+    setBusy(true);
+    try {
+      await removeProjectResource({
+        memory,
+        sourceMedia,
+        mediafiles,
+        sectionResources,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
   const handleUploadVisible = (v: boolean) => {
     setUploadVisible(v);
   };
@@ -428,13 +463,6 @@ export function PassageDetailArtifactsMobile() {
 
   const handleSharedResourceVisible = (v: boolean) => {
     setSharedResourceVisible(v);
-  };
-
-  const handleProjectResourceVisible = (v: boolean) => {
-    const complete = getGlobal('progress');
-    if (complete === 0 || complete === 100) {
-      setProjectResourceVisible(v);
-    }
   };
 
   const handleProjResPassageVisible = (v: boolean) => {
@@ -944,7 +972,6 @@ export function PassageDetailArtifactsMobile() {
     setSelected(m.id, PlayInPlayer.yes);
     projMediaRef.current = m;
     setVisual(isVisual(m));
-    setProjectResourceVisible(false);
     setProjResPassageVisible(true);
   };
 
@@ -1142,13 +1169,6 @@ export function PassageDetailArtifactsMobile() {
     handleItemPlayEnd();
   };
 
-  const [hasProjRes, setHasProjRes] = useState(false);
-
-  useEffect(() => {
-    getProjectResources().then((res) => setHasProjRes(res.length > 0));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles]);
-
   const isScripture = useMemo(
     () => planType(plan)?.scripture,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1168,28 +1188,11 @@ export function PassageDetailArtifactsMobile() {
         {hasPermission && (!offline || offlineOnly) && !isMobileWidth && (
           <AddResource action={handleAction} />
         )}
-        {/* {hasPermission &&
-          (!offline || offlineOnly) &&
-          !isMobileWidth &&
-          hasProjRes && (
-            <Button onClick={() => setProjectResourceVisible(true)}>
-              {t.configure}
-            </Button>
-          )} */}
         <GrowingSpacer />
-        {(otherResourcesAvailable || hasProjRes) && (
+        {otherResourcesAvailable && (
           <IconMenu icon={<SettingsOutlinedIcon />}>
             <MenuList dense>
-              {otherResourcesAvailable && (
-                <MenuItem onClick={handleAllResources}>
-                  {t.allResources}
-                </MenuItem>
-              )}
-              {hasProjRes && (
-                <MenuItem onClick={() => setProjectResourceVisible(true)}>
-                  {t.configure}
-                </MenuItem>
-              )}
+              <MenuItem onClick={handleAllResources}>{t.allResources}</MenuItem>
             </MenuList>
           </IconMenu>
         )}
@@ -1347,20 +1350,6 @@ export function PassageDetailArtifactsMobile() {
         />
       </BigDialog>
       <BigDialog
-        bp={BigDialogBp.mobile}
-        title={t.generalResources}
-        isOpen={projectResourceVisible}
-        onOpen={handleProjectResourceVisible}
-      >
-        <SelectProjectResource
-          onSelect={(m) => {
-            isAddingAudioResourceRef.current = false;
-            handleSelectProjectResource(m);
-          }}
-          onOpen={handleProjectResourceVisible}
-        />
-      </BigDialog>
-      <BigDialog
         title={
           isAddingAudioResourceRef.current
             ? t.addAudioResource
@@ -1465,13 +1454,28 @@ export function PassageDetailArtifactsMobile() {
           passDesc={passDesc}
         />
       </BigDialog>
-      {confirm && (
-        <Confirm
-          text={t.deleteConfirm}
-          yesResponse={handleDeleteConfirmed}
-          noResponse={handleDeleteRefused}
-        />
-      )}
+      {confirm &&
+        (confirmGeneralSource && confirmGeneralCopies > 1 ? (
+          <GeneralResourceDeleteDialog
+            fileName={mediaFileName(confirmGeneralSource)}
+            count={confirmGeneralCopies}
+            onCancel={handleDeleteRefused}
+            onDeleteAll={handleDeleteGeneralResource}
+            onDeleteOne={handleDeleteConfirmed}
+          />
+        ) : (
+          <Confirm
+            text={t.deleteConfirm}
+            // Deleting the last copy of a general resource takes its source
+            // with it; nothing else in the UI can reach an unassigned source.
+            yesResponse={
+              confirmGeneralSource
+                ? handleDeleteGeneralResource
+                : handleDeleteConfirmed
+            }
+            noResponse={handleDeleteRefused}
+          />
+        ))}
       {dialogPendingCloseConfirmation && (
         <Confirm
           title={t.confirmCloseTitle}

@@ -1126,10 +1126,14 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "configure": string;
     "confirmClose": string;
     "confirmCloseTitle": string;
+    "confirmDeleteTitle": string;
     "createResources": string;
     "createXResources": string;
     "currentResource": string;
+    "deleteAll": string;
     "deleteConfirm": string;
+    "deleteGeneralResource": string;
+    "deleteJustThisOne": string;
     "description": string;
     "deselectAll": string;
     "discardAndClose": string;
@@ -1142,6 +1146,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "findResourceDesc": string;
     "general": string;
     "generalResources": string;
+    "generalResourceSplit": string;
     "generalResourcesIndividually": string;
     "keepOpen": string;
     "keywords": string;

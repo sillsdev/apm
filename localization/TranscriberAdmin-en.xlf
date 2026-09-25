@@ -5794,6 +5794,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.confirmDeleteTitle">
+         <segment>
+            <source>Confirm Delete</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.createResources">
          <segment>
             <source>Create Resources</source>
@@ -5812,9 +5818,27 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.deleteAll">
+         <segment>
+            <source>Delete All {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.deleteConfirm">
          <segment>
             <source>Delete Resource?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.deleteGeneralResource">
+         <segment>
+            <source>Do you want to delete the entire general resource or just this one?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.deleteJustThisOne">
+         <segment>
+            <source>Delete Just This One</source>
             <target/>
          </segment>
       </unit>
@@ -5887,6 +5911,12 @@
       <unit id="passageDetailArtifacts.generalResources">
          <segment>
             <source>General Resources</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.generalResourceSplit">
+         <segment>
+            <source>{0} is split into {1} resources</source>
             <target/>
          </segment>
       </unit>
