@@ -141,7 +141,6 @@ jest.mock('../../control', () => {
 
 import { useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { useSelector } from 'react-redux';
 import { PhraseBackTranslateStepSettings } from './PhraseBackTranslateStepSettings';
 

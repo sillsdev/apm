@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 import { runTitleMediaUpdate } from './runTitleMediaUpdate';
 
 describe('runTitleMediaUpdate', () => {

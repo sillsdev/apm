@@ -38,7 +38,6 @@ jest.mock('mui-language-picker', () => {
 });
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSX needs React in scope for TS
 import React from 'react';
 import { useSelector } from 'react-redux';

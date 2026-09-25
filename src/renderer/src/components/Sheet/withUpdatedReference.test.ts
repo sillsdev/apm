@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 import { PassageD } from '../../model';
 import { withUpdatedReference } from './withUpdatedReference';
 import { memory } from '../../schema';

@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import '@testing-library/jest-dom';
 import type { MainAPI } from '../model/main-api';
 import type { Burrito } from './data/types';
 import type { MediaFileD, PassageD, SectionD } from '../model';

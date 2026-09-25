@@ -2,7 +2,6 @@
 import React from 'react';
 // See: https://www.w3schools.com/TAGS/ref_av_dom.asp
 import { cleanup, render, waitFor, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { LimitedMediaPlayer } from './LimitedMediaPlayer';
 import { act } from 'react';
 import userEvent from '@testing-library/user-event';

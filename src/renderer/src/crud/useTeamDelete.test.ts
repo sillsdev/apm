@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 /**
  * useTeamDelete removes the caller's memberships BEFORE deleting the team's
  * projects, and that order is deliberate: dropping the membership makes the

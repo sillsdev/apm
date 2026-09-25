@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { Bible, ICardsStrings, Organization, ProjectD } from '../model';
 
 const mockShowMessage = jest.fn();

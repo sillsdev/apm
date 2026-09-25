@@ -58,7 +58,6 @@ jest.mock('../../../utils/storedCompareKey', () => ({
 }));
 
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSX (react-jsx) still expects React in scope for TS in this file
 import React from 'react';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
