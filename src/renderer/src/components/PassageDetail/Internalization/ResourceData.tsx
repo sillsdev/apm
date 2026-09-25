@@ -126,7 +126,7 @@ export function ResourceData(props: IProps) {
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             id="description"
-            // we decided to user-facing call this "Title", even though internally it corresponds to the description field
+            // Labeled "Title" for users, though it is stored in the description field.
             label={t.title}
             value={description || ''}
             onChange={handleChangeDescription}

@@ -192,14 +192,17 @@ export function SelectSections(props: IProps) {
   const isSectionSelected = (sectionId: string) =>
     selected.has(`section:${sectionId}`);
 
-  const allSelected = data.length > 0 && selected.size === data.length;
+  const rowKeys = () => data.map((row) => `${row.kind}:${row.recId}`);
+
+  const allSelected =
+    data.length > 0 && rowKeys().every((key) => selected.has(key));
 
   /** Tick every row's box, or clear them all when everything is already ticked. */
   const toggleAll = () => {
-    setSelected(
-      allSelected
+    setSelected((current) =>
+      rowKeys().every((key) => current.has(key))
         ? new Set<string>()
-        : new Set(data.map((row) => `${row.kind}:${row.recId}`))
+        : new Set(rowKeys())
     );
   };
 
