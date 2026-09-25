@@ -348,7 +348,7 @@
       </unit>
       <unit id="artifactType.sharedresource">
          <segment>
-            <source>Shared Resource</source>
+            <source>Linked</source>
             <target/>
          </segment>
       </unit>
@@ -5851,6 +5851,12 @@
       <unit id="passageDetailArtifacts.findResourceDesc">
          <segment>
             <source>Create (using artificial intelligence -- AI) resources for internalizing scripture.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.general">
+         <segment>
+            <source>General</source>
             <target/>
          </segment>
       </unit>

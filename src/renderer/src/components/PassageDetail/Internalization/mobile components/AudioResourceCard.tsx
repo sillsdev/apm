@@ -30,6 +30,8 @@ interface IProps {
   onDelete?: (id: string) => void;
   onEnded?: () => void;
   subtitle?: string;
+  /** Admin-only type tag shown beside the subtitle (e.g. "Linked"). */
+  badge?: string;
   limits?: {
     start?: number;
     end?: number;
@@ -48,6 +50,7 @@ export function AudioResourceCard({
   onDelete,
   onEnded,
   subtitle = 'Scripture',
+  badge,
   limits,
   sx,
 }: IProps) {
@@ -127,9 +130,30 @@ export function AudioResourceCard({
             }}
           />
         </Box>
-        <Typography variant="h6" sx={{ lineHeight: 1.25, color: statusColor }}>
-          {subtitle}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{ lineHeight: 1.25, color: statusColor }}
+          >
+            {subtitle}
+          </Typography>
+          {badge && (
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                backgroundColor: 'grey.200',
+                color: 'text.secondary',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {badge}
+            </Typography>
+          )}
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Audio playback UI for audio/* resource files. */}
           <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>

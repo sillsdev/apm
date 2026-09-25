@@ -402,7 +402,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="artifactType.sharedresource">
-            <source>Shared Resource</source>
+            <source>Linked</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">AlertDialog.tsx</context>
@@ -6829,6 +6829,13 @@
                <context context-type="sourcefile">PassageMedia.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="passageDetailArtifacts.general">
+      		<source>General</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageDetailsArtifactsMobile.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.generalResources">
       		<source>General Resources</source>
       		<target/>

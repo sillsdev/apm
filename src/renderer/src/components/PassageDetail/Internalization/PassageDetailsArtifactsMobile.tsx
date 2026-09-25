@@ -39,6 +39,8 @@ import {
   ArtifactCategoryType,
   usePlanType,
   usePlan,
+  useRole,
+  ArtifactTypeSlug,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
@@ -91,6 +93,7 @@ import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
+import { generalResourceMedia } from './generalResourceMedia';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -237,6 +240,18 @@ export function PassageDetailArtifactsMobile() {
     () => hasPermission && (!offline || offlineOnly),
     [hasPermission, offline, offlineOnly]
   );
+  const { userIsAdmin } = useRole();
+  // Admins see badges for resources that are linked (shared) or general; other users don't.
+  const typeBadge = (row: IRow) =>
+    !userIsAdmin
+      ? undefined
+      : // The badge stays short: "General" where the Type column says
+        // "General Resource".
+        row.isGeneralResource
+        ? t.general
+        : row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
+          ? row.artifactType
+          : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   // Confirm-before-discard for the passage-select and edit dialogs. Closing any
   // step of this wizard flow always prompts, since it discards everything
@@ -467,21 +482,11 @@ export function PassageDetailArtifactsMobile() {
     ) as SectionResourceD;
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
       MediaFileD | undefined;
-    const sourceMedia = mediafiles.find(
-      (m) => m.id === related(mf, 'sourceMedia')
-    );
-    // Resolve to the root general resource. When a derived copy is clicked, edit
-    // its source; only fall back to the clicked media when it is itself the
-    // general resource. Derived copies use the `resource` type (not
-    // `projectresource`), so in practice only one branch matches, but preferring
-    // the source guards against ever treating a derived copy as a new source
-    // (which would spawn a second-generation chain).
-    const projectMedia =
-      sourceMedia && related(sourceMedia, 'artifactType') === projResourceType
-        ? sourceMedia
-        : mf && related(mf, 'artifactType') === projResourceType
-          ? mf
-          : undefined;
+    // Resolve to the root general resource; the same resolution decides the
+    // "General" type label and mobile badge (see [[generalResourceMedia]]).
+    const projectMedia = generalResourceMedia(mf, mediafiles, [
+      projResourceType,
+    ]);
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
@@ -1150,6 +1155,7 @@ export function PassageDetailArtifactsMobile() {
                 <AudioResourceCard
                   row={value}
                   subtitle={value.artifactCategory || undefined}
+                  badge={typeBadge(value)}
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
                   expandedId={expandedArtifactNameId}
@@ -1164,6 +1170,7 @@ export function PassageDetailArtifactsMobile() {
                 <TextResourceCard
                   row={value}
                   subtitle={value.artifactCategory || undefined}
+                  badge={typeBadge(value)}
                   expandedId={expandedArtifactNameId}
                   setExpandedId={setExpandedArtifactNameId}
                   onView={

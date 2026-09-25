@@ -27,6 +27,8 @@ interface IProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   subtitle?: string;
+  /** Admin-only type tag shown beside the subtitle (e.g. "Linked"). */
+  badge?: string;
   sx?: SxProps;
 }
 
@@ -39,6 +41,7 @@ export function TextResourceCard({
   onEdit,
   onDelete,
   subtitle = 'Translation Resource',
+  badge,
   sx,
 }: IProps) {
   const statusColor = useMemo(
@@ -116,9 +119,30 @@ export function TextResourceCard({
           />
         </Box>
 
-        <Typography variant="h6" sx={{ lineHeight: 1.25, color: statusColor }}>
-          {subtitle}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{ lineHeight: 1.25, color: statusColor }}
+          >
+            {subtitle}
+          </Typography>
+          {badge && (
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                backgroundColor: 'grey.200',
+                color: 'text.secondary',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {badge}
+            </Typography>
+          )}
+        </Box>
 
         <Box
           sx={{
