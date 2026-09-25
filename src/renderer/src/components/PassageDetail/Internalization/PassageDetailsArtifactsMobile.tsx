@@ -419,8 +419,7 @@ export function PassageDetailArtifactsMobile() {
   );
   const confirmGeneralCopies = countProjectResourceCopies(
     confirmGeneralSource,
-    mediafiles,
-    resourceType
+    mediafiles
   );
   const handleDeleteGeneralResource = async () => {
     const sourceMedia = confirmGeneralSource;
@@ -434,7 +433,6 @@ export function PassageDetailArtifactsMobile() {
         sourceMedia,
         mediafiles,
         sectionResources,
-        resourceTypeId: resourceType,
       });
     } finally {
       setBusy(false);

@@ -162,51 +162,47 @@ export const getGeneralResourceSource = <T extends MediaFile>(
     : undefined;
 };
 
-/** Number of passage/section copies a general resource was split into. */
+/**
+ * Number of passage/section copies a general resource was split into: every
+ * media whose `sourceMedia` is the general resource — the same set
+ * {@link removeProjectResource} deletes.
+ */
 export const countProjectResourceCopies = (
   sourceMedia: MediaFile | undefined,
-  mediafiles: MediaFile[],
-  resourceTypeId?: string | null
-) =>
-  sourceMedia
-    ? derivedResourceMedia(sourceMedia, mediafiles, resourceTypeId).length
-    : 0;
+  mediafiles: MediaFile[]
+) => (sourceMedia ? derivedResourceMedia(sourceMedia, mediafiles).length : 0);
 
 interface RemoveProjectResourceProps {
   memory: Memory;
   sourceMedia: MediaFileD;
   mediafiles: MediaFile[];
   sectionResources: SectionResource[];
-  /** Artifact type id of a derived resource copy (`resource` slug). */
-  resourceTypeId?: string | null;
 }
 
 /**
- * Deletes an entire general resource: every derived copy (and its
- * SectionResource), then the source media itself.
+ * Deletes an entire general resource: every media whose `sourceMedia` is the
+ * general resource (and its SectionResource), then the source media itself.
+ *
+ * Returns the ids of the removed copies.
  */
 export const removeProjectResource = async ({
   memory,
   sourceMedia,
   mediafiles,
   sectionResources,
-  resourceTypeId,
-}: RemoveProjectResourceProps) => {
-  // Without the derived-resource type we cannot tell our copies apart from
-  // other media sharing `sourceMedia` (see removeUnselectedProjectResourceAssignments).
-  if (!resourceTypeId) return;
+}: RemoveProjectResourceProps): Promise<string[]> => {
+  const copies = derivedResourceMedia(sourceMedia, mediafiles);
   const records: Array<MediaFileD | SectionResourceD> = [];
-  derivedResourceMedia(sourceMedia, mediafiles, resourceTypeId).forEach(
-    (media) => {
-      const sectionResource = sectionResources.find(
-        (resource) => related(resource, 'mediafile') === media.id
-      ) as SectionResourceD | undefined;
-      if (sectionResource) records.push(sectionResource);
-      records.push(media as MediaFileD);
-    }
-  );
+  copies.forEach((media) => {
+    const sectionResource = sectionResources.find(
+      (resource) => related(resource, 'mediafile') === media.id
+    ) as SectionResourceD | undefined;
+    if (sectionResource) records.push(sectionResource);
+    records.push(media as MediaFileD);
+  });
   records.push(sourceMedia);
   await memory.update((transform) =>
     records.map((record) => transform.removeRecord(record))
   );
+  return copies.map((media) => media.id as string);
 };

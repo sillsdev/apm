@@ -196,53 +196,52 @@ describe('project resource assignments', () => {
     );
   });
 
-  it('counts only resource-type copies of the source', () => {
+  it('counts every media derived from the source', () => {
     const mediafiles = [
       source,
       passageMedia('a', 'passage-1'),
-      passageMedia('b', 'passage-2'),
-      passageMedia('bt', 'passage-2', 'back-translation-type'),
+      passageMedia('b', 'passage-2', 'other-type'),
+      sectionMedia,
     ];
-    expect(
-      countProjectResourceCopies(source, mediafiles, 'resource-type')
-    ).toBe(2);
-    expect(
-      countProjectResourceCopies(undefined, mediafiles, 'resource-type')
-    ).toBe(0);
+    expect(countProjectResourceCopies(source, mediafiles)).toBe(3);
+    expect(countProjectResourceCopies(undefined, mediafiles)).toBe(0);
   });
 
-  it('removes every copy, its section resource, and the source', async () => {
+  it('removes every derived media, its section resource, and the source', async () => {
     const passageCopy = passageMedia('passage-copy', 'passage-1');
-    const sectionCopy = {
-      ...sectionMedia,
-      relationships: {
-        ...sectionMedia.relationships,
-        artifactType: relationship('artifacttype', 'resource-type'),
-      },
-    } as MediaFileD;
-    const backTranslation = passageMedia(
-      'back-translation',
-      'passage-2',
-      'back-translation-type'
-    );
+    const otherTypeCopy = passageMedia('other-copy', 'passage-2', 'other-type');
+    const unrelated = { ...passageCopy, id: 'unrelated', relationships: {} };
+    const mediafiles = [
+      source,
+      passageCopy,
+      otherTypeCopy,
+      sectionMedia,
+      unrelated as MediaFileD,
+    ];
     const removeRecord = jest.fn((record) => ({ op: 'removeRecord', record }));
     const memory = {
       update: jest.fn(async (callback) => callback({ removeRecord })),
     } as unknown as Memory;
 
-    await removeProjectResource({
+    const removedIds = await removeProjectResource({
       memory,
       sourceMedia: source,
-      mediafiles: [source, passageCopy, sectionCopy, backTranslation],
+      mediafiles,
       sectionResources: [sectionResource],
-      resourceTypeId: 'resource-type',
     });
 
-    expect(removeRecord).toHaveBeenCalledTimes(4);
-    expect(removeRecord).toHaveBeenCalledWith(passageCopy);
+    expect(removedIds).toEqual([
+      passageCopy.id,
+      otherTypeCopy.id,
+      sectionMedia.id,
+    ]);
+    // The dialog's count is exactly what gets deleted.
+    expect(removedIds).toHaveLength(
+      countProjectResourceCopies(source, mediafiles)
+    );
+    expect(removeRecord).toHaveBeenCalledTimes(5);
     expect(removeRecord).toHaveBeenCalledWith(sectionResource);
-    expect(removeRecord).toHaveBeenCalledWith(sectionCopy);
     expect(removeRecord).toHaveBeenCalledWith(source);
-    expect(removeRecord).not.toHaveBeenCalledWith(backTranslation);
+    expect(removeRecord).not.toHaveBeenCalledWith(unrelated);
   });
 });
