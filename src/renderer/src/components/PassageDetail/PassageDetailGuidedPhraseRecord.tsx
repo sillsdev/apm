@@ -211,6 +211,7 @@ export function PassageDetailGuidedPhraseRecord({
   const playClauseInFlightRef = useRef(false);
   /** Last clause-play start time, used by SPURIOUS_STOP_WINDOW_MS filtering. */
   const clausePlaybackStartedAtRef = useRef(0);
+  const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
   const [highlightPlayButton, setHighlightPlayButton] = useState(false);
   const [allowSourcePlayer, setAllowSourcePlayer] = useState(false);
@@ -859,7 +860,36 @@ export function PassageDetailGuidedPhraseRecord({
             CLAUSE_PLAYBACK_MARGIN_MS
         );
         await ctrl.gotoTime(seek, region);
-        ctrl.setPlay(true);
+        // Always (re)start region playback for the clause we just seeked to.
+        // gotoTime made this clause the current segment and cleared the play
+        // region lock (resetPlayingRegion); in region-only mode setPlay(true)
+        // replays the current segment even while audio is already playing
+        // (WSAudioPlayer.handlePlayStatus `wouldReplayRegion`), re-arming
+        // playRegionRef so region-out fires onRegionPlayEnd and Record
+        // re-enables. The old `!ctrl.isPlaying()` guard skipped this whenever
+        // any clause was playing, so pressing Next mid-playback never armed the
+        // new clause and Record stayed disabled after it finished (TT-7690).
+        //
+        // We restart unconditionally rather than trying to detect the
+        // already-playing-this-clause case. The trade-off: if playCurrentClause
+        // is ever invoked for the clause that is *already* playing, this yanks
+        // it back to its start instead of letting it continue — an audible
+        // replay from the top. That is acceptable here because the callers that
+        // replay the current clause (boundary split/combine/undo) want exactly
+        // that restart, and there is no caller that re-plays an unchanged,
+        // mid-playback clause where continuing would be preferred. The
+        // alternative — a position/index heuristic to skip the restart — is
+        // worse: once a boundary edit reloads the regions the live playhead
+        // still sits inside the new region, so the heuristic reads it as "same
+        // clause already playing", skips the re-arm, and silently strands Record
+        // again (the exact TT-7690 symptom). A stray replay is the safe failure
+        // mode; a skipped re-arm is not.
+        skipBeforePlayRef.current = true;
+        try {
+          ctrl.setPlay(true);
+        } finally {
+          skipBeforePlayRef.current = false;
+        }
       } finally {
         playClauseInFlightRef.current = false;
       }
@@ -967,6 +997,23 @@ export function PassageDetailGuidedPhraseRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [clauseRegions.length, currentIndex]
   );
+
+  const handleBeforeSourcePlay = useCallback(async () => {
+    // The user pressed Play rather than the step starting playback, so the
+    // seek-suppression window has to be re-based here too.
+    clausePlaybackStartedAtRef.current = Date.now();
+    if (skipBeforePlayRef.current) return;
+    if (!recordingPassStarted || !showRecorder || currentClausePlayed) return;
+    setHighlightPlayButton(false);
+    await snapToClauseStart(currentIndex);
+  }, [
+    recordingPassStarted,
+    showRecorder,
+    currentClausePlayed,
+    snapToClauseStart,
+    currentIndex,
+    clauseRegions,
+  ]);
 
   const setPlayerPlayingBoth = useCallback(
     (playingNow: boolean) => {
@@ -1694,6 +1741,64 @@ export function PassageDetailGuidedPhraseRecord({
     playCurrentClause,
   ]);
 
+  const handlePrevUnit = useCallback(() => {
+    if (savingRecording || recordingActiveRef.current) return;
+    if (currentIndex <= 0) return;
+    const next = currentIndex - 1;
+    setResetMedia(true);
+    setCurrentIndex(next);
+    setCurrentSegment(clauseRegions[next], next);
+    setCurrentClausePlayed(false);
+    setPhase(
+      completedIndices.has(next)
+        ? 'recorded'
+        : ('readyToRecord' as CarefulSpeechPhase)
+    );
+    setShowRecorder(true);
+    if (completedIndices.has(next)) {
+      void snapToClauseStart(next);
+    } else {
+      void playCurrentClause(next);
+    }
+  }, [
+    savingRecording,
+    currentIndex,
+    clauseRegions,
+    setCurrentSegment,
+    completedIndices,
+    snapToClauseStart,
+    playCurrentClause,
+  ]);
+
+  const handleNextUnitSequential = useCallback(() => {
+    if (savingRecording || recordingActiveRef.current) return;
+    if (currentIndex >= clauseRegions.length - 1) return;
+    const next = currentIndex + 1;
+    setResetMedia(true);
+    setCurrentIndex(next);
+    setCurrentSegment(clauseRegions[next], next);
+    setCurrentClausePlayed(false);
+    setPhase(
+      completedIndices.has(next)
+        ? 'recorded'
+        : ('readyToRecord' as CarefulSpeechPhase)
+    );
+    setShowRecorder(true);
+    if (completedIndices.has(next)) {
+      void snapToClauseStart(next);
+    } else {
+      void playCurrentClause(next);
+    }
+  }, [
+    savingRecording,
+    currentIndex,
+    clauseRegions,
+    setCurrentSegment,
+    completedIndices,
+    snapToClauseStart,
+    playCurrentClause,
+  ]);
+
   const handleStartRecording = useCallback(() => {
     setRecordingPassStarted(true);
     recordingPassStartedRef.current = true;
@@ -1940,6 +2045,7 @@ export function PassageDetailGuidedPhraseRecord({
           onSegmentClick={handleSegmentClick}
           highlightPlay={highlightPlayButton}
           onPlayStatusNotify={handlePlayStatusNotify}
+          beforePlay={handleBeforeSourcePlay}
           lockSegmentSelection={segmentSelectionLocked}
           isSegmentRecorded={isSegmentRecorded}
           allowZoom={true}
@@ -2059,6 +2165,11 @@ export function PassageDetailGuidedPhraseRecord({
           showBoundaryTools={config.showBoundaryTools && editStep}
           readOnly={!editStep}
           controlIdPrefix={config.containerId}
+          sequentialUnitNavAroundRecord={config.sequentialUnitNavAroundRecord}
+          onPrevUnit={handlePrevUnit}
+          onNextUnitSequential={handleNextUnitSequential}
+          canPrevUnit={currentIndex > 0}
+          canNextUnit={currentIndex < clauseRegions.length - 1}
         />
       )}
       {saveRejected ? (
