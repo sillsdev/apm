@@ -167,7 +167,6 @@ export function PassageDetailArtifactsMobile() {
   const [artifactState] = useState<{ id?: string | null }>({});
   // const [artifactTypeId, setArtifactTypeId] = useState<string>();
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
-  const [initDescription, setInitDescription] = useState<string>('');
   const [audioUploadOrRecord, setAudioUploadOrRecord] =
     useState<boolean>(false);
   const [editAudio, setEditAudio] = useState<boolean>(false);
@@ -434,6 +433,11 @@ export function PassageDetailArtifactsMobile() {
   const handlePassageDiscard = () => {
     setDialogPendingCloseConfirmation(null);
     setProjResPassageVisible(false);
+    // A genuine abandon (not a Back), unlike handleWizBack/handlePassageBack — clear
+    // the restore state so the next fresh Add Audio Resource does not inherit it.
+    catIdRef.current = undefined;
+    descriptionRef.current = '';
+    setResourceUploadFiles([]);
   };
 
   // The wizard's X routes here (like the passage-select dialog): a close request
@@ -452,10 +456,45 @@ export function PassageDetailArtifactsMobile() {
     setProjResWizVisible(false);
     projMediaRef.current = undefined;
     setVisual(false);
+    // The wizard is truly done (save or discard) — no more Back is possible, so
+    // clear the category/description/filename restore state kept alive by
+    // resetEdit's preserveResourceForm since the upload succeeded.
+    catIdRef.current = undefined;
+    descriptionRef.current = '';
+    setResourceUploadFiles([]);
   };
   const handleWizDiscard = () => {
     setDialogPendingCloseConfirmation(null);
     closeProjResWiz();
+  };
+
+  // Configure step "Back" (add flow only): return to passage selection keeping
+  // the uploaded media (unlike closeProjResWiz, which discards it). No confirm —
+  // going back is not a close; the wizard clears its own dirty flag on unmount,
+  // and the prior selection is re-checked via SelectSections' initialItems
+  // (projIdentRef). Coming forward again just re-opens the wizard (no re-upload,
+  // since the media already exists).
+  const handleWizBack = () => {
+    setProjResWizVisible(false);
+    setProjResPassageVisible(true);
+  };
+
+  const handlePassageBack = () => {
+    // Back to the upload/record dialog to change the audio file. A media already
+    // uploaded (reached here from the configure step's Back) is left in place;
+    // uploading a replacement creates a new general resource and leaves the prior
+    // one — the same outcome as cancelling from the configure step. Preventing
+    // these orphans is not priority for us at this time.
+    setProjResPassageVisible(false);
+    projMediaRef.current = undefined;
+    // Reopen the Add Audio Resource upload dialog in general-resource mode, the
+    // same state the user staged the file from.
+    setResourceKind(ResourceTypeEnum.projectResource);
+    artifactState.id = projResourceType ?? null;
+    setUploadType(UploadType.ProjectResource);
+    syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
+    setAudioUploadOrRecord(true);
+    setUploadVisible(true);
   };
 
   const handleAllResources = () => {
@@ -520,19 +559,24 @@ export function PassageDetailArtifactsMobile() {
       })
     );
   };
-  const resetEdit = () => {
+  // preserveResourceForm: skip clearing the category/description/filename restore
+  // state. Used when the deferred general-resource upload succeeds and the wizard
+  // advances to the configure step — Back/Back from there must still return the
+  // user to an upload dialog seeded with what they already entered.
+  const resetEdit = (preserveResourceForm = false) => {
     setEditResource(undefined);
-    catIdRef.current = undefined;
-    descriptionRef.current = '';
+    if (!preserveResourceForm) {
+      catIdRef.current = undefined;
+      descriptionRef.current = '';
+      setResourceUploadFiles([]);
+    }
     setResourceKind(ResourceTypeEnum.sectionResource);
     setUploadVisible(false);
     setMarkdownValue('');
-    setInitDescription('');
     setAIGenerated(false);
     setAudioUploadOrRecord(false);
     setAllowProject(true);
     setEditAudio(false);
-    setResourceUploadFiles([]);
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) {
@@ -667,7 +711,6 @@ export function PassageDetailArtifactsMobile() {
     audioUrl: string,
     transcript: string
   ) => {
-    setInitDescription(query);
     descriptionRef.current = query;
     const nextType = audioUrl
       ? UploadType.FaithbridgeLink
@@ -806,6 +849,11 @@ export function PassageDetailArtifactsMobile() {
           projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
         }
       }
+      // Set when advancing to the configure step, which still offers Back to the
+      // upload dialog — resetEdit must then preserve the category/description/
+      // filename restore state instead of clearing it (closeProjResWiz clears it
+      // once that step actually finishes).
+      let preserveResourceForm = false;
       if (projRes.length === 1) {
         isAddingAudioResourceRef.current = true;
         if (sectionsPreselectedRef.current) {
@@ -828,12 +876,13 @@ export function PassageDetailArtifactsMobile() {
             // since this path bypasses handleSelectProjectResource.
             setSelected(media.id, PlayInPlayer.yes);
             setProjResWizVisible(true);
+            preserveResourceForm = true;
           }
         } else {
           setProjResSetup(projRes);
         }
       }
-      resetEdit();
+      resetEdit(preserveResourceForm);
     }
     // Deferred upload produced no media (the upload failed). SelectSections is
     // still open with the user's selection intact, so just re-enable its Upload
@@ -911,9 +960,16 @@ export function PassageDetailArtifactsMobile() {
       addCatCommitRef.current = null;
     }
     stagedResourceFilesRef.current = files;
+    // Also seed the upload-tab restore state (normally set by handleResourceUploadFiles
+    // via onFiles) so a recorded take — which bypasses that callback — is still
+    // pre-selected if the user Backs out to the upload dialog and returns.
+    setResourceUploadFiles(files);
     cancelled.current = false;
     isAddingAudioResourceRef.current = true;
     projMediaRef.current = undefined;
+    // Fresh add: no prior selection to pre-check on SelectSections. (A Back from
+    // the configure step repopulates projIdentRef, so only clear it here.)
+    projIdentRef.current = [];
     // Staging only happens for the "Add Audio Resource" → General Resource flow,
     // which is always audio, so this is never a visual resource. (Visual general
     // resources are reached by selecting an existing project-resource media, not
@@ -1211,6 +1267,8 @@ export function PassageDetailArtifactsMobile() {
         pendingRestore={resourcePendingRestore}
         importList={resourceImportList}
         onFiles={handleResourceUploadFiles}
+        // When returning here via the back button, display the previously selected files
+        initialFiles={resourceUploadFiles}
         deferUpload={uploadType === UploadType.ProjectResource}
         onStageFiles={handleStageAudioFiles}
         validationMessage={resourceUploadValidationMessage}
@@ -1218,10 +1276,12 @@ export function PassageDetailArtifactsMobile() {
           <ResourceData
             uploadType={uploadType}
             catAllowNew={true} //if they can upload they can add cat
-            initCategory=""
+            // Restores a category/description already entered before the user
+            // stepped Back to change the file (both refs are blank on a fresh add).
+            initCategory={catIdRef.current || ''}
             onCategoryChange={handleCategory}
             catCommitRef={addCatCommitRef}
-            initDescription={initDescription}
+            initDescription={descriptionRef.current}
             onDescriptionChange={handleDescription}
             catRequired={false}
             resourceKind={resourceKind}
@@ -1317,16 +1377,31 @@ export function PassageDetailArtifactsMobile() {
       >
         {projResPassageVisible ? (
           <SelectSections
-            initialItems={getProjectResourceAssignments(
-              projMediaRef.current,
-              mediafiles,
-              sectionResources,
-              resourceType
-            )}
+            initialItems={
+              // Returning here via the configure step's Back re-checks the prior
+              // selection (the media has no saved assignments yet). Other entry
+              // points read the media's existing assignments.
+              isAddingAudioResourceRef.current &&
+              projIdentRef.current.length > 0
+                ? projIdentRef.current
+                : getProjectResourceAssignments(
+                    projMediaRef.current,
+                    mediafiles,
+                    sectionResources,
+                    resourceType
+                  )
+            }
             visual={visual}
-            uploadsOnNext={isAddingAudioResourceRef.current}
+            // The button uploads only when a media has not been created yet;
+            // after a Back from configure the media exists, so it just advances.
+            uploadsOnNext={
+              isAddingAudioResourceRef.current && !projMediaRef.current
+            }
             uploading={uploading}
             onSelect={handleSelectProjectResourcePassage}
+            onBack={
+              isAddingAudioResourceRef.current ? handlePassageBack : undefined
+            }
           />
         ) : (
           <></>
@@ -1347,6 +1422,9 @@ export function PassageDetailArtifactsMobile() {
             candidateItems={projCandidateRef.current}
             resourceTypeId={resourceType}
             onOpen={closeProjResWiz}
+            onBack={
+              isAddingAudioResourceRef.current ? handleWizBack : undefined
+            }
           />
         ) : (
           <></>

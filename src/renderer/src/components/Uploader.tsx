@@ -95,6 +95,9 @@ interface IProps {
    */
   deferUpload?: boolean | undefined;
   onStageFiles?: ((files: File[]) => void | Promise<void>) | undefined;
+  /** Pre-select these files when the dialog opens (see MediaUploadContent) —
+   *  used to restore a staged file after the Add Resource wizard's Back. */
+  initialFiles?: File[] | undefined;
 }
 
 export const Uploader = (props: IProps) => {
@@ -134,6 +137,7 @@ export const Uploader = (props: IProps) => {
     pendingRestore,
     deferUpload,
     onStageFiles,
+    initialFiles,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -555,6 +559,8 @@ export const Uploader = (props: IProps) => {
           onStageFile={deferring ? onStageFiles : undefined}
           multiple={multiple}
           onFiles={onFiles}
+          initialFiles={initialFiles}
+          keepFilesAfterSubmit={deferring}
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
@@ -589,6 +595,8 @@ export const Uploader = (props: IProps) => {
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           onFiles={onFiles}
+          initialFiles={initialFiles}
+          keepFilesAfterSubmit={deferring}
           validationMessage={validationMessage}
         />
       )}

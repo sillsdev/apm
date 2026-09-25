@@ -195,11 +195,26 @@ interface IProps {
   /** Artifact type id of a derived resource copy (`resource` slug). */
   resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
+  /**
+   * When set, a "Back" button (the reverse of the selection dialog's Next) is
+   * shown. It returns to SelectSections keeping the media, so the caller must
+   * not tear down the media on this path. Undefined hides the button (e.g. the
+   * edit flow, which has no previous wizard step).
+   */
+  onBack?: () => void;
   bookData?: BookName[];
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { width, media, items, candidateItems, resourceTypeId, onOpen } = props;
+  const {
+    width,
+    media,
+    items,
+    candidateItems,
+    resourceTypeId,
+    onOpen,
+    onBack,
+  } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -736,6 +751,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
           Box neutralizes its flexGrow:1 inside this flex column. */}
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
+          {onBack && (
+            <Button
+              id="res-configure-back"
+              disabled={savingRef.current}
+              onClick={onBack}
+            >
+              {t.back}
+            </Button>
+          )}
           <Box sx={{ ...rowSx, ml: 'auto' }}>
             <Button
               id="res-create"
