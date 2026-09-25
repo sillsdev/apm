@@ -527,13 +527,6 @@
                <context context-type="sourcefile">assignmentTable.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="assignmentTable.showHideFilter">
-            <source>Show/Hide filter rows</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">assignmentTable.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="assignmentTable.title">
             <source>Assignments</source>
             <target/>
@@ -903,13 +896,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">useCreateBurrito.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="burrito.communityFeedback">
-            <source>Community Feedback</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">BurritoContents.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="burrito.contents">
@@ -1347,13 +1333,6 @@
                <context context-type="sourcefile">TeamSettings.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="cards.explainPublishing">
-            <source>Information to use when publishing audio created by this team.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TeamDialog.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="cards.explainTeamDelete">
             <source>Deleting the team will delete all audio projects of the team.</source>
             <target/>
@@ -1419,13 +1398,6 @@
          </trans-unit>
          <trans-unit id="cards.normalize">
             <source>Audio Normalize</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">addCard.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="cards.notesLabel">
-            <source>Introductory Notes Title</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
@@ -1536,13 +1508,6 @@
                <context context-type="sourcefile">TeamDialog.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="cards.recognizePrompt">
-            <source>Choose the language to auto transcribe. If the language is not available, choose a closely related language with a similar writing system.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TeamDialog.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="cards.recognizeSpeech">
             <source>Auto Transcription</source>
             <target/>
@@ -1604,20 +1569,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectMenu.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="cards.notesHelper">
-            <source>Shared explanations, rationales, footnotes, etc.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ProjectButtons.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="cards.notesProject">
-            <source>Project with Notes</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ProjectButtons.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="cards.projectPermissions">
@@ -1970,20 +1921,6 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
-      	<trans-unit id="community.playTest">
-            <source>Play Test</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">Community.tsx</context>
-            </context-group>
-         </trans-unit>
-      	<trans-unit id="community.provideRights">
-      		<source>Provide Rights</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">Community.tsx</context>
-      		</context-group>
-      	</trans-unit>
       	<trans-unit id="community.record">
             <source>Record</source>
             <target/>
@@ -2560,13 +2497,6 @@
          </trans-unit>
          <trans-unit id="discussionCard.assignGroup">
             <source>Assign to a Group</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">DiscussionCard.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="discussionCard.assignUser">
-            <source>Assign to a Team Member</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">DiscussionCard.tsx</context>
@@ -3209,13 +3139,6 @@
                <context context-type="sourcefile">findResource.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="findResource.Lang">
-            <source>{0} Language*</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">findResource.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="findResource.bibleProjectLang">
             <source>Book Overviews</source>
             <target/>
@@ -3274,13 +3197,6 @@
          </trans-unit>
          <trans-unit id="findResource.createItems">
             <source>Create Items</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">findResource.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="findResource.createResource">
-            <source>Create AI Resource</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">findResource.tsx</context>
@@ -3748,13 +3664,6 @@
                <context context-type="sourcefile">shapingTable.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="grid.noColumns">
-            <source>No columns visible</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">shapingTable.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="grid.noData">
             <source>No data</source>
             <target/>
@@ -4196,13 +4105,6 @@
                <context context-type="sourcefile">ImportTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="import.showHideFilter">
-            <source>Show/Hide filter rows</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">import.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="import.state">
             <source>State</source>
             <target/>
@@ -4261,13 +4163,6 @@
          </trans-unit>
          <trans-unit id="scriptureBurritoImport.zipExtractError">
             <source>Failed to extract zip file</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">BurritoUpload.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="scriptureBurritoImport.metadataNotFoundError">
-            <source>metadata.json not found in the selected file/directory</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">BurritoUpload.tsx</context>
@@ -4343,13 +4238,6 @@
                <context context-type="sourcefile">integration.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="integration.emptyBook">
-            <source>Passage {0}.{1}: Book is missing.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">integration.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="integration.exportSectionNumbers">
             <source>Sync {0} Numbers</source>
             <target/>
@@ -4387,13 +4275,6 @@
          </trans-unit>
          <trans-unit id="integration.offline">
             <source>Offline</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">integration.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="integration.onestory">
-            <source>One Story</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">integration.tsx</context>
@@ -4457,13 +4338,6 @@
          </trans-unit>
          <trans-unit id="integration.selectProject">
             <source>Select {0} Project</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">integration.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="integration.showHideFilter">
-            <source>Show/Hide filter rows</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">integration.tsx</context>
@@ -4576,13 +4450,6 @@
          </trans-unit>
          <trans-unit id="invitationTable.selectRows">
             <source>Please select row(s) to {0}.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">InvitationTable.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="invitationTable.showHideFilter">
-            <source>Show/Hide filter rows</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">InvitationTable.tsx</context>
@@ -4730,13 +4597,6 @@
          </trans-unit>
          <trans-unit id="invite.save">
             <source>Save</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">Invite.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="invite.selectTeamRole">
-            <source>Select team role.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">Invite.tsx</context>
@@ -5358,13 +5218,6 @@
                <context context-type="sourcefile">loadData.ts</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="main.loadingTranscriber">
-            <source>Loading {0}</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">drawer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="main.logout">
             <source>Log Out</source>
             <target/>
@@ -5736,13 +5589,6 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mediaTab.availablePassages">
-            <source>Available Passages</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mediaTab.book">
             <source>Book</source>
             <target/>
@@ -5876,13 +5722,6 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mediaTab.mediaAssociations">
-            <source>Audio Associations</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mediaTab.noMatch">
             <source>Match complete: no new associations</source>
             <target/>
@@ -5899,13 +5738,6 @@
          </trans-unit>
          <trans-unit id="mediaTab.noPassageAttached">
             <source>{0} has no passage attached</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="mediaTab.passageAttached">
-            <source>Passage already attached</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaTab.tsx</context>
@@ -6058,13 +5890,6 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mediaTab.showHideFilter">
-            <source>Show/Hide filter rows</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mediaTab.size">
             <source>Size (MB)</source>
             <target/>
@@ -6109,13 +5934,6 @@
          </trans-unit>
          <trans-unit id="mediaTab.versionHistory">
             <source>Version History</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="mediaTab.viewAssociations">
-            <source>View Associations</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaTab.tsx</context>
@@ -6408,13 +6226,6 @@
                <context context-type="sourcefile">MediaUpload.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mobile.addSegment">
-            <source>Add segment boundary</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mobile.desktopOnlyStep">
             <source>This step is only available on computers right now. We are working to bring it to mobile phones soon.</source>
             <target/>
@@ -6443,20 +6254,6 @@
                <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mobile.resetBT">
-            <source>Reset back translation</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="mobile.restoreBoundaries">
-            <source>Restore original segment boundaries</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mobile.segment">
             <source>Segment: {0}</source>
             <target/>
@@ -6465,36 +6262,8 @@
             </context-group>
          </trans-unit>
 
-         <trans-unit id="newProject.audioProduct">
-            <source>Audio Product</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="newProject.blank">
             <source>Audio Project</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.blankFactor1">
-            <source>you want to set up a project with multiple passages</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.blankFactor2">
-            <source>you plan to record each passage as part of the workflow</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.blankTip">
-            <source>Set up an empty project.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">NewProject.tsx</context>
@@ -6514,41 +6283,6 @@
                <context context-type="sourcefile">NewProject.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="newProject.generalFactor1">
-            <source>you have one or a few prerecorded audio files for passages</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.generalFactor2">
-            <source>you just want to try out the program before you set up an actual project</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.generalTip">
-            <source>Create a project with one or a few audio files.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.keyFactors">
-            <source>Best option if...</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.likeTemplate">
-            <source>Here are optional ways to get started. Later, you can use the Edit Audio Project Settings dialog box to change any of your initial settings.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="newProject.newProject">
             <source>Create New Audio Project</source>
             <target/>
@@ -6558,20 +6292,6 @@
          </trans-unit>
          <trans-unit id="newProject.startRecording">
             <source>Start Recording</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.textProduct">
-            <source>Text Product</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">NewProject.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="newProject.uploadAudio">
-            <source>Bulk Upload</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">NewProject.tsx</context>
@@ -6712,13 +6432,6 @@
          </trans-unit>
       	<trans-unit id="passageDetailArtifacts.chapterLevel">
       		<source>{0} for the Chapter</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PassageMedia.tsx</context>
-      		</context-group>
-      	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.chooseLevel">
-      		<source>Resource Reference Filter Level</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
@@ -6941,13 +6654,6 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
-         <trans-unit id="passageDetailArtifacts.linkResource">
-            <source>Link (URI)</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">AddResource.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="passageDetailArtifacts.movementResource">
             <source>Movement</source>
             <target/>
@@ -7011,13 +6717,6 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.projectResourceSheet">
-      		<source>Project Resource Sheet</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">AddResource.tsx</context>
-      		</context-group>
-      	</trans-unit>
          <trans-unit id="passageDetailArtifacts.projectResourceConfigure">
       		<source>Chunk into Resources</source>
       		<target/>
@@ -7060,22 +6759,8 @@
                <context context-type="sourcefile">AddResource.tsx</context>
             </context-group>
          </trans-unit>
-      	<trans-unit id="passageDetailArtifacts.resourcesDeleted">
-      		<source> ({0} resources will be deleted.)</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">AddResource.tsx</context>
-      		</context-group>
-      	</trans-unit>
          <trans-unit id="passageDetailArtifacts.selectAll">
             <source>Select All</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">SelectSections.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="passageDetailArtifacts.selectAllPassages">
-            <source>Select all passages in {0}</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">SelectSections.tsx</context>
@@ -7207,13 +6892,6 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
-         <trans-unit id="passageDetailArtifacts.tip2b">
-         	<source>Steps through connecting chunks of a general resource with {0} and passages.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageMedia.tsx</context>
-            </context-group>
-         </trans-unit>
       	<trans-unit id="passageDetailArtifacts.unusedSegment">
       		<source>Unused segment: only segments with References will create resources</source>
       		<target/>
@@ -7292,20 +6970,6 @@
             </context-group>
          </trans-unit>
 
-         <trans-unit id="passageDetailToolbar.add">
-            <source>Passage Detail Toolbar</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageMedia.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="passageMedia.close">
-            <source>Close</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageMedia.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="passageRecord.cancel">
             <source>Cancel</source>
             <target/>
@@ -7343,13 +7007,6 @@
          </trans-unit>
          <trans-unit id="passageRecord.fileName">
             <source>Name</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">passageRecord.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="passageRecord.fileType">
-            <source>File Type</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageRecord.tsx</context>
@@ -7537,13 +7194,6 @@
       			<context context-type="sourcefile">GroupDialog.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="peer.peerGroup">
-      		<source>Peer Group</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">GroupDialog.tsx</context>
-      		</context-group>
-      	</trans-unit>
       	<trans-unit id="peer.remove">
       		<source>Remove</source>
       		<target/>
@@ -7579,13 +7229,6 @@
       			<context context-type="sourcefile">TeamCheckReference.tsx</context>
       		</context-group>
       	</trans-unit>
-         <trans-unit id="peerCheck.toEnd">
-            <source>Jump to end</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TeamCheckReference.tsx</context>
-            </context-group>
-         </trans-unit>
       	<trans-unit id="permission.admin">
       		<source>Admin</source>
       		<target/>
@@ -7593,22 +7236,8 @@
       			<context context-type="sourcefile">GroupDialog.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="permission.adminTip">
-      		<source>Do we need this group?  Or just use team admin? People in this group will be able to do any step, even if it is assigned to a group they are not in.</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">GroupDialog.tsx</context>
-      		</context-group>
-      	</trans-unit>
          <trans-unit id="permission.consultant">
       		<source>Consultant</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">GroupDialog.tsx</context>
-      		</context-group>
-      	</trans-unit>
-         <trans-unit id="permission.consultantTip">
-      		<source>Not sure we need this permission either, because it is unclear what special things consultants do in this software.  Independent Consultant's comments will be visible to all team members.</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">GroupDialog.tsx</context>
@@ -7649,132 +7278,6 @@
       			<context context-type="sourcefile">GroupDialog.tsx</context>
       		</context-group>
          </trans-unit>
-         <trans-unit id="picker.font">
-            <source>Font</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.script">
-            <source>Script</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.language">
-            <source>Language</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.selectLanguage">
-            <source>Choose Language Details</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.findALanguage">
-            <source>Find a language by name, code, or country</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.codeExplained">
-            <source>Code Explained</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.subtags">
-            <source>Subtags</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.details">
-            <source>Details</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.languageOf">
-            <source>A Language of $1$2.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.inScript">
-            <source> in the $1 script</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.select">
-            <source>Save</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.cancel">
-            <source>Cancel</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.phonetic">
-            <source>Phonetic</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.changeName">
-            <source>Change Name</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.nameInstruction">
-            <source>If you would like to change the language name enter the new name here.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.newName">
-            <source>New Language Name</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.change">
-            <source>Change</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="picker.noFonts">
-            <source>No recommended fonts</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">GroupDialog.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="planActions.addNote">
             <source>Add Note</source>
             <target/>
@@ -7803,22 +7306,8 @@
       			<context context-type="sourcefile">PlanActions.tsx</context>
       		</context-group>
       	</trans-unit>
-         <trans-unit id="planActions.passageDetail">
-            <source>Passage Detail</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanSheet.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="planActions.playpause">
             <source>Play/Pause</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanSheet.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="planActions.recordAudio">
-            <source>Record/Edit Audio</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>
@@ -8272,13 +7761,6 @@
                <context context-type="sourcefile">PlanTabs.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="planTabs.associations">
-            <source>Associations</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanTabs.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="planTabs.media">
             <source>Audio</source>
             <target/>
@@ -8636,20 +8118,6 @@
                <context context-type="sourcefile">ProfileDialog.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="profile.userProfile">
-            <source>User profile</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ProfileDialog.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="projButtons.categoryTitle">
-            <source>Edit Team Categories</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ProjButtons.tsx</context>
-            </context-group>
-         </trans-unit>
       	<trans-unit id="projButtons.export">
       		<source>Export</source>
       		<target/>
@@ -8904,13 +8372,6 @@
       	</trans-unit>
       	<trans-unit id="resource.bookSelect">
       		<source>Select Book</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">Access.tsx</context>
-      		</context-group>
-      	</trans-unit>
-      	<trans-unit id="resource.byWord">
-      		<source>By Word</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">Access.tsx</context>
@@ -9420,34 +8881,6 @@
                <context context-type="sourcefile">ScriptureTable.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="sectionResources.close">
-            <source>Close</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">sectionResources.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="sectionResources.role">
-            <source>Role</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">sectionResources.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="sectionResources.title">
-            <source>Assign {0}</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">sectionResources.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="sectionResources.users">
-            <source>Members</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">sectionResources.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="selectArtifactCategory.addNewCategory">
             <source>Add New Category</source>
             <target/>
@@ -9483,22 +8916,8 @@
                <context context-type="sourcefile">selectArtifactCategory.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="selectArtifactType.addNewType">
-            <source>Add New Type</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="selectArtifactType.artifactType">
             <source>Artifact Type</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="selectArtifactType.newArtifactType">
-            <source>New Artifact Type</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaUpload.tsx</context>
@@ -9679,13 +9098,6 @@
                <context context-type="sourcefile">integration.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="shared.importMediaSingular">
-            <source>Import Audio</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanSheet.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="shared.invalidParatextLogin">
             <source>You must login with a valid {Pt} login.</source>
             <target/>
@@ -9805,13 +9217,6 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="shared.noiseRemovalFailed">
-            <source>Noise Removal Failed</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanSheet.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="shared.NoSaveStayOnPage">
             <source>If you leave this page before saving, your changes will be lost.</source>
             <target/>
@@ -9880,13 +9285,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">Access.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="shared.recordingInProgress">
-            <source>Recording in progress...</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">integration.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="shared.bookNotFound">
@@ -9995,13 +9393,6 @@
               <context context-type="sourcefile">PlanSheet.tsx</context>
           </context-group>
         </trans-unit>
-        <trans-unit id="shared.discardRecording">
-          <source>Would you like to clear this recording?</source>
-          <target/>
-          <context-group>
-              <context context-type="sourcefile">PlanSheet.tsx</context>
-          </context-group>
-        </trans-unit>
         <trans-unit id="shared.useThisVersion">
           <source>Use This Version</source>
           <target/>
@@ -10009,13 +9400,6 @@
               <context context-type="sourcefile">PlanSheet.tsx</context>
           </context-group>
         </trans-unit>
-      	<trans-unit id="shared.uploadRights">
-      		<source>Upload Rights File</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PlanSheet.tsx</context>
-      		</context-group>
-      	</trans-unit>
          <trans-unit id="shared.uploadSuccess">
             <source>Upload Successful</source>
             <target/>
@@ -10303,13 +9687,6 @@
                <context context-type="sourcefile">TaskItem.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="taskItem.unassign">
-            <source>Unassign {0}</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TaskHead.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="teamCheckReference.resource">
             <source>Resource</source>
             <target/>
@@ -10368,13 +9745,6 @@
          </trans-unit>
          <trans-unit id="template.end">
             <source>Ending verse number</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">template.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="template.fileTemplate">
-            <source>File Name Template</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">template.tsx</context>
@@ -10667,13 +10037,6 @@
       			<context context-type="sourcefile">useTools.ts</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="transcribe.openTranscriber">
-            <source>Open Transcriber</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">transcribeAddNote.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcribeAddNote.addNoteTitle">
             <source>Add Note</source>
             <target/>
@@ -10723,13 +10086,6 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriber.chooseSisterLang">
-            <source>Choose a sister language</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcriber.comment">
             <source>Comment</source>
             <target/>
@@ -10756,13 +10112,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="transcriber.historyTip">
-            <source>History [{0}]</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.incomplete">
@@ -10917,13 +10266,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">Transcriber.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="transcriber.scriptOrDialect">
-            <source>Script or Dialect</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">LastEdit.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.scriptTranscription">
@@ -11143,25 +10485,11 @@
                <context context-type="sourcefile">ProjectDownload.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriptionTab.nopermission">
-            <source>You do not have permission to download the project.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ProjectDownload.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcriptionTab.downloading">
             <source>Creation complete. Downloading {0}</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ExportTab.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="transcriptionTab.downloadingProject">
-            <source>Downloading...{0}%</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ProjectDownload.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriptionTab.downloadProject">
@@ -11201,13 +10529,6 @@
          </trans-unit>
          <trans-unit id="transcriptionTab.exportExplanation">
             <source>Export the full audio project to store locally or share with another offline member. Export incremental file to import changes into online app.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ExportTab.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="transcriptionTab.exportingProject">
-            <source>Exporting...{0}%</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ExportTab.tsx</context>
@@ -11269,13 +10590,6 @@
                <context context-type="sourcefile">TranscriptionTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriptionTab.incompletePlan">
-            <source>Plan is incomplete: attach audio to passages.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TranscriptionTab.tsx</context>
-            </context-group>
-         </trans-unit>
       	<trans-unit id="transcriptionTab.latestAudio">
       		<source>Latest Audio</source>
       		<target/>
@@ -11332,25 +10646,11 @@
                <context context-type="sourcefile">TranscriptionTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriptionTab.showHideFilter">
-            <source>Show/Hide filter rows</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TranscriptionTab.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcriptionTab.updated">
             <source>Updated</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">TranscriptionTab.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="treeChart.contributions">
-            <source>Contributions toward</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">treeChart.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="treeChart.noData">
@@ -11508,25 +10808,11 @@
                <context context-type="sourcefile">UserAdd.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="usertable.showHideFilter">
-            <source>Show/Hide filter rows</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">UserTable.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="usertable.timezone">
             <source>Timezone</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">UserTable.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="verse.autosaveSkipped">
-            <source>Autosave skipped: {0} issue(s) found.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageDetailMarkVerses.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="verse.badReferences">
@@ -11590,13 +10876,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="verse.markupIssuesTitle">
-            <source>Verse markup issues</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageDetailMarkVerses.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="verse.missingReferences">
@@ -11667,13 +10946,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="verse.viewIssues">
-            <source>View issues</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageDetailMarkVerses.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="viewMode.audioProject">
@@ -12019,13 +11291,6 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="vProject.errgeneralBookNonScripture">
-            <source>Book Designation must not be a Scripture book code.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">addCard.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="vProject.generalBook">
             <source>{0} Book Designation</source>
             <target/>
@@ -12187,25 +11452,11 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="vProject.renderCustomize">
-            <source>including {0} customization</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">projectExpansion.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="vProject.renderRecommended">
             <source>Recommended for {0}</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">projectExpansion.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="vProject.rightToLeft">
-            <source>Right-to-Left</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.save">
@@ -13048,22 +12299,8 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="wsAudioPlayer.aheadTip">
-            <source>Ahead {jump} {1} [{0}]</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="wsAudioPlayer.aiFailed">
             <source>AI function {1} failed {0}</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="wsAudioPlayer.aiGiveUp">
-            <source>Stop Waiting...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -13078,13 +12315,6 @@
          </trans-unit>
          <trans-unit id="wsAudioPlayer.beginVoiceConvert">
             <source>Beginning voice conversion...</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="wsAudioPlayer.backTip">
-            <source>Rewind {jump} {1} [{0}]</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -13118,13 +12348,6 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="wsAudioPlayer.beginningTip">
-            <source>Go to Beginning [{0}]</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="wsAudioPlayer.clear">
             <source>Clear</source>
             <target/>
@@ -13139,22 +12362,8 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="wsAudioPlayer.endTip">
-            <source>Go to End [{0}]</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="wsAudioPlayer.fasterTip">
             <source>Faster [{0}]</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="wsAudioPlayer.insertoverwrite">
-            <source>Insert/Overwrite</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -13230,13 +12439,6 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="wsAudioPlayer.pauseRecord">
-            <source>Pause</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="wsAudioPlayer.pauseTip">
             <source>Pause [{0}]</source>
             <target/>
@@ -13260,13 +12462,6 @@
          </trans-unit>
          <trans-unit id="wsAudioPlayer.recognizeProgress">
             <source>Auto Transcription in Progress</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageDetailPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="wsAudioPlayer.recognizePrompt">
-            <source>Choose the language to auto transcribe. If the language is not available, choose a closely related language with a similar writing system.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailPlayer.tsx</context>
@@ -13435,13 +12630,6 @@
          </trans-unit>
          <trans-unit id="wsAudioPlayerSegment.close">
             <source>Close</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="wsAudioPlayerSegment.removeAll">
-            <source>Clear Segments</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>

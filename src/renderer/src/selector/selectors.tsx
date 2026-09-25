@@ -210,6 +210,9 @@ export const resourceSelector = (state: IState) =>
 export const scriptureTableSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'scriptureTable' });
 
+export const selectArtifactTypeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'selectArtifactType' });
+
 export const selectRecordingSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'selectRecording' });
 
