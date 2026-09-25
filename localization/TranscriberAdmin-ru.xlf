@@ -4,61 +4,61 @@
       <unit id="access.availableUsers">
          <segment>
             <source>Other Users</source>
-            <target>Otros usuarios</target>
+            <target>Другие пользователи</target>
          </segment>
       </unit>
       <unit id="access.back">
          <segment>
             <source>Back</source>
-            <target>Atrás</target>
+            <target>Назад</target>
          </segment>
       </unit>
       <unit id="access.cancel">
          <segment>
             <source>Cancel</source>
-            <target>Cancelar</target>
+            <target>Отмена</target>
          </segment>
       </unit>
       <unit id="access.createUser">
          <segment>
             <source>Add a new user</source>
-            <target>Añadir un nuevo usuario</target>
+            <target>Добавить нового пользователя</target>
          </segment>
       </unit>
       <unit id="access.currentUser">
          <segment>
             <source>Current User</source>
-            <target>Usuario Actual</target>
+            <target>Текущий пользователь</target>
          </segment>
       </unit>
       <unit id="access.importSnapshot">
          <segment>
             <source>Import Audio Project</source>
-            <target>Importar Proyecto de Audio</target>
+            <target>Импортировать аудио проект</target>
          </segment>
       </unit>
       <unit id="access.logIn">
          <segment>
             <source>Log In</source>
-            <target>Iniciar Sesión</target>
+            <target>Войти</target>
          </segment>
       </unit>
       <unit id="access.logout">
          <segment>
             <source>Log Out</source>
-            <target>Cerrar la sesión</target>
+            <target>Выйти</target>
          </segment>
       </unit>
       <unit id="access.mustBeOnline">
          <segment>
             <source>You must be connected to the Internet to Log In!</source>
-            <target>Debe conectarse a internet para poder iniciar sesión!</target>
+            <target>Вы должны быть подключены к Интернету для входа в систему!</target>
          </segment>
       </unit>
       <unit id="access.noOnlineUsers1">
          <segment>
             <source>To allow offline use:</source>
-            <target>Para permitir el uso sin conexión:</target>
+            <target>Чтобы разрешить использование оффлайн:</target>
          </segment>
       </unit>
       <unit id="access.noOnlineUsers2">
@@ -76,103 +76,103 @@
       <unit id="access.noOnlineUsers4">
          <segment>
             <source>Create a personal audio project.</source>
-            <target>Crear un proyecto de audio personal.</target>
+            <target>Создать персональный аудио проект.</target>
          </segment>
       </unit>
       <unit id="access.offlineUsers">
          <segment>
             <source>Offline Users</source>
-            <target>Usuarios sin conexión</target>
+            <target>Пользователи в автономном режиме</target>
          </segment>
       </unit>
       <unit id="access.title">
          <segment>
             <source>Connection Mode</source>
-            <target>Modo de conexión</target>
+            <target>Режим соединения</target>
          </segment>
       </unit>
       <unit id="activityState.approved">
          <segment>
             <source>Ready to Sync</source>
-            <target>Listo para sincronizar</target>
+            <target>Готово к синхронизации</target>
          </segment>
       </unit>
       <unit id="activityState.done">
          <segment>
             <source>Done</source>
-            <target>Completado</target>
+            <target>Готово</target>
          </segment>
       </unit>
       <unit id="activityState.incomplete">
          <segment>
             <source>Incomplete</source>
-            <target>Incompleto</target>
+            <target>Не завершён</target>
          </segment>
       </unit>
       <unit id="activityState.needsNewRecording">
          <segment>
             <source>Recording Needed</source>
-            <target>Se necesita grabar</target>
+            <target>Запись нужен</target>
          </segment>
       </unit>
       <unit id="activityState.needsNewTranscription">
          <segment>
             <source>Correction Needed</source>
-            <target>Se necesita corregir</target>
+            <target>Нужна коррекция</target>
          </segment>
       </unit>
       <unit id="activityState.noMedia">
          <segment>
             <source>No Recording</source>
-            <target>No existe grabación</target>
+            <target>Нет записей</target>
          </segment>
       </unit>
       <unit id="activityState.review">
          <segment>
             <source>Review</source>
-            <target>Revisar</target>
+            <target>Проверка</target>
          </segment>
       </unit>
       <unit id="activityState.reviewing">
          <segment>
             <source>Reviewing</source>
-            <target>Revisando</target>
+            <target>Проверяет</target>
          </segment>
       </unit>
       <unit id="activityState.synced">
          <segment>
             <source>Synced</source>
-            <target>Sincronizado</target>
+            <target>Синхронизировано</target>
          </segment>
       </unit>
       <unit id="activityState.transcribe">
          <segment>
             <source>Transcribe</source>
-            <target>Transcribir</target>
+            <target>Транскрибировать</target>
          </segment>
       </unit>
       <unit id="activityState.transcribed">
          <segment>
             <source>Transcribed</source>
-            <target>Transcrito</target>
+            <target>Транскрибировано</target>
          </segment>
       </unit>
       <unit id="activityState.transcribeReady">
          <segment>
             <source>Ready to Transcribe</source>
-            <target>Listo para transcribir</target>
+            <target>Готов к транскрипции</target>
          </segment>
       </unit>
       <unit id="activityState.transcribing">
          <segment>
             <source>Transcribing</source>
-            <target>Transcribiendo</target>
+            <target>Трансрибировает</target>
          </segment>
       </unit>
       <unit id="alert.areYouSure">
          <segment>
             <source>Are you sure?</source>
-            <target>¿Está seguro?</target>
+            <target>Вы уверены?</target>
          </segment>
       </unit>
       <unit id="alert.confirmation">
@@ -190,31 +190,31 @@
       <unit id="alert.no">
          <segment>
             <source>No</source>
-            <target>No</target>
+            <target>Нет</target>
          </segment>
       </unit>
       <unit id="alert.yes">
          <segment>
             <source>Yes</source>
-            <target>Sí</target>
+            <target>Да</target>
          </segment>
       </unit>
       <unit id="artifactCategory.activity">
          <segment>
             <source>Activity</source>
-            <target>Actividad</target>
+            <target>Активность</target>
          </segment>
       </unit>
       <unit id="artifactCategory.biblestory">
          <segment>
             <source>Bible Story</source>
-            <target>Historia bíblica</target>
+            <target>Библейская история</target>
          </segment>
       </unit>
       <unit id="artifactCategory.bookintro">
          <segment>
             <source>Book Introduction</source>
-            <target>Introducción al libro</target>
+            <target>Введение</target>
          </segment>
       </unit>
       <unit id="artifactCategory.chapter">
@@ -226,19 +226,19 @@
       <unit id="artifactCategory.scripture">
          <segment>
             <source>Scripture</source>
-            <target>Escrituras</target>
+            <target>Писание</target>
          </segment>
       </unit>
       <unit id="artifactCategory.translationresource">
          <segment>
             <source>Translation Resource</source>
-            <target>Recursos para traduccion</target>
+            <target>Ресурсы для перевода</target>
          </segment>
       </unit>
       <unit id="artifactCategory.uncategorized">
          <segment>
             <source>Uncategorized</source>
-            <target>Sin categoría</target>
+            <target>Без категории</target>
          </segment>
       </unit>
       <unit id="artifactCategory.retelling">
@@ -298,7 +298,7 @@
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
-            <target>Comentario</target>
+            <target>Комментарий</target>
          </segment>
       </unit>
       <unit id="artifactType.graphic">
@@ -319,6 +319,12 @@
             <target>Ключевой термин</target>
          </segment>
       </unit>
+      <unit id="artifactType.linked">
+         <segment>
+            <source>Linked</source>
+            <target>Связано</target>
+         </segment>
+      </unit>
       <unit id="artifactType.projectresource">
          <segment>
             <source>General Resource</source>
@@ -334,7 +340,7 @@
       <unit id="artifactType.resource">
          <segment>
             <source>Resource</source>
-            <target>Recurso</target>
+            <target>Ресурс</target>
          </segment>
       </unit>
       <unit id="artifactType.retell">
@@ -346,13 +352,13 @@
       <unit id="artifactType.sharedresource">
          <segment>
             <source>Shared Resource</source>
-            <target>Recurso compartido</target>
+            <target>Общий ресурс</target>
          </segment>
       </unit>
       <unit id="artifactType.testing">
          <segment>
             <source>Testing</source>
-            <target>Prueba</target>
+            <target>Тестирование</target>
          </segment>
       </unit>
       <unit id="artifactType.title">
@@ -364,7 +370,7 @@
       <unit id="artifactType.vernacular">
          <segment>
             <source>Vernacular</source>
-            <target>Vernáculo</target>
+            <target>Местный язык</target>
          </segment>
       </unit>
       <unit id="artifactType.wholebacktranslation">
@@ -400,13 +406,13 @@
       <unit id="assignmentTable.delete">
          <segment>
             <source>Delete</source>
-            <target>Eliminar</target>
+            <target>Удалить</target>
          </segment>
       </unit>
       <unit id="assignmentTable.filter">
          <segment>
             <source>Filter</source>
-            <target>Filtrar</target>
+            <target>Фильтр</target>
          </segment>
       </unit>
       <unit id="assignmentTable.removeSec">
@@ -424,13 +430,13 @@
       <unit id="assignmentTable.role">
          <segment>
             <source>Role</source>
-            <target>Función</target>
+            <target>Роль</target>
          </segment>
       </unit>
       <unit id="assignmentTable.sectionstate">
          <segment>
             <source>State</source>
-            <target>Estado</target>
+            <target>Cтатус</target>
          </segment>
       </unit>
       <unit id="assignmentTable.selectRowsToAssign">
@@ -443,12 +449,6 @@
          <segment>
             <source>Please select row(s) to remove assignment.</source>
             <target>Пожалуйста, выберите строку(и) для удаления назначения.</target>
-         </segment>
-      </unit>
-      <unit id="assignmentTable.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строку фильтра</target>
          </segment>
       </unit>
       <unit id="assignmentTable.title">
@@ -532,7 +532,7 @@
       <unit id="assignSection.role">
          <segment>
             <source>Role</source>
-            <target>Rol</target>
+            <target>Роль</target>
          </segment>
       </unit>
       <unit id="assignSection.schemeName">
@@ -562,7 +562,7 @@
       <unit id="assignSection.users">
          <segment>
             <source>Members</source>
-            <target>Miembros</target>
+            <target>Участники</target>
          </segment>
       </unit>
       <unit id="audacityManager.audacityProject">
@@ -767,12 +767,6 @@
          <segment>
             <source>Create {0} burrito</source>
             <target>Создать {0} «буррито»</target>
-         </segment>
-      </unit>
-      <unit id="burrito.communityFeedback">
-         <segment>
-            <source>Community Feedback</source>
-            <target>Отзывы сообщества</target>
          </segment>
       </unit>
       <unit id="burrito.contents">
@@ -1030,7 +1024,7 @@
       <unit id="cards.cancel">
          <segment>
             <source>Cancel</source>
-            <target>Cancelar</target>
+            <target>Отменить</target>
          </segment>
       </unit>
       <unit id="cards.closeNoSave">
@@ -1108,7 +1102,7 @@
       <unit id="cards.deleteTeam">
          <segment>
             <source>Delete Team</source>
-            <target>Eliminar equipo</target>
+            <target>Удалить команду</target>
          </segment>
       </unit>
       <unit id="cards.description">
@@ -1145,12 +1139,6 @@
          <segment>
             <source>Experimental Features</source>
             <target>Экспериментальные функции</target>
-         </segment>
-      </unit>
-      <unit id="cards.explainPublishing">
-         <segment>
-            <source>Information to use when publishing audio created by this team.</source>
-            <target>Информация для использования при публикации аудиозаписей, созданных этой командой.</target>
          </segment>
       </unit>
       <unit id="cards.explainTeamDelete">
@@ -1211,12 +1199,6 @@
          <segment>
             <source>Audio Normalize</source>
             <target>Нормализация звука</target>
-         </segment>
-      </unit>
-      <unit id="cards.notesLabel">
-         <segment>
-            <source>Introductory Notes Title</source>
-            <target>Вводные заметки Название</target>
          </segment>
       </unit>
       <unit id="cards.OBS">
@@ -1300,19 +1282,13 @@
       <unit id="cards.projectCreated">
          <segment>
             <source>Audio Project Created</source>
-            <target>Proyecto de audio creado</target>
+            <target>Аудио проект создан</target>
          </segment>
       </unit>
       <unit id="cards.projectRequired">
          <segment>
             <source>A project must be added before recordings are allowed</source>
             <target>Проект должен быть добавлен до того, как будет разрешена запись</target>
-         </segment>
-      </unit>
-      <unit id="cards.recognizePrompt">
-         <segment>
-            <source>Choose the language to auto transcribe. If the language is not available, choose a closely related language with a similar writing system.</source>
-            <target>Выберите язык для автоматической транскрипции. Если язык недоступен, выберите близкий язык с похожей системой письма.</target>
          </segment>
       </unit>
       <unit id="cards.recognizeSpeech">
@@ -1342,7 +1318,7 @@
       <unit id="cards.save">
          <segment>
             <source>Save</source>
-            <target>Guardar</target>
+            <target>Сохранить</target>
          </segment>
       </unit>
       <unit id="cards.sectionStatus">
@@ -1354,7 +1330,7 @@
       <unit id="cards.settings">
          <segment>
             <source>Settings</source>
-            <target>Ajustes</target>
+            <target>Настройки</target>
          </segment>
       </unit>
       <unit id="cards.sortProjects">
@@ -1369,18 +1345,6 @@
             <target>Переключить команды</target>
          </segment>
       </unit>
-      <unit id="cards.notesHelper">
-         <segment>
-            <source>Shared explanations, rationales, footnotes, etc.</source>
-            <target>Общие пояснения, обоснования, сноски и т.д.</target>
-         </segment>
-      </unit>
-      <unit id="cards.notesProject">
-         <segment>
-            <source>Project with Notes</source>
-            <target>Проект с заметками</target>
-         </segment>
-      </unit>
       <unit id="cards.projectPermissions">
          <segment>
             <source>Permissions may be set for projects of this team.</source>
@@ -1390,7 +1354,7 @@
       <unit id="cards.sync">
          <segment>
             <source>Sync ({0})</source>
-            <target>Sincronizar ({0})</target>
+            <target>Синхронизация ({0})</target>
          </segment>
       </unit>
       <unit id="cards.teams">
@@ -1402,19 +1366,19 @@
       <unit id="cards.teamName">
          <segment>
             <source>Team Name</source>
-            <target>Nombre del equipo</target>
+            <target>Название команды</target>
          </segment>
       </unit>
       <unit id="cards.teamSettings">
          <segment>
             <source>Team Settings</source>
-            <target>Configuración del equipo</target>
+            <target>Настройки команды</target>
          </segment>
       </unit>
       <unit id="cards.transcriber">
          <segment>
             <source>Transcribing</source>
-            <target>Transcribiendo</target>
+            <target>Расшифровка</target>
          </segment>
       </unit>
       <unit id="cards.unassigned">
@@ -1493,6 +1457,12 @@
          <segment>
             <source>Edit</source>
             <target>Редактировать</target>
+         </segment>
+      </unit>
+      <unit id="category.editRemoved">
+         <segment>
+            <source>The category you were editing was removed.</source>
+            <target>Категория, которую вы редактировали, была удалена.</target>
          </segment>
       </unit>
       <unit id="category.ignoreInvalid">
@@ -1673,18 +1643,6 @@
          <segment>
             <source>New Voice change samples must be created before a recording is waiting to be saved.</source>
             <target>Новые образцы изменения голоса должны быть созданы до того, как запись будет ожидать сохранения.</target>
-         </segment>
-      </unit>
-      <unit id="community.playTest">
-         <segment>
-            <source>Play Test</source>
-            <target>Тест аудио</target>
-         </segment>
-      </unit>
-      <unit id="community.provideRights">
-         <segment>
-            <source>Provide Rights</source>
-            <target>Предоставить права</target>
          </segment>
       </unit>
       <unit id="community.record">
@@ -2128,7 +2086,7 @@
       <unit id="deleteExpansion.advanced">
          <segment>
             <source>Advanced</source>
-            <target>Avanzado</target>
+            <target>Расширенные</target>
          </segment>
       </unit>
       <unit id="deleteExpansion.dangerZone">
@@ -2183,12 +2141,6 @@
          <segment>
             <source>Assign to a Group</source>
             <target>Назначить группе</target>
-         </segment>
-      </unit>
-      <unit id="discussionCard.assignUser">
-         <segment>
-            <source>Assign to a Team Member</source>
-            <target>Назначить члену группы</target>
          </segment>
       </unit>
       <unit id="discussionCard.category">
@@ -2464,7 +2416,7 @@
       <unit id="electronImport.members">
          <segment>
             <source>Members</source>
-            <target>Miembros</target>
+            <target>Участники</target>
          </segment>
       </unit>
       <unit id="electronImport.neverExported">
@@ -2737,12 +2689,6 @@
             <target>{0} Ресурс</target>
          </segment>
       </unit>
-      <unit id="findResource.Lang">
-         <segment>
-            <source>{0} Language*</source>
-            <target>{0} Язык*</target>
-         </segment>
-      </unit>
       <unit id="findResource.bibleProjectLang">
          <segment>
             <source>Book Overviews</source>
@@ -2795,12 +2741,6 @@
          <segment>
             <source>Create Items</source>
             <target>Создать предметы</target>
-         </segment>
-      </unit>
-      <unit id="findResource.createResource">
-         <segment>
-            <source>Create AI Resource</source>
-            <target>Создать ресурс ИИ</target>
          </segment>
       </unit>
       <unit id="findResource.findBrandedContent">
@@ -3199,12 +3139,6 @@
             <target>Минимум</target>
          </segment>
       </unit>
-      <unit id="grid.noColumns">
-         <segment>
-            <source>No columns visible</source>
-            <target>Столбцы не видны</target>
-         </segment>
-      </unit>
       <unit id="grid.noData">
          <segment>
             <source>No data</source>
@@ -3250,7 +3184,7 @@
       <unit id="groupTabs.groups">
          <segment>
             <source>Groups</source>
-            <target>Grupos</target>
+            <target>Группы</target>
          </segment>
       </unit>
       <unit id="groupTabs.invitations">
@@ -3406,7 +3340,7 @@
       <unit id="import.family">
          <segment>
             <source>Family Name</source>
-            <target>Apellido(s)</target>
+            <target>Фамилия</target>
          </segment>
       </unit>
       <unit id="import.filter">
@@ -3436,7 +3370,7 @@
       <unit id="import.importComplete">
          <segment>
             <source>Import Complete</source>
-            <target>Importación completa</target>
+            <target>Импорт завершен</target>
          </segment>
       </unit>
       <unit id="import.imported">
@@ -3550,7 +3484,7 @@
       <unit id="import.phone">
          <segment>
             <source>Phone</source>
-            <target>Teléfono</target>
+            <target>Телефон</target>
          </segment>
       </unit>
       <unit id="import.plan">
@@ -3583,12 +3517,6 @@
             <target>Выберите «Команда»</target>
          </segment>
       </unit>
-      <unit id="import.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строки фильтра</target>
-         </segment>
-      </unit>
       <unit id="import.state">
          <segment>
             <source>State</source>
@@ -3604,7 +3532,7 @@
       <unit id="import.transcription">
          <segment>
             <source>Transcription</source>
-            <target>Transcripción</target>
+            <target>Транскрипция</target>
          </segment>
       </unit>
       <unit id="import.unassigned">
@@ -3628,7 +3556,7 @@
       <unit id="import.username">
          <segment>
             <source>Name</source>
-            <target>Nombre</target>
+            <target>Имя</target>
          </segment>
       </unit>
       <unit id="scriptureBurritoImport.title">
@@ -3641,12 +3569,6 @@
          <segment>
             <source>Failed to extract zip file</source>
             <target>Не удалось распаковать ZIP-файл</target>
-         </segment>
-      </unit>
-      <unit id="scriptureBurritoImport.metadataNotFoundError">
-         <segment>
-            <source>metadata.json not found in the selected file/directory</source>
-            <target>Файл metadata.json не найден в выбранном файле/каталоге</target>
          </segment>
       </unit>
       <unit id="scriptureBurritoImport.invalidWrapperMetadataError">
@@ -3709,12 +3631,6 @@
             <target>Отрывки, готовые для синхронизации: </target>
          </segment>
       </unit>
-      <unit id="integration.emptyBook">
-         <segment>
-            <source>Passage {0}.{1}: Book is missing.</source>
-            <target>Отрывок {0}.{1}: Книга отсутствует.</target>
-         </segment>
-      </unit>
       <unit id="integration.exportSectionNumbers">
          <segment>
             <source>Sync {0} Numbers</source>
@@ -3730,7 +3646,7 @@
       <unit id="integration.no">
          <segment>
             <source>No</source>
-            <target>No</target>
+            <target>Нет</target>
          </segment>
       </unit>
       <unit id="integration.noProject">
@@ -3749,12 +3665,6 @@
          <segment>
             <source>Offline</source>
             <target>Офлайн</target>
-         </segment>
-      </unit>
-      <unit id="integration.onestory">
-         <segment>
-            <source>One Story</source>
-            <target>Одна история</target>
          </segment>
       </unit>
       <unit id="integration.paratextLocal">
@@ -3811,12 +3721,6 @@
             <target>Выберите проект {0}</target>
          </segment>
       </unit>
-      <unit id="integration.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строки фильтра</target>
-         </segment>
-      </unit>
       <unit id="integration.sync">
          <segment>
             <source>Sync</source>
@@ -3856,7 +3760,7 @@
       <unit id="integration.yes">
          <segment>
             <source>Yes</source>
-            <target>Sí</target>
+            <target>Да</target>
          </segment>
       </unit>
       <unit id="invitationTable.accepted">
@@ -3868,7 +3772,7 @@
       <unit id="invitationTable.action">
          <segment>
             <source>Action</source>
-            <target>Acción</target>
+            <target>Действие</target>
          </segment>
       </unit>
       <unit id="invitationTable.delete">
@@ -3880,7 +3784,7 @@
       <unit id="invitationTable.email">
          <segment>
             <source>Email</source>
-            <target>Correo electrónico</target>
+            <target>Электронная почта</target>
          </segment>
       </unit>
       <unit id="invitationTable.filter">
@@ -3892,7 +3796,7 @@
       <unit id="invitationTable.invite">
          <segment>
             <source>Invite</source>
-            <target>Invitar</target>
+            <target>Приглашение</target>
          </segment>
       </unit>
       <unit id="invitationTable.noData">
@@ -3911,12 +3815,6 @@
          <segment>
             <source>Please select row(s) to {0}.</source>
             <target>Пожалуйста, выберите строку(и) к {0}.</target>
-         </segment>
-      </unit>
-      <unit id="invitationTable.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строки фильтра</target>
          </segment>
       </unit>
       <unit id="invite.addInvite">
@@ -3958,7 +3856,7 @@
       <unit id="invite.email">
          <segment>
             <source>Email</source>
-            <target>Correo electrónico</target>
+            <target>Электронная почта</target>
          </segment>
       </unit>
       <unit id="invite.emailsubject">
@@ -4042,13 +3940,7 @@
       <unit id="invite.save">
          <segment>
             <source>Save</source>
-            <target>Guardar</target>
-         </segment>
-      </unit>
-      <unit id="invite.selectTeamRole">
-         <segment>
-            <source>Select team role.</source>
-            <target>Выберите роль в команде</target>
+            <target>Сохранить</target>
          </segment>
       </unit>
       <unit id="invite.send">
@@ -4306,7 +4198,7 @@
       <unit id="languagePicker.details">
          <segment>
             <source>Details</source>
-            <target>Detalles</target>
+            <target>Подробности</target>
          </segment>
       </unit>
       <unit id="languagePicker.findALanguage">
@@ -4318,19 +4210,19 @@
       <unit id="languagePicker.font">
          <segment>
             <source>Font</source>
-            <target>Fuente</target>
+            <target>Шрифт</target>
          </segment>
       </unit>
       <unit id="languagePicker.inScript">
          <segment>
             <source> in the $1 script</source>
-            <target> en el script $1</target>
+            <target> в скрипте $1</target>
          </segment>
       </unit>
       <unit id="languagePicker.language">
          <segment>
             <source>Language</source>
-            <target>Idioma</target>
+            <target>Язык</target>
          </segment>
       </unit>
       <unit id="languagePicker.languageOf">
@@ -4378,7 +4270,7 @@
       <unit id="main.about">
          <segment>
             <source>About</source>
-            <target>Acerca de</target>
+            <target>О программе</target>
          </segment>
       </unit>
       <unit id="main.addSectionOrPassage">
@@ -4534,7 +4426,7 @@
       <unit id="main.helpCenter">
          <segment>
             <source>Help Center</source>
-            <target>Centro de ayuda</target>
+            <target>Справочный центр</target>
          </segment>
       </unit>
       <unit id="main.helpSpreadsheet">
@@ -4579,12 +4471,6 @@
             <target>Не удалось завершить загрузку в автономном режиме. Проверьте подключение к Интернету и попробуйте ещё раз.</target>
          </segment>
       </unit>
-      <unit id="main.loadingTranscriber">
-         <segment>
-            <source>Loading {0}</source>
-            <target>Загрузка {0}</target>
-         </segment>
-      </unit>
       <unit id="main.logout">
          <segment>
             <source>Log Out</source>
@@ -4612,7 +4498,13 @@
       <unit id="main.myAccount">
          <segment>
             <source>My Account</source>
-            <target>Mi cuenta</target>
+            <target>Мой аккаунт</target>
+         </segment>
+      </unit>
+      <unit id="main.networkRetrySoon">
+         <segment>
+            <source>Network problem - will try again soon.</source>
+            <target>Проблема с сетью — скоро будет повторена попытка.</target>
          </segment>
       </unit>
       <unit id="main.NoLoadOffline">
@@ -4777,6 +4669,12 @@
             <target>Доступно обновление: версия {0} была выпущена {1}</target>
          </segment>
       </unit>
+      <unit id="main.updateFailedNetwork">
+         <segment>
+            <source>Could not reach the server to save your last change. It was undone - please check your connection and try again.</source>
+            <target>Не удалось подключиться к серверу для сохранения последнего изменения. Оно было отменено — проверьте подключение и попробуйте ещё раз.</target>
+         </segment>
+      </unit>
       <unit id="main.upload">
          <segment>
             <source>Upload</source>
@@ -4858,7 +4756,7 @@
       <unit id="mediaTab.action">
          <segment>
             <source>Action</source>
-            <target>Acción</target>
+            <target>Действие</target>
          </segment>
       </unit>
       <unit id="mediaTab.actions">
@@ -4891,16 +4789,10 @@
             <target>Автоматическая Подборка</target>
          </segment>
       </unit>
-      <unit id="mediaTab.availablePassages">
-         <segment>
-            <source>Available Passages</source>
-            <target>Доступные отрывки</target>
-         </segment>
-      </unit>
       <unit id="mediaTab.book">
          <segment>
             <source>Book</source>
-            <target>Libro</target>
+            <target>Книга</target>
          </segment>
       </unit>
       <unit id="mediaTab.cancelling">
@@ -4936,7 +4828,7 @@
       <unit id="mediaTab.date">
          <segment>
             <source>Date</source>
-            <target>Fecha</target>
+            <target>Дата</target>
          </segment>
       </unit>
       <unit id="mediaTab.delete">
@@ -5011,12 +4903,6 @@
             <target>Подборка завершена: {0} новых связей</target>
          </segment>
       </unit>
-      <unit id="mediaTab.mediaAssociations">
-         <segment>
-            <source>Audio Associations</source>
-            <target>Связи аудио</target>
-         </segment>
-      </unit>
       <unit id="mediaTab.noMatch">
          <segment>
             <source>Match complete: no new associations</source>
@@ -5033,12 +4919,6 @@
          <segment>
             <source>{0} has no passage attached</source>
             <target>{0} не содержит прикрепленного отрывка </target>
-         </segment>
-      </unit>
-      <unit id="mediaTab.passageAttached">
-         <segment>
-            <source>Passage already attached</source>
-            <target>Отрывок уже прикреплен</target>
          </segment>
       </unit>
       <unit id="mediaTab.pendingUploadBatchRetry">
@@ -5167,12 +5047,6 @@
             <target>Пожалуйста, выберите файл для загрузки.</target>
          </segment>
       </unit>
-      <unit id="mediaTab.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строки фильтра</target>
-         </segment>
-      </unit>
       <unit id="mediaTab.size">
          <segment>
             <source>Size (MB)</source>
@@ -5213,12 +5087,6 @@
          <segment>
             <source>Version History</source>
             <target>История версий</target>
-         </segment>
-      </unit>
-      <unit id="mediaTab.viewAssociations">
-         <segment>
-            <source>View Associations</source>
-            <target>Просмотр ассоциаций</target>
          </segment>
       </unit>
       <unit id="mediaTitle.cancel">
@@ -5401,6 +5269,12 @@
             <target>Введите текст</target>
          </segment>
       </unit>
+      <unit id="mediaUpload.pdfResourceTitle">
+         <segment>
+            <source>Upload PDF Resource</source>
+            <target>Загрузить ресурс в формате PDF</target>
+         </segment>
+      </unit>
       <unit id="mediaUpload.preview">
          <segment>
             <source>Preview</source>
@@ -5409,8 +5283,8 @@
       </unit>
       <unit id="mediaUpload.projectResourceTask">
          <segment>
-            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
-            <target>Загрузите аудио файлы в формате .mp3, .m4a, .wav или .ogg или визуальное содержимое в формате .pdf.</target>
+            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
+            <target>Загрузите аудиофайлы в формате .mp3, .m4a, .wav или .ogg.</target>
          </segment>
       </unit>
       <unit id="mediaUpload.PTFtask">
@@ -5427,8 +5301,8 @@
       </unit>
       <unit id="mediaUpload.resourceTask">
          <segment>
-            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format or visual content in .pdf format.</source>
-            <target>Загрузите аудио файлы в формате .mp3, .m4a, .wav или .ogg или визуальное содержимое в формате .pdf.</target>
+            <source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
+            <target>Загрузите аудиофайлы в формате .mp3, .m4a, .wav или .ogg.</target>
          </segment>
       </unit>
       <unit id="mediaUpload.resourceTitle">
@@ -5461,16 +5335,10 @@
             <target>Загрузить</target>
          </segment>
       </unit>
-      <unit id="mobile.addSegment">
-         <segment>
-            <source>Add segment boundary</source>
-            <target>Добавить границу сегмента</target>
-         </segment>
-      </unit>
       <unit id="mobile.desktopOnlyStep">
          <segment>
             <source>This step is only available on computers right now. We are working to bring it to mobile phones soon.</source>
-            <target/>
+            <target>В настоящее время эта функция доступна только на компьютерах. Мы работаем над тем, чтобы в ближайшее время сделать её доступной и на мобильных устройствах.</target>
          </segment>
       </unit>
       <unit id="mobile.next">
@@ -5491,52 +5359,16 @@
             <target>Удалить границу следующего сегмента</target>
          </segment>
       </unit>
-      <unit id="mobile.resetBT">
-         <segment>
-            <source>Reset back translation</source>
-            <target>Сбросить обратный перевод</target>
-         </segment>
-      </unit>
-      <unit id="mobile.restoreBoundaries">
-         <segment>
-            <source>Restore original segment boundaries</source>
-            <target>Восстановить исходные границы сегментов</target>
-         </segment>
-      </unit>
       <unit id="mobile.segment">
          <segment>
             <source>Segment: {0}</source>
             <target>Сегмент: {0}</target>
          </segment>
       </unit>
-      <unit id="newProject.audioProduct">
-         <segment>
-            <source>Audio Product</source>
-            <target>Аудио продукт</target>
-         </segment>
-      </unit>
       <unit id="newProject.blank">
          <segment>
             <source>Audio Project</source>
             <target>Аудиопроект</target>
-         </segment>
-      </unit>
-      <unit id="newProject.blankFactor1">
-         <segment>
-            <source>you want to set up a project with multiple passages</source>
-            <target>вы хотите создать проект с несколькими переходами</target>
-         </segment>
-      </unit>
-      <unit id="newProject.blankFactor2">
-         <segment>
-            <source>you plan to record each passage as part of the workflow</source>
-            <target>вы планируете записывать каждый отрывок как часть рабочего процесса</target>
-         </segment>
-      </unit>
-      <unit id="newProject.blankTip">
-         <segment>
-            <source>Set up an empty project.</source>
-            <target>Создайте пустой проект.</target>
          </segment>
       </unit>
       <unit id="newProject.configure">
@@ -5551,36 +5383,6 @@
             <target>Быстрый старт</target>
          </segment>
       </unit>
-      <unit id="newProject.generalFactor1">
-         <segment>
-            <source>you have one or a few prerecorded audio files for passages</source>
-            <target>у вас есть один или несколько предварительно записанных аудиофайлов для отрывков</target>
-         </segment>
-      </unit>
-      <unit id="newProject.generalFactor2">
-         <segment>
-            <source>you just want to try out the program before you set up an actual project</source>
-            <target>вы просто хотите попробовать программу, прежде чем приступать к работе над проектом.</target>
-         </segment>
-      </unit>
-      <unit id="newProject.generalTip">
-         <segment>
-            <source>Create a project with one or a few audio files.</source>
-            <target>Создайте проект с одним или несколькими аудиофайлами.</target>
-         </segment>
-      </unit>
-      <unit id="newProject.keyFactors">
-         <segment>
-            <source>Best option if...</source>
-            <target>Лучший вариант, если...</target>
-         </segment>
-      </unit>
-      <unit id="newProject.likeTemplate">
-         <segment>
-            <source>Here are optional ways to get started. Later, you can use the Edit Audio Project Settings dialog box to change any of your initial settings.</source>
-            <target>Здесь представлены дополнительные способы начать работу. Позже вы можете использовать диалоговое окно Edit Audio Project Settings, чтобы изменить любые первоначальные настройки.</target>
-         </segment>
-      </unit>
       <unit id="newProject.newProject">
          <segment>
             <source>Create New Audio Project</source>
@@ -5591,18 +5393,6 @@
          <segment>
             <source>Start Recording</source>
             <target>Начать запись</target>
-         </segment>
-      </unit>
-      <unit id="newProject.textProduct">
-         <segment>
-            <source>Text Product</source>
-            <target>Текстовый продукт</target>
-         </segment>
-      </unit>
-      <unit id="newProject.uploadAudio">
-         <segment>
-            <source>Bulk Upload</source>
-            <target>Массовая загрузка</target>
          </segment>
       </unit>
       <unit id="passageChooser.passages">
@@ -5653,6 +5443,12 @@
             <target>Связанный ресурс...</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.addPdf">
+         <segment>
+            <source>PDF...</source>
+            <target>PDF...</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.addText">
          <segment>
             <source>Text...</source>
@@ -5681,6 +5477,12 @@
          <segment>
             <source>Audio Scripture</source>
             <target>Аудио Писание</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.back">
+         <segment>
+            <source>Back</source>
+            <target>Назад</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.bookLevel">
@@ -5713,12 +5515,6 @@
             <target>{0} для главы</target>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.chooseLevel">
-         <segment>
-            <source>Resource Reference Filter Level</source>
-            <target>Уровень фильтрации ссылок на ресурсы</target>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.clipboard">
          <segment>
             <source>clipboard</source>
@@ -5746,7 +5542,13 @@
       <unit id="passageDetailArtifacts.confirmCloseTitle">
          <segment>
             <source>Confirm Close</source>
-            <target/>
+            <target>Подтвердить закрытие</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.confirmDeleteTitle">
+         <segment>
+            <source>Confirm Delete</source>
+            <target>Подтвердить удаление</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.createResources">
@@ -5755,10 +5557,22 @@
             <target>Создать ресурс</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.createXResources">
+         <segment>
+            <source>Create {0} resources</source>
+            <target>Создать {0} ресурсов</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.currentResource">
          <segment>
             <source>Current {0}</source>
             <target>Текущее {0}</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.deleteAll">
+         <segment>
+            <source>Delete All {0}</source>
+            <target>Удалить все {0}</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.deleteConfirm">
@@ -5767,10 +5581,28 @@
             <target>Удалить ресурс?</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.deleteGeneralResource">
+         <segment>
+            <source>Do you want to delete the entire general resource or just this one?</source>
+            <target>Вы хотите удалить весь общий ресурс или только этот?</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.deleteJustThisOne">
+         <segment>
+            <source>Delete Just This One</source>
+            <target>Удалить только этот</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.description">
          <segment>
             <source>Description</source>
             <target>Описание</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target>Отменить выбор всех</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.discardAndClose">
@@ -5785,10 +5617,22 @@
             <target>Редактировать аудиоресурс</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.editGeneralResource">
+         <segment>
+            <source>Edit General Resource</source>
+            <target>Редактировать общий ресурс</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.editResource">
          <segment>
             <source>Edit Resource</source>
             <target>Изменить ресурс</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.editingFile">
+         <segment>
+            <source>You are editing {0}</source>
+            <target>Вы редактируете {0}</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.find">
@@ -5809,10 +5653,28 @@
             <target>Создание (с использованием искусственного интеллекта — ИИ) ресурсов для усвоения Священного Писания.</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.general">
+         <segment>
+            <source>General</source>
+            <target>Общие сведения</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.generalResources">
          <segment>
             <source>General Resources</source>
             <target>Общие ресурсы</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.generalResourceSplit">
+         <segment>
+            <source>{0} is split into {1} resources</source>
+            <target>{0} разбит на {1} ресурса</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.generalResourcesIndividually">
+         <segment>
+            <source>General resources should be uploaded individually</source>
+            <target>Общие ресурсы следует загружать по отдельности</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.keepOpen">
@@ -5837,12 +5699,6 @@
          <segment>
             <source>Link</source>
             <target>Ссылка</target>
-         </segment>
-      </unit>
-      <unit id="passageDetailArtifacts.linkResource">
-         <segment>
-            <source>Link (URI)</source>
-            <target>Ссылка (URI)</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.movementResource">
@@ -5899,12 +5755,6 @@
             <target>Ничего не изменилось! Возможно, ссылки не совпадают?</target>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.projectResourceSheet">
-         <segment>
-            <source>Project Resource Sheet</source>
-            <target>Таблица ресурсов проекта</target>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.projectResourceConfigure">
          <segment>
             <source>Chunk into Resources</source>
@@ -5941,10 +5791,10 @@
             <target>Ресурсы</target>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.resourcesDeleted">
+      <unit id="passageDetailArtifacts.selectAll">
          <segment>
-            <source> ({0} resources will be deleted.)</source>
-            <target> (Будет удалено{0} ресурсов.)</target>
+            <source>Select All</source>
+            <target>Выбрать все</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.selectBook">
@@ -5961,8 +5811,14 @@
       </unit>
       <unit id="passageDetailArtifacts.selectPassagesSub">
          <segment>
-            <source>Select this resource's passages.</source>
-            <target>Выберите фрагменты из этого ресурса.</target>
+            <source>Select the {0} and passages contained by this resource.</source>
+            <target>Выберите {0} и фрагменты, содержащиеся в этом ресурсе.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.selectSection">
+         <segment>
+            <source>Select {0}</source>
+            <target>Выбрать {0}</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.sharedResource">
@@ -5991,8 +5847,8 @@
       </unit>
       <unit id="passageDetailArtifacts.suffixTip">
          <segment>
-            <source>A Suffix is added to the end of the Reference (if there is no Description to override it).</source>
-            <target>В конце ссылки добавляется суффикс (если нет описания, которое можно было бы отменить).</target>
+            <source>A Suffix is added to the end of the Reference (if there is no Title to override it).</source>
+            <target>К концу ссылки добавляется суффикс (если нет названия, которое его переопределяет).</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.termsOfUse">
@@ -6049,12 +5905,6 @@
             <target>Ссылка на общий ресурс.</target>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.tip2b">
-         <segment>
-            <source>Steps through connecting chunks of a general resource with {0} and passages.</source>
-            <target>Шаги через подключение фрагментов общего ресурса с {0} и отрывками.</target>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.unusedSegment">
          <segment>
             <source>Unused segment: only segments with References will create resources</source>
@@ -6065,6 +5915,12 @@
          <segment>
             <source>Uploads</source>
             <target>Загрузка</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.uploadAsResources">
+         <segment>
+            <source>Upload as {0} resources</source>
+            <target>Загрузить как {0} ресурсов</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.uploadProject">
@@ -6115,18 +5971,6 @@
             <target>Шаг завершен</target>
          </segment>
       </unit>
-      <unit id="passageDetailToolbar.add">
-         <segment>
-            <source>Passage Detail Toolbar</source>
-            <target>Работа с отрывком</target>
-         </segment>
-      </unit>
-      <unit id="passageMedia.close">
-         <segment>
-            <source>Close</source>
-            <target>Закрыть</target>
-         </segment>
-      </unit>
       <unit id="passageRecord.cancel">
          <segment>
             <source>Cancel</source>
@@ -6161,12 +6005,6 @@
          <segment>
             <source>Name</source>
             <target>Имя</target>
-         </segment>
-      </unit>
-      <unit id="passageRecord.fileType">
-         <segment>
-            <source>File Type</source>
-            <target>Тип файла</target>
          </segment>
       </unit>
       <unit id="passageRecord.loading">
@@ -6325,12 +6163,6 @@
             <target>Новая группа пользователей</target>
          </segment>
       </unit>
-      <unit id="peer.peerGroup">
-         <segment>
-            <source>Peer Group</source>
-            <target>Группа пользователей</target>
-         </segment>
-      </unit>
       <unit id="peer.remove">
          <segment>
             <source>Remove</source>
@@ -6361,34 +6193,16 @@
             <target>Играть с начала</target>
          </segment>
       </unit>
-      <unit id="peerCheck.toEnd">
-         <segment>
-            <source>Jump to end</source>
-            <target>Перейти к концу</target>
-         </segment>
-      </unit>
       <unit id="permission.admin">
          <segment>
             <source>Admin</source>
             <target>Администратор</target>
          </segment>
       </unit>
-      <unit id="permission.adminTip">
-         <segment>
-            <source>Do we need this group? Or just use team admin? People in this group will be able to do any step, even if it is assigned to a group they are not in.</source>
-            <target>Нужна ли нам эта группа? Или просто использовать командного администратора? Люди в этой группе смогут выполнить любой шаг, даже если он назначен группе, в которой они не состоят.</target>
-         </segment>
-      </unit>
       <unit id="permission.consultant">
          <segment>
             <source>Consultant</source>
             <target>Консультант</target>
-         </segment>
-      </unit>
-      <unit id="permission.consultantTip">
-         <segment>
-            <source>Not sure we need this permission either, because it is unclear what special things consultants do in this software. Independent Consultant's comments will be visible to all team members.</source>
-            <target>Не уверен, что нам нужно это разрешение, потому что неясно, что особенного делают консультанты в этом программном обеспечении. Комментарии независимого консультанта будут видны всем членам команды.</target>
          </segment>
       </unit>
       <unit id="permission.consultantInTraining">
@@ -6421,114 +6235,6 @@
             <target>Общая группа сверстников без особых прав. Используется для распределения обсуждений по группам.</target>
          </segment>
       </unit>
-      <unit id="picker.font">
-         <segment>
-            <source>Font</source>
-            <target>Шрифт</target>
-         </segment>
-      </unit>
-      <unit id="picker.script">
-         <segment>
-            <source>Script</source>
-            <target>Сценарий</target>
-         </segment>
-      </unit>
-      <unit id="picker.language">
-         <segment>
-            <source>Language</source>
-            <target>Язык</target>
-         </segment>
-      </unit>
-      <unit id="picker.selectLanguage">
-         <segment>
-            <source>Choose Language Details</source>
-            <target>Выбор сведений о языке</target>
-         </segment>
-      </unit>
-      <unit id="picker.findALanguage">
-         <segment>
-            <source>Find a language by name, code, or country</source>
-            <target>Найдите язык по названию, коду или стране.</target>
-         </segment>
-      </unit>
-      <unit id="picker.codeExplained">
-         <segment>
-            <source>Code Explained</source>
-            <target>Объяснение кода</target>
-         </segment>
-      </unit>
-      <unit id="picker.subtags">
-         <segment>
-            <source>Subtags</source>
-            <target>Подтеги</target>
-         </segment>
-      </unit>
-      <unit id="picker.details">
-         <segment>
-            <source>Details</source>
-            <target>Подробности</target>
-         </segment>
-      </unit>
-      <unit id="picker.languageOf">
-         <segment>
-            <source>A Language of $1$2.</source>
-            <target>Язык $1$2.</target>
-         </segment>
-      </unit>
-      <unit id="picker.inScript">
-         <segment>
-            <source> in the $1 script</source>
-            <target> в скрипте $1</target>
-         </segment>
-      </unit>
-      <unit id="picker.select">
-         <segment>
-            <source>Save</source>
-            <target>Сохранить</target>
-         </segment>
-      </unit>
-      <unit id="picker.cancel">
-         <segment>
-            <source>Cancel</source>
-            <target>Отменить</target>
-         </segment>
-      </unit>
-      <unit id="picker.phonetic">
-         <segment>
-            <source>Phonetic</source>
-            <target>Фонетический</target>
-         </segment>
-      </unit>
-      <unit id="picker.changeName">
-         <segment>
-            <source>Change Name</source>
-            <target>Изменение Имя</target>
-         </segment>
-      </unit>
-      <unit id="picker.nameInstruction">
-         <segment>
-            <source>If you would like to change the language name enter the new name here.</source>
-            <target>Если вы хотите изменить название языка, введите новое название здесь.</target>
-         </segment>
-      </unit>
-      <unit id="picker.newName">
-         <segment>
-            <source>New Language Name</source>
-            <target>Новое название языка</target>
-         </segment>
-      </unit>
-      <unit id="picker.change">
-         <segment>
-            <source>Change</source>
-            <target>Изменить</target>
-         </segment>
-      </unit>
-      <unit id="picker.noFonts">
-         <segment>
-            <source>No recommended fonts</source>
-            <target>Нет рекомендуемых шрифтов</target>
-         </segment>
-      </unit>
       <unit id="planActions.addNote">
          <segment>
             <source>Add Note</source>
@@ -6553,22 +6259,10 @@
             <target>Детали заметки</target>
          </segment>
       </unit>
-      <unit id="planActions.passageDetail">
-         <segment>
-            <source>Passage Detail</source>
-            <target>Детали отрывка</target>
-         </segment>
-      </unit>
       <unit id="planActions.playpause">
          <segment>
             <source>Play/Pause</source>
             <target>Воспроизведение/Пауза</target>
-         </segment>
-      </unit>
-      <unit id="planActions.recordAudio">
-         <segment>
-            <source>Record/Edit Audio</source>
-            <target>Запись/Редактирование аудио</target>
          </segment>
       </unit>
       <unit id="planActions.resourceEdit">
@@ -6598,7 +6292,7 @@
       <unit id="planSheet.action">
          <segment>
             <source>Action</source>
-            <target>Acción</target>
+            <target>Действие</target>
          </segment>
       </unit>
       <unit id="planSheet.addNote">
@@ -6955,12 +6649,6 @@
             <target>Задачи</target>
          </segment>
       </unit>
-      <unit id="planTabs.associations">
-         <segment>
-            <source>Associations</source>
-            <target>Ассоциации</target>
-         </segment>
-      </unit>
       <unit id="planTabs.media">
          <segment>
             <source>Audio</source>
@@ -6994,7 +6682,7 @@
       <unit id="planTabs.transcriptions">
          <segment>
             <source>Transcriptions</source>
-            <target>Transcripciones</target>
+            <target>Транскрипции</target>
          </segment>
       </unit>
       <unit id="prompt.adminInstructions">
@@ -7075,6 +6763,12 @@
             <target>Удаление пользователя заблокирует вам доступ к программе и удалит ссылки на вашу работу. Вы уверены, что хотите это сделать?</target>
          </segment>
       </unit>
+      <unit id="profile.deleteFailed">
+         <segment>
+            <source>Could not delete your account. Try again.</source>
+            <target>Не удалось удалить вашу учетную запись. Попробуйте ещё раз.</target>
+         </segment>
+      </unit>
       <unit id="profile.deleteUser">
          <segment>
             <source>Delete User</source>
@@ -7114,7 +6808,7 @@
       <unit id="profile.email">
          <segment>
             <source>Email</source>
-            <target>Correo electrónico</target>
+            <target>Электронная почта</target>
          </segment>
       </unit>
       <unit id="profile.family">
@@ -7252,25 +6946,13 @@
       <unit id="profile.timezone">
          <segment>
             <source>Time zone</source>
-            <target>Zona horaria</target>
+            <target>Часовой пояс</target>
          </segment>
       </unit>
       <unit id="profile.userExists">
          <segment>
             <source>This offline user exists.</source>
             <target>Этот пользователь уже не в сети.</target>
-         </segment>
-      </unit>
-      <unit id="profile.userProfile">
-         <segment>
-            <source>User profile</source>
-            <target>Профиль пользователя</target>
-         </segment>
-      </unit>
-      <unit id="projButtons.categoryTitle">
-         <segment>
-            <source>Edit Team Categories</source>
-            <target>Редактировать категории команды</target>
          </segment>
       </unit>
       <unit id="projButtons.export">
@@ -7493,12 +7175,6 @@
          <segment>
             <source>Select Book</source>
             <target>Выбрать книгу</target>
-         </segment>
-      </unit>
-      <unit id="resource.byWord">
-         <segment>
-            <source>By Word</source>
-            <target>По слову</target>
          </segment>
       </unit>
       <unit id="resource.changes">
@@ -7744,7 +7420,7 @@
       <unit id="scriptureTable.book">
          <segment>
             <source>Book</source>
-            <target>Libro</target>
+            <target>Книга</target>
          </segment>
       </unit>
       <unit id="scriptureTable.chapter">
@@ -7762,7 +7438,7 @@
       <unit id="scriptureTable.description">
          <segment>
             <source>Description</source>
-            <target>Descripción</target>
+            <target>Описание</target>
          </segment>
       </unit>
       <unit id="scriptureTable.extras">
@@ -7786,7 +7462,7 @@
       <unit id="scriptureTable.passage">
          <segment>
             <source>Passage</source>
-            <target>Pasaje</target>
+            <target>Отрывок</target>
          </segment>
       </unit>
       <unit id="scriptureTable.pasteInvalidBooks">
@@ -7858,7 +7534,7 @@
       <unit id="scriptureTable.title">
          <segment>
             <source>Title</source>
-            <target>Título</target>
+            <target>Заголовок</target>
          </segment>
       </unit>
       <unit id="scriptureTableFilter.apply">
@@ -7933,30 +7609,6 @@
             <target>Сохранить как проект по умолчанию</target>
          </segment>
       </unit>
-      <unit id="sectionResources.close">
-         <segment>
-            <source>Close</source>
-            <target>Закрыть</target>
-         </segment>
-      </unit>
-      <unit id="sectionResources.role">
-         <segment>
-            <source>Role</source>
-            <target>Роль</target>
-         </segment>
-      </unit>
-      <unit id="sectionResources.title">
-         <segment>
-            <source>Assign {0}</source>
-            <target>Назначить {0}</target>
-         </segment>
-      </unit>
-      <unit id="sectionResources.users">
-         <segment>
-            <source>Members</source>
-            <target>Участники</target>
-         </segment>
-      </unit>
       <unit id="selectArtifactCategory.addNewCategory">
          <segment>
             <source>Add New Category</source>
@@ -7987,22 +7639,10 @@
             <target>Ресурсы этого типа будут доступны в шагах с помощью инструмента Сравнить.</target>
          </segment>
       </unit>
-      <unit id="selectArtifactType.addNewType">
-         <segment>
-            <source>Add New Type</source>
-            <target>Добавить новый тип</target>
-         </segment>
-      </unit>
       <unit id="selectArtifactType.artifactType">
          <segment>
             <source>Artifact Type</source>
             <target>Тип дополнительного материала</target>
-         </segment>
-      </unit>
-      <unit id="selectArtifactType.newArtifactType">
-         <segment>
-            <source>New Artifact Type</source>
-            <target>Новый тип дополнительного материала</target>
          </segment>
       </unit>
       <unit id="selectRecording.artifactType">
@@ -8155,12 +7795,6 @@
             <target>Аудиофайл не был загружен или был удален.</target>
          </segment>
       </unit>
-      <unit id="shared.importMediaSingular">
-         <segment>
-            <source>Import Audio</source>
-            <target>Импортировать аудио</target>
-         </segment>
-      </unit>
       <unit id="shared.invalidParatextLogin">
          <segment>
             <source>You must login with a valid {Pt} login.</source>
@@ -8195,6 +7829,12 @@
          <segment>
             <source>Load from file...</source>
             <target>Загрузить из файла...</target>
+         </segment>
+      </unit>
+      <unit id="shared.loadError">
+         <segment>
+            <source>The passage has not properly loaded. You can verify that the passage has audio or continue waiting.</source>
+            <target>Фрагмент не загрузился должным образом. Вы можете проверить, есть ли в фрагменте аудио, или продолжить ожидание.</target>
          </segment>
       </unit>
       <unit id="shared.loading">
@@ -8257,12 +7897,6 @@
             <target>Уменьшить шум</target>
          </segment>
       </unit>
-      <unit id="shared.noiseRemovalFailed">
-         <segment>
-            <source>Noise Removal Failed</source>
-            <target>Устранение шума не удалось</target>
-         </segment>
-      </unit>
       <unit id="shared.NoSaveStayOnPage">
          <segment>
             <source>If you leave this page before saving, your changes will be lost.</source>
@@ -8321,12 +7955,6 @@
          <segment>
             <source>Peer Reviewer</source>
             <target>Рецензент</target>
-         </segment>
-      </unit>
-      <unit id="shared.recordingInProgress">
-         <segment>
-            <source>Recording in progress...</source>
-            <target>Идёт запись...</target>
          </segment>
       </unit>
       <unit id="shared.bookNotFound">
@@ -8419,22 +8047,10 @@
             <target>Загрузить</target>
          </segment>
       </unit>
-      <unit id="shared.discardRecording">
-         <segment>
-            <source>Would you like to clear this recording?</source>
-            <target>Хотите удалить эту запись?</target>
-         </segment>
-      </unit>
       <unit id="shared.useThisVersion">
          <segment>
             <source>Use This Version</source>
             <target>Использовать эту версию</target>
-         </segment>
-      </unit>
-      <unit id="shared.uploadRights">
-         <segment>
-            <source>Upload Rights File</source>
-            <target>Загрузить файл с правами</target>
          </segment>
       </unit>
       <unit id="shared.uploadSuccess">
@@ -8683,12 +8299,6 @@
             <target>{0} {1} {2}</target>
          </segment>
       </unit>
-      <unit id="taskItem.unassign">
-         <segment>
-            <source>Unassign {0}</source>
-            <target>Отменить назначение {0}</target>
-         </segment>
-      </unit>
       <unit id="teamCheckReference.resource">
          <segment>
             <source>Resource</source>
@@ -8743,12 +8353,6 @@
             <target>Номер последнего стиха</target>
          </segment>
       </unit>
-      <unit id="template.fileTemplate">
-         <segment>
-            <source>File Name Template</source>
-            <target>Шаблон имени файла</target>
-         </segment>
-      </unit>
       <unit id="template.language">
          <segment>
             <source>Language BCP47 code</source>
@@ -8788,7 +8392,7 @@
       <unit id="toDoTable.action">
          <segment>
             <source>Action</source>
-            <target>Acción</target>
+            <target>Действие</target>
          </segment>
       </unit>
       <unit id="toDoTable.assigned">
@@ -8800,7 +8404,7 @@
       <unit id="toDoTable.description">
          <segment>
             <source>Description</source>
-            <target>Descripción</target>
+            <target>Описание</target>
          </segment>
       </unit>
       <unit id="toDoTable.editor">
@@ -8830,13 +8434,13 @@
       <unit id="toDoTable.no">
          <segment>
             <source>No</source>
-            <target>No</target>
+            <target>Нет</target>
          </segment>
       </unit>
       <unit id="toDoTable.passage">
          <segment>
             <source>Passage</source>
-            <target>Pasaje</target>
+            <target>Отрывок</target>
          </segment>
       </unit>
       <unit id="toDoTable.plan">
@@ -8872,7 +8476,7 @@
       <unit id="toDoTable.title">
          <segment>
             <source>Title</source>
-            <target>Título</target>
+            <target>Заголовок</target>
          </segment>
       </unit>
       <unit id="toDoTable.topic">
@@ -8890,7 +8494,7 @@
       <unit id="toDoTable.yes">
          <segment>
             <source>Yes</source>
-            <target>Sí</target>
+            <target>Да</target>
          </segment>
       </unit>
       <unit id="tool.carefulSpeech">
@@ -8995,12 +8599,6 @@
             <target>Полный обратный перевод</target>
          </segment>
       </unit>
-      <unit id="transcribe.openTranscriber">
-         <segment>
-            <source>Open Transcriber</source>
-            <target>Открыть транскриптор</target>
-         </segment>
-      </unit>
       <unit id="transcribeAddNote.addNoteTitle">
          <segment>
             <source>Add Note</source>
@@ -9043,12 +8641,6 @@
             <target>ИИ продолжит работу над транскрипцией, даже если вы закроете это окно выполнения. Нажмите кнопку {0}, чтобы открыть окно выполнения на этом шаге рабочего процесса и посмотреть результаты. Используйте шестеренку настроек на кнопке {0}, чтобы просмотреть транскрипцию на другом языке.</target>
          </segment>
       </unit>
-      <unit id="transcriber.chooseSisterLang">
-         <segment>
-            <source>Choose a sister language</source>
-            <target>Выберите родственный язык</target>
-         </segment>
-      </unit>
       <unit id="transcriber.comment">
          <segment>
             <source>Comment</source>
@@ -9071,12 +8663,6 @@
          <segment>
             <source>Finding supported sister languages…</source>
             <target>Поиск поддерживаемых родственных языков…</target>
-         </segment>
-      </unit>
-      <unit id="transcriber.historyTip">
-         <segment>
-            <source>History [{0}]</source>
-            <target>История [{0}]</target>
          </segment>
       </unit>
       <unit id="transcriber.incomplete">
@@ -9211,12 +8797,6 @@
             <target>Сохранение...</target>
          </segment>
       </unit>
-      <unit id="transcriber.scriptOrDialect">
-         <segment>
-            <source>Script or Dialect</source>
-            <target>Скрипт или диалект</target>
-         </segment>
-      </unit>
       <unit id="transcriber.scriptTranscription">
          <segment>
             <source>Script</source>
@@ -9340,7 +8920,7 @@
       <unit id="transcriptionShow.transcription">
          <segment>
             <source>Transcription</source>
-            <target>Transcripción</target>
+            <target>Транскрипция</target>
          </segment>
       </unit>
       <unit id="transcriptionShow.transcriptionDisplay">
@@ -9403,22 +8983,10 @@
             <target>Запись файла... Возобновление работы может занять до 6 минут.</target>
          </segment>
       </unit>
-      <unit id="transcriptionTab.nopermission">
-         <segment>
-            <source>You do not have permission to download the project.</source>
-            <target>У вас нет разрешения на загрузку проекта.</target>
-         </segment>
-      </unit>
       <unit id="transcriptionTab.downloading">
          <segment>
             <source>Creation complete. Downloading {0}</source>
             <target>Создание завершено. Загрузка {0}</target>
-         </segment>
-      </unit>
-      <unit id="transcriptionTab.downloadingProject">
-         <segment>
-            <source>Downloading...{0}%</source>
-            <target>Загрузка...{0}%</target>
          </segment>
       </unit>
       <unit id="transcriptionTab.downloadProject">
@@ -9455,12 +9023,6 @@
          <segment>
             <source>Export the full audio project to store locally or share with another offline member. Export incremental file to import changes into online app.</source>
             <target>Экспортируйте весь аудио проект локально или поделитесь с другим пользователем в автономном режиме. Экспортируйте файл для импорта изменений в онлайн приложение.</target>
-         </segment>
-      </unit>
-      <unit id="transcriptionTab.exportingProject">
-         <segment>
-            <source>Exporting...{0}%</source>
-            <target>Экспорт...{0}%</target>
          </segment>
       </unit>
       <unit id="transcriptionTab.exportITFtype">
@@ -9511,12 +9073,6 @@
             <target>Фильтр</target>
          </segment>
       </unit>
-      <unit id="transcriptionTab.incompletePlan">
-         <segment>
-            <source>Plan is incomplete: attach audio to passages.</source>
-            <target>План не завершен: прикрепите аудио к отрывкам.</target>
-         </segment>
-      </unit>
       <unit id="transcriptionTab.latestAudio">
          <segment>
             <source>Latest Audio</source>
@@ -9565,22 +9121,10 @@
             <target>Cтатус</target>
          </segment>
       </unit>
-      <unit id="transcriptionTab.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строки фильтра</target>
-         </segment>
-      </unit>
       <unit id="transcriptionTab.updated">
          <segment>
             <source>Updated</source>
             <target>Обновлено</target>
-         </segment>
-      </unit>
-      <unit id="treeChart.contributions">
-         <segment>
-            <source>Contributions toward</source>
-            <target>Участие в работе</target>
          </segment>
       </unit>
       <unit id="treeChart.noData">
@@ -9634,7 +9178,7 @@
       <unit id="usertable.action">
          <segment>
             <source>Action</source>
-            <target>Acción</target>
+            <target>Действие</target>
          </segment>
       </unit>
       <unit id="usertable.addMember">
@@ -9667,10 +9211,16 @@
             <target>Удалить</target>
          </segment>
       </unit>
+      <unit id="usertable.deleteFailed">
+         <segment>
+            <source>Could not remove this member. Try again.</source>
+            <target>Не удалось удалить этого участника. Попробуйте ещё раз.</target>
+         </segment>
+      </unit>
       <unit id="usertable.email">
          <segment>
             <source>Email</source>
-            <target>Correo electrónico</target>
+            <target>Электронная почта</target>
          </segment>
       </unit>
       <unit id="usertable.filter">
@@ -9694,7 +9244,7 @@
       <unit id="usertable.name">
          <segment>
             <source>Name</source>
-            <target>Nombre</target>
+            <target>Имя</target>
          </segment>
       </unit>
       <unit id="usertable.phone">
@@ -9709,22 +9259,10 @@
             <target>Выбрать пользователя</target>
          </segment>
       </unit>
-      <unit id="usertable.showHideFilter">
-         <segment>
-            <source>Show/Hide filter rows</source>
-            <target>Показать/скрыть строки фильтра</target>
-         </segment>
-      </unit>
       <unit id="usertable.timezone">
          <segment>
             <source>Timezone</source>
-            <target>Zona horaria</target>
-         </segment>
-      </unit>
-      <unit id="verse.autosaveSkipped">
-         <segment>
-            <source>Autosave skipped: {0} issue(s) found.</source>
-            <target>Автосохранение пропущено: обнаружено {0} проблем.</target>
+            <target>Часовой пояс</target>
          </segment>
       </unit>
       <unit id="verse.badReferences">
@@ -9779,12 +9317,6 @@
          <segment>
             <source>Mark Verses</source>
             <target>Разметка стихов</target>
-         </segment>
-      </unit>
-      <unit id="verse.markupIssuesTitle">
-         <segment>
-            <source>Verse markup issues</source>
-            <target>Проблемы с разметкой стихов</target>
          </segment>
       </unit>
       <unit id="verse.missingReferences">
@@ -9845,12 +9377,6 @@
          <segment>
             <source>Start --&gt; Stop</source>
             <target>Начать --&gt; Остановить</target>
-         </segment>
-      </unit>
-      <unit id="verse.viewIssues">
-         <segment>
-            <source>View issues</source>
-            <target>Просмотреть проблемы</target>
          </segment>
       </unit>
       <unit id="viewMode.audioProject">
@@ -10147,12 +9673,6 @@
             <target>Настройки редактора</target>
          </segment>
       </unit>
-      <unit id="vProject.errgeneralBookNonScripture">
-         <segment>
-            <source>Book Designation must not be a Scripture book code.</source>
-            <target>Обозначение книги не должно быть кодом книги Священного Писания.</target>
-         </segment>
-      </unit>
       <unit id="vProject.generalBook">
          <segment>
             <source>{0} Book Designation</source>
@@ -10291,22 +9811,10 @@
             <target>Название аудио проекта</target>
          </segment>
       </unit>
-      <unit id="vProject.renderCustomize">
-         <segment>
-            <source>including {0} customization</source>
-            <target>включая {0} настройку</target>
-         </segment>
-      </unit>
       <unit id="vProject.renderRecommended">
          <segment>
             <source>Recommended for {0}</source>
             <target>Рекомендуется для {0}</target>
-         </segment>
-      </unit>
-      <unit id="vProject.rightToLeft">
-         <segment>
-            <source>Right-to-Left</source>
-            <target>Справа-налево</target>
          </segment>
       </unit>
       <unit id="vProject.save">
@@ -11029,22 +10537,10 @@
             <target>(Нет)</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.aheadTip">
-         <segment>
-            <source>Ahead {jump} {1} [{0}]</source>
-            <target>Вперед {jump} {1} [{0}]</target>
-         </segment>
-      </unit>
       <unit id="wsAudioPlayer.aiFailed">
          <segment>
             <source>AI function {1} failed {0}</source>
             <target>Функция искусственного интеллекта {1} не сработала {0}</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayer.aiGiveUp">
-         <segment>
-            <source>Stop Waiting...</source>
-            <target>Хватит ждать...</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.aiInProgress">
@@ -11057,12 +10553,6 @@
          <segment>
             <source>Beginning voice conversion...</source>
             <target>Начинаем преобразование голоса...</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayer.backTip">
-         <segment>
-            <source>Rewind {jump} {1} [{0}]</source>
-            <target>Надаз {jump} {1} [{0}]</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.convertVoice">
@@ -11089,12 +10579,6 @@
             <target>Преобразовать речь (ИИ)</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.beginningTip">
-         <segment>
-            <source>Go to Beginning [{0}]</source>
-            <target>В начало [{0}]</target>
-         </segment>
-      </unit>
       <unit id="wsAudioPlayer.clear">
          <segment>
             <source>Clear</source>
@@ -11107,22 +10591,10 @@
             <target>Удалить регион</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.endTip">
-         <segment>
-            <source>Go to End [{0}]</source>
-            <target>Перейти к концу [{0}]</target>
-         </segment>
-      </unit>
       <unit id="wsAudioPlayer.fasterTip">
          <segment>
             <source>Faster [{0}]</source>
             <target>Быстрее [{0}]</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayer.insertoverwrite">
-         <segment>
-            <source>Insert/Overwrite</source>
-            <target>Вставить/переписать</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.loopoff">
@@ -11185,12 +10657,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.pauseRecord">
-         <segment>
-            <source>Pause</source>
-            <target>Пауза</target>
-         </segment>
-      </unit>
       <unit id="wsAudioPlayer.pauseTip">
          <segment>
             <source>Pause [{0}]</source>
@@ -11213,12 +10679,6 @@
          <segment>
             <source>Auto Transcription in Progress</source>
             <target>Выполняется автотранскрипция</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayer.recognizePrompt">
-         <segment>
-            <source>Choose the language to auto transcribe. If the language is not available, choose a closely related language with a similar writing system.</source>
-            <target>Выберите язык для автоматической транскрипции. Если язык недоступен, выберите близкий язык с похожей системой письма.</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.recognizeSpeech">
@@ -11363,12 +10823,6 @@
          <segment>
             <source>Close</source>
             <target>Закрыть</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayerSegment.removeAll">
-         <segment>
-            <source>Clear Segments</source>
-            <target>Очистить сегменты</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayerSegment.removeSegment">

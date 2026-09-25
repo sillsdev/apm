@@ -14,7 +14,7 @@ import { LanguagePicker, LangTag } from 'mui-language-picker';
 import { useSelector, shallowEqual } from 'react-redux';
 import { vProjectSelector, pickerSelector } from '../selector';
 import { fontFamilyName } from '../utils/fontFamilyName';
-import { IPickerStrings, IVProjectStrings } from '../model';
+import { ILanguagePickerStrings, IVProjectStrings } from '../model';
 
 const StyledFormControlLabel = styled(FormControlLabel)<FormControlLabelProps>({
   margin: 0,
@@ -81,7 +81,7 @@ export const Language = (props: IProps) => {
   }, [bcp47, languageName, font, rtl, spellCheck]);
 
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
-  const lt: IPickerStrings = useSelector(pickerSelector, shallowEqual);
+  const lt: ILanguagePickerStrings = useSelector(pickerSelector, shallowEqual);
   const stateRef = React.useRef<ILanguage | undefined>(undefined);
   const langEl = React.useRef<any>(undefined);
 

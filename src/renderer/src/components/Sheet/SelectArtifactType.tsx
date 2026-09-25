@@ -3,7 +3,7 @@ import { Box, MenuItem, SxProps, TextField } from '@mui/material';
 import { ArtifactTypeSlug, IArtifactType, useArtifactType } from '../../crud';
 import { ISelectArtifactTypeStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
-import { artifactTypeSelector } from '../../selector';
+import { selectArtifactTypeSelector } from '../../selector';
 
 const smallProps = { fontSize: 'small' } as SxProps;
 
@@ -22,7 +22,7 @@ export const SelectArtifactType = (props: IProps) => {
   const { getArtifactTypes } = useArtifactType();
   const [artifactTypes, setArtifactTypes] = useState<IArtifactType[]>([]);
   const t: ISelectArtifactTypeStrings = useSelector(
-    artifactTypeSelector,
+    selectArtifactTypeSelector,
     shallowEqual
   );
 
