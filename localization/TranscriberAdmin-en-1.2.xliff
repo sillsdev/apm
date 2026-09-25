@@ -373,6 +373,13 @@
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="artifactType.linked">
+            <source>Linked</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">resourceRows.ts</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="artifactType.projectresource">
       		<source>General Resource</source>
       		<target/>
@@ -402,7 +409,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="artifactType.sharedresource">
-            <source>Linked</source>
+            <source>Shared Resource</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">AlertDialog.tsx</context>

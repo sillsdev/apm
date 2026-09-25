@@ -322,6 +322,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="artifactType.linked">
+         <segment>
+            <source>Linked</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="artifactType.projectresource">
          <segment>
             <source>General Resource</source>
@@ -348,7 +354,7 @@
       </unit>
       <unit id="artifactType.sharedresource">
          <segment>
-            <source>Linked</source>
+            <source>Shared Resource</source>
             <target/>
          </segment>
       </unit>

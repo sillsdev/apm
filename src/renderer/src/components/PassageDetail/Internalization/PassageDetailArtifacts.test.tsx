@@ -29,6 +29,7 @@ jest.mock('react-redux', () => ({
   shallowEqual: (a: unknown, b: unknown) => a === b,
   useSelector: () => ({
     description: 'Description',
+    title: 'Title',
     addAudioResource: 'Add Audio Resource',
     uploadProject: 'Upload {0}',
     currentResource: 'Current {0}',
@@ -318,7 +319,7 @@ describe('PassageDetailArtifacts general resource uploads', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
-    fireEvent.change(screen.getByLabelText('Description'), {
+    fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: 'Resource description' },
     });
     fireEvent.click(screen.getByLabelText('Upload Project'));
