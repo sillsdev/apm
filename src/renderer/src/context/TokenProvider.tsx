@@ -119,7 +119,7 @@ function TokenProvider(props: IProps) {
     if (user) {
       getAccessTokenSilently(webTokenOptions)
         .then((token) => {
-          setAuthSession(user, token);
+          setAuthSession(user, token ?? '');
         })
         .catch(() => {
           handleLogOut();
@@ -191,7 +191,7 @@ function TokenProvider(props: IProps) {
     } else {
       getAccessTokenSilently(webTokenOptions)
         .then((token) => {
-          setAuthSession(user, token);
+          setAuthSession(user, token ?? '');
         })
         .catch((e: any) => {
           if (e.error === 'login_required' && window?.location?.pathname) {

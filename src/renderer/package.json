@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start": "vite",
-    "build": "tsc -p tsconfig.app.json && vite build",
+    "build": "tsc -p tsconfig.app.json --composite false && vite build",
     "serve": "vite preview",
     "test": "jest",
     "test:ci": "jest --ci --verbose --maxWorkers=1 --no-cache",
@@ -16,7 +16,7 @@
     "format": "prettier --config ../../.prettierrc.yaml --ignore-path ../../.prettierignore --write \"**/*.{js,ts,tsx,json,css,md,mdx,html}\"",
     "format:check": "prettier --config ../../.prettierrc.yaml --ignore-path ../../.prettierignore --check \"**/*.{js,ts,tsx,json,css,md,mdx,html}\"",
     "lint": "eslint . --cache-location node_modules/.cache/eslint --quiet",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json --composite false",
     "validate": "npm-run-all --parallel lint build",
     "cy:open-local": "cypress open --e2e --browser chrome --config-file cypress/config/local.config.ts",
     "cy:run-local": "cypress run --e2e --browser chrome --config-file cypress/config/local.config.ts",
