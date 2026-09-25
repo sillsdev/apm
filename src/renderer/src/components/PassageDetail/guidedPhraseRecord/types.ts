@@ -41,6 +41,8 @@ export interface GuidedPhraseRecordConfig {
   showSegmentResetInRecordingPass: boolean;
   /** Multi-level segment undo under the waveform (vs one-level Split/Combine undo). */
   multiLevelSegmentUndo: boolean;
+  /** Prev/next segment arrows flanking Record instead of first-incomplete Next. */
+  sequentialUnitNavAroundRecord: boolean;
   /** Persist segment map on vernacular named regions (false for Retell). */
   persistSegments: boolean;
   /**
@@ -65,6 +67,7 @@ const carefulSpeechBoundaryDefaults = {
   showPlayerSegmentControls: false,
   showSegmentResetInRecordingPass: false,
   multiLevelSegmentUndo: false,
+  sequentialUnitNavAroundRecord: false,
   persistSegments: true,
 } as const;
 
@@ -101,6 +104,7 @@ export function phraseBackTranslateConfig(
     showPlayerSegmentControls: phraseBoundaryTools,
     showSegmentResetInRecordingPass: phraseBoundaryTools,
     multiLevelSegmentUndo: phraseBoundaryTools,
+    sequentialUnitNavAroundRecord: phraseBoundaryTools,
     persistSegments: phraseBoundaryTools,
     buildFilenamePostfix: (unitIndex, sourceVersion, languageBcp47) => {
       const base = `${artifactSlug}${unitIndex + 1}_v${sourceVersion}`;
