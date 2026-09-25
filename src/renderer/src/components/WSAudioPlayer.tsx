@@ -1164,7 +1164,6 @@ function WSAudioPlayer(props: IProps) {
     setDuration(0);
     setProgress(0);
     setHasRegion(0);
-    wsPause();
     if (blob) {
       setReady(false);
       setBusy && setBusy(true); //turned off on ready

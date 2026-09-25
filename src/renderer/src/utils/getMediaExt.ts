@@ -1,14 +1,7 @@
-import path from 'path-browserify';
 import { MediaFileD } from '@model/mediafile';
 import { extensionFromAudioContentType } from './mimeTypes';
 import { removeExtension } from './removeExtension';
-
-/** Last path segment only, so URL/path strings do not produce bogus "extensions" with separators. */
-const safeFileBasename = (originalFile: string): string => {
-  const noQuery = (originalFile || '').split('?')[0] ?? '';
-  const unified = noQuery.replace(/\\/g, '/');
-  return path.basename(unified);
-};
+import { safeFileBasename } from './safeFileBasename';
 
 const isSafeExtensionSegment = (ext: string): boolean =>
   /^[a-z0-9]{1,10}$/i.test(ext);
@@ -29,7 +22,7 @@ const extFromContentType = (m: MediaFileD): string => {
 };
 
 const getMediaExt = (media: MediaFileD) => {
-  const base = safeFileBasename(media.attributes.originalFile || '');
+  const base = safeFileBasename(media.attributes.originalFile);
   let ext =
     removeExtension(base).ext?.split('?')[0]?.trim().toLowerCase() ?? '';
   if (!isSafeExtensionSegment(ext)) {

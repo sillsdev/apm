@@ -12,6 +12,7 @@ describe('guidedPhraseRecord config', () => {
     expect(CAREFUL_SPEECH_CONFIG.constrainAutoSegmentWithVerses).toBe(false);
     expect(CAREFUL_SPEECH_CONFIG.showPlayerSegmentControls).toBe(false);
     expect(CAREFUL_SPEECH_CONFIG.multiLevelSegmentUndo).toBe(false);
+    expect(CAREFUL_SPEECH_CONFIG.sequentialUnitNavAroundRecord).toBe(false);
   });
 
   it('PBT uses BT regions with boundary tools', () => {
@@ -27,6 +28,7 @@ describe('guidedPhraseRecord config', () => {
     expect(config.showPlayerSegmentControls).toBe(true);
     expect(config.showSegmentResetInRecordingPass).toBe(true);
     expect(config.multiLevelSegmentUndo).toBe(true);
+    expect(config.sequentialUnitNavAroundRecord).toBe(true);
     expect(config.persistSegments).toBe(true);
   });
 
@@ -40,6 +42,7 @@ describe('guidedPhraseRecord config', () => {
     expect(config.constrainAutoSegmentWithVerses).toBe(false);
     expect(config.showPlayerSegmentControls).toBe(false);
     expect(config.multiLevelSegmentUndo).toBe(false);
+    expect(config.sequentialUnitNavAroundRecord).toBe(false);
     expect(config.persistSegments).toBe(false);
   });
 

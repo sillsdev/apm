@@ -255,7 +255,7 @@ describe('PassageDetailGuidedPhraseRecord - Next during playback (TT-7690)', () 
     stubControls.setPlay.mockClear();
 
     await act(async () => {
-      (controlsProps?.onNextClause as () => void)();
+      (controlsProps?.onNextUnitSequential as () => void)();
     });
 
     // Region playback for the new clause is (re)started -> region-out will fire
@@ -274,7 +274,7 @@ describe('PassageDetailGuidedPhraseRecord - Next during playback (TT-7690)', () 
     stubControls.setPlay.mockClear();
 
     await act(async () => {
-      (controlsProps?.onNextClause as () => void)();
+      (controlsProps?.onNextUnitSequential as () => void)();
     });
 
     // BUG (TT-7690): playCurrentClause skips setPlay(true) because isPlaying()
