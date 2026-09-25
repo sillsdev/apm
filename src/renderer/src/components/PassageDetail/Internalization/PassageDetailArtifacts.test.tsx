@@ -1,11 +1,12 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { UploadType } from '../../UploadType';
 import PassageDetailArtifacts from './PassageDetailArtifacts';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { createAppTheme } from '../../../theme';
+import { fireEvent } from '@testing-library/dom';
 
 const theme = createAppTheme('en');
 
@@ -28,7 +29,7 @@ jest.mock('../../../context/usePassageDetailContext', () => ({
 jest.mock('react-redux', () => ({
   shallowEqual: (a: unknown, b: unknown) => a === b,
   useSelector: () => ({
-    title: 'Title',
+    description: 'Description',
     addAudioResource: 'Add Audio Resource',
     uploadProject: 'Upload {0}',
     currentResource: 'Current {0}',
@@ -320,7 +321,7 @@ describe('PassageDetailArtifacts general resource uploads', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
-    fireEvent.change(screen.getByLabelText('Title'), {
+    fireEvent.change(screen.getByLabelText('Description'), {
       target: { value: 'Resource description' },
     });
     fireEvent.click(screen.getByLabelText('Upload Project'));
