@@ -3,8 +3,7 @@ import { devServer } from '@cypress/vite-dev-server';
 import { baseConfig } from './base.config';
 import tasks from '../support/tasks';
 import muteBrowserAudio from '../support/muteBrowserAudio';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const cypressGrepPlugin = require('@cypress/grep/src/plugin');
+import { plugin as cypressGrepPlugin } from '@cypress/grep/plugin';
 import viteConfig from '../../vite.config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -183,14 +182,15 @@ const config = {
       // @cypress/grep's browser side is registered in support/commands.ts; this
       // is its plugin half, which implements `grepFilterSpecs`.
       //
-      // Note: in Cypress 15 component mode the rewritten specPattern this
+      // Note: in Cypress component mode the rewritten specPattern this
       // returns is ignored — the runner has already resolved the spec list by
       // the time setupNodeEvents runs, so all specs load even when none of
       // their tests match. That costs ~9s of fixed per-spec overhead each
       // (browser + bundle), which is why cy:run-ct-smoke selects files with
       // --spec instead and leaves grepTags to filter *within* those files.
       // Left registered because it does work for --e2e.
-      return cypressGrepPlugin(config);
+      cypressGrepPlugin(config);
+      return config;
     },
     devServer(devServerConfig: Cypress.DevServerConfig) {
       return devServer({

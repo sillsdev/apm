@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import GraphicPicker from './GraphicPicker';
 
 // Regression test for a follow-up review comment on PR #601
-// (src/renderer/src/components/GraphicPicker.tsx:R412-418): late Scripture
+// (src/src/components/GraphicPicker.tsx:R412-418): late Scripture
 // resolution starts a filtered search while an earlier, unfiltered search is
 // still in flight. `runBibleFetch` had no cancellation/generation guard, so
 // whichever response resolves *last* wins - even if it's the stale one. That

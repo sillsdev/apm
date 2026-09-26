@@ -14,7 +14,7 @@ import { useGlobal } from '../context/useGlobal';
 import { GrowingSpacer } from '../control';
 import { useLogoutResets } from '../utils/useLogoutResets';
 import packageJson from '../../package.json';
-import buildDateJson from '../../../buildDate.json';
+import buildDateJson from '../buildDate.json';
 const version = packageJson.version;
 const buildDate = buildDateJson.date as unknown as string;
 

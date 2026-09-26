@@ -4,17 +4,17 @@ services:
   # Vite development server
   app:
     build:
-      context: ../..
-      dockerfile: src/renderer/Dockerfile
+      context: ..
+      dockerfile: src/Dockerfile
     ports:
       - '3000:3000'
     volumes:
-      - ../..:/app
+      - ..:/app
       - /app/node_modules
-      - /app/src/renderer/node_modules
+      - /app/src/node_modules
     environment:
       - NODE_ENV=development
-    command: sh -c "set -e; cd /app && npm run stamp && npm run devs && cd /app/src/renderer && npm start"
+    command: sh -c "set -e; cd /app && npm run stamp && npm run devs && cd /app/src && npm start"
     healthcheck:
       test:
         [

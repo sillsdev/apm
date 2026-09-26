@@ -21,7 +21,7 @@ function getBurritoToPtfScriptPath(): string {
     process.resourcesPath
       ? path.join(process.resourcesPath, 'migration', '05-burrito-to-ptf.js')
       : '',
-    path.join(__dirname, '..', '..', 'migration', '05-burrito-to-ptf.js'),
+    path.join(__dirname, '..', 'migration', '05-burrito-to-ptf.js'),
   ].filter(Boolean);
   for (const p of candidates) {
     if (fs.existsSync(p)) {

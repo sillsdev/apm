@@ -1,8 +1,8 @@
 # Audio Project Manager
 
-An application for desktop and web with electron-vite and vite using React and TypeScript. This repository contains a simple monorepo using npm. The src/renderer folder builds using vite to create a web app. The root builds using electron-vite and builds a desktop app for Windows, Linux or a Mac such that src/renderer is the UI for the desktop app.
+An application for desktop and web with Vite using React and TypeScript. This repository contains a simple monorepo using npm. The `src` folder is its own package that builds the web app with Vite. The root package builds the desktop app for Windows, Linux or a Mac with Vite and [vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron), using `src` as the UI and `electron/` for the main and preload processes; [electron-builder](https://www.electron.build) (`electron-builder.json5`) packages it into `release/`.
 
-Desktop builds based on [electron-vite](https://electron-vite.org)
+Desktop builds based on the [electron-vite react-ts template](https://electron-vite.github.io/)
 
 ## Recommended IDE Setup
 
@@ -21,14 +21,14 @@ Note:
 Node and npm versions are pinned via [Volta](https://volta.sh) in `package.json`.
 If `npm --version` in this repo is not the pinned version,
 Volta has fallen back to the npm bundled with Node (10.x) because the pinned npm
-is missing from its local inventory; fetch it once with `volta install npm@12.0.2`
+is missing from its local inventory; fetch it once with `volta install npm@12.1.0`
 
 Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
 
 Install the user interface
 
 ```bash
-$ cd src/renderer
+$ cd src
 $ npm install
 ```
 
@@ -56,7 +56,7 @@ This runs tests on the desktop app. It requires setting VITE_TEST_EMAIL1 and
 VITE_TEST_PW1 in your .env.local variables. As a minimum, it does a sanity test which launches and logs in using the credendials you give it.
 
 ```bash
-$ cd src/renderer
+$ cd src
 $ npm run test
 ```
 
@@ -65,11 +65,11 @@ The `npm test` command runs the jest tests. There are also Cypress component tes
 Cypress tests require that the dev server is running on 3000. There are a couple of ways to do this. You can launch the dev server in one terminal using `npm start` or you can use docker to language the server in the background.
 
 ```bash
-$ docker build -t apm-vite-renderer -f src/renderer/Dockerfile .
+$ docker build -t apm-vite-renderer -f src/Dockerfile .
 $ docker run -d -p 3000:3000 --name apm-vite-renderer apm-vite-renderer
 ```
 
-Once the dev server is running, you can run the tests using the commands described in the readme for `src/renderer` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
+Once the dev server is running, you can run the tests using the commands described in the readme for `src` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
 
 When finished, the container can be deleted using the `Docker Desktop` or with the command
 
@@ -95,7 +95,7 @@ $ npm run format
 
 ### Generating Logo Assets
 
-All app logo assets are generated from a single source: `src/renderer/src/assets/apm-logo.svg`. To regenerate the assets, run this script from the root:
+All app logo assets are generated from a single source: `src/src/assets/apm-logo.svg`. To regenerate the assets, run this script from the root:
 
 ```bash
 $ npm run logoassets
@@ -103,8 +103,8 @@ $ npm run logoassets
 
 This rewrites:
 
-- `favicon.ico` in `src/renderer/public`, `src/renderer`, and `resources`
-- `src/renderer/public/favicon.svg`
+- `favicon.ico` in `src/public`, `src`, and `resources`
+- `src/public/favicon.svg`
 - PWA icons: `pwa-192x192.png`, `pwa-512x512.png`, `pwa-maskable-512x512.png`
 - `apple-touch-icon.png`
 - `resources/icon.png`, which electron-builder converts into the `.icns` and `.ico`
@@ -136,4 +136,15 @@ $ npm run build:mac
 $ npm run build:linux
 ```
 
-In order to test and debug web app, launch visual studio code from the `src/renderer` folder. (There is a readme there with the commands to use.)
+The renderer bundle is written to `dist/`, the main and preload bundles to `dist-electron/`, and installers to `release/<version>/`.
+
+### Build Web
+
+```bash
+$ cd src
+$ npm run build
+```
+
+The web app (with its PWA service worker) is written to `src/dist/`.
+
+In order to test and debug web app, launch visual studio code from the `src` folder. (There is a readme there with the commands to use.)

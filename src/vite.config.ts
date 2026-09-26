@@ -15,7 +15,7 @@ export default defineConfig({
   plugins: [
     react(),
     // PWA support for the standalone web build ONLY. The Electron build uses the
-    // separate root electron.vite.config.ts and never loads this file, so the
+    // separate root vite.config.mts and never loads this file, so the
     // service worker is scoped to the web app and cannot affect desktop.
     VitePWA({
       // We register the SW ourselves in main.tsx so we can (a) skip Electron and
@@ -93,7 +93,14 @@ export default defineConfig({
     }),
   ],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
+      output: {
+        // Rolldown splits the app into chunks that import each other
+        // (e.g. utils <-> StyledBox). Without this, a chunk can call a
+        // CommonJS wrapper (React's) from another chunk before that chunk's
+        // body has run: "Uncaught TypeError: So is not a function".
+        strictExecutionOrder: true,
+      },
       // Suppress warnings about mixed static/dynamic imports for eng-vrs.ts
       // This module is intentionally both statically and dynamically imported
       onwarn(warning, warn) {

@@ -1,6 +1,7 @@
 node_modules
 dist
-out
+dist-electron
+release
 .DS_Store
 .eslintcache
 .env
@@ -15,10 +16,11 @@ localization/*.lnk
 localization/*.zip
 buildDate.json
 env-config/env-files*.zip
-src/renderer/index.html
+src/index.html
 *.log*
-src/renderer/dist
-src/renderer/node_modules
+src/dist
+src/node_modules
+src/cypress/downloads
 **/obj
 **/bin
 migration-data

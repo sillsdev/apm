@@ -1,13 +1,20 @@
 import { app, shell, BrowserWindow, ipcMain, Menu, MenuItem } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import icon from '../../resources/icon.png?asset';
 import { appMenu } from './app-menu';
 import { ipcMethods } from './ipcMethods.js';
 import { checkMicrophonePermission } from './checkMicrophonePermission';
 import { setAuthProcessStrings } from './auth-strings.js';
 
 const localString = { addToDict: 'Add to dictionary' };
+
+// resources/** is asar-unpacked (electron-builder.json5) so the icon is a real
+// file on disk in the packaged app.
+const iconPath = (): string =>
+  join(app.getAppPath(), 'resources', 'icon.png').replace(
+    'app.asar',
+    'app.asar.unpacked'
+  );
 
 export function createWindow(): void {
   const existingWindows = BrowserWindow.getAllWindows();
@@ -18,11 +25,11 @@ export function createWindow(): void {
     height: 768,
     show: false,
     // autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' ? { icon: iconPath() } : {}),
     webPreferences: {
       devTools: true, // isDev,
       spellcheck: true,
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, 'preload.js'),
       sandbox: false,
       webSecurity: false,
     },
@@ -82,12 +89,12 @@ export function createWindow(): void {
   }
 
   const chromeOpt = { userAgent: 'Chrome' };
-  // HMR for renderer base on electron-vite cli.
+  // HMR for renderer based on vite-plugin-electron (vite dev server).
   // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'], chromeOpt);
+  if (is.dev && process.env['VITE_DEV_SERVER_URL']) {
+    mainWindow.loadURL(process.env['VITE_DEV_SERVER_URL'], chromeOpt);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(join(__dirname, '../dist/index.html'));
   }
 }
 

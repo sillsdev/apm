@@ -155,7 +155,7 @@ describe('GraphicPicker Scripture filter defaults', () => {
   });
 
   it('checks book/chapter/verse when scripture resolves true while the dialog is already open', () => {
-    // PlanContext (src/renderer/src/context/PlanContext.tsx:134-139) starts
+    // PlanContext (src/src/context/PlanContext.tsx:134-139) starts
     // `scripture: false` and updates it from the plan in a passive effect,
     // which can commit after the picker is already open (isOpen never
     // changes in this sequence - only `scripture` does).

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 //
-// Keeps the --spec list in src/renderer's `cy:run-ct-smoke` script in sync with
+// Keeps the --spec list in src's `cy:run-ct-smoke` script in sync with
 // the specs that actually carry an @smoke tag.
 //
-// Why a --spec list at all, rather than just --env grepTags=@smoke: in Cypress
+// Why a --spec list at all, rather than just --expose grepTags=@smoke: in Cypress
 // 15 component mode the runner resolves the spec list before setupNodeEvents
 // runs, so @cypress/grep's `grepFilterSpecs` cannot drop non-matching files.
 // Every spec that loads costs ~9s of fixed browser+bundle overhead whether or
@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..');
-const RENDERER = path.join(REPO, 'src', 'renderer');
+const RENDERER = path.join(REPO, 'src');
 const SPEC_ROOT = path.join(RENDERER, 'src');
 const PKG = path.join(RENDERER, 'package.json');
 const SCRIPT = 'cy:run-ct-smoke';
@@ -34,7 +34,7 @@ try {
 } catch {
   console.error(
     `Cannot load find-test-names from ${findTestNames}.\n` +
-      `Run "npm ci" in src/renderer first.`
+      `Run "npm ci" in src first.`
   );
   process.exit(1);
 }
@@ -78,7 +78,7 @@ function buildScript(specs) {
     'cypress run --component --browser chrome ' +
     '--config-file cypress/config/local.config.ts ' +
     `--spec "${specs.join(',')}" ` +
-    `--env grepTags=${TAG},grepOmitFiltered=true`
+    `--expose grepTags=${TAG},grepOmitFiltered=true`
   );
 }
 

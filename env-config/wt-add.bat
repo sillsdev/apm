@@ -16,7 +16,7 @@ if exist "..\wt\%1" (
 cd "..\wt\%1"
 call npm install
 if errorlevel 1 exit /b 1
-cd src\renderer
+cd src
 call npm install
 if errorlevel 1 exit /b 1
 cd ..\..

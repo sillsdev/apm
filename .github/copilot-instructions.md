@@ -2,7 +2,7 @@
 
 Repository: sillsdev/apm
 Description: “Flexible audio-text orality tool.”
-Primary Stack: TypeScript (≈75%), JavaScript, HTML, CSS. Desktop application built with Electron + Vite (indicated by `electron.vite.config.ts`, `electron-builder.yml`).
+Primary Stack: TypeScript (≈75%), JavaScript, HTML, CSS. Desktop application built with Electron + Vite (indicated by `vite.config.mts`, `electron-builder.json5`).
 Purpose (inferred): A desktop and web application for managing and executing oral Bible translation workflows, including but not limited to internalizing preliminary resources, recording drafts, transcribing drafts, recording back translations of the drafts, reviewing by peers and consultants, and comprehension testing by community members.
 
 > Follow these instructions first. Only fall back to repository-wide searching if something you need is **not** covered. If something appears incorrect, ask a question before proceeding.
@@ -32,7 +32,7 @@ Scope Boundary:
 
 - TypeScript is the dominant language; strict type checking is expected (multiple `tsconfig.*.json` files).
 - Formatting & linting are enforced via Prettier (`.prettierrc.yaml`, `.prettierignore`) and ESLint (`eslint.config.mjs`).
-- Packaging & distribution are handled by `electron-builder` (`electron-builder.yml`) and there is a development auto-update config (`dev-app-update.yml`).
+- Packaging & distribution are handled by `electron-builder` (`electron-builder.json5`) and there is a development auto-update config (`dev-app-update.yml`).
 - Repo root contains standard Node/Electron project metadata (`package.json`, `package-lock.json`, tsconfigs, lint configs).
 - Always use Context7 to retrieve current documentation when working with frameworks, libraries, or APIs. Automatically invoke the Context7 MCP tools without being asked.
 
@@ -46,7 +46,7 @@ Scope Boundary:
 | Package manager    | Use `npm` (lockfile present: `package-lock.json`). Prefer `npm ci` in CI and `npm install` locally.  |
 | TypeScript         | Controlled via `tsconfig.json`, `tsconfig.node.json`, `tsconfig.web.json`.                           |
 | Linting/Formatting | Run ESLint and Prettier before committing (see scripts section).                                     |
-| Electron           | Build/packaging defined in `electron-builder.yml`.                                                   |
+| Electron           | Build/packaging defined in `electron-builder.json5`.                                                 |
 | Auto Update        | `dev-app-update.yml` suggests a development update channel; do not modify unless working on updates. |
 
 Always ensure a clean install before building: delete `node_modules` and run `npm ci` for reproducible dependency states in CI or scripted automation.
@@ -55,21 +55,21 @@ Always ensure a clean install before building: delete `node_modules` and run `np
 
 Because we have not enumerated the `scripts` field inside `package.json` here, use the following conventional mapping (adjust only if `package.json` differs):
 
-| Purpose             | Typical Script (verify)  | Command to Run                                                           |
-| ------------------- | ------------------------ | ------------------------------------------------------------------------ |
-| Bootstrap deps      | `postinstall` (optional) | `npm install` (local) / `npm ci` (CI)                                    |
-| Development (watch) | `dev` or `start`         | `npm run dev`                                                            |
-| Type check          | `typecheck` or via build | `npm run typecheck` (if defined) or `tsc --noEmit`                       |
-| Lint                | `lint`                   | `npm run lint`                                                           |
-| Format              | `format`                 | `npm run format`                                                         |
-| Build (production)  | `build`                  | `npm run build`                                                          |
-| Package installer   | `dist` / `package`       | `npm run dist` (common with electron-builder)                            |
-| Tests               | `test`                   | `npm test` (Note: Renderer tests must run from `src\renderer` directory) |
+| Purpose             | Typical Script (verify)  | Command to Run                                                  |
+| ------------------- | ------------------------ | --------------------------------------------------------------- |
+| Bootstrap deps      | `postinstall` (optional) | `npm install` (local) / `npm ci` (CI)                           |
+| Development (watch) | `dev` or `start`         | `npm run dev`                                                   |
+| Type check          | `typecheck` or via build | `npm run typecheck` (if defined) or `tsc --noEmit`              |
+| Lint                | `lint`                   | `npm run lint`                                                  |
+| Format              | `format`                 | `npm run format`                                                |
+| Build (production)  | `build`                  | `npm run build`                                                 |
+| Package installer   | `dist` / `package`       | `npm run dist` (common with electron-builder)                   |
+| Tests               | `test`                   | `npm test` (Note: Renderer tests must run from `src` directory) |
 
 **Running Renderer Tests** (PowerShell on Windows):
 
 ```powershell
-cd src\renderer; npm test -- TestName
+cd src; npm test -- TestName
 ```
 
 Use semicolons (`;`) to chain commands in PowerShell, not `&&`.
@@ -118,7 +118,7 @@ npm run build
 npm run dist   # electron-builder to create installers / artifacts
 ```
 
-If `dist` fails, inspect `electron-builder.yml` for missing metadata (e.g., appId, productName, afterPack hooks).
+If `dist` fails, inspect `electron-builder.json5` for missing metadata (e.g., appId, productName, afterPack hooks).
 
 ## 5. Project Layout & Key Files
 
@@ -128,8 +128,8 @@ If `dist` fails, inspect `electron-builder.yml` for missing metadata (e.g., appI
 | `.gitignore`                           | Ignored artifacts; do not commit transient build output.              |
 | `.prettierrc.yaml` / `.prettierignore` | Formatting rules & exclusions.                                        |
 | `eslint.config.mjs`                    | ESLint flat config (ESM).                                             |
-| `electron.vite.config.ts`              | Central Vite config bridging Electron main/renderer build targets.    |
-| `electron-builder.yml`                 | Packaging + distribution config.                                      |
+| `vite.config.mts`                      | Central Vite config bridging Electron main/renderer build targets.    |
+| `electron-builder.json5`               | Packaging + distribution config.                                      |
 | `dev-app-update.yml`                   | Development auto-update channel config.                               |
 | `package.json`                         | Scripts, dependencies, metadata (inspect before adding new libs).     |
 | `package-lock.json`                    | Dependency lock; keep in sync.                                        |
@@ -145,16 +145,16 @@ If `dist` fails, inspect `electron-builder.yml` for missing metadata (e.g., appI
 
 (Not enumerated here; inspect when needed.)
 
-- `src/main`: Electron main process entry (creates BrowserWindow, handles lifecycle).
-- `src/preload`: Preload script exposing secure APIs.
-- `src/renderer`: Frontend (React/Vue/Svelte/vanilla) built by Vite.
+- `electron/main`: Electron main process entry (creates BrowserWindow, handles lifecycle).
+- `electron/preload`: Preload script exposing secure APIs.
+- `src`: Frontend (React/Vue/Svelte/vanilla) built by Vite.
   Add new main-process logic near existing lifecycle or IPC management files; add UI functions within renderer folders to keep layering intact.
 
 ### Configuration Files – Modification Guidance
 
 - Prefer extending existing ESLint or TS config rather than overwriting.
 - Prettier config is authoritative for formatting; do not introduce conflicting style tools.
-- Keep `electron-builder.yml` modifications minimal; test packaging after changes.
+- Keep `electron-builder.json5` modifications minimal; test packaging after changes.
 
 ## 6. Linting, Formatting, and Quality Gates
 
@@ -171,14 +171,14 @@ If adding dependencies, ensure:
 
 ## 7. Common Pitfalls & Preventive Guidance
 
-| Situation                             | Mitigation                                                                                                       |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Build fails due to missing types      | Install `@types/<package>` or ensure TS config `types` includes needed declarations.                             |
-| Electron cannot start (blank window)  | Confirm `npm run dev` compiles both main & renderer; check entry points referenced in `electron.vite.config.ts`. |
-| Packaging error (icon / artifact)     | Ensure required icons exist in `resources/` per `electron-builder.yml` (e.g., `.icns`, `.ico`).                  |
-| Auto-update config mismatch           | Do not alter `dev-app-update.yml` unless implementing update channels.                                           |
-| Lint errors for unused imports        | Remove or disable at specific lines; avoid broad rule suppression.                                               |
-| Mixed formatting (line width, quotes) | Re-run Prettier prior to commit.                                                                                 |
+| Situation                             | Mitigation                                                                                               |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Build fails due to missing types      | Install `@types/<package>` or ensure TS config `types` includes needed declarations.                     |
+| Electron cannot start (blank window)  | Confirm `npm run dev` compiles both main & renderer; check entry points referenced in `vite.config.mts`. |
+| Packaging error (icon / artifact)     | Ensure required icons exist in `resources/` per `electron-builder.json5` (e.g., `.icns`, `.ico`).        |
+| Auto-update config mismatch           | Do not alter `dev-app-update.yml` unless implementing update channels.                                   |
+| Lint errors for unused imports        | Remove or disable at specific lines; avoid broad rule suppression.                                       |
+| Mixed formatting (line width, quotes) | Re-run Prettier prior to commit.                                                                         |
 
 ## 8. Adding New Code
 
@@ -210,7 +210,7 @@ Before altering packaging:
 2. Run `npm run dist`
 3. Smoke-test produced artifact (launch, basic workflow).
 
-Check `electron-builder.yml` for:
+Check `electron-builder.json5` for:
 
 - `appId`
 - `files` inclusion patterns
@@ -272,8 +272,8 @@ npm run dist
 LICENSE
 README.md
 dev-app-update.yml
-electron-builder.yml
-electron.vite.config.ts
+electron-builder.json5
+vite.config.mts
 eslint.config.mjs
 package.json
 package-lock.json

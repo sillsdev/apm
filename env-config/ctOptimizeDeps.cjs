@@ -21,7 +21,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..');
-const RENDERER = path.join(REPO, 'src', 'renderer');
+const RENDERER = path.join(REPO, 'src');
 const META = path.join(
   RENDERER,
   'node_modules',
@@ -38,7 +38,7 @@ const EXCLUDE = new Set(['cypress/react']);
 if (!fs.existsSync(META)) {
   console.error(
     `No Vite CT dep cache at ${META}.\n` +
-      `Run a full component test run first (cd src/renderer && npm run cy:run-ct).`
+      `Run a full component test run first (cd src && npm run cy:run-ct).`
   );
   process.exit(1);
 }

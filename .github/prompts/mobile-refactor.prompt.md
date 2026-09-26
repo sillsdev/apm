@@ -32,7 +32,7 @@ Otherwise continue with the default React developer mode.
 ## Step 3 · Execute Changes (React Mode)
 
 - Ensure chat is in React mode: `@mode react`.
-- Implement UI updates in `src/renderer/src/**`, following the spec’s guidance.
+- Implement UI updates in `src/src/**`, following the spec’s guidance.
 - Prefer editing existing components/hooks; introduce new utilities only when needed for the new layouts or platform detection.
 - Use existing helper hooks (`useMyNavigate`, `useCheckOnline`, etc.) rather than reinventing logic.
 

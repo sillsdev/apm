@@ -1,5 +1,5 @@
 // Type definitions for the API exposed in preload.js via contextBridge.exposeInMainWorld
-// This file mirrors the functions added to `window.electron` in src/preload/preload.js
+// This file mirrors the functions added to `window.electron` in electron/preload/preload.js
 import { User } from '@auth0/auth0-react';
 
 export interface IAuthProcessStrings {
