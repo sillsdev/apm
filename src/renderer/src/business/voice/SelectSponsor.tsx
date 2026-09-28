@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { Button, ActionRow, GrowingSpacer, rowSx } from '../../control';
 import { Divider, Stack, TextField, Box } from '@mui/material';
-import { ISharedStrings, Organization } from '../../model';
+import { ISharedStrings, IVoiceStrings, Organization } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
-import { sharedSelector } from '../../selector';
+import { sharedSelector, voiceSelector } from '../../selector';
 import { IVoicePerm } from './PersonalizeVoicePermission';
 import { orgDefaultVoices, useOrgDefaults } from '../../crud';
 import packageJson from '../../../package.json';
@@ -19,6 +19,7 @@ export default function SelectSponsor({ team, refresh, onOpen }: ISelectVoice) {
   const [permState, setPermState] = React.useState<IVoicePerm>({});
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
   const t: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const vt: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
 
   React.useEffect(() => {
     if (team) {
@@ -49,7 +50,7 @@ export default function SelectSponsor({ team, refresh, onOpen }: ISelectVoice) {
     <Stack sx={{ minWidth: 120, pt: 2 }} spacing={2}>
       <TextField
         name="sponsor"
-        label="Sponsor"
+        label={vt.rightsHolder}
         variant="outlined"
         value={permState?.sponsor ?? owner}
         onChange={handleChange}
