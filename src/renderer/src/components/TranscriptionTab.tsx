@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { debounce, Menu, MenuItem } from '@mui/material';
 import Alert from '@mui/material/Alert';
@@ -20,6 +20,7 @@ import {
   Section,
   User,
   ITranscriptionTabStrings,
+  IWorkflowStepsStrings,
   IActivityStateStrings,
   Plan,
   MediaFileD,
@@ -57,6 +58,8 @@ import {
   afterStep,
   getStepComplete,
   useSharedResRead,
+  useTeamWorkflowProcess,
+  isBoldTeamWorkflow,
 } from '../crud';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -67,6 +70,7 @@ import {
   activitySelector,
   sharedSelector,
   transcriptionTabSelector,
+  workflowStepsSelector,
 } from '../selector';
 import { Button, spreadSx, rowSx } from '../control';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
@@ -96,6 +100,20 @@ interface IRow {
 //   return childRows.length ? childRows : null;
 // };
 
+const defaultArtifactTypes: ArtifactTypeSlug[] = [
+  ArtifactTypeSlug.Vernacular,
+  ArtifactTypeSlug.Retell,
+  ArtifactTypeSlug.QandA,
+  ArtifactTypeSlug.WholeBackTranslation,
+  ArtifactTypeSlug.PhraseBackTranslation,
+];
+
+/** BOLD projects only have careful and LWC (stored as phrase BT) transcriptions. */
+const boldArtifactTypes: ArtifactTypeSlug[] = [
+  ArtifactTypeSlug.CarefulSpeech,
+  ArtifactTypeSlug.PhraseBackTranslation,
+];
+
 interface IProps {
   projectPlans: Plan[];
   planColumn?: boolean;
@@ -120,6 +138,10 @@ export function TranscriptionTab(props: IProps) {
   const { pasId } = useParams();
   const t: ITranscriptionTabStrings = useSelector(transcriptionTabSelector);
   const ts: ISharedStrings = useSelector(sharedSelector);
+  const wf: IWorkflowStepsStrings = useSelector(
+    workflowStepsSelector,
+    shallowEqual
+  );
   const activityState = useSelector(activitySelector);
   const exportFile = useSelector(
     (state: IState) => state.importexport.exportFile
@@ -173,16 +195,36 @@ export function TranscriptionTab(props: IProps) {
 
   const { getTypeId, localizedArtifactType } = useArtifactType();
   const { getSharedResource } = useSharedResRead();
-  const [artifactTypes] = useState<ArtifactTypeSlug[]>([
-    ArtifactTypeSlug.Vernacular,
-    ArtifactTypeSlug.Retell,
-    ArtifactTypeSlug.QandA,
-    ArtifactTypeSlug.WholeBackTranslation,
-    ArtifactTypeSlug.PhraseBackTranslation,
-  ]);
+  const projectPlan = useMemo(
+    () => projectPlans?.[0] as Plan | undefined,
+    [projectPlans]
+  );
+  const [organization] = useGlobal('organization');
+  // Use the plan's own team: the Team screen can open this for any team's project.
+  const teamId = useMemo(() => {
+    const projectId = projectPlan ? related(projectPlan, 'project') : project;
+    const projRec = projects.find((p) => p.id === projectId);
+    return (projRec && related(projRec, 'organization')) || organization;
+  }, [projectPlan, project, projects, organization]);
+  const isBold = isBoldTeamWorkflow(useTeamWorkflowProcess(teamId));
+  const artifactTypes = isBold ? boldArtifactTypes : defaultArtifactTypes;
   const [artifactType, setArtifactType] = useState<ArtifactTypeSlug>(
     artifactTypes[0] as ArtifactTypeSlug
   );
+  // The workflow process may load after mount; keep the selection valid.
+  useEffect(() => {
+    if (!artifactTypes.includes(artifactType))
+      setArtifactType(artifactTypes[0] as ArtifactTypeSlug);
+  }, [artifactTypes, artifactType]);
+  const artifactLabel = (slug: ArtifactTypeSlug) => {
+    if (isBold) {
+      if (slug === ArtifactTypeSlug.CarefulSpeech)
+        return wf.carefulTranscription;
+      if (slug === ArtifactTypeSlug.PhraseBackTranslation)
+        return wf.lwcTranscription;
+    }
+    return localizedArtifactType(slug);
+  };
   const [exportTypeAnchor, setExportTypeAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -195,13 +237,9 @@ export function TranscriptionTab(props: IProps) {
     () =>
       artifactType === ArtifactTypeSlug.Vernacular
         ? ''
-        : localizedArtifactType(artifactType),
+        : artifactLabel(artifactType),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [artifactType]
-  );
-  const projectPlan = useMemo(
-    () => projectPlans?.[0] as Plan | undefined,
-    [projectPlans]
+    [artifactType, isBold, wf]
   );
   const flat = useMemo(
     () => Boolean(projectPlan?.attributes.flat),
@@ -257,9 +295,7 @@ export function TranscriptionTab(props: IProps) {
       pendingmsg: t.creatingDownloadFile,
       nodatamsg: t.noData.replace(
         '{0}',
-        onlyTypeId !== undefined
-          ? localizedArtifactType(artifactType)
-          : t.changed
+        onlyTypeId !== undefined ? artifactLabel(artifactType) : t.changed
       ),
       writingmsg: t.writingDownloadFile,
       localizedArtifact: [ExportType.ELAN, ExportType.AUDIO].includes(
@@ -344,8 +380,7 @@ export function TranscriptionTab(props: IProps) {
         .catch(() => {
           showMessage(ts.cantCopy);
         });
-    else
-      showMessage(t.noData.replace('{0}', localizedArtifactType(artifactType)));
+    else showMessage(t.noData.replace('{0}', artifactLabel(artifactType)));
   };
 
   const handleAudioExportMenu = (what: string | ExportType) => {
@@ -724,7 +759,7 @@ export function TranscriptionTab(props: IProps) {
               onClick={handleExportTypeMenu}
               endIcon={<DropDownIcon />}
             >
-              {localizedArtifactType(artifactType)}
+              {artifactLabel(artifactType)}
             </Button>
             <Menu
               id="select-export-type-menu"
@@ -741,7 +776,7 @@ export function TranscriptionTab(props: IProps) {
                   aria-hidden={!exportTypeAnchor}
                   onClick={handleExportType(slug)}
                 >
-                  {localizedArtifactType(slug)}
+                  {artifactLabel(slug)}
                 </MenuItem>
               ))}
             </Menu>
