@@ -158,16 +158,28 @@ export function loadApmDataSnapshot(entries, metadata, bookCode) {
   return { projectFolder, sections, passages, orgWorkflowSteps };
 }
 
+function relNameVariants(relName) {
+  const dashed = relName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  return [...new Set([relName, dashed])];
+}
+
 /**
  * @param {unknown} record
  * @param {string} relName
  * @returns {string | null}
  */
 function relIdNamed(record, relName) {
-  const rel = /** @type {{ data?: { id?: string } }} */ (
-    record?.relationships?.[relName]
-  );
-  return typeof rel?.data?.id === 'string' ? rel.data.id : null;
+  const relationships = record?.relationships;
+  if (!relationships) {
+    return null;
+  }
+  for (const name of relNameVariants(relName)) {
+    const rel = /** @type {{ data?: { id?: string } }} */ (relationships[name]);
+    if (typeof rel?.data?.id === 'string') {
+      return rel.data.id;
+    }
+  }
+  return null;
 }
 
 /**
@@ -186,9 +198,12 @@ function setRel(record, relName, target) {
   const relationships = /** @type {Record<string, unknown>} */ (
     rels.relationships
   );
-  relationships[relName] = target
+  const value = target
     ? { data: { type: target.type, id: target.id } }
     : { data: null };
+  for (const name of relNameVariants(relName)) {
+    relationships[name] = value;
+  }
 }
 
 /**
@@ -251,6 +266,11 @@ export function remapApmDataSnapshot(snapshot, context) {
   const sections = cloneWithNewIds(snapshot.sections).map((section) => {
     setRel(section, 'lastModifiedByUser', { type: 'user', id: user.id });
     setRel(section, 'plan', { type: 'plan', id: plan.id });
+    setRel(section, 'titleMediafile', null);
+    setRel(section, 'editor', null);
+    setRel(section, 'transcriber', null);
+    setRel(section, 'group', null);
+    setRel(section, 'organizationScheme', null);
     const passageRels =
       /** @type {{ data?: Array<{ id?: string; type?: string }> }} */ (
         section.relationships?.passages
@@ -275,6 +295,8 @@ export function remapApmDataSnapshot(snapshot, context) {
         id: idMap.get(sectionId),
       });
     }
+    setRel(passage, 'sharedResource', null);
+    setRel(passage, 'passagetype', null);
     passage.relationships.mediafiles = { data: [] };
     return passage;
   });

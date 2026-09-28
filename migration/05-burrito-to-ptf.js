@@ -214,9 +214,9 @@ const BURRITO_AUDIO_FILE_EXTENSIONS = new Set([
 
 let chapterVerseMap = {};
 
-async function loadChapterVerseMap() {
+async function loadChapterVerseMap(catalogPath = VERSE_CATALOG_PATH) {
   try {
-    const raw = await fs.readFile(VERSE_CATALOG_PATH, 'utf-8');
+    const raw = await fs.readFile(catalogPath, 'utf-8');
     return raw.split(/\r?\n/).reduce((acc, line) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) {
@@ -462,6 +462,10 @@ function buildAudioReference(ingredient, localizedNames, preferredLocale) {
     bookCode,
     chapters: chapterList,
     reference: referenceParts.join(' ').trim() || ingredient?._reference || '',
+    scopeReference: chapterList
+      .map((chapter) => String(chapter ?? '').trim())
+      .filter((chapter) => chapter.length > 0)
+      .join(', '),
     title: titleParts.join(' ').trim() || ingredient?._title || '',
   };
 }
@@ -984,6 +988,125 @@ function parseAudioReferenceToSpan(referenceText, bookCode) {
   return null;
 }
 
+function publishingReferenceToken(passage) {
+  return String(passage?.attributes?.reference ?? '')
+    .trim()
+    .split(/[\s|]/)[0];
+}
+
+/**
+ * ApmData already owns the plan. Attach audio to that passage instead of
+ * inventing a row or rewriting its reference, title, or book.
+ * @param {unknown[]} planPassages
+ * @param {string} referenceLabel
+ * @param {{ startChapter: number; startVerse: number; endChapter: number; endVerse: number } | null} span
+ */
+function passageScriptureSpan(passage) {
+  const startChapter = Number(passage?.attributes?.['start-chapter']);
+  const startVerse = Number(passage?.attributes?.['start-verse']);
+  const endChapter = Number(passage?.attributes?.['end-chapter']);
+  const endVerse = Number(passage?.attributes?.['end-verse']);
+  if (
+    !Number.isFinite(startChapter) ||
+    !Number.isFinite(startVerse) ||
+    !Number.isFinite(endChapter) ||
+    !Number.isFinite(endVerse) ||
+    startChapter <= 0 ||
+    startVerse <= 0 ||
+    endVerse <= 0
+  ) {
+    return null;
+  }
+  return { startChapter, startVerse, endChapter, endVerse };
+}
+
+/**
+ * Section-level export audio uses the section aggregate (first passage start
+ * through last passage end). That span is not any one scripture row.
+ * @param {unknown[]} sections
+ * @param {unknown[]} passages
+ * @param {{ startChapter: number; startVerse: number; endChapter: number; endVerse: number } | null} span
+ */
+function findSectionForAggregateSpan(sections, passages, span) {
+  if (!span || !Array.isArray(sections) || !Array.isArray(passages)) {
+    return undefined;
+  }
+  return sections.find((section) => {
+    const owned = passages
+      .filter(
+        (passage) => passage.relationships?.section?.data?.id === section.id
+      )
+      .map((passage) => passageScriptureSpan(passage))
+      .filter(Boolean);
+    if (owned.length < 2) {
+      return false;
+    }
+    let start = owned[0];
+    let end = owned[0];
+    for (const item of owned) {
+      if (
+        toVerseIndex(item.startChapter, item.startVerse) <
+        toVerseIndex(start.startChapter, start.startVerse)
+      ) {
+        start = item;
+      }
+      if (
+        toVerseIndex(item.endChapter, item.endVerse) >
+        toVerseIndex(end.endChapter, end.endVerse)
+      ) {
+        end = item;
+      }
+    }
+    return (
+      start.startChapter === span.startChapter &&
+      start.startVerse === span.startVerse &&
+      end.endChapter === span.endChapter &&
+      end.endVerse === span.endVerse
+    );
+  });
+}
+
+function findResourceWorkflowStep(orgWorkflowSteps) {
+  return (orgWorkflowSteps ?? []).find((step) => {
+    try {
+      return JSON.parse(step.attributes?.tool || '{}').tool === 'resource';
+    } catch {
+      return false;
+    }
+  });
+}
+
+function findApmDataPassageForAudio(planPassages, referenceLabel, span) {
+  const label = String(referenceLabel ?? '').trim();
+  const head = label.split(/[\s|]/)[0] ?? '';
+  if (head === 'BOOK' || head === 'ALTBK') {
+    return planPassages.find(
+      (candidate) => publishingReferenceToken(candidate) === head
+    );
+  }
+  if (/^\d+$/.test(label)) {
+    return planPassages.find((candidate) => {
+      const ref = String(candidate.attributes?.reference ?? '').trim();
+      return (
+        ref === `CHNUM|${label}` ||
+        ref === `CHNUM ${label}` ||
+        ref.startsWith(`CHNUM|${label}|`) ||
+        ref.startsWith(`CHNUM ${label} `)
+      );
+    });
+  }
+  if (!span) {
+    return undefined;
+  }
+  return planPassages.find(
+    (candidate) =>
+      candidate.attributes['start-chapter'] === span.startChapter &&
+      candidate.attributes['start-verse'] === span.startVerse &&
+      candidate.attributes['end-chapter'] === span.endChapter &&
+      candidate.attributes['end-verse'] === span.endVerse
+  );
+}
+
 function findBestSectionIndexForSpan(sections, span) {
   if (!Array.isArray(sections) || sections.length === 0) {
     return 0;
@@ -1456,7 +1579,9 @@ async function transformBurritoToPTF(cli) {
     }
   }
 
-  chapterVerseMap = await loadChapterVerseMap();
+  chapterVerseMap = await loadChapterVerseMap(
+    cli.verseCatalogPath || VERSE_CATALOG_PATH
+  );
   const now = DateTime.utc().toISO();
 
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -2095,6 +2220,7 @@ async function transformBurritoToPTF(cli) {
       let sections;
       let passages;
       const mediafiles = [];
+      const sectionResources = [];
       const passageBySection = new Map();
       let passageSeq = 1;
 
@@ -2242,24 +2368,34 @@ async function transformBurritoToPTF(cli) {
         const downloadTimestamp = toUtcIso(exportTimestamp, createdAt);
         const referenceTitle =
           audioEntry.reference.title || `Audio ${index + 1}`;
-        const referenceLabel =
+        const displayLabel =
           audioEntry.reference.reference || `Audio ${index + 1}`;
+        const scopeLabel = String(
+          audioEntry.reference.scopeReference ?? ''
+        ).trim();
+        const matchLabel = scopeLabel || displayLabel;
         const span = parseAudioReferenceToSpan(
-          referenceLabel,
+          apmSnapshot ? matchLabel : displayLabel,
           audioEntry.reference.bookCode
         );
         let passage;
-        if (apmSnapshot && span) {
-          passage = passages.find((candidate) => {
-            return (
-              candidate.attributes['start-chapter'] === span.startChapter &&
-              candidate.attributes['start-verse'] === span.startVerse &&
-              candidate.attributes['end-chapter'] === span.endChapter &&
-              candidate.attributes['end-verse'] === span.endVerse
+        let sectionForResource;
+        if (apmSnapshot) {
+          passage = findApmDataPassageForAudio(passages, matchLabel, span);
+          if (!passage && !/^\d+$/.test(matchLabel)) {
+            sectionForResource = findSectionForAggregateSpan(
+              sections,
+              passages,
+              span
             );
-          });
-        }
-        if (!passage) {
+          }
+          if (!passage && !sectionForResource) {
+            console.warn(
+              `  No ApmData passage matches audio reference "${matchLabel}"; skipping`
+            );
+            return;
+          }
+        } else {
           const targetSectionIndex = findBestSectionIndexForSpan(
             normalizedSections,
             span
@@ -2284,10 +2420,10 @@ async function transformBurritoToPTF(cli) {
               referenceTitle
             );
           }
+          passage.attributes.reference = displayLabel;
+          passage.attributes.title = referenceTitle;
+          passage.attributes.book = audioEntry.reference.bookCode ?? '';
         }
-        passage.attributes.reference = referenceLabel;
-        passage.attributes.title = referenceTitle;
-        passage.attributes.book = audioEntry.reference.bookCode ?? '';
 
         const transcription = resolveTranscriptionFromScope(
           audioEntry.ingredient.scope,
@@ -2341,18 +2477,58 @@ async function transformBurritoToPTF(cli) {
             {
               lastModifiedByUser: createRelationship('user', user),
               plan: createRelationship('plan', plan),
-              passage: createRelationship('passage', passage),
+              passage: createRelationship('passage', passage ?? null),
               recordedbyUser: createRelationship('user', user),
+              ...(sectionForResource
+                ? {
+                    artifactType: createRelationship(
+                      'artifacttype',
+                      findArtifactTypeByTypename('resource')
+                    ),
+                  }
+                : {}),
             }
           );
 
           mediafiles.push(mediafile);
-          passage.relationships.mediafiles.data.push(
-            relationshipIdentifier('mediafile', mediafile)
-          );
+          if (passage?.relationships?.mediafiles?.data) {
+            passage.relationships.mediafiles.data.push(
+              relationshipIdentifier('mediafile', mediafile)
+            );
+          }
           plan.relationships.mediafiles.data.push(
             relationshipIdentifier('mediafile', mediafile)
           );
+          if (sectionForResource) {
+            const resourceStep = findResourceWorkflowStep(orgWorkflowSteps);
+            sectionResources.push(
+              createJsonApiRecord(
+                'sectionresources',
+                {
+                  'sequence-num': sectionResources.length + 1,
+                  description: matchLabel,
+                  'date-created': downloadTimestamp,
+                  'date-updated': downloadTimestamp,
+                  'last-modified-by': -1,
+                },
+                {
+                  lastModifiedByUser: createRelationship('user', user),
+                  section: createRelationship('section', sectionForResource),
+                  passage: createRelationship('passage', null),
+                  mediafile: createRelationship('mediafile', mediafile),
+                  project: createRelationship('project', project),
+                  ...(resourceStep
+                    ? {
+                        orgWorkflowStep: createRelationship(
+                          'orgworkflowstep',
+                          resourceStep
+                        ),
+                      }
+                    : {}),
+                }
+              )
+            );
+          }
 
           ptfZip.addFile(`media/${audioFilename}`, audioBuffer);
         }
@@ -2379,6 +2555,9 @@ async function transformBurritoToPTF(cli) {
         F_sections: { data: sections },
         G_passages: { data: passages },
         H_mediafiles: { data: mediafiles },
+        ...(sectionResources.length > 0
+          ? { I_sectionresources: { data: sectionResources } }
+          : {}),
       };
 
       for (const [filename, content] of Object.entries(dataFiles)) {
