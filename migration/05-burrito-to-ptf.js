@@ -984,6 +984,50 @@ function parseAudioReferenceToSpan(referenceText, bookCode) {
   return null;
 }
 
+function publishingReferenceToken(passage) {
+  return String(passage?.attributes?.reference ?? '')
+    .trim()
+    .split(/[\s|]/)[0];
+}
+
+/**
+ * ApmData already owns the plan. Attach audio to that passage instead of
+ * inventing a row or rewriting its reference, title, or book.
+ * @param {unknown[]} planPassages
+ * @param {string} referenceLabel
+ * @param {{ startChapter: number; startVerse: number; endChapter: number; endVerse: number } | null} span
+ */
+function findApmDataPassageForAudio(planPassages, referenceLabel, span) {
+  const label = String(referenceLabel ?? '').trim();
+  const head = label.split(/[\s|]/)[0] ?? '';
+  if (head === 'BOOK' || head === 'ALTBK') {
+    return planPassages.find(
+      (candidate) => publishingReferenceToken(candidate) === head
+    );
+  }
+  if (/^\d+$/.test(label)) {
+    return planPassages.find((candidate) => {
+      const ref = String(candidate.attributes?.reference ?? '').trim();
+      return (
+        ref === `CHNUM|${label}` ||
+        ref === `CHNUM ${label}` ||
+        ref.startsWith(`CHNUM|${label}|`) ||
+        ref.startsWith(`CHNUM ${label} `)
+      );
+    });
+  }
+  if (!span) {
+    return undefined;
+  }
+  return planPassages.find(
+    (candidate) =>
+      candidate.attributes['start-chapter'] === span.startChapter &&
+      candidate.attributes['start-verse'] === span.startVerse &&
+      candidate.attributes['end-chapter'] === span.endChapter &&
+      candidate.attributes['end-verse'] === span.endVerse
+  );
+}
+
 function findBestSectionIndexForSpan(sections, span) {
   if (!Array.isArray(sections) || sections.length === 0) {
     return 0;
@@ -2249,17 +2293,15 @@ async function transformBurritoToPTF(cli) {
           audioEntry.reference.bookCode
         );
         let passage;
-        if (apmSnapshot && span) {
-          passage = passages.find((candidate) => {
-            return (
-              candidate.attributes['start-chapter'] === span.startChapter &&
-              candidate.attributes['start-verse'] === span.startVerse &&
-              candidate.attributes['end-chapter'] === span.endChapter &&
-              candidate.attributes['end-verse'] === span.endVerse
+        if (apmSnapshot) {
+          passage = findApmDataPassageForAudio(passages, referenceLabel, span);
+          if (!passage) {
+            console.warn(
+              `  No ApmData passage matches audio reference "${referenceLabel}"; skipping`
             );
-          });
-        }
-        if (!passage) {
+            return;
+          }
+        } else {
           const targetSectionIndex = findBestSectionIndexForSpan(
             normalizedSections,
             span
@@ -2284,10 +2326,10 @@ async function transformBurritoToPTF(cli) {
               referenceTitle
             );
           }
+          passage.attributes.reference = referenceLabel;
+          passage.attributes.title = referenceTitle;
+          passage.attributes.book = audioEntry.reference.bookCode ?? '';
         }
-        passage.attributes.reference = referenceLabel;
-        passage.attributes.title = referenceTitle;
-        passage.attributes.book = audioEntry.reference.bookCode ?? '';
 
         const transcription = resolveTranscriptionFromScope(
           audioEntry.ingredient.scope,
