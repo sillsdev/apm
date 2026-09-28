@@ -832,7 +832,14 @@ function buildLukePlanStructure() {
    * @param {string} title
    * @param {{ startChapter?: number; startVerse?: number; endChapter?: number; endVerse?: number }} [span]
    */
-  const passage = (id, sectionId, sequencenum, reference, title, span = {}) => ({
+  const passage = (
+    id,
+    sectionId,
+    sequencenum,
+    reference,
+    title,
+    span = {}
+  ) => ({
     type: 'passages',
     id,
     attributes: {

@@ -159,9 +159,7 @@ export function loadApmDataSnapshot(entries, metadata, bookCode) {
 }
 
 function relNameVariants(relName) {
-  const dashed = relName
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .toLowerCase();
+  const dashed = relName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
   return [...new Set([relName, dashed])];
 }
 
