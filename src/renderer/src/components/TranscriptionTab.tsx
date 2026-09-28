@@ -57,6 +57,8 @@ import {
   afterStep,
   getStepComplete,
   useSharedResRead,
+  useTeamWorkflowProcess,
+  isBoldTeamWorkflow,
 } from '../crud';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -101,6 +103,12 @@ const defaultArtifactTypes: ArtifactTypeSlug[] = [
   ArtifactTypeSlug.Retell,
   ArtifactTypeSlug.QandA,
   ArtifactTypeSlug.WholeBackTranslation,
+  ArtifactTypeSlug.PhraseBackTranslation,
+];
+
+/** BOLD projects only have careful and LWC (stored as phrase BT) transcriptions. */
+const boldArtifactTypes: ArtifactTypeSlug[] = [
+  ArtifactTypeSlug.CarefulSpeech,
   ArtifactTypeSlug.PhraseBackTranslation,
 ];
 
@@ -181,10 +189,27 @@ export function TranscriptionTab(props: IProps) {
 
   const { getTypeId, localizedArtifactType } = useArtifactType();
   const { getSharedResource } = useSharedResRead();
-  const artifactTypes = defaultArtifactTypes;
+  const projectPlan = useMemo(
+    () => projectPlans?.[0] as Plan | undefined,
+    [projectPlans]
+  );
+  const [organization] = useGlobal('organization');
+  // Use the plan's own team: the Team screen can open this for any team's project.
+  const teamId = useMemo(() => {
+    const projectId = projectPlan ? related(projectPlan, 'project') : project;
+    const projRec = projects.find((p) => p.id === projectId);
+    return (projRec && related(projRec, 'organization')) || organization;
+  }, [projectPlan, project, projects, organization]);
+  const isBold = isBoldTeamWorkflow(useTeamWorkflowProcess(teamId));
+  const artifactTypes = isBold ? boldArtifactTypes : defaultArtifactTypes;
   const [artifactType, setArtifactType] = useState<ArtifactTypeSlug>(
     artifactTypes[0] as ArtifactTypeSlug
   );
+  // The workflow process may load after mount; keep the selection valid.
+  useEffect(() => {
+    if (!artifactTypes.includes(artifactType))
+      setArtifactType(artifactTypes[0] as ArtifactTypeSlug);
+  }, [artifactTypes, artifactType]);
   const [exportTypeAnchor, setExportTypeAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -200,10 +225,6 @@ export function TranscriptionTab(props: IProps) {
         : localizedArtifactType(artifactType),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [artifactType]
-  );
-  const projectPlan = useMemo(
-    () => projectPlans?.[0] as Plan | undefined,
-    [projectPlans]
   );
   const flat = useMemo(
     () => Boolean(projectPlan?.attributes.flat),
