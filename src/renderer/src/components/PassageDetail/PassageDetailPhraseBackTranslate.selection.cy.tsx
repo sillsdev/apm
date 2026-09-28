@@ -37,6 +37,7 @@ import {
   startRecordingPass,
   recordAndSettle,
   tapSegmentOnEngine,
+  clickSegmentUntilSelected,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -190,12 +191,11 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
    */
   it('keeps the parked segment when playback overshoots onto a recorded one', () => {
     recordAndSettle(1); // segment 1
-    cy.get(PBT.nextUnit).click();
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(2, SEGMENTS);
     unitLabel('0:06', '0:09').should('be.visible');
     recordAndSettle(2); // segment 3
 
-    cy.get(PBT.prevUnit).click();
+    clickSegmentUntilSelected(1, SEGMENTS);
     unitLabel('0:03', '0:06').should('be.visible');
     expectRecordEnabled(); // segment 2's auto-play has parked
 
@@ -232,30 +232,6 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     });
   });
 
-  it('files each take under its own segment when navigating with the arrows', () => {
-    recordAndSettle(1); // segment 1
-    cy.get(PBT.nextUnit).click();
-    cy.get(PBT.nextUnit).click();
-    unitLabel('0:06', '0:09').should('be.visible');
-    recordAndSettle(2); // segment 3
-
-    cy.get(PBT.prevUnit).click();
-    unitLabel('0:03', '0:06').should('be.visible');
-    expectRecordEnabled();
-    recordTake();
-    waitForUploads(3); // segment 2
-
-    cy.then(() => {
-      const segs = postedTakes().map((t) => t.parsedSegments);
-      expect(segs[0], 'first take').to.deep.include({ start: 0, end: 3 });
-      expect(segs[1], 'second take').to.deep.include({ start: 6, end: 9 });
-      expect(segs[2], 'third take, recorded on segment 2').to.deep.include({
-        start: 3,
-        end: 6,
-      });
-    });
-  });
-
   it('follows a click back to an earlier segment and files the take there', () => {
     // Reported: "I record the first segment, then the third, and then try to go
     // back and record the second, it records into and replaces the third".
@@ -266,13 +242,13 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     // written (engine 1+1 vs step 2) and the navigation effect never re-ran.
     recordAndSettle(1); // segment 1
 
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2, SEGMENTS);
     unitLabel('0:06', '0:09').should('be.visible');
     recordAndSettle(2); // segment 3
 
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1, SEGMENTS);
     unitLabel('0:03', '0:06').should('be.visible');
-    recordTake();
+    recordTake(); // segment 2
     waitForUploads(3);
 
     cy.then(() => {

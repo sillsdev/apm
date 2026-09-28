@@ -77,8 +77,6 @@ export const PBT = {
   split: '#phrase-back-translate-split',
   combine: '#phrase-back-translate-combine',
   next: '#phrase-back-translate-next',
-  prevUnit: '#phrase-back-translate-prev-unit',
-  nextUnit: '#phrase-back-translate-next-unit',
   speaker: '#phrase-back-translate-speaker',
   retrySave: '#phrase-back-translate-retry-save',
   dockedRecord: '[data-cy="phrase-back-translate-docked-record"]',
@@ -1267,6 +1265,10 @@ export function expectRecordEnabled() {
 
 export function expectRecordDisabled() {
   cy.get(PBT.recordButton).should('have.attr', 'aria-disabled', 'true');
+}
+
+export function expectRecordNotVisible() {
+  cy.get(PBT.recordButton).should('not.exist');
 }
 
 /** True when the recorder is showing a take (Clear Recording is offered). */

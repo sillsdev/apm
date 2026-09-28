@@ -74,7 +74,7 @@ describe('PBT known defects', () => {
     recordTake();
     waitForUploads(1);
     cy.wait(1500); // the take is in rowData; the recorder is loading it
-    cy.get(PBT.nextUnit).click({ force: true });
+    cy.get(PBT.next).click({ force: true });
 
     unitLabel('0:03', '0:06').should('be.visible');
     cy.contains('Loading...').should('not.exist');
@@ -155,9 +155,7 @@ describe('PBT known defects (intermittent)', () => {
 
       sampleDom(
         (doc) => {
-          const next = doc.querySelector(
-            PBT.nextUnit
-          ) as HTMLButtonElement | null;
+          const next = doc.querySelector(PBT.next) as HTMLButtonElement | null;
           return {
             offered: Boolean(next) && !next?.disabled,
             stored: postedTakes().length > 0,

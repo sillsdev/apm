@@ -18,6 +18,7 @@ import {
   recordTake,
   expectRecordEnabled,
   expectRecordDisabled,
+  expectRecordNotVisible,
   expectTakePresent,
   expectNoTakePresent,
   succeedFurtherUploads,
@@ -28,6 +29,7 @@ import {
   unitLabel,
   startRecordingPass,
   recordAndSettle,
+  clickSegmentOnWaveform,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -41,9 +43,9 @@ describe('PBT returning to a recorded segment (TT-7561)', () => {
     startRecordingPass();
     recordAndSettle(1);
 
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
-    cy.get(PBT.prevUnit).click();
+    clickSegmentOnWaveform(0);
     unitLabel('0:00', '0:03').should('be.visible');
 
     // The segment is recorded, so the user must see the take (and must not be
@@ -59,9 +61,9 @@ describe('PBT returning to a recorded segment (TT-7561)', () => {
     recordTake();
     waitForUploads(1);
 
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
-    cy.get(PBT.prevUnit).click();
+    clickSegmentOnWaveform(0);
     unitLabel('0:00', '0:03').should('be.visible');
     expectRecordDisabled();
   });
@@ -96,7 +98,7 @@ describe('PBT delete and re-record', () => {
   it('drops the segment back to pending when its take is deleted', () => {
     cy.get('[aria-label="Clear Recording"]').click();
     expectRecordEnabled();
-    cy.get(PBT.nextUnit).click();
+    clickSegmentOnWaveform(1);
     unitLabel('0:03', '0:06').should('be.visible');
     expectSegmentColors([
       SEGMENT_COLOR.pending,
@@ -145,8 +147,6 @@ describe('PBT segment boundary tools', () => {
     }).should('exist');
     cy.get(PBT.combine).should('be.disabled');
     cy.get(PBT.split).should('be.disabled');
-    cy.get(PBT.prevUnit).should('be.disabled');
-    cy.get(PBT.nextUnit).should('be.disabled');
     cy.get(PBT.recordButton).click();
   });
 
@@ -178,9 +178,9 @@ describe('PBT save failure', () => {
     cy.get(PBT.retrySave).should('not.be.disabled');
     // The take is not stored, so the segment must not read as done, and Record
     // must stay off until the user deliberately discards the take.
-    expectRecordDisabled();
+    expectRecordNotVisible();
     expectTakePresent();
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
     expectSegmentColors([
       SEGMENT_COLOR.pending,
@@ -244,9 +244,9 @@ describe('PBT rough handling', () => {
 
   it('does not leave two segments selected after fast next/prev taps', () => {
     startRecordingPass();
-    cy.get(PBT.nextUnit).click();
-    cy.get(PBT.nextUnit).click({ force: true });
-    cy.get(PBT.prevUnit).click({ force: true });
+    clickSegmentOnWaveform(1);
+    clickSegmentOnWaveform(2);
+    clickSegmentOnWaveform(1);
     cy.wait(1500);
     segmentColors().then((colors) => {
       const current = colors.filter((c) => c === SEGMENT_COLOR.current);
@@ -274,9 +274,7 @@ describe('PBT review mode', () => {
   it('opens straight into review when every segment is already recorded', () => {
     mountPbt({ segments: SEGMENTS, existingTakes: [0, 1, 2] });
     waitForPbtReady();
-    // Review mode: recorder docked, nothing to record, takes playable.
-    cy.get(PBT.dockedRecord).should('exist');
-    expectRecordDisabled();
+    expectRecordNotVisible();
     cy.get(PBT.start).should('not.exist');
   });
 });

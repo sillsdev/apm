@@ -38,6 +38,7 @@ import {
   PBT,
   SEGMENTS_3,
   unitLabel,
+  clickSegmentOnWaveform,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -57,7 +58,7 @@ describe('PBT region playback contract', () => {
     // replays the opening. Anything that removes that blip must still begin at
     // the segment start: beginning 100ms in would clip the first syllable, which
     // is exactly what the reference audio is for.
-    cy.get(PBT.nextUnit).click();
+    clickSegmentOnWaveform(1);
     unitLabel('0:03', '0:06').should('be.visible');
     cy.document().should((doc) => {
       expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
@@ -75,7 +76,7 @@ describe('PBT region playback contract', () => {
     // starts playback itself, but a user pressing Play to hear a segment again
     // never goes through that path - and by then the clause counts as heard, so
     // Record is operable and can be pressed over the reference audio.
-    cy.get(PBT.nextUnit).click();
+    clickSegmentOnWaveform(1);
     unitLabel('0:03', '0:06').should('be.visible');
     expectRecordEnabled(); // heard once, Record now offered
 
@@ -94,7 +95,7 @@ describe('PBT region playback contract', () => {
   });
 
   it('stops at the end of the segment without running into the next', () => {
-    cy.get(PBT.nextUnit).click();
+    clickSegmentOnWaveform(1);
     unitLabel('0:03', '0:06').should('be.visible');
     // Segment 2 runs 0:03-0:06. Wait out its span plus slack, then require the
     // playhead to be no further than a moment past its end - running on would
@@ -133,9 +134,9 @@ describe('PBT region playback contract, last segment ends with the audio', () =>
     // no park and no stop, currentClausePlayed was never set and Record could not
     // be offered however the button was gated. The engine now reports its own
     // pauses, so the stop arrives and the clause counts as heard.
-    cy.get(PBT.nextUnit).click();
+    clickSegmentOnWaveform(1);
     unitLabel('0:03', '0:06').should('be.visible');
-    cy.get(PBT.nextUnit).click();
+    clickSegmentOnWaveform(2);
     unitLabel('0:06', '0:09').should('be.visible');
 
     // Both halves: Record withheld while the segment plays, then offered once it
