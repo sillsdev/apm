@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { debounce, Menu, MenuItem } from '@mui/material';
 import Alert from '@mui/material/Alert';
@@ -20,6 +20,7 @@ import {
   Section,
   User,
   ITranscriptionTabStrings,
+  IWorkflowStepsStrings,
   IActivityStateStrings,
   Plan,
   MediaFileD,
@@ -69,6 +70,7 @@ import {
   activitySelector,
   sharedSelector,
   transcriptionTabSelector,
+  workflowStepsSelector,
 } from '../selector';
 import { Button, spreadSx, rowSx } from '../control';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
@@ -136,6 +138,10 @@ export function TranscriptionTab(props: IProps) {
   const { pasId } = useParams();
   const t: ITranscriptionTabStrings = useSelector(transcriptionTabSelector);
   const ts: ISharedStrings = useSelector(sharedSelector);
+  const wf: IWorkflowStepsStrings = useSelector(
+    workflowStepsSelector,
+    shallowEqual
+  );
   const activityState = useSelector(activitySelector);
   const exportFile = useSelector(
     (state: IState) => state.importexport.exportFile
@@ -210,6 +216,15 @@ export function TranscriptionTab(props: IProps) {
     if (!artifactTypes.includes(artifactType))
       setArtifactType(artifactTypes[0] as ArtifactTypeSlug);
   }, [artifactTypes, artifactType]);
+  const artifactLabel = (slug: ArtifactTypeSlug) => {
+    if (isBold) {
+      if (slug === ArtifactTypeSlug.CarefulSpeech)
+        return wf.carefulTranscription;
+      if (slug === ArtifactTypeSlug.PhraseBackTranslation)
+        return wf.lwcTranscription;
+    }
+    return localizedArtifactType(slug);
+  };
   const [exportTypeAnchor, setExportTypeAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -222,9 +237,9 @@ export function TranscriptionTab(props: IProps) {
     () =>
       artifactType === ArtifactTypeSlug.Vernacular
         ? ''
-        : localizedArtifactType(artifactType),
+        : artifactLabel(artifactType),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [artifactType]
+    [artifactType, isBold, wf]
   );
   const flat = useMemo(
     () => Boolean(projectPlan?.attributes.flat),
@@ -280,9 +295,7 @@ export function TranscriptionTab(props: IProps) {
       pendingmsg: t.creatingDownloadFile,
       nodatamsg: t.noData.replace(
         '{0}',
-        onlyTypeId !== undefined
-          ? localizedArtifactType(artifactType)
-          : t.changed
+        onlyTypeId !== undefined ? artifactLabel(artifactType) : t.changed
       ),
       writingmsg: t.writingDownloadFile,
       localizedArtifact: [ExportType.ELAN, ExportType.AUDIO].includes(
@@ -367,8 +380,7 @@ export function TranscriptionTab(props: IProps) {
         .catch(() => {
           showMessage(ts.cantCopy);
         });
-    else
-      showMessage(t.noData.replace('{0}', localizedArtifactType(artifactType)));
+    else showMessage(t.noData.replace('{0}', artifactLabel(artifactType)));
   };
 
   const handleAudioExportMenu = (what: string | ExportType) => {
@@ -747,7 +759,7 @@ export function TranscriptionTab(props: IProps) {
               onClick={handleExportTypeMenu}
               endIcon={<DropDownIcon />}
             >
-              {localizedArtifactType(artifactType)}
+              {artifactLabel(artifactType)}
             </Button>
             <Menu
               id="select-export-type-menu"
@@ -764,7 +776,7 @@ export function TranscriptionTab(props: IProps) {
                   aria-hidden={!exportTypeAnchor}
                   onClick={handleExportType(slug)}
                 >
-                  {localizedArtifactType(slug)}
+                  {artifactLabel(slug)}
                 </MenuItem>
               ))}
             </Menu>
