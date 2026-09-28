@@ -11072,6 +11072,7 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PersonalizeVoicePermission.tsx</context>
+               <context context-type="sourcefile">SelectSponsor.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="voice.scope">
