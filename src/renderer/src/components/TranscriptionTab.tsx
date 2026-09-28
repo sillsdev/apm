@@ -96,6 +96,14 @@ interface IRow {
 //   return childRows.length ? childRows : null;
 // };
 
+const defaultArtifactTypes: ArtifactTypeSlug[] = [
+  ArtifactTypeSlug.Vernacular,
+  ArtifactTypeSlug.Retell,
+  ArtifactTypeSlug.QandA,
+  ArtifactTypeSlug.WholeBackTranslation,
+  ArtifactTypeSlug.PhraseBackTranslation,
+];
+
 interface IProps {
   projectPlans: Plan[];
   planColumn?: boolean;
@@ -173,13 +181,7 @@ export function TranscriptionTab(props: IProps) {
 
   const { getTypeId, localizedArtifactType } = useArtifactType();
   const { getSharedResource } = useSharedResRead();
-  const [artifactTypes] = useState<ArtifactTypeSlug[]>([
-    ArtifactTypeSlug.Vernacular,
-    ArtifactTypeSlug.Retell,
-    ArtifactTypeSlug.QandA,
-    ArtifactTypeSlug.WholeBackTranslation,
-    ArtifactTypeSlug.PhraseBackTranslation,
-  ]);
+  const artifactTypes = defaultArtifactTypes;
   const [artifactType, setArtifactType] = useState<ArtifactTypeSlug>(
     artifactTypes[0] as ArtifactTypeSlug
   );
