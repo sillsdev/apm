@@ -902,14 +902,14 @@ function buildLukePlanStructure() {
  * @param {string} rootDir
  * @returns {Promise<void>}
  */
-async function writeLukeApmDataBurrito(rootDir) {
+async function writeLukeApmDataBurrito(rootDir, options = {}) {
   const apmRoot = path.join(rootDir, 'apmdata');
   const projectRoot = path.join(apmRoot, PROJECT_FOLDER);
   const dataDir = path.join(projectRoot, 'data');
   await fs.mkdir(dataDir, { recursive: true });
 
-  const { sections, passages } = buildLukePlanStructure();
-  const orgWorkflowSteps = buildOrgWorkflowSteps(1);
+  const { sections, passages } = options.structure ?? buildLukePlanStructure();
+  const orgWorkflowSteps = options.orgWorkflowSteps ?? buildOrgWorkflowSteps(1);
   const scope = { [LUK_BOOK]: [] };
 
   /**
@@ -1006,16 +1006,18 @@ async function writeLukeApmDataBurrito(rootDir) {
  * @param {string} rootDir
  * @returns {Promise<void>}
  */
-async function writeLukeScopedAudioBurrito(rootDir) {
-  const audioRoot = path.join(rootDir, 'audio');
-  const ingredientsDir = path.join(audioRoot, 'ingredients');
-  await fs.mkdir(ingredientsDir, { recursive: true });
-  const clips = [
+async function writeLukeScopedAudioBurrito(
+  rootDir,
+  clips = [
     ['luk-1-1-4.wav', '1:1-4'],
     ['luk-1-5-7.wav', '1:5-7'],
     ['luk-chapter-1.wav', '1'],
     ['luk-book.wav', 'BOOK'],
-  ];
+  ]
+) {
+  const audioRoot = path.join(rootDir, 'audio');
+  const ingredientsDir = path.join(audioRoot, 'ingredients');
+  await fs.mkdir(ingredientsDir, { recursive: true });
   const ingredients = {};
   for (const [audioName] of clips) {
     await fs.writeFile(path.join(ingredientsDir, audioName), tinyWavBytes());
@@ -1214,4 +1216,277 @@ test('TT-7728: burrito import keeps ApmData sections and passages when attaching
     assertMediaOnPassage('BOOK', 'luk_book');
     assert.equal(mediafiles.length, 4, 'each audio clip attaches once');
   });
+});
+
+const LUKE_SECTION_SPAN = 'Luke 1:1-7 section';
+
+/**
+ * One section holds two scripture passages. Their aggregate reference is 1:1-7.
+ * @returns {{ sections: unknown[]; passages: unknown[] }}
+ */
+function buildLukeSectionRecordingPlan() {
+  const sectionSpan = 'section-luke-span';
+  const passageIntro = 'passage-luke-intro';
+  const passageAngel = 'passage-luke-angel-span';
+
+  const sections = [
+    {
+      type: 'sections',
+      id: sectionSpan,
+      attributes: {
+        sequencenum: 1,
+        name: LUKE_SECTION_SPAN,
+        state: '',
+        level: 3,
+        published: false,
+        'publish-to': '{}',
+        'date-created': '2025-01-01T00:00:00.000Z',
+        'date-updated': '2025-01-01T00:00:00.000Z',
+      },
+      relationships: {
+        lastModifiedByUser: { data: { type: 'user', id: USER_ID } },
+        plan: { data: { type: 'plan', id: PLAN_ID } },
+        passages: {
+          data: [
+            { type: 'passage', id: passageIntro },
+            { type: 'passage', id: passageAngel },
+          ],
+        },
+      },
+    },
+  ];
+
+  /**
+   * @param {string} id
+   * @param {number} sequencenum
+   * @param {string} reference
+   * @param {string} title
+   * @param {{ startChapter: number; startVerse: number; endChapter: number; endVerse: number }} span
+   */
+  const passage = (id, sequencenum, reference, title, span) => ({
+    type: 'passages',
+    id,
+    attributes: {
+      sequencenum,
+      book: LUK_BOOK,
+      reference,
+      title,
+      state: 'noMedia',
+      'start-chapter': span.startChapter,
+      'end-chapter': span.endChapter,
+      'start-verse': span.startVerse,
+      'end-verse': span.endVerse,
+      'date-created': '2025-01-01T00:00:00.000Z',
+      'date-updated': '2025-01-01T00:00:00.000Z',
+    },
+    relationships: {
+      lastModifiedByUser: { data: { type: 'user', id: USER_ID } },
+      section: { data: { type: 'section', id: sectionSpan } },
+      mediafiles: { data: [] },
+    },
+  });
+
+  const passages = [
+    passage(passageIntro, 1, '1:1-4', 'Theophilus intro', {
+      startChapter: 1,
+      startVerse: 1,
+      endChapter: 1,
+      endVerse: 4,
+    }),
+    passage(passageAngel, 2, '1:5-7', 'John was born', {
+      startChapter: 1,
+      startVerse: 5,
+      endChapter: 1,
+      endVerse: 7,
+    }),
+  ];
+  return { sections, passages };
+}
+
+/**
+ * @param {{
+ *   clips?: [string, string][];
+ *   structure?: { sections: unknown[]; passages: unknown[] };
+ *   orgWorkflowSteps?: unknown[];
+ *   verseCatalog?: string;
+ * }} [options]
+ * @param {(ptfPath: string) => void | Promise<void>} run
+ */
+async function withLukeAudioPlan(options, run) {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'burrito-ptf-'));
+  const outputDir = path.join(rootDir, 'out');
+  await fs.mkdir(outputDir, { recursive: true });
+  const catalogPath = path.join(rootDir, 'eng.vrs');
+  try {
+    if (options.verseCatalog) {
+      await fs.writeFile(catalogPath, options.verseCatalog);
+    }
+    await writeLukeScopedAudioBurrito(rootDir, options.clips);
+    await writeLukeApmDataBurrito(rootDir, {
+      structure: options.structure,
+      orgWorkflowSteps: options.orgWorkflowSteps,
+    });
+    await transformBurritoToPTF({
+      input: rootDir,
+      output: outputDir,
+      book: LUK_BOOK,
+      optionsJson: '{}',
+      jsonResult: true,
+      verseCatalogPath: options.verseCatalog ? catalogPath : undefined,
+    });
+    const files = await fs.readdir(outputDir);
+    const ptfFile = files.find((f) => f.endsWith('.ptf'));
+    assert.ok(ptfFile, 'expected a .ptf file');
+    await run(path.join(outputDir, ptfFile));
+  } finally {
+    await fs.rm(rootDir, { recursive: true, force: true });
+  }
+}
+
+test('chapter-number audio stays on the CHNUM passage when verse counts load', async () => {
+  await withLukeAudioPlan({ verseCatalog: 'LUK 1:80\n' }, (ptfPath) => {
+    const passages = readPtfTable(ptfPath, 'G_passages.json').data;
+    const mediafiles = readPtfTable(ptfPath, 'H_mediafiles.json').data;
+    const chnum = passages.find(
+      (passage) => passage.attributes?.reference === 'CHNUM|1'
+    );
+    const scripture = passages.find(
+      (passage) => passage.attributes?.reference === '1:1-4'
+    );
+    assert.ok(chnum, 'ApmData chapter-number row is kept');
+    assert.equal(
+      passages.length,
+      5,
+      'expanded chapter scope must not add a 1:1-80 passage'
+    );
+    const chapterMedia = mediafiles.filter((mediafile) =>
+      String(mediafile.attributes?.originalFile ?? '').includes('luk_chapter_1')
+    );
+    assert.equal(chapterMedia.length, 1, 'chapter-number audio is imported');
+    assert.equal(
+      chapterMedia[0].relationships?.passage?.data?.id,
+      chnum.id,
+      'chapter-number audio attaches to CHNUM|1, not the expanded verse range'
+    );
+    assert.notEqual(
+      chapterMedia[0].relationships?.passage?.data?.id,
+      scripture.id
+    );
+    const zip = new AdmZip(ptfPath);
+    assert.ok(
+      zip.getEntry(`media/${chapterMedia[0].attributes.originalFile}`),
+      'chapter-number audio file is in the media directory'
+    );
+  });
+});
+
+test('section recording that spans several passages is kept as a section resource', async () => {
+  const orgWorkflowSteps = buildOrgWorkflowSteps(1);
+  orgWorkflowSteps.push({
+    type: 'orgworkflowsteps',
+    id: 'wf-export-resource',
+    attributes: {
+      process: 'resource',
+      name: 'Resources',
+      sequencenum: 2,
+      tool: '{"tool":"resource"}',
+      permissions: '{}',
+      'date-created': '2025-01-01T00:00:00.000Z',
+      'date-updated': '2025-01-01T00:00:00.000Z',
+    },
+    relationships: {
+      lastModifiedByUser: { data: { type: 'user', id: USER_ID } },
+      organization: { data: { type: 'organization', id: ORG_ID } },
+    },
+  });
+
+  await withLukeAudioPlan(
+    {
+      clips: [
+        ['luk-1-1-4.wav', '1:1-4'],
+        ['luk-1-5-7.wav', '1:5-7'],
+        ['luk-section-1-1-7.wav', '1:1-7'],
+      ],
+      structure: buildLukeSectionRecordingPlan(),
+      orgWorkflowSteps,
+    },
+    (ptfPath) => {
+      const sections = readPtfTable(ptfPath, 'F_sections.json').data;
+      const passages = readPtfTable(ptfPath, 'G_passages.json').data;
+      const mediafiles = readPtfTable(ptfPath, 'H_mediafiles.json').data;
+      const sectionResources = readPtfTable(
+        ptfPath,
+        'I_sectionresources.json'
+      ).data;
+      const spanSection = sections.find(
+        (section) => section.attributes?.name === LUKE_SECTION_SPAN
+      );
+
+      assert.equal(
+        passages.length,
+        2,
+        'a section recording must not invent a 1:1-7 scripture passage'
+      );
+      assert.ok(
+        !passages.some((passage) => passage.attributes?.reference === '1:1-7')
+      );
+
+      const sectionMedia = mediafiles.filter((mediafile) =>
+        String(mediafile.attributes?.originalFile ?? '').includes(
+          'luk_section_1_1_7'
+        )
+      );
+      assert.equal(sectionMedia.length, 1, 'section recording is imported');
+      assert.equal(
+        sectionMedia[0].relationships?.passage?.data ?? null,
+        null,
+        'section recording is not attached to one scripture passage'
+      );
+
+      const intro = passages.find(
+        (passage) => passage.attributes?.reference === '1:1-4'
+      );
+      const angel = passages.find(
+        (passage) => passage.attributes?.reference === '1:5-7'
+      );
+      assert.equal(
+        mediafiles
+          .find(
+            (mediafile) =>
+              mediafile.relationships?.passage?.data?.id === intro.id
+          )
+          ?.attributes?.originalFile.includes('luk_1_1_4'),
+        true
+      );
+      assert.equal(
+        mediafiles
+          .find(
+            (mediafile) =>
+              mediafile.relationships?.passage?.data?.id === angel.id
+          )
+          ?.attributes?.originalFile.includes('luk_1_5_7'),
+        true
+      );
+
+      assert.equal(sectionResources.length, 1);
+      assert.equal(
+        sectionResources[0].relationships?.section?.data?.id,
+        spanSection.id
+      );
+      assert.equal(
+        sectionResources[0].relationships?.mediafile?.data?.id,
+        sectionMedia[0].id
+      );
+      assert.equal(
+        sectionResources[0].relationships?.passage?.data ?? null,
+        null
+      );
+
+      const zip = new AdmZip(ptfPath);
+      assert.ok(
+        zip.getEntry(`media/${sectionMedia[0].attributes.originalFile}`),
+        'section recording file is in the media directory'
+      );
+    }
+  );
 });
