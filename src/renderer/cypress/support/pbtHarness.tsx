@@ -1114,7 +1114,7 @@ export function clickSegmentUntilSelected(
   segments: SegmentSpec[] = SEGMENTS_3,
   options: { attempts?: number; spacingMs?: number } = {}
 ) {
-  const { attempts = 8, spacingMs = 250 } = options;
+  const { attempts = 8, spacingMs = 500 } = options;
   const attempt = (left: number) => {
     cy.document().then((doc) => {
       if (readLabelSegmentIndex(doc, segments) === index) return;
