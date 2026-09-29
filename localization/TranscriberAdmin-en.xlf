@@ -6670,9 +6670,9 @@
             <target/>
          </segment>
       </unit>
-      <unit id="planTabs.sectionsPassages">
+      <unit id="planTabs.projectOverview">
          <segment>
-            <source>{0} &amp; Passages</source>
+            <source>Project Overview</source>
             <target/>
          </segment>
       </unit>

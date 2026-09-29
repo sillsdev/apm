@@ -1299,7 +1299,7 @@ export interface IPlanTabsStrings extends Localize.LocalizedStringsMethods {
     "media": string;
     "mediaStatus": string;
     "passageStatus": string;
-    "sectionsPassages": string;
+    "projectOverview": string;
     "sectionStatus": string;
     "transcriptions": string;
 };
