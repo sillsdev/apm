@@ -29,7 +29,7 @@ import {
   unitLabel,
   startRecordingPass,
   recordAndSettle,
-  clickSegmentOnWaveform,
+  clickSegmentUntilSelected,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -45,7 +45,7 @@ describe('PBT returning to a recorded segment (TT-7561)', () => {
 
     cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
-    clickSegmentOnWaveform(0);
+    clickSegmentUntilSelected(0);
     unitLabel('0:00', '0:03').should('be.visible');
 
     // The segment is recorded, so the user must see the take (and must not be
@@ -63,7 +63,7 @@ describe('PBT returning to a recorded segment (TT-7561)', () => {
 
     cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
-    clickSegmentOnWaveform(0);
+    clickSegmentUntilSelected(0);
     unitLabel('0:00', '0:03').should('be.visible');
     expectRecordDisabled();
   });
@@ -98,7 +98,7 @@ describe('PBT delete and re-record', () => {
   it('drops the segment back to pending when its take is deleted', () => {
     cy.get('[aria-label="Clear Recording"]').click();
     expectRecordEnabled();
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     expectSegmentColors([
       SEGMENT_COLOR.pending,
@@ -244,9 +244,9 @@ describe('PBT rough handling', () => {
 
   it('does not leave two segments selected after fast next/prev taps', () => {
     startRecordingPass();
-    clickSegmentOnWaveform(1);
-    clickSegmentOnWaveform(2);
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
+    clickSegmentUntilSelected(2);
+    clickSegmentUntilSelected(1);
     cy.wait(1500);
     segmentColors().then((colors) => {
       const current = colors.filter((c) => c === SEGMENT_COLOR.current);

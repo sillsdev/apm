@@ -34,7 +34,6 @@ import {
   recordAndSettle,
   readSourcePlaying,
   readRecordEnabled,
-  clickSegmentOnWaveform,
   expectRecordNotVisible,
   clickSegmentUntilSelected,
 } from '../../../cypress/support/pbtHarness';
@@ -238,9 +237,9 @@ describe('PBT a clause shorter than the playback-start window', () => {
     // long playback has been running assumes clauses are longer than that
     // window. This one is not: its whole span is shorter, so the signal that
     // says "heard" arrives inside the window and is discarded as the seek.
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     expectRecordEnabled();
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:06').should('be.visible');
 
     // The clause is 0.2s: by the time Record could be offered it has long
@@ -261,7 +260,7 @@ describe('PBT out-of-order recording', () => {
   });
 
   it('records the last segment first without touching the others', () => {
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
     recordTake();
     waitForUploads(1);
@@ -279,7 +278,7 @@ describe('PBT out-of-order recording', () => {
   });
 
   it('records backwards, each take against its own region', () => {
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
     recordAndSettle(1);
 

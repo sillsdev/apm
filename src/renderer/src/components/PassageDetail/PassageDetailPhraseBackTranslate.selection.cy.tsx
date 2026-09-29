@@ -24,7 +24,6 @@ import {
   waitForUploads,
   recordTake,
   expectRecordEnabled,
-  clickSegmentOnWaveform,
   sampleDom,
   readCurrentSegmentIndex,
   readLabelSegmentIndex,
@@ -52,7 +51,7 @@ describe('PBT waveform segment selection', () => {
   });
 
   it('selects a clicked segment and plays it', () => {
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
   });
 
@@ -64,12 +63,12 @@ describe('PBT waveform segment selection', () => {
     // the playhead snapped back, the label never changed, and the user had to
     // click again. The player now reports a click distinctly, which disarms the
     // swallow.
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
   });
 
   it('keeps Record off while a clicked segment plays', () => {
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
 
     // One reading, taken from the middle of the segment. `playing` is the
@@ -117,7 +116,7 @@ describe('PBT segment selection after a take exists', () => {
     // and a sample can legitimately catch both live for a frame. Segment 3 runs
     // 0:06-0:09, so settling for most of a second after playback starts lands
     // clear of both edges.
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     cy.document().should((doc) => {
       expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
     });
@@ -142,7 +141,7 @@ describe('PBT segment selection after a take exists', () => {
       // label comes from the step's own currentIndex, so any segment change the
       // step does not act on shows up as the two disagreeing. Fixed separately -
       // this change only stops the click itself being swallowed.
-      clickSegmentOnWaveform(2);
+      clickSegmentUntilSelected(2);
 
       sampleDom(
         (doc) => ({
@@ -191,11 +190,11 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
    */
   it('keeps the parked segment when playback overshoots onto a recorded one', () => {
     recordAndSettle(1); // segment 1
-    clickSegmentUntilSelected(2, SEGMENTS);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
     recordAndSettle(2); // segment 3
 
-    clickSegmentUntilSelected(1, SEGMENTS);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     expectRecordEnabled(); // segment 2's auto-play has parked
 
@@ -242,11 +241,11 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     // written (engine 1+1 vs step 2) and the navigation effect never re-ran.
     recordAndSettle(1); // segment 1
 
-    clickSegmentUntilSelected(2, SEGMENTS);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
     recordAndSettle(2); // segment 3
 
-    clickSegmentUntilSelected(1, SEGMENTS);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     recordTake(); // segment 2
     waitForUploads(3);

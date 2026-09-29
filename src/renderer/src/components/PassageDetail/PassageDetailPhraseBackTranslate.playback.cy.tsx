@@ -35,10 +35,12 @@ import {
   expectRecordEnabled,
   sourcePlay,
   pbtCleanup,
-  PBT,
   SEGMENTS_3,
   unitLabel,
-  clickSegmentOnWaveform,
+  clickSegmentUntilSelected,
+  expectTakePresent,
+  PBT,
+  expectRecordNotVisible,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -58,7 +60,7 @@ describe('PBT region playback contract', () => {
     // replays the opening. Anything that removes that blip must still begin at
     // the segment start: beginning 100ms in would clip the first syllable, which
     // is exactly what the reference audio is for.
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     cy.document().should((doc) => {
       expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
@@ -76,7 +78,7 @@ describe('PBT region playback contract', () => {
     // starts playback itself, but a user pressing Play to hear a segment again
     // never goes through that path - and by then the clause counts as heard, so
     // Record is operable and can be pressed over the reference audio.
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     expectRecordEnabled(); // heard once, Record now offered
 
@@ -95,7 +97,7 @@ describe('PBT region playback contract', () => {
   });
 
   it('stops at the end of the segment without running into the next', () => {
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     // Segment 2 runs 0:03-0:06. Wait out its span plus slack, then require the
     // playhead to be no further than a moment past its end - running on would
@@ -134,9 +136,9 @@ describe('PBT region playback contract, last segment ends with the audio', () =>
     // no park and no stop, currentClausePlayed was never set and Record could not
     // be offered however the button was gated. The engine now reports its own
     // pauses, so the stop arrives and the clause counts as heard.
-    clickSegmentOnWaveform(1);
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
-    clickSegmentOnWaveform(2);
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
 
     // Both halves: Record withheld while the segment plays, then offered once it
@@ -165,6 +167,49 @@ describe('PBT region playback contract, last segment ends with the audio', () =>
         'Record withheld while the last segment plays'
       ).to.equal(false);
     });
+    cy.wait(200);
+    expectRecordEnabled();
+  });
+});
+
+describe('PBT playback when changing segments', () => {
+  beforeEach(() => {
+    mountPbt({ segments: SEGMENTS, existingTakes: [0] });
+    expectRecordNotVisible();
+    unitLabel('0:03', '0:06').should('be.visible');
+    expectRecordEnabled();
+  });
+
+  it('stops the player when the current segment changes', () => {
+    clickSegmentUntilSelected(0);
+    unitLabel('0:00', '0:03').should('be.visible');
+    expectTakePresent();
+
+    // Play the recording for segment 0
+    cy.get(`#${PBT.container} #wsAudioPlay`)
+      .not('#detailplayer #wsAudioPlay')
+      .as('takePlay');
+    cy.get('@takePlay', { timeout: 20000 }).should('not.be.disabled').click();
+    cy.get('@takePlay').find('svg[data-testid="PauseIcon"]').should('exist');
+
+    // Change to segment 1
+    clickSegmentUntilSelected(1);
+    unitLabel('0:03', '0:06').should('be.visible');
+    cy.get('@takePlay')
+      .find('svg[data-testid="PlayArrowIcon"]')
+      .should('exist');
+
+    // Pause segment 1
+    sourcePlay().then(($play) => {
+      if ($play.find('svg[data-testid="PauseIcon"]').length) {
+        cy.wrap($play).click();
+      }
+    });
+
+    cy.get('@takePlay')
+      .find('svg[data-testid="PlayArrowIcon"]')
+      .should('exist');
+    cy.wait(200);
     expectRecordEnabled();
   });
 });
