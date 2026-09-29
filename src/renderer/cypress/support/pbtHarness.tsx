@@ -1064,6 +1064,13 @@ export function readSourcePlaying(doc: Document): boolean {
   return Boolean(play?.querySelector('svg[data-testid="PauseIcon"]'));
 }
 
+/** Wait until the reference audio has finished playing. */
+export function waitForSourceStopped(timeoutMs = 10000) {
+  cy.document({ timeout: timeoutMs }).should((doc) => {
+    expect(readSourcePlaying(doc), 'playback stopped').to.equal(false);
+  });
+}
+
 /** True while the docked Record control is operable. */
 export function readRecordEnabled(doc: Document): boolean {
   const rec = doc.querySelector(PBT.recordButton);
