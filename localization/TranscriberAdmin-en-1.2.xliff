@@ -7782,13 +7782,6 @@
                <context context-type="sourcefile">PlanTabs.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="planTabs.sectionsPassages">
-            <source>{0} &amp; Passages</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanTabs.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="planTabs.sectionStatus">
             <source>{1} of {2} {0}</source>
             <target/>
