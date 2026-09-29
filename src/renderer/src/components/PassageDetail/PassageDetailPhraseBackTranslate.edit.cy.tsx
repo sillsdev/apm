@@ -51,7 +51,7 @@ describe('PBT returning to a recorded segment (TT-7561)', () => {
     // The segment is recorded, so the user must see the take (and must not be
     // invited to record over it).
     expectTakePresent();
-    expectRecordDisabled();
+    expectRecordNotVisible();
   });
 
   it('shows it as recorded even when the upload reaches rowData late', () => {
