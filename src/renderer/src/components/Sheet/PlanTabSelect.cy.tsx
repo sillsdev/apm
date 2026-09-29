@@ -21,12 +21,13 @@ import localizationReducer from '../../store/localization/reducers';
  * app uses, via LocalizedStrings on the Redux `strings` slice.
  */
 const planTabsFixture = {
+  projectOverview: 'Project Overview',
   media: 'Media',
   assignments: 'Assignments',
   transcriptions: 'Transcriptions',
 } as const;
 
-const projectOverviewLabel = 'Project Overview';
+const projectOverviewLabel = planTabsFixture.projectOverview;
 
 // Mock memory — must match DataProvider so useOrbitData sees organizations
 // (cypress-testing-takeaways: data-driven providers, not import stubs).
