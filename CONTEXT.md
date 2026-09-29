@@ -78,16 +78,16 @@ _Avoid_: Hierarchical; calling flat rows "passages"
 Project structure with sections containing numbered passages.
 _Avoid_: Flat
 
-**Sections & Passages**:
+**Project Overview**:
 The project page that lists sections and passages — desktop sheet or mobile cards.
-_Avoid_: PlanSheet; PlanView (implementation names)
+_Avoid_: Sections & Passages (former name); PlanSheet; PlanView (implementation names)
 
 **Passage Card**:
-A mobile card for a passage (or section+passage) on Sections & Passages.
+A mobile card for a passage (or section+passage) on Project Overview.
 _Avoid_: Sheet row; table cell
 
 **Current Passage**:
-The last passage the user opened for work, stored per user in local storage so Sections & Passages can restore focus.
+The last passage the user opened for work, stored per user in local storage so Project Overview can restore focus.
 _Avoid_: Last row (desktop-sheet wording); selected row
 
 ## Publishing & Akuo
@@ -338,7 +338,7 @@ _Avoid_: Tool; calling a step a "mode"; Racetrack (dev name for the navigation U
 
 **Workflow Navigation**:
 The UI control for moving between sections, passages, and workflow steps while working on a passage.
-_Avoid_: Racetrack (internal dev name); Sections & Passages sheet
+_Avoid_: Racetrack (internal dev name); Project Overview sheet
 
 **Tool**:
 The program logic APM provides to help the user accomplish a workflow step. Each step is mapped to exactly one tool from the fixed set the application offers.
@@ -353,7 +353,7 @@ Granting a workflow step on a section or passage to a team member or group — w
 _Avoid_: Workflow step (what work, not who); Sheet editing permission
 
 **Sheet Editing Permission**:
-Who may edit the Sections & Passages sheet for a project — assigned to a user or group separately from workflow step assignments.
+Who may edit the Project Overview sheet for a project — assigned to a user or group separately from workflow step assignments.
 _Avoid_: Assignment; Publish permission
 
 ## Sync & Paratext
