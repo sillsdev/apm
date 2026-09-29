@@ -90,7 +90,6 @@ const mockSharedStrings = new LocalizedStrings({
 
 const mockPlanTabsStrings = new LocalizedStrings({
   en: {
-    sectionsPassages: 'Sections & Passages',
     media: 'Media',
     assignments: 'Assignments',
     transcriptions: 'Transcriptions',
