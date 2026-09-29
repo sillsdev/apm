@@ -7782,6 +7782,14 @@
                <context context-type="sourcefile">PlanTabs.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="planTabs.projectOverview">
+            <source>Project Overview</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanTabs.tsx</context>
+               <context context-type="sourcefile">PlanTabSelect.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="planTabs.sectionStatus">
             <source>{1} of {2} {0}</source>
             <target/>

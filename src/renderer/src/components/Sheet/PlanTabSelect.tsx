@@ -24,7 +24,7 @@ export const PlanTabSelect = () => {
 
   const options = useMemo(() => {
     const sectionPassage = {
-      label: 'Project Overview',
+      label: t.projectOverview,
       tab: PlanTabEnum.sectionPassage,
     };
     const assignments = { label: t.assignments, tab: PlanTabEnum.assignment };
@@ -38,7 +38,14 @@ export const PlanTabSelect = () => {
           { label: t.transcriptions, tab: PlanTabEnum.transcription },
         ]
       : [...base, { label: t.transcriptions, tab: PlanTabEnum.assignment }];
-  }, [t.media, t.assignments, t.transcriptions, showAssign, isMobile]);
+  }, [
+    t.projectOverview,
+    t.media,
+    t.assignments,
+    t.transcriptions,
+    showAssign,
+    isMobile,
+  ]);
   const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
   const handleClose = () => setActionMenuItem(null);
   const handleChange = (tabIndex: PlanTabEnum) => {
@@ -54,7 +61,7 @@ export const PlanTabSelect = () => {
       <Button
         id="planTabSelect"
         aria-owns={actionMenuItem ? 'action-menu' : undefined}
-        aria-label="Project Overview"
+        aria-label={t.projectOverview}
         variant="outlined"
         onClick={handleMenu}
         endIcon={<DropDownIcon />}

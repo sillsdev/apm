@@ -117,7 +117,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab id="projOverview" label="Project Overview" />
+          <Tab id="projOverview" label={t.projectOverview} />
           <Tab
             id="audio"
             label={
