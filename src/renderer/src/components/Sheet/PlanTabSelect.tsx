@@ -4,7 +4,6 @@ import { IPlanTabsStrings } from '@model/index';
 import { Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { planTabsSelector } from '../../selector';
-import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { useShowAssignment } from '../../crud/useShowAssignment';
 import { useMobile } from '../../utils';
 import { PlanContext } from '../../context/PlanContext';
@@ -18,20 +17,14 @@ export const PlanTabSelect = () => {
     null
   );
   const t: IPlanTabsStrings = useSelector(planTabsSelector, shallowEqual);
-  const { getOrganizedBy } = useOrganizedBy();
-  const organizedBy = getOrganizedBy(false);
   const ctx = useContext(PlanContext);
-  const { flat, tab, setTab } = ctx.state;
+  const { tab, setTab } = ctx.state;
   const showAssign = useShowAssignment();
   const { isMobile } = useMobile();
-  const defaultItem = useMemo(
-    () => (flat ? organizedBy : t.sectionsPassages.replace('{0}', organizedBy)),
-    [flat, organizedBy, t]
-  );
 
   const options = useMemo(() => {
     const sectionPassage = {
-      label: defaultItem,
+      label: 'Project Overview',
       tab: PlanTabEnum.sectionPassage,
     };
     const assignments = { label: t.assignments, tab: PlanTabEnum.assignment };
@@ -45,14 +38,7 @@ export const PlanTabSelect = () => {
           { label: t.transcriptions, tab: PlanTabEnum.transcription },
         ]
       : [...base, { label: t.transcriptions, tab: PlanTabEnum.assignment }];
-  }, [
-    defaultItem,
-    t.media,
-    t.assignments,
-    t.transcriptions,
-    showAssign,
-    isMobile,
-  ]);
+  }, [t.media, t.assignments, t.transcriptions, showAssign, isMobile]);
   const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
   const handleClose = () => setActionMenuItem(null);
   const handleChange = (tabIndex: PlanTabEnum) => {
@@ -68,7 +54,7 @@ export const PlanTabSelect = () => {
       <Button
         id="planTabSelect"
         aria-owns={actionMenuItem ? 'action-menu' : undefined}
-        aria-label={t.sectionsPassages}
+        aria-label="Project Overview"
         variant="outlined"
         onClick={handleMenu}
         endIcon={<DropDownIcon />}

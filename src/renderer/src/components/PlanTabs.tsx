@@ -117,14 +117,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab
-            id="secPass"
-            label={
-              flat
-                ? organizedBy
-                : t.sectionsPassages.replace('{0}', organizedBy)
-            }
-          />
+          <Tab id="projOverview" label="Project Overview" />
           <Tab
             id="audio"
             label={
