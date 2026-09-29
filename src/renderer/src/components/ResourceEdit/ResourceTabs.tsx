@@ -358,6 +358,7 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
           isNote={isNote}
           ws={ws}
           onOpen={handleOverOpen}
+          onSaving={() => showMessage(t.saving)}
           onCommit={handleCommit}
           onDelete={handleDelete}
           onLink={handleLink}

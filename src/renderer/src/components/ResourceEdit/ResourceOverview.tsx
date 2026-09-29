@@ -73,6 +73,7 @@ interface IProps extends IDialog<IResourceDialog> {
   onDelete?: () => void;
   onLink?: (link: SharedResourceD) => Promise<void>;
   onUnlink?: () => Promise<void> | void;
+  onSaving?: () => void;
   contentReadOnly?: boolean;
 }
 
@@ -89,6 +90,7 @@ export default function ResourceOverview(props: IProps) {
     onDelete,
     onLink,
     onUnlink,
+    onSaving,
     contentReadOnly,
   } = props;
 
@@ -161,6 +163,9 @@ export default function ResourceOverview(props: IProps) {
   };
 
   const handleAdd = async () => {
+    // Before category create: a new name waits on the remote queue, and the
+    // saving snackbar lives in onCommit which runs after that.
+    onSaving?.();
     // Create the category now (at save) if the user typed a new one; on blur it
     // was only resolved against existing categories.
     const category = catCommitRef.current

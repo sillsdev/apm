@@ -62,7 +62,7 @@ import {
   findRecord,
   useGraphicUpdate,
   useGraphicFind,
-  useSharedResRead,
+  lookupSharedResource,
   useNoteCategory,
   PublishDestinationEnum,
   usePublishDestination,
@@ -280,6 +280,10 @@ export function ScriptureTable(props: IProps) {
   const [editRow, setEditRow] = useState<ISheet>();
   const [versionRow, setVersionRow] = useState<ISheet>();
   const [isNote, setIsNote] = useState(false);
+  // True while ResourceTabs is open. getSheet from an Orbit write in that
+  // dialog blocks Add and Cancel; the edited row is patched via onUpdRef.
+  const resourceDialogRef = useRef(false);
+  resourceDialogRef.current = editRow !== undefined && (shared || isNote);
   const [defaultFilename, setDefaultFilename] = useState('');
   const [warningVisible, setWarningVisible] = useState<boolean>(false);
   const graphicCreate = useGraphicCreate();
@@ -353,7 +357,6 @@ export function ScriptureTable(props: IProps) {
     getLocalDefault,
     setLocalDefault,
   } = useProjectDefaults();
-  const { getSharedResource } = useSharedResRead();
   const noteCategory = useNoteCategory();
   const orgSteps = useFilteredSteps();
   const getDiscussionCount = useDiscussionCount({
@@ -1528,6 +1531,11 @@ export function ScriptureTable(props: IProps) {
     const canMerge = cur.every(
       (s) => !isPassageRow(s) || s.deleted || Boolean(s.passage?.id)
     );
+    const getSharedResource = lookupSharedResource(
+      memory.cache.query((q) =>
+        q.findRecords('sharedresource')
+      ) as SharedResourceD[]
+    );
     setSheet(
       getSheet({
         plan,
@@ -1572,7 +1580,6 @@ export function ScriptureTable(props: IProps) {
     graphicFind,
     getPublishTo,
     publishStatus,
-    getSharedResource,
     noteCategory,
     user,
     myGroups,
@@ -1721,6 +1728,8 @@ export function ScriptureTable(props: IProps) {
       plan &&
       !updateRef.current
     ) {
+      //we'll do another refresh when the resource dialog is closed
+      if (resourceDialogRef.current) return;
       setUpdate(true);
       refreshSheet();
       getLastModified(plan);

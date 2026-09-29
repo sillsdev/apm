@@ -4,6 +4,24 @@ import { PassageD, SharedResourceD } from '../model';
 import related from './related';
 import { findRecord } from './tryFindRecord';
 
+/** One pass over the shared-resource cache. getSheet used to re-query it per passage. */
+export const lookupSharedResource = (
+  sharedResources: readonly SharedResourceD[]
+) => {
+  const byId = new Map<string, SharedResourceD>();
+  const byPassage = new Map<string, SharedResourceD>();
+  for (const sr of sharedResources) {
+    byId.set(sr.id, sr);
+    const passageId = related(sr, 'passage');
+    if (passageId && !byPassage.has(passageId)) byPassage.set(passageId, sr);
+  }
+  return (p: PassageD): SharedResourceD | undefined => {
+    const linked = related(p, 'sharedResource');
+    if (linked) return byId.get(linked);
+    return byPassage.get(p.id);
+  };
+};
+
 export const useSharedResRead = () => {
   const [memory] = useGlobal('memory');
 
