@@ -96,6 +96,10 @@ const mockMemory = {
     }
   }),
   schema: {},
+  keyMap: {
+    idToKey: jest.fn(() => '501'),
+    keyToId: jest.fn(() => undefined),
+  },
 };
 
 const mockErrorReporter = { notify: jest.fn() };
@@ -323,38 +327,51 @@ describe('useArtifactCategory (TT-7656)', () => {
     );
   });
 
-  it('waits for the remote queue only after creating a new category', async () => {
+  it('returns the new category id while the remote queue is still busy', async () => {
     const { result } = renderHook(() => useArtifactCategory(ORG_ID));
 
-    let settledId: string | undefined | 'pending' = 'pending';
-    const p = result.current.addNewArtifactCategory(
-      'Brand New Note Cat',
-      ArtifactCategoryType.Note
+    // Note Add only needs the local id. Waiting on a remote id here stalled
+    // the Saving snack (TT-7730). The id is remembered so the next note can
+    // see the category before it syncs.
+    const id = await settleSoon(
+      result.current.addNewArtifactCategory(
+        'Brand New Note Cat',
+        ArtifactCategoryType.Note
+      )
     );
-    p.then((id) => {
-      settledId = id;
-    });
-
-    // Memory write happens first; create must not return until the queue wait
-    // (needed so keys.remoteId fills in) resolves.
-    await new Promise<void>((r) => setTimeout(r, 0));
-    // Give isDuplicateCategory's getArtifactCategorys a chance to finish
-    // (must not hang on the remote wait).
-    await act(async () => {
-      await new Promise<void>((r) => setTimeout(r, 50));
-    });
+    expect(id).toBe('new-cat-id');
     expect(mockMemory.update).toHaveBeenCalled();
-    expect(settledId).toBe('pending');
-    expect(waitForRemoteQueue).toHaveBeenCalled();
-    expect(pendingWaits.length).toBeGreaterThan(0);
+    expect(mockMemory.keyMap.idToKey).not.toHaveBeenCalled();
+    expect(waitForRemoteQueue).not.toHaveBeenCalled();
+    expect(pendingWaits).toHaveLength(0);
+  });
 
-    await act(async () => {
-      while (pendingWaits.length) {
-        pendingWaits.shift()?.();
-      }
-      await p;
-    });
-    expect(settledId).toBe('new-cat-id');
+  it('lists a category created this session before it has a remote id', async () => {
+    categoryRecords = [
+      noteCat('synced', 'Synced', { remoteId: '99' }),
+      noteCat('other-local', 'Other Local'),
+    ];
+    const { result } = renderHook(() => useArtifactCategory(ORG_ID));
+
+    const id = await settleSoon(
+      result.current.addNewArtifactCategory(
+        'Session Cat',
+        ArtifactCategoryType.Note
+      )
+    );
+    expect(id).toBe('new-cat-id');
+    categoryRecords = [
+      ...categoryRecords,
+      noteCat('new-cat-id', 'Session Cat'),
+    ];
+
+    const cats = await settleSoon(
+      result.current.getArtifactCategorys(ArtifactCategoryType.Note)
+    );
+    const ids = cats.map((c) => c.id);
+    expect(ids).toContain('new-cat-id');
+    expect(ids).toContain('synced');
+    expect(ids).not.toContain('other-local');
   });
 });
 
