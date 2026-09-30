@@ -98,8 +98,6 @@ interface IProps {
   validationMessage?: string | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
-  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
-  confirmOnClose?: boolean | undefined;
   /**
    * Forwarded to MediaRecord (the record tab): when set, a saved take is handed
    * here as a staged file rather than uploaded — the deferred general-resource
@@ -139,7 +137,6 @@ function PassageRecordDlg(props: IProps) {
     validationMessage,
     pendingRestore,
     beforeUpload,
-    confirmOnClose,
     onStageFile,
     initialFiles,
     keepFilesAfterSubmit,
@@ -230,8 +227,9 @@ function PassageRecordDlg(props: IProps) {
     if (reason === 'backdropClick') return;
     // Can't close mid-recording (matches handleCancel's own guard).
     if (recording) return;
-    // Always confirm first: this is a wizard step and closing discards it.
-    if (confirmOnClose) {
+    // Confirm only when an unsaved take on the record tab would be lost; a
+    // file upload is cheap to redo, so it never prompts.
+    if (mode === 'record' && canSave) {
       setShowConfirm(true);
       return;
     }

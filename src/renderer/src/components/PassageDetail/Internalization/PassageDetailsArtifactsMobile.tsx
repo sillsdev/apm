@@ -257,13 +257,15 @@ export function PassageDetailArtifactsMobile() {
           ? row.artifactType
           : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
-  // Confirm-before-discard for the passage-select and edit dialogs. Closing any
-  // step of this wizard flow always prompts, since it discards everything
-  // entered on this and prior steps.
+  // Confirm-before-discard for the wizard and edit dialogs. In the Add Audio
+  // Resource wizard, closing only prompts when it would lose a recording (a
+  // file upload is cheap to redo) or at the final configure step ('wiz').
   // Which dialog's close is awaiting confirmation ('passage' vs 'edit' differ
   // only in what discarding tears down); null when no prompt is showing.
   const [dialogPendingCloseConfirmation, setDialogPendingCloseConfirmation] =
     useState<null | 'passage' | 'edit' | 'wiz'>(null);
+  // The staged general-resource audio is a recorded take (not an uploaded file).
+  const [isStagedRecording, setIsStagedRecording] = useState(false);
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
   const { isMobileWidth } = useMobile();
@@ -479,9 +481,10 @@ export function PassageDetailArtifactsMobile() {
   };
 
   const handleProjResPassageVisible = (v: boolean) => {
-    // Closing (X or Escape) always prompts; discarding loses this wizard step.
+    // Closing (X or Escape) prompts only if it would discard a recording.
     if (!v) {
-      setDialogPendingCloseConfirmation('passage');
+      if (isStagedRecording) setDialogPendingCloseConfirmation('passage');
+      else handlePassageDiscard();
       return;
     }
     setProjResPassageVisible(v);
@@ -494,6 +497,7 @@ export function PassageDetailArtifactsMobile() {
     catIdRef.current = undefined;
     descriptionRef.current = '';
     setResourceUploadFiles([]);
+    setIsStagedRecording(false);
   };
 
   // The wizard's X routes here (like the passage-select dialog): a close request
@@ -518,6 +522,7 @@ export function PassageDetailArtifactsMobile() {
     catIdRef.current = undefined;
     descriptionRef.current = '';
     setResourceUploadFiles([]);
+    setIsStagedRecording(false);
   };
   const handleWizDiscard = () => {
     setDialogPendingCloseConfirmation(null);
@@ -617,6 +622,7 @@ export function PassageDetailArtifactsMobile() {
       catIdRef.current = undefined;
       descriptionRef.current = '';
       setResourceUploadFiles([]);
+      setIsStagedRecording(false);
     }
     setResourceKind(ResourceTypeEnum.sectionResource);
     setUploadVisible(false);
@@ -995,9 +1001,10 @@ export function PassageDetailArtifactsMobile() {
   // SelectSections, and defer the real upload to that dialog's Upload button
   // (handleSelectProjectResourcePassage). No media exists yet, so there are no
   // existing assignments to pre-check.
-  const handleStageAudioFiles = async (files: File[]) => {
+  const handleStageAudioFiles = async (files: File[], recorded?: boolean) => {
     // we should only have one file if going through the general resource flow
     if (!files || files.length !== 1) return;
+    setIsStagedRecording(Boolean(recorded));
     // Commit a newly-typed artifact category now, while the dialog's metaData is
     // still mounted; the deferred upload runs after it unmounts. Null the ref so
     // the later upload's beforeUpload does not create a second category.
@@ -1267,7 +1274,6 @@ export function PassageDetailArtifactsMobile() {
       <Uploader
         audioUploadOrRecord={audioUploadOrRecord}
         hideUploadCancel
-        confirmOnClose
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}
