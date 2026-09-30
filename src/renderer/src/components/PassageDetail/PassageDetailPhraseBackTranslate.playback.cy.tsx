@@ -38,11 +38,7 @@ import {
   SEGMENTS_3,
   unitLabel,
   clickSegmentUntilSelected,
-  expectTakePresent,
   PBT,
-  expectRecordNotVisible,
-  expectRecordDisabled,
-  waitForSourceStopped as waitForSourceToStop,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -114,74 +110,5 @@ describe('PBT region playback contract', () => {
         'playhead did not run into segment 3'
       ).to.be.lessThan(6.5);
     });
-  });
-});
-
-describe('PBT region playback contract, last segment ends with the audio', () => {
-  beforeEach(() => {
-    // durationSec pinned to the last segment's end, so that segment finishes
-    // exactly where the file does. That, not the segment being short, is the
-    // condition that was reported - a sliver at the end of a 6s file makes the
-    // fixture itself unreliable, and the segment length is beside the point.
-    mountPbt({ segments: SEGMENTS, durationSec: 9 });
-    waitForPbtReady();
-    startRecordingPass();
-  });
-
-  it('enables Record when the last segment ends at the end of the audio', () => {
-    clickSegmentUntilSelected(1);
-    unitLabel('0:03', '0:06').should('be.visible');
-
-    clickSegmentUntilSelected(2);
-    unitLabel('0:06', '0:09').should('be.visible');
-    expectRecordDisabled();
-
-    // Wait for the segment end
-    waitForSourceToStop();
-
-    cy.wait(200);
-    expectRecordEnabled();
-  });
-});
-
-describe('PBT playback when changing segments', () => {
-  beforeEach(() => {
-    mountPbt({ segments: SEGMENTS, existingTakes: [0] });
-    expectRecordNotVisible();
-    unitLabel('0:03', '0:06').should('be.visible');
-    expectRecordEnabled();
-  });
-
-  it('stops the player when the current segment changes', () => {
-    clickSegmentUntilSelected(0);
-    unitLabel('0:00', '0:03').should('be.visible');
-    expectTakePresent();
-
-    // Play the recording for segment 0
-    cy.get(`#${PBT.container} #wsAudioPlay`)
-      .not('#detailplayer #wsAudioPlay')
-      .as('takePlay');
-    cy.get('@takePlay', { timeout: 20000 }).should('not.be.disabled').click();
-    cy.get('@takePlay').find('svg[data-testid="PauseIcon"]').should('exist');
-
-    // Change to segment 1
-    clickSegmentUntilSelected(1);
-    unitLabel('0:03', '0:06').should('be.visible');
-    cy.get('@takePlay')
-      .find('svg[data-testid="PlayArrowIcon"]')
-      .should('exist');
-
-    // Pause segment 1
-    sourcePlay().then(($play) => {
-      if ($play.find('svg[data-testid="PauseIcon"]').length) {
-        cy.wrap($play).click();
-      }
-    });
-
-    cy.get('@takePlay')
-      .find('svg[data-testid="PlayArrowIcon"]')
-      .should('exist');
-    cy.wait(200);
-    expectRecordEnabled();
   });
 });

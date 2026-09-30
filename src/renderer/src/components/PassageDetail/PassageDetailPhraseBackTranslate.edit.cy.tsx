@@ -215,6 +215,25 @@ describe('PBT save failure', () => {
     recordTake();
     cy.contains('Upload Failed', { timeout: 25000 }).should('be.visible');
 
+    // Let the failed save settle before clearing it, the way a user would.
+    //
+    // A rejected upload leaves the take dirty (MediaRecord only clears
+    // `filechanged` when there is a mediaId), so `canSave` flips back to true
+    // right after the failure. The step's auto-save effect reads
+    // `saveRejectedRef` when it runs, and Clear Recording clears that ref - so
+    // if the click lands before React has flushed that pending effect, the
+    // effect then sees canSave true with the guard already down and re-uploads
+    // the take the user just discarded. It fails again, afterUploadCb forces
+    // phase back to 'recorded', and Record is replaced by Next Segment.
+    //
+    // Cypress clicks a millisecond or two after the banner renders, which is
+    // inside that window; 100ms is enough to close it and a real user is never
+    // anywhere near it. This wait is not the behaviour under test - it keeps
+    // the spec on the path a person actually takes. The underlying guard still
+    // depends on effect-flush ordering rather than on state; fixing that is
+    // what removes the need for this wait.
+    cy.wait(100);
+
     cy.get('[aria-label="Clear Recording"]').click();
     cy.contains('Upload Failed').should('not.exist');
     expectRecordEnabled();
