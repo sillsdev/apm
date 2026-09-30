@@ -2,7 +2,7 @@
  * TT-7730: Adding a note (title + new category) must show Saving and switch to
  * References without waiting for the Orbit remote request queue to drain.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import Coordinator from '@orbit/coordinator';
@@ -12,6 +12,7 @@ import bugsnagClient from '../../auth/bugsnagClient';
 import { GlobalProvider } from '../../context/GlobalContext';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import DataProvider from '../../hoc/DataProvider';
+import { useOrbitData } from '../../hoc/useOrbitData';
 import SnackBarProvider from '../../hoc/SnackBar';
 import { PassageTypeEnum, RoleNames, IwsKind, SheetLevel } from '../../model';
 import localizationReducer from '../../store/localization/reducers';
@@ -71,6 +72,8 @@ const createMockMemory = (records: RecordsByKey = {}): Memory => {
   const runQuery = (
     queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
   ) => queryFn(createMockQueryBuilder(records));
+  // useOrbitData (what ScriptureTable's load effect depends on) listens here.
+  const listeners = new Set<() => void>();
   return {
     schema,
     cache: {
@@ -78,7 +81,10 @@ const createMockMemory = (records: RecordsByKey = {}): Memory => {
       liveQuery: (
         queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown
       ) => ({
-        subscribe: () => () => {},
+        subscribe: (cb: () => void) => {
+          listeners.add(cb);
+          return () => listeners.delete(cb);
+        },
         query: () => runQuery(queryFn),
       }),
     },
@@ -87,6 +93,7 @@ const createMockMemory = (records: RecordsByKey = {}): Memory => {
     ) => runQuery(queryFn),
     update: (arg: unknown) => {
       if (Array.isArray(arg)) applyOps(records, arg as RecordOperation[]);
+      listeners.forEach((cb) => cb());
       return Promise.resolve();
     },
     keyMap: { idToKey: () => undefined, keyToId: () => undefined },
@@ -183,10 +190,33 @@ const mockStore = createStore(
 
 const passage = notePassage[`passage:${PASSAGE_ID}`];
 
+/**
+ * ScriptureTable's load effect: onSaving sets updateRef, updatePassageRef
+ * leaves that lock set, and a shared-resource write must not refreshSheet
+ * while it is set (TT-7730).
+ */
+const SheetRebuildGuard = ({
+  guard,
+  watch,
+}: {
+  guard: { current: boolean };
+  watch: { seen: number; rebuilds: number };
+}) => {
+  const sharedresources = useOrbitData<{ id: string }[]>('sharedresource');
+  useEffect(() => {
+    watch.seen = sharedresources.length;
+    if (sharedresources.length > 0 && !guard.current) watch.rebuilds += 1;
+  }, [sharedresources, guard, watch]);
+  return null;
+};
+SheetRebuildGuard.displayName = 'SheetRebuildGuard';
+
 describe('ResourceTabs add note (TT-7730)', () => {
   let memory: Memory;
   /** Stays non-zero so waitForRemoteQueue cannot finish inside one 1s poll. */
   const queueLength = 3;
+  let guard = { current: false };
+  let watch = { seen: 0, rebuilds: 0 };
 
   const createInitialState = () => ({
     coordinator: {
@@ -244,6 +274,10 @@ describe('ResourceTabs add note (TT-7730)', () => {
   ) => {
     const records = options.records ?? { ...notePassage };
     memory = createMockMemory(records);
+    guard = { current: false };
+    watch = { seen: 0, rebuilds: 0 };
+    const sheetGuard = guard;
+    const sheetWatch = watch;
     if (options.holdSharedResourceAdd) {
       const hold = options.holdSharedResourceAdd;
       const update = memory.update.bind(memory);
@@ -264,6 +298,7 @@ describe('ResourceTabs add note (TT-7730)', () => {
           <GlobalProvider init={createInitialState()}>
             <DataProvider dataStore={memory}>
               <SnackBarProvider>
+                <SheetRebuildGuard guard={sheetGuard} watch={sheetWatch} />
                 <UnsavedContext.Provider
                   value={{
                     state: {
@@ -293,7 +328,15 @@ describe('ResourceTabs add note (TT-7730)', () => {
                       passage,
                     }}
                     onOpen={cy.stub()}
-                    onUpdRef={cy.stub()}
+                    onSaving={(saving) => {
+                      sheetGuard.current = saving;
+                    }}
+                    onUpdRef={() => {
+                      // updatePassageRef: a lock already held by onSaving stays held.
+                      const nested = sheetGuard.current;
+                      if (!nested) sheetGuard.current = true;
+                      if (!nested) sheetGuard.current = false;
+                    }}
                   />
                 </UnsavedContext.Provider>
               </SnackBarProvider>
@@ -326,6 +369,13 @@ describe('ResourceTabs add note (TT-7730)', () => {
       'aria-selected',
       'true'
     );
+    cy.wrap(null).should(() => {
+      expect(watch.seen, 'sheet saw the new shared resource').to.be.greaterThan(
+        0
+      );
+      expect(watch.rebuilds, 'sheet rebuilt while saving').to.eq(0);
+      expect(guard.current, 'sheet save guard released').to.eq(false);
+    });
   });
 
   it('creates one shared resource when Add is clicked again while saving', () => {
@@ -370,5 +420,12 @@ describe('ResourceTabs add note (TT-7730)', () => {
       'aria-selected',
       'true'
     );
+    cy.wrap(null).should(() => {
+      expect(watch.seen, 'sheet saw the new shared resource').to.be.greaterThan(
+        0
+      );
+      expect(watch.rebuilds, 'sheet rebuilt while saving').to.eq(0);
+      expect(guard.current, 'sheet save guard released').to.eq(false);
+    });
   });
 });
