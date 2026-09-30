@@ -19,6 +19,7 @@ import {
 } from '../model/baseModel';
 import { cleanFileName } from '../utils/cleanFileName';
 import { logError, Severity } from '../utils/logErrorService';
+import { waitForRemoteId } from './remoteId';
 
 interface ISwitches {
   [key: string]: any;
@@ -286,10 +287,14 @@ export const useArtifactCategory = (teamId?: string) => {
         ];
       }
       await memory.update(ops);
-      // Return the local id immediately. Waiting for the remote queue here
-      // held Note Details Add (Saving snack, then References) for as long as
-      // any earlier sync was still draining (TT-7730). Callers that need a
-      // synced id wait themselves (CategoryListEdit → waitForRemoteId).
+      // Online lists hide categories until they have a remote id. Wait for this
+      // record only, not the whole queue (TT-7730). Offline-only never gets one.
+      if (!offlineOnly && artifactCategory.id && memory?.keyMap) {
+        await waitForRemoteId(
+          { type: 'artifactcategory', id: artifactCategory.id },
+          memory.keyMap
+        );
+      }
       return artifactCategory.id;
     }
     return undefined;

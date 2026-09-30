@@ -96,6 +96,10 @@ const mockMemory = {
     }
   }),
   schema: {},
+  keyMap: {
+    idToKey: jest.fn(() => '501'),
+    keyToId: jest.fn(() => undefined),
+  },
 };
 
 const mockErrorReporter = { notify: jest.fn() };
@@ -326,8 +330,8 @@ describe('useArtifactCategory (TT-7656)', () => {
   it('returns the new category id while the remote queue is still busy', async () => {
     const { result } = renderHook(() => useArtifactCategory(ORG_ID));
 
-    // Note Add only needs the local id. Waiting on the remote queue here is
-    // what stalled the Saving snack (TT-7730).
+    // Note Add needs this category's remote id before the next note can see it.
+    // That wait is this record only, not the whole remote queue (TT-7730).
     const id = await settleSoon(
       result.current.addNewArtifactCategory(
         'Brand New Note Cat',
@@ -336,6 +340,11 @@ describe('useArtifactCategory (TT-7656)', () => {
     );
     expect(id).toBe('new-cat-id');
     expect(mockMemory.update).toHaveBeenCalled();
+    expect(mockMemory.keyMap.idToKey).toHaveBeenCalledWith(
+      'artifactcategory',
+      'remoteId',
+      'new-cat-id'
+    );
     expect(waitForRemoteQueue).not.toHaveBeenCalled();
     expect(pendingWaits).toHaveLength(0);
   });
