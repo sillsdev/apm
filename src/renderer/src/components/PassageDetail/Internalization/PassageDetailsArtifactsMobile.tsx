@@ -481,7 +481,6 @@ export function PassageDetailArtifactsMobile() {
   };
 
   const handleProjResPassageVisible = (v: boolean) => {
-    // Closing (X or Escape) prompts only if it would discard a recording.
     if (!v) {
       if (isStagedRecording) setDialogPendingCloseConfirmation('passage');
       else handlePassageDiscard();

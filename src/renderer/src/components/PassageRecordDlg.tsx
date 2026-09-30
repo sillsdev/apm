@@ -161,6 +161,10 @@ function PassageRecordDlg(props: IProps) {
   const [, setCanCancel] = useState(false);
   const [hasRights, setHasRights] = useState(false);
   const [recording, setRecording] = useState(false);
+  // A take has been recorded since the record tab opened. Tracked separately
+  // from canSave, which stays false while a take is still processing (or is
+  // too big to save), so closing then must still confirm.
+  const [hasTake, setHasTake] = useState(false);
   const [dialogWidth, setDialogWidth] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -170,6 +174,7 @@ function PassageRecordDlg(props: IProps) {
     if (visible) {
       setMode('upload');
       setRecording(false);
+      setHasTake(false);
       setShowConfirm(false);
     }
   }, [visible]);
@@ -182,6 +187,7 @@ function PassageRecordDlg(props: IProps) {
       setCanCancel(false);
       setHasRights(false);
       setRecording(false);
+      setHasTake(false);
     }
   }, [mode]);
 
@@ -227,9 +233,9 @@ function PassageRecordDlg(props: IProps) {
     if (reason === 'backdropClick') return;
     // Can't close mid-recording (matches handleCancel's own guard).
     if (recording) return;
-    // Confirm only when an unsaved take on the record tab would be lost; a
-    // file upload is cheap to redo, so it never prompts.
-    if (mode === 'record' && canSave) {
+    // Confirm only when a take on the record tab would be lost; a file upload
+    // is cheap to redo, so it never prompts.
+    if (mode === 'record' && hasTake) {
       setShowConfirm(true);
       return;
     }
@@ -327,7 +333,10 @@ function PassageRecordDlg(props: IProps) {
                 allowZoom={true}
                 allowNoNoise={true}
                 allowDeltaVoice={true}
-                onRecording={setRecording}
+                onRecording={(isRecording) => {
+                  setRecording(isRecording);
+                  if (isRecording) setHasTake(true);
+                }}
                 pendingRestore={pendingRestore}
                 beforeUpload={beforeUpload}
                 onStageFile={onStageFile}
