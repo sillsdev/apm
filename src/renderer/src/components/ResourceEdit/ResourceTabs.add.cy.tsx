@@ -235,8 +235,27 @@ describe('ResourceTabs add note (TT-7730)', () => {
     cy.intercept('GET', '**/api/AmIOnline/', { statusCode: 200, body: {} });
   });
 
-  const mountTabs = () => {
-    memory = createMockMemory({ ...notePassage });
+  const mountTabs = (
+    options: {
+      records?: RecordsByKey;
+      /** Hang the sharedresource addRecord so a second Add click lands mid-save. */
+      holdSharedResourceAdd?: () => Promise<unknown>;
+    } = {}
+  ) => {
+    const records = options.records ?? { ...notePassage };
+    memory = createMockMemory(records);
+    if (options.holdSharedResourceAdd) {
+      const hold = options.holdSharedResourceAdd;
+      const update = memory.update.bind(memory);
+      memory.update = ((arg: Parameters<Memory['update']>[0]) => {
+        const ops = (Array.isArray(arg) ? arg : []) as RecordOperation[];
+        const addsShared = ops.some(
+          (op) => op.op === 'addRecord' && op.record.type === 'sharedresource'
+        );
+        const pending = update(arg);
+        return addsShared ? hold().then(() => pending) : pending;
+      }) as Memory['update'];
+    }
     // StrictMode matches the app shell. The snack only mounts after that
     // double layout effect in dev (useMounted).
     cy.mount(
@@ -302,6 +321,50 @@ describe('ResourceTabs add note (TT-7730)', () => {
     // Discriminating: both must land well under a 1s waitForIt poll.
     // Unfixed code is still inside waitForRemoteQueue, so neither updates.
     cy.contains('Saving', { timeout: 800 }).should('be.visible');
+    cy.get('#res-edit-tab-1', { timeout: 800 }).should(
+      'have.attr',
+      'aria-selected',
+      'true'
+    );
+  });
+
+  it('creates one shared resource when Add is clicked again while saving', () => {
+    const records: RecordsByKey = { ...notePassage };
+    let releaseSave: () => void = () => undefined;
+    const saveGate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    const sharedResourceCount = () =>
+      Object.keys(records).filter((key) => key.startsWith('sharedresource:'))
+        .length;
+
+    mountTabs({
+      records,
+      holdSharedResourceAdd: () => saveGate,
+    });
+
+    cy.get(`#note-${PASSAGE_ID}adornment`, { timeout: 4000 }).type(
+      'Morning note'
+    );
+    cy.contains('.MuiFormControl-root', 'Category')
+      .find('input[role="combobox"]')
+      .clear()
+      .type('Field Note');
+    cy.get('#resSave').should('not.be.disabled').click();
+
+    // First create has been handed to Orbit and is still awaiting persist.
+    cy.wrap(null).should(() => {
+      expect(sharedResourceCount()).to.eq(1);
+    });
+    // Unfixed Add stays enabled through that delay, so another click is a
+    // second addRecord and the server returns 500.
+    cy.get('#resSave', { timeout: 800 }).should('be.disabled');
+    cy.get('#resSave').click({ force: true });
+    cy.wrap(null).should(() => {
+      expect(sharedResourceCount()).to.eq(1);
+    });
+
+    cy.then(() => releaseSave());
     cy.get('#res-edit-tab-1', { timeout: 800 }).should(
       'have.attr',
       'aria-selected',
