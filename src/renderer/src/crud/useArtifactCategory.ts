@@ -19,7 +19,6 @@ import {
 } from '../model/baseModel';
 import { cleanFileName } from '../utils/cleanFileName';
 import { logError, Severity } from '../utils/logErrorService';
-import { waitForRemoteId } from './remoteId';
 
 interface ISwitches {
   [key: string]: any;
@@ -38,6 +37,9 @@ export enum ArtifactCategoryType {
   Discussion = 'discussion',
   Note = 'note',
 }
+// Created this session. Online lists hide rows until they have a remoteId;
+// these stay visible so the next note can pick the category just saved (TT-7730).
+const pendingCatIds = new Set<string>();
 const stringSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'artifactCategory' });
 
@@ -173,7 +175,8 @@ export const useArtifactCategory = (teamId?: string) => {
           related(r, 'organization') === null)
     );
     let orgrecs: ArtifactCategoryD[] = allOrgRecs.filter(
-      (r) => Boolean(r.keys?.remoteId) !== offlineOnly
+      (r) =>
+        Boolean(r.keys?.remoteId) !== offlineOnly || pendingCatIds.has(r.id)
     );
     if (!offlineOnly && type === ArtifactCategoryType.Note && curOrg) {
       // Detect specials against unfiltered cache so an unsynced local special
@@ -287,14 +290,7 @@ export const useArtifactCategory = (teamId?: string) => {
         ];
       }
       await memory.update(ops);
-      // Online lists hide categories until they have a remote id. Wait for this
-      // record only, not the whole queue (TT-7730). Offline-only never gets one.
-      if (!offlineOnly && artifactCategory.id && memory?.keyMap) {
-        await waitForRemoteId(
-          { type: 'artifactcategory', id: artifactCategory.id },
-          memory.keyMap
-        );
-      }
+      if (artifactCategory.id) pendingCatIds.add(artifactCategory.id);
       return artifactCategory.id;
     }
     return undefined;
