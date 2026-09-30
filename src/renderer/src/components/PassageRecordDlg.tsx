@@ -183,9 +183,15 @@ function PassageRecordDlg(props: IProps) {
       setStatusText('');
       setCanSave(false);
       setCanCancel(false);
-      setHasRights(false);
+      // Trust a preselected speaker, as the upload tab does: "Do later" in
+      // ProvideRights grants rights without creating an IP record, so
+      // SpeakerName can't re-derive them from the rights list on reopen.
+      setHasRights(Boolean(speaker?.trim()));
       setRecording(false);
     }
+    // Only on tab entry: re-running on speaker change would override
+    // SpeakerName reporting no rights for a newly chosen, unlisted name.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   useEffect(() => {
