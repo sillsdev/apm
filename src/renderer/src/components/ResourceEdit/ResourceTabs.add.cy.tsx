@@ -7,7 +7,7 @@ import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
-import { RecordOperation } from '@orbit/records';
+import { RecordOperation, UninitializedRecord } from '@orbit/records';
 import bugsnagClient from '../../auth/bugsnagClient';
 import { GlobalProvider } from '../../context/GlobalContext';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -202,7 +202,7 @@ const SheetRebuildGuard = ({
   guard: { current: boolean };
   watch: { seen: number; rebuilds: number };
 }) => {
-  const sharedresources = useOrbitData<{ id: string }[]>('sharedresource');
+  const sharedresources = useOrbitData<UninitializedRecord[]>('sharedresource');
   useEffect(() => {
     watch.seen = sharedresources.length;
     if (sharedresources.length > 0 && !guard.current) watch.rebuilds += 1;
@@ -298,47 +298,49 @@ describe('ResourceTabs add note (TT-7730)', () => {
           <GlobalProvider init={createInitialState()}>
             <DataProvider dataStore={memory}>
               <SnackBarProvider>
-                <SheetRebuildGuard guard={sheetGuard} watch={sheetWatch} />
-                <UnsavedContext.Provider
-                  value={{
-                    state: {
-                      toolChanged: () => undefined,
-                      toolsChanged: {},
-                      startSave: () => undefined,
-                      saveRequested: () => false,
-                      saveCompleted: () => undefined,
-                      clearRequested: () => false,
-                      clearCompleted: () => undefined,
-                    } as any,
-                    setState: cy.stub(),
-                  }}
-                >
-                  <ResourceTabs
-                    passId={PASSAGE_ID}
-                    hasPublishing={false}
-                    ws={{
-                      level: SheetLevel.Passage,
-                      kind: IwsKind.Passage,
-                      sectionSeq: 1,
-                      passageSeq: 1,
-                      passageType: PassageTypeEnum.NOTE,
-                      deleted: false,
-                      filtered: false,
-                      published: [],
-                      passage,
+                <>
+                  <SheetRebuildGuard guard={sheetGuard} watch={sheetWatch} />
+                  <UnsavedContext.Provider
+                    value={{
+                      state: {
+                        toolChanged: () => undefined,
+                        toolsChanged: {},
+                        startSave: () => undefined,
+                        saveRequested: () => false,
+                        saveCompleted: () => undefined,
+                        clearRequested: () => false,
+                        clearCompleted: () => undefined,
+                      } as any,
+                      setState: cy.stub(),
                     }}
-                    onOpen={cy.stub()}
-                    onSaving={(saving) => {
-                      sheetGuard.current = saving;
-                    }}
-                    onUpdRef={() => {
-                      // updatePassageRef: a lock already held by onSaving stays held.
-                      const nested = sheetGuard.current;
-                      if (!nested) sheetGuard.current = true;
-                      if (!nested) sheetGuard.current = false;
-                    }}
-                  />
-                </UnsavedContext.Provider>
+                  >
+                    <ResourceTabs
+                      passId={PASSAGE_ID}
+                      hasPublishing={false}
+                      ws={{
+                        level: SheetLevel.Passage,
+                        kind: IwsKind.Passage,
+                        sectionSeq: 1,
+                        passageSeq: 1,
+                        passageType: PassageTypeEnum.NOTE,
+                        deleted: false,
+                        filtered: false,
+                        published: [],
+                        passage,
+                      }}
+                      onOpen={cy.stub()}
+                      onSaving={(saving) => {
+                        sheetGuard.current = saving;
+                      }}
+                      onUpdRef={() => {
+                        // updatePassageRef: a lock already held by onSaving stays held.
+                        const nested = sheetGuard.current;
+                        if (!nested) sheetGuard.current = true;
+                        if (!nested) sheetGuard.current = false;
+                      }}
+                    />
+                  </UnsavedContext.Provider>
+                </>
               </SnackBarProvider>
             </DataProvider>
           </GlobalProvider>
