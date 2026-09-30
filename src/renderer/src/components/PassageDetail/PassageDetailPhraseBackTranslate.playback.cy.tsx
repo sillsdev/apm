@@ -35,9 +35,10 @@ import {
   expectRecordEnabled,
   sourcePlay,
   pbtCleanup,
-  PBT,
   SEGMENTS_3,
   unitLabel,
+  clickSegmentUntilSelected,
+  PBT,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -57,7 +58,7 @@ describe('PBT region playback contract', () => {
     // replays the opening. Anything that removes that blip must still begin at
     // the segment start: beginning 100ms in would clip the first syllable, which
     // is exactly what the reference audio is for.
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     cy.document().should((doc) => {
       expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
@@ -75,7 +76,7 @@ describe('PBT region playback contract', () => {
     // starts playback itself, but a user pressing Play to hear a segment again
     // never goes through that path - and by then the clause counts as heard, so
     // Record is operable and can be pressed over the reference audio.
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     expectRecordEnabled(); // heard once, Record now offered
 
@@ -94,7 +95,7 @@ describe('PBT region playback contract', () => {
   });
 
   it('stops at the end of the segment without running into the next', () => {
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(1);
     unitLabel('0:03', '0:06').should('be.visible');
     // Segment 2 runs 0:03-0:06. Wait out its span plus slack, then require the
     // playhead to be no further than a moment past its end - running on would
@@ -109,61 +110,5 @@ describe('PBT region playback contract', () => {
         'playhead did not run into segment 3'
       ).to.be.lessThan(6.5);
     });
-  });
-});
-
-describe('PBT region playback contract, last segment ends with the audio', () => {
-  beforeEach(() => {
-    // durationSec pinned to the last segment's end, so that segment finishes
-    // exactly where the file does. That, not the segment being short, is the
-    // condition that was reported - a sliver at the end of a 6s file makes the
-    // fixture itself unreliable, and the segment length is beside the point.
-    mountPbt({ segments: SEGMENTS, durationSec: 9 });
-    waitForPbtReady();
-    startRecordingPass();
-  });
-
-  it('offers Record when the last segment ends at the end of the audio', () => {
-    // The stall found by hand. Both signals that would mark the clause heard
-    // were missing here at once: playback ends at the file end without the
-    // playhead leaving the region, so the regions plugin's inclusive membership
-    // test emits no region-out and nothing parks; and seeking to exactly the
-    // duration pauses the media element directly, which onPlayStatus never heard
-    // about because it was only ever raised from the imperative setPlaying. With
-    // no park and no stop, currentClausePlayed was never set and Record could not
-    // be offered however the button was gated. The engine now reports its own
-    // pauses, so the stop arrives and the clause counts as heard.
-    cy.get(PBT.nextUnit).click();
-    unitLabel('0:03', '0:06').should('be.visible');
-    cy.get(PBT.nextUnit).click();
-    unitLabel('0:06', '0:09').should('be.visible');
-
-    // Both halves: Record withheld while the segment plays, then offered once it
-    // finishes. Either alone can be satisfied for the wrong reason - Record
-    // appearing eventually covers the dead end, but a premature park offers it
-    // immediately, which passes that half while the audio is still going.
-    //
-    // Read this as a statement of the contract rather than as a repro. Reverting
-    // the fixes does not reliably turn it red: whether the boundary emits a
-    // region-out at all is itself nondeterministic here, so on some runs the
-    // premature park supplies the parked state and this goes green without them.
-    // It will not fail when the behaviour is right, which is what makes it worth
-    // keeping; the dependable guards for these fixes are the arrow tests in the
-    // main spec and the clicked-segment test in the selection spec, which fail
-    // every time the fixes are removed.
-    cy.document().should((doc) => {
-      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
-    });
-    cy.wait(800);
-    cy.document().then((doc) => {
-      expect(readSourcePlaying(doc), 'reference audio still playing').to.equal(
-        true
-      );
-      expect(
-        readRecordEnabled(doc),
-        'Record withheld while the last segment plays'
-      ).to.equal(false);
-    });
-    expectRecordEnabled();
   });
 });

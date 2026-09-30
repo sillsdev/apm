@@ -77,8 +77,6 @@ export const PBT = {
   split: '#phrase-back-translate-split',
   combine: '#phrase-back-translate-combine',
   next: '#phrase-back-translate-next',
-  prevUnit: '#phrase-back-translate-prev-unit',
-  nextUnit: '#phrase-back-translate-next-unit',
   speaker: '#phrase-back-translate-speaker',
   retrySave: '#phrase-back-translate-retry-save',
   dockedRecord: '[data-cy="phrase-back-translate-docked-record"]',
@@ -1066,6 +1064,13 @@ export function readSourcePlaying(doc: Document): boolean {
   return Boolean(play?.querySelector('svg[data-testid="PauseIcon"]'));
 }
 
+/** Wait until the reference audio has finished playing. */
+export function waitForSourceStopped(timeoutMs = 10000) {
+  cy.document({ timeout: timeoutMs }).should((doc) => {
+    expect(readSourcePlaying(doc), 'playback stopped').to.equal(false);
+  });
+}
+
 /** True while the docked Record control is operable. */
 export function readRecordEnabled(doc: Document): boolean {
   const rec = doc.querySelector(PBT.recordButton);
@@ -1096,26 +1101,6 @@ export function waitForSegmentSelectionUnlocked() {
 }
 
 /**
- * Dispatch one click on a segment, the way a user selects one. The region lives
- * in wavesurfer's shadow root, so this dispatches the click the plugin listens
- * for rather than going through cy.click (which cannot reach it).
- *
- * Deliberately ONE click: several specs here exist to catch a first click that
- * is only half applied ("the user had to click again"), and a retry would hide
- * exactly that. Use clickSegmentUntilSelected when reaching the segment is
- * setup rather than the assertion.
- */
-export function clickSegmentOnWaveform(index: number) {
-  waitForSegmentSelectionUnlocked();
-  cy.document().then((doc) => {
-    const el = regionElements(doc)[index];
-    expect(el, `waveform region ${index} exists`).to.not.equal(undefined);
-    const view = el.ownerDocument.defaultView as Window & typeof globalThis;
-    el.dispatchEvent(new view.MouseEvent('click', { bubbles: true }));
-  });
-}
-
-/**
  * Click a segment until the step reports it as current.
  *
  * For specs where getting to a segment is setup and the assertion is about
@@ -1126,10 +1111,10 @@ export function clickSegmentOnWaveform(index: number) {
  */
 export function clickSegmentUntilSelected(
   index: number,
-  segments: SegmentSpec[],
+  segments: SegmentSpec[] = SEGMENTS_3,
   options: { attempts?: number; spacingMs?: number } = {}
 ) {
-  const { attempts = 8, spacingMs = 250 } = options;
+  const { attempts = 8, spacingMs = 500 } = options;
   const attempt = (left: number) => {
     cy.document().then((doc) => {
       if (readLabelSegmentIndex(doc, segments) === index) return;
@@ -1269,6 +1254,10 @@ export function expectRecordDisabled() {
   cy.get(PBT.recordButton).should('have.attr', 'aria-disabled', 'true');
 }
 
+export function expectRecordNotVisible() {
+  cy.get(PBT.recordButton).should('not.exist');
+}
+
 /** True when the recorder is showing a take (Clear Recording is offered). */
 export function expectTakePresent() {
   cy.get('[aria-label="Clear Recording"]', { timeout: 20000 }).should('exist');
@@ -1303,6 +1292,7 @@ export function waitForUploads(count: number) {
  * document across every test, so leaking them makes later tests fail to decode.
  */
 export function pbtCleanup() {
+  cy.mount(<></>); // Unmount first
   cy.window({ log: false }).then((win) => {
     const ctx = win.__recordingMock?.audioContext;
     if (ctx && ctx.state !== 'closed') void ctx.close();

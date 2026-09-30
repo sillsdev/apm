@@ -167,76 +167,14 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(undo).toBeTruthy();
     expect(undo?.disabled).toBe(true);
   });
-
-  it('hides Next Clause when sequential unit nav is enabled', () => {
-    const { container } = render(
-      <CarefulSpeechControls
-        {...baseProps}
-        sequentialUnitNavAroundRecord
-        canPrevUnit
-        canNextUnit
-      />
-    );
-    expect(container.querySelector('#careful-speech-next')).toBeNull();
-    expect(container.querySelector('#careful-speech-prev-unit')).toBeTruthy();
-    expect(container.querySelector('#careful-speech-next-unit')).toBeTruthy();
-  });
-
-  it('highlights sequential next after save completes on a recorded segment', () => {
-    const { container } = render(
-      <CarefulSpeechControls
-        {...baseProps}
-        phase="recorded"
-        sequentialUnitNavAroundRecord
-        canNextUnit
-        savingRecording={false}
-      />
-    );
-    const next = container.querySelector('#careful-speech-next-unit');
-    expect(next).toBeTruthy();
-    expect(next?.getAttribute('data-highlighted')).toBe('true');
-  });
-
-  it('does not highlight sequential next on an unrecorded segment', () => {
-    const { container } = render(
-      <CarefulSpeechControls
-        {...baseProps}
-        phase="readyToRecord"
-        sequentialUnitNavAroundRecord
-        canNextUnit
-        savingRecording={false}
-      />
-    );
-    const next = container.querySelector('#careful-speech-next-unit');
-    expect(next).toBeTruthy();
-    expect(next?.getAttribute('data-highlighted')).toBeNull();
-  });
-
-  it('does not highlight sequential next while save is in progress', () => {
-    const { container } = render(
-      <CarefulSpeechControls
-        {...baseProps}
-        phase="recorded"
-        sequentialUnitNavAroundRecord
-        canNextUnit
-        savingRecording
-      />
-    );
-    const next = container.querySelector('#careful-speech-next-unit');
-    expect(next).toBeTruthy();
-    expect(next?.getAttribute('data-highlighted')).toBeNull();
-  });
 });
 
 describe('CarefulSpeechControls linked note play-only (TT-5873)', () => {
-  it('keeps playback and segment nav while hiding record and edit controls', () => {
+  it('keeps playback while hiding record and edit controls', () => {
     const { container, queryByLabelText, queryByText } = render(
       <CarefulSpeechControls
         {...baseProps}
         readOnly
-        sequentialUnitNavAroundRecord
-        canPrevUnit
-        canNextUnit
         recordingPassStarted
         phase="recorded"
         showRecorder
@@ -245,8 +183,6 @@ describe('CarefulSpeechControls linked note play-only (TT-5873)', () => {
     expect(
       container.querySelector('[data-testid="media-record"]')
     ).toBeTruthy();
-    expect(container.querySelector('#careful-speech-prev-unit')).toBeTruthy();
-    expect(container.querySelector('#careful-speech-next-unit')).toBeTruthy();
     expect(queryByText('Start Recording')).toBeNull();
     expect(queryByLabelText('Clear Recording')).toBeNull();
     const speaker = container.querySelector(
