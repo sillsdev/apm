@@ -197,9 +197,10 @@ interface IProps {
   onOpen?: (open: boolean) => void;
   /**
    * When set, a "Back" button (the reverse of the selection dialog's Next) is
-   * shown. It returns to SelectSections keeping the media, so the caller must
-   * not tear down the media on this path. Undefined hides the button (e.g. the
-   * edit flow, which has no previous wizard step).
+   * shown — for now only in developer mode. It returns to SelectSections
+   * keeping the media, so the caller must not tear down the media on this
+   * path. Undefined hides the button (e.g. the edit flow, which has no
+   * previous wizard step).
    */
   onBack?: () => void;
   bookData?: BookName[];
@@ -219,6 +220,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
   const [, setComplete] = useGlobal('progress');
+  const [isDeveloper] = useGlobal('developer');
   const [data, setDatax] = useState<ICell[][]>([]);
   const [suffix, setSuffix] = useState('');
   const [numSegments, setNumSegments] = useState(0);
@@ -754,7 +756,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
           Box neutralizes its flexGrow:1 inside this flex column. */}
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
-          {onBack && (
+          {onBack && isDeveloper && (
             <Button
               id="res-configure-back"
               disabled={savingRef.current}
