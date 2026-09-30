@@ -71,9 +71,10 @@ interface IProps {
    */
   onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
   /**
-   * When set, a "Back" button (the reverse of Next/Upload) is shown. The add
-   * flow wires this to reopen the upload dialog; leaving it undefined hides the
-   * button for entry points that have no previous step here.
+   * When set, a "Back" button (the reverse of Next/Upload) is shown — for now
+   * only in developer mode. The add flow wires this to reopen the upload
+   * dialog; leaving it undefined hides the button for entry points that have no
+   * previous step here.
    */
   onBack?: () => void;
 }
@@ -88,6 +89,7 @@ export function SelectSections(props: IProps) {
   const sections = useOrbitData<SectionD[]>('section');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
+  const [isDeveloper] = useGlobal('developer');
   const [data, setData] = useState(Array<IRow>());
   const [heightStyle, setHeightStyle] = useState({
     maxHeight: `${window.innerHeight - 200}px`,
@@ -311,7 +313,7 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
-        {onBack && (
+        {onBack && isDeveloper && (
           <Button
             id="select-sections-back"
             onClick={onBack}
