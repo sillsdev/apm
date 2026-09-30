@@ -34,6 +34,8 @@ import {
   recordAndSettle,
   readSourcePlaying,
   readRecordEnabled,
+  expectRecordNotVisible,
+  clickSegmentUntilSelected,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -149,9 +151,9 @@ describe('PBT record and save', () => {
   it('shows the take as recorded: Clear offered, Record off, segment green', () => {
     recordAndSettle(1);
     expectTakePresent();
-    expectRecordDisabled();
+    expectRecordNotVisible();
     // The selected segment stays yellow; its green shows once we move on.
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
     expectSegmentColors([
       SEGMENT_COLOR.completed,
@@ -162,7 +164,7 @@ describe('PBT record and save', () => {
 
   it('moves the playhead into the new segment on Next', () => {
     recordAndSettle(1);
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
     playheadText().then((t) => {
       expect(parseTime(t), 'playhead inside segment 2').to.be.within(3, 6);
@@ -175,7 +177,7 @@ describe('PBT record and save', () => {
     // recorded over the reference audio, which the listen-then-record flow
     // prevents everywhere else.
     recordAndSettle(1);
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
 
     // One reading, taken from the middle of the segment. `playing` is the
@@ -202,16 +204,16 @@ describe('PBT record and save', () => {
 
   it('starts the next segment with an empty recorder', () => {
     recordAndSettle(1);
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     unitLabel('0:03', '0:06').should('be.visible');
     expectNoTakePresent();
   });
 
   it('marks the step complete once every segment is recorded', () => {
     recordAndSettle(1);
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     recordAndSettle(2);
-    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.next).click();
     recordAndSettle(3);
     cy.window().should((win) => {
       expect(win.__pbt?.stepComplete(), 'step complete').to.equal(true);
@@ -235,9 +237,9 @@ describe('PBT a clause shorter than the playback-start window', () => {
     // long playback has been running assumes clauses are longer than that
     // window. This one is not: its whole span is shorter, so the signal that
     // says "heard" arrives inside the window and is discarded as the seek.
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(1);
     expectRecordEnabled();
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:06').should('be.visible');
 
     // The clause is 0.2s: by the time Record could be offered it has long
@@ -258,8 +260,7 @@ describe('PBT out-of-order recording', () => {
   });
 
   it('records the last segment first without touching the others', () => {
-    cy.get(PBT.nextUnit).click();
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
     recordTake();
     waitForUploads(1);
@@ -277,12 +278,11 @@ describe('PBT out-of-order recording', () => {
   });
 
   it('records backwards, each take against its own region', () => {
-    cy.get(PBT.nextUnit).click();
-    cy.get(PBT.nextUnit).click();
+    clickSegmentUntilSelected(2);
     unitLabel('0:06', '0:09').should('be.visible');
     recordAndSettle(1);
 
-    cy.get(PBT.prevUnit).click();
+    clickSegmentUntilSelected(1, SEGMENTS);
     unitLabel('0:03', '0:06').should('be.visible');
     recordAndSettle(2);
 
