@@ -62,7 +62,7 @@ import {
   findRecord,
   useGraphicUpdate,
   useGraphicFind,
-  useSharedResRead,
+  lookupSharedResource,
   useNoteCategory,
   PublishDestinationEnum,
   usePublishDestination,
@@ -248,10 +248,10 @@ export function ScriptureTable(props: IProps) {
     useState(false);
   const [view, setView] = useState('');
   const [lastSaved, setLastSavedx] = useState<string>();
-  const setLastSaved = (value: string | undefined) => {
+  const setLastSaved = useCallback((value: string | undefined) => {
     lastSavedRef.current = value;
     setLastSavedx(value);
-  };
+  }, []);
   const toolId = 'scriptureTable';
   const {
     saveRequested,
@@ -353,7 +353,6 @@ export function ScriptureTable(props: IProps) {
     getLocalDefault,
     setLocalDefault,
   } = useProjectDefaults();
-  const { getSharedResource } = useSharedResRead();
   const noteCategory = useNoteCategory();
   const orgSteps = useFilteredSteps();
   const getDiscussionCount = useDiscussionCount({
@@ -531,7 +530,9 @@ export function ScriptureTable(props: IProps) {
     toolChanged(toolId, value);
   };
 
-  const setUpdate = (value: boolean) => (updateRef.current = value);
+  const setUpdate = useCallback((value: boolean) => {
+    updateRef.current = value;
+  }, []);
 
   const runWhenSheetIdle = (label: string, fn: () => void) => {
     if (savingRef.current || updateRef.current) {
@@ -1453,14 +1454,6 @@ export function ScriptureTable(props: IProps) {
     }
   };
 
-  const getLastModified = (plan: string) => {
-    if (plan) {
-      const planRec = getPlan(plan) as PlanD;
-      if (planRec !== null) setLastSaved(planRec.attributes.dateUpdated);
-      else setLastSaved('');
-    }
-  };
-
   // keep track of screen width
   const setDimensions = () => {
     setWidth(window.innerWidth);
@@ -1510,6 +1503,7 @@ export function ScriptureTable(props: IProps) {
 
   const refreshSheet = useCallback(() => {
     if (!plan) return;
+    setUpdate(true);
     //because we ignore data changes if we are dirty,
     // we need to refresh the data when we do refresh the sheet
     const freshSections = memory.cache.query((q) =>
@@ -1527,6 +1521,11 @@ export function ScriptureTable(props: IProps) {
     const cur = sheetRef.current;
     const canMerge = cur.every(
       (s) => !isPassageRow(s) || s.deleted || Boolean(s.passage?.id)
+    );
+    const getSharedResource = lookupSharedResource(
+      memory.cache.query((q) =>
+        q.findRecords('sharedresource')
+      ) as SharedResourceD[]
     );
     setSheet(
       getSheet({
@@ -1556,6 +1555,9 @@ export function ScriptureTable(props: IProps) {
         current: canMerge ? cur.map((r) => ({ ...r })) : undefined,
       })
     );
+    const planRec = getPlan(plan) as PlanD;
+    setLastSaved(planRec !== null ? planRec.attributes.dateUpdated : '');
+    setUpdate(false);
   }, [
     plan,
     flat,
@@ -1572,12 +1574,14 @@ export function ScriptureTable(props: IProps) {
     graphicFind,
     getPublishTo,
     publishStatus,
-    getSharedResource,
     noteCategory,
     user,
     myGroups,
     developer,
     setSheet,
+    setUpdate,
+    getPlan,
+    setLastSaved,
   ]);
 
   const handleAssignClose = useCallback(
@@ -1721,10 +1725,7 @@ export function ScriptureTable(props: IProps) {
       plan &&
       !updateRef.current
     ) {
-      setUpdate(true);
       refreshSheet();
-      getLastModified(plan);
-      setUpdate(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -2366,6 +2367,7 @@ export function ScriptureTable(props: IProps) {
             ws={editRow}
             onOpen={handleEditClose}
             onUpdRef={updatePassageRef}
+            onSaving={(saving) => setUpdate(saving)}
             hasPublishing={publishingOn}
           />
         ) : (

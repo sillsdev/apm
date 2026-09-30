@@ -74,6 +74,8 @@ interface IProps extends IDialog<IResourceDialog> {
   onLink?: (link: SharedResourceD) => Promise<void>;
   onUnlink?: () => Promise<void> | void;
   contentReadOnly?: boolean;
+  // Paint Saving and hold the sheet rebuild before category commit / orbit write.
+  onSaving?: (saving: boolean) => void;
 }
 
 export default function ResourceOverview(props: IProps) {
@@ -90,10 +92,16 @@ export default function ResourceOverview(props: IProps) {
     onLink,
     onUnlink,
     contentReadOnly,
+    onSaving,
   } = props;
 
   const [isDeveloper] = useGlobal('developer');
   const recording = useRef(false);
+  // Add stays enabled for the whole save. A second click in that window is
+  // another sharedresource addRecord, and the server 500s onto the error page
+  // (TT-7732). The ref blocks a click that lands before disabled paints.
+  const savingRef = useRef(false);
+  const [saving, setSaving] = React.useState(false);
   // commit() handle for the category field; called at save so a newly typed
   // category is created on submission rather than on blur.
   const catCommitRef = useRef<(() => Promise<string>) | null>(null);
@@ -160,13 +168,30 @@ export default function ResourceOverview(props: IProps) {
     if (onCancel) onCancel();
   };
 
+  const setAddBusy = (next: boolean) => {
+    savingRef.current = next;
+    setSaving(next);
+  };
+
   const handleAdd = async () => {
-    // Create the category now (at save) if the user typed a new one; on blur it
-    // was only resolved against existing categories.
-    const category = catCommitRef.current
-      ? await catCommitRef.current()
-      : state.category;
-    onCommit({ ...state, category });
+    if (savingRef.current) return;
+    setAddBusy(true);
+    // Saving has to paint before category commit. A new category used to wait
+    // on the remote queue here, so the snack never appeared (TT-7730).
+    onSaving?.(true);
+    try {
+      // Create the category now (at save) if the user typed a new one; on blur it
+      // was only resolved against existing categories.
+      const category = catCommitRef.current
+        ? await catCommitRef.current()
+        : state.category;
+      await Promise.resolve(onCommit({ ...state, category }));
+    } catch (err) {
+      onSaving?.(false);
+      throw err;
+    } finally {
+      setAddBusy(false);
+    }
   };
 
   const handleLanguageChange = (val: ILanguage) => {
@@ -285,7 +310,8 @@ export default function ResourceOverview(props: IProps) {
                 title === '' ||
                 (bcp47 === 'und' && !isNote) ||
                 !state.changed ||
-                recording.current
+                recording.current ||
+                saving
               }
               onClick={() => handleAdd()}
             >

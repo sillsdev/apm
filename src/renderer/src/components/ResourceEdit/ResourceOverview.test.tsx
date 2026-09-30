@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import Mode from '../../model/dialogMode';
 
 const mockOnLink = jest.fn();
@@ -68,9 +68,38 @@ jest.mock('../../control', () => ({
   rowSx: {},
 }));
 
-jest.mock('./NoteTitle', () => ({
-  NoteTitle: () => <div data-testid="note-title" />,
-}));
+jest.mock('./NoteTitle', () => {
+  const MockNoteTitle = ({
+    setState,
+  }: {
+    setState?: (
+      update: (state: {
+        title: string;
+        category: string;
+        changed: boolean;
+      }) => { title: string; category: string; changed: boolean }
+    ) => void;
+  }) => (
+    <div data-testid="note-title">
+      <button
+        type="button"
+        data-testid="set-note-title"
+        onClick={() =>
+          setState?.((state) => ({
+            ...state,
+            title: 'Morning note',
+            category: 'cat1',
+            changed: true,
+          }))
+        }
+      >
+        title
+      </button>
+    </div>
+  );
+  MockNoteTitle.displayName = 'MockNoteTitle';
+  return { NoteTitle: MockNoteTitle };
+});
 jest.mock('./ResourceTitle', () => ({
   ResourceTitle: () => <div data-testid="resource-title" />,
 }));
@@ -159,5 +188,83 @@ describe('ResourceOverview linked note (TT-5873)', () => {
     );
     expect(document.getElementById('resSave')).not.toBeNull();
     expect(document.getElementById('unlinkNote')).toBeNull();
+  });
+});
+
+describe('ResourceOverview add in progress (TT-7732)', () => {
+  const values = {
+    title: 'Morning note',
+    mediaId: '',
+    description: '',
+    bcp47: 'und',
+    languageName: '',
+    font: '',
+    rtl: false,
+    spellCheck: false,
+    terms: '',
+    keywords: '',
+    linkurl: '',
+    note: true,
+    category: 'cat1',
+    changed: true,
+    ws: undefined,
+    onRecording: jest.fn(),
+  };
+
+  it('ignores another Add click while the first save is still in progress', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const onCommit = jest.fn(() => gate);
+
+    render(
+      <ResourceOverview
+        mode={Mode.add}
+        dialogmode={Mode.add}
+        values={values}
+        isOpen={true}
+        isNote={true}
+        ws={undefined}
+        onOpen={jest.fn()}
+        onCommit={onCommit}
+        onSaving={jest.fn()}
+      />
+    );
+
+    // values.changed is cleared when the dialog loads; the title field is
+    // what marks the note dirty and enables Add.
+    fireEvent.click(screen.getByTestId('set-note-title'));
+
+    const button = document.getElementById('resSave') as HTMLButtonElement;
+    expect(button).not.toBeDisabled();
+    expect(button.textContent).toBe('Add');
+
+    fireEvent.click(button);
+
+    // The save is the multi-second delay in Note Details. Add must not accept
+    // another click during it — that second click is a second sharedresource
+    // addRecord, and the server 500s onto the error page.
+    expect(button).toBeDisabled();
+    expect(onCommit).toHaveBeenCalledTimes(1);
+
+    // A click can be delivered before the disabled attribute paints. Invoke
+    // the handler directly so the disabled attribute cannot swallow it.
+    const propsKey = Object.keys(button).find((key) =>
+      key.startsWith('__reactProps')
+    );
+    expect(propsKey).toEqual(expect.any(String));
+    act(() => {
+      (button as unknown as Record<string, { onClick: () => void }>)[
+        propsKey as string
+      ].onClick();
+    });
+    expect(onCommit).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      release();
+      await gate;
+    });
+    expect(button).not.toBeDisabled();
   });
 });

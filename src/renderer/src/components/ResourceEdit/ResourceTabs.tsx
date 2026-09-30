@@ -32,6 +32,7 @@ import { isLinkedNote } from '../../crud/isLinkedNote';
 import { useMemo } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { useSnackBar } from '../../hoc/SnackBar';
+import { flushSync } from 'react-dom';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../model/passageType';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -83,9 +84,17 @@ interface IProps {
   hasPublishing: boolean;
   onOpen: () => void;
   onUpdRef: (id: string, val: string, sr?: SharedResourceD) => void;
+  // While true, ScriptureTable skips a full getSheet rebuild (updateRef).
+  onSaving?: (saving: boolean) => void;
 }
 
-export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
+export function ResourceTabs({
+  passId,
+  ws,
+  onOpen,
+  onUpdRef,
+  onSaving,
+}: IProps) {
   const sharedResources = useOrbitData<SharedResource[]>('sharedresource');
   const graphics = useOrbitData<GraphicD[]>('graphic');
   const [value, setValue] = React.useState(0);
@@ -166,8 +175,18 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
     setValue(newValue);
   };
 
+  const markSaving = (saving: boolean) => {
+    if (saving) {
+      // Paint the snack before category commit and the orbit write re-render
+      // the sheet (TT-7730).
+      flushSync(() => {
+        showMessage(t.saving);
+      });
+    }
+    onSaving?.(saving);
+  };
+
   const handleCommit = async (values: IResourceDialog) => {
-    showMessage(t.saving);
     const {
       title,
       description,
@@ -179,39 +198,50 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
       category,
       mediaId,
     } = values;
-    if (sharedResRec) {
-      const rec = sharedResRec;
-      await updateSharedResource(
-        {
-          ...rec,
-          attributes: {
-            ...rec.attributes,
-            title,
-            description,
-            languagebcp47: `${languageName}|${bcp47}`,
-            termsOfUse: terms,
-            keywords,
-            linkurl,
-            note: isNote,
-          },
-        } as SharedResourceD,
-        category,
-        mediaId
-      );
-    } else {
-      await createSharedResource({
-        title,
-        description,
-        languagebcp47: `${languageName}|${bcp47}`,
-        termsOfUse: terms,
-        keywords,
-        linkurl,
-        note: isNote,
-        category,
-        mediaId,
+    try {
+      if (sharedResRec) {
+        const rec = sharedResRec;
+        await updateSharedResource(
+          {
+            ...rec,
+            attributes: {
+              ...rec.attributes,
+              title,
+              description,
+              languagebcp47: `${languageName}|${bcp47}`,
+              termsOfUse: terms,
+              keywords,
+              linkurl,
+              note: isNote,
+            },
+          } as SharedResourceD,
+          category,
+          mediaId
+        );
+      } else {
+        await createSharedResource({
+          title,
+          description,
+          languagebcp47: `${languageName}|${bcp47}`,
+          termsOfUse: terms,
+          keywords,
+          linkurl,
+          note: isNote,
+          category,
+          mediaId,
+        });
+      }
+      onSaving?.(true);
+      // Paint References before releasing the sheet guard. updatePassageRef
+      // clears that guard as soon as the orbit write returns, which is before
+      // this tab state is painted; flushSync runs the sheet effect while the
+      // guard is still set so getSheet does not block the switch (TT-7730).
+      flushSync(() => {
+        setValue(1);
       });
+    } finally {
+      onSaving?.(false);
     }
-    setValue(1);
   };
 
   const handleDelete = () => {
@@ -359,6 +389,7 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
           ws={ws}
           onOpen={handleOverOpen}
           onCommit={handleCommit}
+          onSaving={markSaving}
           onDelete={handleDelete}
           onLink={handleLink}
           onUnlink={handleUnlink}

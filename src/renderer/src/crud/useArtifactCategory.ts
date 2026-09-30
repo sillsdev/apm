@@ -18,7 +18,6 @@ import {
   UpdateRecord,
 } from '../model/baseModel';
 import { cleanFileName } from '../utils/cleanFileName';
-import { useWaitForRemoteQueue } from '../utils/useWaitForRemoteQueue';
 import { logError, Severity } from '../utils/logErrorService';
 
 interface ISwitches {
@@ -38,6 +37,9 @@ export enum ArtifactCategoryType {
   Discussion = 'discussion',
   Note = 'note',
 }
+// Created this session. Online lists hide rows until they have a remoteId;
+// these stay visible so the next note can pick the category just saved (TT-7730).
+const pendingCatIds = new Set<string>();
 const stringSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'artifactCategory' });
 
@@ -48,7 +50,6 @@ export const useArtifactCategory = (teamId?: string) => {
   const curOrg = teamId ?? organization;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [errorReporter] = useGlobal('errorReporter');
-  const waitForRemoteQueue = useWaitForRemoteQueue();
   const t: IArtifactCategoryStrings = useSelector(stringSelector, shallowEqual);
   // Rebuilt whenever the strings change: localStrings hands out a new identity
   // per language, and a map cached from the first language would answer a
@@ -174,7 +175,8 @@ export const useArtifactCategory = (teamId?: string) => {
           related(r, 'organization') === null)
     );
     let orgrecs: ArtifactCategoryD[] = allOrgRecs.filter(
-      (r) => Boolean(r.keys?.remoteId) !== offlineOnly
+      (r) =>
+        Boolean(r.keys?.remoteId) !== offlineOnly || pendingCatIds.has(r.id)
     );
     if (!offlineOnly && type === ArtifactCategoryType.Note && curOrg) {
       // Detect specials against unfiltered cache so an unsynced local special
@@ -288,13 +290,7 @@ export const useArtifactCategory = (teamId?: string) => {
         ];
       }
       await memory.update(ops);
-      // Wait here (not on read) so keys.remoteId can fill in before callers
-      // that need a synced id continue. A stuck queue must not blank the list.
-      try {
-        await waitForRemoteQueue('category update');
-      } catch {
-        /* ignore — create already persisted locally */
-      }
+      if (artifactCategory.id) pendingCatIds.add(artifactCategory.id);
       return artifactCategory.id;
     }
     return undefined;
