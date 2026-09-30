@@ -21,17 +21,13 @@ import localizationReducer from '../../store/localization/reducers';
  * app uses, via LocalizedStrings on the Redux `strings` slice.
  */
 const planTabsFixture = {
-  sectionsPassages: '{0} & Passages',
+  projectOverview: 'Project Overview',
   media: 'Media',
   assignments: 'Assignments',
   transcriptions: 'Transcriptions',
 } as const;
 
-const organizedByDefault = 'Sections';
-const sectionsPassagesLabel = planTabsFixture.sectionsPassages.replace(
-  '{0}',
-  organizedByDefault
-);
+const projectOverviewLabel = planTabsFixture.projectOverview;
 
 // Mock memory — must match DataProvider so useOrbitData sees organizations
 // (cypress-testing-takeaways: data-driven providers, not import stubs).
@@ -65,17 +61,6 @@ const mockPlanTabsStrings = new LocalizedStrings({
   en: planTabsFixture,
 });
 
-const mockVProjectStrings = new LocalizedStrings({
-  en: {
-    sections: organizedByDefault,
-    sets: 'Sets',
-    stories: 'Stories',
-    scenes: 'Scenes',
-    pericopes: 'Pericopes',
-    movements: 'Movements',
-  },
-});
-
 const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
   return {
@@ -83,7 +68,6 @@ const mockStringsReducer = () => {
     loaded: true,
     lang: 'en',
     planTabs: mockPlanTabsStrings,
-    vProject: mockVProjectStrings,
   };
 };
 
@@ -234,25 +218,19 @@ describe('PlanTabSelect', () => {
       cy.get('#planTabSelect')
         .should('exist')
         .should('be.visible')
-        .should('have.attr', 'aria-label', planTabsFixture.sectionsPassages);
+        .should('have.attr', 'aria-label', projectOverviewLabel);
     });
 
-    it('should display default item text when flat is false', () => {
+    it('should display Project Overview for both flat and non-flat projects', () => {
       mountPlanTabSelect({ flat: false });
 
       cy.wait(100);
-      cy.get('#planTabSelect').should('contain.text', sectionsPassagesLabel);
-    });
+      cy.get('#planTabSelect').should('contain.text', projectOverviewLabel);
 
-    it('should display organizedBy text when flat is true', () => {
       mountPlanTabSelect({ flat: true });
 
       cy.wait(100);
-      cy.get('#planTabSelect').should('contain.text', organizedByDefault);
-      cy.get('#planTabSelect').should(
-        'not.contain.text',
-        sectionsPassagesLabel
-      );
+      cy.get('#planTabSelect').should('contain.text', projectOverviewLabel);
     });
 
     it('should display dropdown icon', () => {
@@ -275,9 +253,7 @@ describe('PlanTabSelect', () => {
       mountPlanTabSelect({ flat: false, tab: 0 }, teamGlobal, teamOrgs);
 
       cy.wait(100);
-      cy.get('#planTabSelect')
-        .should('contain.text', sectionsPassagesLabel)
-        .should('contain.text', organizedByDefault);
+      cy.get('#planTabSelect').should('contain.text', projectOverviewLabel);
 
       mountPlanTabSelect({ flat: false, tab: 2 }, teamGlobal, teamOrgs);
       cy.wait(100);
@@ -332,7 +308,7 @@ describe('PlanTabSelect', () => {
       cy.wait(100);
       openPlanTabMenu();
       cy.get('#import-export-menu').within(() => {
-        cy.contains(sectionsPassagesLabel).should('be.visible');
+        cy.contains(projectOverviewLabel).should('be.visible');
         cy.get(`#${CSS.escape(planTabsFixture.media)}`).should('be.visible');
         cy.get(`#${CSS.escape(planTabsFixture.assignments)}`).should(
           'be.visible'
@@ -389,8 +365,7 @@ describe('PlanTabSelect', () => {
       cy.get('#import-export-menu')
         .find('li[role="menuitem"]')
         .first()
-        .should('contain.text', organizedByDefault)
-        .should('not.contain.text', sectionsPassagesLabel);
+        .should('contain.text', projectOverviewLabel);
     });
   });
 

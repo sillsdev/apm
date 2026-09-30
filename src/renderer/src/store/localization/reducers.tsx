@@ -1367,7 +1367,7 @@ const initialState = {
 			"media": "Audio",
 			"mediaStatus": "{1} of {2} associations",
 			"passageStatus": "{1} of {2} passages",
-			"sectionsPassages": "{0} & Passages",
+			"projectOverview": "Project Overview",
 			"sectionStatus": "{1} of {2} {0}",
 			"transcriptions": "Transcriptions",
 		}
