@@ -74,6 +74,8 @@ interface IProps extends IDialog<IResourceDialog> {
   onLink?: (link: SharedResourceD) => Promise<void>;
   onUnlink?: () => Promise<void> | void;
   contentReadOnly?: boolean;
+  // Paint Saving and hold the sheet rebuild before category commit / orbit write.
+  onSaving?: (saving: boolean) => void;
 }
 
 export default function ResourceOverview(props: IProps) {
@@ -90,6 +92,7 @@ export default function ResourceOverview(props: IProps) {
     onLink,
     onUnlink,
     contentReadOnly,
+    onSaving,
   } = props;
 
   const [isDeveloper] = useGlobal('developer');
@@ -161,12 +164,20 @@ export default function ResourceOverview(props: IProps) {
   };
 
   const handleAdd = async () => {
-    // Create the category now (at save) if the user typed a new one; on blur it
-    // was only resolved against existing categories.
-    const category = catCommitRef.current
-      ? await catCommitRef.current()
-      : state.category;
-    onCommit({ ...state, category });
+    // Saving has to paint before category commit. A new category used to wait
+    // on the remote queue here, so the snack never appeared (TT-7730).
+    onSaving?.(true);
+    try {
+      // Create the category now (at save) if the user typed a new one; on blur it
+      // was only resolved against existing categories.
+      const category = catCommitRef.current
+        ? await catCommitRef.current()
+        : state.category;
+      await Promise.resolve(onCommit({ ...state, category }));
+    } catch (err) {
+      onSaving?.(false);
+      throw err;
+    }
   };
 
   const handleLanguageChange = (val: ILanguage) => {

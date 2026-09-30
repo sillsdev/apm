@@ -2366,6 +2366,7 @@ export function ScriptureTable(props: IProps) {
             ws={editRow}
             onOpen={handleEditClose}
             onUpdRef={updatePassageRef}
+            onSaving={(saving) => setUpdate(saving)}
             hasPublishing={publishingOn}
           />
         ) : (

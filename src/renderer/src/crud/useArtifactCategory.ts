@@ -18,7 +18,6 @@ import {
   UpdateRecord,
 } from '../model/baseModel';
 import { cleanFileName } from '../utils/cleanFileName';
-import { useWaitForRemoteQueue } from '../utils/useWaitForRemoteQueue';
 import { logError, Severity } from '../utils/logErrorService';
 
 interface ISwitches {
@@ -48,7 +47,6 @@ export const useArtifactCategory = (teamId?: string) => {
   const curOrg = teamId ?? organization;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [errorReporter] = useGlobal('errorReporter');
-  const waitForRemoteQueue = useWaitForRemoteQueue();
   const t: IArtifactCategoryStrings = useSelector(stringSelector, shallowEqual);
   // Rebuilt whenever the strings change: localStrings hands out a new identity
   // per language, and a map cached from the first language would answer a
@@ -288,13 +286,10 @@ export const useArtifactCategory = (teamId?: string) => {
         ];
       }
       await memory.update(ops);
-      // Wait here (not on read) so keys.remoteId can fill in before callers
-      // that need a synced id continue. A stuck queue must not blank the list.
-      try {
-        await waitForRemoteQueue('category update');
-      } catch {
-        /* ignore — create already persisted locally */
-      }
+      // Return the local id immediately. Waiting for the remote queue here
+      // held Note Details Add (Saving snack, then References) for as long as
+      // any earlier sync was still draining (TT-7730). Callers that need a
+      // synced id wait themselves (CategoryListEdit → waitForRemoteId).
       return artifactCategory.id;
     }
     return undefined;
