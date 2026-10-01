@@ -1,6 +1,6 @@
 {
   "name": "apm-vite-web",
-  "version": "4.6.0.alpha.3",
+  "version": "4.6.0",
   "license": "MIT",
   "scripts": {
     "start": "vite",

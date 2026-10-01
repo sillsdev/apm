@@ -1,6 +1,6 @@
 {
   "name": "audio-project-manager",
-  "version": "4.6.0-alpha.3",
+  "version": "4.6.0",
   "description": "A flexible audio-text orality solution",
   "main": "./out/main/index.js",
   "homepage": "./out",
