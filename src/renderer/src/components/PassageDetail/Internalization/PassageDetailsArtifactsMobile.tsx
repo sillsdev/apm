@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
+  IArtifactTypeStrings,
   IPassageDetailArtifactsStrings,
   Passage,
   Section,
@@ -77,6 +78,7 @@ import {
 } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
+  artifactTypeSelector,
   passageDetailArtifactsSelector,
   sharedSelector,
 } from '../../../selector';
@@ -245,6 +247,14 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
   const { userIsAdmin } = useRole();
+  // Read here rather than using row.artifactType: rows snapshot their localized
+  // label when they are built, so a badge taken from the row would keep the old
+  // wording after a runtime language change. row.isGeneralResource and
+  // row.artifactTypeSlug carry no language, so they are safe to read from a row.
+  const at: IArtifactTypeStrings = useSelector(
+    artifactTypeSelector,
+    shallowEqual
+  );
   // Admins see badges for resources that are linked (shared) or general; other users don't.
   const typeBadge = (row: IRow) =>
     !userIsAdmin
@@ -254,7 +264,7 @@ export function PassageDetailArtifactsMobile() {
         row.isGeneralResource
         ? t.general
         : row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
-          ? row.artifactType
+          ? at.linked
           : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   // Confirm-before-discard for the passage-select and edit dialogs. Closing any
