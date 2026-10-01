@@ -1,5 +1,5 @@
 import { ICardsStrings, ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, Typography } from '@mui/material';
 import { ChevronRight, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
@@ -66,6 +66,9 @@ export function PassageCard(props: IProps) {
       sx={{
         minWidth: isMobileWidth ? '100%' : 275,
         maxWidth: 400,
+        minHeight: 200,
+        display: 'flex',
+        flexDirection: 'column',
         ...(isCurrent && {
           outline: '2px solid',
           outlineColor: 'primary.light',
@@ -74,7 +77,16 @@ export function PassageCard(props: IProps) {
       }}
     >
       {psgType === PassageTypeEnum.CHAPTERNUMBER ? (
-        <CardContent>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 1,
+            flex: 1,
+            p: 2,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <PassageGraphic
               cardInfo={cardInfo}
@@ -115,9 +127,18 @@ export function PassageCard(props: IProps) {
               onPlayEnd={handlePlayEnd}
             />
           </Box>
-        </CardContent>
+        </Box>
       ) : (
-        <CardContent>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 1,
+            flex: 1,
+            p: 2,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <PassageGraphic
               cardInfo={cardInfo}
@@ -174,7 +195,6 @@ export function PassageCard(props: IProps) {
           <Button
             data-cy="passage-card-step"
             sx={{
-              width: '100%',
               position: 'relative',
               '& .MuiTypography-root': {
                 fontWeight: 'bold',
@@ -192,7 +212,7 @@ export function PassageCard(props: IProps) {
           >
             {cardInfo.step}
           </Button>
-        </CardContent>
+        </Box>
       )}
     </Card>
   );
