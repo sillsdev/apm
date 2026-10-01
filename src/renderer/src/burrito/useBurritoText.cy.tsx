@@ -72,8 +72,17 @@ const section = {
   relationships: { plan: rel('plan', PLAN_ID) },
 } as unknown as SectionD;
 
+// Typed-in transcription: \c on its own line, no paragraph after it.
+const TYPED_1_19 =
+  '\\v 19  Be quick to hear\n\\v 27  Pure religion\n\\c 2  \n\\v 1  Show no partiality\n\\v 13 Mercy triumphs';
+// Paratext text import (getLocalParatextText): verses joined inline with
+// `\c ${chap} ` between chapters.
+const PARATEXT_1_19 =
+  '\\v 19 Be quick to hear\\v 27 Pure religion\\c 2 \\v 1 Show no partiality\\v 13 Mercy triumphs';
+
 const createDataset = (
-  textOutputFormat: 'usx' | 'usj'
+  textOutputFormat: 'usx' | 'usj',
+  transcription1 = TYPED_1_19
 ): Record<string, MockRec[]> => ({
   organization: [
     {
@@ -95,11 +104,7 @@ const createDataset = (
     passage('pas-4', 4, '4:13-17', [4, 13, 4, 17]),
   ],
   mediafile: [
-    media(
-      'med-1',
-      'pas-1',
-      '\\v 19  Be quick to hear\n\\v 27  Pure religion\n\\c 2  \n\\v 1  Show no partiality\n\\v 13 Mercy triumphs'
-    ),
+    media('med-1', 'pas-1', transcription1),
     media('med-2', 'pas-2', '\\v 14  Faith without works'),
     media(
       'med-3',
@@ -202,8 +207,13 @@ const countUsjChapters = (node: unknown, number: string): number => {
 };
 
 describe('useBurritoText cross-chapter export (TT-7716)', () => {
-  const mountHarness = (textOutputFormat: 'usx' | 'usj') => {
-    const memory = createMockMemory(createDataset(textOutputFormat));
+  const mountHarness = (
+    textOutputFormat: 'usx' | 'usj',
+    transcription1?: string
+  ) => {
+    const memory = createMockMemory(
+      createDataset(textOutputFormat, transcription1)
+    );
     cy.window().then((win) => {
       // CT's `process` polyfill has no `versions`; usfm-grammar-web probes
       // `globalThis.process?.versions.node` and would throw before parsing.
@@ -270,6 +280,25 @@ describe('useBurritoText cross-chapter export (TT-7716)', () => {
         const doc = JSON.parse(String(usj));
         for (const n of ['1', '2', '3', '4']) {
           expect(countUsjChapters(doc, n), `chapter ${n}`).to.equal(1);
+        }
+      });
+  });
+
+  it('exports USX for Paratext-imported text with an inline \\c 2 \\v 1', () => {
+    mountHarness('usx', PARATEXT_1_19);
+    cy.get('[data-cy="burrito-text-result"]', { timeout: 20000 }).should(
+      'have.text',
+      'ok'
+    );
+    cy.get('@write')
+      .its('firstCall.args.1')
+      .then((usx) => {
+        const content = String(usx);
+        for (const n of ['1', '2', '3', '4']) {
+          expect(
+            content.match(new RegExp(`<chapter[^>]*number="${n}"`, 'g')),
+            `chapter ${n}`
+          ).to.have.length(1);
         }
       });
   });

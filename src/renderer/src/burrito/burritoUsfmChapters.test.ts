@@ -22,6 +22,44 @@ describe('ensureParagraphAfterChapter', () => {
     );
   });
 
+  describe('inline chapter transitions (Paratext text import)', () => {
+    it('moves an inline \\c before \\v onto its own line with \\p', () => {
+      expect(ensureParagraphAfterChapter('\\v 27 End \\c 2 \\v 1 Start')).toBe(
+        '\\v 27 End\n\\c 2\n\\p\n\\v 1 Start'
+      );
+    });
+
+    it('handles \\c glued to the previous verse text', () => {
+      expect(
+        ensureParagraphAfterChapter('\\v 27 End\\c 2 \\v 1 Start\\v 2 More')
+      ).toBe('\\v 27 End\n\\c 2\n\\p\n\\v 1 Start\\v 2 More');
+    });
+
+    it('handles \\c glued to the next \\v', () => {
+      expect(ensureParagraphAfterChapter('\\v 27 End \\c 2\\v 1 Start')).toBe(
+        '\\v 27 End\n\\c 2\n\\p\n\\v 1 Start'
+      );
+    });
+
+    it('handles inline \\c followed by plain text', () => {
+      expect(ensureParagraphAfterChapter('\\v 27 End \\c 2 Start')).toBe(
+        '\\v 27 End\n\\c 2\n\\p\nStart'
+      );
+    });
+
+    it('handles a leading inline \\c at the start of a line', () => {
+      expect(ensureParagraphAfterChapter('\\p\n\\c 2 \\v 1 Start')).toBe(
+        '\\p\n\\c 2\n\\p\n\\v 1 Start'
+      );
+    });
+
+    it('handles multi-digit chapters', () => {
+      expect(ensureParagraphAfterChapter('\\v 7 a \\c 12 \\v 1 b')).toBe(
+        '\\v 7 a\n\\c 12\n\\p\n\\v 1 b'
+      );
+    });
+  });
+
   it('adds \\p when \\c ends the content', () => {
     expect(ensureParagraphAfterChapter('\\v 1 a\n\\c 2')).toBe(
       '\\v 1 a\n\\c 2\n\\p\n'

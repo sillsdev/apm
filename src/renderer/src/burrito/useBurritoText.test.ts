@@ -539,13 +539,13 @@ describe('useBurritoText cross-chapter USFM structure (TT-7716)', () => {
   const chapterNumbers = (usfm: string) =>
     Array.from(usfm.matchAll(/\\c\s*(\d+)/g)).map((m) => Number(m[1]));
 
+  // Every \c (inline ones included) must sit on its own line and be followed
+  // by a paragraph or section line.
   const expectEveryChapterFollowedByParagraph = (usfm: string) => {
-    const lines = usfm.split('\n');
-    lines.forEach((line, idx) => {
-      if (/^\\c\s*\d+/.test(line)) {
-        expect(lines[idx + 1]).toMatch(/^\\(p|s\d?)\b/);
-      }
-    });
+    const chapterMarkers = usfm.match(/\\c\s*\d+/g) ?? [];
+    const wellFormed =
+      usfm.match(/(?:^|\n)\\c \d+\n\\(?:p|s\d?)(?![a-z])/g) ?? [];
+    expect(wellFormed).toHaveLength(chapterMarkers.length);
   };
 
   async function exportJames(passages: PassageD[], mediafiles: MediaFileD[]) {
@@ -668,6 +668,55 @@ describe('useBurritoText cross-chapter USFM structure (TT-7716)', () => {
     expect(usfm).toContain('\\v 1-12 1 What causes quarrels');
     expect(usfm.indexOf('\\c 4')).toBeLessThan(
       usfm.indexOf('What causes quarrels')
+    );
+  });
+
+  it('breaks out an inline chapter from Paratext text (\\c 2 \\v 1 on one line)', async () => {
+    // getLocalParatextText: getPassageVerses output joined by `\c ${chap} `
+    const usfm = await exportJames(
+      [
+        passageFixture(
+          {
+            sequencenum: 1,
+            reference: '1:26-2:2',
+            startChapter: 1,
+            startVerse: 26,
+            endChapter: 2,
+            endVerse: 2,
+          },
+          'pas-a'
+        ),
+        passageFixture(
+          {
+            sequencenum: 2,
+            reference: '2:3',
+            startChapter: 2,
+            startVerse: 3,
+            endChapter: 2,
+            endVerse: 3,
+          },
+          'pas-b'
+        ),
+      ],
+      [
+        mediaFixture(
+          {
+            transcription:
+              '\\v 26 Bridle the tongue\\v 27 Pure religion\\c 2 \\v 1 Show no partiality\\v 2 A gold ring',
+          },
+          { id: 'med-a', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { transcription: '\\v 3 Fine clothing' },
+          { id: 'med-b', passageId: 'pas-b' }
+        ),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain(
+      '\\v 27 Pure religion\n\\c 2\n\\p\n\\v 1 Show no partiality\\v 2 A gold ring'
     );
   });
 });
