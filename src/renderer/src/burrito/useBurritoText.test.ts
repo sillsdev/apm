@@ -520,3 +520,154 @@ describe('useBurritoText', () => {
     expect(denseUsfm).toContain('\\v 4 These are the generations');
   });
 });
+
+// TT-7716: usfm-grammar rejects a \c that is not followed by a paragraph or
+// section marker, so USX/USJ export threw "USFM parse errors" for James.
+describe('useBurritoText cross-chapter USFM structure (TT-7716)', () => {
+  const teamId = 'team-1';
+  const preLen = '/data'.length;
+  const usxDefaults = (key: string) => {
+    if (key === 'burritoVersions') return '1';
+    if (key === 'burritoFormat') return { textOutputFormat: 'usx' };
+    return undefined;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const chapterNumbers = (usfm: string) =>
+    Array.from(usfm.matchAll(/\\c\s*(\d+)/g)).map((m) => Number(m[1]));
+
+  const expectEveryChapterFollowedByParagraph = (usfm: string) => {
+    const lines = usfm.split('\n');
+    lines.forEach((line, idx) => {
+      if (/^\\c\s*\d+/.test(line)) {
+        expect(lines[idx + 1]).toMatch(/^\\(p|s\d?)\b/);
+      }
+    });
+  };
+
+  async function exportJames(passages: PassageD[], mediafiles: MediaFileD[]) {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages,
+        mediafiles,
+        getOrgDefaultImpl: usxDefaults,
+      });
+    const { result } = renderHook(() => useBurritoText(teamId));
+    await act(async () => {
+      await result.current({
+        metadata: burritoFixture(),
+        book: 'JAS',
+        bookPath: '/data/burrito/JAS',
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+    expect(convertBurritoText).toHaveBeenCalledTimes(1);
+    return (convertBurritoText as jest.Mock).mock.calls[0][0] as string;
+  }
+
+  it('adds a paragraph after the synthesized end chapter (JAS 3:13-4:12, no \\v)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '3:13-4:12',
+          startChapter: 3,
+          startVerse: 13,
+          endChapter: 4,
+          endVerse: 12,
+        }),
+      ],
+      [mediaFixture({ transcription: 'Wisdom from above' })]
+    );
+
+    expect(usfm).toContain('\\v 13-18 Wisdom from above');
+    expect(usfm).toContain('\\c 4\n\\p\n\\v 1-12');
+    expect(chapterNumbers(usfm)).toEqual([3, 4]);
+    expectEveryChapterFollowedByParagraph(usfm);
+  });
+
+  it('does not repeat \\c after a versed transcription with an embedded chapter (JAS 1:19-2:13, 2:14-26)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture(
+          {
+            sequencenum: 1,
+            reference: '1:19-2:13',
+            startChapter: 1,
+            startVerse: 19,
+            endChapter: 2,
+            endVerse: 13,
+          },
+          'pas-a'
+        ),
+        passageFixture(
+          {
+            sequencenum: 2,
+            reference: '2:14-26',
+            startChapter: 2,
+            startVerse: 14,
+            endChapter: 2,
+            endVerse: 26,
+          },
+          'pas-b'
+        ),
+      ],
+      [
+        mediaFixture(
+          {
+            transcription:
+              '\\v 19  Be quick to hear\n\\v 27  Pure religion\n\\c 2  \n\\v 1  Show no partiality\n\\v 13 Mercy triumphs',
+          },
+          { id: 'med-a', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { transcription: '\\v 14  Faith without works' },
+          { id: 'med-b', passageId: 'pas-b' }
+        ),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm.indexOf('\\c 2')).toBeLessThan(
+      usfm.indexOf('\\v 1  Show no partiality')
+    );
+    expect(usfm.indexOf('\\c 2')).toBeLessThan(
+      usfm.indexOf('\\v 14  Faith without works')
+    );
+  });
+
+  it('splits an un-versed transcription at its embedded end chapter (JAS 3:13-4:12)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '3:13-4:12',
+          startChapter: 3,
+          startVerse: 13,
+          endChapter: 4,
+          endVerse: 12,
+        }),
+      ],
+      [
+        mediaFixture({
+          transcription:
+            '13 Who is wise\n18 Fruit of righteousness\n\\c 4\n1 What causes quarrels\n12 Who are you to judge',
+        }),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([3, 4]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain(
+      '\\v 13-18 13 Who is wise\n18 Fruit of righteousness\n\\c 4'
+    );
+    expect(usfm).toContain('\\v 1-12 1 What causes quarrels');
+    expect(usfm.indexOf('\\c 4')).toBeLessThan(
+      usfm.indexOf('What causes quarrels')
+    );
+  });
+});

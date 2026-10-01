@@ -19,7 +19,11 @@ import {
   parseBurritoTextOutputFormat,
 } from './burritoFormatParams';
 import { convertBurritoText } from './usfmTextConvert';
-const ipc = window?.api as MainAPI;
+import {
+  ensureParagraphAfterChapter,
+  lastChapterMarker,
+} from './burritoUsfmChapters';
+const ipc = () => window?.api as MainAPI;
 
 function textIngredientMimeType(format: BurritoTextOutputFormat): string {
   switch (format) {
@@ -158,7 +162,15 @@ export const useBurritoText = (teamId: string) => {
                   }
                   const endRef =
                     endVerse != null && endVerse > 1 ? `1-${endVerse}` : '1';
-                  verseRange = `\\v ${ref} ${attr.transcription}\n\\c ${endChapter}\n\\v ${endRef}`;
+                  // Split at a \c the transcriber already typed so the end
+                  // chapter is not emitted twice.
+                  const [before, after] = attr.transcription.split(
+                    new RegExp(`\\\\c\\s*${endChapter}(?!\\d)[ \\t]*\\n?`)
+                  );
+                  verseRange =
+                    after !== undefined
+                      ? `\\v ${ref} ${before.trimEnd()}\n\\c ${endChapter}\n\\v ${endRef} ${after}`
+                      : `\\v ${ref} ${attr.transcription}\n\\c ${endChapter}\n\\v ${endRef}`;
                   chapters.add(endChapter.toString());
                   chapterByVersion.set(i, endChapter);
                 } else {
@@ -166,6 +178,14 @@ export const useBurritoText = (teamId: string) => {
                     ref = `${ref}-${endVerse?.toString()}`;
                   }
                   verseRange = `\\v ${ref} ${attr.transcription}`;
+                }
+              } else {
+                // A versed transcription may cross chapters with its own \c;
+                // advance the cursor so the next passage doesn't repeat it.
+                const lastChapter = lastChapterMarker(verseRange);
+                if (lastChapter) {
+                  chapters.add(lastChapter.toString());
+                  chapterByVersion.set(i, lastChapter);
                 }
               }
               text.push(verseRange);
@@ -184,15 +204,15 @@ export const useBurritoText = (teamId: string) => {
       if (!name) continue;
       const textPath = path.join(bookPath, name);
       const text = textMap.get(i);
-      let content = (text?.join('\n') ?? '') as string;
+      let content = ensureParagraphAfterChapter(text?.join('\n') ?? '');
       if (textOutputFormat === 'usx' || textOutputFormat === 'usj') {
         content = await convertBurritoText(content, textOutputFormat);
       }
-      await ipc?.write(textPath, content);
+      await ipc()?.write(textPath, content);
       // add the alignment file to the metadata file
       const docid = textPath.substring(preLen);
       ingredients[docid] = {
-        checksum: { md5: await ipc?.md5File(textPath) },
+        checksum: { md5: await ipc()?.md5File(textPath) },
         mimeType: textIngredientMimeType(textOutputFormat),
         size: content.length,
         scope: { [book]: sortChapters(chapters) },
