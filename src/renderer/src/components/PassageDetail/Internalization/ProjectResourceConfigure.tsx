@@ -108,8 +108,16 @@ const ProjectResourceTable = ({ className, children }: ISheetRendererProps) => (
       // forces `text-align:right`, which beats a single-class override — so the
       // input renders right-aligned mid-edit and only snaps left once the
       // value-viewer takes over on blur. `!important` is required to win.
+      //
+      // That same rule also pins the input to `height:11px` with a 2px blue
+      // border top and bottom — shorter than the text, so those blue border
+      // lines cut across the glyphs while typing. Let the height follow the
+      // content and add the viewer's vertical padding so the border frames the
+      // text instead of obscuring it. `!important` is again needed to win.
       '& .data-editor': {
         px: 1.5,
+        py: 1.25,
+        height: 'auto !important',
         boxSizing: 'border-box',
         textAlign: 'left !important',
       },
