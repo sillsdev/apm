@@ -1,8 +1,4 @@
 /// <reference types="node" />
-import type { MainAPI } from '../model/main-api';
-import type { Burrito } from './data/types';
-import type { MediaFileD, PassageD, SectionD } from '../model';
-
 jest.mock('../hoc/useOrbitData', () => ({
   useOrbitData: jest.fn(() => []),
 }));
@@ -14,6 +10,15 @@ jest.mock('../crud/useOrgDefaults', () => ({
 jest.mock('./usfmTextConvert', () => ({
   convertBurritoText: jest.fn((content: string) => Promise.resolve(content)),
 }));
+
+import { act, renderHook } from '@testing-library/react';
+import { useOrbitData } from '../hoc/useOrbitData';
+import { useOrgDefaults } from '../crud/useOrgDefaults';
+import { convertBurritoText } from './usfmTextConvert';
+import { useBurritoText } from './useBurritoText';
+import type { MainAPI } from '../model/main-api';
+import type { Burrito } from './data/types';
+import type { MediaFileD, PassageD, SectionD } from '../model';
 
 function burritoFixture(): Burrito {
   return {
@@ -113,23 +118,17 @@ type LoadOpts = {
 };
 
 /**
- * `useBurritoText` reads `window.api` at module load. `jest.isolateModules`
- * would give the hook a second React copy and break hooks; `resetModules` +
- * requiring RTL before the hook keeps a single React for `renderHook`.
+ * `useBurritoText` reads `window.api` at call time, so stubbing it here before
+ * running the hook is enough — no module reset needed.
  */
 function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
-  /* eslint-disable @typescript-eslint/no-require-imports -- resetModules + RTL pure + hook in one registry cycle */
-  jest.resetModules();
   (window as unknown as { api?: MainAPI }).api = api;
-  // `react` entry registers Jest hooks; `pure` does not (invalid inside `it`).
-  const { renderHook, act } = require('@testing-library/react/pure');
-  const { useOrgDefaults } = require('../crud/useOrgDefaults');
   const defaultGetOrg = (key: string) => {
     if (key === 'burritoVersions') return '1';
     if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
     return undefined;
   };
-  useOrgDefaults.mockReturnValue({
+  (useOrgDefaults as jest.Mock).mockReturnValue({
     getOrgDefault: jest.fn((key: string, teamId?: string) =>
       (opts.getOrgDefaultImpl ?? defaultGetOrg)(key, teamId)
     ),
@@ -138,18 +137,17 @@ function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
     setDefault: jest.fn(),
     canSetOrgDefault: true,
   });
-  const { useOrbitData } = require('../hoc/useOrbitData');
-  useOrbitData.mockImplementation((key: string) => {
-    if (key === 'mediafile') return opts.mediafiles ?? [];
-    if (key === 'passage') return opts.passages ?? [];
+  // Stable array references (jest-testing-takeaways: useOrbitData churn).
+  const mediafiles = opts.mediafiles ?? [];
+  const passages = opts.passages ?? [];
+  (useOrbitData as jest.Mock).mockImplementation((key: string) => {
+    if (key === 'mediafile') return mediafiles;
+    if (key === 'passage') return passages;
     return [];
   });
-  const { convertBurritoText } = require('./usfmTextConvert');
-  convertBurritoText.mockImplementation((content: string, fmt: string) =>
-    Promise.resolve(`${fmt}:${content}`)
+  (convertBurritoText as jest.Mock).mockImplementation(
+    (content: string, fmt: string) => Promise.resolve(`${fmt}:${content}`)
   );
-  const { useBurritoText } = require('./useBurritoText');
-  /* eslint-enable @typescript-eslint/no-require-imports */
   return { renderHook, act, useBurritoText, convertBurritoText };
 }
 
@@ -518,5 +516,229 @@ describe('useBurritoText', () => {
     expect(denseUsfm).toContain('\\c 2');
     expect(denseUsfm).toContain('\\v 1-3');
     expect(denseUsfm).toContain('\\v 4 These are the generations');
+  });
+});
+
+// TT-7716: usfm-grammar rejects a \c that is not followed by a paragraph or
+// section marker, so USX/USJ export threw "USFM parse errors" for James.
+describe('useBurritoText cross-chapter USFM structure (TT-7716)', () => {
+  const teamId = 'team-1';
+  const preLen = '/data'.length;
+  const usxDefaults = (key: string) => {
+    if (key === 'burritoVersions') return '1';
+    if (key === 'burritoFormat') return { textOutputFormat: 'usx' };
+    return undefined;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const chapterNumbers = (usfm: string) =>
+    Array.from(usfm.matchAll(/\\c\s*(\d+)/g)).map((m) => Number(m[1]));
+
+  // Every \c (inline ones included) must sit on its own line and be followed
+  // by a paragraph or section line.
+  const expectEveryChapterFollowedByParagraph = (usfm: string) => {
+    const chapterMarkers = usfm.match(/\\c\s*\d+/g) ?? [];
+    const wellFormed =
+      usfm.match(/(?:^|\n)\\c \d+\n\\(?:p|s\d?)(?![a-z])/g) ?? [];
+    expect(wellFormed).toHaveLength(chapterMarkers.length);
+  };
+
+  async function exportJames(passages: PassageD[], mediafiles: MediaFileD[]) {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages,
+        mediafiles,
+        getOrgDefaultImpl: usxDefaults,
+      });
+    const { result } = renderHook(() => useBurritoText(teamId));
+    await act(async () => {
+      await result.current({
+        metadata: burritoFixture(),
+        book: 'JAS',
+        bookPath: '/data/burrito/JAS',
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+    expect(convertBurritoText).toHaveBeenCalledTimes(1);
+    return (convertBurritoText as jest.Mock).mock.calls[0][0] as string;
+  }
+
+  it('adds a paragraph after the synthesized end chapter (JAS 3:13-4:12, no \\v)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '3:13-4:12',
+          startChapter: 3,
+          startVerse: 13,
+          endChapter: 4,
+          endVerse: 12,
+        }),
+      ],
+      [mediaFixture({ transcription: 'Wisdom from above' })]
+    );
+
+    expect(usfm).toContain('\\v 13-18 Wisdom from above');
+    expect(usfm).toContain('\\c 4\n\\p\n\\v 1-12');
+    expect(chapterNumbers(usfm)).toEqual([3, 4]);
+    expectEveryChapterFollowedByParagraph(usfm);
+  });
+
+  it('does not repeat \\c after a versed transcription with an embedded chapter (JAS 1:19-2:13, 2:14-26)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture(
+          {
+            sequencenum: 1,
+            reference: '1:19-2:13',
+            startChapter: 1,
+            startVerse: 19,
+            endChapter: 2,
+            endVerse: 13,
+          },
+          'pas-a'
+        ),
+        passageFixture(
+          {
+            sequencenum: 2,
+            reference: '2:14-26',
+            startChapter: 2,
+            startVerse: 14,
+            endChapter: 2,
+            endVerse: 26,
+          },
+          'pas-b'
+        ),
+      ],
+      [
+        mediaFixture(
+          {
+            transcription:
+              '\\v 19  Be quick to hear\n\\v 27  Pure religion\n\\c 2  \n\\v 1  Show no partiality\n\\v 13 Mercy triumphs',
+          },
+          { id: 'med-a', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { transcription: '\\v 14  Faith without works' },
+          { id: 'med-b', passageId: 'pas-b' }
+        ),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm.indexOf('\\c 2')).toBeLessThan(
+      usfm.indexOf('\\v 1  Show no partiality')
+    );
+    expect(usfm.indexOf('\\c 2')).toBeLessThan(
+      usfm.indexOf('\\v 14  Faith without works')
+    );
+  });
+
+  it('splits an un-versed transcription at its embedded end chapter (JAS 3:13-4:12)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '3:13-4:12',
+          startChapter: 3,
+          startVerse: 13,
+          endChapter: 4,
+          endVerse: 12,
+        }),
+      ],
+      [
+        mediaFixture({
+          transcription:
+            '13 Who is wise\n18 Fruit of righteousness\n\\c 4\n1 What causes quarrels\n12 Who are you to judge',
+        }),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([3, 4]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain(
+      '\\v 13-18 13 Who is wise\n18 Fruit of righteousness\n\\c 4'
+    );
+    expect(usfm).toContain('\\v 1-12 1 What causes quarrels');
+    expect(usfm.indexOf('\\c 4')).toBeLessThan(
+      usfm.indexOf('What causes quarrels')
+    );
+  });
+
+  it('repairs a CRLF chapter transition in a transcription (\\c 2\\r\\n\\v 1)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '1:27-2:1',
+          startChapter: 1,
+          startVerse: 27,
+          endChapter: 2,
+          endVerse: 1,
+        }),
+      ],
+      [
+        mediaFixture({
+          transcription:
+            '\\v 27 Pure religion\r\n\\c 2\r\n\\v 1 Show no partiality',
+        }),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain('\\c 2\n\\p\n\\v 1 Show no partiality');
+  });
+
+  it('breaks out an inline chapter from Paratext text (\\c 2 \\v 1 on one line)', async () => {
+    // getLocalParatextText: getPassageVerses output joined by `\c ${chap} `
+    const usfm = await exportJames(
+      [
+        passageFixture(
+          {
+            sequencenum: 1,
+            reference: '1:26-2:2',
+            startChapter: 1,
+            startVerse: 26,
+            endChapter: 2,
+            endVerse: 2,
+          },
+          'pas-a'
+        ),
+        passageFixture(
+          {
+            sequencenum: 2,
+            reference: '2:3',
+            startChapter: 2,
+            startVerse: 3,
+            endChapter: 2,
+            endVerse: 3,
+          },
+          'pas-b'
+        ),
+      ],
+      [
+        mediaFixture(
+          {
+            transcription:
+              '\\v 26 Bridle the tongue\\v 27 Pure religion\\c 2 \\v 1 Show no partiality\\v 2 A gold ring',
+          },
+          { id: 'med-a', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { transcription: '\\v 3 Fine clothing' },
+          { id: 'med-b', passageId: 'pas-b' }
+        ),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain(
+      '\\v 27 Pure religion\n\\c 2\n\\p\n\\v 1 Show no partiality\\v 2 A gold ring'
+    );
   });
 });
