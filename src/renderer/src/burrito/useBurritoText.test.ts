@@ -1,8 +1,4 @@
 /// <reference types="node" />
-import type { MainAPI } from '../model/main-api';
-import type { Burrito } from './data/types';
-import type { MediaFileD, PassageD, SectionD } from '../model';
-
 jest.mock('../hoc/useOrbitData', () => ({
   useOrbitData: jest.fn(() => []),
 }));
@@ -14,6 +10,15 @@ jest.mock('../crud/useOrgDefaults', () => ({
 jest.mock('./usfmTextConvert', () => ({
   convertBurritoText: jest.fn((content: string) => Promise.resolve(content)),
 }));
+
+import { act, renderHook } from '@testing-library/react';
+import { useOrbitData } from '../hoc/useOrbitData';
+import { useOrgDefaults } from '../crud/useOrgDefaults';
+import { convertBurritoText } from './usfmTextConvert';
+import { useBurritoText } from './useBurritoText';
+import type { MainAPI } from '../model/main-api';
+import type { Burrito } from './data/types';
+import type { MediaFileD, PassageD, SectionD } from '../model';
 
 function burritoFixture(): Burrito {
   return {
@@ -113,23 +118,17 @@ type LoadOpts = {
 };
 
 /**
- * `useBurritoText` reads `window.api` at module load. `jest.isolateModules`
- * would give the hook a second React copy and break hooks; `resetModules` +
- * requiring RTL before the hook keeps a single React for `renderHook`.
+ * `useBurritoText` reads `window.api` at call time, so stubbing it here before
+ * running the hook is enough — no module reset needed.
  */
 function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
-  /* eslint-disable @typescript-eslint/no-require-imports -- resetModules + RTL pure + hook in one registry cycle */
-  jest.resetModules();
   (window as unknown as { api?: MainAPI }).api = api;
-  // `react` entry registers Jest hooks; `pure` does not (invalid inside `it`).
-  const { renderHook, act } = require('@testing-library/react/pure');
-  const { useOrgDefaults } = require('../crud/useOrgDefaults');
   const defaultGetOrg = (key: string) => {
     if (key === 'burritoVersions') return '1';
     if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
     return undefined;
   };
-  useOrgDefaults.mockReturnValue({
+  (useOrgDefaults as jest.Mock).mockReturnValue({
     getOrgDefault: jest.fn((key: string, teamId?: string) =>
       (opts.getOrgDefaultImpl ?? defaultGetOrg)(key, teamId)
     ),
@@ -138,18 +137,17 @@ function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
     setDefault: jest.fn(),
     canSetOrgDefault: true,
   });
-  const { useOrbitData } = require('../hoc/useOrbitData');
-  useOrbitData.mockImplementation((key: string) => {
-    if (key === 'mediafile') return opts.mediafiles ?? [];
-    if (key === 'passage') return opts.passages ?? [];
+  // Stable array references (jest-testing-takeaways: useOrbitData churn).
+  const mediafiles = opts.mediafiles ?? [];
+  const passages = opts.passages ?? [];
+  (useOrbitData as jest.Mock).mockImplementation((key: string) => {
+    if (key === 'mediafile') return mediafiles;
+    if (key === 'passage') return passages;
     return [];
   });
-  const { convertBurritoText } = require('./usfmTextConvert');
-  convertBurritoText.mockImplementation((content: string, fmt: string) =>
-    Promise.resolve(`${fmt}:${content}`)
+  (convertBurritoText as jest.Mock).mockImplementation(
+    (content: string, fmt: string) => Promise.resolve(`${fmt}:${content}`)
   );
-  const { useBurritoText } = require('./useBurritoText');
-  /* eslint-enable @typescript-eslint/no-require-imports */
   return { renderHook, act, useBurritoText, convertBurritoText };
 }
 
@@ -669,6 +667,30 @@ describe('useBurritoText cross-chapter USFM structure (TT-7716)', () => {
     expect(usfm.indexOf('\\c 4')).toBeLessThan(
       usfm.indexOf('What causes quarrels')
     );
+  });
+
+  it('repairs a CRLF chapter transition in a transcription (\\c 2\\r\\n\\v 1)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '1:27-2:1',
+          startChapter: 1,
+          startVerse: 27,
+          endChapter: 2,
+          endVerse: 1,
+        }),
+      ],
+      [
+        mediaFixture({
+          transcription:
+            '\\v 27 Pure religion\r\n\\c 2\r\n\\v 1 Show no partiality',
+        }),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain('\\c 2\n\\p\n\\v 1 Show no partiality');
   });
 
   it('breaks out an inline chapter from Paratext text (\\c 2 \\v 1 on one line)', async () => {

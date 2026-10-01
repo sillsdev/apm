@@ -80,6 +80,11 @@ const TYPED_1_19 =
 const PARATEXT_1_19 =
   '\\v 19 Be quick to hear\\v 27 Pure religion\\c 2 \\v 1 Show no partiality\\v 13 Mercy triumphs';
 
+// Typed transcription saved with Windows line endings; no trailing spaces
+// after \c so only a CRLF-aware repair can reach it.
+const CRLF_1_19 =
+  '\\v 19 Be quick to hear\r\n\\v 27 Pure religion\r\n\\c 2\r\n\\v 1 Show no partiality\r\n\\v 13 Mercy triumphs';
+
 const createDataset = (
   textOutputFormat: 'usx' | 'usj',
   transcription1 = TYPED_1_19
@@ -270,6 +275,22 @@ describe('useBurritoText cross-chapter export (TT-7716)', () => {
 
   it('exports USJ without USFM parse errors and one chapter 2 and 4', () => {
     mountHarness('usj');
+    cy.get('[data-cy="burrito-text-result"]', { timeout: 20000 }).should(
+      'have.text',
+      'ok'
+    );
+    cy.get('@write')
+      .its('firstCall.args.1')
+      .then((usj) => {
+        const doc = JSON.parse(String(usj));
+        for (const n of ['1', '2', '3', '4']) {
+          expect(countUsjChapters(doc, n), `chapter ${n}`).to.equal(1);
+        }
+      });
+  });
+
+  it('exports USJ for a transcription saved with CRLF line endings', () => {
+    mountHarness('usj', CRLF_1_19);
     cy.get('[data-cy="burrito-text-result"]', { timeout: 20000 }).should(
       'have.text',
       'ok'

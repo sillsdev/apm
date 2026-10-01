@@ -22,6 +22,26 @@ describe('ensureParagraphAfterChapter', () => {
     );
   });
 
+  describe('CRLF line endings', () => {
+    it('inserts \\p after a \\c on its own CRLF line', () => {
+      expect(
+        ensureParagraphAfterChapter('\\v 27 End\r\n\\c 2\r\n\\v 1 Start')
+      ).toBe('\\v 27 End\n\\c 2\n\\p\n\\v 1 Start');
+    });
+
+    it('does not add a second \\p when one already follows on a CRLF line', () => {
+      expect(ensureParagraphAfterChapter('\\c 2\r\n\\p\r\n\\v 1 a')).toBe(
+        '\\c 2\n\\p\n\\v 1 a'
+      );
+    });
+
+    it('keeps a lone \\r paragraph break inside verse text', () => {
+      expect(ensureParagraphAfterChapter('\\v 1 a\rb \\c 2 \\v 1 c')).toBe(
+        '\\v 1 a\rb\n\\c 2\n\\p\n\\v 1 c'
+      );
+    });
+  });
+
   describe('inline chapter transitions (Paratext text import)', () => {
     it('moves an inline \\c before \\v onto its own line with \\p', () => {
       expect(ensureParagraphAfterChapter('\\v 27 End \\c 2 \\v 1 Start')).toBe(

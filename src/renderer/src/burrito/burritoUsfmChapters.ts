@@ -7,14 +7,18 @@ const chapterWithoutParagraph =
 
 /**
  * Put every `\c N` on its own line followed by `\p`, unless a paragraph or
- * section marker already follows it.
+ * section marker already follows it. CRLF is normalized to LF first so the
+ * pattern sees one line-break form; a lone `\r` (Paratext's in-verse paragraph
+ * break) is kept.
  */
 export const ensureParagraphAfterChapter = (usfm: string): string =>
-  usfm.replace(
-    chapterWithoutParagraph,
-    (_m, _nl, chapter: string, offset) =>
-      `${offset === 0 ? '' : '\n'}${chapter}\n\\p\n`
-  );
+  usfm
+    .replace(/\r\n/g, '\n')
+    .replace(
+      chapterWithoutParagraph,
+      (_m, _nl, chapter: string, offset) =>
+        `${offset === 0 ? '' : '\n'}${chapter}\n\\p\n`
+    );
 
 /** The number of the last `\c N` marker in `text`, if any. */
 export const lastChapterMarker = (text: string): number | undefined => {
