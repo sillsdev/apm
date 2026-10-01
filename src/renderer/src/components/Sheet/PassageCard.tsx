@@ -73,89 +73,34 @@ export function PassageCard(props: IProps) {
         }),
       }}
     >
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <PassageGraphic
-            cardInfo={cardInfo}
-            reference={ref}
-            psgType={psgType}
-            onClick={onGraphicClick}
-          />
-          {cardInfo.kind === IwsKind.Passage ? (
+      {psgType === PassageTypeEnum.CHAPTERNUMBER ? (
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <PassageGraphic
+              cardInfo={cardInfo}
+              reference={ref}
+              psgType={psgType}
+              onClick={onGraphicClick}
+            />
+            {cardInfo.kind === IwsKind.Passage ? (
+              <PassageRef
+                psgType={psgType}
+                book={cardInfo.book}
+                passageRef={ref}
+                comment={comment}
+              />
+            ) : (
+              <Typography variant="h6">{getDescription(cardInfo)}</Typography>
+            )}
+          </Box>
+          {cardInfo.kind === IwsKind.SectionPassage && (
             <PassageRef
               psgType={psgType}
               book={cardInfo.book}
               passageRef={ref}
               comment={comment}
             />
-          ) : (
-            <Typography variant="h6">{getDescription(cardInfo)}</Typography>
           )}
-          {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
-            <PlayButton
-              mediaId={cardInfo.mediaId?.id}
-              isPlaying={isPlaying}
-              onPlayStatus={onPlayStatus}
-              onPlayEnd={handlePlayEnd}
-            />
-          ) : (
-            <></>
-          )}
-        </Box>
-        {cardInfo.kind === IwsKind.SectionPassage && (
-          <PassageRef
-            psgType={psgType}
-            book={cardInfo.book}
-            passageRef={ref}
-            comment={comment}
-          />
-        )}
-        {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
-          <>
-            <Typography variant="body2" color="grey">
-              {comment || '\u00A0'}
-            </Typography>
-            {!isPersonal && (
-              <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
-                {cardInfo.assign ? (
-                  <TaskAvatar assigned={cardInfo?.assign || null} />
-                ) : (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
-                    {t.unassigned || 'Unassigned'}
-                  </Box>
-                )}
-              </Box>
-            )}
-            <Button
-              data-cy="passage-card-step"
-              sx={{
-                width: '100%',
-                position: 'relative',
-                '& .MuiTypography-root': {
-                  fontWeight: 'bold',
-                  maxWidth: '80%',
-                },
-                '& .MuiButton-endIcon': {
-                  position: 'absolute',
-                  right: 12,
-                  m: 0,
-                },
-              }}
-              color="primary"
-              endIcon={<ChevronRight />}
-              onClick={handleViewStep}
-            >
-              {cardInfo.step}
-            </Button>
-          </>
-        ) : (
           <Box
             sx={{
               display: 'flex',
@@ -165,13 +110,90 @@ export function PassageCard(props: IProps) {
           >
             <PlayButton
               mediaId={cardInfo.mediaId?.id}
-              isPlaying={isPlaying && psgType === PassageTypeEnum.CHAPTERNUMBER}
+              isPlaying={isPlaying}
               onPlayStatus={onPlayStatus}
               onPlayEnd={handlePlayEnd}
             />
           </Box>
-        )}
-      </CardContent>
+        </CardContent>
+      ) : (
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <PassageGraphic
+              cardInfo={cardInfo}
+              reference={ref}
+              psgType={psgType}
+              onClick={onGraphicClick}
+            />
+            {cardInfo.kind === IwsKind.Passage ? (
+              <PassageRef
+                psgType={psgType}
+                book={cardInfo.book}
+                passageRef={ref}
+                comment={comment}
+              />
+            ) : (
+              <Typography variant="h6">{getDescription(cardInfo)}</Typography>
+            )}
+            <PlayButton
+              mediaId={cardInfo.mediaId?.id}
+              isPlaying={isPlaying}
+              onPlayStatus={onPlayStatus}
+              onPlayEnd={handlePlayEnd}
+            />
+          </Box>
+          {cardInfo.kind === IwsKind.SectionPassage && (
+            <PassageRef
+              psgType={psgType}
+              book={cardInfo.book}
+              passageRef={ref}
+              comment={comment}
+            />
+          )}
+          <Typography variant="body2" color="grey">
+            {comment || '\u00A0'}
+          </Typography>
+          {!isPersonal && (
+            <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
+              {cardInfo.assign ? (
+                <TaskAvatar assigned={cardInfo?.assign || null} />
+              ) : (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
+                  {t.unassigned || 'Unassigned'}
+                </Box>
+              )}
+            </Box>
+          )}
+          <Button
+            data-cy="passage-card-step"
+            sx={{
+              width: '100%',
+              position: 'relative',
+              '& .MuiTypography-root': {
+                fontWeight: 'bold',
+                maxWidth: '80%',
+              },
+              '& .MuiButton-endIcon': {
+                position: 'absolute',
+                right: 12,
+                m: 0,
+              },
+            }}
+            color="primary"
+            endIcon={<ChevronRight />}
+            onClick={handleViewStep}
+          >
+            {cardInfo.step}
+          </Button>
+        </CardContent>
+      )}
     </Card>
   );
 }
