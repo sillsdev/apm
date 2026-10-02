@@ -1,13 +1,13 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
-  "include": ["src/src/**/*", "src/src/**/*.tsx"],
+  "include": ["web/src/**/*", "web/src/**/*.tsx"],
   "exclude": ["**/*.cy.tsx", "**/*.test.tsx", "**/*.cy.ts", "**/*.test.ts"],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@model/*": ["src/src/model/*"]
+      "@model/*": ["web/src/model/*"]
     },
     "noUnusedParameters": false /* Raise an error when a function parameter isn't read. */,
     "exactOptionalPropertyTypes": false /* Interpret optional property types as written, rather than adding 'undefined'. */,

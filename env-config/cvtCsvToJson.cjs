@@ -48,8 +48,8 @@ const writeFile = require('write');
 var argName =
   process.argv.length > 2 ? process.argv[2] : 'biblebrain_2024-08-22';
 
-const data = readFileSync(__dirname + `/../src/assets/${argName}.csv`, 'utf8');
+const data = readFileSync(__dirname + `/../web/src/assets/${argName}.csv`, 'utf8');
 
 const json = csvToJson(data);
 
-writeFile.sync(__dirname + `/../src/assets/${argName}.json`, json);
+writeFile.sync(__dirname + `/../web/src/assets/${argName}.json`, json);

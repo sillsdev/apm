@@ -32,10 +32,10 @@ function indexTemplate(argEnv) {
     } else {
       data = data.replace(/%VITE_CALLBACK% /g, '');
     }
-    fs.writeFile(`src/index.html`, data, (err) => {
+    fs.writeFile(`web/index.html`, data, (err) => {
       if (err) throw err;
       console.log(
-        `template env-config/index.html was written to src/index.html`
+        `template env-config/index.html was written to web/index.html`
       );
     });
   });

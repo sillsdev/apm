@@ -3,8 +3,8 @@
   "include": [
     "vite.config.mts",
     "electron/**/*",
-    "src/src/model/IdToken.ts",
-    "src/src/model/main-api.ts"
+    "web/src/model/IdToken.ts",
+    "web/src/model/main-api.ts"
   ],
   "compilerOptions": {
     "composite": true,

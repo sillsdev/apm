@@ -23,7 +23,7 @@ fs.copyFile(
 );
 
 // destination.txt will be created or overwritten by default.
-fs.copyFile(`env-config/.env.${argEnv}.local`, 'src/.env.local', (err) => {
+fs.copyFile(`env-config/.env.${argEnv}.local`, 'web/.env.local', (err) => {
   if (err) throw err;
   console.log(`env-config/.env.${argEnv}.local was copied to .env.local`);
 });
@@ -31,7 +31,7 @@ fs.copyFile(`env-config/.env.${argEnv}.local`, 'src/.env.local', (err) => {
 // destination.txt will be created or overwritten by default.
 fs.copyFile(
   `env-config/.env.${argEnv}.development.local`,
-  'src/.env.development.local',
+  'web/.env.development.local',
   (err) => {
     if (err) throw err;
     console.log(
@@ -47,17 +47,17 @@ fs.copyFile(
   (err) => {
     if (err) throw err;
     console.log(
-      `env-config/.auth0-variables.${argEnv}.json was copied to src/auth/auth0-variables.json`
+      `env-config/.auth0-variables.${argEnv}.json was copied to electron/main/auth0-variables.json`
     );
   }
 );
 fs.copyFile(
   `env-config/.auth0-variables.${argEnv}.json`,
-  `src/src/auth/auth0-variables.json`,
+  `web/src/auth/auth0-variables.json`,
   (err) => {
     if (err) throw err;
     console.log(
-      `env-config/.auth0-variables.${argEnv}.json was copied to src/auth/auth0-variables.json`
+      `env-config/.auth0-variables.${argEnv}.json was copied to web/src/auth/auth0-variables.json`
     );
   }
 );

@@ -1,12 +1,12 @@
 cd ..\..
-del ..\src\public\localization\strings*.json
-copy strings*.json ..\src\public\localization
+del ..\web\public\localization\strings*.json
+copy strings*.json ..\web\public\localization
 del strings*.json
-copy exported-strings-name.json ..\src\src\store\localization
+copy exported-strings-name.json ..\web\src\store\localization
 del exported-strings-name.json
-copy localizationReducer.tsx ..\src\src\store\localization\reducers.tsx
+copy localizationReducer.tsx ..\web\src\store\localization\reducers.tsx
 del localizationReducer.tsx
-copy localizeModel.tsx ..\src\src\store\localization\model.tsx
+copy localizeModel.tsx ..\web\src\store\localization\model.tsx
 del localizeModel.tsx
 del az\TranscriberAdmin-en-1.2.xliff
 del hi\TranscriberAdmin-en-1.2.xliff
