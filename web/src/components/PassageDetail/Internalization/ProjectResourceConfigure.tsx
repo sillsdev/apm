@@ -440,6 +440,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
       });
 
     const content = config.join('\n');
+    // content is always non-empty here: the Copy button is disabled until there
+    // is a segment (numSegments > 0), and reaching this dialog always has at
+    // least one selected passage/section row, so there is no empty-sheet case.
     if (content.length > 0)
       navigator.clipboard
         .writeText(content)
@@ -449,7 +452,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
         .catch(() => {
           showMessage(ts.cantCopy);
         });
-    else showMessage(tt.noData.replace('{0}', t.projectResourceConfigure));
   };
 
   const loadPastedSegments = (newData: ICell[][]) => {

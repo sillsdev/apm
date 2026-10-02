@@ -115,3 +115,63 @@ describe('PassageRecordDlg speaker rights', () => {
     expect(capturedAllowRecord).toBe(false);
   });
 });
+
+describe('PassageRecordDlg record-tab persistence (wizard Next→Back)', () => {
+  beforeEach(() => {
+    capturedAllowRecord = undefined;
+    mockIpRecs = [];
+  });
+
+  const props = (over: Record<string, unknown> = {}) => ({
+    onVisible: jest.fn(),
+    onCancel: jest.fn(),
+    mediaId: '',
+    artifactId: null,
+    afterUploadCb: jest.fn().mockResolvedValue(undefined),
+    passageId: 'p1',
+    defaultFilename: 'file',
+    speaker: 'Alice',
+    onSpeaker: jest.fn(),
+    uploadType: UploadType.ProjectResource,
+    uploadMethod: undefined,
+    ...over,
+  });
+
+  // The dialog portals to document.body; record mode renders #recDlgContent.
+  const inRecordMode = () => Boolean(document.querySelector('#recDlgContent'));
+  const staged = [new File(['a'], 'a.webm', { type: 'audio/webm' })];
+
+  it('keeps the Record tab mounted when reopened with a staged take', () => {
+    const { rerender } = render(<PassageRecordDlg visible {...props()} />);
+    act(() => {
+      fireEvent.click(screen.getByTestId('tab-record'));
+    });
+    expect(inRecordMode()).toBe(true);
+
+    // Next: dialog closes but a take is staged — keepMounted keeps it in the DOM.
+    rerender(
+      <PassageRecordDlg visible={false} {...props({ initialFiles: staged })} />
+    );
+    expect(inRecordMode()).toBe(true);
+
+    // Back: reopen with the staged take → still on the Record tab.
+    rerender(<PassageRecordDlg visible {...props({ initialFiles: staged })} />);
+    expect(inRecordMode()).toBe(true);
+  });
+
+  it('drops back to the Upload tab on a genuine close (no staged take)', () => {
+    const { rerender } = render(<PassageRecordDlg visible {...props()} />);
+    act(() => {
+      fireEvent.click(screen.getByTestId('tab-record'));
+    });
+    expect(inRecordMode()).toBe(true);
+
+    // Fully closed with nothing staged → unmount the recorder.
+    rerender(<PassageRecordDlg visible={false} {...props()} />);
+    expect(inRecordMode()).toBe(false);
+
+    // Fresh reopen with no staged take → Upload tab.
+    rerender(<PassageRecordDlg visible {...props()} />);
+    expect(inRecordMode()).toBe(false);
+  });
+});

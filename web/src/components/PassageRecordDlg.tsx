@@ -169,13 +169,32 @@ function PassageRecordDlg(props: IProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const myToolId = 'PassageRecordDlg';
+  // Latest initialFiles without making the open/close effects depend on it (so
+  // they fire only on visibility changes, never mid-recording).
+  const initialFilesRef = useRef(initialFiles);
+  initialFilesRef.current = initialFiles;
 
   useEffect(() => {
     if (visible) {
-      setMode('upload');
+      // Reopening with a staged take (the wizard's Next→Back) keeps the current
+      // tab — and, because the dialog is keepMounted, the recorded take and its
+      // waveform are still there. A fresh open (no staged files) starts on the
+      // Upload tab as before.
+      const hasStagedTake = Boolean(initialFilesRef.current?.length);
+      if (!hasStagedTake) setMode('upload');
       setRecording(false);
       setHasTake(false);
       setShowConfirm(false);
+    }
+  }, [visible]);
+
+  // keepMounted keeps the record tab (and its live recorder) in the DOM while
+  // the dialog is closed. That is wanted during a Next→Back pause (a take is
+  // staged), but on a genuine close drop back to Upload so MediaRecord unmounts
+  // and releases the recorder/mic.
+  useEffect(() => {
+    if (!visible && !initialFilesRef.current?.length) {
+      setMode('upload');
     }
   }, [visible]);
 
@@ -272,6 +291,9 @@ function PassageRecordDlg(props: IProps) {
       onClose={requestClose}
       aria-labelledby="addAudioDlg"
       disableEnforceFocus
+      // Keep the dialog (and a recorded-but-staged take) mounted across the
+      // wizard's Next→Back so the Record tab still shows the recording.
+      keepMounted
     >
       <DialogTitle
         id="addAudioDlg"
