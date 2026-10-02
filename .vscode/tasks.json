@@ -23,7 +23,7 @@
     {
       "label": "TypeCheck: Renderer Only",
       "type": "shell",
-      "command": "cd src && npm run typecheck",
+      "command": "cd web && npm run typecheck",
       "group": {
         "kind": "test",
         "isDefault": false

@@ -24,7 +24,7 @@ Usage Rules:
 Scope Boundary:
 
 - Autonomous modifications are allowed ONLY for `.github/.memory.md` and other agent instructions files.
-- Source code under `src/` must only change when explicitly requested.
+- Source code under `web/` must only change when explicitly requested.
 
 ---
 
@@ -64,12 +64,12 @@ Because we have not enumerated the `scripts` field inside `package.json` here, u
 | Format              | `format`                 | `npm run format`                                                |
 | Build (production)  | `build`                  | `npm run build`                                                 |
 | Package installer   | `dist` / `package`       | `npm run dist` (common with electron-builder)                   |
-| Tests               | `test`                   | `npm test` (Note: Renderer tests must run from `src` directory) |
+| Tests               | `test`                   | `npm test` (Note: Renderer tests must run from `web` directory) |
 
 **Running Renderer Tests** (PowerShell on Windows):
 
 ```powershell
-cd src; npm test -- TestName
+cd web; npm test -- TestName
 ```
 
 Use semicolons (`;`) to chain commands in PowerShell, not `&&`.
@@ -137,17 +137,17 @@ If `dist` fails, inspect `electron-builder.json5` for missing metadata (e.g., ap
 | `tsconfig.node.json`                   | Node/Electron main process compilation options.                       |
 | `tsconfig.web.json`                    | Renderer/browser-specific TS options.                                 |
 | `resources/`                           | Assets (icons, binaries, static resources) used at packaging/runtime. |
-| `src/`                                 | Application source (expect `main` process + renderer substructure).   |
+| `web/`                                 | Web/renderer package (its own `package.json`; app code in `web/src`). |
 | `README.md`                            | User-level overview (consult for domain-specific behavior).           |
 | `LICENSE`                              | License terms (MIT or other; respect when adding third-party code).   |
 
-### Likely `src` Substructure (Inferred Pattern)
+### Likely Source Substructure (Inferred Pattern)
 
 (Not enumerated here; inspect when needed.)
 
 - `electron/main`: Electron main process entry (creates BrowserWindow, handles lifecycle).
 - `electron/preload`: Preload script exposing secure APIs.
-- `src`: Frontend (React/Vue/Svelte/vanilla) built by Vite.
+- `web/src`: Frontend (React) built by Vite.
   Add new main-process logic near existing lifecycle or IPC management files; add UI functions within renderer folders to keep layering intact.
 
 ### Configuration Files – Modification Guidance
@@ -278,7 +278,7 @@ eslint.config.mjs
 package.json
 package-lock.json
 resources/          (assets)
-src/                (application source)
+web/                (web/renderer package)
 tsconfig.json
 tsconfig.node.json
 tsconfig.web.json

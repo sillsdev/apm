@@ -1,6 +1,6 @@
 # Audio Project Manager
 
-An application for desktop and web with Vite using React and TypeScript. This repository contains a simple monorepo using npm. The `src` folder is its own package that builds the web app with Vite. The root package builds the desktop app for Windows, Linux or a Mac with Vite and [vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron), using `src` as the UI and `electron/` for the main and preload processes; [electron-builder](https://www.electron.build) (`electron-builder.json5`) packages it into `release/`.
+An application for desktop and web with Vite using React and TypeScript. This repository contains a simple monorepo using npm. The `web` folder is its own package that builds the web app with Vite. The root package builds the desktop app for Windows, Linux or a Mac with Vite and [vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron), using `web` as the UI and `electron/` for the main and preload processes; [electron-builder](https://www.electron.build) (`electron-builder.json5`) packages it into `release/`.
 
 Desktop builds based on the [electron-vite react-ts template](https://electron-vite.github.io/)
 
@@ -28,7 +28,7 @@ Note: This project uses `usfm-grammar-web` (wasm-based), which typically does no
 Install the user interface
 
 ```bash
-$ cd src
+$ cd web
 $ npm install
 ```
 
@@ -56,7 +56,7 @@ This runs tests on the desktop app. It requires setting VITE_TEST_EMAIL1 and
 VITE_TEST_PW1 in your .env.local variables. As a minimum, it does a sanity test which launches and logs in using the credendials you give it.
 
 ```bash
-$ cd src
+$ cd web
 $ npm run test
 ```
 
@@ -65,11 +65,11 @@ The `npm test` command runs the jest tests. There are also Cypress component tes
 Cypress tests require that the dev server is running on 3000. There are a couple of ways to do this. You can launch the dev server in one terminal using `npm start` or you can use docker to language the server in the background.
 
 ```bash
-$ docker build -t apm-vite-renderer -f src/Dockerfile .
+$ docker build -t apm-vite-renderer -f web/Dockerfile .
 $ docker run -d -p 3000:3000 --name apm-vite-renderer apm-vite-renderer
 ```
 
-Once the dev server is running, you can run the tests using the commands described in the readme for `src` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
+Once the dev server is running, you can run the tests using the commands described in the readme for `web` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
 
 When finished, the container can be deleted using the `Docker Desktop` or with the command
 
@@ -95,7 +95,7 @@ $ npm run format
 
 ### Generating Logo Assets
 
-All app logo assets are generated from a single source: `src/src/assets/apm-logo.svg`. To regenerate the assets, run this script from the root:
+All app logo assets are generated from a single source: `web/src/assets/apm-logo.svg`. To regenerate the assets, run this script from the root:
 
 ```bash
 $ npm run logoassets
@@ -103,8 +103,8 @@ $ npm run logoassets
 
 This rewrites:
 
-- `favicon.ico` in `src/public`, `src`, and `resources`
-- `src/public/favicon.svg`
+- `favicon.ico` in `web/public`, `web`, and `resources`
+- `web/public/favicon.svg`
 - PWA icons: `pwa-192x192.png`, `pwa-512x512.png`, `pwa-maskable-512x512.png`
 - `apple-touch-icon.png`
 - `resources/icon.png`, which electron-builder converts into the `.icns` and `.ico`
@@ -141,10 +141,10 @@ The renderer bundle is written to `dist/`, the main and preload bundles to `dist
 ### Build Web
 
 ```bash
-$ cd src
+$ cd web
 $ npm run build
 ```
 
-The web app (with its PWA service worker) is written to `src/dist/`.
+The web app (with its PWA service worker) is written to `web/dist/`.
 
-In order to test and debug web app, launch visual studio code from the `src` folder. (There is a readme there with the commands to use.)
+In order to test and debug web app, launch visual studio code from the `web` folder. (There is a readme there with the commands to use.)

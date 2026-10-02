@@ -35,11 +35,11 @@ The exe generates `localizeModel.tsx` and `localizationReducer.tsx` under
 [localization/UpdateLocalizationFollowUp.bat](localization/UpdateLocalizationFollowUp.bat)
 (spawned when present) copies them to:
 
-- [src/src/store/localization/model.tsx](src/src/store/localization/model.tsx)
-- [src/src/store/localization/reducers.tsx](src/src/store/localization/reducers.tsx)
+- [web/src/store/localization/model.tsx](web/src/store/localization/model.tsx)
+- [web/src/store/localization/reducers.tsx](web/src/store/localization/reducers.tsx)
 
 It also refreshes `strings*.json` / `exported-strings-name.json` under
-`src/public/localization` and `src/src/store/localization`.
+`web/public/localization` and `web/src/store/localization`.
 
 **Do not hand-edit `model.tsx` or `reducers.tsx` for strings that belong in
 XLIFF** — the next tool run will overwrite those edits.
@@ -47,7 +47,7 @@ XLIFF** — the next tool run will overwrite those edits.
 ## Using strings in components
 
 Use `useSelector` with a selector from
-[src/src/selector/selectors.tsx](src/src/selector/selectors.tsx)
+[web/src/selector/selectors.tsx](web/src/selector/selectors.tsx)
 (e.g. `burritoSelector` with `layout: 'burrito'`), then read properties on the
 returned `LocalizedStrings` object. Use `getString` / format helpers where
 already established.
@@ -84,7 +84,7 @@ language changes.
 const lang = useSelector((state: IState) => state.strings.lang);
 ```
 
-The locale change flow in [ProfileDialog.tsx](src/src/components/ProfileDialog.tsx)
+The locale change flow in [ProfileDialog.tsx](web/src/components/ProfileDialog.tsx)
 updates the Redux `strings` slice, which is the single source of truth.
 
 ## Adding a new string section (new `layout` bucket)
@@ -96,7 +96,7 @@ run the updater.
 
 ## Verification
 
-After regenerating, run from `src`:
+After regenerating, run from `web`:
 
 ```powershell
 npm run typecheck
@@ -110,6 +110,6 @@ Or from repo root: `npm run typecheck:web`.
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1    | Add/update `<trans-unit>` in `localization/TranscriberAdmin-en-1.2.xliff`                                                                  |
 | 2    | `cd .\localization\bin\Debug ; &.\.\updateLocalization.exe` (PowerShell from repo root) — or `Updatestrings.bat` from `localization` (cmd) |
-| 3    | Confirm `model.tsx` / `reducers.tsx` (and JSON files) updated under `src/…`                                                                |
-| 4    | `cd src` → `npm run typecheck`                                                                                                             |
+| 3    | Confirm `model.tsx` / `reducers.tsx` (and JSON files) updated under `web/…`                                                                |
+| 4    | `cd web` → `npm run typecheck`                                                                                                             |
 | 5    | Use `useSelector(yourSelector)` — add a selector only if the section is new                                                                |

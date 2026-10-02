@@ -16,12 +16,12 @@ While **React 19** introduces new features for efficient rendering and state man
 
 What I changed
 File Change
-src/vite.config.ts Added VitePWA (generateSW, registerType: 'prompt', precache the shell only, /api/ navigation denylist, no cross-origin runtime caching, exclude lazy term dictionaries, 25 MiB precache limit for the large main bundle)
-src/src/components/PwaUpdatePrompt.tsx New web-only component: registers the SW and shows a localized "reload to update" snackbar on new deploys
-src/src/auth/Root.tsx Mounts <PwaUpdatePrompt /> guarded by !isElectron
-src/public/ New icons: pwa-192x192.png, pwa-512x512.png, pwa-maskable-512x512.png, apple-touch-icon.png, favicon.ico (generated from resources/icon.png)
-env-config/index.html + src/index.html PWA meta tags (theme-color, apple-touch-icon, mobile-web-app-capable) added to the template so they survive changeEnv regeneration
-src/src/vite-env.d.ts vite-plugin-pwa/client types reference
+web/vite.config.ts Added VitePWA (generateSW, registerType: 'prompt', precache the shell only, /api/ navigation denylist, no cross-origin runtime caching, exclude lazy term dictionaries, 25 MiB precache limit for the large main bundle)
+web/src/components/PwaUpdatePrompt.tsx New web-only component: registers the SW and shows a localized "reload to update" snackbar on new deploys
+web/src/auth/Root.tsx Mounts <PwaUpdatePrompt /> guarded by !isElectron
+web/public/ New icons: pwa-192x192.png, pwa-512x512.png, pwa-maskable-512x512.png, apple-touch-icon.png, favicon.ico (generated from resources/icon.png)
+env-config/index.html + web/index.html PWA meta tags (theme-color, apple-touch-icon, mobile-web-app-capable) added to the template so they survive changeEnv regeneration
+web/src/vite-env.d.ts vite-plugin-pwa/client types reference
 localization/TranscriberAdmin-en-1.2.xliff + generated model/reducers/JSON Two new strings (main.pwaReload, main.pwaUpdateReady) via the XLIFF pipeline
 Verification (all green)
 npm run typecheck ✅ and npm run build ✅ — dist/sw.js + manifest.webmanifest generated, manifest link auto-injected.

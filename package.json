@@ -4,7 +4,7 @@
   "description": "A flexible audio-text orality solution",
   "main": "dist-electron/main.js",
   "scripts": {
-    "clean": "rimraf dist dist-electron release src/dist src/coverage",
+    "clean": "rimraf dist dist-electron release web/dist web/coverage",
     "stamp": "node env-config/writeDate.cjs",
     "logoassets": "node env-config/genLogoAssets.cjs",
     "format": "prettier --config .prettierrc.yaml --write .",

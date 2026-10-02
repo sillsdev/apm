@@ -84,10 +84,10 @@ const writeFile = require('write');
 var argName = process.argv.length > 2 ? process.argv[2] : 'book-es';
 
 const data = readFileSync(
-  __dirname + `/../src/public/localization/${argName}.json`,
+  __dirname + `/../web/public/localization/${argName}.json`,
   'utf8'
 ).replace(/^\uFEFF/, '');
 
 const csv = stringsToCvs(data);
 
-writeFile.sync(__dirname + `/../src/public/localization/${argName}.csv`, csv);
+writeFile.sync(__dirname + `/../web/public/localization/${argName}.csv`, csv);

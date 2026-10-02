@@ -168,7 +168,7 @@ export async function loginToTeamScreen(
   if (auth0) {
     if (!(credentials.username && credentials.password)) {
       throw new Error(
-        'VITE_TEST_EMAIL1 / VITE_TEST_PW1 must be set in src/.env*.local ' +
+        'VITE_TEST_EMAIL1 / VITE_TEST_PW1 must be set in web/.env*.local ' +
           'to drive interactive Auth0 login'
       );
     }

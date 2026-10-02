@@ -27,7 +27,7 @@ The workflow runs on:
 2. Setup Volta (Node.js version manager)
 3. Install Node.js 22
 4. Clean up any existing node processes
-5. Install dependencies (`npm ci` in `src`)
+5. Install dependencies (`npm ci` in `web`)
 6. Format check
 7. Stamp build with date and time
 8. Create `.env.local` file with environment variables

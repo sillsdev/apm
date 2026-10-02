@@ -15,7 +15,7 @@ var sourceFlnm =
 var vrsName =
   process.argv.length > 3
     ? process.argv[3]
-    : path.join(__dirname, '..', 'src', 'src', 'assets', 'eng-vrs.js');
+    : path.join(__dirname, '..', 'web', 'src', 'assets', 'eng-vrs.js');
 console.log(`source: ${sourceFlnm},\nresult: ${vrsName}`);
 
 var result = new Map(); // {book: [verses, ...], ...}
