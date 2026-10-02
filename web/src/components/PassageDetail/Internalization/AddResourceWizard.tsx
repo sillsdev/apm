@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
+  IMediaUploadStrings,
   Passage,
   Section,
   MediaFileD,
@@ -40,7 +41,11 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
-import { passageDetailArtifactsSelector } from '../../../selector';
+import {
+  mediaUploadSelector,
+  passageDetailArtifactsSelector,
+} from '../../../selector';
+import { FaithBridge } from '../../../assets/brands';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../../model/passageType';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
@@ -122,8 +127,17 @@ export function AddResourceWizard({
     passageDetailArtifactsSelector,
     shallowEqual
   );
+  const tu: IMediaUploadStrings = useSelector(
+    mediaUploadSelector,
+    shallowEqual
+  );
 
   const [step, setStep] = useState<WizardStep>(WizardStep.None);
+  // Reported by the embedded recorder so the dialog X can't close mid-recording.
+  const [recording, setRecording] = useState(false);
+  // Reported by the embedded recorder: a take was recorded on the record tab
+  // and not yet saved/staged, so closing the upload step must confirm (#719).
+  const [uploadHasTake, setUploadHasTake] = useState(false);
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [audioUploadOrRecord, setAudioUploadOrRecord] = useState(false);
   // whether we give the "general resource" option
@@ -670,80 +684,50 @@ export function AddResourceWizard({
     if (!v) closeAll();
   };
 
-  // The X on the section/configure dialog. The configure step always confirms
-  // (it discards a saved-but-unconfigured resource). The section-select step
-  // only confirms when a recorded take would be lost; a staged file upload is
-  // cheap to redo, so it closes without a prompt (#719).
-  const handlePostDialogOpen = (v: boolean) => {
+  // One close handler for the whole wizard dialog. Blocks mid-recording. Only
+  // confirms when something would be lost (#719): the configure step always
+  // (a saved-but-unconfigured resource); the section-select step only when a
+  // recording was staged (a file upload is cheap to redo); the upload step only
+  // when an unsaved take sits on the record tab. Everything else closes directly.
+  const handleWizardClose = (v: boolean) => {
     if (v) return;
-    if (step === WizardStep.SelectSections && !isStagedRecording) {
-      closeAll();
-      return;
-    }
-    setPendingCloseConfirmation(true);
+    if (recording) return;
+    const needConfirm =
+      step === WizardStep.Configure ||
+      (step === WizardStep.SelectSections && isStagedRecording) ||
+      (step === WizardStep.Upload && uploadHasTake);
+    if (needConfirm) setPendingCloseConfirmation(true);
+    else closeAll();
   };
 
-  const postDialogOpen =
-    step === WizardStep.SelectSections || step === WizardStep.Configure;
+  const wizardOpen = step !== WizardStep.None;
+
+  // Per-step dialog title. The upload step keeps the title each standalone
+  // dialog used to show: "Add Audio Resource" for the audio record/upload UI, or
+  // the type-specific MediaUpload title for link/pdf/text. Steps 2–3 title by
+  // whether we are adding or editing a general resource.
+  const uploadStepTitle = audioUploadOrRecord
+    ? t.addAudioResource
+    : uploadType === UploadType.Link
+      ? tu.linkTitle
+      : uploadType === UploadType.MarkDown
+        ? tu.markdownTitle
+        : uploadType === UploadType.FaithbridgeLink
+          ? tu.faithbridgeTitle.replace('{0}', FaithBridge)
+          : uploadType === UploadType.PdfResource
+            ? tu.pdfResourceTitle
+            : tu.resourceTitle;
+  const wizardTitle =
+    step === WizardStep.Upload
+      ? uploadStepTitle
+      : isAddingAudioResourceRef.current
+        ? t.addAudioResource
+        : t.editGeneralResource;
 
   return (
     <>
-      <Uploader
-        audioUploadOrRecord={audioUploadOrRecord}
-        hideUploadCancel
-        isOpen={step === WizardStep.Upload}
-        onOpen={handleUploaderOpen}
-        showMessage={showMessage}
-        multiple={true}
-        finish={afterUpload}
-        beforeUpload={async () => {
-          pendingResourceSeqRef.current = 0;
-          if (addCatCommitRef.current)
-            catIdRef.current = await addCatCommitRef.current();
-        }}
-        cancelled={cancelled}
-        cancelReset={closeAll}
-        artifactState={artifactState.current}
-        uploadType={uploadType}
-        ready={() => resourceReady}
-        onNonAudio={handleNonAudio}
-        performedBy={performedBy}
-        onSpeakerChange={(value) => setPerformedBy(value)}
-        inValue={markdownValue}
-        eafUrl={aiGenerated ? AIGenerated : ''}
-        defaultFilename={filename}
-        pendingRestore={resourcePendingRestore}
-        importList={resourceImportList}
-        onFiles={handleResourceUploadFiles}
-        // When returning here via Back, display the previously selected files.
-        initialFiles={resourceUploadFiles}
-        deferUpload={uploadType === UploadType.ProjectResource}
-        onStageFiles={handleStageAudioFiles}
-        validationMessage={resourceUploadValidationMessage}
-        metaData={
-          <ResourceData
-            uploadType={uploadType}
-            catAllowNew={true} //if they can upload they can add cat
-            initCategory={catIdRef.current || ''}
-            onCategoryChange={handleCategory}
-            catCommitRef={addCatCommitRef}
-            initDescription={descriptionRef.current}
-            onDescriptionChange={handleDescription}
-            catRequired={false}
-            resourceKind={resourceKind}
-            onPassResChange={handlePassRes}
-            allowProject={allowProject}
-            sectDesc={sectDesc}
-            passDesc={passDesc}
-          />
-        }
-      />
       <BigDialog
-        title={
-          isAddingAudioResourceRef.current
-            ? t.addAudioResource
-            : t.editGeneralResource
-        }
+        title={wizardTitle}
         description={
           step === WizardStep.SelectSections ? (
             <Typography sx={{ color: 'text.secondary' }}>
@@ -758,19 +742,84 @@ export function AddResourceWizard({
             </Typography>
           ) : undefined
         }
-        isOpen={postDialogOpen}
-        onOpen={handlePostDialogOpen}
+        isOpen={wizardOpen}
+        onOpen={handleWizardClose}
         bp={BigDialogBp.md}
         disableBackdropClose
         // Flex column so the step content fills the height and footers pin to the
         // dialog bottom.
         dialogContentSx={{ display: 'flex', flexDirection: 'column' }}
       >
-        {postDialogOpen ? (
+        {wizardOpen ? (
           <>
-            {/* SelectSections stays mounted while the dialog is open (CSS-hidden
-                on the configure step) so its selection survives Back from
-                configure with no re-seeding. */}
+            {/* Step 1: the record/upload UI, embedded (no dialog of its own) so
+                it shows/hides as a step and stays mounted across the flow — a
+                recorded take survives Next→Back (see PassageRecordPanel). */}
+            <Box
+              sx={{
+                display: step === WizardStep.Upload ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: '1 1 auto',
+                minHeight: 0,
+              }}
+            >
+              <Uploader
+                embedded
+                onRecordingChange={setRecording}
+                onHasTakeChange={setUploadHasTake}
+                audioUploadOrRecord={audioUploadOrRecord}
+                hideUploadCancel
+                isOpen={step === WizardStep.Upload}
+                onOpen={handleUploaderOpen}
+                showMessage={showMessage}
+                multiple={true}
+                finish={afterUpload}
+                beforeUpload={async () => {
+                  pendingResourceSeqRef.current = 0;
+                  if (addCatCommitRef.current)
+                    catIdRef.current = await addCatCommitRef.current();
+                }}
+                cancelled={cancelled}
+                cancelReset={closeAll}
+                artifactState={artifactState.current}
+                uploadType={uploadType}
+                ready={() => resourceReady}
+                onNonAudio={handleNonAudio}
+                performedBy={performedBy}
+                onSpeakerChange={(value) => setPerformedBy(value)}
+                inValue={markdownValue}
+                eafUrl={aiGenerated ? AIGenerated : ''}
+                defaultFilename={filename}
+                pendingRestore={resourcePendingRestore}
+                importList={resourceImportList}
+                onFiles={handleResourceUploadFiles}
+                // When returning here via Back, show the previously selected files.
+                initialFiles={resourceUploadFiles}
+                deferUpload={uploadType === UploadType.ProjectResource}
+                onStageFiles={handleStageAudioFiles}
+                validationMessage={resourceUploadValidationMessage}
+                metaData={
+                  <ResourceData
+                    uploadType={uploadType}
+                    catAllowNew={true} //if they can upload they can add cat
+                    initCategory={catIdRef.current || ''}
+                    onCategoryChange={handleCategory}
+                    catCommitRef={addCatCommitRef}
+                    initDescription={descriptionRef.current}
+                    onDescriptionChange={handleDescription}
+                    catRequired={false}
+                    resourceKind={resourceKind}
+                    onPassResChange={handlePassRes}
+                    allowProject={allowProject}
+                    sectDesc={sectDesc}
+                    passDesc={passDesc}
+                  />
+                }
+              />
+            </Box>
+            {/* Step 2: SelectSections stays mounted while the dialog is open
+                (CSS-hidden on the configure step) so its selection survives Back
+                from configure with no re-seeding. */}
             <Box
               sx={{
                 display: step === WizardStep.SelectSections ? 'flex' : 'none',

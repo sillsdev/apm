@@ -26,12 +26,19 @@ jest.mock('react-redux', () => ({
     passageResource: 'Passage Resource',
     bookResource: 'Book Resource',
     movementResource: 'Movement Resource',
+    // media-upload title strings (same mock object serves every selector)
+    resourceTitle: 'Add Resource',
+    linkTitle: 'Add Link',
+    markdownTitle: 'Add Text',
+    pdfResourceTitle: 'Add PDF Resource',
+    faithbridgeTitle: 'Add {0} Resource',
   }),
 }));
 
 jest.mock('../../../selector', () => ({
   passageDetailArtifactsSelector: jest.fn(),
   sharedSelector: jest.fn(),
+  mediaUploadSelector: jest.fn(),
 }));
 
 // --- context / data ----------------------------------------------------------
@@ -392,6 +399,22 @@ describe('AddResourceWizard', () => {
       screen.getByText('General resources should be uploaded individually')
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  it('titles the single dialog by the upload step type', () => {
+    const audio = renderWizard({
+      kind: 'add',
+      action: AddResourceAction.Audio,
+    });
+    expect(screen.getByText('Add Audio Resource')).toBeInTheDocument();
+    audio.unmount();
+
+    const pdf = renderWizard({ kind: 'add', action: AddResourceAction.Pdf });
+    expect(screen.getByText('Add PDF Resource')).toBeInTheDocument();
+    pdf.unmount();
+
+    renderWizard({ kind: 'add', action: AddResourceAction.Link });
+    expect(screen.getByText('Add Link')).toBeInTheDocument();
   });
 
   it('advances from upload to the section-select step when a single general file is staged', () => {

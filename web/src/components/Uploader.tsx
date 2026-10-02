@@ -9,6 +9,8 @@ import {
   MediaFileD,
 } from '../model';
 import MediaUpload, { FaithbridgeType } from './MediaUpload';
+import MediaUploadContent from './MediaUploadContent';
+import PassageRecordPanel from './PassageRecordPanel';
 import { typeLimit } from '../utils/typeLimit';
 import {
   findRecord,
@@ -98,8 +100,21 @@ interface IProps {
   /** Pre-select these files when the dialog opens (see MediaUploadContent) —
    *  used to restore a staged file after the Add Resource wizard's Back. */
   initialFiles?: File[] | undefined;
+  /**
+   * Render the upload/record UI chrome-less (no dialog of its own) so a host —
+   * the add-resource wizard — can embed it as a show/hide step inside its own
+   * single dialog, which then owns the title, close, and confirm.
+   */
+  embedded?: boolean | undefined;
+  /** Reported up (embedded) so the host can block its close mid-recording. */
+  onRecordingChange?: ((recording: boolean) => void) | undefined;
+  /** Reported up (embedded) so the host can confirm close only when an unsaved
+   *  recorded take would be lost (#719). */
+  onHasTakeChange?: ((hasTake: boolean) => void) | undefined;
 }
 
+// TODO I don't like how Uploader is currently bifurcating. Can we split the
+// embedded, audioUploadOrRecord case out and use a shared hook?
 export const Uploader = (props: IProps) => {
   const {
     noBusy,
@@ -137,6 +152,9 @@ export const Uploader = (props: IProps) => {
     deferUpload,
     onStageFiles,
     initialFiles,
+    embedded,
+    onRecordingChange,
+    onHasTakeChange,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -533,6 +551,94 @@ export const Uploader = (props: IProps) => {
     throw new Error('defaultFilename is required');
 
   const hasImport = Boolean(importList && importList.length > 0);
+
+  if (embedded) {
+    // Host-owned chrome (the add-resource wizard's single dialog). Render the
+    // record/upload body directly; the upload orchestration (finish, onOpen,
+    // importList) is unchanged. While a deferred upload is in flight (hasImport)
+    // nothing shows — the host's section-select step carries the spinner.
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
+        {!hasImport &&
+          (audioUploadOrRecord ? (
+            <PassageRecordPanel
+              embedded
+              active={isOpen}
+              onRecordingChange={onRecordingChange}
+              onHasTakeChange={onHasTakeChange}
+              artifactId={artifactState?.id ?? VernacularTag}
+              passageId={passageId}
+              planId={planIdRef.current}
+              onVisible={onOpen}
+              mediaId={mediaId ?? ''}
+              afterUploadCb={afterUploadCb}
+              onCancel={uploadCancel}
+              metaData={metaData}
+              ready={ready}
+              defaultFilename={defaultFilename ?? 'resource'}
+              allowWave={false}
+              speaker={performedBy}
+              onSpeaker={handleSpeakerChange}
+              team={team}
+              uploadType={uploadType || UploadType.Media}
+              uploadMethod={effectiveUploadMethod}
+              // Only the record tab calls onStageFile (the upload tab stages via
+              // uploadMethod), so anything staged here is a recorded take (#719).
+              onStageFile={
+                deferring
+                  ? (files) => onStageFiles?.(files, /* recorded */ true)
+                  : undefined
+              }
+              multiple={multiple}
+              onFiles={onFiles}
+              initialFiles={initialFiles}
+              keepFilesAfterSubmit={deferring}
+              inValue={inValue}
+              onNonAudio={onNonAudio}
+              audioOnly={audioOnly}
+              validationMessage={validationMessage}
+              pendingRestore={pendingRestore}
+              beforeUpload={beforeUpload}
+            />
+          ) : (
+            <MediaUploadContent
+              noWrapper
+              hideCancel
+              onVisible={onOpen}
+              uploadType={uploadType || UploadType.Media}
+              multiple={multiple}
+              uploadMethod={uploadMedia}
+              cancelMethod={uploadCancel}
+              metaData={metaData}
+              ready={ready}
+              speaker={performedBy}
+              onSpeaker={
+                !artifactState?.id &&
+                (uploadType || UploadType.Media) === UploadType.Media
+                  ? handleSpeakerChange
+                  : undefined
+              }
+              team={team}
+              onFiles={onFiles}
+              initialFiles={initialFiles}
+              keepFilesAfterSubmit={deferring}
+              inValue={inValue}
+              onNonAudio={onNonAudio}
+              audioOnly={audioOnly}
+              validationMessage={validationMessage}
+            />
+          ))}
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%' }}>
