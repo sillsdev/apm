@@ -57,14 +57,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Volta
-        uses: volta-cli/action@v4
+      - name: Setup mise (Node.js and npm from mise.toml)
+        uses: jdx/mise-action@v2
+        with:
+          cache: true
 
-      - name: Install Node.js 22 npm 12
+      - name: Show Node.js and npm versions
         run: |
-          volta install node@22
           node --version
-          volta install npm@12
           npm --version
 
       - name: Clean up memory (kill any existing node processes)

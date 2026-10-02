@@ -18,10 +18,12 @@ $ npm run stamp
 ```
 
 Note:
-Node and npm versions are pinned via [Volta](https://volta.sh) in `package.json`.
-If `npm --version` in this repo is not the pinned version,
-Volta has fallen back to the npm bundled with Node (10.x) because the pinned npm
-is missing from its local inventory; fetch it once with `volta install npm@12.1.0`
+Node and npm versions are pinned via [mise](https://mise.jdx.dev) in `mise.toml`
+(it applies to both the root and `web`). After cloning, run `mise trust` and then
+`mise install`. If `npm --version` is not the pinned version, the npm bundled with
+Node is ahead of mise's on `PATH`; check with `mise which npm`. On Windows, add
+`%LOCALAPPDATA%\mise\shims` to your user `PATH` so tools that don't load your shell
+profile (VS Code tasks, Git Bash) also get the pinned versions.
 
 Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
 
