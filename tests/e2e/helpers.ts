@@ -9,7 +9,7 @@ import fs from 'fs';
 import { execFileSync } from 'child_process';
 
 // The built main-process entry. Run `npm run build` before the e2e suite.
-export const MAIN_JS = path.join(__dirname, '../../out/main/index.js');
+export const MAIN_JS = path.join(__dirname, '../../dist-electron/main.js');
 
 /**
  * Env to hand the launched app.
@@ -168,7 +168,7 @@ export async function loginToTeamScreen(
   if (auth0) {
     if (!(credentials.username && credentials.password)) {
       throw new Error(
-        'VITE_TEST_EMAIL1 / VITE_TEST_PW1 must be set in src/renderer/.env*.local ' +
+        'VITE_TEST_EMAIL1 / VITE_TEST_PW1 must be set in src/.env*.local ' +
           'to drive interactive Auth0 login'
       );
     }
@@ -177,7 +177,7 @@ export async function loginToTeamScreen(
 
     // A fresh --user-data-dir profile looks "unused" to the main process,
     // which defaults the Auth0 Universal Login page to the Sign Up tab
-    // (src/main/auth-service.ts's getAuthenticationURL adds
+    // (electron/main/auth-service.ts's getAuthenticationURL adds
     // login_hint=signUp for a never-used profile on a -dev tenant). Switch
     // to Log In before filling in credentials for an existing test account.
     // No-op if the tab isn't present (e.g. a reused/non-fresh profile).

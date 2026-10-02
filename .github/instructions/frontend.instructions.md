@@ -1,12 +1,12 @@
 ---
-applyTo: 'src/renderer/src/**'
+applyTo: 'src/src/**'
 ---
 
 # Renderer Stack Guide
 
 ## Scope
 
-- These notes cover the React renderer that lives under `src/renderer/src`. They assume the repo-level onboarding file has already been read.
+- These notes cover the React renderer that lives under `src/src`. They assume the repo-level onboarding file has already been read.
 - Primary goals: explain how control flows from the DOM bootstrap through auth, routing, Orbit data sources, Redux slices, and domain contexts; highlight platform differences (Electron vs web) and offline support.
 
 ## Startup Flow
@@ -24,7 +24,7 @@ applyTo: 'src/renderer/src/**'
 ## State Management Stack
 
 - **GlobalContext**: central app session state (organization/project selection, connectivity flags, snack messages). Use the `useGlobal`/`useGetGlobal` helpers for reads/writes; avoid storing derived UI state here.
-- **Orbit Memory / Coordinator**: defined in `schema.tsx`. Orbit models describe every backend record type, and the coordinator orchestrates JSON:API sync + IndexedDB backup. Use the CRUD helpers in `src/renderer/src/crud` and hooks like `useOrbitData` to query/update instead of hitting Orbit directly.
+- **Orbit Memory / Coordinator**: defined in `schema.tsx`. Orbit models describe every backend record type, and the coordinator orchestrates JSON:API sync + IndexedDB backup. Use the CRUD helpers in `src/src/crud` and hooks like `useOrbitData` to query/update instead of hitting Orbit directly.
 - **Redux Store**: lives in `store/index.tsx` and is mostly for view-model slices (localization strings, upload workflow, auth UI helpers, import/export state). Prefer adding to Redux only if state is not a raw Orbit record and must be shared across distant components.
 - **Feature Contexts**: `UnsavedContext`, `HotKeyContext`, `PlanContext`, etc., layer on top of Global/Redux for specialized concerns. Check existing context implementations before introducing new top-level providers.
 

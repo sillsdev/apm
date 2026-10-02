@@ -1,0 +1,87 @@
+// @see - https://www.electron.build/configuration/configuration
+{
+  $schema: 'https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json',
+  appId: 'sil.lsdev.audio-project-manager',
+  productName: 'Audio Project Manager',
+  copyright: 'Copyright © 2020-2026 ${author}',
+  asar: true,
+  directories: {
+    output: 'release/${version}',
+    buildResources: 'assets',
+  },
+  // Only the build output (plus production node_modules, which electron-builder
+  // adds itself). Without this list the whole repo — including env-config
+  // secrets — was packed into app.asar.
+  files: ['dist', 'dist-electron', 'resources', 'package.json'],
+  asarUnpack: [
+    'resources/**',
+    'node_modules/ffmpeg-static/**',
+    'node_modules/ffprobe-static/**',
+  ],
+  extraResources: [
+    {
+      from: 'migration',
+      to: 'migration',
+      filter: ['**/*'],
+    },
+  ],
+  extraFiles: [
+    {
+      from: './src/public/localization',
+      to: 'localization',
+      filter: '*.json',
+    },
+    {
+      from: './src/public/help',
+      to: 'help',
+      filter: '*.chm',
+    },
+    {
+      from: './src/public/help',
+      to: 'help',
+      filter: '*.xlsx',
+    },
+    {
+      from: './src/public/script',
+      to: 'resources',
+      filter: ['resetData.*', '*.py', '*.aup3'],
+    },
+  ],
+  afterSign: './env-config/notarize.js',
+  win: {
+    icon: 'resources/icon.ico',
+  },
+  mac: {
+    category: 'public.app-category.utilities',
+    icon: 'resources/icon.png',
+    hardenedRuntime: true,
+    entitlements: 'env-config/entitlements.mac.plist',
+    entitlementsInherit: 'env-config/entitlements.mac.plist',
+    gatekeeperAssess: false,
+    extendInfo: {
+      NSMicrophoneUsageDescription: 'Please give us access to your microphone',
+    },
+  },
+  dmg: {
+    sign: false,
+  },
+  linux: {
+    icon: 'debian/audio-project-manager.png',
+    executableName: 'audio-project-manager',
+    desktop: {
+      entry: {
+        Type: 'Application',
+        Encoding: 'UTF-8',
+        Name: 'Audio Project Manager',
+        'Name[fr]': 'Audio Project Manager',
+        Comment: 'A flexible audio-text orality solution',
+        'Comment[fr]': "Une solution flexible d'oralité audio-textuelle",
+        Icon: 'audio-project-manager',
+        Categories: 'GTK;GNOME;Education;Utility;',
+        Keywords: 'audio;obt;transcribe;ai',
+        Terminal: 'false',
+      },
+    },
+    target: 'deb',
+  },
+}

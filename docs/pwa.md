@@ -16,12 +16,12 @@ While **React 19** introduces new features for efficient rendering and state man
 
 What I changed
 File Change
-src/renderer/vite.config.ts Added VitePWA (generateSW, registerType: 'prompt', precache the shell only, /api/ navigation denylist, no cross-origin runtime caching, exclude lazy term dictionaries, 25 MiB precache limit for the large main bundle)
-src/renderer/src/components/PwaUpdatePrompt.tsx New web-only component: registers the SW and shows a localized "reload to update" snackbar on new deploys
-src/renderer/src/auth/Root.tsx Mounts <PwaUpdatePrompt /> guarded by !isElectron
-src/renderer/public/ New icons: pwa-192x192.png, pwa-512x512.png, pwa-maskable-512x512.png, apple-touch-icon.png, favicon.ico (generated from resources/icon.png)
-env-config/index.html + src/renderer/index.html PWA meta tags (theme-color, apple-touch-icon, mobile-web-app-capable) added to the template so they survive changeEnv regeneration
-src/renderer/src/vite-env.d.ts vite-plugin-pwa/client types reference
+src/vite.config.ts Added VitePWA (generateSW, registerType: 'prompt', precache the shell only, /api/ navigation denylist, no cross-origin runtime caching, exclude lazy term dictionaries, 25 MiB precache limit for the large main bundle)
+src/src/components/PwaUpdatePrompt.tsx New web-only component: registers the SW and shows a localized "reload to update" snackbar on new deploys
+src/src/auth/Root.tsx Mounts <PwaUpdatePrompt /> guarded by !isElectron
+src/public/ New icons: pwa-192x192.png, pwa-512x512.png, pwa-maskable-512x512.png, apple-touch-icon.png, favicon.ico (generated from resources/icon.png)
+env-config/index.html + src/index.html PWA meta tags (theme-color, apple-touch-icon, mobile-web-app-capable) added to the template so they survive changeEnv regeneration
+src/src/vite-env.d.ts vite-plugin-pwa/client types reference
 localization/TranscriberAdmin-en-1.2.xliff + generated model/reducers/JSON Two new strings (main.pwaReload, main.pwaUpdateReady) via the XLIFF pipeline
 Verification (all green)
 npm run typecheck ✅ and npm run build ✅ — dist/sw.js + manifest.webmanifest generated, manifest link auto-injected.
@@ -30,7 +30,7 @@ Confirmed the generated SW has the SPA navigation fallback with the /api/ denyli
 changeEnv dev confirmed the PWA meta tags survive index.html regeneration.
 Lint passed on the changed files.
 Answering your original question
-No, it does not break the web app, and it does not touch Electron at all — the desktop build uses the separate root electron.vite.config.ts and the prompt component is guarded by !isElectron. The web app keeps working exactly as before (login, Orbit sync, media) because nothing cross-origin is cached; the PWA only adds installability, faster repeat loads, and an app-shell that survives reconnects.
+No, it does not break the web app, and it does not touch Electron at all — the desktop build uses the separate root vite.config.mts and the prompt component is guarded by !isElectron. The web app keeps working exactly as before (login, Orbit sync, media) because nothing cross-origin is cached; the PWA only adds installability, faster repeat loads, and an app-shell that survives reconnects.
 
 One caveat carried over from the plan: true offline data is not delivered here — the web build is online-first (offline: isElectron), and the offline data machinery is Electron-gated. That's a separate, larger effort.
 
