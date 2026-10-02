@@ -1,0 +1,5 @@
+# Toolchain versions for this repo (root and web/). See https://mise.jdx.dev
+# npm:npm is listed first so its npm/npx come before the npm bundled with node on PATH.
+[tools]
+"npm:npm" = "12.1.0"
+node = "22.23.3"

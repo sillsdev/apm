@@ -24,8 +24,8 @@ The workflow runs on:
 ### Build Steps
 
 1. Checkout code
-2. Setup Volta (Node.js version manager)
-3. Install Node.js 22
+2. Setup mise (tool version manager)
+3. Install Node.js and npm pinned in `mise.toml`
 4. Clean up any existing node processes
 5. Install dependencies (`npm ci` in `web`)
 6. Format check
