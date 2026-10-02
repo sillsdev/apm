@@ -162,9 +162,9 @@ window?.api`) so tests can `import { launch }` and stub `window.api` in
 
 ## Running a New Jest Test Module
 
-Run Jest from `src` (required for this repo).
+Run Jest from `web` (required for this repo).
 
 ```bash
-cd src
+cd web
 npm test -- <moduleName> --runInBand --watchAll=false
 ```

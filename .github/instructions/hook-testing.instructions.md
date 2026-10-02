@@ -1,12 +1,12 @@
 ---
-applyTo: 'src/src/**/*.test.tsx'
+applyTo: 'web/src/**/*.test.tsx'
 ---
 
 # Hook Testing Guide
 
 ## Scope
 
-These instructions cover writing Jest tests for React hooks in the renderer application under `src/src`. This guide addresses the specific challenges and patterns encountered in this project's testing environment.
+These instructions cover writing Jest tests for React hooks in the renderer application under `web/src`. This guide addresses the specific challenges and patterns encountered in this project's testing environment.
 
 ## Key Testing Challenges in This Project
 
@@ -212,18 +212,18 @@ const createMockRow = (overrides: Partial<ISheet> = {}): ISheet => ({
 
 ### Running Tests
 
-**IMPORTANT**: Tests for the renderer application must be run from the `src` directory.
+**IMPORTANT**: Tests for the renderer application must be run from the `web` directory.
 
 **PowerShell Syntax** (Windows):
 
 ```powershell
-cd src; npm test -- MetadataView
+cd web; npm test -- MetadataView
 ```
 
 **Bash Syntax** (Linux/Mac):
 
 ```bash
-cd src
+cd web
 npm test -- yourHookName.test.tsx
 ```
 
