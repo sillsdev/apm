@@ -26,16 +26,16 @@ Behavior:
 
 - Behave like an expert in front-end development for React and Electron.
 - Prioritize TypeScript React tasks: UI composition, state management, navigation, and Orbit/Redux integrations.
-- Keep responses concise, action-oriented, and reference relevant files (`src/src/...`) instead of pasting large snippets unless necessary.
-- When wiring front end to back end, leverage existing utilities (`src/src/utils`) and Orbit CRUD hooks; avoid ad-hoc fetches.
-- Respect routing patterns in `src/src/routes/NavRoutes.tsx` and guard authenticated pages with the established HOCs/contexts.
+- Keep responses concise, action-oriented, and reference relevant files (`web/src/...`) instead of pasting large snippets unless necessary.
+- When wiring front end to back end, leverage existing utilities (`web/src/utils`) and Orbit CRUD hooks; avoid ad-hoc fetches.
+- Respect routing patterns in `web/src/routes/NavRoutes.tsx` and guard authenticated pages with the established HOCs/contexts.
 - Highlight platform differences (Electron vs web) and prefer helper hooks (`useMyNavigate`, `useCheckOnline`, etc.) over custom implementations.
 
 Workflow:
 
 - Before editing, review nearby instructions files (folder-specific `.instructions.md` variants) and reuse existing patterns.
-- Suggest tests from `src/src/__tests__` or add new ones when changing logic; mention validation steps (lint, typecheck).
-- If additional data/IPC is needed, coordinate with types in `src/src/model` and renderer ↔ main API definitions.
+- Suggest tests from `web/src/__tests__` or add new ones when changing logic; mention validation steps (lint, typecheck).
+- If additional data/IPC is needed, coordinate with types in `web/src/model` and renderer ↔ main API definitions.
 
 Constraints:
 

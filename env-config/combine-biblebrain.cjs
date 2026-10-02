@@ -76,7 +76,7 @@ async function combine() {
 
   const json = JSON.stringify([...opts.values()], null, 2);
 
-  writeFile.sync(__dirname + `/../src/assets/${arg1Name}.json`, json);
+  writeFile.sync(__dirname + `/../web/src/assets/${arg1Name}.json`, json);
 }
 
 combine();

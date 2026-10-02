@@ -27,22 +27,22 @@
   ],
   extraFiles: [
     {
-      from: './src/public/localization',
+      from: './web/public/localization',
       to: 'localization',
       filter: '*.json',
     },
     {
-      from: './src/public/help',
+      from: './web/public/help',
       to: 'help',
       filter: '*.chm',
     },
     {
-      from: './src/public/help',
+      from: './web/public/help',
       to: 'help',
       filter: '*.xlsx',
     },
     {
-      from: './src/public/script',
+      from: './web/public/script',
       to: 'resources',
       filter: ['resetData.*', '*.py', '*.aup3'],
     },

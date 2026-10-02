@@ -12,15 +12,15 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy renderer package files
-COPY src/package*.json ./src/
+COPY web/package*.json ./web/
 
 # Install renderer dependencies (use ci for clean install, ignore cache)
-RUN cd src && npm ci
+RUN cd web && npm ci
 
 # Copy necessary config files
 COPY env-config ./env-config
 COPY tsconfig*.json ./
-COPY src ./src
+COPY web ./web
 
 # Expose Vite dev server port
 EXPOSE 3000
@@ -28,5 +28,5 @@ EXPOSE 3000
 # Run the renderer's Vite dev server (not the full Electron app)
 # The .env.local and auth0-variables.json files should be created or mounted
 # inside the container by the workflow (for example at startup), not copied at build time.
-WORKDIR /app/src
+WORKDIR /app/web
 CMD ["npm", "start"]

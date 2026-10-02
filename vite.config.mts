@@ -3,13 +3,13 @@ import { defineConfig, type Plugin } from 'vite';
 import electron from 'vite-plugin-electron/simple';
 import react from '@vitejs/plugin-react';
 
-// Electron app build. The renderer source lives in the web package (./src),
-// which also builds standalone for the web with its own src/vite.config.ts.
+// Electron app build. The renderer source lives in the web package (./web),
+// which also builds standalone for the web with its own web/vite.config.ts.
 const repoRoot = import.meta.dirname;
-const webRoot = path.join(repoRoot, 'src');
+const webRoot = path.join(repoRoot, 'web');
 
 // `virtual:pwa-register` is provided by vite-plugin-pwa, which is only wired
-// into the web build (src/vite.config.ts). The shared renderer source imports
+// into the web build (web/vite.config.ts). The shared renderer source imports
 // it in PwaUpdatePrompt.tsx, but that component is mounted only on the web
 // (see Root.tsx: `{!isElectron && ...}`), so the import is never evaluated in
 // Electron. Stub the virtual module here so neither the dev server's import
@@ -35,7 +35,7 @@ const externalizePackages = (id: string): boolean =>
   !(id.startsWith('.') || id.startsWith('/') || path.isAbsolute(id));
 
 // main/preload are built in their own Vite instances; pin them to the repo
-// root so their output lands in <repo>/dist-electron, not <repo>/src.
+// root so their output lands in <repo>/dist-electron, not <repo>/web.
 const electronBuild = {
   root: repoRoot,
   build: {

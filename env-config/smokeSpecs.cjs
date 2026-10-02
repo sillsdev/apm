@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 //
-// Keeps the --spec list in src's `cy:run-ct-smoke` script in sync with
+// Keeps the --spec list in web's `cy:run-ct-smoke` script in sync with
 // the specs that actually carry an @smoke tag.
 //
 // Why a --spec list at all, rather than just --expose grepTags=@smoke: in Cypress
@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..');
-const RENDERER = path.join(REPO, 'src');
+const RENDERER = path.join(REPO, 'web');
 const SPEC_ROOT = path.join(RENDERER, 'src');
 const PKG = path.join(RENDERER, 'package.json');
 const SCRIPT = 'cy:run-ct-smoke';
@@ -34,7 +34,7 @@ try {
 } catch {
   console.error(
     `Cannot load find-test-names from ${findTestNames}.\n` +
-      `Run "npm ci" in src first.`
+      `Run "npm ci" in web first.`
   );
   process.exit(1);
 }

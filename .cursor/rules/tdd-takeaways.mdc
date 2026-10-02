@@ -51,21 +51,21 @@ Commit **tests-only** first when possible; production fix in a separate commit.
 
 ## Prove red/green before calling it done
 
-From `src`:
+From `web`:
 
 ```powershell
 # Green — tests + production fix
 npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx --browser chrome
 
 # Red — same tests, baseline production (from repo root)
-git checkout <base> -- src/src/crud/AudioMediaRecorder.ts `
-  src/src/components/WSAudioPlayer.tsx `
-  src/src/crud/useWaveSurfer.tsx
-cd src
+git checkout <base> -- web/src/crud/AudioMediaRecorder.ts `
+  web/src/components/WSAudioPlayer.tsx `
+  web/src/crud/useWaveSurfer.tsx
+cd web
 npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx --browser chrome
-git checkout -- src/src/crud/AudioMediaRecorder.ts `
-  src/src/components/WSAudioPlayer.tsx `
-  src/src/crud/useWaveSurfer.tsx
+git checkout -- web/src/crud/AudioMediaRecorder.ts `
+  web/src/components/WSAudioPlayer.tsx `
+  web/src/crud/useWaveSurfer.tsx
 ```
 
 Expect **fail without fix** (duration stuck at `0:01`) and **pass with fix**.
@@ -165,8 +165,8 @@ mid-playback works as the ticket originally asked. (`ended()` keeps calling only
 - Gotcha retained from #606: React 19 function components receive `undefined`,
   not `{}`, as the second call argument. `expect.anything()` rejects `undefined`
   too, so index into `mock.calls[0][0]` directly.
-- **Files:** [LimitedMediaPlayer.tsx](../../src/src/components/LimitedMediaPlayer.tsx),
-  [LimitedMediaPlayer.test.tsx](../../src/src/components/LimitedMediaPlayer.test.tsx),
-  [TeamCheckReference.tsx](../../src/src/components/PassageDetail/TeamCheckReference.tsx),
-  [TeamCheckReference.test.tsx](../../src/src/components/PassageDetail/TeamCheckReference.test.tsx),
-  [MediaPlayer.tsx](../../src/src/components/MediaPlayer.tsx) (the correct precedent).
+- **Files:** [LimitedMediaPlayer.tsx](../../web/src/components/LimitedMediaPlayer.tsx),
+  [LimitedMediaPlayer.test.tsx](../../web/src/components/LimitedMediaPlayer.test.tsx),
+  [TeamCheckReference.tsx](../../web/src/components/PassageDetail/TeamCheckReference.tsx),
+  [TeamCheckReference.test.tsx](../../web/src/components/PassageDetail/TeamCheckReference.test.tsx),
+  [MediaPlayer.tsx](../../web/src/components/MediaPlayer.tsx) (the correct precedent).

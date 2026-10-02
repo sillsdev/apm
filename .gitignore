@@ -16,11 +16,11 @@ localization/*.lnk
 localization/*.zip
 buildDate.json
 env-config/env-files*.zip
-src/index.html
+web/index.html
 *.log*
-src/dist
-src/node_modules
-src/cypress/downloads
+web/dist
+web/node_modules
+web/cypress/downloads
 **/obj
 **/bin
 migration-data

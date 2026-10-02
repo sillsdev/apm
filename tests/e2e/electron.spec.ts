@@ -10,10 +10,10 @@ import {
   LaunchedApp,
 } from './helpers';
 
-// Mirror Vite's env loading order, same as src/cypress/config/local.config.ts.
-dotenv.config({ path: path.join(__dirname, '../../src/.env.local') });
+// Mirror Vite's env loading order, same as web/cypress/config/local.config.ts.
+dotenv.config({ path: path.join(__dirname, '../../web/.env.local') });
 dotenv.config({
-  path: path.join(__dirname, '../../src/.env.development.local'),
+  path: path.join(__dirname, '../../web/.env.development.local'),
   override: true,
 });
 

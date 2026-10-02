@@ -8,7 +8,7 @@ The branch changed during the session: the reflog shows a checkout from `develop
 
 - **Root package = Electron app.** `vite.config.mts` uses `vite-plugin-electron` with the renderer root set to `./src`. Build output goes to `dist/` and `dist-electron/{main,preload}.js`. `electron-builder.json5` packages to `release/<version>/`.
 - **`electron/main`, `electron/preload`** were `src/main` and `src/preload`.
-- **`src/` package = web app.** It is the old `src/renderer`, moved whole, so its renderer code now lives in `src/src/`. It builds on its own to `src/dist/` and owns Jest and Cypress. Moving it whole kept every relative path inside it valid.
+- **`src/` package = web app.** It is the old `src/renderer`, moved whole, so its renderer code now lives in `web/src/`. It builds on its own to `web/dist/` and owns Jest and Cypress. Moving it whole kept every relative path inside it valid.
 - File moves were done with `git mv`, so git records them as renames and history follows. I also updated the path references in CI, Docker, env-config, the localization batch file, VS Code configs, docs and the `.cursor` rules.
 
 ## Results
@@ -42,7 +42,7 @@ I couldn't tell whether this is new. The pre-migration build, run in a temporary
 ## Commands
 
 - Electron: `npm start`, `npm run build`, `npm run build:win` (root)
-- Web: `cd src; npm run build`
-- Tests: `cd src; npm test`, `cd src; npm run cy:run-ct`
+- Web: `cd web; npm run build`
+- Tests: `cd web; npm test`, `cd web; npm run cy:run-ct`
 
-The build output (`dist`, `dist-electron`, `release`, `src/dist`) is left in place and gitignored.
+The build output (`dist`, `dist-electron`, `release`, `web/dist`) is left in place and gitignored.

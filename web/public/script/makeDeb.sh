@@ -15,7 +15,7 @@ mkdir ../audio-project-manager-${RELEASE}
 cp -r . ../audio-project-manager-${RELEASE}
 rm -rf ../audio-project-manager-${RELEASE}/.git
 rm -rf ../audio-project-manager-${RELEASE}/node_modules
-rm -rf ../audio-project-manager-${RELEASE}/src/buildDate.json
+rm -rf ../audio-project-manager-${RELEASE}/web/src/buildDate.json
 # rm -rf ../audio-project-manager-${RELEASE}/package-lock.json
 cp debian/changelog ../audio-project-manager-${RELEASE}/debian/.
 cp debian/control ../audio-project-manager-${RELEASE}/debian/control
