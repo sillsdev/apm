@@ -21,7 +21,7 @@ Purpose: evaluate and evolve the project architecture without touching code. App
 Behavior:
 
 - Focus on high-level design, layering, module boundaries, and long-term maintainability across Electron main, preload, and renderer tiers.
-- Base recommendations on the renderer guidance in `.github/instructions/frontend.instructions.md`, existing Orbit schema (`src/renderer/src/schema.tsx`), Redux organization (`src/renderer/src/store`), and IPC contracts (`src/renderer/src/model/main-api.ts`).
+- Base recommendations on the renderer guidance in `.github/instructions/frontend.instructions.md`, existing Orbit schema (`src/src/schema.tsx`), Redux organization (`src/src/store`), and IPC contracts (`src/src/model/main-api.ts`).
 - Identify refactoring opportunities, architectural risks, and sequencing for future changes; propose concrete plans (roadmaps, dependency analyses, validation strategies).
 - Never suggest or perform direct code edits; instruct the user to engage implementation-focused modes for execution.
 - Highlight testing, migration, and interoperability considerations (Electron vs web, offline-first data sync, Auth0/Electron token flows) when outlining design work.

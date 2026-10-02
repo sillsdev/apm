@@ -1,0 +1,744 @@
+/// <reference types="node" />
+jest.mock('../hoc/useOrbitData', () => ({
+  useOrbitData: jest.fn(() => []),
+}));
+
+jest.mock('../crud/useOrgDefaults', () => ({
+  useOrgDefaults: jest.fn(),
+}));
+
+jest.mock('./usfmTextConvert', () => ({
+  convertBurritoText: jest.fn((content: string) => Promise.resolve(content)),
+}));
+
+import { act, renderHook } from '@testing-library/react';
+import { useOrbitData } from '../hoc/useOrbitData';
+import { useOrgDefaults } from '../crud/useOrgDefaults';
+import { convertBurritoText } from './usfmTextConvert';
+import { useBurritoText } from './useBurritoText';
+import type { MainAPI } from '../model/main-api';
+import type { Burrito } from './data/types';
+import type { MediaFileD, PassageD, SectionD } from '../model';
+
+function burritoFixture(): Burrito {
+  return {
+    format: 'burrito',
+    meta: {
+      version: '0.1',
+      category: 'scripture',
+      generator: {
+        softwareName: 'apm',
+        softwareVersion: '1',
+        userName: 'tester',
+      },
+      defaultLocale: 'en',
+      dateCreated: '2020-01-01',
+      comments: [],
+    },
+    ingredients: {},
+    type: {
+      flavorType: {
+        name: 'scripture',
+        flavor: { name: 'before-text' },
+        currentScope: {},
+      },
+    },
+  };
+}
+
+const planId = 'plan-1';
+
+function sectionFixture(): SectionD {
+  return {
+    id: 'sec-1',
+    type: 'section',
+    attributes: {
+      sequencenum: 1,
+      name: 'Intro',
+    },
+    relationships: {
+      plan: { data: { id: planId } },
+    },
+  } as unknown as SectionD;
+}
+
+function passageFixture(
+  attrs: Partial<PassageD['attributes']> = {},
+  id = 'pas-1'
+): PassageD {
+  return {
+    id,
+    type: 'passage',
+    attributes: {
+      sequencenum: 1,
+      reference: 'GEN 1:1',
+      startChapter: 1,
+      startVerse: 1,
+      endChapter: 1,
+      endVerse: 1,
+      ...attrs,
+    },
+    relationships: {
+      section: { data: { id: 'sec-1' } },
+      plan: { data: { id: planId } },
+    },
+  } as unknown as PassageD;
+}
+
+function mediaFixture(
+  attrs: Partial<MediaFileD['attributes']>,
+  opts: { id?: string; passageId?: string } = {}
+): MediaFileD {
+  return {
+    id: opts.id ?? 'med-1',
+    type: 'mediafile',
+    attributes: {
+      versionNumber: 1,
+      transcription: 'In the beginning',
+      ...attrs,
+    } as MediaFileD['attributes'],
+    relationships: {
+      plan: { data: { id: planId } },
+      passage: { data: { id: opts.passageId ?? 'pas-1' } },
+    },
+  } as unknown as MediaFileD;
+}
+
+function makeIpc() {
+  return {
+    write: jest.fn().mockResolvedValue(undefined),
+    md5File: jest.fn().mockResolvedValue('text-md5'),
+  };
+}
+
+type LoadOpts = {
+  passages?: PassageD[];
+  mediafiles?: MediaFileD[];
+  getOrgDefaultImpl?: (key: string, teamId?: string) => unknown;
+};
+
+/**
+ * `useBurritoText` reads `window.api` at call time, so stubbing it here before
+ * running the hook is enough — no module reset needed.
+ */
+function loadTextForApi(api: MainAPI | undefined, opts: LoadOpts = {}) {
+  (window as unknown as { api?: MainAPI }).api = api;
+  const defaultGetOrg = (key: string) => {
+    if (key === 'burritoVersions') return '1';
+    if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
+    return undefined;
+  };
+  (useOrgDefaults as jest.Mock).mockReturnValue({
+    getOrgDefault: jest.fn((key: string, teamId?: string) =>
+      (opts.getOrgDefaultImpl ?? defaultGetOrg)(key, teamId)
+    ),
+    setOrgDefault: jest.fn(),
+    getDefault: jest.fn(),
+    setDefault: jest.fn(),
+    canSetOrgDefault: true,
+  });
+  // Stable array references (jest-testing-takeaways: useOrbitData churn).
+  const mediafiles = opts.mediafiles ?? [];
+  const passages = opts.passages ?? [];
+  (useOrbitData as jest.Mock).mockImplementation((key: string) => {
+    if (key === 'mediafile') return mediafiles;
+    if (key === 'passage') return passages;
+    return [];
+  });
+  (convertBurritoText as jest.Mock).mockImplementation(
+    (content: string, fmt: string) => Promise.resolve(`${fmt}:${content}`)
+  );
+  return { renderHook, act, useBurritoText, convertBurritoText };
+}
+
+describe('useBurritoText', () => {
+  const teamId = 'team-1';
+  const bookPath = '/data/burrito/GEN';
+  const preLen = '/data'.length;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('writes USFM, sets textTranslation flavor, and merges ingredients', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {
+      passages: [passageFixture()],
+      mediafiles: [mediaFixture({})],
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('textTranslation');
+    expect(ipc.write).toHaveBeenCalled();
+    const writeCall = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv1.usfm')
+    );
+    expect(writeCall).toBeDefined();
+    const written = writeCall![1] as string;
+    expect(written).toContain('\\id GEN');
+    expect(written).toContain('In the beginning');
+    expect(ipc.md5File).toHaveBeenCalled();
+
+    const docid = String(writeCall![0]).substring(preLen);
+    expect(metadata.ingredients[docid]).toMatchObject({
+      checksum: { md5: 'text-md5' },
+      mimeType: 'text/usfm',
+      scope: { GEN: ['1'] },
+    });
+  });
+
+  it('runs convertBurritoText for usj output and sets application/usj+json', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [passageFixture()],
+        mediafiles: [mediaFixture({})],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usj' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    expect(convertBurritoText).toHaveBeenCalled();
+    const written = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv1.usj')
+    )?.[1] as string;
+    expect(written.startsWith('usj:')).toBe(true);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('GENv1.usj')
+    )!;
+    expect(metadata.ingredients[ingredientKey].mimeType).toBe(
+      'application/usj+json'
+    );
+  });
+
+  it('writes each USFM file beginning with a \\id line', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {
+      passages: [passageFixture()],
+      mediafiles: [
+        mediaFixture({ versionNumber: 2, transcription: 'Second version' }),
+        mediaFixture({ versionNumber: 1, transcription: 'First version' }),
+      ],
+      getOrgDefaultImpl: (key: string) => {
+        if (key === 'burritoVersions') return '2';
+        if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
+        return undefined;
+      },
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const usfmWrites = ipc.write.mock.calls.filter((c: unknown[]) =>
+      String(c[0]).endsWith('.usfm')
+    );
+    expect(usfmWrites).toHaveLength(2);
+
+    for (const writeCall of usfmWrites) {
+      const written = writeCall[1] as string;
+      expect(written.split('\n')[0]).toBe('\\id GEN');
+    }
+  });
+
+  it('does not throw when window.api is missing', async () => {
+    const { renderHook, act, useBurritoText } = loadTextForApi(undefined, {
+      passages: [passageFixture()],
+      mediafiles: [mediaFixture({})],
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('textTranslation');
+    const ing = Object.values(metadata.ingredients)[0];
+    expect(ing).toBeDefined();
+    expect(ing!.checksum.md5).toBeUndefined();
+  });
+
+  it('with empty sections only updates flavor name', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText } = loadTextForApi(
+      ipc as never,
+      {}
+    );
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [],
+      });
+    });
+
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('textTranslation');
+    expect(ipc.write).not.toHaveBeenCalled();
+    expect(Object.keys(metadata.ingredients)).toHaveLength(0);
+  });
+
+  it('synthesizes valid USFM for cross-chapter when start verse is last of chapter (JON 1:17-2:10)', async () => {
+    const ipc = makeIpc();
+    const jonBookPath = '/data/burrito/JON';
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [
+          passageFixture({
+            reference: '1:17-2:10',
+            startChapter: 1,
+            startVerse: 17,
+            endChapter: 2,
+            endVerse: 10,
+          }),
+        ],
+        mediafiles: [mediaFixture({ transcription: 'Jonah prayed' })],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usj' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'JON',
+        bookPath: jonBookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    expect(convertBurritoText).toHaveBeenCalled();
+    const usfmArg = (convertBurritoText as jest.Mock).mock
+      .calls[0][0] as string;
+    expect(usfmArg).not.toMatch(/\\v\s+\d+-\d+:\d+/);
+    expect(usfmArg).toContain('\\c 1');
+    expect(usfmArg).toContain('\\v 17 Jonah prayed');
+    expect(usfmArg).not.toContain('\\v 17-17');
+    expect(usfmArg).toContain('\\c 2');
+    expect(usfmArg).toContain('\\v 1-10');
+    expect(usfmArg.match(/Jonah prayed/g)).toHaveLength(1);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('JONv1.usj')
+    )!;
+    expect(metadata.ingredients[ingredientKey].scope).toEqual({
+      JON: ['1', '2'],
+    });
+  });
+
+  it('synthesizes start-chapter verse range through last verse (GEN 1:28-2:3)', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages: [
+          passageFixture({
+            reference: '1:28-2:3',
+            startChapter: 1,
+            startVerse: 28,
+            endChapter: 2,
+            endVerse: 3,
+          }),
+        ],
+        mediafiles: [mediaFixture({ transcription: 'Be fruitful' })],
+        getOrgDefaultImpl: (key: string) => {
+          if (key === 'burritoVersions') return '1';
+          if (key === 'burritoFormat') return { textOutputFormat: 'usx' };
+          return undefined;
+        },
+      });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const usfmArg = (convertBurritoText as jest.Mock).mock
+      .calls[0][0] as string;
+    expect(usfmArg).not.toMatch(/\\v\s+\d+-\d+:\d+/);
+    expect(usfmArg).toContain('\\v 28-31 Be fruitful');
+    expect(usfmArg).toContain('\\c 2');
+    expect(usfmArg).toContain('\\v 1-3');
+    expect(usfmArg.match(/Be fruitful/g)).toHaveLength(1);
+
+    const ingredientKey = Object.keys(metadata.ingredients).find((k) =>
+      k.includes('GENv1.usx')
+    )!;
+    expect(metadata.ingredients[ingredientKey].scope).toEqual({
+      GEN: ['1', '2'],
+    });
+  });
+
+  it('keeps \\c markers per version when a version skips the cross-chapter passage', async () => {
+    // Passage A (1:28-2:3) has only the newest take → burrito slot 0 (GENv1).
+    // Passage B (2:4) has two takes → slots 0 and 1. Slot 1 must still get \\c 2
+    // (and \\id) even though the shared export cursor already advanced to chapter 2.
+    const ipc = makeIpc();
+    const pasA = passageFixture(
+      {
+        sequencenum: 1,
+        reference: '1:28-2:3',
+        startChapter: 1,
+        startVerse: 28,
+        endChapter: 2,
+        endVerse: 3,
+      },
+      'pas-a'
+    );
+    const pasB = passageFixture(
+      {
+        sequencenum: 2,
+        reference: '2:4',
+        startChapter: 2,
+        startVerse: 4,
+        endChapter: 2,
+        endVerse: 4,
+      },
+      'pas-b'
+    );
+    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {
+      passages: [pasA, pasB],
+      mediafiles: [
+        mediaFixture(
+          { versionNumber: 2, transcription: 'Be fruitful' },
+          { id: 'med-a2', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { versionNumber: 2, transcription: 'These are the generations' },
+          { id: 'med-b2', passageId: 'pas-b' }
+        ),
+        mediaFixture(
+          { versionNumber: 1, transcription: 'Generations sparse take' },
+          { id: 'med-b1', passageId: 'pas-b' }
+        ),
+      ],
+      getOrgDefaultImpl: (key: string) => {
+        if (key === 'burritoVersions') return '2';
+        if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
+        return undefined;
+      },
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const writeV2 = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv2.usfm')
+    );
+    expect(writeV2).toBeDefined();
+    const sparseUsfm = writeV2![1] as string;
+    expect(sparseUsfm.split('\n')[0]).toBe('\\id GEN');
+    expect(sparseUsfm).toContain('\\c 2');
+    const c2Idx = sparseUsfm.indexOf('\\c 2');
+    const v4Idx = sparseUsfm.indexOf('\\v 4 Generations sparse take');
+    expect(v4Idx).toBeGreaterThan(-1);
+    expect(c2Idx).toBeGreaterThan(-1);
+    expect(c2Idx).toBeLessThan(v4Idx);
+
+    const writeV1 = ipc.write.mock.calls.find((c: unknown[]) =>
+      String(c[0]).includes('GENv1.usfm')
+    );
+    expect(writeV1).toBeDefined();
+    const denseUsfm = writeV1![1] as string;
+    expect(denseUsfm).toContain('\\c 2');
+    expect(denseUsfm).toContain('\\v 1-3');
+    expect(denseUsfm).toContain('\\v 4 These are the generations');
+  });
+});
+
+// TT-7716: usfm-grammar rejects a \c that is not followed by a paragraph or
+// section marker, so USX/USJ export threw "USFM parse errors" for James.
+describe('useBurritoText cross-chapter USFM structure (TT-7716)', () => {
+  const teamId = 'team-1';
+  const preLen = '/data'.length;
+  const usxDefaults = (key: string) => {
+    if (key === 'burritoVersions') return '1';
+    if (key === 'burritoFormat') return { textOutputFormat: 'usx' };
+    return undefined;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const chapterNumbers = (usfm: string) =>
+    Array.from(usfm.matchAll(/\\c\s*(\d+)/g)).map((m) => Number(m[1]));
+
+  // Every \c (inline ones included) must sit on its own line and be followed
+  // by a paragraph or section line.
+  const expectEveryChapterFollowedByParagraph = (usfm: string) => {
+    const chapterMarkers = usfm.match(/\\c\s*\d+/g) ?? [];
+    const wellFormed =
+      usfm.match(/(?:^|\n)\\c \d+\n\\(?:p|s\d?)(?![a-z])/g) ?? [];
+    expect(wellFormed).toHaveLength(chapterMarkers.length);
+  };
+
+  async function exportJames(passages: PassageD[], mediafiles: MediaFileD[]) {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText, convertBurritoText } =
+      loadTextForApi(ipc as never, {
+        passages,
+        mediafiles,
+        getOrgDefaultImpl: usxDefaults,
+      });
+    const { result } = renderHook(() => useBurritoText(teamId));
+    await act(async () => {
+      await result.current({
+        metadata: burritoFixture(),
+        book: 'JAS',
+        bookPath: '/data/burrito/JAS',
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+    expect(convertBurritoText).toHaveBeenCalledTimes(1);
+    return (convertBurritoText as jest.Mock).mock.calls[0][0] as string;
+  }
+
+  it('adds a paragraph after the synthesized end chapter (JAS 3:13-4:12, no \\v)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '3:13-4:12',
+          startChapter: 3,
+          startVerse: 13,
+          endChapter: 4,
+          endVerse: 12,
+        }),
+      ],
+      [mediaFixture({ transcription: 'Wisdom from above' })]
+    );
+
+    expect(usfm).toContain('\\v 13-18 Wisdom from above');
+    expect(usfm).toContain('\\c 4\n\\p\n\\v 1-12');
+    expect(chapterNumbers(usfm)).toEqual([3, 4]);
+    expectEveryChapterFollowedByParagraph(usfm);
+  });
+
+  it('does not repeat \\c after a versed transcription with an embedded chapter (JAS 1:19-2:13, 2:14-26)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture(
+          {
+            sequencenum: 1,
+            reference: '1:19-2:13',
+            startChapter: 1,
+            startVerse: 19,
+            endChapter: 2,
+            endVerse: 13,
+          },
+          'pas-a'
+        ),
+        passageFixture(
+          {
+            sequencenum: 2,
+            reference: '2:14-26',
+            startChapter: 2,
+            startVerse: 14,
+            endChapter: 2,
+            endVerse: 26,
+          },
+          'pas-b'
+        ),
+      ],
+      [
+        mediaFixture(
+          {
+            transcription:
+              '\\v 19  Be quick to hear\n\\v 27  Pure religion\n\\c 2  \n\\v 1  Show no partiality\n\\v 13 Mercy triumphs',
+          },
+          { id: 'med-a', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { transcription: '\\v 14  Faith without works' },
+          { id: 'med-b', passageId: 'pas-b' }
+        ),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm.indexOf('\\c 2')).toBeLessThan(
+      usfm.indexOf('\\v 1  Show no partiality')
+    );
+    expect(usfm.indexOf('\\c 2')).toBeLessThan(
+      usfm.indexOf('\\v 14  Faith without works')
+    );
+  });
+
+  it('splits an un-versed transcription at its embedded end chapter (JAS 3:13-4:12)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '3:13-4:12',
+          startChapter: 3,
+          startVerse: 13,
+          endChapter: 4,
+          endVerse: 12,
+        }),
+      ],
+      [
+        mediaFixture({
+          transcription:
+            '13 Who is wise\n18 Fruit of righteousness\n\\c 4\n1 What causes quarrels\n12 Who are you to judge',
+        }),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([3, 4]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain(
+      '\\v 13-18 13 Who is wise\n18 Fruit of righteousness\n\\c 4'
+    );
+    expect(usfm).toContain('\\v 1-12 1 What causes quarrels');
+    expect(usfm.indexOf('\\c 4')).toBeLessThan(
+      usfm.indexOf('What causes quarrels')
+    );
+  });
+
+  it('repairs a CRLF chapter transition in a transcription (\\c 2\\r\\n\\v 1)', async () => {
+    const usfm = await exportJames(
+      [
+        passageFixture({
+          reference: '1:27-2:1',
+          startChapter: 1,
+          startVerse: 27,
+          endChapter: 2,
+          endVerse: 1,
+        }),
+      ],
+      [
+        mediaFixture({
+          transcription:
+            '\\v 27 Pure religion\r\n\\c 2\r\n\\v 1 Show no partiality',
+        }),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain('\\c 2\n\\p\n\\v 1 Show no partiality');
+  });
+
+  it('breaks out an inline chapter from Paratext text (\\c 2 \\v 1 on one line)', async () => {
+    // getLocalParatextText: getPassageVerses output joined by `\c ${chap} `
+    const usfm = await exportJames(
+      [
+        passageFixture(
+          {
+            sequencenum: 1,
+            reference: '1:26-2:2',
+            startChapter: 1,
+            startVerse: 26,
+            endChapter: 2,
+            endVerse: 2,
+          },
+          'pas-a'
+        ),
+        passageFixture(
+          {
+            sequencenum: 2,
+            reference: '2:3',
+            startChapter: 2,
+            startVerse: 3,
+            endChapter: 2,
+            endVerse: 3,
+          },
+          'pas-b'
+        ),
+      ],
+      [
+        mediaFixture(
+          {
+            transcription:
+              '\\v 26 Bridle the tongue\\v 27 Pure religion\\c 2 \\v 1 Show no partiality\\v 2 A gold ring',
+          },
+          { id: 'med-a', passageId: 'pas-a' }
+        ),
+        mediaFixture(
+          { transcription: '\\v 3 Fine clothing' },
+          { id: 'med-b', passageId: 'pas-b' }
+        ),
+      ]
+    );
+
+    expect(chapterNumbers(usfm)).toEqual([1, 2]);
+    expectEveryChapterFollowedByParagraph(usfm);
+    expect(usfm).toContain(
+      '\\v 27 Pure religion\n\\c 2\n\\p\n\\v 1 Show no partiality\\v 2 A gold ring'
+    );
+  });
+});

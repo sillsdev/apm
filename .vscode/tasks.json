@@ -4,7 +4,7 @@
     {
       "label": "TypeCheck: All Files",
       "type": "shell",
-      "command": "npm run typecheck:all",
+      "command": "npm run typecheck",
       "group": {
         "kind": "test",
         "isDefault": false
@@ -23,7 +23,7 @@
     {
       "label": "TypeCheck: Renderer Only",
       "type": "shell",
-      "command": "cd src/renderer && npm run typecheck:renderer",
+      "command": "cd src && npm run typecheck",
       "group": {
         "kind": "test",
         "isDefault": false

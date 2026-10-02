@@ -81,18 +81,18 @@ jobs:
         run: node --test migration/usj-structure.test.mjs
 
       - name: Install renderer dependencies
-        working-directory: src/renderer
+        working-directory: src
         run: npm ci
 
       - name: Format renderer dependencies
-        working-directory: src/renderer
+        working-directory: src
         run: npm run format:check
 
       - name: Stamp build with date and time
         run: npm run stamp
 
       - name: Make Environment (.env.local)
-        working-directory: src/renderer
+        working-directory: src
         run: |
           echo "VITE_DOMAIN=${{ env.DOMAIN }}" > .env.local
           echo "VITE_CLIENTID=${{ env.CLIENT_ID }}" >> .env.local
@@ -118,7 +118,7 @@ jobs:
           echo "VITE_SITE_TITLE=${{ env.NAME }}" >> .env.local
 
       - name: Create auth0-variables.json
-        working-directory: src/renderer
+        working-directory: src
         run: |
           echo '{"apiIdentifier":"${{ env.API_ID }}","auth0Domain":"${{ env.DOMAIN }}","webClientId":"${{ env.CLIENT_ID }}"}' > src/auth/auth0-variables.json
 
@@ -137,19 +137,19 @@ jobs:
       # Same split as the Cypress steps below. Pull requests run the 25-file
       # jest smoke subset (~1:30); merges to develop/main and manual runs run
       # all 213 files (~8:00), so nothing lands without full coverage.
-      # The subset is defined in src/renderer/jest.smoke.config.ts.
+      # The subset is defined in src/jest.smoke.config.ts.
       - name: Run unit test smoke subset
         if: github.event_name == 'pull_request'
-        working-directory: src/renderer
+        working-directory: src
         run: npm run test:smoke:ci
 
       - name: Run all unit tests
         if: github.event_name != 'pull_request'
-        working-directory: src/renderer
+        working-directory: src
         run: npm run test:ci
 
       - name: Build
-        working-directory: src/renderer
+        working-directory: src
         run: npm run build
 
       # The --spec list in cy:run-ct-smoke is generated from the @smoke tags.
@@ -170,12 +170,12 @@ jobs:
       # coverage before it lands.
       - name: Run Cypress smoke tests
         if: github.event_name == 'pull_request'
-        working-directory: src/renderer
+        working-directory: src
         run: npm run cy:run-ct-smoke
 
       - name: Run full Cypress suite
         if: github.event_name != 'pull_request'
-        working-directory: src/renderer
+        working-directory: src
         run: npm run cy:run-ct
 
       - name: Upload Cypress screenshots on failure
@@ -183,7 +183,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshots-${{ github.run_number }}
-          path: src/renderer/cypress/screenshots
+          path: src/cypress/screenshots
           retention-days: 7
           if-no-files-found: ignore
 
@@ -192,7 +192,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cypress-videos-${{ github.run_number }}
-          path: src/renderer/cypress/videos
+          path: src/cypress/videos
           retention-days: 7
           if-no-files-found: ignore
 
@@ -202,8 +202,8 @@ jobs:
         with:
           name: cypress-results-${{ github.run_number }}
           path: |
-            src/renderer/cypress/reports
-            src/renderer/cypress/results
+            src/cypress/reports
+            src/cypress/results
           retention-days: 30
           if-no-files-found: ignore
 

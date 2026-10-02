@@ -1,0 +1,239 @@
+import path from 'path-browserify';
+import { Burrito, BurritoIngredients, BurritoScopes } from './data/types';
+import related from '../crud/related';
+import { VernacularTag } from '../crud/useArtifactType';
+import { useOrgDefaults } from '../crud/useOrgDefaults';
+import { useOrbitData } from '../hoc/useOrbitData';
+import { MediaFileD, PassageD, SectionD } from '../model';
+import { parseRef } from '../crud/passage';
+import { passageTypeFromRef } from '../control/passageTypeFromRef';
+import { PassageTypeEnum } from '../model/passageType';
+
+import { sortChapters } from '../utils/sort';
+import { MainAPI } from '@model/main-api';
+import { sectionDescription } from '../crud/section';
+import { getLastVerse } from '../business/localParatext/getLastVerse';
+import {
+  burritoFormat,
+  BurritoTextOutputFormat,
+  parseBurritoTextOutputFormat,
+} from './burritoFormatParams';
+import { convertBurritoText } from './usfmTextConvert';
+import {
+  ensureParagraphAfterChapter,
+  lastChapterMarker,
+} from './burritoUsfmChapters';
+const ipc = () => window?.api as MainAPI;
+
+function textIngredientMimeType(format: BurritoTextOutputFormat): string {
+  switch (format) {
+    case 'usj':
+      return 'application/usj+json';
+    case 'usx':
+      return 'application/usx+xml';
+    default:
+      return 'text/usfm';
+  }
+}
+
+interface Props {
+  metadata: Burrito;
+  book: string;
+  bookPath: string;
+  preLen: number;
+  sections: SectionD[];
+}
+
+export const useBurritoText = (teamId: string) => {
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
+  const passages = useOrbitData<PassageD[]>('passage');
+  const { getOrgDefault } = useOrgDefaults();
+
+  return async ({ metadata, book, bookPath, preLen, sections }: Props) => {
+    // setup data structures to capture metadata from content
+    const scopes: Map<string, string[]> = new Map(); // book scopes
+    const ingredients: BurritoIngredients = {};
+    const chapters = new Set<string>();
+    const textNameMap = new Map<number, string>();
+    const textMap = new Map<number, string[]>();
+    // Chapter cursor is per burrito version slot — shared state wrongly
+    // suppresses \\c for versions absent on a cross-chapter passage.
+    const chapterByVersion = new Map<number, number>();
+
+    let sectionId = '';
+    let initialText = new Array<string>();
+    const versions = parseInt(
+      (getOrgDefault('burritoVersions', teamId) || '1') as string
+    );
+    const textOutputFormat = parseBurritoTextOutputFormat(
+      (
+        getOrgDefault(burritoFormat, teamId) as
+          { textOutputFormat?: unknown } | undefined
+      )?.textOutputFormat
+    );
+
+    for (const section of sections) {
+      // get the passages files for the plan sorted by sequence number
+      const planMedia = mediafiles.filter(
+        (m) => related(section, 'plan') === related(m, 'plan')
+      );
+
+      let paraStart = '\\p';
+      const passageRecs = passages
+        .filter((p) => related(p, 'section') === section.id)
+        .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
+      for (const p of passageRecs) {
+        // get additional passage info
+        const passageType = passageTypeFromRef(p.attributes.reference, false);
+        if (passageType !== PassageTypeEnum.PASSAGE) continue;
+
+        // initialize the text for the passage
+        const mediaSectionId = related(p, 'section');
+        parseRef(p);
+        const { startChapter, startVerse, endChapter, endVerse } = p.attributes;
+        if (sectionId !== mediaSectionId) {
+          sectionId = mediaSectionId;
+          initialText.push(
+            `\\s ${sectionDescription(section).trim().split('\u00A0\u00A0').slice(1).join('\u00A0\u00A0')}`
+          );
+          if (paraStart) initialText.push(paraStart);
+          paraStart = '';
+        }
+
+        // get the media files for the passage
+        const media = planMedia.filter((m) => related(m, 'passage') === p.id);
+
+        // get the vernacular media files for the passage and sort them by descending version number
+        const vernMedia = media
+          .filter(
+            (m) =>
+              related(m, 'artifactType') === VernacularTag ||
+              !related(m, 'artifactType')
+          )
+          .sort(
+            (a, b) => b.attributes.versionNumber - a.attributes.versionNumber
+          );
+        for (let i = 0; i < versions; i++) {
+          if (i >= vernMedia.length) break;
+          const attr = vernMedia[i].attributes;
+
+          // initialize name and text maps
+          if (!textNameMap.has(i)) {
+            textNameMap.set(i, `${book}v${i + 1}.${textOutputFormat}`);
+          }
+
+          const versionPrefix: string[] = [];
+          if (!textMap.has(i)) {
+            versionPrefix.push(`\\id ${book}`);
+          }
+          const versionChapter = chapterByVersion.get(i) ?? 0;
+          if (startChapter && startChapter !== versionChapter) {
+            versionPrefix.push(`\\c ${startChapter.toString()}`);
+            chapterByVersion.set(i, startChapter);
+            chapters.add(startChapter.toString());
+          }
+
+          textMap.set(
+            i,
+            (textMap.get(i) ?? []).concat(versionPrefix, initialText)
+          );
+
+          // get the transcription for the usfm file
+          if (attr?.transcription) {
+            const text = textMap.get(i);
+            if (text) {
+              if (paraStart) text.push(paraStart);
+              let verseRange = attr.transcription
+                .replace(/(\\[a-z])(\\[a-z])/g, '$1\n$2')
+                .replace(/\\v([0-9]+)/g, '\\v $1');
+              if (!/\\v/.test(verseRange)) {
+                let ref = startVerse?.toString();
+                if (endChapter && endChapter !== startChapter) {
+                  const lastVerseInChapter =
+                    startChapter != null
+                      ? getLastVerse(book, startChapter)
+                      : null;
+                  if (
+                    lastVerseInChapter != null &&
+                    startVerse != null &&
+                    startVerse < lastVerseInChapter
+                  ) {
+                    ref = `${startVerse}-${lastVerseInChapter}`;
+                  }
+                  const endRef =
+                    endVerse != null && endVerse > 1 ? `1-${endVerse}` : '1';
+                  // Split at a \c the transcriber already typed so the end
+                  // chapter is not emitted twice.
+                  const [before, after] = attr.transcription.split(
+                    new RegExp(`\\\\c\\s*${endChapter}(?!\\d)[ \\t]*\\n?`)
+                  );
+                  verseRange =
+                    after !== undefined
+                      ? `\\v ${ref} ${before.trimEnd()}\n\\c ${endChapter}\n\\v ${endRef} ${after}`
+                      : `\\v ${ref} ${attr.transcription}\n\\c ${endChapter}\n\\v ${endRef}`;
+                  chapters.add(endChapter.toString());
+                  chapterByVersion.set(i, endChapter);
+                } else {
+                  if (endVerse && endVerse !== startVerse) {
+                    ref = `${ref}-${endVerse?.toString()}`;
+                  }
+                  verseRange = `\\v ${ref} ${attr.transcription}`;
+                }
+              } else {
+                // A versed transcription may cross chapters with its own \c;
+                // advance the cursor so the next passage doesn't repeat it.
+                const lastChapter = lastChapterMarker(verseRange);
+                if (lastChapter) {
+                  chapters.add(lastChapter.toString());
+                  chapterByVersion.set(i, lastChapter);
+                }
+              }
+              text.push(verseRange);
+              textMap.set(i, text);
+            }
+          }
+        }
+        if (vernMedia.length > 0) {
+          initialText = new Array<string>();
+          paraStart = '\\p';
+        }
+      }
+    }
+    for (let i = 0; i < versions; i++) {
+      const name = textNameMap.get(i);
+      if (!name) continue;
+      const textPath = path.join(bookPath, name);
+      const text = textMap.get(i);
+      let content = ensureParagraphAfterChapter(text?.join('\n') ?? '');
+      if (textOutputFormat === 'usx' || textOutputFormat === 'usj') {
+        content = await convertBurritoText(content, textOutputFormat);
+      }
+      await ipc()?.write(textPath, content);
+      // add the alignment file to the metadata file
+      const docid = textPath.substring(preLen);
+      ingredients[docid] = {
+        checksum: { md5: await ipc()?.md5File(textPath) },
+        mimeType: textIngredientMimeType(textOutputFormat),
+        size: content.length,
+        scope: { [book]: sortChapters(chapters) },
+      };
+    }
+    const curScopes = scopes.get(book) || [];
+    scopes.set(book, [...curScopes, ...sortChapters(chapters)]);
+    const newScopes: BurritoScopes = {};
+    Array.from(scopes).forEach((scope) => {
+      newScopes[scope[0]] = scope[1];
+    });
+    if (metadata.type?.flavorType) {
+      metadata.type.flavorType.currentScope = {
+        ...metadata.type.flavorType.currentScope,
+        ...newScopes,
+      };
+    }
+    metadata.ingredients = { ...metadata.ingredients, ...ingredients };
+    if (metadata.type?.flavorType?.flavor?.name) {
+      metadata.type.flavorType.flavor.name = 'textTranslation';
+    }
+    return metadata;
+  };
+};
