@@ -4,9 +4,7 @@ import {
   IPassageDetailArtifactsStrings,
   MediaFileD,
   SectionResourceD,
-  ArtifactType,
   Resource,
-  SheetLevel,
   ISharedStrings,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
@@ -61,8 +59,6 @@ import {
   passageDetailArtifactsSelector,
   sharedSelector,
 } from '../../../selector';
-import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
-import { PassageTypeEnum } from '../../../model/passageType';
 import { VertListDnd } from '../../../hoc/VertListDnd';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { LaunchLink } from '../../../control/LaunchLink';
@@ -76,10 +72,7 @@ import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import {
-  generalResourceMedia,
-  projectResourceTypeIds,
-} from './generalResourceMedia';
+import { generalResourceMedia } from './generalResourceMedia';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -88,6 +81,8 @@ import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { AddResourceAction } from './AddResourceAction';
 import AddResourceWizard, { WizardLaunch } from './AddResourceWizard';
+import { useResourceScopeLabels } from './useResourceScopeLabels';
+import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -104,7 +99,6 @@ export function PassageDetailArtifacts() {
   const theme = useTheme();
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
   const [memory] = useGlobal('memory');
   const [busy, setBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [remoteBusy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
@@ -206,11 +200,9 @@ export function PassageDetailArtifacts() {
 
   // Both projectresource type records (offline + remote); used to resolve
   // general resources for the type label, Edit, and Delete (see
-  // [[generalResourceMedia]]).
-  const projResourceTypeIds = useMemo(
-    () => projectResourceTypeIds(artifactTypes),
-    [artifactTypes]
-  );
+  // [[generalResourceMedia]]). Shared with the add wizard via this hook so the
+  // two resolve the same records (see useResourceArtifactTypes).
+  const { projResourceTypeIds } = useResourceArtifactTypes();
 
   const handlePlay = (id: string) => {
     if (id === playItem) {
@@ -496,33 +488,7 @@ export function PassageDetailArtifacts() {
     setWizardLaunch({ kind: 'markdown', query, audioUrl, transcript });
   };
 
-  const passDesc = useMemo(
-    () =>
-      passageTypeFromRef(passage?.attributes?.reference) ===
-      PassageTypeEnum.NOTE
-        ? t.noteResource
-        : t.passageResource,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [passage]
-  );
-
-  const getSectionType = () => {
-    const level = section.attributes?.level;
-    if (level === SheetLevel.Book) return 'BOOK';
-    if (level === SheetLevel.Movement) return 'MOVE';
-    return undefined;
-  };
-
-  const sectDesc = useMemo(
-    () =>
-      getSectionType() === PassageTypeEnum.BOOK
-        ? t.bookResource
-        : getSectionType() === PassageTypeEnum.MOVEMENT
-          ? t.movementResource
-          : getOrganizedBy(true),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [section]
-  );
+  const { sectDesc, passDesc } = useResourceScopeLabels();
 
   const listFilter = (r: IRow) =>
     r?.isResource &&

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
@@ -7,9 +7,7 @@ import {
   Section,
   MediaFileD,
   MediaFile,
-  ArtifactType,
   SectionResourceD,
-  SheetLevel,
 } from '../../../model';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
 import { useSnackBar } from '../../../hoc/SnackBar';
@@ -46,8 +44,6 @@ import {
   passageDetailArtifactsSelector,
 } from '../../../selector';
 import { FaithBridge } from '../../../assets/brands';
-import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
-import { PassageTypeEnum } from '../../../model/passageType';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import {
   getProjectResourceAssignments,
@@ -59,6 +55,8 @@ import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { buildResourcePendingRestore } from './buildResourcePendingRestore';
 import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 import { AddResourceAction } from './AddResourceAction';
+import { useResourceScopeLabels } from './useResourceScopeLabels';
+import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 /**
  * The AddResourceActions this wizard owns — the upload-based ones. Shared and
@@ -112,9 +110,7 @@ export function AddResourceWizard({
 }: IProps) {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
-  const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
   const [memory] = useGlobal('memory');
-  const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [, setComplete] = useGlobal('progress');
   const [plan] = useGlobal('plan'); //will be constant here
   const { rowData, section, passage, setSelected } = usePassageDetailContext();
@@ -195,56 +191,14 @@ export function AddResourceWizard({
     ? `${planRec.attributes.slug}resource`
     : 'resource';
 
-  const resourceType = useMemo(() => {
-    const resourceType = artifactTypes.find(
-      (t) =>
-        t.attributes?.typename === 'resource' &&
-        Boolean(t?.keys?.remoteId) === !offlineOnly
-    );
-    return resourceType?.id;
-  }, [artifactTypes, offlineOnly]);
-
-  const projResourceType = useMemo(() => {
-    const resourceType = artifactTypes.find(
-      (t) =>
-        t.attributes?.typename === 'projectresource' &&
-        Boolean(t?.keys?.remoteId) === !offlineOnly
-    );
-    return resourceType?.id;
-  }, [artifactTypes, offlineOnly]);
+  const { resourceType, projResourceType } = useResourceArtifactTypes();
 
   const isPassageResource = () =>
     resourceKindRef.current === ResourceTypeEnum.passageResource;
   const isProjectResource = () =>
     resourceKindRef.current === ResourceTypeEnum.projectResource;
 
-  const passDesc = useMemo(
-    () =>
-      passageTypeFromRef(passage?.attributes?.reference) ===
-      PassageTypeEnum.NOTE
-        ? t.noteResource
-        : t.passageResource,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [passage]
-  );
-
-  const getSectionType = () => {
-    const level = section.attributes?.level;
-    if (level === SheetLevel.Book) return 'BOOK';
-    if (level === SheetLevel.Movement) return 'MOVE';
-    return undefined;
-  };
-
-  const sectDesc = useMemo(
-    () =>
-      getSectionType() === PassageTypeEnum.BOOK
-        ? t.bookResource
-        : getSectionType() === PassageTypeEnum.MOVEMENT
-          ? t.movementResource
-          : getOrganizedBy(true),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [section]
-  );
+  const { sectDesc, passDesc } = useResourceScopeLabels();
 
   const resourcePendingRestore = useCallback(() => {
     if (resourceKindRef.current === ResourceTypeEnum.projectResource) {
