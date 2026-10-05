@@ -19,8 +19,7 @@ Most of the development happens in the `develop` branch. Feature branches should
 - [Running the Application](#running-the-application)
 - [Testing the Application](#testing-the-application)
 - [Linting and Formatting](#linting-and-formatting)
-- [Building the Electron Desktop App](#building-the-electron-desktop-app)
-- [Building the Web App](#building-the-web-app)
+- [Building the Application](#building-the-application)
 - [Generating Logo Assets](#generating-logo-assets)
 - [Troubleshooting](#troubleshooting)
 
@@ -138,7 +137,18 @@ Running end-to-end tests on the Electron desktop app requires setting `VITE_TEST
 
 We use ESLint for linting and Prettier for code formatting. To run the linter, use `npm run lint`. To format the code, use `npm run format`.
 
-## Building the Electron Desktop App
+## Building the Application
+
+### Web App
+
+```bash
+cd web
+npm run build
+```
+
+The web app (with its PWA service worker) is written to `web/dist/`.
+
+### Electron Desktop App
 
 ```bash
 # For Windows
@@ -152,17 +162,6 @@ npm run build:linux
 ```
 
 The renderer bundle is written to `dist/`, the main and preload bundles to `dist-electron/`, and installers to `release/<version>/`.
-
-## Building the Web App
-
-```bash
-cd web
-npm run build
-```
-
-The web app (with its PWA service worker) is written to `web/dist/`.
-
-In order to test and debug web app, launch visual studio code from the `web` folder. (There is a readme there with the commands to use.)
 
 ## Generating Logo Assets
 
