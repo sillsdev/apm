@@ -39,7 +39,7 @@ import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
 import { OrganizationSchemeD } from '../model/organizationScheme';
 import { PlanContext } from '../context/PlanContext';
 import { useGlobal } from '../context/useGlobal';
-import { pad2 } from '../utils/pad2';
+import { sequencePad, sequenceSortKey } from '../utils/sort';
 import {
   related,
   sectionDescription,
@@ -320,10 +320,7 @@ export function AssignmentTable() {
       .sort(sectionCompare);
 
     plansections.forEach(function (section) {
-      const sort = (section.attributes?.sequencenum || 0)
-        .toFixed(2)
-        .toString()
-        .padStart(6, '0');
+      const sort = sequencePad(section.attributes?.sequencenum || 0);
       sectionRow = {
         id: id++,
         recId: section.id as string,
@@ -347,7 +344,10 @@ export function AssignmentTable() {
             scheme: '',
             passages: '',
             parentId: section.id,
-            sort: `${sort}.${pad2(passage.attributes.sequencenum)}`,
+            sort: sequenceSortKey(
+              section.attributes?.sequencenum || 0,
+              passage.attributes.sequencenum
+            ),
           } as IRow);
         });
       }

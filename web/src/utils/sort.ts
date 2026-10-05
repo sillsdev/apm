@@ -17,6 +17,20 @@ export function strNumCompare(a: string, b: string): number {
 export function sortChapters(chapters: Iterable<string>): string[] {
   return Array.from(chapters).sort(strNumCompare);
 }
+
+/**
+ * Zero-pads a (possibly fractional) sequence number so a plain string sort
+ * stays numeric — e.g. 10 sorts after 2, not before (the TT-7588 bug). Scaled
+ * by 1000 to keep up to three fractional digits (inserted rows).
+ */
+export const sequencePad = (n: number): string =>
+  Math.round(Math.max(n, 0) * 1000)
+    .toString()
+    .padStart(8, '0');
+
+/** Sort key ordering rows by section sequence, then passage sequence. */
+export const sequenceSortKey = (secNum: number, pasNum: number): string =>
+  `${sequencePad(secNum)}.${sequencePad(pasNum)}`;
 export function strCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
