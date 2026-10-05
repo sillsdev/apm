@@ -14,6 +14,8 @@ const RECORD_KEY = 'F9,CTRL+9';
 
 let capturedOnWSReady:
   ((duration: number, loadingAnother: boolean) => void) | undefined;
+let capturedOnWSRegion:
+  ((count: number, newRegion: boolean) => void) | undefined;
 
 const waveSurferMock = {
   wsLoad: jest.fn(),
@@ -34,6 +36,9 @@ const waveSurferMock = {
   wsLoopRegion: jest.fn(() => false),
   wsRegionDelete: jest.fn(async () => true),
   wsRegionReplace: jest.fn(),
+  wsCopyRegion: jest.fn(() => true),
+  wsPaste: jest.fn(async () => true),
+  wsHasClipboard: jest.fn(() => false),
   wsUndo: jest.fn(),
   wsInsertAudio: jest.fn(async () => 0),
   wsFillPx: jest.fn(() => 100),
@@ -85,9 +90,13 @@ jest.mock('../crud/useWaveSurfer', () => ({
   useWaveSurfer: (
     _allowSegment: unknown,
     _container: unknown,
-    onReady: (duration: number, loadingAnother: boolean) => void
+    onReady: (duration: number, loadingAnother: boolean) => void,
+    _onLoadError: unknown,
+    _onProgress: unknown,
+    onRegion: (count: number, newRegion: boolean) => void
   ) => {
     capturedOnWSReady = onReady;
+    capturedOnWSRegion = onRegion;
     return waveSurferMock;
   },
 }));
@@ -126,6 +135,9 @@ jest.mock('react-redux', () => ({
     stopTip: 'Stop {0}',
     recordTip: 'Record {0}',
     clearRecordingTip: 'Clear',
+    copyRegion: 'Copy [{0}]',
+    cutRegion: 'Cut [{0}]',
+    pasteRegion: 'Paste [{0}]',
     reduceNoise: 'Reduce noise',
     downloadMedia: 'Download',
     microphoneDisconnected:
@@ -319,6 +331,64 @@ describe('WSAudioPlayer record hotkeys', () => {
     );
 
     expect(mockUnsubscribe).toHaveBeenCalledWith(RECORD_KEY);
+  });
+
+  const latestHotkey = (key: string) => {
+    const calls = mockSubscribe.mock.calls.filter((call) => call[0] === key);
+    return calls[calls.length - 1][1] as () => boolean;
+  };
+
+  it('copies and pastes from the record hotkeys', () => {
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(false);
+    render(<WSAudioPlayer {...defaultProps} />);
+
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    expect(latestHotkey('CTRL+C')()).toBe(true);
+    expect(waveSurferMock.wsCopyRegion).toHaveBeenCalled();
+    expect(latestHotkey('CTRL+V')()).toBe(true);
+    expect(waveSurferMock.wsPaste).toHaveBeenCalled();
+
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+    act(() => {
+      capturedOnWSRegion?.(1, true);
+    });
+    expect(latestHotkey('CTRL+X')()).toBe(true);
+    expect(waveSurferMock.wsRegionDelete).toHaveBeenCalled();
+  });
+
+  it('does not copy or paste while a text field is focused', () => {
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSRegion?.(1, true);
+    });
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+
+    input.remove();
+  });
+
+  it('unsubscribes copy and paste when allowRecord is false', () => {
+    const { rerender } = render(<WSAudioPlayer {...defaultProps} />);
+    rerender(
+      <WSAudioPlayer {...defaultProps} allowRecord={false} loading={false} />
+    );
+
+    expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+C');
+    expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+X');
+    expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+V');
   });
 
   it('shows loading overlay when mediaId is set and loading', () => {

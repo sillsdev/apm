@@ -2069,7 +2069,8 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "clearRecordingTip": string;
     "convertVoiceAi": string;
     "clear": string;
-    "deleteRegion": string;
+    "copyRegion": string;
+    "cutRegion": string;
     "fasterTip": string;
     "loopoff": string;
     "loopon": string;
@@ -2081,6 +2082,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "normalize": string;
     "normalizeFail": string;
     "normalizeInProgress": string;
+    "pasteRegion": string;
     "pauseTip": string;
     "playTip": string;
     "prevRegion": string;

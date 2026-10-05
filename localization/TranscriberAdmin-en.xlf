@@ -10588,9 +10588,15 @@
             <target/>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRegion">
+      <unit id="wsAudioPlayer.copyRegion">
          <segment>
-            <source>Delete Region</source>
+            <source>Copy [{0}]</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.cutRegion">
+         <segment>
+            <source>Cut [{0}]</source>
             <target/>
          </segment>
       </unit>
@@ -10657,6 +10663,12 @@
       <unit id="wsAudioPlayer.normalizeInProgress">
          <segment>
             <source>Audio loudness normalization In Progress...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.pasteRegion">
+         <segment>
+            <source>Paste [{0}]</source>
             <target/>
          </segment>
       </unit>
