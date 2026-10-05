@@ -1,84 +1,93 @@
 # Audio Project Manager
 
-An application for desktop and web with Vite using React and TypeScript. This repository contains a simple monorepo using npm. The `web` folder is its own package that builds the web app with Vite. The root package builds the desktop app for Windows, Linux or a Mac with Vite and [vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron), using `web` as the UI and `electron/` for the main and preload processes; [electron-builder](https://www.electron.build) (`electron-builder.json5`) packages it into `release/`.
+This is the repository for the [Audio Project Manager](https://software.sil.org/audioprojectmanager/) application, written in React and TypeScript and built using Vite.
 
-Desktop builds based on the [electron-vite react-ts template](https://electron-vite.github.io/)
+The repository is an npm monorepo with two packages:
 
-## Recommended IDE Setup
+- **`web/`** contains the React UI and its own package and configuration. It builds the web app using Vite.
+- **The root folder** contains the package and configuration for the Electron desktop app. It uses `web/` as the UI and `electron/` for the main and preload processes. [vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron) builds both together, and [electron-builder](https://www.electron.build) (configured in `electron-builder.json5`) packages the result into installers in `release/`.
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+The desktop build is based on the [electron-vite react-ts template](https://electron-vite.github.io/).
 
-## Project Setup
+We recommend using Visual Studio Code with the [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) extensions for a consistent development experience.
 
-### Install
+Most of the development happens in the `develop` branch. Feature branches should be created off of `develop` and merged back into it when ready.
 
-Node and npm versions are pinned via [mise](https://mise.jdx.dev) in `mise.toml`
-(it applies to both the root and `web`). Install mise first if you don't have it:
+## Table of Contents
 
-- Windows: `winget install jdx.mise`
-- macOS/Linux: `curl https://mise.run | sh` (or `brew install mise`)
+- [Setting Up the Development Environment](#setting-up-the-development-environment)
+- [Running the Application](#running-the-application)
+- [Testing the Application](#testing-the-application)
+- [Linting and Formatting](#linting-and-formatting)
+- [Building the Electron Desktop App](#building-the-electron-desktop-app)
+- [Building the Web App](#building-the-web-app)
+- [Generating Logo Assets](#generating-logo-assets)
+- [Troubleshooting](#troubleshooting)
 
-After cloning, run `mise trust` and then `mise install`. If `npm --version` is not the pinned version, the npm bundled with
-Node is ahead of mise's on `PATH`; check with `mise which npm`. On Windows, add
-`%LOCALAPPDATA%\mise\shims` to your user `PATH` so tools that don't load your shell
-profile (VS Code tasks, Git Bash) also get the pinned versions.
+## Setting Up the Development Environment
 
-If you previously used Volta or installed Node system-wide, uninstall both first:
-their shims and `PATH` entries shadow mise's shims, so mise appears not to take
-effect. After removing them, also delete any leftover `%LOCALAPPDATA%\Volta`
-directory and `...\Volta\bin` entry from your user `PATH`.
+We use mise-en-place to pin node and npm versions. Please [install mise-en-place](https://mise.jdx.dev/getting-started.html) first if you don't have it. Make sure you also [activate it](https://mise.jdx.dev/getting-started.html#activate-mise).
 
-With the toolchain in place, install dependencies and stamp the build date:
+Install the pinned versions of node and npm using mise-en-place:
 
 ```bash
-$ npm install
-$ npm run stamp
+mise trust
+mise install
 ```
 
-Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
+If you are having issues with mise-en-place, please refer to the [Troubleshooting](#troubleshooting) section.
 
-Install the user interface
+With the pinned versions of node and npm installed, run:
 
 ```bash
-$ cd web
-$ npm install
+npm install
+npm run stamp
 ```
 
-Select a channel using ONE of these three commands (you'll need the appropriate secrets files in env-config).
+Install dependencies for the user interface:
 
 ```bash
-$ npm run devs
-$ npm run qas
-$ npm run prods
+cd web
+npm install
 ```
 
-### Development
+Select a channel using ONE of these three commands (you'll need the appropriate secrets files in `env-config/`):
 
 ```bash
-$ npm start
+npm run devs
+npm run qas
+npm run prods
 ```
 
-### Testing
+## Running the Application
+
+In the appropriate folder (`web/` for the web app, root for the Electron desktop app), run:
 
 ```bash
-$ npm run test:e2e
+npm start
+```
+
+## Testing the Application
+
+```bash
+npm run test:e2e
 ```
 
 This runs tests on the desktop app. It requires setting VITE_TEST_EMAIL1 and
 VITE_TEST_PW1 in your .env.local variables. As a minimum, it does a sanity test which launches and logs in using the credendials you give it.
 
 ```bash
-$ cd web
-$ npm run test
+cd web
+npm run test
 ```
 
 The `npm test` command runs the jest tests. There are also Cypress component tests for the renderer `npm run cy:run-ct` and end to end tests for the renderer `npm run cy:run-local` which at least authenticates the web app using credentials like above. For testing, it is also helpful to include VITE_TEST_CACHE=localstorage in your .env files so that it doesn't ask you to authenticate on each change. Also for Cypress there are commands to launch the component (`npm run cy:open-ct`) or e2e (`npm run cy:open-local`) tests in a browser so you can watch them run.
 
-Cypress tests require that the dev server is running on 3000. There are a couple of ways to do this. You can launch the dev server in one terminal using `npm start` or you can use docker to language the server in the background.
+Cypress tests require that the dev server is running on 3000. There are a couple of ways to do this. You can launch the dev server in one terminal using `npm start` or you can use docker to launch the server in the background.
 
 ```bash
-$ docker build -t apm-vite-renderer -f web/Dockerfile .
-$ docker run -d -p 3000:3000 --name apm-vite-renderer apm-vite-renderer
+docker build -t apm-vite-renderer -f web/Dockerfile .
+docker run -d -p 3000:3000 --name apm-vite-renderer apm-vite-renderer
 ```
 
 Once the dev server is running, you can run the tests using the commands described in the readme for `web` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
@@ -93,24 +102,42 @@ docker rmi -f apm-vite-renderer # forces removal of image
 
 Alternatively, you can use docker compose to run the entire test suite. It warms up with `npm run cy:docker:build` and the actual tests will run the second time using `npm run cy:docker`. (On Windows, Docker Desktop needs to be running to use docker and docker-compose).
 
-### lint - static check
+## Linting and Formatting
+
+We use ESLint for linting and Prettier for code formatting. To run the linter, use `npm run lint`. To format the code, use `npm run format`.
+
+## Building the Electron Desktop App
 
 ```bash
-$ npm run lint
+# For Windows
+npm run build:win
+
+# For macOS
+npm run build:mac
+
+# For Linux
+npm run build:linux
 ```
 
-### Format - reformat sources
+The renderer bundle is written to `dist/`, the main and preload bundles to `dist-electron/`, and installers to `release/<version>/`.
+
+## Building the Web App
 
 ```bash
-$ npm run format
+cd web
+npm run build
 ```
 
-### Generating Logo Assets
+The web app (with its PWA service worker) is written to `web/dist/`.
+
+In order to test and debug web app, launch visual studio code from the `web` folder. (There is a readme there with the commands to use.)
+
+## Generating Logo Assets
 
 All app logo assets are generated from a single source: `web/src/assets/apm-logo.svg`. To regenerate the assets, run this script from the root:
 
 ```bash
-$ npm run logoassets
+npm run logoassets
 ```
 
 This rewrites:
@@ -124,39 +151,32 @@ This rewrites:
 
 Only run this when the logo itself changes. Commit the regenerated files with the new logo, and never edit them by hand.
 
-Rasterizing requires Chrome or Chromium. The script defaults to the copy puppeteer downloaded. If that copy is missing or fails to launch, point it at an installed browser, for example (your path might be different):
+Rasterizing requires Chrome or Chromium. `npm install` skips puppeteer's browser download (see `.puppeteerrc.cjs`), so `npm run logoassets` downloads Chrome into `~/.cache/puppeteer` the first time it runs. If that download is interrupted, a later run can fail with "The browser folder ... exists but the executable ... is missing"; delete the folder named in the error and run the command again.
 
-    # Windows (PowerShell)
-    $ $env:PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"; npm run logoassets
-
-    # macOS
-    $ PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run logoassets
-
-    # Linux
-    $ PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome npm run logoassets
-
-### Build Desktop
+If the downloaded copy fails to launch, point the script at an installed browser, for example (your path might be different):
 
 ```bash
-# For windows
-$ npm run build:win
+# Windows (PowerShell)
+$env:PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"; npm run logoassets
 
-# For macOS
-$ npm run build:mac
+# macOS
+PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run logoassets
 
-# For Linux
-$ npm run build:linux
+# Linux
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome npm run logoassets
 ```
 
-The renderer bundle is written to `dist/`, the main and preload bundles to `dist-electron/`, and installers to `release/<version>/`.
+## Troubleshooting
 
-### Build Web
+### mise-en-place
+
+After installing the pinned versions of Node and npm using mise-en-place, check that your shell is using mise's shims by running:
 
 ```bash
-$ cd web
-$ npm run build
+mise which node
+mise which npm
 ```
 
-The web app (with its PWA service worker) is written to `web/dist/`.
+If you previously used Volta or installed Node system-wide, uninstall both first. Their shims and `PATH` entries shadow mise's shims, so mise appears not to take effect. On Windows, after removing them, also delete any leftover `%LOCALAPPDATA%\Volta` directory and `...\Volta\bin` entry from your user `PATH`.
 
-In order to test and debug web app, launch visual studio code from the `web` folder. (There is a readme there with the commands to use.)
+On Windows, add `%LOCALAPPDATA%\mise\shims` to your user `PATH` so tools that don't load your shell profile (VS Code tasks, Git Bash) also get the pinned versions.
