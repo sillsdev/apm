@@ -151,9 +151,7 @@ This rewrites:
 
 Only run this when the logo itself changes. Commit the regenerated files with the new logo, and never edit them by hand.
 
-Rasterizing requires Chrome or Chromium. `npm install` skips puppeteer's browser download (see `.puppeteerrc.cjs`), so `npm run logoassets` downloads Chrome into `~/.cache/puppeteer` the first time it runs. If that download is interrupted, a later run can fail with "The browser folder ... exists but the executable ... is missing"; delete the folder named in the error and run the command again.
-
-If the downloaded copy fails to launch, point the script at an installed browser, for example (your path might be different):
+Rasterizing requires Google Chrome or Chromium to be installed; `npm install` does not download a browser. The script finds Chrome in its standard install location. If it's installed somewhere else, set `PUPPETEER_EXECUTABLE_PATH` to the browser executable, for example (your path might be different):
 
 ```bash
 # Windows (PowerShell)
