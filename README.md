@@ -12,18 +12,28 @@ Desktop builds based on the [electron-vite react-ts template](https://electron-v
 
 ### Install
 
+Node and npm versions are pinned via [mise](https://mise.jdx.dev) in `mise.toml`
+(it applies to both the root and `web`). Install mise first if you don't have it:
+
+- Windows: `winget install jdx.mise`
+- macOS/Linux: `curl https://mise.run | sh` (or `brew install mise`)
+
+After cloning, run `mise trust` and then `mise install`. If `npm --version` is not the pinned version, the npm bundled with
+Node is ahead of mise's on `PATH`; check with `mise which npm`. On Windows, add
+`%LOCALAPPDATA%\mise\shims` to your user `PATH` so tools that don't load your shell
+profile (VS Code tasks, Git Bash) also get the pinned versions.
+
+If you previously used Volta or installed Node system-wide, uninstall both first:
+their shims and `PATH` entries shadow mise's shims, so mise appears not to take
+effect. After removing them, also delete any leftover `%LOCALAPPDATA%\Volta`
+directory and `...\Volta\bin` entry from your user `PATH`.
+
+With the toolchain in place, install dependencies and stamp the build date:
+
 ```bash
 $ npm install
 $ npm run stamp
 ```
-
-Note:
-Node and npm versions are pinned via [mise](https://mise.jdx.dev) in `mise.toml`
-(it applies to both the root and `web`). After cloning, run `mise trust` and then
-`mise install`. If `npm --version` is not the pinned version, the npm bundled with
-Node is ahead of mise's on `PATH`; check with `mise which npm`. On Windows, add
-`%LOCALAPPDATA%\mise\shims` to your user `PATH` so tools that don't load your shell
-profile (VS Code tasks, Git Bash) also get the pinned versions.
 
 Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
 
