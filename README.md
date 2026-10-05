@@ -69,30 +69,53 @@ npm start
 
 ## Testing the Application
 
-```bash
-npm run test:e2e
-```
+### Jest Tests
 
-This runs tests on the desktop app. It requires setting VITE_TEST_EMAIL1 and
-VITE_TEST_PW1 in your .env.local variables. As a minimum, it does a sanity test which launches and logs in using the credendials you give it.
+Jest tests are meant to verify the business logic of the web application.
 
 ```bash
 cd web
 npm run test
 ```
 
-The `npm test` command runs the jest tests. There are also Cypress component tests for the renderer `npm run cy:run-ct` and end to end tests for the renderer `npm run cy:run-local` which at least authenticates the web app using credentials like above. For testing, it is also helpful to include VITE_TEST_CACHE=localstorage in your .env files so that it doesn't ask you to authenticate on each change. Also for Cypress there are commands to launch the component (`npm run cy:open-ct`) or e2e (`npm run cy:open-local`) tests in a browser so you can watch them run.
+### Component Tests
 
-Cypress tests require that the dev server is running on 3000. There are a couple of ways to do this. You can launch the dev server in one terminal using `npm start` or you can use docker to launch the server in the background.
+```bash
+cd web
+
+# Headless mode (runs tests without opening a browser)
+npm run cy:run-ct
+
+# Open mode (runs tests and opens a browser to show them)
+npm run cy:open-ct
+```
+
+### End-to-End Tests
+
+#### Web App
+
+```bash
+cd web
+
+# Headless mode (runs tests without opening a browser)
+npm run cy:run-local
+
+# Open mode (runs tests and opens a browser to show them)
+npm run cy:open-local
+```
+
+Running end-to-end tests on the web app requires the dev server to be running on port 3000. It may also be helpful to set `VITE_TEST_CACHE=localstorage` in your .env files so that it doesn't ask you to authenticate on each change.
+
+##### Using Docker
+
+As an alternative to running the dev server manually, you can use Docker to launch the server in the background before running Cypress end-to-end tests:
 
 ```bash
 docker build -t apm-vite-renderer -f web/Dockerfile .
 docker run -d -p 3000:3000 --name apm-vite-renderer apm-vite-renderer
 ```
 
-Once the dev server is running, you can run the tests using the commands described in the readme for `web` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
-
-When finished, the container can be deleted using the `Docker Desktop` or with the command
+When finished, the container can be deleted using the Docker Desktop or with the command:
 
 ```bash
 docker stop apm-vite-renderer # stops container from running
@@ -101,6 +124,15 @@ docker rmi -f apm-vite-renderer # forces removal of image
 ```
 
 Alternatively, you can use docker compose to run the entire test suite. It warms up with `npm run cy:docker:build` and the actual tests will run the second time using `npm run cy:docker`. (On Windows, Docker Desktop needs to be running to use docker and docker-compose).
+
+#### Electron Desktop App
+
+```bash
+# In the root folder
+npm run test:e2e
+```
+
+Running end-to-end tests on the Electron desktop app requires setting `VITE_TEST_EMAIL1` and `VITE_TEST_PW1` in your .env files.
 
 ## Linting and Formatting
 
