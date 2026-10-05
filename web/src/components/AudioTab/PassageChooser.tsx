@@ -76,7 +76,10 @@ export const PassageChooser = (props: IProps) => {
         width: MinNameWidth + addWidth / 2,
         align: 'left',
         cellClassName: 'word-wrap',
-        type: 'singleSelect',
+        // Sort (incl. header-click) by the section/passage sequence key rather
+        // than the displayed reference text, which would collate wrong (e.g.
+        // "1:10" before "1:2") (TT-7588).
+        valueGetter: (_value, row: IPRow) => row.sort,
         renderCell: refCell,
       },
       {
