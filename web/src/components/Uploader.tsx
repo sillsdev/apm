@@ -83,8 +83,6 @@ interface IProps {
   validationMessage?: string | undefined;
   /** Hide the upload dialog's bottom "Cancel" button (cancel via the dialog X). */
   hideUploadCancel?: boolean | undefined;
-  /** Prompt before discarding on close when a file/recording is staged. */
-  confirmOnClose?: boolean | undefined;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   /**
@@ -94,7 +92,9 @@ interface IProps {
    * actual upload is then driven through `importList`.
    */
   deferUpload?: boolean | undefined;
-  onStageFiles?: ((files: File[]) => void | Promise<void>) | undefined;
+  /** `recorded` is true when the staged file is a take from the record tab. */
+  onStageFiles?:
+    ((files: File[], recorded?: boolean) => void | Promise<void>) | undefined;
   /** Pre-select these files when the dialog opens (see MediaUploadContent) —
    *  used to restore a staged file after the Add Resource wizard's Back. */
   initialFiles?: File[] | undefined;
@@ -133,7 +133,6 @@ export const Uploader = (props: IProps) => {
     uploadDialogBp,
     validationMessage,
     hideUploadCancel,
-    confirmOnClose,
     pendingRestore,
     deferUpload,
     onStageFiles,
@@ -556,7 +555,13 @@ export const Uploader = (props: IProps) => {
           team={team}
           uploadType={uploadType || UploadType.Media}
           uploadMethod={effectiveUploadMethod}
-          onStageFile={deferring ? onStageFiles : undefined}
+          // Only the record tab calls onStageFile (the upload tab stages via
+          // uploadMethod), so anything staged here is a recorded take.
+          onStageFile={
+            deferring
+              ? (files) => onStageFiles?.(files, /* recorded */ true)
+              : undefined
+          }
           multiple={multiple}
           onFiles={onFiles}
           initialFiles={initialFiles}
@@ -567,7 +572,6 @@ export const Uploader = (props: IProps) => {
           validationMessage={validationMessage}
           pendingRestore={pendingRestore}
           beforeUpload={beforeUpload}
-          confirmOnClose={confirmOnClose}
         />
       )}
       {!audioUploadOrRecord && !hasImport && (
@@ -580,7 +584,6 @@ export const Uploader = (props: IProps) => {
           uploadMethod={uploadMedia}
           cancelMethod={uploadCancel}
           hideCancel={hideUploadCancel}
-          confirmOnClose={confirmOnClose}
           metaData={metaData}
           ready={ready}
           speaker={performedBy}

@@ -98,8 +98,6 @@ interface IProps {
   validationMessage?: string | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
-  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
-  confirmOnClose?: boolean | undefined;
   /**
    * Forwarded to MediaRecord (the record tab): when set, a saved take is handed
    * here as a staged file rather than uploaded — the deferred general-resource
@@ -139,7 +137,6 @@ function PassageRecordDlg(props: IProps) {
     validationMessage,
     pendingRestore,
     beforeUpload,
-    confirmOnClose,
     onStageFile,
     initialFiles,
     keepFilesAfterSubmit,
@@ -164,6 +161,10 @@ function PassageRecordDlg(props: IProps) {
   const [, setCanCancel] = useState(false);
   const [hasRights, setHasRights] = useState(false);
   const [recording, setRecording] = useState(false);
+  // A take has been recorded since the record tab opened. Tracked separately
+  // from canSave, which stays false while a take is still processing (or is
+  // too big to save), so closing then must still confirm.
+  const [hasTake, setHasTake] = useState(false);
   const [dialogWidth, setDialogWidth] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -173,6 +174,7 @@ function PassageRecordDlg(props: IProps) {
     if (visible) {
       setMode('upload');
       setRecording(false);
+      setHasTake(false);
       setShowConfirm(false);
     }
   }, [visible]);
@@ -188,6 +190,7 @@ function PassageRecordDlg(props: IProps) {
       // SpeakerName can't re-derive them from the rights list on reopen.
       setHasRights(Boolean(speaker?.trim()));
       setRecording(false);
+      setHasTake(false);
     }
     // Only on tab entry: re-running on speaker change would override
     // SpeakerName reporting no rights for a newly chosen, unlisted name.
@@ -236,8 +239,9 @@ function PassageRecordDlg(props: IProps) {
     if (reason === 'backdropClick') return;
     // Can't close mid-recording (matches handleCancel's own guard).
     if (recording) return;
-    // Always confirm first: this is a wizard step and closing discards it.
-    if (confirmOnClose) {
+    // Confirm only when a take on the record tab would be lost; a file upload
+    // is cheap to redo, so it never prompts.
+    if (mode === 'record' && hasTake) {
       setShowConfirm(true);
       return;
     }
@@ -335,7 +339,10 @@ function PassageRecordDlg(props: IProps) {
                 allowZoom={true}
                 allowNoNoise={true}
                 allowDeltaVoice={true}
-                onRecording={setRecording}
+                onRecording={(isRecording) => {
+                  setRecording(isRecording);
+                  if (isRecording) setHasTake(true);
+                }}
                 pendingRestore={pendingRestore}
                 beforeUpload={beforeUpload}
                 onStageFile={onStageFile}

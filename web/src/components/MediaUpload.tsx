@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { IMediaUploadStrings, IPassageDetailArtifactsStrings } from '../model';
-import { mediaUploadSelector, resourceSelector } from '../selector';
+import { IMediaUploadStrings } from '../model';
+import { mediaUploadSelector } from '../selector';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import MediaUploadContent from './MediaUploadContent';
 import { useMobile } from '../utils';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
-import Confirm from './AlertDialog';
 
 export const UriLinkType = 'text/uri-list';
 export const MarkDownType = 'text/markdown';
@@ -40,8 +38,6 @@ interface IProps {
   // I think we are moving towards using the dialog's X as the standard way to cancel instead of an explicit Cancel button.
   // hopefully in the future we can remove the explicit Cancel button entirely.
   hideCancel?: boolean | undefined;
-  /** When set, always prompt to confirm before discarding on close (X/backdrop). */
-  confirmOnClose?: boolean | undefined;
   /** Pre-select these files when the dialog opens (see MediaUploadContent). */
   initialFiles?: File[] | undefined;
   /** Keep the selection after submit instead of clearing it (see MediaUploadContent). */
@@ -70,23 +66,11 @@ function MediaUpload(props: IProps) {
     audioOnly,
     validationMessage,
     hideCancel,
-    confirmOnClose,
     initialFiles,
     keepFilesAfterSubmit,
   } = props;
   const { isMobile } = useMobile();
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
-  const rt: IPassageDetailArtifactsStrings = useSelector(
-    resourceSelector,
-    shallowEqual
-  );
-  const [showConfirm, setShowConfirm] = useState(false);
-  // The dialog stays mounted across open/close, so a discard prompt left showing
-  // when `visible` flips off externally would reappear over the next upload.
-  // Clear it whenever the dialog is hidden.
-  useEffect(() => {
-    if (!visible) setShowConfirm(false);
-  }, [visible]);
   const title = [
     t.title,
     t.resourceTitle,
@@ -102,19 +86,11 @@ function MediaUpload(props: IProps) {
     '', // Burrito
     t.pdfResourceTitle,
   ];
-  const doCancel = () => {
+  const handleCancel = () => {
     if (cancelMethod) {
       cancelMethod();
     }
     onVisible(false);
-  };
-  // The BigDialog X routes here; always confirm before discarding this step.
-  const handleCancel = () => {
-    if (confirmOnClose) {
-      setShowConfirm(true);
-      return;
-    }
-    doCancel();
   };
 
   return (
@@ -147,20 +123,6 @@ function MediaUpload(props: IProps) {
           initialFiles={initialFiles}
           keepFilesAfterSubmit={keepFilesAfterSubmit}
         />
-        {showConfirm && (
-          <Confirm
-            title={rt.confirmCloseTitle}
-            text={rt.confirmClose}
-            no={rt.keepOpen}
-            primaryButton="no"
-            yes={rt.discardAndClose}
-            noResponse={() => setShowConfirm(false)}
-            yesResponse={() => {
-              setShowConfirm(false);
-              doCancel();
-            }}
-          />
-        )}
       </>
     </BigDialog>
   );
