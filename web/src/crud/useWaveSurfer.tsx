@@ -962,6 +962,8 @@ export function useWaveSurfer(
     if (!clip || !wavesurferRef.current || recordingRef.current) return false;
     const region = currentRegion();
     const originalBuffer = blobAudioRef.current;
+    if (originalBuffer && clip.sampleRate !== originalBuffer.sampleRate)
+      return false;
     const span = pasteSpan(
       region
         ? {
@@ -972,11 +974,10 @@ export function useWaveSurfer(
       progress(),
       originalBuffer
     );
+    // No snapshot means the waveform was empty. Undo clears the pasted clip.
     const snapshot = copyOriginal();
-    if (snapshot) {
-      setUndoBuffer(snapshot);
-      onCanUndo(true);
-    }
+    setUndoBuffer(snapshot);
+    onCanUndo(true);
     region?.remove();
     if (span.end === undefined) {
       await loadDecoded(clip, clip.length / clip.sampleRate);
