@@ -1,9 +1,12 @@
 import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 import type { JestConfigWithTsJest } from 'ts-jest';
 
-import { config as base } from './jest.config';
+import { config as base } from './jest.config.ts';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Per-pull-request smoke subset of the jest suite.
 //
