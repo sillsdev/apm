@@ -1,13 +1,15 @@
 /**
  * Regenerate every app logo asset from web/src/assets/apm-logo.svg
  *
- * Rasterizing needs a Chrome/Chromium. The script uses the one puppeteer
- * downloaded; set PUPPETEER_EXECUTABLE_PATH to point at another (e.g. an
- * installed Google Chrome) when that download is missing or broken.
+ * Rasterizing needs a Chrome/Chromium. `npm install` skips puppeteer's browser
+ * download (see .puppeteerrc.cjs), so the first run downloads it; set
+ * PUPPETEER_EXECUTABLE_PATH to point at another (e.g. an installed Google
+ * Chrome) when that download is missing or broken.
  *
  * Outputs are committed, so this only needs re-running when the logo changes.
  */
 
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -384,7 +386,26 @@ const MAX_SUPERSAMPLE = 32;
 const supersampleFor = (size) =>
   Math.max(1, Math.min(MAX_SUPERSAMPLE, Math.floor(SUPERSAMPLE_TARGET / size)));
 
+/** Download puppeteer's pinned Chrome unless it, or an override, is present. */
+function ensureBrowser() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) return;
+  if (fs.existsSync(puppeteer.executablePath())) return;
+  console.log('Downloading Chrome for puppeteer (first run only)...');
+  execFileSync(
+    process.execPath,
+    [
+      require.resolve('puppeteer/internal/node/cli.js'),
+      'browsers',
+      'install',
+      'chrome',
+    ],
+    { stdio: 'inherit' }
+  );
+}
+
 async function main() {
+  ensureBrowser();
+
   const svg = fs.readFileSync(SOURCE, 'utf8');
   const dataUri = `data:image/svg+xml;base64,${Buffer.from(cropped(svg)).toString('base64')}`;
 
