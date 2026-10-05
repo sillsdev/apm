@@ -1,16 +1,13 @@
 import { DOMParser } from '@xmldom/xmldom';
+import { readChapter } from './readChapter';
+
 const domParser = new DOMParser();
 
 describe('readChapter', () => {
-  // see: https://stackoverflow.com/questions/41885841/how-can-i-mock-the-javascript-window-object-using-jest
-  let windowSpy: any;
-
-  beforeEach(() => {
-    windowSpy = jest.spyOn(global, 'window', 'get');
-  });
+  const originalApi = window.api;
 
   afterEach(() => {
-    windowSpy.mockRestore();
+    window.api = originalApi;
   });
 
   it('should read a chapter', async () => {
@@ -27,10 +24,7 @@ describe('readChapter', () => {
       temp: jest.fn().mockResolvedValue('temp'),
       read: jest.fn().mockResolvedValue('usx'),
     };
-
-    windowSpy.mockImplementation(() => ({ api: mockElectron }));
-
-    const { readChapter } = await import('./readChapter');
+    window.api = mockElectron as unknown as typeof window.api;
 
     // Act
     const result = await readChapter(paths, ptProjName);

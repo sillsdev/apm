@@ -1,7 +1,7 @@
 import { DOMParser } from '@xmldom/xmldom';
 import { IExecResult } from '../../model';
 import { MainAPI } from '@model/main-api';
-const ipc = window?.api as MainAPI;
+const ipc = () => window?.api as MainAPI | undefined;
 const domParser = new DOMParser();
 
 export const readChapter = async (
@@ -13,7 +13,7 @@ export const readChapter = async (
   },
   ptProjName: string
 ) => {
-  const temp = await ipc?.temp();
+  const temp = await ipc()?.temp();
   if (!temp) throw new Error('Unable to find temp directory.'); //this is app.getPath('temp')
   const { stdout } = await paths.program([
     '-r',
@@ -25,6 +25,6 @@ export const readChapter = async (
   ]);
   if (stdout) console.log(stdout);
 
-  const usx: string = (await ipc?.read(paths.chapterFile, 'utf-8')) as string;
+  const usx: string = (await ipc()?.read(paths.chapterFile, 'utf-8')) as string;
   return domParser.parseFromString(usx);
 };
