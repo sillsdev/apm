@@ -151,7 +151,7 @@ This rewrites:
 
 Only run this when the logo itself changes. Commit the regenerated files with the new logo, and never edit them by hand.
 
-Rasterizing requires Google Chrome or Chromium to be installed; `npm install` does not download a browser. The script finds Chrome in its standard install location. If it's installed somewhere else, set `PUPPETEER_EXECUTABLE_PATH` to the browser executable, for example (your path might be different):
+Rasterizing requires Google Chrome or Chromium to be installed. The script finds Chrome in its standard install location. If it's installed somewhere else, set `PUPPETEER_EXECUTABLE_PATH` to the browser executable, for example (your path might be different):
 
 ```bash
 # Windows (PowerShell)
