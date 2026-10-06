@@ -1,4 +1,9 @@
-import { normalizeReference } from './sort';
+import {
+  normalizeReference,
+  sequencePad,
+  sequenceSortKey,
+  strCompare,
+} from './sort';
 
 describe('normalizeReference', () => {
   describe('single verse references', () => {
@@ -201,5 +206,86 @@ describe('normalizeReference', () => {
       const ref2 = normalizeReference('Lk', '1:10');
       expect(ref1 < ref2).toBe(true);
     });
+  });
+});
+
+// A spread of positive whole numbers crossing every digit boundary, well past
+// 100000 and into the millions. The point of the key is that a plain string
+// sort stays numeric at ANY magnitude — e.g. 10 must sort after 2, not before,
+// and 100000 after 99999 (the overflow a fixed-width pad would get wrong).
+const SAMPLE = [
+  1, 2, 3, 5, 9, 10, 11, 19, 20, 99, 100, 101, 110, 199, 200, 999, 1000, 1001,
+  1010, 5000, 9999, 10000, 10001, 50000, 99999, 100000, 100001, 999999, 1000000,
+  1000001, 12345678, 99999999,
+];
+
+const asc = (a: string, b: string) => strCompare(a, b);
+
+describe('sequencePad', () => {
+  test.each([
+    [2, 10],
+    [9, 10],
+    [19, 20],
+    [99, 100],
+    [100, 101],
+    [199, 200],
+    [999, 1000],
+    [1001, 1010],
+    [9999, 10000],
+    [50000, 99999],
+    // Past the point a fixed 8-wide pad would overflow and reverse:
+    [99999, 100000],
+    [100000, 100001],
+    [999999, 1000000],
+    [1000000, 1000001],
+    [12345678, 99999999],
+    [1, 99999999],
+  ])('pads %i to sort before %i', (lo, hi) => {
+    expect(sequencePad(lo) < sequencePad(hi)).toBe(true);
+  });
+
+  test('string-sorting the keys matches numeric order across all magnitudes', () => {
+    const shuffled = [...SAMPLE].reverse();
+    const byKey = [...shuffled].sort((a, b) =>
+      asc(sequencePad(a), sequencePad(b))
+    );
+    const byNumber = [...SAMPLE].sort((a, b) => a - b);
+    expect(byKey).toEqual(byNumber);
+  });
+
+  test('equal numbers produce equal keys', () => {
+    expect(sequencePad(42)).toBe(sequencePad(42));
+    expect(asc(sequencePad(42), sequencePad(42))).toBe(0);
+  });
+});
+
+describe('sequenceSortKey', () => {
+  test('section number dominates passage number', () => {
+    // A huge passage in an earlier section still sorts before a tiny passage
+    // in a later section — even past the old fixed-width ceiling.
+    expect(sequenceSortKey(1, 99999) < sequenceSortKey(2, 1)).toBe(true);
+    expect(sequenceSortKey(9, 99999) < sequenceSortKey(10, 1)).toBe(true);
+    expect(sequenceSortKey(1, 9999999) < sequenceSortKey(2, 1)).toBe(true);
+  });
+
+  test('within a section, passages sort numerically', () => {
+    expect(sequenceSortKey(3, 2) < sequenceSortKey(3, 10)).toBe(true);
+    expect(sequenceSortKey(3, 99) < sequenceSortKey(3, 100)).toBe(true);
+    expect(sequenceSortKey(3, 99999) < sequenceSortKey(3, 100000)).toBe(true);
+  });
+
+  test('string-sorting (section, passage) keys matches numeric order', () => {
+    // Every pairing of a representative spread, including values past 100000.
+    const parts = [
+      1, 2, 9, 10, 11, 99, 100, 1000, 9999, 10000, 100000, 1000000,
+    ];
+    const pairs: Array<[number, number]> = [];
+    for (const sec of parts) for (const pas of parts) pairs.push([sec, pas]);
+
+    const byKey = [...pairs]
+      .reverse()
+      .sort((a, b) => asc(sequenceSortKey(...a), sequenceSortKey(...b)));
+    const byNumber = [...pairs].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    expect(byKey).toEqual(byNumber);
   });
 });

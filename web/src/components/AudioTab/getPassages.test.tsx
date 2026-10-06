@@ -39,7 +39,7 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
       sectionDesc: '  1\xa0\xa0Creation',
       reference: 'Gen 1:1',
       attached: 'N',
-      sort: '00001000.00001000',
+      sort: '041000.041000',
       book: 'Gen',
       chap: 1,
       beg: 1,
@@ -56,7 +56,7 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
 
     expect(result.chap).toBe(1);
     expect(result.beg).toBe(1);
-    expect(result.sort).toBe('00001000.00001000');
+    expect(result.sort).toBe('041000.041000');
   });
 
   it('should return parsed reference for Gen 1:1-3', () => {
@@ -69,7 +69,7 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
       sectionDesc: '  1\xa0\xa0Creation',
       reference: 'Gen 1:1-3',
       attached: 'N',
-      sort: '00001000.00001000',
+      sort: '041000.041000',
       book: 'Gen',
       chap: 1,
       beg: 1,
@@ -90,7 +90,7 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
       sectionDesc: '  1\xa0\xa0Creation',
       reference: 'Gen 1:26-2:3',
       attached: 'N',
-      sort: '00001000.00001000',
+      sort: '041000.041000',
       book: 'Gen',
       chap: 1,
       beg: 26,
@@ -124,8 +124,9 @@ describe('sequenceSortKey', () => {
     expect(sequenceSortKey(1, 99) < sequenceSortKey(2, 1)).toBe(true);
   });
 
-  it('handles fractional (inserted) sequence numbers', () => {
-    expect(sequenceSortKey(1, 1) < sequenceSortKey(1, 1.5)).toBe(true);
-    expect(sequenceSortKey(1, 1.5) < sequenceSortKey(1, 2)).toBe(true);
+  it('stays numeric for large values (no fixed-width overflow)', () => {
+    // A fixed zero-pad would reverse these once a value outgrew its width.
+    expect(sequenceSortKey(1, 99999) < sequenceSortKey(1, 100000)).toBe(true);
+    expect(sequenceSortKey(99999, 1) < sequenceSortKey(100000, 1)).toBe(true);
   });
 });

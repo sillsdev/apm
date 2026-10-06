@@ -19,14 +19,19 @@ export function sortChapters(chapters: Iterable<string>): string[] {
 }
 
 /**
- * Zero-pads a (possibly fractional) sequence number so a plain string sort
- * stays numeric — e.g. 10 sorts after 2, not before (the TT-7588 bug). Scaled
- * by 1000 to keep up to three fractional digits (inserted rows).
+ * Order-preserving string key for a non-negative
+ * sequence number: a 2-digit digit-count tag followed by the value scaled to
+ * three decimal places. The tag makes a larger number always produce a
+ * lexicographically larger key at ANY magnitude, so a plain string sort stays
+ * numeric and can't silently reverse — neither for small values padded too
+ * narrowly (the TT-7588 bug) nor for large values that overflow a fixed width
+ * (its mirror image). Negative sentinels (BookSeq/AltBkSeq) clamp to 0;
+ * callers that use them filter to `sequencenum > 0` first (e.g. AssignmentTable).
  */
-export const sequencePad = (n: number): string =>
-  Math.round(Math.max(n, 0) * 1000)
-    .toString()
-    .padStart(8, '0');
+export const sequencePad = (n: number): string => {
+  const scaled = Math.round(Math.max(n, 0) * 1000).toString();
+  return `${scaled.length.toString().padStart(2, '0')}${scaled}`;
+};
 
 /** Sort key ordering rows by section sequence, then passage sequence. */
 export const sequenceSortKey = (secNum: number, pasNum: number): string =>
