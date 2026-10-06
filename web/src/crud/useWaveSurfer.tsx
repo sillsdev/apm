@@ -24,6 +24,7 @@ import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions, useMobile } from '../utils';
 import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
+import { pasteSpan, sliceAudioBuffer } from './audioClipboard';
 
 const noop = () => {};
 
@@ -65,7 +66,8 @@ export function useWaveSurfer(
   /** A region was clicked, as opposed to selected by the playhead. */
   onSegmentClick?: (region: IRegion) => void,
   /** Whether the segment at a sorted index already has a recording (TT-7666). */
-  isSegmentRecorded?: (sortedIndex: number) => boolean
+  isSegmentRecorded?: (sortedIndex: number) => boolean,
+  onCanPaste: (canPaste: boolean) => void = noop
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -106,6 +108,8 @@ export function useWaveSurfer(
   const [playerUrl, setPlayerUrl] = useState<string | undefined>();
   const blobRef = useRef<Blob | undefined>(undefined);
   const blobAudioRef = useRef<AudioBuffer | undefined>(undefined);
+  /** Copied region samples. Independent of the OS clipboard; cleared on unmount. */
+  const clipboardRef = useRef<AudioBuffer | undefined>(undefined);
   const positionRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
   /** Bumped on wsStopRecord so in-flight preview loads cannot overwrite the final take. */
@@ -570,6 +574,7 @@ export function useWaveSurfer(
 
       // Clear audio buffer references
       blobAudioRef.current = undefined;
+      clipboardRef.current = undefined;
       setUndoBuffer(undefined);
 
       // Clear blob references and revoke blob URLs
@@ -790,25 +795,14 @@ export function useWaveSurfer(
 
     const originalBuffer = blobAudioRef.current;
     if (!originalBuffer) return wsBlob();
-    const { numberOfChannels, sampleRate } = originalBuffer;
-    // Calculate the number of frames for the region
-    const startFrame = Math.floor(start * sampleRate);
-    const endFrame = Math.floor(end * sampleRate);
-    const frameCount = endFrame - startFrame;
-
-    // Create a new buffer for the region
-    const regionBuffer = audioContext().createBuffer(
-      numberOfChannels,
-      frameCount,
-      sampleRate
+    const regionBuffer = sliceAudioBuffer(
+      originalBuffer,
+      start,
+      end,
+      (channels, length, sampleRate) =>
+        audioContext().createBuffer(channels, length, sampleRate)
     );
-
-    // Copy the audio data for the region
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const originalData = originalBuffer.getChannelData(channel);
-      const regionData = regionBuffer.getChannelData(channel);
-      regionData.set(originalData.subarray(startFrame, endFrame));
-    }
+    if (!regionBuffer) return wsBlob();
     return await audioBufferToWavBlob(regionBuffer);
   };
 
@@ -936,6 +930,61 @@ export function useWaveSurfer(
       logError(Severity.error, errorReporter, error);
       throw error;
     }
+  };
+
+  const wsHasClipboard = () => clipboardRef.current !== undefined;
+
+  /** Copy the current region's samples. Leaves the audio and undo stack alone. */
+  const wsCopyRegion = (): boolean => {
+    if (recordingRef.current) return false;
+    const region = currentRegion();
+    const originalBuffer = blobAudioRef.current;
+    if (!region || !originalBuffer) return false;
+    const clip = sliceAudioBuffer(
+      originalBuffer,
+      trimTo(region.start ?? 0, 3),
+      trimTo(region.end ?? 0, 3),
+      (channels, length, sampleRate) =>
+        audioContext().createBuffer(channels, length, sampleRate)
+    );
+    if (!clip) return false;
+    clipboardRef.current = clip;
+    onCanPaste(true);
+    return true;
+  };
+
+  /**
+   * Replace the current region, or insert at the playhead when none overlaps.
+   * Returns true when decoded audio was mutated.
+   */
+  const wsPaste = async (): Promise<boolean> => {
+    const clip = clipboardRef.current;
+    if (!clip || !wavesurferRef.current || recordingRef.current) return false;
+    const region = currentRegion();
+    const originalBuffer = blobAudioRef.current;
+    if (originalBuffer && clip.sampleRate !== originalBuffer.sampleRate)
+      return false;
+    const span = pasteSpan(
+      region
+        ? {
+            start: trimTo(region.start ?? 0, 3),
+            end: trimTo(region.end ?? 0, 3),
+          }
+        : undefined,
+      progress(),
+      originalBuffer
+    );
+    // No snapshot means the waveform was empty. Undo clears the pasted clip.
+    const snapshot = copyOriginal();
+    setUndoBuffer(snapshot);
+    onCanUndo(true);
+    region?.remove();
+    if (span.end === undefined) {
+      await loadDecoded(clip, clip.length / clip.sampleRate);
+    } else {
+      await insertAudioData(clip, span.start, span.end);
+    }
+    return true;
   };
 
   const setRecording = (value: boolean) => {
@@ -1072,7 +1121,7 @@ export function useWaveSurfer(
     onCanUndo(false);
   };
 
-  //delete the audio in the current region
+  // Cut the audio in the current region onto the paste clipboard.
   // Returns true when decoded audio was mutated (caller should mark changed).
   const wsRegionDelete = async (): Promise<boolean> => {
     if (!currentRegion() || !wavesurferRef.current) return false;
@@ -1104,6 +1153,18 @@ export function useWaveSurfer(
       return false;
     }
     const newLength = length - (endSample - startSample);
+    // Cut: the removed span stays pasteable. A failed slice leaves the old clipboard.
+    const clip = sliceAudioBuffer(
+      originalBuffer,
+      start,
+      end,
+      (channels, frames, rate) =>
+        audioContext().createBuffer(channels, frames, rate)
+    );
+    if (clip) {
+      clipboardRef.current = clip;
+      onCanPaste(true);
+    }
     if (newLength <= 0) {
       regionToRemove?.remove();
       await wsClear();
@@ -1218,6 +1279,9 @@ export function useWaveSurfer(
     wsLoopRegion,
     wsRegionDelete,
     wsRegionReplace,
+    wsCopyRegion,
+    wsPaste,
+    wsHasClipboard,
     wsUndo,
     wsInsertAudio,
     wsZoom,

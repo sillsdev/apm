@@ -26,6 +26,9 @@ import LoopIcon from '@mui/icons-material/Loop';
 import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import TimerIcon from '@mui/icons-material/AccessTime';
 import UndoIcon from '@mui/icons-material/Undo';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -39,9 +42,6 @@ import {
   ISharedStrings,
   IWsAudioPlayerStrings,
 } from '../model';
-import { FaHandScissors } from 'react-icons/fa';
-import type { IconBaseProps } from 'react-icons/lib';
-
 import { useWavRecorder } from '../crud/useWavRecorder';
 import { fallbackInputDeviceId } from '../crud/captureConstraints';
 import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
@@ -111,8 +111,6 @@ import { MainAPI } from '@model/main-api';
 import { AudioDownloadView } from './AudioDownload';
 import { useAudioDownload } from './useAudioDownload';
 const ipc = window?.api as MainAPI;
-
-const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
 
 const VertDivider = (prop: DividerProps) => (
   <Divider orientation="vertical" flexItem sx={{ ml: '5px' }} {...prop} />
@@ -224,7 +222,7 @@ interface IProps {
   hideSegmentReset?: boolean;
   hasRecording?: boolean;
   isStopLogic?: boolean;
-  /** When true, hide undo and scissors (region delete) waveform edit tools. */
+  /** When true, hide undo, copy, cut, and paste waveform edit tools. */
   hideWaveformEditTools?: boolean;
   hasSegmentUndo?: boolean;
   onSegmentUndo?: () => void;
@@ -298,7 +296,18 @@ const AHEAD_KEY = 'F3,CTRL+SHIFT+>';
 const END_KEY = 'CTRL+END';
 const TIMER_KEY = 'F6,CTRL+6';
 const RECORD_KEY = 'F9,CTRL+9';
+const COPY_KEY = 'CTRL+C';
+const CUT_KEY = 'CTRL+X';
+const PASTE_KEY = 'CTRL+V';
 const LEFT_KEY = 'CTRL+ARROWLEFT';
+
+/** Let text fields keep the browser copy/paste shortcut. */
+function isTypingTarget() {
+  const el = document.activeElement;
+  if (!el || !(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+}
 const RIGHT_KEY = 'CTRL+ARROWRIGHT';
 /**
  * MediaRecorder / WavRecorder timeslice for live waveform preview (not final quality).
@@ -478,6 +487,7 @@ function WSAudioPlayer(props: IProps) {
   // react to whether the playhead is near an existing boundary.
   const [regionBounds, setRegionBounds] = useState<IRegion[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  const [canPaste, setCanPaste] = useState(false);
   const recordStartPosition = useRef(0);
   const recordOverwritePosition = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
@@ -750,6 +760,9 @@ function WSAudioPlayer(props: IProps) {
     wsLoopRegion,
     wsRegionDelete,
     wsRegionReplace,
+    wsCopyRegion,
+    wsPaste,
+    wsHasClipboard,
     wsUndo,
     wsInsertAudio,
     wsFillPx,
@@ -790,7 +803,8 @@ function WSAudioPlayer(props: IProps) {
     lockSegmentSelection,
     disableDragSelection,
     onSegmentClick,
-    isSegmentRecorded
+    isSegmentRecorded,
+    onWSCanPaste
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -1498,6 +1512,9 @@ function WSAudioPlayer(props: IProps) {
   function onWSCanUndo(canUndo: boolean) {
     setCanUndo(canUndo);
   }
+  function onWSCanPaste(canPaste: boolean) {
+    setCanPaste(canPaste);
+  }
   function onWSPlayStatus(status: boolean) {
     setPlaying(status);
     if (onPlayStatus) onPlayStatus(status);
@@ -1572,7 +1589,7 @@ function WSAudioPlayer(props: IProps) {
     if (confirmAction === t.clearRecording) {
       confirmedDelete();
     } else {
-      handleDeleteRegion();
+      handleCutRegion();
     }
     setConfirmAction('');
   };
@@ -1583,13 +1600,32 @@ function WSAudioPlayer(props: IProps) {
     setConfirmAction(t.clearRecording);
   }, [t.clearRecording]);
 
-  const handleDeleteRegion = () => {
+  const handleCutRegion = useCallback(() => {
+    if (
+      isTypingTarget() ||
+      recordingRef.current ||
+      recordingStartPendingRef.current ||
+      waitingForAI ||
+      hideWaveformEditTools ||
+      oneShotUsed ||
+      !hasRegion
+    )
+      return false;
     setPlaying(false);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsRegionDelete().then((mutated) => {
       if (mutated) handleChanged();
     });
-  };
+    return true;
+  }, [
+    waitingForAI,
+    hideWaveformEditTools,
+    oneShotUsed,
+    hasRegion,
+    setPlaying,
+    wsRegionDelete,
+    handleChanged,
+  ]);
 
   const handleUndo = useCallback(() => {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
@@ -1597,6 +1633,64 @@ function WSAudioPlayer(props: IProps) {
       handleChanged();
     });
   }, [wsUndo, handleChanged]);
+
+  const handleCopyRegion = useCallback(() => {
+    if (
+      isTypingTarget() ||
+      recordingRef.current ||
+      recordingStartPendingRef.current ||
+      waitingForAI ||
+      hideWaveformEditTools ||
+      oneShotUsed
+    )
+      return false;
+    return wsCopyRegion();
+  }, [waitingForAI, hideWaveformEditTools, oneShotUsed, wsCopyRegion]);
+
+  const handlePaste = useCallback(() => {
+    if (
+      isTypingTarget() ||
+      recordingRef.current ||
+      recordingStartPendingRef.current ||
+      waitingForAI ||
+      hideWaveformEditTools ||
+      oneShotUsed ||
+      !wsHasClipboard()
+    )
+      return false;
+    preserveZoomOnReloadRef.current = pxPerSecRef.current;
+    wsPaste().then((mutated) => {
+      if (mutated) handleChanged();
+    });
+    return true;
+  }, [
+    waitingForAI,
+    hideWaveformEditTools,
+    oneShotUsed,
+    wsHasClipboard,
+    wsPaste,
+    handleChanged,
+  ]);
+
+  useEffect(() => {
+    if (!allowRecord) return;
+    subscribe(COPY_KEY, handleCopyRegion);
+    subscribe(CUT_KEY, handleCutRegion);
+    subscribe(PASTE_KEY, handlePaste);
+    return () => {
+      unsubscribe(COPY_KEY);
+      unsubscribe(CUT_KEY);
+      unsubscribe(PASTE_KEY);
+    };
+  }, [
+    allowRecord,
+    handleCopyRegion,
+    handleCutRegion,
+    handlePaste,
+    subscribe,
+    unsubscribe,
+  ]);
+
   useEffect(() => {
     if (!controlsRef) return;
     controlsRef.current = {
@@ -2213,23 +2307,60 @@ function WSAudioPlayer(props: IProps) {
     return () => onDockedRecordButton(null);
   }, [dockRecordButton, onDockedRecordButton, dockedRecordButtonNode]);
 
-  const deleteRegionNode = !hideWaveformEditTools &&
+  const copyTip = t.copyRegion.replace('{0}', localizeHotKey(COPY_KEY));
+  const cutTip = t.cutRegion.replace('{0}', localizeHotKey(CUT_KEY));
+  const pasteTip = t.pasteRegion.replace('{0}', localizeHotKey(PASTE_KEY));
+  const copyRegionNode = !hideWaveformEditTools &&
     hasRegion !== 0 &&
     !oneShotUsed && (
-      <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
+      <LightTooltip id="wsAudioCopyTip" title={copyTip}>
         <span>
           <IconButton
-            id="wsAudioDeleteRegion"
-            onClick={handleDeleteRegion}
+            id="wsAudioCopy"
+            aria-label={copyTip}
+            onClick={handleCopyRegion}
             disabled={recording || waitingForAI}
           >
-            <HandScissors />
+            <ContentCopyIcon />
+          </IconButton>
+        </span>
+      </LightTooltip>
+    );
+  const pasteRegionNode = !hideWaveformEditTools &&
+    canPaste &&
+    !oneShotUsed && (
+      <LightTooltip id="wsAudioPasteTip" title={pasteTip}>
+        <span>
+          <IconButton
+            id="wsAudioPaste"
+            aria-label={pasteTip}
+            onClick={handlePaste}
+            disabled={recording || waitingForAI}
+          >
+            <ContentPasteIcon />
           </IconButton>
         </span>
       </LightTooltip>
     );
 
-  // Waveform-edit undo (trim/delete-region): undoes edits on the wavesurfer
+  const cutRegionNode = !hideWaveformEditTools &&
+    hasRegion !== 0 &&
+    !oneShotUsed && (
+      <LightTooltip id="wsAudioCutTip" title={cutTip}>
+        <span>
+          <IconButton
+            id="wsAudioDeleteRegion"
+            aria-label={cutTip}
+            onClick={handleCutRegion}
+            disabled={recording || waitingForAI}
+          >
+            <ContentCutIcon />
+          </IconButton>
+        </span>
+      </LightTooltip>
+    );
+
+  // Waveform-edit undo (trim/cut-region): undoes edits on the wavesurfer
   // itself via the internal `handleUndo`. Only shown in recording/editing
   // contexts (rendered inside `allowRecord`). Distinct from `segmentUndoNode`,
   // which delegates to a host tool's own undo stack.
@@ -2625,7 +2756,9 @@ function WSAudioPlayer(props: IProps) {
               {hideSegmentControls && segmentUndoNode}
               {allowRecord && (
                 <>
-                  {deleteRegionNode}
+                  {copyRegionNode}
+                  {pasteRegionNode}
+                  {cutRegionNode}
                   {recordingUndoNode}
                   {moreAndMicMenusNode}
                 </>
