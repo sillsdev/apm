@@ -83,6 +83,18 @@ export default defineConfig({
         // Object form names the output dist-electron/main.js.
         entry: { main: path.join(repoRoot, 'electron/main/index.ts') },
         vite: electronBuild,
+        // launch.json sets REMOTE_DEBUGGING_PORT; the plugin ignores it.
+        // js-debug also injects NODE_OPTIONS into this process. Electron
+        // inherits that bootloader and pauses before the window stays up.
+        onstart({ startup }) {
+          const port = process.env.REMOTE_DEBUGGING_PORT;
+          const env = { ...process.env };
+          delete env.NODE_OPTIONS;
+          delete env.VSCODE_INSPECTOR_OPTIONS;
+          const argv = ['.', '--no-sandbox'];
+          if (port) argv.push(`--remote-debugging-port=${port}`);
+          return startup(argv, { env });
+        },
       },
       preload: {
         input: { preload: path.join(repoRoot, 'electron/preload/index.ts') },
