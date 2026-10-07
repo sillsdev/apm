@@ -555,8 +555,10 @@ export const Uploader = (props: IProps) => {
   if (embedded) {
     // Host-owned chrome (the add-resource wizard's single dialog). Render the
     // record/upload body directly; the upload orchestration (finish, onOpen,
-    // importList) is unchanged. While a deferred upload is in flight (hasImport)
-    // nothing shows — the host's section-select step carries the spinner.
+    // importList) is unchanged. We keep the panel
+    // mounted during a deferred upload (hasImport): the wizard's step CSS already
+    // hides it, and staying mounted preserves a recorded take + the Record tab so
+    // the user returns to it after going all the way to Configure and back.
     return (
       <Box
         sx={{
@@ -567,75 +569,74 @@ export const Uploader = (props: IProps) => {
           minHeight: 0,
         }}
       >
-        {!hasImport &&
-          (audioUploadOrRecord ? (
-            <PassageRecordPanel
-              embedded
-              active={isOpen}
-              onRecordingChange={onRecordingChange}
-              onHasTakeChange={onHasTakeChange}
-              artifactId={artifactState?.id ?? VernacularTag}
-              passageId={passageId}
-              planId={planIdRef.current}
-              onVisible={onOpen}
-              mediaId={mediaId ?? ''}
-              afterUploadCb={afterUploadCb}
-              onCancel={uploadCancel}
-              metaData={metaData}
-              ready={ready}
-              defaultFilename={defaultFilename ?? 'resource'}
-              allowWave={false}
-              speaker={performedBy}
-              onSpeaker={handleSpeakerChange}
-              team={team}
-              uploadType={uploadType || UploadType.Media}
-              uploadMethod={effectiveUploadMethod}
-              // Only the record tab calls onStageFile (the upload tab stages via
-              // uploadMethod), so anything staged here is a recorded take (#719).
-              onStageFile={
-                deferring
-                  ? (files) => onStageFiles?.(files, /* recorded */ true)
-                  : undefined
-              }
-              multiple={multiple}
-              onFiles={onFiles}
-              initialFiles={initialFiles}
-              keepFilesAfterSubmit={deferring}
-              inValue={inValue}
-              onNonAudio={onNonAudio}
-              audioOnly={audioOnly}
-              validationMessage={validationMessage}
-              pendingRestore={pendingRestore}
-              beforeUpload={beforeUpload}
-            />
-          ) : (
-            <MediaUploadContent
-              noWrapper
-              hideCancel
-              onVisible={onOpen}
-              uploadType={uploadType || UploadType.Media}
-              multiple={multiple}
-              uploadMethod={uploadMedia}
-              cancelMethod={uploadCancel}
-              metaData={metaData}
-              ready={ready}
-              speaker={performedBy}
-              onSpeaker={
-                !artifactState?.id &&
-                (uploadType || UploadType.Media) === UploadType.Media
-                  ? handleSpeakerChange
-                  : undefined
-              }
-              team={team}
-              onFiles={onFiles}
-              initialFiles={initialFiles}
-              keepFilesAfterSubmit={deferring}
-              inValue={inValue}
-              onNonAudio={onNonAudio}
-              audioOnly={audioOnly}
-              validationMessage={validationMessage}
-            />
-          ))}
+        {audioUploadOrRecord ? (
+          <PassageRecordPanel
+            embedded
+            active={isOpen}
+            onRecordingChange={onRecordingChange}
+            onHasTakeChange={onHasTakeChange}
+            artifactId={artifactState?.id ?? VernacularTag}
+            passageId={passageId}
+            planId={planIdRef.current}
+            onVisible={onOpen}
+            mediaId={mediaId ?? ''}
+            afterUploadCb={afterUploadCb}
+            onCancel={uploadCancel}
+            metaData={metaData}
+            ready={ready}
+            defaultFilename={defaultFilename ?? 'resource'}
+            allowWave={false}
+            speaker={performedBy}
+            onSpeaker={handleSpeakerChange}
+            team={team}
+            uploadType={uploadType || UploadType.Media}
+            uploadMethod={effectiveUploadMethod}
+            // Only the record tab calls onStageFile (the upload tab stages via
+            // uploadMethod), so anything staged here is a recorded take (#719).
+            onStageFile={
+              deferring
+                ? (files) => onStageFiles?.(files, /* recorded */ true)
+                : undefined
+            }
+            multiple={multiple}
+            onFiles={onFiles}
+            initialFiles={initialFiles}
+            keepFilesAfterSubmit={deferring}
+            inValue={inValue}
+            onNonAudio={onNonAudio}
+            audioOnly={audioOnly}
+            validationMessage={validationMessage}
+            pendingRestore={pendingRestore}
+            beforeUpload={beforeUpload}
+          />
+        ) : (
+          <MediaUploadContent
+            noWrapper
+            hideCancel
+            onVisible={onOpen}
+            uploadType={uploadType || UploadType.Media}
+            multiple={multiple}
+            uploadMethod={uploadMedia}
+            cancelMethod={uploadCancel}
+            metaData={metaData}
+            ready={ready}
+            speaker={performedBy}
+            onSpeaker={
+              !artifactState?.id &&
+              (uploadType || UploadType.Media) === UploadType.Media
+                ? handleSpeakerChange
+                : undefined
+            }
+            team={team}
+            onFiles={onFiles}
+            initialFiles={initialFiles}
+            keepFilesAfterSubmit={deferring}
+            inValue={inValue}
+            onNonAudio={onNonAudio}
+            audioOnly={audioOnly}
+            validationMessage={validationMessage}
+          />
+        )}
       </Box>
     );
   }
