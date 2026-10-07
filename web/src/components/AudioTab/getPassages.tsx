@@ -7,7 +7,7 @@ import { pad } from './pad';
 import { getSection } from './getSection';
 import { passageRefText } from '../../crud/passage';
 
-enum StatusL {
+export enum StatusL {
   No = 'N',
   Proposed = 'P',
   Yes = 'Y',
