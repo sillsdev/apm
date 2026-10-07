@@ -248,31 +248,13 @@ export function AddResourceWizard({
   };
 
   // Tear the whole flow down (save, discard, or a terminal non-project upload).
-  // No more Back is possible, so clear the category/description/filename restore
-  // state kept alive while stepping through the wizard.
+  // Just hide it: wizardOpen goes false so every step child unmounts (releasing
+  // the recorder/player and clearing Configure's unsaved-changes flag). The flow
+  // state is NOT reset here — the parent bumps the wizard's `key` on the next
+  // launch, so it remounts fresh. That makes a clean reopen structural instead
+  // of a hand-maintained teardown list.
   const closeAll = useCallback(() => {
     setStep(WizardStep.None);
-    projMediaRef.current = undefined;
-    setVisual(false);
-    catIdRef.current = undefined;
-    descriptionRef.current = '';
-    setResourceUploadFiles([]);
-    setResourceKind(ResourceTypeEnum.sectionResource);
-    setAudioUploadOrRecord(false);
-    setAllowProject(true);
-    setAIGenerated(false);
-    setMarkdownValue('');
-    setIsStagedRecording(false);
-    stagedResourceFilesRef.current = undefined;
-    sectionsPreselectedRef.current = false;
-    setResourceImportList(undefined);
-    setUploading(false);
-    // Clear the record-only signals too: only the (audio) record panel resets
-    // these via its callbacks, so without this a take from an audio flow leaves
-    // uploadHasTake true and a later non-audio upload (Pdf/Text/Link) — where the
-    // panel never mounts — would show a spurious discard confirm on close.
-    setUploadHasTake(false);
-    setRecording(false);
   }, []);
 
   const writeVisualResource = async (items: RecordIdentity[]) => {

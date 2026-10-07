@@ -144,6 +144,13 @@ export function PassageDetailArtifacts() {
   const [allowEditSave, setAllowEditSave] = useState(false);
   // Pending open request handed to the add-resource wizard (null = closed).
   const [wizardLaunch, setWizardLaunch] = useState<WizardLaunch | null>(null);
+  // Bumped on every launch so the wizard remounts fresh each time it opens — it
+  // resets its own state by construction instead of a hand-maintained teardown.
+  const [wizardKey, setWizardKey] = useState(0);
+  const launchWizard = (next: WizardLaunch) => {
+    setWizardLaunch(next);
+    setWizardKey((k) => k + 1);
+  };
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [editAudio, setEditAudio] = useState<boolean>(false);
   const mediaRef = useRef<MediaFileD | undefined>(undefined);
@@ -348,7 +355,7 @@ export function PassageDetailArtifacts() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
       setResourceKind(ResourceTypeEnum.projectResource);
-      setWizardLaunch({ kind: 'editGeneral', media: projectMedia });
+      launchWizard({ kind: 'editGeneral', media: projectMedia });
       return;
     }
     setEditResource(secRes);
@@ -474,7 +481,7 @@ export function PassageDetailArtifacts() {
       what === AddResourceAction.Text ||
       what === AddResourceAction.Link
     ) {
-      setWizardLaunch({ kind: 'add', action: what });
+      launchWizard({ kind: 'add', action: what });
     }
   };
 
@@ -485,7 +492,7 @@ export function PassageDetailArtifacts() {
     audioUrl: string,
     transcript: string
   ) => {
-    setWizardLaunch({ kind: 'markdown', query, audioUrl, transcript });
+    launchWizard({ kind: 'markdown', query, audioUrl, transcript });
   };
 
   const { sectDesc, passDesc } = useResourceScopeLabels();
@@ -721,6 +728,7 @@ export function PassageDetailArtifacts() {
         ))}
       </VertListDnd>
       <AddResourceWizard
+        key={wizardKey}
         launch={wizardLaunch}
         onLaunchHandled={() => setWizardLaunch(null)}
       />
