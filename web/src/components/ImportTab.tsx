@@ -98,7 +98,7 @@ import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent from './FilterContent';
 import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
 import { readItfEmbeddedProject } from '../utils/readItfEmbeddedProject';
-import { shouldStartItfSyncUpload } from './shouldStartItfSyncUpload';
+import { importMountAction } from './shouldStartItfSyncUpload';
 
 const ipc = window?.api as MainAPI;
 
@@ -374,16 +374,20 @@ export function ImportTab(props: IProps) {
   useEffect(() => {
     setImportTitle('');
     setChangeData([]);
-    if (
-      isElectron &&
-      syncFile &&
-      shouldStartItfSyncUpload(syncBuffer, lastItfSyncBuffer)
-    ) {
+    const action = importMountAction({
+      isElectron,
+      hasSyncFile: Boolean(syncFile),
+      syncBuffer,
+      lastStarted: lastItfSyncBuffer,
+      offerPtf,
+    });
+    if (action === 'sync' && syncBuffer && syncFile) {
       lastItfSyncBuffer = syncBuffer;
       uploadSyncITF(syncBuffer, syncFile);
-    } // Need to ask user if they want to import PTF or ITF
-    else if (offerPtf) setShowImportTypeSelection(true);
-    else {
+    } else if (action === 'choose') {
+      // Need to ask user if they want to import PTF or ITF
+      setShowImportTypeSelection(true);
+    } else if (action === 'pick') {
       setSelectedImportType(isOffline ? UploadType.PTF : UploadType.ITF);
       if (!getImportFileRef.current)
         getImportFile(isOffline ? UploadType.PTF : UploadType.ITF);
