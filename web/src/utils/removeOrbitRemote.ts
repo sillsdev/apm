@@ -10,7 +10,24 @@ const remoteStrategies = [
   'remote-sync',
 ] as const;
 
-export async function removeOrbitRemote(
+// Coordinator.deactivate() is not reentrant. A second call that starts before
+// the first finishes makes EventLoggingStrategy drop listeners that are
+// already gone (deepGet on undefined, reading 'memory'). Go Offline hits this
+// when logout and another teardown both drop the remote. One queue for every
+// deactivate/reactivate, including Sources().
+let coordinatorTail: Promise<void> = Promise.resolve();
+
+export function withCoordinatorLock<T>(task: () => Promise<T>): Promise<T> {
+  const run = coordinatorTail.then(task, task);
+  coordinatorTail = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
+/** Caller must already hold withCoordinatorLock. */
+export async function detachOrbitRemote(
   coordinator: Coordinator | undefined,
   reactivate = true
 ): Promise<void> {
@@ -28,4 +45,11 @@ export async function removeOrbitRemote(
   if (reactivate) {
     await coordinator.activate({ logLevel: LogLevel.Warnings });
   }
+}
+
+export function removeOrbitRemote(
+  coordinator: Coordinator | undefined,
+  reactivate = true
+): Promise<void> {
+  return withCoordinatorLock(() => detachOrbitRemote(coordinator, reactivate));
 }

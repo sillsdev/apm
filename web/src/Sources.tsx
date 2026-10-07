@@ -40,7 +40,10 @@ import {
   datachangesQueryError,
   updateError,
 } from './utils/orbitStrategyErrors';
-import { removeOrbitRemote } from './utils/removeOrbitRemote';
+import {
+  detachOrbitRemote,
+  withCoordinatorLock,
+} from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';
 import { AlertSeverity } from './hoc/SnackBar';
@@ -100,6 +103,8 @@ interface SourcesReturn {
 // /loading remount firing fetchOrbitData again) now reuses the in-flight
 // promise instead of tearing the coordinator down under the first run. The
 // guard clears on completion so the next sequential login still runs fresh.
+// The whole run also sits on withCoordinatorLock so a logout teardown cannot
+// deactivate the coordinator while this run is doing the same.
 // Mirrors restoreBackup's restorePromise pattern.
 let sourcesPromise: Promise<SourcesReturn> | null = null;
 
@@ -164,7 +169,7 @@ const sourcesImpl = async (
       await restoreBackup(coordinator);
     }
     if (coordinator.sourceNames.includes('remote')) {
-      await removeOrbitRemote(coordinator, false);
+      await detachOrbitRemote(coordinator, false);
     }
     if (coordinator.activated) {
       await coordinator.deactivate();
@@ -426,8 +431,10 @@ export const Sources = (
   ...args: Parameters<typeof sourcesImpl>
 ): Promise<SourcesReturn> => {
   if (sourcesPromise) return sourcesPromise; // dedupe concurrent invocations
-  sourcesPromise = sourcesImpl(...args).finally(() => {
-    sourcesPromise = null; // allow the next (sequential) login to run fresh
-  });
+  sourcesPromise = withCoordinatorLock(() => sourcesImpl(...args)).finally(
+    () => {
+      sourcesPromise = null; // allow the next (sequential) login to run fresh
+    }
+  );
   return sourcesPromise;
 };
