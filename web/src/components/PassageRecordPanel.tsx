@@ -322,6 +322,9 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
             >
               <MediaRecord
                 toolId={myToolId}
+                // Only the on-screen step owns the keyboard shortcuts; a hidden
+                // record panel (wizard on step 2/3) must not react to Alt+Space/F9.
+                hotkeys={active}
                 artifactId={artifactId}
                 passageId={passageId}
                 planId={planId}
