@@ -275,6 +275,12 @@ export function AddResourceWizard({
     sectionsPreselectedRef.current = false;
     setResourceImportList(undefined);
     setUploading(false);
+    // Clear the record-only signals too: only the (audio) record panel resets
+    // these via its callbacks, so without this a take from an audio flow leaves
+    // uploadHasTake true and a later non-audio upload (Pdf/Text/Link) — where the
+    // panel never mounts — would show a spurious discard confirm on close.
+    setUploadHasTake(false);
+    setRecording(false);
   }, []);
 
   const writeVisualResource = async (items: RecordIdentity[]) => {
@@ -634,10 +640,6 @@ export function AddResourceWizard({
   // the flow. A plain file upload closes without a prompt, and the record tab
   // confirms internally only when an unsaved take would be lost (#719).
   // Programmatic step changes don't fire onOpen.
-  const handleUploaderOpen = (v: boolean) => {
-    if (!v) closeAll();
-  };
-
   // One close handler for the whole wizard dialog. Blocks mid-recording. Only
   // confirms when something would be lost (#719): the configure step always
   // (a saved-but-unconfigured resource); the section-select step only when a
@@ -724,7 +726,12 @@ export function AddResourceWizard({
                 audioUploadOrRecord={audioUploadOrRecord}
                 hideUploadCancel
                 isOpen={step === WizardStep.Upload}
-                onOpen={handleUploaderOpen}
+                // Embedded: the wizard owns visibility via `step`, and teardown
+                // is driven by `finish` (completion) and `cancelReset` (cancel).
+                // Closing here on the Uploader's completion onOpen(false) raced
+                // afterUpload and wiped the metadata refs it needs, so this is a
+                // no-op.
+                onOpen={() => {}}
                 showMessage={showMessage}
                 multiple={true}
                 finish={afterUpload}

@@ -176,7 +176,10 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
       const hasStagedTake = Boolean(initialFilesRef.current?.length);
       if (!hasStagedTake) setMode('upload');
       setRecording(false);
-      setHasTake(false);
+      // A retained take is still in the player on Back (keepMounted), so keep
+      // hasTake true — otherwise the wizard's close-confirm thinks nothing would
+      // be lost and discards the recording silently.
+      setHasTake(hasStagedTake);
       setShowConfirm(false);
     }
   }, [active]);

@@ -1684,7 +1684,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (!allowRecord) return;
+    if (!hotkeys || !allowRecord) return;
     subscribe(COPY_KEY, handleCopyRegion);
     subscribe(CUT_KEY, handleCutRegion);
     subscribe(PASTE_KEY, handlePaste);
@@ -1694,6 +1694,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(PASTE_KEY);
     };
   }, [
+    hotkeys,
     allowRecord,
     handleCopyRegion,
     handleCutRegion,
