@@ -261,7 +261,15 @@ function MediaUploadContent(props: IProps) {
       // Historical behavior: clear selection after initiating an upload. Skip it
       // when deferring — the file is only staged (uploaded later), so the parent
       // keeps it selected to restore if the user steps back to this dialog.
-      if (!keepFilesAfterSubmit) handleFiles(undefined);
+      if (!keepFilesAfterSubmit) {
+        handleFiles(undefined);
+      } else {
+        // Deferring only staged the file; no upload is in flight, so clear the
+        // progress state. The embedded panel stays mounted across the wizard's
+        // Back, so a lingering `progress` would otherwise spin forever and keep
+        // the Next button disabled on return.
+        setProgress(false);
+      }
     } catch {
       setProgress(false);
     }
