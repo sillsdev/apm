@@ -147,7 +147,6 @@ export function AddResourceWizard({
     File[] | undefined
   >(undefined);
   const [uploading, setUploading] = useState(false);
-  const [projResSetup, setProjResSetup] = useState(new Array<MediaFileD>());
   const [pendingCloseConfirmation, setPendingCloseConfirmation] =
     useState(false);
   // Whether the staged general-resource audio is a recorded take (not an
@@ -380,11 +379,6 @@ export function AddResourceWizard({
             setStep(WizardStep.Configure);
           }
           advanced = true;
-        } else {
-          // Resume-style open (Home Retry / mobile): let the projResSetup effect
-          // open the section-select step.
-          setProjResSetup(projRes);
-          advanced = true;
         }
       }
     }
@@ -469,24 +463,6 @@ export function AddResourceWizard({
     setStep(WizardStep.SelectSections);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (projResSetup.length) {
-      openForMedia(projResSetup[0] as MediaFileD);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projResSetup]);
-
-  // When the flow leaves the section/configure steps, drop the resumed media
-  // from projResSetup so it isn't reopened.
-  useEffect(() => {
-    if (
-      step !== WizardStep.SelectSections &&
-      step !== WizardStep.Configure &&
-      projMediaRef.current
-    )
-      setProjResSetup((prev) => prev.filter((m) => m !== projMediaRef.current));
-  }, [step]);
 
   // If SelectSections closes without starting the deferred upload (the user
   // discarded before clicking Upload), drop the staged file(s); otherwise a
