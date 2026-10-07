@@ -120,7 +120,17 @@ export const PassageChooser = (props: IProps) => {
   };
 
   return (
-    <Box ref={boxRef}>
+    <Box
+      ref={boxRef}
+      sx={{
+        // Fixed height so the dialog stays the same size regardless of how many
+        // rows the table has; the row list scrolls within this box.
+        // So things don't jump around when the user toggles the filter
+        height: '70vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <FormControlLabel
         value="attached"
         labelPlacement="end"
@@ -132,38 +142,40 @@ export const PassageChooser = (props: IProps) => {
         }
         label={t.alreadyAssociated}
       />
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell padding="checkbox" />
-            <TableCell sx={{ width: colWidth }}>{organizedBy}</TableCell>
-            <TableCell sx={{ width: colWidth }}>{t.reference}</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.id} hover>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selectedIds.has(r.id)}
-                  onChange={() => handleToggle(r.id)}
-                  slotProps={{
-                    input: {
-                      'aria-label': `${r.sectionDesc} ${r.reference}`.trim(),
-                    },
-                  }}
-                />
-              </TableCell>
-              <TableCell sx={{ whiteSpace: 'break-spaces' }}>
-                {r.sectionDesc}
-              </TableCell>
-              <TableCell sx={{ whiteSpace: 'break-spaces' }}>
-                {refCell(r)}
-              </TableCell>
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox" />
+              <TableCell sx={{ width: colWidth }}>{organizedBy}</TableCell>
+              <TableCell sx={{ width: colWidth }}>{t.reference}</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.id} hover>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedIds.has(r.id)}
+                    onChange={() => handleToggle(r.id)}
+                    slotProps={{
+                      input: {
+                        'aria-label': `${r.sectionDesc} ${r.reference}`.trim(),
+                      },
+                    }}
+                  />
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'break-spaces' }}>
+                  {r.sectionDesc}
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'break-spaces' }}>
+                  {refCell(r)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
     </Box>
   );
 };
