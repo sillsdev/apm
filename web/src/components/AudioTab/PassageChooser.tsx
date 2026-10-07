@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IMediaTabStrings, IState, PassageD } from '../../model';
-import { Box, debounce, FormControlLabel, Switch } from '@mui/material';
+import {
+  Box,
+  Checkbox,
+  debounce,
+  FormControlLabel,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from '@mui/material';
 import { findRecord, useOrganizedBy } from '../../crud';
 import { GetReference, IPRow } from '.';
+import { StatusL } from './getPassages';
 import { useSelector } from 'react-redux';
 import { mediaTabSelector } from '../../selector';
-import {
-  DataGrid,
-  type GridFilterModel,
-  type GridColDef,
-  type GridSortModel,
-  type GridRowSelectionModel,
-  GridRenderCellParams,
-  GridColumnVisibilityModel,
-} from '@mui/x-data-grid';
 import { useGlobal } from '../../context/useGlobal';
 
 interface IProps {
@@ -39,80 +42,33 @@ export const PassageChooser = (props: IProps) => {
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
 
-  const [columnVisibilityModel] = useState<GridColumnVisibilityModel>({
-    sort: false,
-    attached: false,
-  });
-  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  });
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-  const refCell = (params: GridRenderCellParams<IPRow>) => {
-    const passage = findRecord(
-      memory,
-      'passage',
-      params.row.passageId
-    ) as PassageD;
+  const refCell = (pRow: IPRow) => {
+    const passage = findRecord(memory, 'passage', pRow.passageId) as PassageD;
     return (
       <GetReference passage={[passage]} bookData={allBookData} flat={false} />
     );
   };
 
   const MinNameWidth = 150;
+  const colWidth = MinNameWidth + addWidth / 2;
 
-  const columns: GridColDef<IPRow>[] = useMemo(
-    () => [
-      {
-        field: 'sectionDesc',
-        headerName: organizedBy,
-        width: MinNameWidth + addWidth / 2,
-        align: 'left',
-        cellClassName: 'word-wrap',
-      },
-      {
-        field: 'reference',
-        headerName: t.reference,
-        width: MinNameWidth + addWidth / 2,
-        align: 'left',
-        cellClassName: 'word-wrap',
-        type: 'singleSelect',
-        renderCell: refCell,
-      },
-      {
-        field: 'attached',
-        headerName: t.associated,
-        width: 100,
-        align: 'left',
-      },
-      { field: 'sort', headerName: '\u00A0', width: 100, align: 'left' },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [organizedBy, addWidth]
-  );
+  const [showAttached, setShowAttached] = useState(false);
 
-  const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
-  const [attachedFilter, setAttachedFilter] = useState<
-    GridFilterModel['items'][number]
-  >({
-    field: 'attached',
-    operator: 'contains',
-    value: 'N',
-  });
-
-  const totalWidth = useMemo(
+  // Filter (by the switch) and statically sort
+  const rows = useMemo(
     () =>
-      columns.reduce(
-        (sum, col) =>
-          !columnVisibilityModel[col.field]
-            ? sum
-            : ['sectionDesc', 'reference'].includes(col.field)
-              ? sum + MinNameWidth
-              : sum + (col.width ?? 0),
-        0
-      ),
-    [columns, columnVisibilityModel]
+      data
+        .map((r, id) => ({ ...r, id }))
+        .filter((r) =>
+          showAttached ? r.attached === StatusL.Yes : r.attached !== StatusL.Yes
+        )
+        .sort((a, b) => String(a.sort).localeCompare(String(b.sort))),
+    [data, showAttached]
   );
+
+  const totalWidth = useMemo(() => 2 * MinNameWidth, []);
 
   // keep track of screen width
   const setDimensions = () => {
@@ -140,23 +96,14 @@ export const PassageChooser = (props: IProps) => {
   }, []); //do this once to get the default;
 
   const handleAttachedFilterChange = (e: any) => {
-    setAttachedFilter({
-      field: 'attached',
-      operator: 'contains',
-      value: e.target.checked ? 'Y' : 'N',
-    });
+    setShowAttached(e.target.checked);
   };
 
-  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    let checks = Array.from(newSelection.ids).map((id) =>
-      parseInt(id as string)
-    );
-    if (newSelection.type === 'exclude') {
-      checks = [];
-      data.forEach((_r, i) => {
-        if (!newSelection.ids.has(i)) checks.push(i);
-      });
-    }
+  const handleToggle = (id: number) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    const checks = Array.from(next);
     let mRow = row;
     if (uploadMedia) {
       mRow = mediaRow(uploadMedia);
@@ -167,38 +114,68 @@ export const PassageChooser = (props: IProps) => {
       setVisible(false);
       return;
     }
-    const newIds = checks[0] === pcheck ? checks[1] : checks[0];
-    setCheck(newIds);
-    setSelectedRows(newSelection);
+    const newId = checks[0] === pcheck ? checks[1] : checks[0];
+    setCheck(newId);
+    setSelectedIds(next);
   };
 
   return (
-    <Box ref={boxRef}>
+    <Box
+      ref={boxRef}
+      sx={{
+        // Fixed height so the dialog stays the same size regardless of how many
+        // rows the table has; the row list scrolls within this box.
+        // So things don't jump around when the user toggles the filter
+        height: '70vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <FormControlLabel
         value="attached"
         labelPlacement="end"
         control={
           <Switch
-            checked={attachedFilter.value === 'Y'}
+            checked={showAttached}
             onChange={handleAttachedFilterChange}
           />
         }
         label={t.alreadyAssociated}
       />
-      <DataGrid
-        columns={columns}
-        rows={data.map((r, id) => ({ ...r, id }))}
-        filterModel={{ items: [attachedFilter] }}
-        initialState={{
-          sorting: { sortModel },
-          columns: { columnVisibilityModel },
-        }}
-        checkboxSelection
-        disableRowSelectionOnClick
-        onRowSelectionModelChange={handleRowSelectionChange}
-        rowSelectionModel={selectedRows}
-        sx={{ '& .wrap-text': { whiteSpace: 'break-spaces' } }}
-      />
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox" />
+              <TableCell sx={{ width: colWidth }}>{organizedBy}</TableCell>
+              <TableCell sx={{ width: colWidth }}>{t.reference}</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.id} hover>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedIds.has(r.id)}
+                    onChange={() => handleToggle(r.id)}
+                    slotProps={{
+                      input: {
+                        'aria-label': `${r.sectionDesc} ${r.reference}`.trim(),
+                      },
+                    }}
+                  />
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'break-spaces' }}>
+                  {r.sectionDesc}
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'break-spaces' }}>
+                  {refCell(r)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
     </Box>
   );
 };

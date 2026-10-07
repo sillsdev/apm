@@ -17,6 +17,23 @@ export function strNumCompare(a: string, b: string): number {
 export function sortChapters(chapters: Iterable<string>): string[] {
   return Array.from(chapters).sort(strNumCompare);
 }
+
+/**
+ * Order-preserving string key for a non-negative sequence number: a 2-digit
+ * digit-count tag followed by the value scaled to three decimal places. The
+ * length tag makes a larger number produce a lexicographically larger key, so
+ * a plain string sort stays numeric (TT-7588). Negative sentinels
+ * (BookSeq/AltBkSeq) clamp to 0; callers that use them filter to
+ * `sequencenum > 0` first (e.g. AssignmentTable).
+ */
+export const sequencePad = (n: number): string => {
+  const scaled = Math.round(Math.max(n, 0) * 1000).toString();
+  return `${scaled.length.toString().padStart(2, '0')}${scaled}`;
+};
+
+/** Sort key ordering rows by section sequence, then passage sequence. */
+export const sequenceSortKey = (secNum: number, pasNum: number): string =>
+  `${sequencePad(secNum)}.${sequencePad(pasNum)}`;
 export function strCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }

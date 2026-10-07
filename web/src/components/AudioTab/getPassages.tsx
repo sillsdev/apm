@@ -3,11 +3,11 @@ import { related } from '../../crud/related';
 import { refMatch } from '../../utils/refMatch';
 import { IPRow } from './IPRow';
 import { isAttached } from './isAttached';
-import { pad } from './pad';
 import { getSection } from './getSection';
 import { passageRefText } from '../../crud/passage';
+import { sequenceSortKey } from '../../utils/sort';
 
-enum StatusL {
+export enum StatusL {
   No = 'N',
   Proposed = 'P',
   Yes = 'Y',
@@ -34,9 +34,10 @@ export const passageRow = (
     sectionDesc: getSection([section]),
     reference: passageRefText(passage, allBookData),
     attached: isAttached(passage, media) ? StatusL.Yes : StatusL.No,
-    sort: `${pad(section.attributes.sequencenum)}.${pad(
+    sort: sequenceSortKey(
+      section.attributes.sequencenum,
       passage.attributes.sequencenum
-    )}`,
+    ),
 
     // Used for Reference matching
     book: passage.attributes.book,

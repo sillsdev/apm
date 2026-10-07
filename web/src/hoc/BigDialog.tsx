@@ -310,7 +310,11 @@ export function BigDialog({
               </Button>
             )}
             {showCancel && (
-              <Button id="bigCancel" sx={{ color: 'grey' }} onClick={onCancel}>
+              <Button
+                id="bigCancel"
+                sx={{ color: 'text.primary' }}
+                onClick={onCancel}
+              >
                 {ts.cancel}
               </Button>
             )}
