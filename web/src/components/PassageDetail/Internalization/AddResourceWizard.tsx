@@ -53,7 +53,6 @@ import { descriptionRequiredForResource } from './resourceArtifactName';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { buildResourcePendingRestore } from './buildResourcePendingRestore';
-import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 import { AddResourceAction } from './AddResourceAction';
 import { useResourceScopeLabels } from './useResourceScopeLabels';
 import { useResourceArtifactTypes } from './useResourceArtifactTypes';
@@ -224,13 +223,6 @@ export function AddResourceWizard({
       ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
     });
   }, [InternalizationStep, section.id, passage.id, rowData.length]);
-
-  useResumePendingProjectResourceConfig({
-    memory,
-    mediafiles,
-    setProjResSetup,
-    isAddingAudioResourceRef,
-  });
 
   const hasGeneralResourceUploadConflict = (
     files: File[] = resourceUploadFiles,

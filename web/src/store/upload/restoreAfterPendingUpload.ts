@@ -26,7 +26,6 @@ import {
   SectionResource,
 } from '../../model';
 import type { PendingUploadRestore } from './pendingMediaUploads';
-import { appendPendingProjectResourceConfig } from './pendingProjectResourceConfig';
 
 export interface RestoreAfterPendingUploadArgs {
   mediaId: string;
@@ -461,8 +460,6 @@ async function restoreProjectResource({
       ),
     ]);
   }
-
-  appendPendingProjectResourceConfig(mediaId);
 }
 
 /**

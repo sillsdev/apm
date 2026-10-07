@@ -4,7 +4,6 @@ import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
 import { restoreAfterPendingUpload } from './restoreAfterPendingUpload';
 import type { PendingUploadRestore } from './pendingMediaUploads';
-import { takePendingProjectResourceConfigs } from './pendingProjectResourceConfig';
 import {
   getRecordingForClause,
   getCompletedClauseIndices,
@@ -483,8 +482,6 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         q.findRecords('sectionresource')
       );
       expect(sectionResources).toHaveLength(0);
-
-      expect(takePendingProjectResourceConfigs()).toEqual(['proj-media-1']);
     });
   });
 

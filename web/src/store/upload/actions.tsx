@@ -498,7 +498,11 @@ export const nextUpload =
         }
       }
 
-      if (localAbsolutePath) {
+      // General (project) resource uploads are a wizard step, not a durable
+      // task: an interrupted one should be abandoned (start over), never resumed
+      // from Pending Uploads — there is no path to configure a resumed one. So
+      // don't enroll them in the crash-recovery queue.
+      if (localAbsolutePath && uploadType !== UploadType.ProjectResource) {
         const queuePatch = {
           localAbsolutePath,
           fileSize: size,

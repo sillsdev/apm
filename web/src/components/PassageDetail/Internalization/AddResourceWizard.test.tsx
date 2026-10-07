@@ -96,9 +96,6 @@ jest.mock('../../../crud', () => ({
 jest.mock('./useProjectResourceSave', () => ({
   useProjectResourceSave: () => jest.fn(),
 }));
-jest.mock('./useResumePendingProjectResourceConfig', () => ({
-  useResumePendingProjectResourceConfig: jest.fn(),
-}));
 
 const mockIsVisual = jest.fn((_m?: unknown) => false);
 jest.mock('../../../utils', () => ({
