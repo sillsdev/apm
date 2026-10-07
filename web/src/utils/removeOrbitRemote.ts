@@ -13,8 +13,8 @@ const remoteStrategies = [
 // Coordinator.deactivate() is not reentrant. A second call that starts before
 // the first finishes makes EventLoggingStrategy drop listeners that are
 // already gone (deepGet on undefined, reading 'memory'). Go Offline hits this
-// when logout and another teardown both drop the remote. One queue for every
-// deactivate/reactivate, including Sources().
+// when logout and another teardown both drop the remote. Queue only that
+// teardown and the following activate — not backup restore or remote queries.
 let coordinatorTail: Promise<void> = Promise.resolve();
 
 export function withCoordinatorLock<T>(task: () => Promise<T>): Promise<T> {

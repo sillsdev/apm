@@ -103,8 +103,6 @@ interface SourcesReturn {
 // /loading remount firing fetchOrbitData again) now reuses the in-flight
 // promise instead of tearing the coordinator down under the first run. The
 // guard clears on completion so the next sequential login still runs fresh.
-// The whole run also sits on withCoordinatorLock so a logout teardown cannot
-// deactivate the coordinator while this run is doing the same.
 // Mirrors restoreBackup's restorePromise pattern.
 let sourcesPromise: Promise<SourcesReturn> | null = null;
 
@@ -165,131 +163,136 @@ const sourcesImpl = async (
     resetUnauthorizedRetry();
     // RestoreBackupOnMount may still be pulling IndexedDB. Finish that before
     // deactivate() closes the backup DB ("IndexedDB database is not yet open").
+    // Outside the coordinator lock: logout must not wait on this restore.
     if (isElectron) {
       await restoreBackup(coordinator);
     }
-    if (coordinator.sourceNames.includes('remote')) {
-      await detachOrbitRemote(coordinator, false);
-    }
-    if (coordinator.activated) {
-      await coordinator.deactivate();
-    }
-    remote = new JSONAPISource({
-      schema: memory?.schema,
-      keyMap: memory?.keyMap,
-      ...(isElectron ? { bucket } : {}),
-      name: 'remote',
-      namespace: 'api',
-      host: API_CONFIG.host,
-      serializerSettingsFor: serializersSettings(),
-      defaultFetchSettings: {
-        headers: {
-          Authorization: 'Bearer ' + (tokenState.accessToken || ''),
-          'X-FP': fingerprint,
-        },
-        timeout: 100000,
-      },
-      defaultTransformOptions: {
-        useRemoteId: true,
-      },
-    });
-    try {
-      await remote.activated;
-    } catch (ex) {
-      if (isUnauthorized(ex)) {
-        await skipRemoteQueue(remote);
+    // Lock only while the coordinator is torn down and the remote sources are
+    // swapped. Remote queries and ITF export stay outside so logout can proceed.
+    await withCoordinatorLock(async () => {
+      if (coordinator.sourceNames.includes('remote')) {
+        await detachOrbitRemote(coordinator, false);
       }
-    }
-    if (!coordinator.sourceNames.includes('remote')) {
-      coordinator.addSource(remote);
-    }
+      if (coordinator.activated) {
+        await coordinator.deactivate();
+      }
+      remote = new JSONAPISource({
+        schema: memory?.schema,
+        keyMap: memory?.keyMap,
+        ...(isElectron ? { bucket } : {}),
+        name: 'remote',
+        namespace: 'api',
+        host: API_CONFIG.host,
+        serializerSettingsFor: serializersSettings(),
+        defaultFetchSettings: {
+          headers: {
+            Authorization: 'Bearer ' + (tokenState.accessToken || ''),
+            'X-FP': fingerprint,
+          },
+          timeout: 100000,
+        },
+        defaultTransformOptions: {
+          useRemoteId: true,
+        },
+      });
+      try {
+        await remote.activated;
+      } catch (ex) {
+        if (isUnauthorized(ex)) {
+          await skipRemoteQueue(remote);
+        }
+      }
+      if (!coordinator.sourceNames.includes('remote')) {
+        coordinator.addSource(remote);
+      }
 
-    // Trap error querying data (token expired or offline)
-    if (!coordinator.strategyNames.includes('remote-query-fail'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'remote-query-fail',
+      // Trap error querying data (token expired or offline)
+      if (!coordinator.strategyNames.includes('remote-query-fail'))
+        coordinator.addStrategy(
+          new RequestStrategy({
+            name: 'remote-query-fail',
 
-          source: 'remote',
-          on: 'queryFail',
-          action: queryError({
-            tokenCtx,
-            orbitError,
-            coordinator,
-            fingerprint,
-            setOrbitRetries,
-          }) as unknown as StategyError,
-          blocking: true,
-        })
-      );
-    if (!coordinator.strategyNames.includes('remote-update-fail'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'remote-update-fail',
+            source: 'remote',
+            on: 'queryFail',
+            action: queryError({
+              tokenCtx,
+              orbitError,
+              coordinator,
+              fingerprint,
+              setOrbitRetries,
+            }) as unknown as StategyError,
+            blocking: true,
+          })
+        );
+      if (!coordinator.strategyNames.includes('remote-update-fail'))
+        coordinator.addStrategy(
+          new RequestStrategy({
+            name: 'remote-update-fail',
 
-          source: 'remote',
-          on: 'updateFail',
-          action: updateError({
-            tokenCtx,
-            orbitError,
-            setOrbitRetries,
-            showMessage,
-            memory,
-            coordinator,
-            fingerprint,
-            errorReporter,
-            getStrings,
-          }) as unknown as StategyError,
-          blocking: true,
-        })
-      );
-    addRemoteLinkStrategies(coordinator);
+            source: 'remote',
+            on: 'updateFail',
+            action: updateError({
+              tokenCtx,
+              orbitError,
+              setOrbitRetries,
+              showMessage,
+              memory,
+              coordinator,
+              fingerprint,
+              errorReporter,
+              getStrings,
+            }) as unknown as StategyError,
+            blocking: true,
+          })
+        );
+      addRemoteLinkStrategies(coordinator);
 
-    datachangeremote = coordinator.sourceNames.includes('datachanges')
-      ? (coordinator?.getSource('datachanges') as JSONAPISource)
-      : new JSONAPISource({
-          schema: memory?.schema,
-          keyMap: memory?.keyMap,
-          bucket: new IndexedDBBucket({
-            namespace:
-              'datachanges-' +
-              (tokData.sub || '').replace(/\|/g, '-') +
-              '-bucket',
-          }),
-          name: 'datachanges',
-          namespace: 'api',
-          host: API_CONFIG.host,
-          serializerSettingsFor: serializersSettings(),
-          defaultFetchSettings: {
-            headers: {
-              Authorization: 'Bearer ' + (tokenState.accessToken || ''),
-              'X-FP': fingerprint,
+      datachangeremote = coordinator.sourceNames.includes('datachanges')
+        ? (coordinator?.getSource('datachanges') as JSONAPISource)
+        : new JSONAPISource({
+            schema: memory?.schema,
+            keyMap: memory?.keyMap,
+            bucket: new IndexedDBBucket({
+              namespace:
+                'datachanges-' +
+                (tokData.sub || '').replace(/\|/g, '-') +
+                '-bucket',
+            }),
+            name: 'datachanges',
+            namespace: 'api',
+            host: API_CONFIG.host,
+            serializerSettingsFor: serializersSettings(),
+            defaultFetchSettings: {
+              headers: {
+                Authorization: 'Bearer ' + (tokenState.accessToken || ''),
+                'X-FP': fingerprint,
+              },
+              timeout: 100000,
             },
-            timeout: 100000,
-          },
-          defaultTransformOptions: {
-            useRemoteId: true,
-          },
-        });
-    if (!coordinator.sourceNames.includes('datachanges')) {
-      coordinator.addSource(datachangeremote);
-    }
-    if (!coordinator.strategyNames.includes('datachanges-query-fail'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'datachanges-query-fail',
-          source: 'datachanges',
-          on: 'queryFail',
-          action: datachangesQueryError({
-            tokenCtx,
-            orbitError,
-            coordinator,
-            fingerprint,
-            setOrbitRetries,
-          }) as unknown as StategyError,
-          blocking: true,
-        })
-      );
+            defaultTransformOptions: {
+              useRemoteId: true,
+            },
+          });
+      if (!coordinator.sourceNames.includes('datachanges')) {
+        coordinator.addSource(datachangeremote);
+      }
+      if (!coordinator.strategyNames.includes('datachanges-query-fail'))
+        coordinator.addStrategy(
+          new RequestStrategy({
+            name: 'datachanges-query-fail',
+            source: 'datachanges',
+            on: 'queryFail',
+            action: datachangesQueryError({
+              tokenCtx,
+              orbitError,
+              coordinator,
+              fingerprint,
+              setOrbitRetries,
+            }) as unknown as StategyError,
+            blocking: true,
+          })
+        );
+    });
   } //!offline
   let goRemote =
     !offline &&
@@ -313,11 +316,13 @@ const sourcesImpl = async (
     }
   }
 
-  if (!coordinator.activated)
-    await coordinator.activate({ logLevel: LogLevel.Warnings });
-  if (typeof backup?.cache?.openDB === 'function') {
-    await backup.cache.openDB();
-  }
+  await withCoordinatorLock(async () => {
+    if (!coordinator.activated)
+      await coordinator.activate({ logLevel: LogLevel.Warnings });
+    if (typeof backup?.cache?.openDB === 'function') {
+      await backup.cache.openDB();
+    }
+  });
 
   console.log('Coordinator will log warnings');
 
@@ -431,10 +436,8 @@ export const Sources = (
   ...args: Parameters<typeof sourcesImpl>
 ): Promise<SourcesReturn> => {
   if (sourcesPromise) return sourcesPromise; // dedupe concurrent invocations
-  sourcesPromise = withCoordinatorLock(() => sourcesImpl(...args)).finally(
-    () => {
-      sourcesPromise = null; // allow the next (sequential) login to run fresh
-    }
-  );
+  sourcesPromise = sourcesImpl(...args).finally(() => {
+    sourcesPromise = null; // allow the next (sequential) login to run fresh
+  });
   return sourcesPromise;
 };
