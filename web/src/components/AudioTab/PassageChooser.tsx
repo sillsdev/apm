@@ -147,6 +147,11 @@ export const PassageChooser = (props: IProps) => {
                 <Checkbox
                   checked={selectedIds.has(r.id)}
                   onChange={() => handleToggle(r.id)}
+                  slotProps={{
+                    input: {
+                      'aria-label': `${r.sectionDesc} ${r.reference}`.trim(),
+                    },
+                  }}
                 />
               </TableCell>
               <TableCell sx={{ whiteSpace: 'break-spaces' }}>
