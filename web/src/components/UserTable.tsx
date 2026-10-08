@@ -50,7 +50,7 @@ const getUser = (om: OrganizationMembership, users: User[]) => {
 const getName = (om: OrganizationMembership, users: User[]) => {
   const u = getUser(om, users) as UserD[];
   const firstUser = u[0] as UserD;
-  return u && u.length > 0 && firstUser.attributes && firstUser.attributes.name;
+  return u && u.length > 0 && firstUser.attributes?.name;
 };
 
 export function UserTable() {
@@ -68,7 +68,7 @@ export function UserTable() {
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { getUserRec } = useUser();
-  const [data, setData] = useState(Array<IRow>());
+  const [data, setData] = useState(new Array<IRow>());
   const { userIsAdmin } = useRole();
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [deleteItem, setDeleteItem] = useState('');
@@ -77,7 +77,7 @@ export function UserTable() {
   const [dialogVisible, setDialogVisible] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<string | undefined>();
-  const [, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [_, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const addToOrgAndGroup = useAddToOrgAndGroup();
   const teamDelete = useTeamDelete();
   const offlineProjectDelete = useOfflnProjDelete();
@@ -85,7 +85,7 @@ export function UserTable() {
   const handleInvite = () => {
     setDialogVisible(true);
   };
-  const handleInviteComplete = async () => {
+  const handleInviteComplete = () => {
     setDialogVisible(false);
   };
 
@@ -209,7 +209,7 @@ export function UserTable() {
             related(om, 'organization') === organization
         );
         const role = roles.find((r) => r.id === related(rec, 'role'));
-        return role && role.attributes.roleName === RoleNames.Admin;
+        return role?.attributes.roleName === RoleNames.Admin;
       }),
     [data, organizationMemberships, roles, organization]
   );
