@@ -6,6 +6,7 @@ import Memory from '@orbit/memory';
 import { RecordSchema } from '@orbit/records';
 import {
   bootstrapMayContinue,
+  detachOrbitRemote,
   removeOrbitRemote,
   trackBackupRestore,
   withCoordinatorLock,
@@ -42,33 +43,95 @@ describe('removeOrbitRemote', () => {
     expect(coordinator.activated).toBeInstanceOf(Promise);
   });
 
-  it('waits for an in-flight teardown and not for other work', async () => {
+  it('finishes a paused loading swap before logout teardown', async () => {
     const coordinator = await activatedCoordinator();
-    let releaseHeld: () => void = () => undefined;
-    const held = new Promise<void>((resolve) => {
-      releaseHeld = resolve;
+    let releaseLoad: () => void = () => undefined;
+    const paused = new Promise<void>((resolve) => {
+      releaseLoad = resolve;
     });
-    const holding = withCoordinatorLock(() => held);
-    let releaseSlow: () => void = () => undefined;
-    const slow = new Promise<void>((resolve) => {
-      releaseSlow = resolve;
+    const events: string[] = [];
+    const loading = (async () => {
+      await withCoordinatorLock(async () => {
+        events.push('load-lock');
+        await paused;
+        await detachOrbitRemote(coordinator, false);
+        events.push('load-detached');
+      });
+      events.push('load-between');
+      await withCoordinatorLock(async () => {
+        if (!coordinator.activated) {
+          await coordinator.activate({ logLevel: LogLevel.Warnings });
+        }
+        events.push('load-activate');
+      });
+      events.push('load-done');
+    })();
+    let teardown: Promise<void> = Promise.resolve();
+    try {
+      await Promise.resolve();
+      teardown = removeOrbitRemote(coordinator).then(() => {
+        events.push('teardown-done');
+      });
+      await Promise.resolve();
+      expect(events).toEqual(['load-lock']);
+      expect(coordinator.sourceNames).toContain('remote');
+
+      releaseLoad();
+      await loading;
+      await teardown;
+      expect(events).toEqual([
+        'load-lock',
+        'load-detached',
+        'load-between',
+        'teardown-done',
+        'load-activate',
+        'load-done',
+      ]);
+      expect(coordinator.sourceNames).toEqual(['memory']);
+      expect(coordinator.activated).toBeInstanceOf(Promise);
+    } finally {
+      releaseLoad();
+      await Promise.all(
+        [loading, teardown].map((p) => p.catch(() => undefined))
+      );
+    }
+  });
+
+  it('waits for the source swap and not for the query after it', async () => {
+    const coordinator = await activatedCoordinator();
+    let releaseSwap: () => void = () => undefined;
+    const swap = new Promise<void>((resolve) => {
+      releaseSwap = resolve;
     });
-    let logoutDone = false;
-    const logout = removeOrbitRemote(coordinator).then(() => {
-      logoutDone = true;
+    let releaseQuery: () => void = () => undefined;
+    const query = new Promise<void>((resolve) => {
+      releaseQuery = resolve;
     });
+    // Same shape as Sources: hold the lock only while swapping sources, then
+    // run the remote query outside it.
+    const login = (async () => {
+      await withCoordinatorLock(() => swap);
+      coordinator.getSource('memory');
+      await query;
+    })();
+    const logout = removeOrbitRemote(coordinator);
 
     await Promise.resolve();
-    expect(logoutDone).toBe(false);
+    expect(coordinator.sourceNames).toContain('remote');
 
-    releaseHeld();
-    await holding;
+    releaseSwap();
     await logout;
-    expect(logoutDone).toBe(true);
     expect(coordinator.sourceNames).toEqual(['memory']);
 
-    releaseSlow();
-    await slow;
+    let queryFinished = false;
+    void login.then(() => {
+      queryFinished = true;
+    });
+    await Promise.resolve();
+    expect(queryFinished).toBe(false);
+
+    releaseQuery();
+    await login;
   });
 
   it('waits for an in-flight backup restore before detaching remote', async () => {
