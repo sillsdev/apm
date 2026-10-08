@@ -64,7 +64,6 @@ import ExtendableDeleteExpansion from './ExtendableDeleteExpansion';
 import { AltActionBar } from './AltActionBar';
 import { StyledDialogTitle } from './StyledDialogTitle';
 import { Button } from '../control/Button';
-import { infoMsg } from '@utils/infoMsg';
 
 const Caption = styled(Typography)<TypographyProps>(() => ({
   width: 150,
@@ -489,7 +488,7 @@ export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
           logError(
             Severity.error,
             errorReporter,
-            infoMsg(error, 'Error saving user profile')
+            'Error saving user profile: ' + error.message
           );
         });
       const mbrRec = getMbrRoleRec(
@@ -508,7 +507,7 @@ export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
               logError(
                 Severity.error,
                 errorReporter,
-                infoMsg(error, 'Error saving user role')
+                'Error saving user role: ' + error.message
               );
             });
         }
