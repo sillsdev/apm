@@ -1575,11 +1575,11 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         flexDirection: 'column',
         flex: 1,
         minHeight: 0,
-        overflow: 'clip',
-        // Constrain the column to the player's width so the table and action
-        // row line up with the waveform's right edge (the player is sized to
-        // `width`, which already accounts for the pane's fit margin/scrollbar).
-        width,
+        overflow: 'hidden',
+        minWidth: 0,
+        // Fill the pane so the table and waveform can use leftover space to
+        // the right (TT-7623). The player is maxWidth 100%, so it follows.
+        width: '100%',
         maxWidth: '100%',
       }}
     >

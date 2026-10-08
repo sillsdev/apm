@@ -94,7 +94,14 @@ export default function MarkVersesTable({
       <Table stickyHeader size="small" aria-label="mark verses table">
         <TableHead>
           <TableRow>
-            <TableCell sx={{ pl: 1.5 }}>
+            <TableCell
+              sx={{
+                pl: 1.5,
+                // Keep "Start --> Stop" on one line (TT-7623).
+                whiteSpace: 'nowrap',
+                width: '1%',
+              }}
+            >
               {header[ColName.Limits]?.value ?? 'Start-Stop'}
             </TableCell>
             {/* Dedicated, always-present warning column so the reference text
