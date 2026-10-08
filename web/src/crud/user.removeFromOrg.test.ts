@@ -185,6 +185,64 @@ describe('RemoveUserFromOrg self-delete', () => {
     }
   });
 
+  it('deletes offline projects when the current user leaves a team that remains', async () => {
+    const memory = new MemorySource({ schema });
+    await seed(memory, { email: 'me@example.com' });
+    const me = memory.cache.query((q) =>
+      q.findRecord({ type: 'user', id: 'me' })
+    ) as Parameters<typeof RemoveUserFromOrg>[1];
+    const offlineProjectDelete = jest.fn();
+    await RemoveUserFromOrg(
+      memory,
+      me,
+      'org1',
+      'me',
+      jest.fn(),
+      offlineProjectDelete
+    );
+    expect(offlineProjectDelete).toHaveBeenCalledTimes(1);
+    expect(offlineProjectDelete).toHaveBeenCalledWith('p1');
+  });
+
+  it('does not delete offline projects when removing someone else', async () => {
+    const memory = new MemorySource({ schema });
+    await seed(memory, { email: 'admin@example.com' });
+    const admin = memory.cache.query((q) =>
+      q.findRecord({ type: 'user', id: 'admin' })
+    ) as Parameters<typeof RemoveUserFromOrg>[1];
+    const offlineProjectDelete = jest.fn();
+    await RemoveUserFromOrg(
+      memory,
+      admin,
+      'org1',
+      'me',
+      jest.fn(),
+      offlineProjectDelete
+    );
+    expect(offlineProjectDelete).not.toHaveBeenCalled();
+  });
+
+  it('leaves offline project deletion to team delete when the user was the last member', async () => {
+    const memory = new MemorySource({ schema });
+    await seed(memory, { email: 'me@example.com' });
+    await memory.update((t) =>
+      t.removeRecord({ type: 'organizationmembership', id: 'om-admin' })
+    );
+    const me = memory.cache.query((q) =>
+      q.findRecord({ type: 'user', id: 'me' })
+    ) as Parameters<typeof RemoveUserFromOrg>[1];
+    const offlineProjectDelete = jest.fn();
+    await RemoveUserFromOrg(
+      memory,
+      me,
+      'org1',
+      'me',
+      jest.fn(),
+      offlineProjectDelete
+    );
+    expect(offlineProjectDelete).not.toHaveBeenCalled();
+  });
+
   it('still removes membership when an invitation has no attributes', async () => {
     const memory = new MemorySource({ schema });
     await seed(memory);

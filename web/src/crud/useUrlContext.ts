@@ -37,6 +37,10 @@ export const useUrlContext = () => {
       setMyOrgRole(orgId); //do this even if the org hasn't changed because this gets reset more often
       if (projectId !== getGlobal('project')) setProject(projectId);
       setProjectType(projectId);
+      // Opening a project from its URL resolves the plan record above and used
+      // to skip this. Go Offline is hidden without a plan once no
+      // offlineAvailable row is left (for example after a team delete).
+      if (planRec.id && planRec.id !== getGlobal('plan')) setPlan(planRec.id);
       return projectId;
     }
     return getGlobal('project');

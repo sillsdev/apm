@@ -56,7 +56,8 @@ export async function RemoveUserFromOrg(
   deletedUser: User,
   organization: string | undefined,
   user: string,
-  teamDelete: (id: string) => Promise<void>
+  teamDelete: (id: string) => Promise<void>,
+  offlineProjectDelete?: (projectId: string) => Promise<void>
 ) {
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
@@ -151,6 +152,19 @@ export async function RemoveUserFromOrg(
     ).map((om) => related(om, 'organization'));
     const orphaned = organizationIds.filter((o) => !orgWithMembers.includes(o));
     await Promise.all(orphaned.map((o) => teamDelete(o)));
+
+    // teamDelete already removes offlineproject rows for an orphaned team.
+    // A user leaving a team that still has members keeps the projects online,
+    // but his local offline snapshots for those projects should go.
+    if (deletedUser.id === user && offlineProjectDelete) {
+      const orphanedIds = new Set(orphaned);
+      for (const project of projects) {
+        const orgId = related(project, 'organization');
+        if (!organizationIds.includes(orgId) || orphanedIds.has(orgId))
+          continue;
+        await offlineProjectDelete(project.id);
+      }
+    }
   } catch (err) {
     // A thrown update never reaches the remote queue. Surface it; callers await this.
     console.error('RemoveUserFromOrg failed', err);

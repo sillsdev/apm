@@ -26,6 +26,7 @@ import {
   useUser,
   useRole,
 } from '../crud';
+import { useOfflnProjDelete } from '../crud/useOfflnProjDelete';
 import { GrowingSpacer, Button, ActionRow } from '../control';
 import { sharedSelector, usertableSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -79,6 +80,7 @@ export function UserTable() {
   const [, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const addToOrgAndGroup = useAddToOrgAndGroup();
   const teamDelete = useTeamDelete();
+  const offlineProjectDelete = useOfflnProjDelete();
 
   const handleInvite = () => {
     setDialogVisible(true);
@@ -141,7 +143,8 @@ export function UserTable() {
         deleteRec,
         organization,
         user,
-        teamDelete
+        teamDelete,
+        offlineProjectDelete
       );
       localStorage.setItem(localUserKey(LocalKey.url), '/');
       setDeleteItem('');

@@ -53,6 +53,7 @@ import { RemoveUserFromOrg } from '../crud/user';
 import { useAddToOrgAndGroup } from '../crud/useAddToOrgAndGroup';
 import { useRole } from '../crud/useRole';
 import { useTeamDelete } from '../crud/useTeamDelete';
+import { useOfflnProjDelete } from '../crud/useOfflnProjDelete';
 import { useUser } from '../crud/useUser';
 import { DateTime } from 'luxon';
 import {
@@ -317,6 +318,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
   const { showMessage } = useSnackBar();
   const addToOrgAndGroup = useAddToOrgAndGroup();
   const teamDelete = useTeamDelete();
+  const offlineProjectDelete = useOfflnProjDelete();
   const toolId = 'profile';
   const saving = useRef(false);
   const [confirmCancel, setConfirmCancel] = useState<string>();
@@ -644,7 +646,14 @@ export function ProfileDialog(props: ProfileDialogProps) {
     const deleteRec = getUserRec(deleteItem);
     try {
       await waitForRemoteQueue('wait for any changes to finish');
-      await RemoveUserFromOrg(memory, deleteRec, undefined, user, teamDelete);
+      await RemoveUserFromOrg(
+        memory,
+        deleteRec,
+        undefined,
+        user,
+        teamDelete,
+        offlineProjectDelete
+      );
       await memory.update((tb) =>
         tb.removeRecord({ type: 'user', id: deleteItem })
       );

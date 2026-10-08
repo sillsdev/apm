@@ -53,6 +53,9 @@ jest.mock('../crud/useRole', () => ({
 jest.mock('../crud/useTeamDelete', () => ({
   useTeamDelete: jest.fn(),
 }));
+jest.mock('../crud/useOfflnProjDelete', () => ({
+  useOfflnProjDelete: () => jest.fn(),
+}));
 jest.mock('../utils/useMyNavigate', () => ({
   useMyNavigate: jest.fn(),
 }));
