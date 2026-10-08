@@ -7,6 +7,9 @@ import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
 import { PassageStepButton } from './PassageStepButton';
 import { useMobile } from '../../utils';
+import { useCardHeight, useMeasureCardHeight } from '../CardSize/useCardSize';
+
+const minPassageCardHeight = 200;
 
 interface IProps {
   cardInfo: ISheet;
@@ -52,6 +55,16 @@ export function PassageCard(props: IProps) {
   const passageId = cardInfo.passage?.id;
   const isChapter = psgType === PassageTypeEnum.CHAPTERNUMBER;
 
+  // Chapter cards stretch their play button to fill the card, so they'd report
+  // the height they were given rather than what they need. At phone width
+  // there's one card per row, so there's nothing to line up with.
+  const cardHeight = useCardHeight(minPassageCardHeight);
+  const contentRef = useMeasureCardHeight(
+    isChapter || isMobileWidth
+      ? undefined
+      : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
+  );
+
   const playButton = (
     <PlayButton
       mediaId={cardInfo.mediaId?.id}
@@ -70,9 +83,10 @@ export function PassageCard(props: IProps) {
       sx={{
         minWidth: isMobileWidth ? '100%' : 275,
         maxWidth: 400,
-        minHeight: 200,
+        minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
         display: 'flex',
         flexDirection: 'column',
+        p: 2,
         ...(isCurrent && {
           outline: '2px solid',
           outlineColor: 'primary.light',
@@ -81,13 +95,13 @@ export function PassageCard(props: IProps) {
       }}
     >
       <Box
+        ref={contentRef}
         sx={{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
           gap: 1,
           flex: 1,
-          p: 2,
         }}
       >
         <PassageCardHeader
