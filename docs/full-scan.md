@@ -33,11 +33,11 @@ sonar.javascript.lcov.reportPaths=web/coverage/lcov.info
 
 The two localization files are excluded because they're generated.
 
-5. Run the scanner. It needs no install because it runs through npx:
+5. Run the scanner. It needs no install because it runs through npx. The token is the `SONAR_TOKEN` environment variable (`${SONAR_TOKEN}`):
 
 ```powershell
 cd web; npm run test:coverage; cd ..   \# optional: adds coverage data to the report
-npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=\<your-token\>"
+npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${SONAR_TOKEN}"
 ```
 
 6. Look at the results under Issues, filtered by Type = Code Smell (newer versions call it "Maintainability"). You can sort by severity, rule or file.
@@ -53,5 +53,5 @@ I've updated [sonar-project.properties](vscode-webview://1vvl62agp8nmso4u3onassc
 Run it again with:
 
 ```powershell
-npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=\<your-token\>"
+npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${SONAR_TOKEN}"
 ```
