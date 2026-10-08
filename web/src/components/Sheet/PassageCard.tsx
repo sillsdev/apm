@@ -9,7 +9,7 @@ import { PassageStepButton } from './PassageStepButton';
 import { useMobile } from '../../utils';
 import { useCardHeight, useMeasureCardHeight } from '../CardSize/useCardSize';
 
-const minPassageCardHeight = 200;
+const minPassageCardHeight = 176;
 
 interface IProps {
   cardInfo: ISheet;
@@ -81,8 +81,7 @@ export function PassageCard(props: IProps) {
       data-cy={passageId ? `passage-card-${passageId}` : undefined}
       aria-current={isCurrent ? 'true' : undefined}
       sx={{
-        minWidth: isMobileWidth ? '100%' : 275,
-        maxWidth: 400,
+        height: '100%',
         minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
         display: 'flex',
         flexDirection: 'column',
