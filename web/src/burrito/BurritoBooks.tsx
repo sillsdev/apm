@@ -130,11 +130,13 @@ export function BurritoBooks() {
     const catalog = allBookData.find((b) => b.code === book)?.short;
     if (catalog) return catalog;
     if (/^\d{3}$/.test(book)) {
-      const proj = teamProjs.find(
-        (p) =>
+      const proj = teamProjs.find((p) => {
+        const projectBook = getProjectDefault(projDefBook, p);
+        return (
           checked.includes(p.id) &&
-          String(getProjectDefault(projDefBook, p) ?? '').trim() === book
-      );
+          (typeof projectBook === 'string' ? projectBook : '').trim() === book
+        );
+      });
       if (proj?.attributes?.name) return proj.attributes.name;
     }
     return book;
@@ -146,16 +148,16 @@ export function BurritoBooks() {
 
   React.useEffect(() => {
     if (teamId && teams) {
-      const team = teams.find((t) => t.id === teamId);
+      const team = teams.some((t) => t.id === teamId);
       if (team) {
         const teamProjs = projects.filter(
           (p) => related(p, 'organization') === teamId
         );
         setTeamProjs(teamProjs);
-        const teamProjIds = teamProjs.map((p) => p.id);
+        const teamProjIds = new Set(teamProjs.map((p) => p.id));
         const curProjects = getOrgDefault(burritoProjects, teamId) as string[];
         if (curProjects) {
-          setChecked(curProjects.filter((p) => teamProjIds.includes(p)));
+          setChecked(curProjects.filter((p) => teamProjIds.has(p)));
         }
         const curBooks = getOrgDefault(burritoBooks, teamId) as string[];
         if (curBooks) {
@@ -180,22 +182,25 @@ export function BurritoBooks() {
         );
         let book: string | undefined = undefined;
         passageRecs.forEach((p) => {
-          if (p?.attributes?.book) {
-            if (book && book !== p.attributes.book) {
-              console.warn('multiple books in one project');
-            }
-            book = p.attributes.book;
-            if (book) {
-              newBooks.add(book);
-            } else {
-              const fromDefault = projectDefaultToBurritoBookKey(
-                (getProjectDefault(projDefBook, proj) as string) ?? 'B01',
-                num2BookCode
-              );
-              if (fromDefault) newBooks.add(fromDefault);
-            }
+          const passageBook = p?.attributes?.book;
+          if (!passageBook) return;
+          if (book && book !== passageBook) {
+            console.warn('multiple books in one project');
           }
+          book = passageBook;
+          newBooks.add(passageBook);
         });
+        // General projects store the book on the project default, not on passages.
+        if (!book) {
+          const projectBook = getProjectDefault(projDefBook, proj);
+          if (typeof projectBook === 'string' && projectBook.trim()) {
+            const fromDefault = projectDefaultToBurritoBookKey(
+              projectBook,
+              num2BookCode
+            );
+            if (fromDefault) newBooks.add(fromDefault);
+          }
+        }
       });
     setBooks(Array.from(newBooks).sort(bookSort));
     // eslint-disable-next-line react-hooks/exhaustive-deps

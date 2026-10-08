@@ -32,6 +32,10 @@ const PROJ_ID = 'proj-1';
 const PLAN_ID = 'plan-1';
 const SECTION_ID = 'sec-1';
 const PASSAGE_ID = 'pas-1';
+const GEN_PROJ_ID = 'proj-g';
+const GEN_PLAN_ID = 'plan-g';
+const GEN_SECTION_ID = 'sec-g';
+const GEN_PASSAGE_ID = 'pas-g';
 const USER_ID = 'test-user-id';
 
 const createTeamDataset = (): Record<string, MockRec[]> => ({
@@ -140,6 +144,77 @@ const createTeamDataset = (): Record<string, MockRec[]> => ({
     },
   ],
 });
+
+/** Scripture (passage book GEN) plus a General project whose book lives only on the project default. */
+const createScriptureAndGeneralDataset = (): Record<string, MockRec[]> => {
+  const base = createTeamDataset();
+  return {
+    ...base,
+    project: [
+      ...base.project,
+      {
+        id: GEN_PROJ_ID,
+        type: 'project',
+        attributes: {
+          name: 'General Proj',
+          defaultParams: '{"book":"010"}',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          organization: { data: { type: 'organization', id: TEAM_ID } },
+        },
+      },
+    ],
+    plan: [
+      ...base.plan,
+      {
+        id: GEN_PLAN_ID,
+        type: 'plan',
+        attributes: {
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          project: { data: { type: 'project', id: GEN_PROJ_ID } },
+        },
+      },
+    ],
+    section: [
+      ...base.section,
+      {
+        id: GEN_SECTION_ID,
+        type: 'section',
+        attributes: {
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: GEN_PLAN_ID } },
+        },
+      },
+    ],
+    passage: [
+      ...base.passage,
+      {
+        id: GEN_PASSAGE_ID,
+        type: 'passage',
+        attributes: {
+          reference: 'p1',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: GEN_SECTION_ID } },
+        },
+      },
+    ],
+  };
+};
 
 function createBurritoMockMemory(dataset: Record<string, MockRec[]>) {
   const getRecords = (model: string) => dataset[model] ?? [];
@@ -339,6 +414,24 @@ describe('BurritoBooks', () => {
       .click();
 
     cy.contains('.MuiListItem-root', 'Genesis').should('be.visible');
+  });
+
+  it('lists the General project book when its passages have no book', () => {
+    const memory = createBurritoMockMemory(createScriptureAndGeneralDataset());
+    mountBurritoBooks(createInitialState(memory));
+
+    cy.get(`#checkbox-list-label-${PROJ_ID}`).click();
+    cy.get(`#checkbox-list-label-${GEN_PROJ_ID}`).click();
+
+    // Project checkboxes are also list items and already show "General Proj".
+    // Scope to Selected Books so this fails until the General book key is collected.
+    cy.contains('h5', 'Selected Books')
+      .parent()
+      .within(() => {
+        cy.get('.MuiListItem-root').should('have.length', 2);
+        cy.contains('.MuiListItem-root', 'Genesis').should('be.visible');
+        cy.contains('.MuiListItem-root', 'General Proj').should('be.visible');
+      });
   });
 
   it('disables Save until at least one project is selected', () => {
