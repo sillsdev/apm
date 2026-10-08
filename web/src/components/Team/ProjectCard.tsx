@@ -85,7 +85,7 @@ import CategoryTabs from './CategoryTabs';
 import ProjectMenu from './ProjectMenu';
 import { ProjectDialog } from './ProjectDialog';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
-import { useCardHeight, useMeasureCardHeight } from './useCardSize';
+import { useCardHeight, useMeasureCardHeight } from '../CardSize/useCardSize';
 import { Button } from '../../control/Button';
 
 interface IProps {
