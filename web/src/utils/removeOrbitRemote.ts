@@ -15,7 +15,33 @@ const remoteStrategies = [
 // already gone (deepGet on undefined, reading 'memory'). Go Offline hits this
 // when logout and another teardown both drop the remote. Queue only that
 // teardown and the following activate — not backup restore or remote queries.
+// Logout still waits for an in-flight backup restore before deactivating, so
+// IndexedDB is not closed under the restore query.
 let coordinatorTail: Promise<void> = Promise.resolve();
+let restoreInFlight: Promise<unknown> = Promise.resolve();
+
+/** Register the backup restore logout must finish before it deactivates. */
+export function trackBackupRestore<T>(restore: Promise<T>): Promise<T> {
+  const tracked = restore.then(
+    (value) => {
+      if (restoreInFlight === tracked) restoreInFlight = Promise.resolve();
+      return value;
+    },
+    (err: unknown) => {
+      if (restoreInFlight === tracked) restoreInFlight = Promise.resolve();
+      throw err;
+    }
+  );
+  restoreInFlight = tracked;
+  return tracked;
+}
+
+export function waitForBackupRestore(): Promise<void> {
+  return restoreInFlight.then(
+    () => undefined,
+    () => undefined
+  );
+}
 
 export function withCoordinatorLock<T>(task: () => Promise<T>): Promise<T> {
   const run = coordinatorTail.then(task, task);
@@ -51,5 +77,28 @@ export function removeOrbitRemote(
   coordinator: Coordinator | undefined,
   reactivate = true
 ): Promise<void> {
-  return withCoordinatorLock(() => detachOrbitRemote(coordinator, reactivate));
+  return waitForBackupRestore().then(() =>
+    withCoordinatorLock(() => detachOrbitRemote(coordinator, reactivate))
+  );
+}
+
+/** Login stopped because logout cleared the session or detached remote sync. */
+export class BootstrapCancelled extends Error {
+  constructor() {
+    super('Bootstrap cancelled');
+    this.name = 'BootstrapCancelled';
+  }
+}
+
+/** Online login may continue only while this session still owns a synced remote. */
+export function onlineBootstrapIntact(
+  coordinator: Pick<Coordinator, 'sourceNames' | 'strategyNames'> | undefined,
+  loggedIn: boolean
+): boolean {
+  if (!loggedIn || !coordinator?.sourceNames.includes('remote')) return false;
+  return (
+    coordinator.strategyNames.includes('remote-request') &&
+    coordinator.strategyNames.includes('remote-update') &&
+    coordinator.strategyNames.includes('remote-sync')
+  );
 }

@@ -1,5 +1,6 @@
 import { memory, backup, schema } from '../schema';
 import { logError, Severity, infoMsg, waitForIt, LocalKey } from '../utils';
+import { trackBackupRestore } from '../utils/removeOrbitRemote';
 import { RecordQueryBuilder, UninitializedRecord } from '@orbit/records';
 import { related } from '../crud';
 import { OfflineProject } from '../model';
@@ -14,7 +15,7 @@ export async function restoreBackup(
   coordinator?: Coordinator
 ): Promise<string[]> {
   if (!restorePromise) {
-    restorePromise = restoreBackupOnce(coordinator);
+    restorePromise = trackBackupRestore(restoreBackupOnce(coordinator));
   }
   return restorePromise;
 }
@@ -68,6 +69,6 @@ async function restoreBackupOnce(coordinator?: Coordinator): Promise<string[]> {
       bugsnagClient,
       infoMsg(err as Error, 'IndexedDB Pull error')
     );
+    throw err;
   }
-  return [];
 }

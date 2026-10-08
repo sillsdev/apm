@@ -24,7 +24,8 @@ const orbitMsg = (err: Error | IApiError | null, info: string): string =>
 
 export const isOrbitQueueCancelled = (ex: unknown): boolean =>
   ex instanceof Error &&
-  /TaskQueue#clear|Processing cancelled/i.test(ex.message);
+  (ex.name === 'BootstrapCancelled' ||
+    /TaskQueue#clear|Processing cancelled/i.test(ex.message));
 
 export const orbitErr = (
   err: Error | IApiError | null,

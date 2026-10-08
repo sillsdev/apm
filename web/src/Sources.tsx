@@ -41,7 +41,9 @@ import {
   updateError,
 } from './utils/orbitStrategyErrors';
 import {
+  BootstrapCancelled,
   detachOrbitRemote,
+  onlineBootstrapIntact,
   withCoordinatorLock,
 } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
@@ -158,15 +160,31 @@ const sourcesImpl = async (
   let datachangeremote: JSONAPISource = {} as JSONAPISource;
 
   const offline = !tokenState.accessToken;
+  // Logout can drop the remote as soon as the teardown lock releases. The
+  // local `remote` source would still answer queries, so do not continue or
+  // publish a successful bootstrap unless this session still owns remote sync.
+  const ensureOnline = () => {
+    if (offline) return;
+    if (
+      !onlineBootstrapIntact(
+        coordinator,
+        localStorage.getItem(LocalKey.loggedIn) === 'true'
+      )
+    ) {
+      throw new BootstrapCancelled();
+    }
+  };
 
   if (!offline) {
     resetUnauthorizedRetry();
     // RestoreBackupOnMount may still be pulling IndexedDB. Finish that before
     // deactivate() closes the backup DB ("IndexedDB database is not yet open").
-    // Outside the coordinator lock: logout must not wait on this restore.
+    // Logout waits for this same restore before its own deactivate. A failed
+    // restore rejects instead of looking like an empty backup.
     if (isElectron) {
       await restoreBackup(coordinator);
     }
+    ensureOnline();
     // Lock only while the coordinator is torn down and the remote sources are
     // swapped. Remote queries and ITF export stay outside so logout can proceed.
     await withCoordinatorLock(async () => {
@@ -293,6 +311,7 @@ const sourcesImpl = async (
           })
         );
     });
+    ensureOnline();
   } //!offline
   let goRemote =
     !offline &&
@@ -316,6 +335,7 @@ const sourcesImpl = async (
     }
   }
 
+  ensureOnline();
   await withCoordinatorLock(async () => {
     if (!coordinator.activated)
       await coordinator.activate({ logLevel: LogLevel.Warnings });
@@ -323,6 +343,7 @@ const sourcesImpl = async (
       await backup.cache.openDB();
     }
   });
+  ensureOnline();
 
   console.log('Coordinator will log warnings');
 
@@ -379,6 +400,7 @@ const sourcesImpl = async (
       }
     }
   }
+  ensureOnline();
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */
   if (!offline) {
     console.log(`Activating remote for user: ${tokData.sub}`);
@@ -390,6 +412,7 @@ const sourcesImpl = async (
     )) as UserD[];
     console.log(`has user rec: ${tokData.sub}`);
     if (!Array.isArray(uRecs)) uRecs = [uRecs];
+    ensureOnline();
     const user = uRecs[0] as UserD;
     localStorage.setItem(LocalKey.userId, user.id);
     localStorage.setItem(LocalKey.onlineUserId, user.id);
@@ -428,6 +451,16 @@ const sourcesImpl = async (
     const token = tokenState.accessToken || null;
     console.log(`Updating consultant workflow step`);
     await updateConsultantWorkflowStep(token, memory, user);
+  }
+  if (
+    !offline &&
+    !onlineBootstrapIntact(
+      coordinator,
+      localStorage.getItem(LocalKey.loggedIn) === 'true'
+    )
+  ) {
+    setUser('');
+    throw new BootstrapCancelled();
   }
   return { syncBuffer, syncFile, goRemote };
 };
