@@ -1,0 +1,50 @@
+---
+description: Recording component tests. Use when changing MediaRecord, AudioMediaRecorder, WSAudioPlayer, useWaveSurfer, cy.clock, or waveform duration (TT-7276, TT-7384).
+globs: web/**/*MediaRecord*,web/**/AudioMediaRecorder.ts,web/**/WSAudioPlayer.tsx,web/**/useWaveSurfer.tsx,web/**/*recording*
+alwaysApply: false
+---
+
+# Recording component tests
+
+Prove red and green with `.cursor/rules/tdd-takeaways.mdc`. Run the spec from `web`:
+
+```powershell
+npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx
+```
+
+Expect fail without the fix (waveform duration stuck at `0:01`) and pass with the fix.
+
+## Discriminating assertion
+
+Save becoming enabled is a false green: Save turns on with about one second of decodable preview audio while `cy.clock()` shows the full take. After pause, require waveform-backed duration (`#wsAudioDuration`) to match ticks recorded. Parse `m:ss` and assert `>= minSeconds` (3 ticks → `>= 2`, 95 ticks → `>= 90`).
+
+## Production path
+
+- Use real components (`MediaRecord` → `WSAudioPlayer` → `useWaveSurfer`). Leave the player unstubbed for integration regressions.
+- Patch browser APIs on `window` (`getUserMedia`, optional `MediaRecorder`, `AudioWorklet`) via `cypress/support/recordingMocks.ts`.
+- Force the MediaRecorder fallback (`forceMediaRecorderFallback: true`) when the bug lives in `AudioMediaRecorder`.
+- `MockMediaRecorder`: emit one-second WAV fragments per timeslice so concatenated chunks reproduce the decode/merge failure. Use `Date.now()` for elapsed slices (it advances with `cy.tick`; `performance.now()` does not under `cy.clock()`).
+- Mock `stop()` flushes pending chunks before setting `state = 'inactive'` (`emitPreviewChunk` checks `state === 'recording'`).
+
+## `cy.clock()`
+
+- `beforeEach(() => cy.clock())` for deterministic preview ticks.
+- After click Record, `cy.tick(100)` to flush async `recorder.start()`.
+- On pause, `cy.tick(200)` for `AudioMediaRecorder.stop()`'s 100ms chunk wait.
+- `assertSaveReady()` may `cy.tick(500)` to flush post-stop UI updates.
+
+## Slice smallest to full
+
+1. Tracer: short record → pause → Save + duration.
+2. Long record (~95 ticks) — TT-7384.
+3. Duration advances during record — TT-7276.
+4. Overdub second take — TT-7276 scenario 2.
+
+## Failures these tests caught
+
+- **Decode trap:** `decodeAudioData` on concatenated WAV fragments can succeed and return only the first RIFF (~1s). Skip accumulated decode when chunks are multiple `audio/wav`; merge per-chunk instead.
+- **Async stop:** `await handleChanged()` in `onRecordStop`.
+- **Load races:** bump a load generation on `wsStopRecord` so an in-flight preview load cannot overwrite the final stop take in `useWaveSurfer`.
+- **Unit backstop:** `AudioMediaRecorder.test.ts` for preview/stop blob shape; component test for the UI path.
+
+When the test passes without the fix, check in order: assertion too weak (Save vs waveform duration); mock chunk shape (native vs mock `MediaRecorder`); harness (`stop()` order, frozen timers, missing `cy.tick` after async stop); production edited by a test-only change (revert production files and re-run red).

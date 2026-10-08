@@ -1,0 +1,33 @@
+---
+description: Compare-step player refs. Use when LimitedMediaPlayer, TeamCheckReference, or MediaPlayer end-of-play resets, or a second resource fails to play (TT-7005).
+globs: web/**/LimitedMediaPlayer.tsx,web/**/MediaPlayer.tsx,web/**/TeamCheckReference.tsx,web/**/TeamCheckReference.test.tsx,web/**/LimitedMediaPlayer.test.tsx
+alwaysApply: false
+---
+
+# Compare-step player
+
+On the Compare step, picking a second resource does not play it and the player blinks. Blocking the dropdown while `itemPlaying` (PR #606) hid the bug until playback finished and the control unlocked. A red test that only saw `disabled: true` on a mocked child locked in that wrong behaviour.
+
+Prove red and green with `.cursor/rules/tdd-takeaways.mdc`.
+
+## Root cause
+
+`LimitedMediaPlayer.resetPlay()` cleared `durationRef` and left `valueTracker` and `stop` holding the previous resource. `timeUpdate`'s end heuristic is guarded by `valueTracker.current !== 0`, so after anything had played that guard stayed true.
+
+- `TeamCheckReference` renders `LimitedMediaPlayer` on every resource change, so its refs survive. `PassageDetailArtifacts` renders `{playItem !== '' && <LimitedMediaPlayer …>}`, which destroys the refs. Only Compare showed the bug.
+- On a new blob, `WSAudioPlayer` calls `setDuration(0); setProgress(0)` before decode, and `setProgress` forwards to `onProgress`. With `durationRef === 0` and a stale `valueTracker`, `timeUpdate(0)` reads as end-of-media and fires `onEnded` on load.
+- `onEnded` → `handleEnded` cleared `playItem` and bumped `resetCount`, whose effect re-selected the stored resource 500 ms later and re-armed `PassageDetailContext`'s 2-second auto-play timer. Reload → spurious `ended()` → remount loop.
+
+## Fix
+
+Clear end-detection refs when the source changes. `resetMediaTiming()` clears `stop` and `durationRef` and calls `resetPlay()` (`valueTracker`, position, slider), matching `MediaPlayer.resetWaveSurferTiming`. Require `durationRef.current > 0` before the duration-based end test. `handleEnded` leaves the `resetCount` clear/restore cycle unused. `ended()` calls only `resetPlay()`.
+
+`resetPlay()` rewinds one playthrough. `resetMediaTiming()` also clears media-scoped timing and runs only from the `[srcMediaId]` effect. Clearing `stop` and `durationRef` inside `resetPlay()` removed the end boundary for a replay of the same loaded resource, because that replay never reports `onDuration` again. Regression: play to the end, replay with no second `onDuration`, and assert `onEnded` fires again.
+
+## Tests
+
+`LimitedMediaPlayer.test.tsx` mocks `HiddenPlayer` and captures `onProgress`, `onDuration`, and `setPlaying`. Replay production order: play to end → switch `srcMediaId` → `onDuration(0)`, `onProgress(0)`. Pair `expect(onEnded).not.toHaveBeenCalled()` with a follow-up assertion that the new source still ends at its own end.
+
+React 19 function components receive `undefined` as the second call argument. Read `mock.calls[0][0]` for props. `jsdom` `localStorage` is a Proxy: seed with `localStorage.setItem` and `localStorage.clear()` in `beforeEach`.
+
+Files: [LimitedMediaPlayer.tsx](../../web/src/components/LimitedMediaPlayer.tsx), [LimitedMediaPlayer.test.tsx](../../web/src/components/LimitedMediaPlayer.test.tsx), [TeamCheckReference.tsx](../../web/src/components/PassageDetail/TeamCheckReference.tsx), [TeamCheckReference.test.tsx](../../web/src/components/PassageDetail/TeamCheckReference.test.tsx), [MediaPlayer.tsx](../../web/src/components/MediaPlayer.tsx).
