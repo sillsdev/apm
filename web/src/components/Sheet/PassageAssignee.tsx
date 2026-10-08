@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { Person } from '@mui/icons-material';
 import { RecordIdentity } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -14,7 +14,7 @@ export function PassageAssignee({ assign }: IProps) {
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
 
   return (
-    <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
+    <Box>
       {assign ? (
         <TaskAvatar assigned={assign} />
       ) : (
@@ -23,10 +23,11 @@ export function PassageAssignee({ assign }: IProps) {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
-          <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
-          {t.unassigned || 'Unassigned'}
+          <Person />
+          <Typography>{t.unassigned}</Typography>
         </Box>
       )}
     </Box>
