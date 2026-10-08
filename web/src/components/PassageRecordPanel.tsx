@@ -336,7 +336,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                 onSaving={() => setBusy(true)}
                 onReady={() => setBusy(false)}
                 defaultFilename={defaultFilename}
-                allowRecord={hasRights}
+                allowRecord={hasRights && active}
                 allowWave={allowWave}
                 setCanSave={setCanSave}
                 setCanCancel={setCanCancel}
