@@ -13,18 +13,26 @@ export const axiosError = (e: IAxiosStatus): Error =>
     message: `${e.errStatus}: ${e.errMsg}`,
   }) as Error;
 
-const orbitMsg = (err: Error | IApiError | null, info: string): string =>
-  err instanceof ServerError &&
-  (err.data as { errors: { detail: string }[] }).errors?.length > 0
-    ? info +
+const orbitMsg = (err: Error | IApiError | null, info: string): string => {
+  if (
+    err instanceof ServerError &&
+    (err.data as { errors: { detail: string }[] }).errors?.length > 0
+  ) {
+    return (
+      info +
       ': ' +
       err.message +
       ((err.data as { errors: { detail: string }[] }).errors?.[0]?.detail || '')
-    : info + (err ? ': ' + err.message : '');
+    );
+  }
+
+  return info + (err ? ': ' + err.message : '');
+};
 
 export const isOrbitQueueCancelled = (ex: unknown): boolean =>
   ex instanceof Error &&
-  /TaskQueue#clear|Processing cancelled/i.test(ex.message);
+  (ex.name === 'BootstrapCancelled' ||
+    /TaskQueue#clear|Processing cancelled/i.test(ex.message));
 
 export const orbitErr = (
   err: Error | IApiError | null,
