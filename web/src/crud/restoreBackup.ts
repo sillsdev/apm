@@ -14,11 +14,9 @@ let restorePromise: Promise<string[]> | null = null;
 export async function restoreBackup(
   coordinator?: Coordinator
 ): Promise<string[]> {
-  if (!restorePromise) {
-    // Pass a thunk so a pending teardown can refuse the query before it starts.
-    // A refusal is not cached: restorePromise stays null and a later login can retry.
-    restorePromise = trackBackupRestore(() => restoreBackupOnce(coordinator));
-  }
+  // Pass a thunk so a pending teardown can refuse the query before it starts.
+  // A refusal is not cached: restorePromise stays null and a later login can retry.
+  restorePromise ??= trackBackupRestore(() => restoreBackupOnce(coordinator));
   return restorePromise;
 }
 

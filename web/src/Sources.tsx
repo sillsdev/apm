@@ -137,7 +137,7 @@ const sourcesImpl = async (
 
   const bucket = new IndexedDBBucket({
     namespace:
-      'transcriber-' + (tokData.sub || '').replace(/\|/g, '-') + '-bucket',
+      'transcriber-' + (tokData.sub || '').replaceAll('|', '-') + '-bucket',
   }) as Bucket;
 
   //set up strategies
@@ -276,7 +276,7 @@ const sourcesImpl = async (
             bucket: new IndexedDBBucket({
               namespace:
                 'datachanges-' +
-                (tokData.sub || '').replace(/\|/g, '-') +
+                (tokData.sub || '').replaceAll('|', '-') +
                 '-bucket',
             }),
             name: 'datachanges',
@@ -429,15 +429,12 @@ const sourcesImpl = async (
       );
       await orbitReset(remote, setOrbitRetries);
     }
-    if (
-      new Date().getTime() - new Date(user.attributes.dateUpdated).getTime() <=
-      60000
-    ) {
+    if (Date.now() - new Date(user.attributes.dateUpdated).getTime() <= 60000) {
       console.log(`Forcing data changes`);
       await forceDataChanges();
       console.log(`Forcing complete`);
     }
-    logLoginAnalytics(tokenState.accessToken, errorReporter);
+    await logLoginAnalytics(tokenState.accessToken, errorReporter);
   }
   const user = localStorage.getItem(LocalKey.userId) as string;
   setUser(user);

@@ -1,5 +1,4 @@
-import { LogLevel } from '@orbit/coordinator';
-import Coordinator from '@orbit/coordinator';
+import Coordinator, { LogLevel } from '@orbit/coordinator';
 
 const remoteStrategies = [
   'remote-query-fail',
