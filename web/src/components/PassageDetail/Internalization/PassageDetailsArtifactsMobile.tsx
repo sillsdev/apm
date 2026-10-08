@@ -4,9 +4,7 @@ import {
   IPassageDetailArtifactsStrings,
   MediaFileD,
   SectionResourceD,
-  ArtifactType,
   Resource,
-  SheetLevel,
   ISharedStrings,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
@@ -53,8 +51,6 @@ import {
   passageDetailArtifactsSelector,
   sharedSelector,
 } from '../../../selector';
-import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
-import { PassageTypeEnum } from '../../../model/passageType';
 import { VertListDnd } from '../../../hoc/VertListDnd';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { LaunchLink } from '../../../control/LaunchLink';
@@ -68,10 +64,7 @@ import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import {
-  generalResourceMedia,
-  projectResourceTypeIds,
-} from './generalResourceMedia';
+import { generalResourceMedia } from './generalResourceMedia';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -82,11 +75,12 @@ import { AddResourceAction } from './AddResourceAction';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import IconMenu from '../../../control/IconMenu';
 import AddResourceWizard, { WizardLaunch } from './AddResourceWizard';
+import { useResourceScopeLabels } from './useResourceScopeLabels';
+import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 export function PassageDetailArtifactsMobile() {
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
   const [memory] = useGlobal('memory');
   const [busy, setBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [remoteBusy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
@@ -132,6 +126,13 @@ export function PassageDetailArtifactsMobile() {
   const [allowEditSave, setAllowEditSave] = useState(false);
   // Pending open request handed to the add-resource wizard (null = closed).
   const [wizardLaunch, setWizardLaunch] = useState<WizardLaunch | null>(null);
+  // Bumped on every launch so the wizard remounts fresh each time it opens — it
+  // resets its own state by construction instead of a hand-maintained teardown.
+  const [wizardKey, setWizardKey] = useState(0);
+  const launchWizard = (next: WizardLaunch) => {
+    setWizardLaunch(next);
+    setWizardKey((k) => k + 1);
+  };
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [editAudio, setEditAudio] = useState<boolean>(false);
   const mediaRef = useRef<MediaFileD | undefined>(undefined);
@@ -203,11 +204,9 @@ export function PassageDetailArtifactsMobile() {
 
   // Both projectresource type records (offline + remote); used to resolve
   // general resources for the type label, Edit, and Delete (see
-  // [[generalResourceMedia]]).
-  const projResourceTypeIds = useMemo(
-    () => projectResourceTypeIds(artifactTypes),
-    [artifactTypes]
-  );
+  // [[generalResourceMedia]]). Shared with the add wizard via this hook so the
+  // two resolve the same records (see useResourceArtifactTypes).
+  const { projResourceTypeIds } = useResourceArtifactTypes();
 
   const handlePlay = (id: string) => {
     if (id === playItem) {
@@ -356,7 +355,7 @@ export function PassageDetailArtifactsMobile() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
       setResourceKind(ResourceTypeEnum.projectResource);
-      setWizardLaunch({ kind: 'editGeneral', media: projectMedia });
+      launchWizard({ kind: 'editGeneral', media: projectMedia });
       return;
     }
     setEditResource(secRes);
@@ -481,7 +480,7 @@ export function PassageDetailArtifactsMobile() {
       what === AddResourceAction.Text ||
       what === AddResourceAction.Link
     ) {
-      setWizardLaunch({ kind: 'add', action: what });
+      launchWizard({ kind: 'add', action: what });
     }
   };
 
@@ -492,36 +491,10 @@ export function PassageDetailArtifactsMobile() {
     audioUrl: string,
     transcript: string
   ) => {
-    setWizardLaunch({ kind: 'markdown', query, audioUrl, transcript });
+    launchWizard({ kind: 'markdown', query, audioUrl, transcript });
   };
 
-  const passDesc = useMemo(
-    () =>
-      passageTypeFromRef(passage?.attributes?.reference) ===
-      PassageTypeEnum.NOTE
-        ? t.noteResource
-        : t.passageResource,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [passage]
-  );
-
-  const getSectionType = () => {
-    const level = section.attributes?.level;
-    if (level === SheetLevel.Book) return 'BOOK';
-    if (level === SheetLevel.Movement) return 'MOVE';
-    return undefined;
-  };
-
-  const sectDesc = useMemo(
-    () =>
-      getSectionType() === PassageTypeEnum.BOOK
-        ? t.bookResource
-        : getSectionType() === PassageTypeEnum.MOVEMENT
-          ? t.movementResource
-          : getOrganizedBy(true),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [section]
-  );
+  const { sectDesc, passDesc } = useResourceScopeLabels();
 
   const listFilter = (r: IRow) =>
     r?.isResource &&
@@ -735,6 +708,7 @@ export function PassageDetailArtifactsMobile() {
         </VertListDnd>
       </Box>
       <AddResourceWizard
+        key={wizardKey}
         launch={wizardLaunch}
         onLaunchHandled={() => setWizardLaunch(null)}
         configureWidth={800}
