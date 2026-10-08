@@ -392,8 +392,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
                 t.downloadDescription
                   .replace(/\{1}/g, organizedBy)
                   .replace(/\{2}/g, organizedByPl)
-                  .replace(/\{3}/g, ts.save.toUpperCase())
-                  .replace(/\{4}/g, organizedByPl.toUpperCase()),
+                  .replace(/\{3}/g, ts.save.toUpperCase()),
                 '{0}',
                 () => (
                   <FilterIcon
