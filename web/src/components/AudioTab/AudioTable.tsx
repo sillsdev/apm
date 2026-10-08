@@ -37,7 +37,8 @@ interface IProps {
   setPlayItem: (item: string) => void;
   selectedId?: string;
   setSelectedId?: (item: string) => void;
-  onAttach?: (checks: number[], attach: boolean) => void;
+  onAttach?: (checks: number[]) => void;
+  onDetach?: (checks: number[]) => void;
   /** Version dialog: show radio + selection highlight */
   showVersionRadio?: boolean;
 }
@@ -48,6 +49,7 @@ export const AudioTable = (props: IProps) => {
     playItem,
     setPlayItem,
     onAttach,
+    onDetach,
     readonly,
     shared,
     canSetDestination,
@@ -91,7 +93,7 @@ export const AudioTable = (props: IProps) => {
   const handleShowTranscription = (id: string) => () => {
     const row = sortedData.find((r) => r.id === id);
     const rowVer = row?.version;
-    if (rowVer) setVerValue(parseInt(rowVer, 10));
+    if (rowVer) setVerValue(Number.parseInt(rowVer, 10));
     setShowId(id);
   };
   const updateMediaRec = async (
@@ -267,7 +269,12 @@ export const AudioTable = (props: IProps) => {
               showAttachControl={sheetAttach}
               attached={Boolean(row.passId)}
               onAttachToggle={
-                onAttach ? () => onAttach([row.index], !row.passId) : undefined
+                onAttach
+                  ? () =>
+                      row.passId
+                        ? onDetach?.([row.index])
+                        : onAttach([row.index])
+                  : undefined
               }
               canDeleteMedia={canDelete}
               onRequestDelete={

@@ -52,19 +52,19 @@ export function AudioTab() {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const requests = useRef(0);
   const { getPlan } = usePlan();
-  const [planRec] = useState(getPlan(plan) || ({} as Plan));
+  const [planRec] = useState(getPlan(plan) ?? ({} as Plan));
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { toolChanged, saveCompleted } = useContext(UnsavedContext).state;
   const [urlOpen, setUrlOpen] = useGlobal('autoOpenAddMedia'); //verified this is not used in a function 2/18/25
   const { showMessage } = useSnackBar();
-  const [data, setData] = useState(Array<IRow>());
-  const [pdata, setPData] = useState(Array<IPRow>());
+  const [data, setData] = useState(new Array<IRow>());
+  const [pdata, setPdata] = useState(new Array<IPRow>());
   const { sectionArr, shared, publishingOn, canEditAudio, canPublish } =
     useContext(PlanContext).state;
   const sectionMap = new Map<number, string>(sectionArr);
   const [attachVisible, setAttachVisible] = useState(false);
-  const [mcheck, setMCheck] = useState(-1);
-  const [pcheck, setPCheck] = useState(-1);
+  const [mcheck, setMcheck] = useState(-1);
+  const [pcheck, setPcheck] = useState(-1);
   // const [filter, setFilter] = useState(false);
   const [uploadVisible, setUploadVisible] = useState(false);
   const cancelled = useRef(false);
@@ -105,8 +105,8 @@ export function AudioTab() {
   const handleAttachCancel = () => {
     setUploadMedia(undefined);
     setAttachVisible(false);
-    setPCheck(-1);
-    setMCheck(-1);
+    setPcheck(-1);
+    setMcheck(-1);
   };
 
   const handleSave = async (argMap?: IAttachMap) => {
@@ -189,8 +189,8 @@ export function AudioTab() {
       return;
     }
     handleSave({ ...attachMap, [data[mRow].id]: pRow });
-    setMCheck(-1);
-    setPCheck(-1);
+    setMcheck(-1);
+    setPcheck(-1);
   };
 
   const handleCheck = (checks: Array<number>, visible?: boolean) => {
@@ -200,7 +200,7 @@ export function AudioTab() {
         doAttach(checks[0], pcheck);
         return;
       }
-      setMCheck(newCheck);
+      setMcheck(newCheck);
     }
   };
   // const handleFilter = () => setFilter(!filter);
@@ -217,12 +217,12 @@ export function AudioTab() {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [urlOpen]);
 
-  const onAttach = (checks: number[], attach: boolean) => {
-    if (attach) {
-      setAttachVisible(true);
-      handleCheck(checks, true);
-    } else doDetach(data[checks[0]].id);
+  const onAttach = (checks: number[]) => {
+    setAttachVisible(true);
+    handleCheck(checks, true);
   };
+
+  const onDetach = (checks: number[]) => doDetach(data[checks[0]].id);
 
   useEffect(() => {
     if (plan) {
@@ -262,7 +262,7 @@ export function AudioTab() {
   useEffect(() => {
     if (attachVisible || autoMatch) {
       const passData: IPassageData = { media: planMedia, allBookData };
-      setPData(getPassages(plan, passages, sections, passData));
+      setPdata(getPassages(plan, passages, sections, passData));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planMedia, passages, sections, attachVisible, autoMatch]);
@@ -280,13 +280,13 @@ export function AudioTab() {
         }
         return { ...r };
       });
-      if (dataChange) setPData(newPData);
+      if (dataChange) setPdata(newPData);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [attachMap, attachVisible, autoMatch]);
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    if (mediaRemoteIds && mediaRemoteIds.length === 1) {
+    if (mediaRemoteIds?.length === 1) {
       const id =
         remoteIdGuid(
           'mediafile',
@@ -390,6 +390,7 @@ export function AudioTab() {
             playItem={playItem}
             setPlayItem={setPlayItem}
             onAttach={onAttach}
+            onDetach={onDetach}
             readonly={!canEditAudio}
             sectionArr={sectionArr}
             shared={shared}

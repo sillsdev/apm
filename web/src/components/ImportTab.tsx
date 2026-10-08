@@ -43,7 +43,7 @@ import {
 } from '@mui/material';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
-import { shallowEqual } from 'react-redux';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import * as actions from '../store';
 import MediaUpload from './MediaUpload';
 import { UploadType } from './UploadType';
@@ -71,9 +71,7 @@ import {
   clearNeedItfSync,
 } from '../utils';
 import { Button, ActionRow } from '../control';
-import { useSelector } from 'react-redux';
 import { activitySelector, importSelector, sharedSelector } from '../selector';
-import { useDispatch } from 'react-redux';
 import {
   ImportProjectITFFromElectronProps,
   ImportProjectFromExternalProps,
@@ -198,13 +196,13 @@ const initialColumnVisibilityModel: GridColumnVisibilityModel = {
 interface IProps {
   project?: string;
   planName?: string;
-  syncBuffer?: Buffer | undefined;
-  syncFile?: string | undefined;
+  syncBuffer: Buffer | undefined;
+  syncFile: string | undefined;
   isOpen: boolean;
   offerPtf: boolean;
   onOpen: (val: boolean) => void;
 }
-export function ImportTab(props: IProps) {
+export function ImportTab(props: Readonly<IProps>) {
   const { isOpen, onOpen, project, planName, syncBuffer, syncFile, offerPtf } =
     props;
   const t: IImportStrings = useSelector(importSelector, shallowEqual);
@@ -241,7 +239,7 @@ export function ImportTab(props: IProps) {
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const { showMessage } = useSnackBar();
-  const [changeData, setChangeDatax] = useState(Array<IRow>());
+  const [changeData, setChangeDatax] = useState(new Array<IRow>());
   const changeDataRef = useRef(changeData);
   const [importTitle, setImportTitle] = useState('');
   const [confirmAction, setConfirmAction] = useState<
@@ -681,7 +679,7 @@ export function ImportTab(props: IProps) {
         return ts.expiredToken;
       case 406:
         return t.projectNotFound.replace('{0}', err.errMsg);
-      case 422:
+      case 422: {
         const json = tryParseJSON(err.errMsg);
         if (Array.isArray(json)) {
           let msg = '';
@@ -692,6 +690,7 @@ export function ImportTab(props: IProps) {
           return msg;
         }
         return t.invalidITF + ' ' + err.errMsg;
+      }
       case 450:
         return t.invalidProject;
       case 413:
@@ -758,14 +757,15 @@ export function ImportTab(props: IProps) {
         let other = '';
         let plan = '';
         switch (c?.type) {
-          case 'project':
+          case 'project': {
             //expecting only deleted
             const project = c.imported.data as Project;
             imported = ' ';
             old = t.projectDeleted.replace('{0}', project.attributes.name);
             localStorage.setItem(localUserKey(LocalKey.url), '/');
             break;
-          case 'mediafile':
+          }
+          case 'mediafile': {
             const mediafile = c.imported.data as MediaFile;
             const passageid = mediafile.relationships?.passage
               ?.data as RecordIdentity;
@@ -813,7 +813,8 @@ export function ImportTab(props: IProps) {
                 localizeActivityState(online.attributes.transcriptionstate, ta);
             }
             break;
-          case 'section':
+          }
+          case 'section': {
             const oldsection = c.online.data as Section;
             section = c.imported.data as Section;
             if (section) {
@@ -912,7 +913,8 @@ export function ImportTab(props: IProps) {
               } */
             }
             break;
-          case 'user':
+          }
+          case 'user': {
             const usr = c.imported.data as User;
             usr.attributes.givenName = c.imported.data.attributes['given-name'];
             usr.attributes.familyName =
@@ -995,7 +997,8 @@ export function ImportTab(props: IProps) {
                 '   ';
             }
             break;
-          case 'groupmembership':
+          }
+          case 'groupmembership': {
             const gm = c.imported.data as GroupMembership;
             const group = memory.cache.query((q) =>
               q.findRecord({
@@ -1014,6 +1017,7 @@ export function ImportTab(props: IProps) {
               ':' +
               (c.online.data as GroupMembership).attributes.fontSize;
             break;
+          }
           default:
         }
         if (imported.length > 0)
@@ -1030,52 +1034,54 @@ export function ImportTab(props: IProps) {
       });
     }
 
-    if (data.findIndex((r) => r.other !== '') > -1)
-      setColumnVisibilityModel({});
+    if (data.some((r) => r.other !== '')) setColumnVisibilityModel({});
     else setColumnVisibilityModel({ ...initialColumnVisibilityModel });
     return data;
   };
 
-  useEffect(() => {
-    if (importStatus) {
-      if (importStatus.errStatus) {
-        const json = tryParseJSON(importStatus.errMsg);
-        let msg: string;
-        if (json) {
-          msg =
-            translateError(
-              errorStatus(importStatus.errStatus, JSON.stringify(json.errors))
-            ) + '\n';
-          const chdata = getChangeData(json.report as string);
-          setChangeData([...changeData].concat(chdata));
-          msg += chdata.length > 0 ? t.onlineChangeReport : '\n';
-        } else {
-          msg = translateError(importStatus);
-        }
-        setImporting(false, msg);
-      } else {
-        if (importStatus.complete) {
-          //import completed ok but might have message
-          if (syncFile) clearNeedItfSync();
-          const chdata = getChangeData(importStatus.errMsg);
-          setChangeData([...changeData].concat(chdata));
-          const syncExtra = userVisibleImportErrMsg(importStatus.errMsg);
-          setImportTitle(
-            chdata.length > 0
-              ? t.onlineChangeReport
-              : t.importSyncDown + ' ' + syncExtra
-          );
-          if (remote) forceDataChanges().then(() => setImporting(false));
-          else {
-            SetUserLanguage(memory, user, setLanguage);
-            setImporting(false);
-          }
-        }
-      }
+  const handleImportError = (status: IAxiosStatus) => {
+    const json = tryParseJSON(status.errMsg);
+    if (!json) {
+      setImporting(false, translateError(status));
+      return;
+    }
+    const chdata = getChangeData(json.report as string);
+    setChangeData([...changeData].concat(chdata));
+    const msg =
+      translateError(
+        errorStatus(status.errStatus, JSON.stringify(json.errors))
+      ) +
+      '\n' +
+      (chdata.length > 0 ? t.onlineChangeReport : '\n');
+    setImporting(false, msg);
+  };
+
+  const handleImportComplete = (status: IAxiosStatus) => {
+    //import completed ok but might have message
+    if (syncFile) clearNeedItfSync();
+    const chdata = getChangeData(status.errMsg);
+    setChangeData([...changeData].concat(chdata));
+    const syncExtra = userVisibleImportErrMsg(status.errMsg);
+    setImportTitle(
+      chdata.length > 0
+        ? t.onlineChangeReport
+        : t.importSyncDown + ' ' + syncExtra
+    );
+    if (remote) {
+      forceDataChanges().then(() => setImporting(false));
     } else {
-      if (syncFile && importTitle === t.importComplete) {
-        handleClose();
-      }
+      SetUserLanguage(memory, user, setLanguage);
+      setImporting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!importStatus) {
+      if (syncFile && importTitle === t.importComplete) handleClose();
+    } else if (importStatus.errStatus) {
+      handleImportError(importStatus);
+    } else if (importStatus.complete) {
+      handleImportComplete(importStatus);
     }
   }, [importStatus]);
 
@@ -1092,6 +1098,15 @@ export function ImportTab(props: IProps) {
     if (!status || status.statusMsg === 'Import Complete') return '';
     const extra = userVisibleImportErrMsg(status.errMsg);
     return status.statusMsg + (extra ? ': ' + extra : '');
+  };
+
+  const progressProps = (prog: typeof burritoPrepareProgress) => {
+    if (!prog) return 0;
+    const [index, total] =
+      prog.phase === 'convert'
+        ? [prog.bookIndex, prog.bookTotal]
+        : [prog.fileIndex, prog.fileTotal];
+    return total > 0 ? (index / total) * 100 : 0;
   };
 
   return (
@@ -1160,7 +1175,9 @@ export function ImportTab(props: IProps) {
               <RadioGroup
                 value={selectedImportType}
                 onChange={(e) =>
-                  setSelectedImportType(parseInt(e.target.value) as UploadType)
+                  setSelectedImportType(
+                    Number.parseInt(e.target.value) as UploadType
+                  )
                 }
               >
                 <FormControlLabel
@@ -1234,8 +1251,8 @@ export function ImportTab(props: IProps) {
               disableEscapeKeyDown
               maxWidth="sm"
               fullWidth
-              PaperProps={{
-                sx: { zIndex: (theme) => theme.zIndex.modal + 2 },
+              slotProps={{
+                paper: { sx: { zIndex: (theme) => theme.zIndex.modal + 2 } },
               }}
             >
               <DialogTitle>
@@ -1247,19 +1264,7 @@ export function ImportTab(props: IProps) {
               <DialogContent>
                 <LinearProgress
                   variant="determinate"
-                  value={
-                    burritoPrepareProgress.phase === 'convert'
-                      ? burritoPrepareProgress.bookTotal > 0
-                        ? (burritoPrepareProgress.bookIndex /
-                            burritoPrepareProgress.bookTotal) *
-                          100
-                        : 0
-                      : burritoPrepareProgress.fileTotal > 0
-                        ? (burritoPrepareProgress.fileIndex /
-                            burritoPrepareProgress.fileTotal) *
-                          100
-                        : 0
-                  }
+                  value={progressProps(burritoPrepareProgress)}
                 />
                 <Typography variant="body2" sx={{ mt: 2 }}>
                   {burritoPrepareProgress.phase === 'convert'

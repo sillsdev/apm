@@ -17,7 +17,8 @@ const actionProps = { color: 'primary.light' } as SxProps;
 
 interface IProps {
   canCreate: boolean;
-  onAttach?: (checks: number[], attach: boolean) => void;
+  onAttach?: (checks: number[]) => void;
+  onDetach?: (checks: number[]) => void;
   readonly: boolean;
   handleSelect: (id: string) => void;
   playItem: string;
@@ -28,6 +29,7 @@ export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
   const {
     canCreate,
     onAttach,
+    onDetach,
     readonly: readonlyParams,
     handleSelect: onPlayStatus,
     playItem,
@@ -46,7 +48,8 @@ export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
   };
 
   const handleAttach = () => {
-    onAttach && onAttach([params.row.index], !attached);
+    if (attached) onDetach?.([params.row.index]);
+    else onAttach?.([params.row.index]);
   };
 
   return (

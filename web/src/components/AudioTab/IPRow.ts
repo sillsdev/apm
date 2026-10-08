@@ -1,10 +1,8 @@
-import React from 'react';
-
 export interface IPRow {
   passageId: string;
   sectionId: string;
   sectionDesc: string;
-  reference: React.ReactNode;
+  reference: string;
   attached: string;
   sort: string;
   book: string;
