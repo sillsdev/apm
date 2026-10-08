@@ -25,6 +25,7 @@ import {
   Switch,
   Stack,
 } from '@mui/material';
+import logError, { Severity } from '../utils/logErrorService';
 import Confirm from '../components/AlertDialog';
 import Typography, { TypographyProps } from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
@@ -63,6 +64,7 @@ import ExtendableDeleteExpansion from './ExtendableDeleteExpansion';
 import { AltActionBar } from './AltActionBar';
 import { StyledDialogTitle } from './StyledDialogTitle';
 import { Button } from '../control/Button';
+import { infoMsg } from '@utils/infoMsg';
 
 const Caption = styled(Typography)<TypographyProps>(() => ({
   width: 150,
@@ -257,6 +259,7 @@ export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
     onCancel,
     finishAdd,
   } = props;
+  const [errorReporter] = useGlobal('errorReporter');
   const users = useOrbitData<UserD[]>('user');
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const tp: IProfileStrings = useSelector(profileSelector, shallowEqual);
@@ -481,6 +484,13 @@ export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
               onSaveCompleted();
             }
           }
+        })
+        .catch((error) => {
+          logError(
+            Severity.error,
+            errorReporter,
+            infoMsg(error, 'Error saving user profile')
+          );
         });
       const mbrRec = getMbrRoleRec(
         'organization',
@@ -490,9 +500,17 @@ export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
       if (mbrRec) {
         const curRoleId = related(mbrRec, 'role');
         if (curRoleId !== role) {
-          memory.update((t) =>
-            UpdateRelatedRecord(t, mbrRec, 'role', 'role', role, user)
-          );
+          memory
+            .update((t) =>
+              UpdateRelatedRecord(t, mbrRec, 'role', 'role', role, user)
+            )
+            .catch((error) => {
+              logError(
+                Severity.error,
+                errorReporter,
+                infoMsg(error, 'Error saving user role')
+              );
+            });
         }
       }
       if (!editId) setLanguage(locale);
