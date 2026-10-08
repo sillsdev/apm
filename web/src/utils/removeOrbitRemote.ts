@@ -15,13 +15,29 @@ const remoteStrategies = [
 // already gone (deepGet on undefined, reading 'memory'). Go Offline hits this
 // when logout and another teardown both drop the remote. Queue only that
 // teardown and the following activate — not backup restore or remote queries.
-// Logout still waits for an in-flight backup restore before deactivating, so
-// IndexedDB is not closed under the restore query.
+// Logout waits for a restore that has already started. It also closes
+// admission in the same turn, so a restore cannot start after teardown was
+// requested and have IndexedDB closed under it. Admission reopens when every
+// queued teardown has finished.
 let coordinatorTail: Promise<void> = Promise.resolve();
 let restoreInFlight: Promise<unknown> = Promise.resolve();
+let teardownDepth = 0;
 
-/** Register the backup restore logout must finish before it deactivates. */
-export function trackBackupRestore<T>(restore: Promise<T>): Promise<T> {
+/** Login stopped because logout cleared the session or detached remote sync. */
+export class BootstrapCancelled extends Error {
+  constructor() {
+    super('Bootstrap cancelled');
+    this.name = 'BootstrapCancelled';
+  }
+}
+
+/**
+ * Start a backup restore, or refuse it when teardown is already requested.
+ * `start` runs only if this call is admitted.
+ */
+export function trackBackupRestore<T>(start: () => Promise<T>): Promise<T> {
+  if (teardownDepth > 0) throw new BootstrapCancelled();
+  const restore = start();
   const tracked = restore.then(
     (value) => {
       if (restoreInFlight === tracked) restoreInFlight = Promise.resolve();
@@ -77,17 +93,16 @@ export function removeOrbitRemote(
   coordinator: Coordinator | undefined,
   reactivate = true
 ): Promise<void> {
+  teardownDepth += 1;
   return waitForBackupRestore().then(() =>
-    withCoordinatorLock(() => detachOrbitRemote(coordinator, reactivate))
+    withCoordinatorLock(async () => {
+      try {
+        await detachOrbitRemote(coordinator, reactivate);
+      } finally {
+        teardownDepth -= 1;
+      }
+    })
   );
-}
-
-/** Login stopped because logout cleared the session or detached remote sync. */
-export class BootstrapCancelled extends Error {
-  constructor() {
-    super('Bootstrap cancelled');
-    this.name = 'BootstrapCancelled';
-  }
 }
 
 /** Online login may continue only while this session still owns a synced remote. */

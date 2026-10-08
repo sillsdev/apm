@@ -5,6 +5,7 @@ import Coordinator, {
 import Memory from '@orbit/memory';
 import { RecordSchema } from '@orbit/records';
 import {
+  BootstrapCancelled,
   bootstrapMayContinue,
   detachOrbitRemote,
   removeOrbitRemote,
@@ -140,7 +141,7 @@ describe('removeOrbitRemote', () => {
     const restore = new Promise<string[]>((resolve) => {
       releaseRestore = () => resolve([]);
     });
-    const tracked = trackBackupRestore(restore);
+    const tracked = trackBackupRestore(() => restore);
     try {
       const logout = removeOrbitRemote(coordinator);
       await Promise.resolve();
@@ -157,13 +158,46 @@ describe('removeOrbitRemote', () => {
 
   it('detaches remote after a failed backup restore', async () => {
     const coordinator = await activatedCoordinator();
-    const tracked = trackBackupRestore(
+    const tracked = trackBackupRestore(() =>
       Promise.reject(new Error('IndexedDB database is not yet open'))
     );
     const logout = removeOrbitRemote(coordinator);
     await expect(tracked).rejects.toThrow('IndexedDB database is not yet open');
     await logout;
     expect(coordinator.sourceNames).toEqual(['memory']);
+  });
+
+  it('does not start a restore once teardown is requested', async () => {
+    const coordinator = await activatedCoordinator();
+    let releaseSwap: () => void = () => undefined;
+    const swap = new Promise<void>((resolve) => {
+      releaseSwap = resolve;
+    });
+    const loading = withCoordinatorLock(() => swap);
+    await Promise.resolve();
+    const logout = removeOrbitRemote(coordinator);
+    let started = false;
+    try {
+      releaseSwap();
+      expect(() =>
+        trackBackupRestore(() => {
+          started = true;
+          return Promise.resolve([]);
+        })
+      ).toThrow(BootstrapCancelled);
+      expect(started).toBe(false);
+      expect(coordinator.sourceNames).toContain('remote');
+      await loading;
+      await logout;
+      expect(coordinator.sourceNames).toEqual(['memory']);
+      await expect(
+        trackBackupRestore(() => Promise.resolve(['later']))
+      ).resolves.toEqual(['later']);
+    } finally {
+      releaseSwap();
+      await loading.catch(() => undefined);
+      await logout.catch(() => undefined);
+    }
   });
 
   it('continues a fresh login before remote exists, then requires sync', () => {
