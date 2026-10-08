@@ -56,7 +56,8 @@ export async function RemoveUserFromOrg(
   deletedUser: User,
   organization: string | undefined,
   user: string,
-  teamDelete: (id: string) => Promise<void>
+  teamDelete: (id: string) => Promise<void>,
+  offlineProjectDelete?: (projectId: string) => Promise<void>
 ) {
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
@@ -97,16 +98,18 @@ export async function RemoveUserFromOrg(
   const groupRecs = memory?.cache.query((q) =>
     q.findRecords('group')
   ) as Group[];
-  const orgGroups = groupRecs
-    .filter((g) => organizationIds.includes(related(g, 'owner')))
-    .map((og) => og.id);
+  const orgGroups = new Set(
+    groupRecs
+      .filter((g) => organizationIds.includes(related(g, 'owner')))
+      .map((og) => og.id)
+  );
   const grpMbrRecs = memory?.cache.query((q) =>
     q.findRecords('groupmembership')
   ) as GroupMembershipD[];
   const userGrpOrgRecs = grpMbrRecs.filter(
     (g) =>
       related(g, 'user') === deletedUser.id &&
-      orgGroups.includes(related(g, 'group'))
+      orgGroups.has(related(g, 'group'))
   );
   userGrpOrgRecs.forEach((g) => {
     ops.push(t.removeRecord(g).toOperation());
@@ -115,17 +118,19 @@ export async function RemoveUserFromOrg(
   const projects = memory?.cache.query((q) =>
     q.findRecords('project')
   ) as ProjectD[];
-  const projectids = projects
-    .filter((p) => organizationIds.includes(related(p, 'organization')))
-    .map((p) => p.id);
+  const projectids = new Set(
+    projects
+      .filter((p) => organizationIds.includes(related(p, 'organization')))
+      .map((p) => p.id)
+  );
   const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
-  const planids = plans
-    .filter((p) => projectids.includes(related(p, 'project')))
-    .map((p) => p.id);
+  const planids = new Set(
+    plans.filter((p) => projectids.has(related(p, 'project'))).map((p) => p.id)
+  );
   let sections = memory?.cache.query((q) =>
     q.findRecords('section')
   ) as SectionD[];
-  sections = sections.filter((s) => planids.includes(related(s, 'plan')));
+  sections = sections.filter((s) => planids.has(related(s, 'plan')));
 
   let assigned = sections.filter(
     (s) => related(s, 'transcriber') === deletedUser.id
@@ -144,13 +149,29 @@ export async function RemoveUserFromOrg(
     await memory.update(ops);
 
     //now...if any orgs are orphaned (this was the only user) delete those too
-    const orgWithMembers = (
-      memory?.cache.query((q) =>
-        q.findRecords('organizationmembership')
-      ) as OrganizationMembership[]
-    ).map((om) => related(om, 'organization'));
-    const orphaned = organizationIds.filter((o) => !orgWithMembers.includes(o));
+    const orgWithMembers = new Set(
+      (
+        memory?.cache.query((q) =>
+          q.findRecords('organizationmembership')
+        ) as OrganizationMembership[]
+      ).map((om) => related(om, 'organization'))
+    );
+    const orphaned = organizationIds.filter((o) => !orgWithMembers.has(o));
     await Promise.all(orphaned.map((o) => teamDelete(o)));
+
+    // teamDelete already removes offlineproject rows for an orphaned team.
+    // A user leaving a team that still has members keeps the projects online,
+    // but his local offline snapshots for those projects should go.
+    if (deletedUser.id === user && offlineProjectDelete) {
+      const orphanedIds = new Set(orphaned);
+      const leftProjectIds = projects
+        .filter((p) => {
+          const orgId = related(p, 'organization');
+          return organizationIds.includes(orgId) && !orphanedIds.has(orgId);
+        })
+        .map((p) => p.id);
+      await Promise.all(leftProjectIds.map((id) => offlineProjectDelete(id)));
+    }
   } catch (err) {
     // A thrown update never reaches the remote queue. Surface it; callers await this.
     console.error('RemoveUserFromOrg failed', err);

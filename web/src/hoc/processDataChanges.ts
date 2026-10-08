@@ -27,6 +27,10 @@ import IndexedDBSource from '@orbit/indexeddb';
 import * as actions from '../store';
 import { ReplaceRelatedRecord } from '../model/baseModel';
 import { pullRemoteToMemory } from '../crud/syncToMemory';
+import {
+  offlineProjectIdsForDeleted,
+  offlineProjectsFor,
+} from '../crud/offlineProjectDelete';
 import { axiosGet } from '../utils/axios';
 
 /** Returned when axios retries are exhausted — callers must stop the sync pass */
@@ -350,10 +354,12 @@ export const processDataChanges = async (pdc: {
     }
     setDataChangeCount(deletes.length);
     const tb: RecordTransformBuilder = new RecordTransformBuilder();
+    const removedOfflineIds = new Set<string>();
 
     for (let ix = 0; ix < deletes.length; ix++) {
       const table = deletes[ix] as ChangeList;
-      const operations: RecordOperation[] = [];
+      const recordOps: RecordOperation[] = [];
+      const offlineProjectIds: string[] = [];
       table.ids.forEach((r) => {
         const localId = remoteIdGuid(
           table.type,
@@ -361,6 +367,9 @@ export const processDataChanges = async (pdc: {
           memory?.keyMap as RecordKeyMap
         );
         if (localId) {
+          offlineProjectIds.push(
+            ...offlineProjectIdsForDeleted(memory, user, table.type, localId)
+          );
           switch (table.type) {
             case 'organizationmembership':
               reloadOrgs(localId, true, true);
@@ -369,11 +378,21 @@ export const processDataChanges = async (pdc: {
               reloadProjects(localId, true, true);
               break;
           }
-          operations.push(
+          recordOps.push(
             tb.removeRecord({ type: table.type, id: localId }).toOperation()
           );
         }
       });
+      const operations: RecordOperation[] = offlineProjectsFor(
+        memory,
+        offlineProjectIds
+      )
+        .filter((op) => !removedOfflineIds.has(op.id))
+        .map((op) => {
+          removedOfflineIds.add(op.id);
+          return tb.removeRecord(op).toOperation();
+        });
+      operations.push(...recordOps);
       if (operations.length > 0) {
         await backup.sync(() => operations);
         await memory.sync(() => operations);

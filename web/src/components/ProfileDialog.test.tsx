@@ -53,6 +53,9 @@ jest.mock('../crud/useRole', () => ({
 jest.mock('../crud/useTeamDelete', () => ({
   useTeamDelete: jest.fn(),
 }));
+jest.mock('../crud/useOfflnProjDelete', () => ({
+  useOfflnProjDelete: () => jest.fn(),
+}));
 jest.mock('../utils/useMyNavigate', () => ({
   useMyNavigate: jest.fn(),
 }));
@@ -142,21 +145,13 @@ const runTest = (props: ProfileDialogProps) =>
 describe('ProfileDialog', () => {
   beforeEach(cleanup);
 
-  it('should render', async () => {
-    const { container } = runTest({ mode: 'create', open: false });
-    expect(container).not.toBe(null);
-    await waitFor(() => expect(container).toBeTruthy());
-  });
-
-  it('should render in viewMyAccount mode', async () => {
-    const { container } = runTest({ mode: 'viewMyAccount', open: false });
-    expect(container).not.toBe(null);
-    await waitFor(() => expect(container).toBeTruthy());
-  });
-
-  it('should render in editMember mode', async () => {
-    const { container } = runTest({ mode: 'editMember', open: false });
-    expect(container).not.toBe(null);
+  it.each<ProfileDialogProps['mode']>([
+    'create',
+    'viewMyAccount',
+    'editMember',
+  ])('should render in %s mode', async (mode) => {
+    const { container } = runTest({ mode, open: false });
+    expect(container).not.toBeNull();
     await waitFor(() => expect(container).toBeTruthy());
   });
 });
