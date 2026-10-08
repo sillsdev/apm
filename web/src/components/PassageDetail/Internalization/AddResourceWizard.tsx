@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useContext } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
@@ -45,6 +45,7 @@ import {
 } from '../../../selector';
 import { FaithBridge } from '../../../assets/brands';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import { UnsavedContext } from '../../../context/UnsavedContext';
 import {
   getProjectResourceAssignments,
   removeUnselectedProjectResourceAssignments,
@@ -87,6 +88,14 @@ enum WizardStep {
   Configure,
 }
 
+// Registered with the Unsaved context whenever closing the wizard would lose
+// work (the same states that confirm on the dialog's own X), so a browser/app
+// close (beforeunload) raises the usual unsaved-changes warning too. This is a
+// close-guard only — nothing saves it; it just lights up the global `changed`
+// flag. Distinct from ProjectResourceConfigure's save tool ('AddResourceWizard-Save'),
+// which actually persists the configure step.
+const wizardCloseGuardToolId = 'AddResourceWizard-CloseGuard';
+
 interface IProps {
   /** Pending open request from the parent; cleared via onLaunchHandled. */
   launch: WizardLaunch | null;
@@ -118,6 +127,7 @@ export function AddResourceWizard({
   const { getPlan } = usePlan();
   const projectResourceSave = useProjectResourceSave();
   const { showMessage } = useSnackBar();
+  const { toolChanged } = useContext(UnsavedContext).state;
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
@@ -595,16 +605,32 @@ export function AddResourceWizard({
   // (a saved-but-unconfigured resource); the section-select step only when a
   // recording was staged (a file upload is cheap to redo); the upload step only
   // when an unsaved take sits on the record tab. Everything else closes directly.
+  // The states where closing would lose work and so must confirm first.
+  const needConfirmClose =
+    step === WizardStep.Configure ||
+    (step === WizardStep.SelectSections && isStagedRecording) ||
+    (step === WizardStep.Upload && uploadHasTake);
+
   const handleWizardClose = (v: boolean) => {
     if (v) return;
     if (recording) return;
-    const needConfirm =
-      step === WizardStep.Configure ||
-      (step === WizardStep.SelectSections && isStagedRecording) ||
-      (step === WizardStep.Upload && uploadHasTake);
-    if (needConfirm) setPendingCloseConfirmation(true);
+    if (needConfirmClose) setPendingCloseConfirmation(true);
     else closeAll();
   };
+
+  // Those same states should also fire the usual unsaved-changes warning on a
+  // browser/app close, so register a changed tool while one is showing (AppHead's
+  // beforeunload reads the global `changed` flag). This covers every confirm
+  // state, Configure included, so app-close matches the dialog X exactly.
+  // ProjectResourceConfigure's own (save-capable) tool is separate and coexists
+  // during Configure edits. Nothing persists this guard on a save-all, but that
+  // path is unreachable while the wizard's modal dialog is open — the only exit
+  // is the dialog's own confirm-gated close.
+  useEffect(() => {
+    toolChanged(wizardCloseGuardToolId, needConfirmClose);
+    return () => toolChanged(wizardCloseGuardToolId, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needConfirmClose]);
 
   const wizardOpen = step !== WizardStep.None;
 

@@ -56,7 +56,10 @@ import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
-const wizToolId = 'ProjResWizard';
+// Save participant for the configure step: the Unsaved context requests a save
+// against this id, which runs writeResources. (The wizard's close-guard is a
+// separate, save-less tool; see AddResourceWizard.)
+const wizardSaveToolId = 'AddResourceWizard-Save';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -388,11 +391,11 @@ export const ProjectResourceConfigure = (props: IProps) => {
           ),
         })
           .then(() => {
-            saveCompleted(wizToolId);
+            saveCompleted(wizardSaveToolId);
           })
           .catch((err) => {
             //so we don't come here...we go to continue/logout
-            saveCompleted(wizToolId, err.message);
+            saveCompleted(wizardSaveToolId, err.message);
           })
           .finally(() => {
             savingRef.current = false;
@@ -404,14 +407,14 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   const handleCreate = () => {
-    if (!saveRequested(wizToolId)) {
-      startSave(wizToolId);
+    if (!saveRequested(wizardSaveToolId)) {
+      startSave(wizardSaveToolId);
     }
   };
 
   useEffect(() => {
-    if (saveRequested(wizToolId) && !savingRef.current) writeResources();
-    else if (clearRequested(wizToolId)) clearCompleted(wizToolId);
+    if (saveRequested(wizardSaveToolId) && !savingRef.current) writeResources();
+    else if (clearRequested(wizardSaveToolId)) clearCompleted(wizardSaveToolId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
@@ -421,7 +424,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   // confirm-gated by the parent; clear the flag on unmount so a normal
   // discard/save close doesn't leak it into the rest of the app.
   useEffect(() => {
-    return () => toolChanged(wizToolId, false);
+    return () => toolChanged(wizardSaveToolId, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -558,7 +561,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setData(newData);
     // Editing a Title marks the wizard dirty so a browser/app close warns
     // (same tracking the segment handler uses).
-    if (!isChanged(wizToolId)) toolChanged(wizToolId);
+    if (!isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
   };
 
   const handleSegment = (segments: string, init: boolean) => {
@@ -633,7 +636,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     if (change) {
       setData(newData);
       setPastedSegments('');
-      if (!init && !isChanged(wizToolId)) toolChanged(wizToolId);
+      if (!init && !isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
     }
   };
 
@@ -658,7 +661,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setSuffix(e.target.value);
     // The suffix feeds the saved topic, so editing it marks the wizard dirty too
     // (so a browser/app close mid-edit warns).
-    if (!isChanged(wizToolId)) toolChanged(wizToolId);
+    if (!isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
