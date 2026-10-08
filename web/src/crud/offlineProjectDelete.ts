@@ -54,27 +54,10 @@ export const deleteOfflineProjects = async (
   backup: IndexedDBSource,
   projectIds: Iterable<string>
 ) => {
-  console.log(
-    'deleteOfflineProjects',
-    projectIds,
-    (
-      memory.cache.query((q) =>
-        q.findRecords('offlineproject')
-      ) as OfflineProjectD[]
-    ).length
-  );
   const records = offlineProjectsFor(memory, projectIds);
   if (records.length === 0) return;
   const removes = (t: RecordTransformBuilder) =>
     records.map((op) => t.removeRecord(op));
   await backup.sync(removes);
   await memory.sync(removes);
-  console.log(
-    'after',
-    (
-      memory.cache.query((q) =>
-        q.findRecords('offlineproject')
-      ) as OfflineProjectD[]
-    ).length
-  );
 };
