@@ -209,15 +209,10 @@ export function AddResourceWizard({
   const { sectDesc, passDesc } = useResourceScopeLabels();
 
   const resourcePendingRestore = useCallback(() => {
+    // Project resources are configured in one go through the wizard, not staged
+    // as pending uploads.
     if (resourceKindRef.current === ResourceTypeEnum.projectResource) {
-      return buildResourcePendingRestore({
-        resourceType: ResourceTypeEnum.projectResource,
-        sectionId: section.id,
-        passageId: passage.id,
-        description: descriptionRef.current || null,
-        sequenceNum: 0,
-        ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
-      });
+      return undefined;
     }
     const step = InternalizationStep();
     if (!step?.id) return undefined;

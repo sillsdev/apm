@@ -57,16 +57,6 @@ export type PendingUploadRestore =
     }
   | {
       /**
-       * General (project) resource: afterUpload opens the configure wizard
-       * instead of creating a sectionresource. Home Retry applies topic/category
-       * and queues the media id so Internalization can resume configuration.
-       */
-      kind: 'projectresource';
-      topic?: string;
-      artifactCategoryId?: string;
-    }
-  | {
-      /**
        * Term Verify Audio Translation: recreate orgkeytermtarget after Retry
        * (TT-7721). Mirrors useKeyTermSave create path.
        */
