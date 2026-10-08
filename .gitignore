@@ -32,3 +32,4 @@ tsconfig.tsbuildinfo
 *.lscache
 playwright-results
 playwright-report
+.scannerwork/

@@ -51,5 +51,9 @@
   "typescript.preferences.quoteStyle": "single",
   "typescript.suggest.autoImports": true,
   "typescript.updateImportsOnFileMove.enabled": "always",
-  "dotnet.defaultSolution": "disable"
+  "dotnet.defaultSolution": "disable",
+  "sonarlint.connectedMode.project": {
+    "connectionId": "http-localhost-9000",
+    "projectKey": "apm-vite"
+  }
 }
