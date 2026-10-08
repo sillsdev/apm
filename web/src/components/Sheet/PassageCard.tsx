@@ -135,7 +135,7 @@ export function PassageCard(props: IProps) {
         ) : (
           <>
             <Typography variant="body2" color="grey">
-              {comment || '\u00A0'}
+              {comment}
             </Typography>
             {!isPersonal && <PassageAssignee assign={cardInfo.assign} />}
             <PassageStepButton step={cardInfo.step} onClick={handleViewStep} />
