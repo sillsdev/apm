@@ -5,7 +5,7 @@ import Coordinator, {
 import Memory from '@orbit/memory';
 import { RecordSchema } from '@orbit/records';
 import {
-  onlineBootstrapIntact,
+  bootstrapMayContinue,
   removeOrbitRemote,
   trackBackupRestore,
   withCoordinatorLock,
@@ -103,21 +103,19 @@ describe('removeOrbitRemote', () => {
     expect(coordinator.sourceNames).toEqual(['memory']);
   });
 
-  it('continues online bootstrap only while remote sync is still attached', () => {
+  it('continues a fresh login before remote exists, then requires sync', () => {
+    const fresh = {
+      sourceNames: ['memory', 'backup'],
+      strategyNames: ['logging'],
+    };
     const intact = {
-      sourceNames: ['memory', 'remote'],
+      sourceNames: ['memory', 'backup', 'remote'],
       strategyNames: ['remote-request', 'remote-update', 'remote-sync'],
     };
-    expect(onlineBootstrapIntact(intact, true)).toBe(true);
-    expect(onlineBootstrapIntact(intact, false)).toBe(false);
-    expect(
-      onlineBootstrapIntact({ ...intact, sourceNames: ['memory'] }, true)
-    ).toBe(false);
-    expect(
-      onlineBootstrapIntact(
-        { ...intact, strategyNames: ['remote-request'] },
-        true
-      )
-    ).toBe(false);
+    expect(bootstrapMayContinue(fresh, true, false)).toBe(true);
+    expect(bootstrapMayContinue(fresh, false, false)).toBe(false);
+    expect(bootstrapMayContinue(intact, true, true)).toBe(true);
+    expect(bootstrapMayContinue(intact, false, true)).toBe(false);
+    expect(bootstrapMayContinue(fresh, true, true)).toBe(false);
   });
 });

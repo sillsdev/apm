@@ -42,8 +42,8 @@ import {
 } from './utils/orbitStrategyErrors';
 import {
   BootstrapCancelled,
+  bootstrapMayContinue,
   detachOrbitRemote,
-  onlineBootstrapIntact,
   withCoordinatorLock,
 } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
@@ -160,15 +160,18 @@ const sourcesImpl = async (
   let datachangeremote: JSONAPISource = {} as JSONAPISource;
 
   const offline = !tokenState.accessToken;
-  // Logout can drop the remote as soon as the teardown lock releases. The
-  // local `remote` source would still answer queries, so do not continue or
-  // publish a successful bootstrap unless this session still owns remote sync.
+  // A fresh coordinator has no remote yet. Until this login installs one,
+  // cancel only when logout has cleared the session. After that, also require
+  // the remote sync strategies — the local `remote` object can still answer
+  // queries after logout detaches it.
+  let remoteInstalled = false;
   const ensureOnline = () => {
     if (offline) return;
     if (
-      !onlineBootstrapIntact(
+      !bootstrapMayContinue(
         coordinator,
-        localStorage.getItem(LocalKey.loggedIn) === 'true'
+        localStorage.getItem(LocalKey.loggedIn) === 'true',
+        remoteInstalled
       )
     ) {
       throw new BootstrapCancelled();
@@ -311,6 +314,7 @@ const sourcesImpl = async (
           })
         );
     });
+    remoteInstalled = true;
     ensureOnline();
   } //!offline
   let goRemote =
@@ -454,9 +458,10 @@ const sourcesImpl = async (
   }
   if (
     !offline &&
-    !onlineBootstrapIntact(
+    !bootstrapMayContinue(
       coordinator,
-      localStorage.getItem(LocalKey.loggedIn) === 'true'
+      localStorage.getItem(LocalKey.loggedIn) === 'true',
+      remoteInstalled
     )
   ) {
     setUser('');

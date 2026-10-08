@@ -102,3 +102,17 @@ export function onlineBootstrapIntact(
     coordinator.strategyNames.includes('remote-sync')
   );
 }
+
+/**
+ * Before this login installs remote, only a cleared session cancels bootstrap.
+ * A fresh coordinator has memory and backup and no remote yet.
+ */
+export function bootstrapMayContinue(
+  coordinator: Pick<Coordinator, 'sourceNames' | 'strategyNames'> | undefined,
+  loggedIn: boolean,
+  remoteInstalled: boolean
+): boolean {
+  if (!loggedIn) return false;
+  if (!remoteInstalled) return true;
+  return onlineBootstrapIntact(coordinator, true);
+}
