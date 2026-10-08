@@ -402,6 +402,7 @@ export function AudioTab() {
               isOpen={attachVisible || false}
               onOpen={setAttachVisible}
               onCancel={handleAttachCancel}
+              showBottomCancelButton={false}
             >
               <PassageChooser
                 data={pdata}
