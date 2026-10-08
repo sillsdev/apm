@@ -11,6 +11,7 @@ import { Box, Typography, Grid } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import { PassageCard } from './PassageCard';
+import { CardSizeProvider } from '../CardSize/CardSize';
 import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
@@ -117,108 +118,112 @@ export function PlanView(props: IProps) {
   let bookCount = 0;
 
   return (
-    <Grid
-      container
-      sx={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: '1rem',
-      }}
-    >
-      {rowInfo.map((row, i) => {
-        if (row.kind === IwsKind.Section) {
-          const isBook =
-            row.passageType === PassageTypeEnum.BOOK ||
-            row.passageType === PassageTypeEnum.ALTBOOK;
-          let indent = false;
-          if (isBook) {
-            bookCount++;
-            indent = bookCount === 2;
+    <CardSizeProvider>
+      <Grid
+        container
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '1rem',
+        }}
+      >
+        {rowInfo.map((row, i) => {
+          if (row.kind === IwsKind.Section) {
+            const isBook =
+              row.passageType === PassageTypeEnum.BOOK ||
+              row.passageType === PassageTypeEnum.ALTBOOK;
+            let indent = false;
+            if (isBook) {
+              bookCount++;
+              indent = bookCount === 2;
+            }
+            return (
+              <Box
+                key={row.sectionId?.id}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  width: '100%',
+                }}
+              >
+                {publishingView && (
+                  <GraphicAvatar
+                    graphicUri={row.graphicUri}
+                    reference={row.reference}
+                    sectionSeq={row.sectionSeq}
+                    organizedBy="B"
+                    style={indent ? { marginLeft: '2rem' } : undefined}
+                    onClick={editGraphic ? () => editGraphic(i) : undefined}
+                  />
+                )}
+                {row.passageType === PassageTypeEnum.BOOK ? (
+                  <Typography variant="h5">{row.title}</Typography>
+                ) : row.passageType === PassageTypeEnum.ALTBOOK ? (
+                  <Typography variant="h5" sx={{ pl: 2 }}>
+                    {row.title}
+                  </Typography>
+                ) : (
+                  <Typography variant="h5">{getDescription(row)}</Typography>
+                )}
+                <GrowingSpacer />
+                {row.passageType === 'PASS' && publishingView ? (
+                  <Button
+                    disabled={!canPublish}
+                    startIcon={
+                      isPublished(rowInfo[i].published) ? (
+                        <PublishOffIcon />
+                      ) : (
+                        <PublishOnIcon />
+                      )
+                    }
+                    onClick={() => onPublish(i)}
+                  >
+                    {t.published}
+                  </Button>
+                ) : null}
+              </Box>
+            );
+          } else if (
+            row.kind === IwsKind.Passage ||
+            row.kind === IwsKind.SectionPassage
+          ) {
+            const mediaId = row.mediaId?.id;
+            return (
+              <PassageCard
+                key={row.passage?.id}
+                cardInfo={row}
+                handleViewStep={() => handleViewStep(i)}
+                onPlayStatus={mediaId ? () => onPlayStatus(mediaId) : undefined}
+                onGraphicClick={
+                  publishingView && editGraphic
+                    ? () => editGraphic(i)
+                    : undefined
+                }
+                isPlaying={mediaId === srcMediaId}
+                isPersonal={isPersonal}
+                isCurrent={
+                  !!currentPassageId && row.passage?.id === currentPassageId
+                }
+              />
+            );
+          } else {
+            return null;
           }
-          return (
-            <Box
-              key={row.sectionId?.id}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                width: '100%',
-              }}
-            >
-              {publishingView && (
-                <GraphicAvatar
-                  graphicUri={row.graphicUri}
-                  reference={row.reference}
-                  sectionSeq={row.sectionSeq}
-                  organizedBy="B"
-                  style={indent ? { marginLeft: '2rem' } : undefined}
-                  onClick={editGraphic ? () => editGraphic(i) : undefined}
-                />
-              )}
-              {row.passageType === PassageTypeEnum.BOOK ? (
-                <Typography variant="h5">{row.title}</Typography>
-              ) : row.passageType === PassageTypeEnum.ALTBOOK ? (
-                <Typography variant="h5" sx={{ pl: 2 }}>
-                  {row.title}
-                </Typography>
-              ) : (
-                <Typography variant="h5">{getDescription(row)}</Typography>
-              )}
-              <GrowingSpacer />
-              {row.passageType === 'PASS' && publishingView ? (
-                <Button
-                  disabled={!canPublish}
-                  startIcon={
-                    isPublished(rowInfo[i].published) ? (
-                      <PublishOffIcon />
-                    ) : (
-                      <PublishOnIcon />
-                    )
-                  }
-                  onClick={() => onPublish(i)}
-                >
-                  {t.published}
-                </Button>
-              ) : null}
-            </Box>
-          );
-        } else if (
-          row.kind === IwsKind.Passage ||
-          row.kind === IwsKind.SectionPassage
-        ) {
-          const mediaId = row.mediaId?.id;
-          return (
-            <PassageCard
-              key={row.passage?.id}
-              cardInfo={row}
-              handleViewStep={() => handleViewStep(i)}
-              onPlayStatus={mediaId ? () => onPlayStatus(mediaId) : undefined}
-              onGraphicClick={
-                publishingView && editGraphic ? () => editGraphic(i) : undefined
-              }
-              isPlaying={mediaId === srcMediaId}
-              isPersonal={isPersonal}
-              isCurrent={
-                !!currentPassageId && row.passage?.id === currentPassageId
-              }
-            />
-          );
-        } else {
-          return null;
-        }
-      })}
-      {confirmPublish && (
-        <ConfirmPublishDialog
-          context="plan"
-          isMovement={isMovement(publishRow.current)}
-          yesResponse={publishConfirm}
-          noResponse={publishRefused}
-          current={rowInfo[publishRow.current].published}
-          sharedProject={shared}
-          hasPublishing={publishingOn}
-          passageType={rowInfo[publishRow.current]?.passageType}
-        />
-      )}
-    </Grid>
+        })}
+        {confirmPublish && (
+          <ConfirmPublishDialog
+            context="plan"
+            isMovement={isMovement(publishRow.current)}
+            yesResponse={publishConfirm}
+            noResponse={publishRefused}
+            current={rowInfo[publishRow.current].published}
+            sharedProject={shared}
+            hasPublishing={publishingOn}
+            passageType={rowInfo[publishRow.current]?.passageType}
+          />
+        )}
+      </Grid>
+    </CardSizeProvider>
   );
 }
