@@ -1,10 +1,11 @@
-import { Box, Typography } from '@mui/material';
-import { Person } from '@mui/icons-material';
+import { Box, Typography, useTheme } from '@mui/material';
+import NoAccountsIcon from '@mui/icons-material/NoAccounts';
 import { RecordIdentity } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ICardsStrings } from '../../model';
 import TaskAvatar from '../../components/TaskAvatar';
 import { cardsSelector } from '../../selector';
+import { avatarSize } from '../../control';
 
 interface IProps {
   assign?: RecordIdentity;
@@ -12,6 +13,7 @@ interface IProps {
 
 export function PassageAssignee({ assign }: IProps) {
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
+  const theme = useTheme();
 
   return (
     <Box>
@@ -26,7 +28,10 @@ export function PassageAssignee({ assign }: IProps) {
             gap: '0.5rem',
           }}
         >
-          <Person sx={{ color: 'custom.black' }} />
+          <NoAccountsIcon
+            sx={avatarSize()}
+            htmlColor={theme.palette.custom.black}
+          />
           <Typography>{t.unassigned}</Typography>
         </Box>
       )}
