@@ -439,7 +439,7 @@ describe('PlanView', { tags: '@smoke' }, () => {
     });
   };
 
-  it('should render Grid container', () => {
+  it('should render the plan view container', () => {
     const rowInfo: ISheet[] = [];
     const bookMap = createMockBookNameMap();
 
@@ -452,9 +452,7 @@ describe('PlanView', { tags: '@smoke' }, () => {
     });
 
     cy.wait(100);
-    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 }).should(
-      'exist'
-    );
+    cy.get('[data-cy="plan-view"]', { timeout: 5000 }).should('exist');
   });
 
   it('should render section with title when passageType is BOOK', () => {
@@ -974,9 +972,7 @@ describe('PlanView', { tags: '@smoke' }, () => {
     });
 
     cy.wait(100);
-    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 }).should(
-      'exist'
-    );
+    cy.get('[data-cy="plan-view"]', { timeout: 5000 }).should('exist');
     // Should not render any sections or passages
     cy.get('h5[class*="MuiTypography-h5"]').should('not.exist');
     cy.get('div[class*="MuiCard-root"]').should('not.exist');
