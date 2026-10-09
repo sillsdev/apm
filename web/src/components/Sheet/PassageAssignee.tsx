@@ -26,7 +26,7 @@ export function PassageAssignee({ assign }: IProps) {
             gap: '0.5rem',
           }}
         >
-          <Person />
+          <Person sx={{ color: 'custom.black' }} />
           <Typography>{t.unassigned}</Typography>
         </Box>
       )}
