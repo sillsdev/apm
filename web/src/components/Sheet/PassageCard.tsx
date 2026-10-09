@@ -1,7 +1,7 @@
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { Box, Card, Typography, useTheme } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { PlayButton } from '../PlayButton';
+import { PassagePlayButton } from './PassagePlayButton';
 import { PassageRef } from './PassageRef';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
@@ -17,6 +17,7 @@ interface IProps {
   onPlayStatus?: () => void;
   onGraphicClick?: () => void;
   isPlaying: boolean;
+  isPlayActive?: boolean;
   isPersonal?: boolean;
   isCurrent?: boolean;
 }
@@ -29,6 +30,7 @@ export function PassageCard(props: IProps) {
     onPlayStatus,
     onGraphicClick,
     isPlaying,
+    isPlayActive,
     isPersonal,
     isCurrent,
   } = props;
@@ -46,12 +48,6 @@ export function PassageCard(props: IProps) {
     ? passageTypeFromRef(cardInfo.passage.attributes.reference, false)
     : cardInfo.passageType;
 
-  const handlePlayEnd = () => {
-    if (isPlaying) {
-      onPlayStatus?.();
-    }
-  };
-
   const passageId = cardInfo.passage?.id;
   const isChapter = psgType === PassageTypeEnum.CHAPTERNUMBER;
 
@@ -67,14 +63,15 @@ export function PassageCard(props: IProps) {
 
   const theme = useTheme();
 
-  const playButton = (
-    <PlayButton
-      mediaId={cardInfo.mediaId?.id}
-      isPlaying={isPlaying}
-      onPlayStatus={onPlayStatus}
-      onPlayEnd={handlePlayEnd}
+  const mediaId = cardInfo.mediaId?.id;
+  const playButton = mediaId ? (
+    <PassagePlayButton
+      mediaId={mediaId}
+      playing={isPlaying}
+      active={isPlayActive}
+      onToggle={onPlayStatus}
     />
-  );
+  ) : null;
 
   return (
     <Card

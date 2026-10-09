@@ -50,6 +50,7 @@ export function PlanView(props: IProps) {
   const ctx = useContext(PlanContext);
   const { shared, publishingOn, canPublish } = ctx.state;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
+  const [playing, setPlaying] = useState(false);
   const [view, setView] = useState('');
   const [confirmPublish, setConfirmPublish] = useState(false);
   const publishRow = useRef<number>(-1);
@@ -82,7 +83,12 @@ export function PlanView(props: IProps) {
   }, [rowInfo, memory]);
 
   const onPlayStatus = (mediaId: string) => {
-    setSrcMediaId(mediaId);
+    if (mediaId === srcMediaId) {
+      setPlaying(!playing);
+    } else {
+      setSrcMediaId(mediaId);
+      setPlaying(true);
+    }
   };
 
   const handleViewStep = (passageIndex: number) => {
@@ -238,7 +244,8 @@ export function PlanView(props: IProps) {
                               ? () => editGraphic(i)
                               : undefined
                           }
-                          isPlaying={mediaId === srcMediaId}
+                          isPlaying={playing && mediaId === srcMediaId}
+                          isPlayActive={mediaId === srcMediaId}
                           isPersonal={isPersonal}
                           isCurrent={
                             !!currentPassageId &&
