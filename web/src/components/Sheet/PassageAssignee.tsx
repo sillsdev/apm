@@ -26,35 +26,16 @@ export function PassageAssignee({ assign }: IProps) {
       : (findRecord(memory, 'group', assign.id) as GroupD)?.attributes?.name;
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
       {assign ? (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <TaskAvatar assigned={assign} />
-          <Typography>{assigneeName}</Typography>
-        </Box>
+        <TaskAvatar assigned={assign} />
       ) : (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <NoAccountsIcon
-            sx={avatarSize()}
-            htmlColor={theme.palette.custom.black}
-          />
-          <Typography>{t.unassigned}</Typography>
-        </Box>
+        <NoAccountsIcon
+          sx={avatarSize()}
+          htmlColor={theme.palette.custom.black}
+        />
       )}
+      <Typography>{assign ? assigneeName : t.unassigned}</Typography>
     </Box>
   );
 }
