@@ -1,16 +1,15 @@
-import { ICardsStrings, ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import { ChevronRight, Person } from '@mui/icons-material';
-import TaskAvatar from '../../components/TaskAvatar';
+import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
+import { Box, Card, Typography, useTheme } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { PlayButton } from '../PlayButton';
-import { cardsSelector } from '../../selector';
-import { shallowEqual, useSelector } from 'react-redux';
-import { PassageGraphic } from './PassageGraphic';
+import { PassagePlayButton } from './PassagePlayButton';
 import { PassageRef } from './PassageRef';
-import { useSectionIdDescription } from './useSectionIdDescription';
+import { PassageCardHeader } from './PassageCardHeader';
+import { PassageAssignee } from './PassageAssignee';
+import { PassageStepButton } from './PassageStepButton';
 import { useMobile } from '../../utils';
-import { Button } from '../../control/Button';
+import { useCardHeight, useMeasureCardHeight } from '../CardSize/useCardSize';
+
+const minPassageCardHeight = 176;
 
 interface IProps {
   cardInfo: ISheet;
@@ -18,6 +17,7 @@ interface IProps {
   onPlayStatus?: () => void;
   onGraphicClick?: () => void;
   isPlaying: boolean;
+  isPlayActive?: boolean;
   isPersonal?: boolean;
   isCurrent?: boolean;
 }
@@ -30,11 +30,10 @@ export function PassageCard(props: IProps) {
     onPlayStatus,
     onGraphicClick,
     isPlaying,
+    isPlayActive,
     isPersonal,
     isCurrent,
   } = props;
-  const getDescription = useSectionIdDescription();
-  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const noteTitle = cardInfo?.sharedResource?.attributes.title;
   // Unsaved rows have no passage record yet, so fall back to the row fields.
   const ref =
@@ -49,13 +48,30 @@ export function PassageCard(props: IProps) {
     ? passageTypeFromRef(cardInfo.passage.attributes.reference, false)
     : cardInfo.passageType;
 
-  const handlePlayEnd = () => {
-    if (isPlaying) {
-      onPlayStatus?.();
-    }
-  };
-
   const passageId = cardInfo.passage?.id;
+  const isChapter = psgType === PassageTypeEnum.CHAPTERNUMBER;
+
+  // Chapter cards stretch their play button to fill the card, so they'd report
+  // the height they were given rather than what they need. At phone width
+  // there's one card per row, so there's nothing to line up with.
+  const cardHeight = useCardHeight(minPassageCardHeight);
+  const contentRef = useMeasureCardHeight(
+    isChapter || isMobileWidth
+      ? undefined
+      : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
+  );
+
+  const theme = useTheme();
+
+  const mediaId = cardInfo.mediaId?.id;
+  const playButton = mediaId ? (
+    <PassagePlayButton
+      mediaId={mediaId}
+      playing={isPlaying}
+      active={isPlayActive}
+      onToggle={onPlayStatus}
+    />
+  ) : null;
 
   return (
     <Card
@@ -64,8 +80,12 @@ export function PassageCard(props: IProps) {
       data-cy={passageId ? `passage-card-${passageId}` : undefined}
       aria-current={isCurrent ? 'true' : undefined}
       sx={{
-        minWidth: isMobileWidth ? '100%' : 275,
-        maxWidth: 400,
+        boxSizing: 'border-box',
+        minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
+        display: 'flex',
+        flexDirection: 'column',
+        px: 2,
+        py: 1.5,
         ...(isCurrent && {
           outline: '2px solid',
           outlineColor: 'primary.light',
@@ -73,105 +93,83 @@ export function PassageCard(props: IProps) {
         }),
       }}
     >
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <PassageGraphic
-            cardInfo={cardInfo}
-            reference={ref}
-            psgType={psgType}
-            onClick={onGraphicClick}
-          />
-          {cardInfo.kind === IwsKind.Passage ? (
-            <PassageRef
-              psgType={psgType}
-              book={cardInfo.book}
+      <Box
+        ref={contentRef}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: isChapter ? 0 : 1,
+          flex: 1,
+        }}
+      >
+        {isChapter ? (
+          <>
+            <PassageCardHeader
+              cardInfo={cardInfo}
               passageRef={ref}
               comment={comment}
-            />
-          ) : (
-            <Typography variant="h6">{getDescription(cardInfo)}</Typography>
-          )}
-          {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
-            <PlayButton
-              mediaId={cardInfo.mediaId?.id}
-              isPlaying={isPlaying}
-              onPlayStatus={onPlayStatus}
-              onPlayEnd={handlePlayEnd}
-            />
-          ) : (
-            <></>
-          )}
-        </Box>
-        {cardInfo.kind === IwsKind.SectionPassage && (
-          <PassageRef
-            psgType={psgType}
-            book={cardInfo.book}
-            passageRef={ref}
-            comment={comment}
-          />
-        )}
-        {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
-          <>
-            <Typography variant="body2" color="grey">
-              {comment || '\u00A0'}
-            </Typography>
-            {!isPersonal && (
-              <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
-                {cardInfo.assign ? (
-                  <TaskAvatar assigned={cardInfo?.assign || null} />
-                ) : (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
-                    {t.unassigned || 'Unassigned'}
-                  </Box>
-                )}
-              </Box>
-            )}
-            <Button
-              data-cy="passage-card-step"
+              psgType={psgType}
+              onGraphicClick={onGraphicClick}
+            ></PassageCardHeader>
+            <Box
               sx={{
-                width: '100%',
-                position: 'relative',
-                '& .MuiTypography-root': {
-                  fontWeight: 'bold',
-                  maxWidth: '80%',
-                },
-                '& .MuiButton-endIcon': {
-                  position: 'absolute',
-                  right: 12,
-                  m: 0,
-                },
+                display: 'flex',
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-              color="primary"
-              endIcon={<ChevronRight />}
-              onClick={handleViewStep}
             >
-              {cardInfo.step}
-            </Button>
+              {playButton}
+            </Box>
           </>
         ) : (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-around',
-              mt: 2,
-            }}
-          >
-            <PlayButton
-              mediaId={cardInfo.mediaId?.id}
-              isPlaying={isPlaying && psgType === PassageTypeEnum.CHAPTERNUMBER}
-              onPlayStatus={onPlayStatus}
-              onPlayEnd={handlePlayEnd}
-            />
-          </Box>
+          <>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PassageCardHeader
+                cardInfo={cardInfo}
+                passageRef={ref}
+                comment={comment}
+                psgType={psgType}
+                onGraphicClick={onGraphicClick}
+              >
+                {playButton}
+              </PassageCardHeader>
+              {cardInfo.kind === IwsKind.SectionPassage && (
+                <PassageRef
+                  psgType={psgType}
+                  book={cardInfo.book}
+                  passageRef={ref}
+                  comment={comment}
+                />
+              )}
+              <Typography
+                variant="body2"
+                color="grey"
+                sx={{
+                  lineHeight: theme.spacing(3.5),
+                  minWidth: 0,
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1,
+                  overflow: 'hidden',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {comment}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {!isPersonal && <PassageAssignee assign={cardInfo.assign} />}
+              <PassageStepButton
+                step={cardInfo.step}
+                discussionCount={cardInfo.stepDiscussionCount}
+                onClick={handleViewStep}
+              />
+            </Box>
+          </>
         )}
-      </CardContent>
+      </Box>
     </Card>
   );
 }

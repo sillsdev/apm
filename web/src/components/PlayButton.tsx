@@ -1,6 +1,6 @@
 import { IconButton } from '@mui/material';
 import { PlayCircleOutline } from '@mui/icons-material';
-import { LoadAndPlay } from './LoadAndPLay';
+import { LoadAndPlay } from './LoadAndPlay';
 import AudioProgressButton from './AudioProgressButton';
 
 interface IPlayButtonProps {

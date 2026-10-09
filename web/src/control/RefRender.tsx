@@ -70,7 +70,7 @@ ArgType.displayName = 'ArgType';
 interface IPtMap {
   [key: string]: React.JSX.Element;
 }
-const passageTypeMap: IPtMap = {
+export const passageTypeMap: IPtMap = {
   [PassageTypeEnum.MOVEMENT]: MovementIcon,
   [PassageTypeEnum.CHAPTERNUMBER]: ChapterNumberIcon,
   [PassageTypeEnum.BOOK]: BookIcon,

@@ -485,12 +485,11 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       isPlaying: false,
     });
 
-    // Should show play icon button
-    cy.get('button[class*="MuiIconButton-root"]').should('be.visible');
-    cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('exist');
+    cy.get('[data-testid="play-button"]').should('be.visible');
+    cy.get('svg[data-testid="PlayArrowIcon"]').should('exist');
   });
 
-  it('should show AudioProgressButton when mediaId exists and isPlaying is true', () => {
+  it('should show pause icon when mediaId exists and isPlaying is true', () => {
     const cardInfo = createMockSheet({
       mediaId: createMockRecordIdentity('media-1', 'mediafile'),
     });
@@ -501,17 +500,9 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       isPlaying: true,
     });
 
-    // Should show LoadAndPlay component (AudioProgressButton)
-    // LoadAndPlay renders AudioProgressButton only when ready (after fetching media URL)
-    // The step button should always be visible
-    cy.contains('button', 'Step 1').should('be.visible');
-    // LoadAndPlay may not be ready immediately, so we check that the card renders
-    // and that we're in the playing state (LoadAndPlay is rendered instead of IconButton)
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
-    // When LoadAndPlay is ready, it will render a Fab button (from AudioProgressButton)
-    // But since media fetching is async, we just verify the structure is correct
-    // by checking that the play IconButton is NOT shown (since isPlaying is true)
-    cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('not.exist');
+    cy.get('[data-testid="play-button"]').should('be.visible');
+    cy.get('svg[data-testid="PauseIcon"]').should('exist');
+    cy.get('svg[data-testid="PlayArrowIcon"]').should('not.exist');
   });
 
   it('should call onPlayStatus when play button is clicked', () => {
@@ -525,7 +516,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       isPlaying: false,
     });
 
-    cy.get('button[class*="MuiIconButton-root"]').click();
+    cy.get('[data-testid="play-button"]').click();
     cy.wrap(mockOnPlayStatus).should('have.been.called');
   });
 
@@ -540,7 +531,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     });
 
     // Should not show play button
-    cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('not.exist');
+    cy.get('[data-testid="play-button"]').should('not.exist');
     // Should have an empty box placeholder
     cy.get('div[class*="MuiBox-root"]').should('have.length.at.least', 1);
   });
@@ -561,7 +552,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.contains('Unassigned').should('not.exist');
   });
 
-  it('should show Unassigned with Person icon when assign does not exist', () => {
+  it('should show Unassigned with NoAccounts icon when assign does not exist', () => {
     const cardInfo = createMockSheet({
       assign: undefined,
     });
@@ -574,8 +565,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Should show "Unassigned" text
     cy.contains('Unassigned').should('be.visible');
-    // Should show Person icon
-    cy.get('svg[data-testid="PersonIcon"]').should('exist');
+    // Should show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('exist');
   });
 
   it('should not show assign section for personal projects when assign exists', () => {
@@ -591,8 +582,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Should not show TaskAvatar
     cy.contains('Unassigned').should('not.exist');
-    // Should not show Person icon
-    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+    // Should not show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
     // Assign section should not be visible
     cy.get('div[class*="MuiBox-root"]').should('not.contain', 'Unassigned');
   });
@@ -610,8 +601,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Should not show "Unassigned" text
     cy.contains('Unassigned').should('not.exist');
-    // Should not show Person icon
-    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+    // Should not show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
   });
 
   it('should call handleViewStep when step button is clicked', () => {
@@ -720,39 +711,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Comment area should exist but be empty (contains non-breaking space)
     cy.get('p[class*="MuiTypography-body2"]').should('exist');
-  });
-
-  it('should render with mobile width styling on mobile viewport', () => {
-    cy.viewport(400, 800);
-
-    const cardInfo = createMockSheet();
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    });
-
-    // Card should have mobile width (100%)
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
-    // Check that card exists and is visible
-    cy.get('div[class*="MuiCard-root"]')
-      .should('have.css', 'min-width')
-      .and('match', /100%|275px/);
-  });
-
-  it('should render with desktop width styling on desktop viewport', () => {
-    cy.viewport(1024, 768);
-
-    const cardInfo = createMockSheet();
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    });
-
-    // Card should have desktop min width (275px)
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
-    cy.get('div[class*="MuiCard-root"]')
-      .should('have.css', 'min-width')
-      .and('match', /275px/);
   });
 
   it('should handle non-PASSAGE passage types with RefRender', () => {
@@ -948,7 +906,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       // Should not show TaskAvatar or Unassigned text
       cy.contains('Unassigned').should('not.exist');
-      cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+      cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
     });
 
     it('should not show step button for CHAPTERNUMBER type', () => {
@@ -1013,12 +971,11 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         isPlaying: false,
       });
 
-      // Should show play icon button in the centered box
-      cy.get('button[class*="MuiIconButton-root"]').should('be.visible');
-      cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('exist');
+      // Should show play button in the centered box
+      cy.get('[data-testid="play-button"]').should('be.visible');
     });
 
-    it('should show AudioProgressButton when playing for CHAPTERNUMBER type', () => {
+    it('should show pause icon when playing for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
@@ -1047,9 +1004,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         isPlaying: true,
       });
 
-      // Should show LoadAndPlay component (AudioProgressButton) in centered box
-      // The play IconButton should not be visible when isPlaying is true
-      cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('not.exist');
+      cy.get('[data-testid="play-button"]').should('be.visible');
+      cy.get('svg[data-testid="PauseIcon"]').should('exist');
       cy.get('div[class*="MuiCard-root"]').should('be.visible');
     });
 
