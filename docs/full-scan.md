@@ -8,9 +8,9 @@ This is free, runs on your machine, and gives you a dashboard of every code smel
 docker run -d --name sonarqube -e SONAR\_ES\_BOOTSTRAP\_CHECKS\_DISABLE=true -p 9000:9000 sonarqube:latest
 ```
 
-`Access: Once initialized, the dashboard is accessible at http://localhost:9000 using default credentials (admin/admin).`
+Access: Once initialized, the dashboard is accessible at `http://localhost:9000` using default credentials (admin/admin).
 
-`Persistent Data: For production-like local setups, it is advisable to use Docker Compose to link SonarQube with an external database (like PostgreSQL) and persistent volumes for data retention. `
+Persistent Data: For production-like local setups, it is advisable to use Docker Compose to link SonarQube with an external database (like PostgreSQL) and persistent volumes for data retention.
 
 ```poershell
 docker run -d --name sonarqube -p 9000:9000 sonarqube:community
@@ -33,11 +33,11 @@ sonar.javascript.lcov.reportPaths=web/coverage/lcov.info
 
 The two localization files are excluded because they're generated.
 
-5. Run the scanner. It needs no install because it runs through npx. The token is the `SONAR_TOKEN` environment variable (`${SONAR_TOKEN}`):
+5. Run the scanner. It needs no install because it runs through npx. The token is the `env:SONAR_TOKEN` environment variable (`${env:SONAR_TOKEN}`):
 
 ```powershell
 cd web; npm run test:coverage; cd ..   \# optional: adds coverage data to the report
-npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${SONAR_TOKEN}"
+npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${env:SONAR_TOKEN}"
 ```
 
 6. Look at the results under Issues, filtered by Type = Code Smell (newer versions call it "Maintainability"). You can sort by severity, rule or file.
@@ -53,5 +53,5 @@ I've updated [sonar-project.properties](vscode-webview://1vvl62agp8nmso4u3onassc
 Run it again with:
 
 ```powershell
-npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${SONAR_TOKEN}"
+npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${env:SONAR_TOKEN}"
 ```
