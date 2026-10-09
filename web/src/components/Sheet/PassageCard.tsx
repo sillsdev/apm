@@ -83,7 +83,7 @@ export function PassageCard(props: IProps) {
       data-cy={passageId ? `passage-card-${passageId}` : undefined}
       aria-current={isCurrent ? 'true' : undefined}
       sx={{
-        height: '100%',
+        boxSizing: 'border-box',
         minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
         display: 'flex',
         flexDirection: 'column',
