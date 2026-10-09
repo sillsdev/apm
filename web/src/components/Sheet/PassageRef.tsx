@@ -1,6 +1,7 @@
-import { Typography } from '@mui/material';
+import { Typography, useTheme } from '@mui/material';
 import { PassageTypeEnum, IPlanSheetStrings, IState } from '../../model';
-import { RefRender } from '../../control/RefRender';
+import { passageTypeFromRef } from '../../control/passageTypeFromRef';
+import { passageTypeMap } from '../../control/RefRender';
 import { useContext } from 'react';
 import { PlanContext } from '../../context/PlanContext';
 import { useSelector, shallowEqual } from 'react-redux';
@@ -19,6 +20,7 @@ export function PassageRef({
   passageRef,
   comment,
 }: PassageRefProps) {
+  const theme = useTheme();
   const ctx = useContext(PlanContext);
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const bookMap = useSelector((state: IState) => state.books.map);
@@ -35,22 +37,46 @@ export function PassageRef({
 
   const fullBookName = getBookName(book);
 
-  if (psgType !== PassageTypeEnum.PASSAGE && !passageRef) {
+  if (psgType === PassageTypeEnum.PASSAGE) {
+    return (
+      <Typography variant="h6">{`${fullBookName} ${passageRef}`}</Typography>
+    );
+  }
+
+  if (!passageRef) {
     return null;
   }
 
+  // Strip the type prefix (e.g. "CHNUM 1" -> "1")
+  const refType = passageTypeFromRef(passageRef);
+  const refText =
+    refType === PassageTypeEnum.PASSAGE
+      ? passageRef
+      : passageRef.substring(refType.length + 1);
+  const showComment = psgType === PassageTypeEnum.CHAPTERNUMBER && comment;
+
   return (
-    <Typography variant="h6">
-      {psgType === PassageTypeEnum.PASSAGE ? (
-        `${fullBookName} ${passageRef}`
-      ) : passageRef ? (
+    <Typography
+      variant="h6"
+      sx={{
+        lineHeight: theme.spacing(3.5),
+        minWidth: 0,
+        display: '-webkit-box',
+        WebkitBoxOrient: 'vertical',
+        WebkitLineClamp: 2,
+        overflow: 'hidden',
+        overflowWrap: 'anywhere',
+      }}
+    >
+      {showComment ? (
+        comment
+      ) : (
         <>
-          <RefRender value={passageRef} pt={psgType} fontSize={'0.8rem'} />
-          {psgType === PassageTypeEnum.CHAPTERNUMBER && comment
-            ? ` ${comment}`
-            : null}
+          {passageTypeMap[psgType]}
+          {' '}
+          {refText}
         </>
-      ) : null}
+      )}
     </Typography>
   );
 }
