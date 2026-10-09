@@ -138,11 +138,16 @@ export function AddResourceWizard({
   );
 
   const [step, setStep] = useState<WizardStep>(WizardStep.None);
-  // Reported by the embedded recorder so the dialog X can't close mid-recording.
-  const [recording, setRecording] = useState(false);
-  // Reported by the embedded recorder: a take was recorded on the record tab
-  // and not yet saved/staged, so closing the upload step must confirm (#719).
-  const [uploadHasTake, setUploadHasTake] = useState(false);
+  // Sticky: set once a recording starts on the record tab this session and never
+  // cleared until the wizard remounts. It is the single "an unsaved recording
+  // could be lost" signal that gates the close confirm on both the upload and
+  // section-select steps (#719). Sticky deliberately over-confirms rather than
+  // risk discarding a recording silently: if the user records, then discards or
+  // switches to a plain file upload, closing still prompts — a rare path where an
+  // extra confirm is harmless. Closing
+  // mid-recording confirms, then unmounts the recorder, and
+  // useWavRecorder stops the mic on unmount — so there is no separate block.
+  const [hasRecordedTake, setHasRecordedTake] = useState(false);
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [audioUploadOrRecord, setAudioUploadOrRecord] = useState(false);
   // whether we give the "general resource" option
@@ -159,10 +164,6 @@ export function AddResourceWizard({
   const [uploading, setUploading] = useState(false);
   const [pendingCloseConfirmation, setPendingCloseConfirmation] =
     useState(false);
-  // Whether the staged general-resource audio is a recorded take (not an
-  // uploaded file). Closing the section-select step only confirms when a
-  // recording would be lost; a plain file upload is cheap to redo (#719).
-  const [isStagedRecording, setIsStagedRecording] = useState(false);
 
   const artifactState = useRef<{ id?: string | null }>({});
   const catIdRef = useRef<string | undefined>(undefined);
@@ -409,10 +410,11 @@ export function AddResourceWizard({
   // Deferred general-resource add: the Add Audio Resource dialog's Next hands
   // the prepared file here instead of uploading. We keep the file, open
   // SelectSections, and defer the real upload to that dialog's Upload button.
-  const handleStageAudioFiles = async (files: File[], recorded?: boolean) => {
+  const handleStageAudioFiles = async (files: File[]) => {
     // we should only have one file if going through the general resource flow
     if (!files || files.length !== 1) return;
-    setIsStagedRecording(Boolean(recorded));
+    // Whether a recording was staged is already captured by hasRecordedTake
+    // (set when the take was recorded, before Next), so nothing to set here.
     // Commit a newly-typed artifact category now, while the dialog's metaData is
     // still mounted; the deferred upload runs after it unmounts.
     pendingResourceSeqRef.current = 0;
@@ -421,9 +423,6 @@ export function AddResourceWizard({
       addCatCommitRef.current = null;
     }
     stagedResourceFilesRef.current = files;
-    // Also seed the upload-tab restore state so a recorded take — which bypasses
-    // onFiles — is still pre-selected if the user Backs out and returns.
-    setResourceUploadFiles(files);
     cancelled.current = false;
     isAddingAudioResourceRef.current = true;
     projMediaRef.current = undefined;
@@ -592,23 +591,20 @@ export function AddResourceWizard({
   }, [launch]);
 
   // The Uploader's close (X) calls onOpen(false); on the upload step that ends
-  // the flow. A plain file upload closes without a prompt, and the record tab
-  // confirms internally only when an unsaved take would be lost (#719).
-  // Programmatic step changes don't fire onOpen.
-  // One close handler for the whole wizard dialog. Blocks mid-recording. Only
-  // confirms when something would be lost (#719): the configure step always
-  // (a saved-but-unconfigured resource); the section-select step only when a
-  // recording was staged (a file upload is cheap to redo); the upload step only
-  // when an unsaved take sits on the record tab. Everything else closes directly.
-  // The states where closing would lose work and so must confirm first.
+  // the flow. Programmatic step changes don't fire onOpen.
+  // One close handler for the whole wizard dialog. Only confirms when something
+  // would be lost (#719): the configure step always (a saved-but-unconfigured
+  // resource); the upload and section-select steps whenever a recording has
+  // started this session (hasRecordedTake) — a plain file upload is cheap to
+  // redo and never sets that flag, so it closes directly. Closing mid-recording
+  // takes the same confirm path, not a block. Everything else closes directly.
   const needConfirmClose =
     step === WizardStep.Configure ||
-    (step === WizardStep.SelectSections && isStagedRecording) ||
-    (step === WizardStep.Upload && uploadHasTake);
+    ((step === WizardStep.Upload || step === WizardStep.SelectSections) &&
+      hasRecordedTake);
 
   const handleWizardClose = (v: boolean) => {
     if (v) return;
-    if (recording) return;
     if (needConfirmClose) setPendingCloseConfirmation(true);
     else closeAll();
   };
@@ -692,8 +688,9 @@ export function AddResourceWizard({
             >
               <Uploader
                 embedded
-                onRecordingChange={setRecording}
-                onHasTakeChange={setUploadHasTake}
+                // A recording started this session — latch it on and never off,
+                // so the close confirm survives Next→Back and step changes.
+                onStartRecording={() => setHasRecordedTake(true)}
                 audioUploadOrRecord={audioUploadOrRecord}
                 hideUploadCancel
                 isOpen={step === WizardStep.Upload}
@@ -725,8 +722,6 @@ export function AddResourceWizard({
                 pendingRestore={resourcePendingRestore}
                 importList={resourceImportList}
                 onFiles={handleResourceUploadFiles}
-                // When returning here via Back, show the previously selected files.
-                initialFiles={resourceUploadFiles}
                 deferUpload={uploadType === UploadType.ProjectResource}
                 onStageFiles={handleStageAudioFiles}
                 validationMessage={resourceUploadValidationMessage}

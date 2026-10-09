@@ -162,8 +162,8 @@ jest.mock('../../Uploader', () => {
       validationMessage,
       onFiles,
       onStageFiles,
+      onStartRecording,
       finish,
-      initialFiles,
       importList,
       metaData,
       onOpen,
@@ -173,9 +173,9 @@ jest.mock('../../Uploader', () => {
       ready?: () => boolean;
       validationMessage?: string;
       onFiles?: (f: File[]) => void;
-      onStageFiles?: (f: File[], recorded?: boolean) => void;
+      onStageFiles?: (f: File[]) => void;
+      onStartRecording?: () => void;
       finish?: (planId: string, ids: string[]) => void;
-      initialFiles?: File[];
       importList?: File[];
       metaData?: React.ReactNode;
       onOpen?: (open: boolean) => void;
@@ -193,7 +193,6 @@ jest.mock('../../Uploader', () => {
           {isOpen && (
             <div data-testid="uploader">
               <span>uploader-open</span>
-              <span>initial-files:{initialFiles?.length ?? 0}</span>
               {metaData}
               <button
                 type="button"
@@ -207,9 +206,14 @@ jest.mock('../../Uploader', () => {
               <button type="button" onClick={() => onStageFiles?.([file('a')])}>
                 stage-one-file
               </button>
+              {/* A real recording reports recording-start (onStartRecording)
+                  when it begins, before Next stages it. */}
               <button
                 type="button"
-                onClick={() => onStageFiles?.([file('a')], /* recorded */ true)}
+                onClick={() => {
+                  onStartRecording?.();
+                  onStageFiles?.([file('a')]);
+                }}
               >
                 stage-one-recording
               </button>
@@ -423,15 +427,16 @@ describe('AddResourceWizard', () => {
     expect(screen.getByText('btn-upload')).toBeInTheDocument();
   });
 
-  it('preserves the staged file when going Back from section-select to upload', () => {
+  it('returns to the upload step when going Back from section-select', () => {
     renderWizard({ kind: 'add', action: AddResourceAction.Audio });
     stageToSelectSections();
 
     fireEvent.click(screen.getByText('sections-back'));
 
+    // The staged file/take itself is preserved by the upload subtree staying
+    // mounted across the step change (not re-seeded), so here we just confirm
+    // Back returns to the upload step.
     expect(screen.getByText('uploader-open')).toBeInTheDocument();
-    // The previously staged file is handed back as initialFiles.
-    expect(screen.getByText('initial-files:1')).toBeInTheDocument();
   });
 
   it('keeps SelectSections mounted while on the configure step (Back preserves it)', async () => {

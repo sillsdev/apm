@@ -26,7 +26,6 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import SpeakerName from './SpeakerName';
 import { Button } from '../control';
 import Busy from './Busy';
-import Confirm from './AlertDialog';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -64,32 +63,8 @@ export interface IPassageRecordPanelProps {
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
   onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
-  initialFiles?: File[] | undefined;
   keepFilesAfterSubmit?: boolean | undefined;
-  /**
-   * Embedded in a host dialog (the add-resource wizard) rather than wrapped by
-   * PassageRecordDlg's own dialog. The host owns the dialog chrome, close, and
-   * confirm, so the panel renders no Confirm of its own and reports recording
-   * state up (onRecordingChange) so the host can gate its close.
-   */
-  embedded?: boolean | undefined;
-  /**
-   * Dialog-frame close plumbing (non-embedded). The frame flips
-   * `closeRequested` true when its X/escape is used; the panel runs the close
-   * logic (block mid-recording, confirm, then close) and calls onCloseHandled
-   * to reset the flag.
-   */
-  closeRequested?: boolean | undefined;
-  onCloseHandled?: (() => void) | undefined;
-  /** Reported so an embedding host can block its own close mid-recording. */
-  onRecordingChange?: ((recording: boolean) => void) | undefined;
-  /**
-   * Reported so an embedding host can decide whether closing needs a discard
-   * confirm: true once a take has been recorded on the record tab (and not yet
-   * saved/staged), tracked separately from canSave, which stays false while a
-   * take is still processing or is too big to save (#719).
-   */
-  onHasTakeChange?: ((hasTake: boolean) => void) | undefined;
+  onStartRecording?: (() => void) | undefined;
 }
 
 /**
@@ -126,13 +101,8 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     pendingRestore,
     beforeUpload,
     onStageFile,
-    initialFiles,
     keepFilesAfterSubmit,
-    embedded,
-    closeRequested,
-    onCloseHandled,
-    onRecordingChange,
-    onHasTakeChange,
+    onStartRecording,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -153,45 +123,15 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
   // but MediaRecord still drives the setter.
   const [, setCanCancel] = useState(false);
   const [hasRights, setHasRights] = useState(false);
-  const [recording, setRecording] = useState(false);
-  // A take has been recorded since the record tab opened. Tracked separately
-  // from canSave, which stays false while a take is still processing (or is
-  // too big to save), so closing then must still confirm (#719).
-  const [hasTake, setHasTake] = useState(false);
+  // Kept to disable the Upload tab toggle and block the tab switch while a
+  // recording is in progress — not reported out: the host's close confirm is
+  // driven by the sticky onStartRecording latch, not live recording state.
+  const [isRecording, setIsRecording] = useState(false);
   const [dialogWidth, setDialogWidth] = useState(0);
-  const [showConfirm, setShowConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const myToolId = 'PassageRecordDlg';
-  // Latest initialFiles without making the open/close effects depend on it (so
-  // they fire only on visibility changes, never mid-recording).
-  const initialFilesRef = useRef(initialFiles);
-  initialFilesRef.current = initialFiles;
-
   useEffect(() => {
-    if (active) {
-      // Reopening with a staged take (the wizard's Next→Back) keeps the current
-      // tab — and, because the dialog is kept mounted, the recorded take and its
-      // waveform are still there. A fresh open (no staged files) starts on the
-      // Upload tab as before.
-      const hasStagedTake = Boolean(initialFilesRef.current?.length);
-      if (!hasStagedTake) setMode('upload');
-      setRecording(false);
-      // A retained take is still in the player on Back (keepMounted), so keep
-      // hasTake true — otherwise the wizard's close-confirm thinks nothing would
-      // be lost and discards the recording silently.
-      setHasTake(hasStagedTake);
-      setShowConfirm(false);
-    }
-  }, [active]);
-
-  // Staying mounted keeps the record tab (and its live recorder) alive while
-  // inactive. That is wanted during a Next→Back pause (a take is staged), but on
-  // a genuine close drop back to Upload so MediaRecord unmounts and releases the
-  // recorder/mic.
-  useEffect(() => {
-    if (!active && !initialFilesRef.current?.length) {
-      setMode('upload');
-    }
+    if (active) setIsRecording(false);
   }, [active]);
 
   useEffect(() => {
@@ -204,8 +144,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
       // ProvideRights grants rights without creating an IP record, so
       // SpeakerName can't re-derive them from the rights list on reopen.
       setHasRights(Boolean(speaker?.trim()));
-      setRecording(false);
-      setHasTake(false);
+      setIsRecording(false);
     }
     // Only on tab entry: re-running on speaker change would override
     // SpeakerName reporting no rights for a newly chosen, unlisted name.
@@ -221,14 +160,6 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
 
   useEffect(() => setBusy(false), [active]);
 
-  useEffect(() => {
-    onRecordingChange?.(recording);
-  }, [recording, onRecordingChange]);
-
-  useEffect(() => {
-    onHasTakeChange?.(hasTake);
-  }, [hasTake, onHasTakeChange]);
-
   const updateDialogWidth = useCallback(() => {
     setDialogWidth(getRefWidth(contentRef));
   }, []);
@@ -240,44 +171,14 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     return () => window.removeEventListener('resize', updateDialogWidth);
   }, [mode, active, updateDialogWidth]);
 
-  const handleCancel = () => {
-    if (recording) return;
-    onCancel();
-    if (!busy) onVisible(false);
-  };
-
-  const doClose = () => {
-    if (mode === 'record') {
-      handleCancel();
-    } else {
-      onCancel();
-    }
-  };
-
-  // Non-embedded: the dialog frame asks to close via closeRequested. Embedded
-  // hosts own their own close/confirm (and read onRecordingChange to block
-  // mid-recording), so this plumbing is inert there.
-  useEffect(() => {
-    if (!closeRequested) return;
-    onCloseHandled?.();
-    // Can't close mid-recording (matches handleCancel's own guard).
-    if (recording) return;
-    // Confirm only when a take on the record tab would be lost; a file upload
-    // is cheap to redo, so it never prompts (#719).
-    if (mode === 'record' && hasTake) {
-      setShowConfirm(true);
-      return;
-    }
-    doClose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeRequested]);
-
   const handleMode = (nextMode: AudioAddMode) => {
-    if (recording && nextMode === 'upload') return;
-    // Switching to record abandons any file selection made on the upload tab.
-    // Clear it so a stale multi-file general-resource selection can't keep
-    // blocking save once the user records instead.
-    if (nextMode === 'record') onFiles?.([]);
+    if (isRecording && nextMode === 'upload') return;
+    if (nextMode === 'record') {
+      // Switching to record abandons any file selection made on the upload tab.
+      // Clear it so a stale multi-file general-resource selection can't keep
+      // blocking save once the user records instead.
+      onFiles?.([]);
+    }
     setMode(nextMode);
   };
 
@@ -295,7 +196,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
       <UploadRecordToggle
         mode={mode}
         onMode={handleMode}
-        disableUpload={recording}
+        disableUpload={isRecording}
       />
       {mode === 'record' ? (
         <>
@@ -347,8 +248,8 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                 allowNoNoise={true}
                 allowDeltaVoice={true}
                 onRecording={(isRecording) => {
-                  setRecording(isRecording);
-                  if (isRecording) setHasTake(true);
+                  setIsRecording(isRecording);
+                  if (isRecording) onStartRecording?.();
                 }}
                 pendingRestore={pendingRestore}
                 beforeUpload={beforeUpload}
@@ -389,26 +290,11 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
           onSpeaker={uploadType === UploadType.Media ? onSpeaker : undefined}
           team={team}
           onFiles={onFiles}
-          initialFiles={initialFiles}
           keepFilesAfterSubmit={keepFilesAfterSubmit}
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           validationMessage={validationMessage}
-        />
-      )}
-      {!embedded && showConfirm && (
-        <Confirm
-          title={resourceStrings.confirmCloseTitle}
-          text={resourceStrings.confirmClose}
-          no={resourceStrings.keepOpen}
-          primaryButton="no"
-          yes={resourceStrings.discardAndClose}
-          noResponse={() => setShowConfirm(false)}
-          yesResponse={() => {
-            setShowConfirm(false);
-            doClose();
-          }}
         />
       )}
     </>
