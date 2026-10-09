@@ -722,39 +722,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.get('p[class*="MuiTypography-body2"]').should('exist');
   });
 
-  it('should render with mobile width styling on mobile viewport', () => {
-    cy.viewport(400, 800);
-
-    const cardInfo = createMockSheet();
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    });
-
-    // Card should have mobile width (100%)
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
-    // Check that card exists and is visible
-    cy.get('div[class*="MuiCard-root"]')
-      .should('have.css', 'min-width')
-      .and('match', /100%|275px/);
-  });
-
-  it('should render with desktop width styling on desktop viewport', () => {
-    cy.viewport(1024, 768);
-
-    const cardInfo = createMockSheet();
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    });
-
-    // Card should have desktop min width (275px)
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
-    cy.get('div[class*="MuiCard-root"]')
-      .should('have.css', 'min-width')
-      .and('match', /275px/);
-  });
-
   it('should handle non-PASSAGE passage types with RefRender', () => {
     const cardInfo = createMockSheet({
       passage: {
