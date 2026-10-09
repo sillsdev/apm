@@ -1,6 +1,7 @@
 import {
   Box,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -22,6 +23,7 @@ import {
 } from '../../../../utils/markVersesSegmentColors';
 import type { ICell } from './PassageDetailMarkVerses';
 import { Button } from '../../../../control/Button';
+import { useMobile } from '../../../../utils/useMobile';
 
 interface MarkVersesTableProps {
   data: ICell[][];
@@ -59,6 +61,7 @@ export default function MarkVersesTable({
 }: MarkVersesTableProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
+  const { isMobileWidth } = useMobile();
 
   // Inline reference editing: which data-row index is in edit mode, plus its
   // draft text. Escape cancels via `cancelEditRef` so the shared blur path can
@@ -94,7 +97,14 @@ export default function MarkVersesTable({
       <Table stickyHeader size="small" aria-label="mark verses table">
         <TableHead>
           <TableRow>
-            <TableCell sx={{ pl: 1.5 }}>
+            <TableCell
+              sx={{
+                pl: 1.5,
+                // Keep "Start --> Stop" on one line (TT-7623).
+                whiteSpace: 'nowrap',
+                width: '1%',
+              }}
+            >
               {header[ColName.Limits]?.value ?? 'Start-Stop'}
             </TableCell>
             {/* Dedicated, always-present warning column so the reference text
@@ -149,7 +159,10 @@ export default function MarkVersesTable({
                 <TableCell
                   sx={{
                     whiteSpace: 'nowrap',
-                    width: '42%',
+                    // Shrink to the limits text's own width (rather than a fixed
+                    // 42%) so the reference column keeps enough room to stay on
+                    // one line even for three-digit chapter:verse ranges (TT-7623).
+                    width: '1%',
                     pl: 1.5,
                     backgroundColor: 'inherit',
                     py: 0.75,
@@ -290,6 +303,10 @@ export default function MarkVersesTable({
                       aria-label={`verse-reference-${rowIndex}`}
                       sx={{
                         color: invalid ? 'error.main' : 'text.primary',
+                        // Keep the reference (e.g. "119:10b-11a") on a single
+                        // line instead of wrapping when it has three-digit
+                        // chapter/verse numbers (TT-7623).
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {reference.value || '-'}
@@ -329,13 +346,41 @@ export default function MarkVersesTable({
                         aria-label={`verse-edit-reference-${rowIndex}`}
                         variant="outlined"
                         size="small"
-                        startIcon={<EditIcon />}
+                        // On small screens drop MUI's 64px min-width (and trim
+                        // the side padding) so the icon-only button hugs the
+                        // pencil instead of sitting in a wide pill.
+                        sx={
+                          isMobileWidth
+                            ? { minWidth: 'auto', px: 1 }
+                            : undefined
+                        }
+                        // Children are custom markup (icon + optional label), so
+                        // skip the Button's default Typography wrapper — a block
+                        // Stack inside a <p> would be invalid; we wrap the label
+                        // in its own Typography below to keep its styling.
+                        disableTypography
                         onClick={(event) => {
                           event.stopPropagation();
                           onEditReference(rowIndex);
                         }}
                       >
-                        {editLabel ?? 'Edit'}
+                        <Stack
+                          component="span"
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.5}
+                        >
+                          <EditIcon fontSize="small" />
+                          {!isMobileWidth && (
+                            <Typography
+                              noWrap
+                              variant="button"
+                              component="span"
+                            >
+                              {editLabel ?? 'Edit'}
+                            </Typography>
+                          )}
+                        </Stack>
                       </Button>
                     </LightTooltip>
                   ) : null}
