@@ -1,6 +1,7 @@
 import {
   Box,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -22,6 +23,7 @@ import {
 } from '../../../../utils/markVersesSegmentColors';
 import type { ICell } from './PassageDetailMarkVerses';
 import { Button } from '../../../../control/Button';
+import { useMobile } from '../../../../utils/useMobile';
 
 interface MarkVersesTableProps {
   data: ICell[][];
@@ -59,6 +61,7 @@ export default function MarkVersesTable({
 }: MarkVersesTableProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
+  const { isMobileWidth } = useMobile();
 
   // Inline reference editing: which data-row index is in edit mode, plus its
   // draft text. Escape cancels via `cancelEditRef` so the shared blur path can
@@ -343,13 +346,41 @@ export default function MarkVersesTable({
                         aria-label={`verse-edit-reference-${rowIndex}`}
                         variant="outlined"
                         size="small"
-                        startIcon={<EditIcon />}
+                        // On small screens drop MUI's 64px min-width (and trim
+                        // the side padding) so the icon-only button hugs the
+                        // pencil instead of sitting in a wide pill.
+                        sx={
+                          isMobileWidth
+                            ? { minWidth: 'auto', px: 1 }
+                            : undefined
+                        }
+                        // Children are custom markup (icon + optional label), so
+                        // skip the Button's default Typography wrapper — a block
+                        // Stack inside a <p> would be invalid; we wrap the label
+                        // in its own Typography below to keep its styling.
+                        disableTypography
                         onClick={(event) => {
                           event.stopPropagation();
                           onEditReference(rowIndex);
                         }}
                       >
-                        {editLabel ?? 'Edit'}
+                        <Stack
+                          component="span"
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.5}
+                        >
+                          <EditIcon fontSize="small" />
+                          {!isMobileWidth && (
+                            <Typography
+                              noWrap
+                              variant="button"
+                              component="span"
+                            >
+                              {editLabel ?? 'Edit'}
+                            </Typography>
+                          )}
+                        </Stack>
                       </Button>
                     </LightTooltip>
                   ) : null}
