@@ -84,7 +84,8 @@ export function PassageCard(props: IProps) {
         minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
         display: 'flex',
         flexDirection: 'column',
-        p: 1.5,
+        px: 2,
+        py: 1.5,
         ...(isCurrent && {
           outline: '2px solid',
           outlineColor: 'primary.light',
