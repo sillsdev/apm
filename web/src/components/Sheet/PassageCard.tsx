@@ -163,6 +163,7 @@ export function PassageCard(props: IProps) {
               {!isPersonal && <PassageAssignee assign={cardInfo.assign} />}
               <PassageStepButton
                 step={cardInfo.step}
+                discussionCount={cardInfo.stepDiscussionCount}
                 onClick={handleViewStep}
               />
             </Box>
