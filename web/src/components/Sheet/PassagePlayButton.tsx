@@ -108,7 +108,6 @@ export function PassagePlayButton({
         aria-label={t.playPause}
         title={t.playPause}
         onClick={onToggle}
-        color="primary"
         sx={{ width: buttonSize, height: buttonSize }}
       >
         {playing ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
