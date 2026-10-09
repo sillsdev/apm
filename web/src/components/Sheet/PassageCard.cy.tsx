@@ -552,7 +552,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.contains('Unassigned').should('not.exist');
   });
 
-  it('should show Unassigned with Person icon when assign does not exist', () => {
+  it('should show Unassigned with NoAccounts icon when assign does not exist', () => {
     const cardInfo = createMockSheet({
       assign: undefined,
     });
@@ -565,8 +565,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Should show "Unassigned" text
     cy.contains('Unassigned').should('be.visible');
-    // Should show Person icon
-    cy.get('svg[data-testid="PersonIcon"]').should('exist');
+    // Should show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('exist');
   });
 
   it('should not show assign section for personal projects when assign exists', () => {
@@ -582,8 +582,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Should not show TaskAvatar
     cy.contains('Unassigned').should('not.exist');
-    // Should not show Person icon
-    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+    // Should not show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
     // Assign section should not be visible
     cy.get('div[class*="MuiBox-root"]').should('not.contain', 'Unassigned');
   });
@@ -601,8 +601,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     // Should not show "Unassigned" text
     cy.contains('Unassigned').should('not.exist');
-    // Should not show Person icon
-    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+    // Should not show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
   });
 
   it('should call handleViewStep when step button is clicked', () => {
@@ -906,7 +906,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       // Should not show TaskAvatar or Unassigned text
       cy.contains('Unassigned').should('not.exist');
-      cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+      cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
     });
 
     it('should not show step button for CHAPTERNUMBER type', () => {
