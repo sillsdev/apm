@@ -25,7 +25,9 @@ export function PassageCardHeader({
   const getDescription = useSectionIdDescription();
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 51 }}>
+    <Box
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 51 }}
+    >
       <PassageGraphic
         cardInfo={cardInfo}
         reference={passageRef}

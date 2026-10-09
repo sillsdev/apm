@@ -41,7 +41,7 @@ export function PassageGraphic({
     return (
       <Avatar
         onClick={onClick}
-        sx={{ ...pointer, ...border, mr: 1.5 }}
+        sx={{ ...pointer, ...border }}
         src={cardInfo.graphicUri}
         slotProps={{ img: { onError: () => setHasGraphicError(true) } }}
         variant="rounded"
@@ -55,7 +55,6 @@ export function PassageGraphic({
         // ...pointer,  # Disable until we add ability to edit graphics here.
         ...border,
         ...(pointer || {}),
-        mr: 1.5,
       })}
       onClick={onClick}
       variant="rounded"
