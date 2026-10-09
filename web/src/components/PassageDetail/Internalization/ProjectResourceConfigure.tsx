@@ -56,7 +56,10 @@ import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
-const wizToolId = 'ProjResWizard';
+// Save participant for the configure step: the Unsaved context requests a save
+// against this id, which runs writeResources. (The wizard's close-guard is a
+// separate, save-less tool; see AddResourceWizard.)
+const wizardSaveToolId = 'AddResourceWizard-Save';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -205,10 +208,9 @@ interface IProps {
   onOpen?: (open: boolean) => void;
   /**
    * When set, a "Back" button (the reverse of the selection dialog's Next) is
-   * shown — for now only in developer mode. It returns to SelectSections
-   * keeping the media, so the caller must not tear down the media on this
-   * path. Undefined hides the button (e.g. the edit flow, which has no
-   * previous wizard step).
+   * shown. It returns to SelectSections keeping the media, so the caller must
+   * not tear down the media on this path. Undefined hides the button (e.g. the
+   * edit flow, which has no previous wizard step).
    */
   onBack?: () => void;
   bookData?: BookName[];
@@ -228,7 +230,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
   const [, setComplete] = useGlobal('progress');
-  const [isDeveloper] = useGlobal('developer');
   const [data, setDatax] = useState<ICell[][]>([]);
   const [suffix, setSuffix] = useState('');
   const [numSegments, setNumSegments] = useState(0);
@@ -390,11 +391,11 @@ export const ProjectResourceConfigure = (props: IProps) => {
           ),
         })
           .then(() => {
-            saveCompleted(wizToolId);
+            saveCompleted(wizardSaveToolId);
           })
           .catch((err) => {
             //so we don't come here...we go to continue/logout
-            saveCompleted(wizToolId, err.message);
+            saveCompleted(wizardSaveToolId, err.message);
           })
           .finally(() => {
             savingRef.current = false;
@@ -406,14 +407,14 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   const handleCreate = () => {
-    if (!saveRequested(wizToolId)) {
-      startSave(wizToolId);
+    if (!saveRequested(wizardSaveToolId)) {
+      startSave(wizardSaveToolId);
     }
   };
 
   useEffect(() => {
-    if (saveRequested(wizToolId) && !savingRef.current) writeResources();
-    else if (clearRequested(wizToolId)) clearCompleted(wizToolId);
+    if (saveRequested(wizardSaveToolId) && !savingRef.current) writeResources();
+    else if (clearRequested(wizardSaveToolId)) clearCompleted(wizardSaveToolId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
@@ -423,7 +424,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   // confirm-gated by the parent; clear the flag on unmount so a normal
   // discard/save close doesn't leak it into the rest of the app.
   useEffect(() => {
-    return () => toolChanged(wizToolId, false);
+    return () => toolChanged(wizardSaveToolId, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -440,6 +441,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
       });
 
     const content = config.join('\n');
+    // content is always non-empty here: the Copy button is disabled until there
+    // is a segment (numSegments > 0), and reaching this dialog always has at
+    // least one selected passage/section row, so there is no empty-sheet case.
     if (content.length > 0)
       navigator.clipboard
         .writeText(content)
@@ -449,7 +453,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
         .catch(() => {
           showMessage(ts.cantCopy);
         });
-    else showMessage(tt.noData.replace('{0}', t.projectResourceConfigure));
   };
 
   const loadPastedSegments = (newData: ICell[][]) => {
@@ -558,7 +561,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setData(newData);
     // Editing a Title marks the wizard dirty so a browser/app close warns
     // (same tracking the segment handler uses).
-    if (!isChanged(wizToolId)) toolChanged(wizToolId);
+    if (!isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
   };
 
   const handleSegment = (segments: string, init: boolean) => {
@@ -633,7 +636,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     if (change) {
       setData(newData);
       setPastedSegments('');
-      if (!init && !isChanged(wizToolId)) toolChanged(wizToolId);
+      if (!init && !isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
     }
   };
 
@@ -658,7 +661,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setSuffix(e.target.value);
     // The suffix feeds the saved topic, so editing it marks the wizard dirty too
     // (so a browser/app close mid-edit warns).
-    if (!isChanged(wizToolId)) toolChanged(wizToolId);
+    if (!isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
@@ -764,7 +767,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
           Box neutralizes its flexGrow:1 inside this flex column. */}
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
-          {onBack && isDeveloper && (
+          {onBack && (
             <Button
               id="res-configure-back"
               disabled={savingRef.current}

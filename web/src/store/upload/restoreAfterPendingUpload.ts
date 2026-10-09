@@ -26,7 +26,6 @@ import {
   SectionResource,
 } from '../../model';
 import type { PendingUploadRestore } from './pendingMediaUploads';
-import { appendPendingProjectResourceConfig } from './pendingProjectResourceConfig';
 
 export interface RestoreAfterPendingUploadArgs {
   mediaId: string;
@@ -85,14 +84,6 @@ export async function restoreAfterPendingUpload({
       return;
     case 'sourceMedia':
       await restoreSourceMedia({
-        mediaId: localMediaId,
-        restore,
-        memory,
-        user,
-      });
-      return;
-    case 'projectresource':
-      await restoreProjectResource({
         mediaId: localMediaId,
         restore,
         memory,
@@ -416,53 +407,6 @@ async function restoreSourceMedia({
       user
     )
   );
-}
-
-/**
- * Mirrors PassageDetailArtifacts.afterUpload for project resources: apply
- * topic/category only, then queue configure-wizard resume (no sectionresource).
- */
-async function restoreProjectResource({
-  mediaId,
-  restore,
-  memory,
-  user,
-}: {
-  mediaId: string;
-  restore: Extract<PendingUploadRestore, { kind: 'projectresource' }>;
-  memory: Memory;
-  user: string;
-}): Promise<void> {
-  const mediaRecId = { type: 'mediafile', id: mediaId };
-  const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-    MediaFileD | undefined;
-
-  if (restore.topic && mediaRec) {
-    await memory.update((t) =>
-      UpdateRecord(
-        t,
-        {
-          ...mediaRec,
-          attributes: { ...mediaRec.attributes, topic: restore.topic },
-        } as MediaFileD,
-        user
-      )
-    );
-  }
-  if (restore.artifactCategoryId) {
-    const t = new RecordTransformBuilder();
-    await memory.update([
-      ...ReplaceRelatedRecord(
-        t,
-        mediaRecId,
-        'artifactCategory',
-        'artifactcategory',
-        restore.artifactCategoryId
-      ),
-    ]);
-  }
-
-  appendPendingProjectResourceConfig(mediaId);
 }
 
 /**

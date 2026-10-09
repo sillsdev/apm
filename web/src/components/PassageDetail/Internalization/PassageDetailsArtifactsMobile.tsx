@@ -1,29 +1,20 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   IPassageDetailArtifactsStrings,
-  Passage,
-  Section,
   MediaFileD,
   SectionResourceD,
-  MediaFile,
-  ArtifactType,
   Resource,
-  SheetLevel,
   ISharedStrings,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
-import { useSnackBar } from '../../../hoc/SnackBar';
-import Uploader from '../../Uploader';
 import AddResource from './AddResource';
 import { IRow } from '../../../context/PassageDetailContext';
 import { Button, GrowingSpacer } from '../../../control';
-import { AIGenerated } from '.';
 import { AudioResourceCard } from './mobile components/AudioResourceCard';
 import { TextResourceCard } from './mobile components/TextResourceCard';
 import {
-  remoteIdGuid,
   useSecResCreate,
   useMediaResCreate,
   useSecResUpdate,
@@ -38,7 +29,6 @@ import {
   IArtifactCategory,
   ArtifactCategoryType,
   usePlanType,
-  usePlan,
   useRole,
   ArtifactTypeSlug,
   mediaFileName,
@@ -47,48 +37,25 @@ import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
-import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
-import {
-  canSaveResourceEdit,
-  descriptionRequiredForResource,
-} from './resourceArtifactName';
+import { canSaveResourceEdit } from './resourceArtifactName';
 import { Box, Stack, Typography, MenuItem, MenuList } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
-import ProjectResourceConfigure from './ProjectResourceConfigure';
-import { useProjectResourceSave } from './useProjectResourceSave';
 import Confirm from '../../AlertDialog';
-import {
-  getSegments,
-  NamedRegions,
-  removeExtension,
-  isVisual,
-  isUrl,
-  useMobile,
-  safeFileBasename,
-} from '../../../utils';
+import { getSegments, NamedRegions, isUrl, useMobile } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
-import {
-  RecordIdentity,
-  RecordKeyMap,
-  RecordTransformBuilder,
-} from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   passageDetailArtifactsSelector,
   sharedSelector,
 } from '../../../selector';
-import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
-import { PassageTypeEnum } from '../../../model/passageType';
 import { VertListDnd } from '../../../hoc/VertListDnd';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { LaunchLink } from '../../../control/LaunchLink';
 import FindTabs from './FindTabs';
 import {
-  getProjectResourceAssignments,
-  removeUnselectedProjectResourceAssignments,
   countProjectResourceCopies,
   removeProjectResource,
 } from './projectResourceAssignments';
@@ -97,32 +64,28 @@ import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import {
-  generalResourceMedia,
-  projectResourceTypeIds,
-} from './generalResourceMedia';
+import { generalResourceMedia } from './generalResourceMedia';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
 import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
-import { buildResourcePendingRestore } from './buildResourcePendingRestore';
-import { useResumePendingProjectResourceConfig } from './useResumePendingProjectResourceConfig';
 import { AddResourceAction } from './AddResourceAction';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import IconMenu from '../../../control/IconMenu';
+import AddResourceWizard, { WizardLaunch } from './AddResourceWizard';
+import { useResourceScopeLabels } from './useResourceScopeLabels';
+import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 export function PassageDetailArtifactsMobile() {
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
   const [memory] = useGlobal('memory');
   const [busy, setBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [remoteBusy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
-  const [, setComplete] = useGlobal('progress');
   const {
     rowData,
     section,
@@ -140,7 +103,7 @@ export function PassageDetailArtifactsMobile() {
     sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
-  const { AddSectionResource, InternalizationStep } = useSecResCreate(section);
+  const { AddSectionResource } = useSecResCreate(section);
   const AddSectionResourceUser = useSecResUserCreate();
   const ReadSectionResourceUser = useSecResUserRead();
   const RemoveSectionResourceUser = useSecResUserDelete();
@@ -149,44 +112,36 @@ export function PassageDetailArtifactsMobile() {
   const DeleteSectionResource = useSecResDelete();
   const { getArtifactCategorys } = useArtifactCategory();
   const catRef = useRef<IArtifactCategory[]>([]);
-  const [uploadVisible, setUploadVisible] = useState(false);
-  const [aiGenerated, setAIGenerated] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
-  const [visual, setVisual] = useState(false);
   const [sortKey, setSortKey] = useState(0);
-  const cancelled = useRef(false);
   const [displayId, setDisplayId] = useState('');
   const [link, setLink] = useState<string>();
   const [markDown, setMarkDoan] = useState('');
   const [markDownTitle, setMarkDownTitle] = useState('');
   const [audioScriptureVisible, setAudioScriptureVisible] = useState(false);
-  const [allowProject, setAllowProject] = useState(true);
   const [sharedResourceVisible, setSharedResourceVisible] = useState(false);
-  const [projResPassageVisible, setProjResPassageVisible] = useState(false);
-  const [projResWizVisible, setProjResWizVisible] = useState(false);
-  const [projResSetup, setProjResSetup] = useState(new Array<MediaFileD>());
   const [editResource, setEditResource] = useState<
     SectionResourceD | undefined
   >();
   const [allowEditSave, setAllowEditSave] = useState(false);
-  const [resourceReady, setResourceReady] = useState(true);
-  const [resourceUploadFiles, setResourceUploadFiles] = useState<File[]>([]);
-  const [artifactState] = useState<{ id?: string | null }>({});
-  // const [artifactTypeId, setArtifactTypeId] = useState<string>();
+  // Pending open request handed to the add-resource wizard (null = closed).
+  const [wizardLaunch, setWizardLaunch] = useState<WizardLaunch | null>(null);
+  // Bumped on every launch so the wizard remounts fresh each time it opens — it
+  // resets its own state by construction instead of a hand-maintained teardown.
+  const [wizardKey, setWizardKey] = useState(0);
+  const launchWizard = (next: WizardLaunch) => {
+    setWizardLaunch(next);
+    setWizardKey((k) => k + 1);
+  };
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
-  const [audioUploadOrRecord, setAudioUploadOrRecord] =
-    useState<boolean>(false);
   const [editAudio, setEditAudio] = useState<boolean>(false);
   const mediaRef = useRef<MediaFileD | undefined>(undefined);
   const textRef = useRef<string | undefined>(undefined);
   const catIdRef = useRef<string | undefined>(undefined);
-  // Separate commit() handles for the edit dialog vs. the add/upload dialog so
-  // one unmounting never clears the other's. Called at save to create a new
-  // category the user typed (deferred from blur).
+  // commit() handle for the edit dialog's SelectArtifactCategory. Called at save
+  // to create a new category the user typed (deferred from blur).
   const editCatCommitRef = useRef<(() => Promise<string>) | null>(null);
-  const addCatCommitRef = useRef<(() => Promise<string>) | null>(null);
   const descriptionRef = useRef<string>('');
-  const pendingResourceSeqRef = useRef(0);
 
   const [resourceKind, setResourceKindx] = useState(
     ResourceTypeEnum.sectionResource
@@ -196,41 +151,14 @@ export function PassageDetailArtifactsMobile() {
     resourceKindRef.current = kind;
     setResourceKindx(kind);
   };
-  const projIdentRef = useRef<RecordIdentity[]>([]);
-  /** Every passage/section the selection dialog offered; scopes cleanup. */
-  const projCandidateRef = useRef<RecordIdentity[]>([]);
-  const projMediaRef = useRef<MediaFileD | undefined>(undefined);
-  // True when the general-resource wizard was entered by adding a new audio
-  // resource (title "Add Audio Resource"); false when configuring/editing an
-  // existing one ("Edit General Resource").
-  const isAddingAudioResourceRef = useRef<boolean>(false);
-  // Deferred general-resource upload: the prepared file(s) are held here and not
-  // uploaded until the user picks passages/sections on SelectSections.
-  const stagedResourceFilesRef = useRef<File[] | undefined>(undefined);
-  // True between SelectSections' Upload and the upload completing, so afterUpload
-  // routes straight to the configure step (or visual write) instead of
-  // re-opening SelectSections.
-  const sectionsPreselectedRef = useRef(false);
-  // Drives the deferred (headless) upload through the always-mounted Uploader.
-  const [resourceImportList, setResourceImportList] = useState<
-    File[] | undefined
-  >(undefined);
-  // True while the general-resource upload runs. SelectSections stays open
-  // (selections preserved) with its Upload button disabled/spinner until the
-  // upload succeeds (advance to the wizard) or fails (re-enable for retry).
-  const [uploading, setUploading] = useState(false);
+
   const [allResources, setAllResources] = useState(false);
-  const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
   const [mediaStart, setMediaStart] = useState<number | undefined>();
   const [mediaEnd, setMediaEnd] = useState<number | undefined>();
-  const [performedBy, setPerformedBy] = useState('');
-  const [markdownValue, setMarkdownValue] = useState('');
-  const projectResourceSave = useProjectResourceSave();
   const { removeKey } = storedCompareKey(passage, section);
   const [plan] = useGlobal('plan'); //will be constant here
   const planType = usePlanType();
-  const { getPlan } = usePlan();
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
@@ -257,15 +185,8 @@ export function PassageDetailArtifactsMobile() {
           ? row.artifactType
           : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
-  // Confirm-before-discard for the wizard and edit dialogs. In the Add Audio
-  // Resource wizard, closing only prompts when it would lose a recording (a
-  // file upload is cheap to redo) or at the final configure step ('wiz').
-  // Which dialog's close is awaiting confirmation ('passage' vs 'edit' differ
-  // only in what discarding tears down); null when no prompt is showing.
-  const [dialogPendingCloseConfirmation, setDialogPendingCloseConfirmation] =
-    useState<null | 'passage' | 'edit' | 'wiz'>(null);
-  // The staged general-resource audio is a recorded take (not an uploaded file).
-  const [isStagedRecording, setIsStagedRecording] = useState(false);
+  // Confirm-before-discard for the simple edit dialog.
+  const [editCloseConfirmation, setEditCloseConfirmation] = useState(false);
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
   const { isMobileWidth } = useMobile();
@@ -273,83 +194,19 @@ export function PassageDetailArtifactsMobile() {
     string | null
   >(null);
 
-  const planRec = plan ? getPlan(plan) : null;
-  const filename = planRec?.attributes?.slug
-    ? `${planRec.attributes.slug}resource`
-    : 'resource';
-
-  const resourceType = useMemo(() => {
-    const resourceType = artifactTypes.find(
-      (t) =>
-        t.attributes?.typename === 'resource' &&
-        Boolean(t?.keys?.remoteId) === !offlineOnly
-    );
-    // setArtifactTypeId(resourceType?.id);
-    artifactState.id = resourceType?.id || null;
-    return resourceType?.id;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artifactTypes, offlineOnly]);
-
   const otherResourcesAvailable = useMemo(
     () => rowData.some((r) => r.passageId && r.passageId !== passage.id),
     [passage, rowData]
   );
 
-  const handleNonAudio = (value: boolean) => setAllowProject(!value);
-
   const isPassageResource = () =>
     resourceKindRef.current === ResourceTypeEnum.passageResource;
-  const isProjectResource = () =>
-    resourceKindRef.current === ResourceTypeEnum.projectResource;
-
-  const projResourceType = useMemo(() => {
-    const resourceType = artifactTypes.find(
-      (t) =>
-        t.attributes?.typename === 'projectresource' &&
-        Boolean(t?.keys?.remoteId) === !offlineOnly
-    );
-    return resourceType?.id;
-  }, [artifactTypes, offlineOnly]);
 
   // Both projectresource type records (offline + remote); used to resolve
   // general resources for the type label, Edit, and Delete (see
-  // [[generalResourceMedia]]).
-  const projResourceTypeIds = useMemo(
-    () => projectResourceTypeIds(artifactTypes),
-    [artifactTypes]
-  );
-
-  const resourcePendingRestore = useCallback(() => {
-    if (resourceKindRef.current === ResourceTypeEnum.projectResource) {
-      return buildResourcePendingRestore({
-        resourceType: ResourceTypeEnum.projectResource,
-        sectionId: section.id,
-        passageId: passage.id,
-        description: descriptionRef.current || null,
-        sequenceNum: 0,
-        ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
-      });
-    }
-    const step = InternalizationStep();
-    if (!step?.id) return undefined;
-    pendingResourceSeqRef.current += 1;
-    return buildResourcePendingRestore({
-      resourceType: resourceKindRef.current,
-      sectionId: section.id,
-      passageId: passage.id,
-      description: descriptionRef.current || null,
-      sequenceNum: rowData.length + pendingResourceSeqRef.current,
-      orgWorkflowStepId: step.id,
-      ...(catIdRef.current ? { artifactCategoryId: catIdRef.current } : {}),
-    });
-  }, [InternalizationStep, section.id, passage.id, rowData.length]);
-
-  useResumePendingProjectResourceConfig({
-    memory,
-    mediafiles,
-    setProjResSetup,
-    isAddingAudioResourceRef,
-  });
+  // [[generalResourceMedia]]). Shared with the add wizard via this hook so the
+  // two resolve the same records (see useResourceArtifactTypes).
+  const { projResourceTypeIds } = useResourceArtifactTypes();
 
   const handlePlay = (id: string) => {
     if (id === playItem) {
@@ -468,9 +325,6 @@ export function PassageDetailArtifactsMobile() {
       setBusy(false);
     }
   };
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
 
   const handleFindVisible = (v: boolean) => {
     setFindOpen(v);
@@ -478,83 +332,6 @@ export function PassageDetailArtifactsMobile() {
 
   const handleSharedResourceVisible = (v: boolean) => {
     setSharedResourceVisible(v);
-  };
-
-  const handleProjResPassageVisible = (v: boolean) => {
-    if (!v) {
-      if (isStagedRecording) setDialogPendingCloseConfirmation('passage');
-      else handlePassageDiscard();
-      return;
-    }
-    setProjResPassageVisible(v);
-  };
-  const handlePassageDiscard = () => {
-    setDialogPendingCloseConfirmation(null);
-    setProjResPassageVisible(false);
-    // A genuine abandon (not a Back), unlike handleWizBack/handlePassageBack — clear
-    // the restore state so the next fresh Add Audio Resource does not inherit it.
-    catIdRef.current = undefined;
-    descriptionRef.current = '';
-    setResourceUploadFiles([]);
-    setIsStagedRecording(false);
-  };
-
-  // The wizard's X routes here (like the passage-select dialog): a close request
-  // opens the shared discard confirm; opening just shows the dialog.
-  const handleProjResWizVisible = (v: boolean) => {
-    if (!v) {
-      setDialogPendingCloseConfirmation('wiz');
-      return;
-    }
-    setProjResWizVisible(v);
-  };
-  // Actually hide the wizard dialog. Called on discard (handleWizDiscard) and
-  // when a save finishes (ProjectResourceConfigure's onOpen). Confirm-on-close is
-  // parent-owned via dialogPendingCloseConfirmation='wiz'.
-  const closeProjResWiz = () => {
-    setProjResWizVisible(false);
-    projMediaRef.current = undefined;
-    setVisual(false);
-    // The wizard is truly done (save or discard) — no more Back is possible, so
-    // clear the category/description/filename restore state kept alive by
-    // resetEdit's preserveResourceForm since the upload succeeded.
-    catIdRef.current = undefined;
-    descriptionRef.current = '';
-    setResourceUploadFiles([]);
-    setIsStagedRecording(false);
-  };
-  const handleWizDiscard = () => {
-    setDialogPendingCloseConfirmation(null);
-    closeProjResWiz();
-  };
-
-  // Configure step "Back" (add flow only): return to passage selection keeping
-  // the uploaded media (unlike closeProjResWiz, which discards it). No confirm —
-  // going back is not a close; the wizard clears its own dirty flag on unmount,
-  // and the prior selection is re-checked via SelectSections' initialItems
-  // (projIdentRef). Coming forward again just re-opens the wizard (no re-upload,
-  // since the media already exists).
-  const handleWizBack = () => {
-    setProjResWizVisible(false);
-    setProjResPassageVisible(true);
-  };
-
-  const handlePassageBack = () => {
-    // Back to the upload/record dialog to change the audio file. A media already
-    // uploaded (reached here from the configure step's Back) is left in place;
-    // uploading a replacement creates a new general resource and leaves the prior
-    // one — the same outcome as cancelling from the configure step. Preventing
-    // these orphans is not priority for us at this time.
-    setProjResPassageVisible(false);
-    projMediaRef.current = undefined;
-    // Reopen the Add Audio Resource upload dialog in general-resource mode, the
-    // same state the user staged the file from.
-    setResourceKind(ResourceTypeEnum.projectResource);
-    artifactState.id = projResourceType ?? null;
-    setUploadType(UploadType.ProjectResource);
-    syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
-    setAudioUploadOrRecord(true);
-    setUploadVisible(true);
   };
 
   const handleAllResources = () => {
@@ -578,8 +355,7 @@ export function PassageDetailArtifactsMobile() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
       setResourceKind(ResourceTypeEnum.projectResource);
-      isAddingAudioResourceRef.current = false;
-      handleSelectProjectResource(projectMedia);
+      launchWizard({ kind: 'editGeneral', media: projectMedia });
       return;
     }
     setEditResource(secRes);
@@ -611,29 +387,16 @@ export function PassageDetailArtifactsMobile() {
       })
     );
   };
-  // preserveResourceForm: skip clearing the category/description/filename restore
-  // state. Used when the deferred general-resource upload succeeds and the wizard
-  // advances to the configure step — Back/Back from there must still return the
-  // user to an upload dialog seeded with what they already entered.
-  const resetEdit = (preserveResourceForm = false) => {
+  const resetEdit = () => {
     setEditResource(undefined);
-    if (!preserveResourceForm) {
-      catIdRef.current = undefined;
-      descriptionRef.current = '';
-      setResourceUploadFiles([]);
-      setIsStagedRecording(false);
-    }
+    catIdRef.current = undefined;
+    descriptionRef.current = '';
     setResourceKind(ResourceTypeEnum.sectionResource);
-    setUploadVisible(false);
-    setMarkdownValue('');
-    setAIGenerated(false);
-    setAudioUploadOrRecord(false);
-    setAllowProject(true);
     setEditAudio(false);
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) {
-      setDialogPendingCloseConfirmation('edit');
+      setEditCloseConfirmation(true);
     }
   };
   const handleEditSave = async () => {
@@ -696,113 +459,42 @@ export function PassageDetailArtifactsMobile() {
     resetEdit();
   };
   const handleEditCancel = () => {
-    setDialogPendingCloseConfirmation('edit');
+    setEditCloseConfirmation(true);
   };
   const handleEditDiscard = () => {
-    setDialogPendingCloseConfirmation(null);
+    setEditCloseConfirmation(false);
     resetEdit();
-  };
-  const hasGeneralResourceUploadConflict = (
-    files: File[] = resourceUploadFiles,
-    kind: ResourceTypeEnum = resourceKindRef.current
-  ) => kind === ResourceTypeEnum.projectResource && files.length > 1;
-  const resourceUploadValidationMessage = hasGeneralResourceUploadConflict(
-    resourceUploadFiles,
-    resourceKind
-  )
-    ? t.generalResourcesIndividually
-    : '';
-  const syncResourceReady = (
-    type: UploadType,
-    desc: string,
-    files: File[] = resourceUploadFiles
-  ) => {
-    const descriptionReady = descriptionRequiredForResource(undefined, type)
-      ? Boolean(desc.trim())
-      : true;
-    setResourceReady(
-      descriptionReady && !hasGeneralResourceUploadConflict(files)
-    );
   };
 
   const handleAction = (what: AddResourceAction) => {
-    artifactState.id = resourceType ?? null;
-    setResourceKind(ResourceTypeEnum.sectionResource);
-    if (what === AddResourceAction.Audio) {
-      mediaRef.current = undefined;
-      setUploadType(UploadType.Resource);
-      syncResourceReady(UploadType.Resource, descriptionRef.current);
-      setAudioUploadOrRecord(true);
-      setUploadVisible(true);
-    } else if (what === AddResourceAction.Scripture) {
+    if (what === AddResourceAction.Scripture) {
       setAudioScriptureVisible(true);
-    } else if (what === AddResourceAction.Link) {
-      setUploadType(UploadType.Link);
-      syncResourceReady(UploadType.Link, descriptionRef.current);
-      setAudioUploadOrRecord(false);
-      setUploadVisible(true);
-    } else if (what === AddResourceAction.Pdf) {
-      mediaRef.current = undefined;
-      setUploadType(UploadType.PdfResource);
-      syncResourceReady(UploadType.PdfResource, descriptionRef.current);
-      setAllowProject(false);
-      setAudioUploadOrRecord(false);
-      setUploadVisible(true);
-    } else if (what === AddResourceAction.Text) {
-      setUploadType(UploadType.MarkDown);
-      syncResourceReady(UploadType.MarkDown, descriptionRef.current);
-      setAudioUploadOrRecord(false);
-      setUploadVisible(true);
     } else if (what === AddResourceAction.Shared) {
       setResourceKind(ResourceTypeEnum.sectionResource);
       setSharedResourceVisible(true);
+    } else if (
+      // Audio / Pdf / Text / Link all enter the upload-based wizard. Listing
+      // them explicitly narrows `what` to AddUploadAction (no cast needed).
+      what === AddResourceAction.Audio ||
+      what === AddResourceAction.Pdf ||
+      what === AddResourceAction.Text ||
+      what === AddResourceAction.Link
+    ) {
+      launchWizard({ kind: 'add', action: what });
     }
   };
 
+  // Research (FindTabs) produced markdown or a Faithbridge link; seed the wizard
+  // upload step with it.
   const handleMarkdownValue = (
     query: string,
     audioUrl: string,
     transcript: string
   ) => {
-    descriptionRef.current = query;
-    const nextType = audioUrl
-      ? UploadType.FaithbridgeLink
-      : UploadType.MarkDown;
-    setUploadType(nextType);
-    syncResourceReady(nextType, query);
-    setMarkdownValue(audioUrl ? `${audioUrl}||${transcript}` : transcript);
-    setAudioUploadOrRecord(false);
-    setAIGenerated(true);
-    setUploadVisible(true);
+    launchWizard({ kind: 'markdown', query, audioUrl, transcript });
   };
 
-  const passDesc = useMemo(
-    () =>
-      passageTypeFromRef(passage?.attributes?.reference) ===
-      PassageTypeEnum.NOTE
-        ? t.noteResource
-        : t.passageResource,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [passage]
-  );
-
-  const getSectionType = () => {
-    const level = section.attributes?.level;
-    if (level === SheetLevel.Book) return 'BOOK';
-    if (level === SheetLevel.Movement) return 'MOVE';
-    return undefined;
-  };
-
-  const sectDesc = useMemo(
-    () =>
-      getSectionType() === PassageTypeEnum.BOOK
-        ? t.bookResource
-        : getSectionType() === PassageTypeEnum.MOVEMENT
-          ? t.movementResource
-          : getOrganizedBy(true),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [section]
-  );
+  const { sectDesc, passDesc } = useResourceScopeLabels();
 
   const listFilter = (r: IRow) =>
     r?.isResource &&
@@ -854,102 +546,6 @@ export function PassageDetailArtifactsMobile() {
     forceRefresh(newRows);
   };
 
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    let cnt = rowData.length;
-    const projRes = new Array<MediaFileD>();
-    if (mediaRemoteIds && mediaRemoteIds.length > 0) {
-      for (const remId of mediaRemoteIds) {
-        cnt += 1;
-        const id =
-          remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
-          remId;
-        const mediaRecId = { type: 'mediafile', id };
-        if (descriptionRef.current) {
-          await memory.update((t) => [
-            t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
-          ]);
-        }
-        if (catIdRef.current) {
-          await memory.update((t) => [
-            ...ReplaceRelatedRecord(
-              t,
-              mediaRecId,
-              'artifactCategory',
-              'artifactcategory',
-              catIdRef.current
-            ),
-          ]);
-        }
-        if (isPassageResource()) {
-          await memory.update((t) => [
-            ...ReplaceRelatedRecord(
-              t,
-              mediaRecId,
-              'passage',
-              'passage',
-              passage.id
-            ),
-          ]);
-        }
-        if (!isProjectResource()) {
-          await AddSectionResource(
-            cnt,
-            descriptionRef.current,
-            mediaRecId,
-            isPassageResource() ? passage.id : null
-          );
-        } else {
-          projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
-        }
-      }
-      // Set when advancing to the configure step, which still offers Back to the
-      // upload dialog — resetEdit must then preserve the category/description/
-      // filename restore state instead of clearing it (closeProjResWiz clears it
-      // once that step actually finishes).
-      let preserveResourceForm = false;
-      if (projRes.length === 1) {
-        isAddingAudioResourceRef.current = true;
-        if (sectionsPreselectedRef.current) {
-          // Deferred flow: passages/sections were already chosen on
-          // SelectSections (which stayed open during the upload). The upload
-          // succeeded, so close it now and go to the configure step, or write
-          // visual resources directly.
-          const media = projRes[0] as MediaFileD;
-          projMediaRef.current = media;
-          sectionsPreselectedRef.current = false;
-          stagedResourceFilesRef.current = undefined;
-          setResourceImportList(undefined);
-          setUploading(false);
-          setProjResPassageVisible(false);
-          if (isVisual(media)) {
-            await writeVisualResource(projIdentRef.current);
-            setVisual(false);
-          } else {
-            // The configure step plays the context's playerMediafile; load it here
-            // since this path bypasses handleSelectProjectResource.
-            setSelected(media.id, PlayInPlayer.yes);
-            setProjResWizVisible(true);
-            preserveResourceForm = true;
-          }
-        } else {
-          setProjResSetup(projRes);
-        }
-      }
-      resetEdit(preserveResourceForm);
-    }
-    // Deferred upload produced no media (the upload failed). SelectSections is
-    // still open with the user's selection intact, so just re-enable its Upload
-    // button (the error was already surfaced by the uploader) and keep the
-    // staged file so they can retry without re-selecting. (A general resource is
-    // a single configured source; adding several at once is unsupported and is
-    // prevented in the UI, so only the single-media path is handled here.)
-    if (sectionsPreselectedRef.current && projRes.length === 0) {
-      sectionsPreselectedRef.current = false;
-      setResourceImportList(undefined);
-      setUploading(false);
-    }
-  };
-
   const resourceSourcePassages = useMemo(() => {
     const results: number[] = [];
     sectionResources.forEach((sr) => {
@@ -988,95 +584,6 @@ export function PassageDetailArtifactsMobile() {
     }
   };
 
-  const handleSelectProjectResource = (m: MediaFileD) => {
-    setSelected(m.id, PlayInPlayer.yes);
-    projMediaRef.current = m;
-    setVisual(isVisual(m));
-    setProjResPassageVisible(true);
-  };
-
-  // Deferred general-resource add: the Add Audio Resource dialog's Next hands
-  // the prepared file here instead of uploading. We keep the file, open
-  // SelectSections, and defer the real upload to that dialog's Upload button
-  // (handleSelectProjectResourcePassage). No media exists yet, so there are no
-  // existing assignments to pre-check.
-  const handleStageAudioFiles = async (files: File[], recorded?: boolean) => {
-    // we should only have one file if going through the general resource flow
-    if (!files || files.length !== 1) return;
-    setIsStagedRecording(Boolean(recorded));
-    // Commit a newly-typed artifact category now, while the dialog's metaData is
-    // still mounted; the deferred upload runs after it unmounts. Null the ref so
-    // the later upload's beforeUpload does not create a second category.
-    pendingResourceSeqRef.current = 0;
-    if (addCatCommitRef.current) {
-      catIdRef.current = await addCatCommitRef.current();
-      addCatCommitRef.current = null;
-    }
-    stagedResourceFilesRef.current = files;
-    // Also seed the upload-tab restore state (normally set by handleResourceUploadFiles
-    // via onFiles) so a recorded take — which bypasses that callback — is still
-    // pre-selected if the user Backs out to the upload dialog and returns.
-    setResourceUploadFiles(files);
-    cancelled.current = false;
-    isAddingAudioResourceRef.current = true;
-    projMediaRef.current = undefined;
-    // Fresh add: no prior selection to pre-check on SelectSections. (A Back from
-    // the configure step repopulates projIdentRef, so only clear it here.)
-    projIdentRef.current = [];
-    // Staging only happens for the "Add Audio Resource" → General Resource flow,
-    // which is always audio, so this is never a visual resource. (Visual general
-    // resources are reached by selecting an existing project-resource media, not
-    // through staging.) The visual-vs-wizard routing in afterUpload keys off the
-    // uploaded media's own type, so this only sets the SelectSections label.
-    setVisual(false);
-    setUploadVisible(false);
-    setProjResPassageVisible(true);
-  };
-
-  const writeVisualResource = async (items: RecordIdentity[]) => {
-    const t = new RecordTransformBuilder();
-    let cnt = 0;
-    const total = items.length;
-    for (const i of items) {
-      const rec = memory.cache.query((q) => q.findRecord(i)) as
-        Passage | Section;
-      const secRec =
-        rec?.type === 'section'
-          ? (rec as Section)
-          : (memory.cache.query((q) =>
-              q.findRecord({ type: 'section', id: related(rec, 'section') })
-            ) as Section);
-      const secNum = secRec?.attributes.sequencenum || 0;
-      const topicIn =
-        projMediaRef.current?.attributes?.topic ||
-        removeExtension(projMediaRef.current?.attributes?.originalFile || '')
-          ?.name;
-      const passage = rec?.type === 'passage' ? (rec as Passage) : undefined;
-      await projectResourceSave({
-        t,
-        media: projMediaRef.current as MediaFile,
-        i: { secNum, section: secRec, passage },
-        topicIn,
-        limitValue: '',
-        mediafiles,
-        sectionResources,
-      });
-      cnt += 1;
-      setComplete(Math.min((cnt * 100) / total, 100));
-    }
-    await removeUnselectedProjectResourceAssignments({
-      memory,
-      sourceMedia: projMediaRef.current,
-      selectedItems: items,
-      mediafiles,
-      sectionResources,
-      resourceTypeId: resourceType,
-      candidateItems: projCandidateRef.current,
-    });
-    // Ensure setComplete(0) is always called after processing
-    setComplete(0);
-  };
-
   const handleTextChange = (text: string) => {
     textRef.current = text;
     const ct = mediaContentType(mediaRef.current);
@@ -1091,98 +598,28 @@ export function PassageDetailArtifactsMobile() {
     );
   };
 
-  useEffect(() => {
-    if (!projResPassageVisible && !projResWizVisible && projMediaRef.current)
-      setProjResSetup(projResSetup.filter((m) => m !== projMediaRef.current));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projResPassageVisible, projResWizVisible]);
-
-  // If SelectSections closes without starting the deferred upload (the user
-  // discarded/closed it before clicking Upload), drop the staged file(s).
-  // Otherwise a later SelectSections run — e.g. configuring an existing general
-  // resource — would see stale files and wrongly upload them. When the upload
-  // has started, sectionsPreselectedRef is true and afterUpload clears them.
-  useEffect(() => {
-    if (!projResPassageVisible && !sectionsPreselectedRef.current) {
-      stagedResourceFilesRef.current = undefined;
-    }
-  }, [projResPassageVisible]);
-
-  useEffect(() => {
-    if (projResSetup.length) {
-      handleSelectProjectResource(projResSetup[0] as MediaFileD);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projResSetup]);
-
-  const handleSelectProjectResourcePassage = (
-    items: RecordIdentity[],
-    candidates: RecordIdentity[]
-  ) => {
-    projIdentRef.current = items;
-    projCandidateRef.current = candidates;
-    if (stagedResourceFilesRef.current) {
-      // Deferred new-add flow: the file has not been uploaded yet. Upload it now
-      // (headlessly, through the always-mounted Uploader's importList) while
-      // SelectSections stays open with its button spinner. afterUpload advances
-      // to the configure step on success, or re-enables the button on failure
-      // so the user can retry without losing this selection.
-      sectionsPreselectedRef.current = true;
-      setUploading(true);
-      setResourceImportList(stagedResourceFilesRef.current);
-      return;
-    }
-    if (isVisual(projMediaRef.current)) {
-      writeVisualResource(items).then(() => {
-        setProjResPassageVisible(false);
-      });
-    } else {
-      setProjResWizVisible(true);
-      setProjResPassageVisible(false);
-    }
-  };
-
   const handleCategory = (categoryId: string) => {
     catIdRef.current = categoryId;
-  };
-
-  const handleResourceUploadFiles = (files: File[]) => {
-    setResourceUploadFiles(files);
-    syncResourceReady(uploadType, descriptionRef.current, files);
   };
 
   const handleDescription = (desc: string) => {
     descriptionRef.current = desc;
     const ct = mediaContentType(mediaRef.current);
-    if (editResource) {
-      setAllowEditSave(
-        canSaveResourceEdit({
-          contentType: ct,
-          description: desc,
-          text: textRef.current ?? '',
-          originalFile: mediaRef.current?.attributes?.originalFile,
-          isUrl,
-        })
-      );
-    } else {
-      syncResourceReady(uploadType, desc);
-    }
+    setAllowEditSave(
+      canSaveResourceEdit({
+        contentType: ct,
+        description: desc,
+        text: textRef.current ?? '',
+        originalFile: mediaRef.current?.attributes?.originalFile,
+        isUrl,
+      })
+    );
   };
 
+  // The edit dialog never offers the General scope (allowProject=false), so the
+  // toggle only moves between section and passage.
   const handlePassRes = (newValue: ResourceTypeEnum) => {
     setResourceKind(newValue);
-    if (newValue === ResourceTypeEnum.projectResource) {
-      artifactState.id = projResourceType ?? null;
-      setUploadType(UploadType.ProjectResource);
-      syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
-    } else if (
-      artifactState.id === projResourceType ||
-      uploadType === UploadType.ProjectResource
-    ) {
-      artifactState.id = resourceType ?? null;
-      setUploadType(UploadType.Resource);
-      syncResourceReady(UploadType.Resource, descriptionRef.current);
-    }
   };
 
   const handleEnded = () => {
@@ -1270,57 +707,11 @@ export function PassageDetailArtifactsMobile() {
           ))}
         </VertListDnd>
       </Box>
-      <Uploader
-        audioUploadOrRecord={audioUploadOrRecord}
-        hideUploadCancel
-        isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
-        showMessage={showMessage}
-        multiple={true}
-        finish={afterUpload}
-        beforeUpload={async () => {
-          pendingResourceSeqRef.current = 0;
-          if (addCatCommitRef.current)
-            catIdRef.current = await addCatCommitRef.current();
-        }}
-        cancelled={cancelled}
-        cancelReset={resetEdit}
-        artifactState={artifactState}
-        uploadType={uploadType}
-        ready={() => resourceReady}
-        onNonAudio={handleNonAudio}
-        performedBy={performedBy}
-        onSpeakerChange={(value) => setPerformedBy(value)}
-        inValue={markdownValue}
-        eafUrl={aiGenerated ? AIGenerated : ''}
-        defaultFilename={filename}
-        pendingRestore={resourcePendingRestore}
-        importList={resourceImportList}
-        onFiles={handleResourceUploadFiles}
-        // When returning here via the back button, display the previously selected files
-        initialFiles={resourceUploadFiles}
-        deferUpload={uploadType === UploadType.ProjectResource}
-        onStageFiles={handleStageAudioFiles}
-        validationMessage={resourceUploadValidationMessage}
-        metaData={
-          <ResourceData
-            uploadType={uploadType}
-            catAllowNew={true} //if they can upload they can add cat
-            // Restores a category/description already entered before the user
-            // stepped Back to change the file (both refs are blank on a fresh add).
-            initCategory={catIdRef.current || ''}
-            onCategoryChange={handleCategory}
-            catCommitRef={addCatCommitRef}
-            initDescription={descriptionRef.current}
-            onDescriptionChange={handleDescription}
-            catRequired={false}
-            resourceKind={resourceKind}
-            onPassResChange={handlePassRes}
-            allowProject={allowProject}
-            sectDesc={sectDesc}
-            passDesc={passDesc}
-          />
-        }
+      <AddResourceWizard
+        key={wizardKey}
+        launch={wizardLaunch}
+        onLaunchHandled={() => setWizardLaunch(null)}
+        configureWidth={800}
       />
       <BigDialog
         title={`Research - ${passageRef(passage) || ''}`.trim()}
@@ -1368,83 +759,6 @@ export function PassageDetailArtifactsMobile() {
           onSelect={handleSelectShared}
           onOpen={handleSharedResourceVisible}
         />
-      </BigDialog>
-      <BigDialog
-        title={
-          isAddingAudioResourceRef.current
-            ? t.addAudioResource
-            : t.editGeneralResource
-        }
-        description={
-          <Typography sx={{ color: 'text.secondary' }}>
-            {isAddingAudioResourceRef.current
-              ? t.selectPassagesSub.replace('{0}', getOrganizedBy(false))
-              : t.editingFile.replace(
-                  '{0}',
-                  safeFileBasename(
-                    projMediaRef.current?.attributes?.originalFile
-                  )
-                )}
-          </Typography>
-        }
-        isOpen={projResPassageVisible}
-        onOpen={handleProjResPassageVisible}
-        disableBackdropClose
-      >
-        {projResPassageVisible ? (
-          <SelectSections
-            initialItems={
-              // Returning here via the configure step's Back re-checks the prior
-              // selection (the media has no saved assignments yet). Other entry
-              // points read the media's existing assignments.
-              isAddingAudioResourceRef.current &&
-              projIdentRef.current.length > 0
-                ? projIdentRef.current
-                : getProjectResourceAssignments(
-                    projMediaRef.current,
-                    mediafiles,
-                    sectionResources,
-                    resourceType
-                  )
-            }
-            visual={visual}
-            // The button uploads only when a media has not been created yet;
-            // after a Back from configure the media exists, so it just advances.
-            uploadsOnNext={
-              isAddingAudioResourceRef.current && !projMediaRef.current
-            }
-            uploading={uploading}
-            onSelect={handleSelectProjectResourcePassage}
-            onBack={
-              isAddingAudioResourceRef.current ? handlePassageBack : undefined
-            }
-          />
-        ) : (
-          <></>
-        )}
-      </BigDialog>
-      <BigDialog
-        title={t.projectResourceConfigure}
-        isOpen={projResWizVisible}
-        onOpen={handleProjResWizVisible}
-        bp={BigDialogBp.md}
-        disableBackdropClose
-      >
-        {projResWizVisible ? (
-          <ProjectResourceConfigure
-            width={800}
-            media={projMediaRef.current}
-            items={projIdentRef.current}
-            candidateItems={projCandidateRef.current}
-            resourceTypeId={resourceType}
-            onOpen={closeProjResWiz}
-            onBack={
-              isAddingAudioResourceRef.current ? handleWizBack : undefined
-            }
-          />
-        ) : (
-          <></>
-        )}
       </BigDialog>
       <BigDialog
         title={editAudio ? t.editAudioResource : t.editResource}
@@ -1496,21 +810,15 @@ export function PassageDetailArtifactsMobile() {
             noResponse={handleDeleteRefused}
           />
         ))}
-      {dialogPendingCloseConfirmation && (
+      {editCloseConfirmation && (
         <Confirm
           title={t.confirmCloseTitle}
           text={t.confirmClose}
           no={t.keepOpen}
           primaryButton="no"
           yes={t.discardAndClose}
-          noResponse={() => setDialogPendingCloseConfirmation(null)}
-          yesResponse={
-            dialogPendingCloseConfirmation === 'passage'
-              ? handlePassageDiscard
-              : dialogPendingCloseConfirmation === 'wiz'
-                ? handleWizDiscard
-                : handleEditDiscard
-          }
+          noResponse={() => setEditCloseConfirmation(false)}
+          yesResponse={handleEditDiscard}
         />
       )}
       {displayId && (

@@ -4,7 +4,6 @@ import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
 import { restoreAfterPendingUpload } from './restoreAfterPendingUpload';
 import type { PendingUploadRestore } from './pendingMediaUploads';
-import { takePendingProjectResourceConfigs } from './pendingProjectResourceConfig';
 import {
   getRecordingForClause,
   getCompletedClauseIndices,
@@ -422,69 +421,6 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'orgWorkflowStep')).toBe('ows-1');
       expect(related(sectionResources[0], 'passage')).toBe('pas-1');
-    });
-  });
-
-  describe('General Resource — projectresource configure resume', () => {
-    /**
-     * Bug: PassageDetailArtifacts / PassageDetailsArtifactsMobile return
-     * undefined from resourcePendingRestore when resourceType is projectResource.
-     * Home Retry then uploads an unlinked mediafile with no way to reopen the
-     * configure wizard that afterUpload normally starts.
-     */
-    it('applies topic and artifactCategory, and queues media for configure resume', async () => {
-      await memory.update((t) => [
-        t.addRecord({
-          type: 'artifactcategory',
-          id: 'cat-1',
-          attributes: { categoryname: 'Scripture' },
-        }),
-        t.addRecord({
-          type: 'artifacttype',
-          id: 'proj-art',
-          attributes: { typename: 'projectresource' },
-        }),
-        t.addRecord({
-          type: 'mediafile',
-          id: 'proj-media-1',
-          attributes: {
-            originalFile: 'general.mp3',
-            versionNumber: 1,
-            topic: '',
-          },
-          relationships: {
-            artifactType: { data: { type: 'artifacttype', id: 'proj-art' } },
-          },
-        }),
-      ]);
-
-      const restore: PendingUploadRestore = {
-        kind: 'projectresource',
-        topic: 'General resource take',
-        artifactCategoryId: 'cat-1',
-      };
-
-      await restoreAfterPendingUpload({
-        mediaId: 'proj-media-1',
-        restore,
-        memory,
-        user,
-      });
-
-      const media = memory.cache.getRecordSync({
-        type: 'mediafile',
-        id: 'proj-media-1',
-      }) as { attributes?: { topic?: string } };
-      expect(media.attributes?.topic).toBe('General resource take');
-      expect(related(media, 'artifactCategory')).toBe('cat-1');
-
-      // Must not create a sectionresource — configuration still owns linking.
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      );
-      expect(sectionResources).toHaveLength(0);
-
-      expect(takePendingProjectResourceConfigs()).toEqual(['proj-media-1']);
     });
   });
 

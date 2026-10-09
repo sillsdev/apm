@@ -181,15 +181,9 @@ interface IProps {
   noWrapper?: boolean | undefined;
   /** Hide the bottom "Cancel" button (cancel is reached via the dialog's X). */
   hideCancel?: boolean | undefined;
-  /** Pre-select these files when the content mounts, so a returning user (e.g.
-   *  after the Add Resource wizard's Back) sees their previous choice and can
-   *  proceed without re-picking. Seeded once on mount; a fresh open passes an
-   *  empty list, so nothing is seeded there. */
-  initialFiles?: File[] | undefined;
   /** Keep the file selection after a successful submit instead of clearing it.
-   *  Used by the deferred general-resource flow: the file is only *staged* on
-   *  submit (uploaded later), so the parent keeps it selected to restore if the
-   *  user steps back to this dialog. */
+   *  Used by the deferred general-resource flow, so the selection survives is still there
+   *  if the user hits next then back*/
   keepFilesAfterSubmit?: boolean | undefined;
 }
 
@@ -217,7 +211,6 @@ function MediaUploadContent(props: IProps) {
     onSaveDisabled,
     noWrapper,
     hideCancel,
-    initialFiles,
     keepFilesAfterSubmit,
   } = props;
   const [name, setName] = useState('');
@@ -261,7 +254,15 @@ function MediaUploadContent(props: IProps) {
       // Historical behavior: clear selection after initiating an upload. Skip it
       // when deferring — the file is only staged (uploaded later), so the parent
       // keeps it selected to restore if the user steps back to this dialog.
-      if (!keepFilesAfterSubmit) handleFiles(undefined);
+      if (!keepFilesAfterSubmit) {
+        handleFiles(undefined);
+      } else {
+        // Deferring only staged the file; no upload is in flight, so clear the
+        // progress state. The embedded panel stays mounted across the wizard's
+        // Back, so a lingering `progress` would otherwise spin forever and keep
+        // the Next button disabled on return.
+        setProgress(false);
+      }
     } catch {
       setProgress(false);
     }
@@ -407,17 +408,6 @@ function MediaUploadContent(props: IProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadType, audioOnly]);
-
-  // Seed the selection from a previously-chosen file (e.g. after the Add
-  // Resource wizard's Back). Mount-only: the dialog remounts this content on
-  // each open and a fresh open passes an empty list, so nothing is seeded there.
-  useEffect(() => {
-    if (initialFiles && initialFiles.length > 0) {
-      setName(fileName(initialFiles));
-      setFiles(initialFiles);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const body = (
     <>

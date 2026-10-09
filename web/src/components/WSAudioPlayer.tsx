@@ -207,6 +207,13 @@ interface IProps {
   applyRegionColor?: ApplyRegionColor;
   hideToolbar?: boolean;
   hideControls?: boolean;
+  /**
+   * When false, this player registers none of its keyboard shortcuts (transport,
+   * region nav, and record) — so a second, non-owning player (e.g. an off-screen
+   * step in the add-resource wizard) yields all keys to the visible/owning one.
+   * Default true. All of a player's hotkeys enable/disable together.
+   */
+  hotkeys?: boolean;
   /** Careful Speech / guided flows: emphasize the main play control until used. */
   highlightPlay?: boolean;
   /** Invoked before starting playback. Return false to skip default play handling. */
@@ -426,6 +433,7 @@ function WSAudioPlayer(props: IProps) {
     applyRegionColor,
     hideToolbar,
     hideControls,
+    hotkeys = true,
     highlightPlay,
     beforePlay,
     onAutoSegment,
@@ -1287,6 +1295,7 @@ function WSAudioPlayer(props: IProps) {
   }, [wsGoto, wsPause, setPlaying]);
 
   useEffect(() => {
+    if (!hotkeys) return;
     if (justPlayButton) {
       subscribe(ALT_PLAY_PAUSE_KEY, handlePlayPauseHotkey);
       return () => unsubscribe(ALT_PLAY_PAUSE_KEY);
@@ -1306,6 +1315,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(TIMER_KEY);
     };
   }, [
+    hotkeys,
     justPlayButton,
     handlePlayPauseHotkey,
     handleHomeHotkey,
@@ -1318,13 +1328,13 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (!allowRecord) return;
+    if (!hotkeys || !allowRecord) return;
     subscribe(RECORD_KEY, handleRecorder);
     return () => unsubscribe(RECORD_KEY);
-  }, [allowRecord, handleRecorder, subscribe, unsubscribe]);
+  }, [hotkeys, allowRecord, handleRecorder, subscribe, unsubscribe]);
 
   useEffect(() => {
-    if (!allowSegment) return;
+    if (!hotkeys || !allowSegment) return;
     subscribe(LEFT_KEY, handlePrevRegion);
     subscribe(RIGHT_KEY, handleNextRegion);
     return () => {
@@ -1332,6 +1342,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(RIGHT_KEY);
     };
   }, [
+    hotkeys,
     allowSegment,
     handlePrevRegion,
     handleNextRegion,
@@ -1673,7 +1684,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (!allowRecord) return;
+    if (!hotkeys || !allowRecord) return;
     subscribe(COPY_KEY, handleCopyRegion);
     subscribe(CUT_KEY, handleCutRegion);
     subscribe(PASTE_KEY, handlePaste);
@@ -1683,6 +1694,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(PASTE_KEY);
     };
   }, [
+    hotkeys,
     allowRecord,
     handleCopyRegion,
     handleCutRegion,

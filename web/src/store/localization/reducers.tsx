@@ -1179,7 +1179,6 @@ const initialState = {
 			"pasteFormat": "Pasted data must contain two or three columns. One of them must be the reference.",
 			"pasteError": "Unable to parse {0} segment boundaries. {1} segment boundaries were adjusted.",
 			"pasteNoChange": "Nothing changed! Perhaps no references matched?",
-			"projectResourceConfigure": "Chunk into Resources",
 			"recordResource": "Record",
 			"reference": "Reference",
 			"research": "Research",

@@ -17,7 +17,6 @@ import {
   Box,
   Checkbox,
   CircularProgress,
-  debounce,
   Paper,
   PaperProps,
   styled,
@@ -38,7 +37,7 @@ import { Button } from '../../../control/Button';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
-  marginBottom: theme.spacing(1),
+  marginBottom: theme.spacing(2),
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
@@ -71,10 +70,9 @@ interface IProps {
    */
   onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
   /**
-   * When set, a "Back" button (the reverse of Next/Upload) is shown — for now
-   * only in developer mode. The add flow wires this to reopen the upload
-   * dialog; leaving it undefined hides the button for entry points that have no
-   * previous step here.
+   * When set, a "Back" button (the reverse of Next/Upload) is shown. The add
+   * flow wires this to reopen the upload dialog; leaving it undefined hides the
+   * button for entry points that have no previous step here.
    */
   onBack?: () => void;
 }
@@ -89,11 +87,7 @@ export function SelectSections(props: IProps) {
   const sections = useOrbitData<SectionD[]>('section');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
-  const [isDeveloper] = useGlobal('developer');
   const [data, setData] = useState(Array<IRow>());
-  const [heightStyle, setHeightStyle] = useState({
-    maxHeight: `${window.innerHeight - 200}px`,
-  });
   const { getOrganizedBy } = useOrganizedBy();
   // User cannot change the language while dialog is open, so for now it should be okay if this component does not
   // respond to changes in the language setting until the dialog is reopened.
@@ -104,23 +98,7 @@ export function SelectSections(props: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const setDimensions = () => {
-    setHeightStyle({
-      maxHeight: `${window.innerHeight - 200}px`,
-    });
-  };
   const planType = usePlanType();
-
-  useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   const planRec = useMemo(
     () => findRecord(memory, 'plan', plan) as Plan | undefined,
@@ -235,7 +213,14 @@ export function SelectSections(props: IProps) {
   return (
     <Box
       id="SelectSections"
-      sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
+      sx={{
+        pt: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
     >
       <Box sx={{ ...rowSx, justifyContent: 'flex-start', pb: 1 }}>
         <Button
@@ -246,11 +231,7 @@ export function SelectSections(props: IProps) {
           {allSelected ? ta.deselectAll : ta.selectAll}
         </Button>
       </Box>
-      <StyledPaper
-        id="PassageList"
-        style={heightStyle}
-        sx={{ flex: 1, minHeight: 0 }}
-      >
+      <StyledPaper id="PassageList" sx={{ flex: 1, minHeight: 0 }}>
         {/* Plain striped table (theme MuiTable variant="striped"); no row-hover
             tint, so hovering a row never greys it. The checkbox hover feedback
             is unaffected. */}
@@ -313,7 +294,7 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
-        {onBack && isDeveloper && (
+        {onBack && (
           <Button
             id="select-sections-back"
             onClick={onBack}
