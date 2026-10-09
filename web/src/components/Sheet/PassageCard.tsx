@@ -1,5 +1,5 @@
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import { Box, Card, Typography } from '@mui/material';
+import { Box, Card, Typography, useTheme } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PlayButton } from '../PlayButton';
 import { PassageRef } from './PassageRef';
@@ -65,6 +65,8 @@ export function PassageCard(props: IProps) {
       : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
   );
 
+  const theme = useTheme();
+
   const playButton = (
     <PlayButton
       mediaId={cardInfo.mediaId?.id}
@@ -85,7 +87,7 @@ export function PassageCard(props: IProps) {
         minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
         display: 'flex',
         flexDirection: 'column',
-        p: 2,
+        p: 1.5,
         ...(isCurrent && {
           outline: '2px solid',
           outlineColor: 'primary.light',
@@ -103,41 +105,69 @@ export function PassageCard(props: IProps) {
           flex: 1,
         }}
       >
-        <PassageCardHeader
-          cardInfo={cardInfo}
-          passageRef={ref}
-          comment={comment}
-          psgType={psgType}
-          onGraphicClick={onGraphicClick}
-        >
-          {!isChapter && playButton}
-        </PassageCardHeader>
-        {cardInfo.kind === IwsKind.SectionPassage && (
-          <PassageRef
-            psgType={psgType}
-            book={cardInfo.book}
-            passageRef={ref}
-            comment={comment}
-          />
-        )}
         {isChapter ? (
-          <Box
-            sx={{
-              display: 'flex',
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {playButton}
-          </Box>
+          <>
+            <PassageCardHeader
+              cardInfo={cardInfo}
+              passageRef={ref}
+              comment={comment}
+              psgType={psgType}
+              onGraphicClick={onGraphicClick}
+            ></PassageCardHeader>
+            <Box
+              sx={{
+                display: 'flex',
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {playButton}
+            </Box>
+          </>
         ) : (
           <>
-            <Typography variant="body2" color="grey">
-              {comment}
-            </Typography>
-            {!isPersonal && <PassageAssignee assign={cardInfo.assign} />}
-            <PassageStepButton step={cardInfo.step} onClick={handleViewStep} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PassageCardHeader
+                cardInfo={cardInfo}
+                passageRef={ref}
+                comment={comment}
+                psgType={psgType}
+                onGraphicClick={onGraphicClick}
+              >
+                {playButton}
+              </PassageCardHeader>
+              {cardInfo.kind === IwsKind.SectionPassage && (
+                <PassageRef
+                  psgType={psgType}
+                  book={cardInfo.book}
+                  passageRef={ref}
+                  comment={comment}
+                />
+              )}
+              <Typography
+                variant="body2"
+                color="grey"
+                sx={{
+                  lineHeight: theme.spacing(3.5),
+                  minWidth: 0,
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 1,
+                  overflow: 'hidden',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {comment}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {!isPersonal && <PassageAssignee assign={cardInfo.assign} />}
+              <PassageStepButton
+                step={cardInfo.step}
+                onClick={handleViewStep}
+              />
+            </Box>
           </>
         )}
       </Box>
