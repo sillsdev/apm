@@ -482,7 +482,7 @@ function WSAudioPlayer(props: IProps) {
   const [playing, setPlayingx] = useState(false);
   const loopingRef = useRef(false);
   const [looping, setLoopingx] = useState(false);
-  const [hasRegion, setHasRegion] = useState(0);
+  const [regionCount, setRegionCount] = useState(0);
   // Sorted region boundaries, kept in sync so the Add/Remove segment buttons can
   // react to whether the playhead is near an existing boundary.
   const [regionBounds, setRegionBounds] = useState<IRegion[]>([]);
@@ -1190,7 +1190,7 @@ function WSAudioPlayer(props: IProps) {
   useEffect(() => {
     setDuration(0);
     setProgress(0);
-    setHasRegion(0);
+    setRegionCount(0);
     wsPause();
     if (blob) {
       setReady(false);
@@ -1517,7 +1517,7 @@ function WSAudioPlayer(props: IProps) {
     }
   }
   function onWSRegion(count: number, newRegion: boolean) {
-    setHasRegion(count);
+    setRegionCount(count);
     const regionsJson = wsGetRegions();
     setRegionBounds(getSortedRegions(regionsJson));
     if (onSegmentChange && newRegion) onSegmentChange(regionsJson);
@@ -2254,7 +2254,7 @@ function WSAudioPlayer(props: IProps) {
       onParamChange={onSegmentParamChange}
       loop={loopingRef.current || false}
       playing={playing}
-      currentNumRegions={hasRegion}
+      currentNumRegions={regionCount}
       params={defaultRegionParams}
       canSetDefault={canSetDefaultParams}
       onAutoSegment={onAutoSegment}
@@ -2334,7 +2334,7 @@ function WSAudioPlayer(props: IProps) {
   const cutTip = t.cutRegion.replace('{0}', localizeHotKey(CUT_KEY));
   const pasteTip = t.pasteRegion.replace('{0}', localizeHotKey(PASTE_KEY));
   const copyRegionNode = !hideWaveformEditTools &&
-    hasRegion !== 0 &&
+    regionCount !== 0 &&
     !oneShotUsed && (
       <LightTooltip id="wsAudioCopyTip" title={copyTip}>
         <span>
@@ -2373,7 +2373,7 @@ function WSAudioPlayer(props: IProps) {
     );
 
   const cutRegionNode = !hideWaveformEditTools &&
-    hasRegion !== 0 &&
+    regionCount !== 0 &&
     !oneShotUsed && (
       <LightTooltip id="wsAudioCutTip" title={cutTip}>
         <span>
@@ -2546,7 +2546,7 @@ function WSAudioPlayer(props: IProps) {
           value="loop"
           selected={looping}
           onChange={handleToggleLoop}
-          disabled={!hasRegion || waitingForAI}
+          disabled={!regionCount || waitingForAI}
         >
           <LoopIcon />
         </ToggleButton>
@@ -2567,7 +2567,7 @@ function WSAudioPlayer(props: IProps) {
         <IconButton
           id="wsPrev"
           onClick={handlePrevRegion}
-          disabled={!hasRegion || waitingForAI}
+          disabled={!regionCount || waitingForAI}
         >
           <NextSegmentIcon sx={{ transform: 'rotate(180deg)' }} />
         </IconButton>
@@ -2588,7 +2588,7 @@ function WSAudioPlayer(props: IProps) {
         <IconButton
           id="wsNext"
           onClick={handleNextRegion}
-          disabled={!hasRegion || waitingForAI}
+          disabled={!regionCount || waitingForAI}
         >
           <NextSegmentIcon />
         </IconButton>
@@ -2847,7 +2847,7 @@ function WSAudioPlayer(props: IProps) {
                   id="wsSegmentReset"
                   onClick={handleClearRegions}
                   disabled={
-                    resetDisabled ?? (recording || waitingForAI || !hasRegion)
+                    resetDisabled ?? (recording || waitingForAI || !regionCount)
                   }
                 >
                   {t.resetSegments}
@@ -2964,7 +2964,7 @@ function WSAudioPlayer(props: IProps) {
                   id="wsSegmentReset"
                   onClick={handleClearRegions}
                   disabled={
-                    resetDisabled ?? (recording || waitingForAI || !hasRegion)
+                    resetDisabled ?? (recording || waitingForAI || !regionCount)
                   }
                 >
                   {t.resetSegments}
