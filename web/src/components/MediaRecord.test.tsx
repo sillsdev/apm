@@ -265,10 +265,12 @@ describe('MediaRecord save gating', () => {
     });
   });
 
-  it('shows save but does not enable upload when blob exceeds size limit', async () => {
+  it('keeps save enabled when a mono float32 take is under the compressed limit', async () => {
     const setCanSave = jest.fn();
-    const hugeBlob = new Blob([new Uint8Array(21 * 1000000)], {
-      type: 'audio/ogg',
+    // 21 MB float32 WAV ≈ 0.53 MB compressed (21 / 2 / 20). The old check
+    // treated this as over a 20 MB raw limit.
+    const blob = new Blob([new Uint8Array(21 * 1000000)], {
+      type: 'audio/wav',
     });
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
@@ -278,11 +280,40 @@ describe('MediaRecord save gating', () => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
       latestWsProps?.onDuration?.(12);
-      latestWsProps?.onBlobReady?.(hugeBlob);
+      latestWsProps?.onBlobReady?.(blob);
     });
 
     await waitFor(() => {
       expect(latestWsProps?.showWaveformSave).toBe(true);
+      expect(latestWsProps?.isSaveDisabled).toBe(false);
+      expect(setCanSave).toHaveBeenLastCalledWith(true);
+      expect(document.getElementById('size')?.textContent).toBe('0.53MB');
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big warn 1'
+      );
+    });
+  });
+
+  it('warns with the compressed limit when a mono float32 take exceeds it', async () => {
+    const setCanSave = jest.fn();
+    // typeLimit is 1 MB. Float32 mono → 16-bit / 20 must clear 1 MB: > 40 MB.
+    const blob = new Blob([new Uint8Array(41 * 1000000)], {
+      type: 'audio/wav',
+    });
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => {
+      expect(document.getElementById('warning')?.textContent).toBe('Too big 1');
+      expect(document.getElementById('size')?.textContent).toBe('1.02MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });

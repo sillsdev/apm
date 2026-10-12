@@ -35,6 +35,10 @@ import { useStepTool } from '../crud/useStepTool';
 import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
 import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
+import {
+  RECORD_PCM16_BYTES_PER_SECOND,
+  estimatedUploadBytes,
+} from './mediaRecordSize';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
@@ -212,8 +216,6 @@ function MediaRecord(props: IProps) {
   );
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
   const WARNINGLIMIT = 1;
-  /** Recorded WAV bytes/sec: mono 16-bit @ 48kHz (WavRecorder's preferred rate). */
-  const RECORD_WAV_BYTES_PER_SECOND = 96000;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
@@ -525,15 +527,19 @@ function MediaRecord(props: IProps) {
   }, [converting, uploading, setCanCancel]);
 
   // While recording, audioBlob is the previous take (it only refreshes after
-  // stop via onBlobReady). Estimate the eventual WAV size from the live
-  // duration instead so the size warning shows before a long take is wasted;
-  // the exact blob size takes over once recording stops.
-  const effectiveAudioBytes = useMemo(
+  // stop via onBlobReady). Estimate from the live duration so the size warning
+  // shows before a long take is wasted; the blob size takes over once recording
+  // stops. Both are reported as the estimated compressed upload size.
+  const estimatedBytes = useMemo(
     () =>
       recording
-        ? Math.round(waveformDuration * RECORD_WAV_BYTES_PER_SECOND)
-        : (audioBlob?.size ?? 0),
-    [recording, waveformDuration, audioBlob, RECORD_WAV_BYTES_PER_SECOND]
+        ? estimatedUploadBytes(
+            Math.round(waveformDuration * RECORD_PCM16_BYTES_PER_SECOND),
+            compression,
+            false
+          )
+        : estimatedUploadBytes(audioBlob?.size ?? 0, compression, true),
+    [recording, waveformDuration, audioBlob, compression]
   );
 
   const { isMobile: isMobileView } = useMobile();
@@ -590,12 +596,11 @@ function MediaRecord(props: IProps) {
     [toolId, saveCompleted, onReady, onSaveRejected]
   );
   useEffect(() => {
-    const limit = sizeLimit * compression;
-    const big = effectiveAudioBytes > limit * 1000000;
+    const big = estimatedBytes > sizeLimit * 1000000;
     setTooBig(big);
-    if (effectiveAudioBytes > (limit - WARNINGLIMIT) * 1000000)
+    if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * 1000000)
       setWarning(
-        (big ? t.toobig : t.toobigwarn).replace('{1}', limit.toString())
+        (big ? t.toobig : t.toobigwarn).replace('{1}', sizeLimit.toString())
       );
     else setWarning('');
 
@@ -661,7 +666,7 @@ function MediaRecord(props: IProps) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, effectiveAudioBytes, toolsChanged, mimeType, toolId]);
+  }, [audioBlob, estimatedBytes, toolsChanged, mimeType, toolId]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {
@@ -952,7 +957,7 @@ function MediaRecord(props: IProps) {
         >
           {showSize && (
             <Typography sx={{ mr: 3 }} id="size">
-              {`${(effectiveAudioBytes / 1000000 / compression).toFixed(2)}MB`}
+              {`${(estimatedBytes / 1000000).toFixed(2)}MB`}
             </Typography>
           )}
           {metaData}
