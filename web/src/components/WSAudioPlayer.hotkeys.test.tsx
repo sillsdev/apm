@@ -8,7 +8,14 @@ import {
   expect,
 } from '@jest/globals';
 import '@testing-library/jest-dom/jest-globals';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 
 const RECORD_KEY = 'F9,CTRL+9';
 
@@ -16,6 +23,14 @@ let capturedOnWSReady:
   ((duration: number, loadingAnother: boolean) => void) | undefined;
 let capturedOnWSRegion:
   ((count: number, newRegion: boolean) => void) | undefined;
+let capturedOnPlayStatus: ((playing: boolean) => void) | undefined;
+let capturedOnCurrentRegion:
+  | ((
+      region: { start: number; end: number } | undefined,
+      index?: number
+    ) => void)
+  | undefined;
+let capturedOnCanPaste: ((canPaste: boolean) => void) | undefined;
 
 const waveSurferMock = {
   wsLoad: jest.fn(),
@@ -87,16 +102,12 @@ const { subscribe: mockSubscribe, unsubscribe: mockUnsubscribe } = (
 ).hotkeyTestMocks;
 
 jest.mock('../crud/useWaveSurfer', () => ({
-  useWaveSurfer: (
-    _allowSegment: unknown,
-    _container: unknown,
-    onReady: (duration: number, loadingAnother: boolean) => void,
-    _onLoadError: unknown,
-    _onProgress: unknown,
-    onRegion: (count: number, newRegion: boolean) => void
-  ) => {
-    capturedOnWSReady = onReady;
-    capturedOnWSRegion = onRegion;
+  useWaveSurfer: (...args: unknown[]) => {
+    capturedOnWSReady = args[2] as typeof capturedOnWSReady;
+    capturedOnWSRegion = args[5] as typeof capturedOnWSRegion;
+    capturedOnPlayStatus = args[7] as typeof capturedOnPlayStatus;
+    capturedOnCurrentRegion = args[14] as typeof capturedOnCurrentRegion;
+    capturedOnCanPaste = args[24] as typeof capturedOnCanPaste;
     return waveSurferMock;
   },
 }));
@@ -293,6 +304,15 @@ describe('WSAudioPlayer record hotkeys', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     capturedOnWSReady = undefined;
+    capturedOnWSRegion = undefined;
+    capturedOnPlayStatus = undefined;
+    capturedOnCurrentRegion = undefined;
+    capturedOnCanPaste = undefined;
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementation(async () => true);
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockImplementation(
+      () => false
+    );
+    (waveSurferMock.wsCopyRegion as jest.Mock).mockImplementation(() => true);
   });
 
   afterEach(cleanup);
@@ -346,18 +366,95 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
 
     (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    act(() => {
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+      capturedOnWSRegion?.(1, true);
+    });
     expect(latestHotkey('CTRL+C')()).toBe(true);
     expect(waveSurferMock.wsCopyRegion).toHaveBeenCalled();
     expect(latestHotkey('CTRL+V')()).toBe(true);
     expect(waveSurferMock.wsPaste).toHaveBeenCalled();
 
-    expect(latestHotkey('CTRL+X')()).toBe(false);
-    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+    expect(latestHotkey('CTRL+X')()).toBe(true);
+    expect(waveSurferMock.wsRegionDelete).toHaveBeenCalled();
+  });
+
+  it('disables copy and cut when no region is selected', () => {
+    render(<WSAudioPlayer {...defaultProps} />);
     act(() => {
       capturedOnWSRegion?.(1, true);
     });
-    expect(latestHotkey('CTRL+X')()).toBe(true);
-    expect(waveSurferMock.wsRegionDelete).toHaveBeenCalled();
+
+    expect(
+      screen.getByRole('button', { name: 'Copy [CTRL+C]' })
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+
+    act(() => {
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+    expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeEnabled();
+  });
+
+  it('does not paste while audio is playing', () => {
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnCanPaste?.(true);
+      capturedOnPlayStatus?.(true);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Paste [CTRL+V]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+  });
+
+  it('does not paste while save is in progress', () => {
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    render(<WSAudioPlayer {...defaultProps} mediaSaveInProgress />);
+
+    act(() => {
+      capturedOnCanPaste?.(true);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Paste [CTRL+V]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+  });
+
+  it('does not paste twice from a double click', async () => {
+    let resolvePaste: (value: boolean) => void = () => undefined;
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolvePaste = resolve;
+        })
+    );
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnCanPaste?.(true);
+    });
+
+    const paste = screen.getByRole('button', { name: 'Paste [CTRL+V]' });
+    fireEvent.click(paste);
+    fireEvent.click(paste);
+    expect(waveSurferMock.wsPaste).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolvePaste(true);
+    });
+    fireEvent.click(paste);
+    expect(waveSurferMock.wsPaste).toHaveBeenCalledTimes(2);
   });
 
   it('does not copy or paste while a text field is focused', () => {

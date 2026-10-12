@@ -588,6 +588,10 @@ function WSAudioPlayer(props: IProps) {
   /** True after Stop until final `onRecordStop` finishes — blocks late preview ticks. */
   const recordPreviewSuppressedRef = useRef(false);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
+  const [regionSelected, setRegionSelectedx] = useState(false);
+  const regionSelectedRef = useRef(false);
+  const [pasteBusy, setPasteBusyx] = useState(false);
+  const pasteBusyRef = useRef(false);
   // Recording timer refs for local progress/duration while recording
   const recElapsedRef = useRef<number>(0);
   const recTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -622,6 +626,14 @@ function WSAudioPlayer(props: IProps) {
     if (recordingRef.current) return;
     pxPerSecRef.current = px;
     setPxPerSecx(px);
+  }, []);
+  const setRegionSelected = useCallback((value: boolean) => {
+    regionSelectedRef.current = value;
+    setRegionSelectedx(value);
+  }, []);
+  const setPasteBusy = useCallback((value: boolean) => {
+    pasteBusyRef.current = value;
+    setPasteBusyx(value);
   }, []);
 
   useEffect(() => {
@@ -736,9 +748,10 @@ function WSAudioPlayer(props: IProps) {
       //onPlayStatus && onPlayStatus(true);
       //}
       currentSegmentRef.current = currentSegment;
+      setRegionSelected(currentSegment !== undefined);
       onCurrentSegment && onCurrentSegment(currentSegment, index);
     },
-    [onCurrentSegment]
+    [onCurrentSegment, setRegionSelected]
   );
 
   const {
@@ -1608,7 +1621,7 @@ function WSAudioPlayer(props: IProps) {
       waitingForAI ||
       hideWaveformEditTools ||
       oneShotUsed ||
-      !hasRegion
+      !regionSelectedRef.current
     )
       return false;
     setPlaying(false);
@@ -1621,7 +1634,6 @@ function WSAudioPlayer(props: IProps) {
     waitingForAI,
     hideWaveformEditTools,
     oneShotUsed,
-    hasRegion,
     setPlaying,
     wsRegionDelete,
     handleChanged,
@@ -1641,7 +1653,8 @@ function WSAudioPlayer(props: IProps) {
       recordingStartPendingRef.current ||
       waitingForAI ||
       hideWaveformEditTools ||
-      oneShotUsed
+      oneShotUsed ||
+      !regionSelectedRef.current
     )
       return false;
     return wsCopyRegion();
@@ -1655,21 +1668,31 @@ function WSAudioPlayer(props: IProps) {
       waitingForAI ||
       hideWaveformEditTools ||
       oneShotUsed ||
-      !wsHasClipboard()
+      !wsHasClipboard() ||
+      playingRef.current ||
+      Boolean(mediaSaveInProgress) ||
+      pasteBusyRef.current
     )
       return false;
+    setPasteBusy(true);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
-    wsPaste().then((mutated) => {
-      if (mutated) handleChanged();
-    });
+    wsPaste()
+      .then((mutated) => {
+        if (mutated) handleChanged();
+      })
+      .finally(() => {
+        setPasteBusy(false);
+      });
     return true;
   }, [
     waitingForAI,
     hideWaveformEditTools,
     oneShotUsed,
+    mediaSaveInProgress,
     wsHasClipboard,
     wsPaste,
     handleChanged,
+    setPasteBusy,
   ]);
 
   useEffect(() => {
@@ -2319,7 +2342,7 @@ function WSAudioPlayer(props: IProps) {
             id="wsAudioCopy"
             aria-label={copyTip}
             onClick={handleCopyRegion}
-            disabled={recording || waitingForAI}
+            disabled={recording || waitingForAI || !regionSelected}
           >
             <ContentCopyIcon />
           </IconButton>
@@ -2335,7 +2358,13 @@ function WSAudioPlayer(props: IProps) {
             id="wsAudioPaste"
             aria-label={pasteTip}
             onClick={handlePaste}
-            disabled={recording || waitingForAI}
+            disabled={
+              recording ||
+              waitingForAI ||
+              playing ||
+              Boolean(mediaSaveInProgress) ||
+              pasteBusy
+            }
           >
             <ContentPasteIcon />
           </IconButton>
@@ -2352,7 +2381,7 @@ function WSAudioPlayer(props: IProps) {
             id="wsAudioDeleteRegion"
             aria-label={cutTip}
             onClick={handleCutRegion}
-            disabled={recording || waitingForAI}
+            disabled={recording || waitingForAI || !regionSelected}
           >
             <ContentCutIcon />
           </IconButton>
