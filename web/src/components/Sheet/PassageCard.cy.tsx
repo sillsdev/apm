@@ -775,37 +775,18 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
   });
 
-  it('should call onPlayStatus when playing ends if isPlaying is true', () => {
+  it('should handle clicking play without an onPlayStatus callback', () => {
     const cardInfo = createMockSheet({
       mediaId: createMockRecordIdentity('media-1', 'mediafile'),
     });
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      onPlayStatus: mockOnPlayStatus,
-      isPlaying: true,
-    });
-
-    // The handlePlayEnd function should be passed to LoadAndPlay
-    // This will be called when audio ends if isPlaying is true
-    // We can't directly test this without mocking LoadAndPlay, but the component structure is correct
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
-  });
-
-  it('should not call onPlayStatus when playing ends if isPlaying is false', () => {
-    const cardInfo = createMockSheet({
-      mediaId: createMockRecordIdentity('media-1', 'mediafile'),
-    });
-
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      onPlayStatus: mockOnPlayStatus,
       isPlaying: false,
     });
 
-    // When isPlaying is false, handlePlayEnd won't call onPlayStatus
-    // This is tested implicitly through the component logic
-    cy.get('div[class*="MuiCard-root"]').should('be.visible');
+    cy.get('[data-testid="play-button"]').click();
+    cy.get('svg[data-testid="PlayArrowIcon"]').should('exist');
   });
 
   // Tests for CHAPTERNUMBER passage type
