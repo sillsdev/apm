@@ -313,6 +313,9 @@ describe('WSAudioPlayer record hotkeys', () => {
       () => false
     );
     (waveSurferMock.wsCopyRegion as jest.Mock).mockImplementation(() => true);
+    (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
+      async () => undefined
+    );
   });
 
   afterEach(cleanup);
@@ -399,6 +402,68 @@ describe('WSAudioPlayer record hotkeys', () => {
     });
     expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeEnabled();
+  });
+
+  it('does not cut while a replacement blob is still loading', async () => {
+    let releaseLoad: () => void = () => undefined;
+    (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseLoad = resolve;
+        })
+    );
+    const first = new Blob([new Uint8Array([1])], { type: 'audio/wav' });
+    const { rerender } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={first} />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    const second = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
+    rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={second} />);
+    // The outgoing region can still be reported while the new blob decodes.
+    act(() => {
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+
+    await act(async () => {
+      releaseLoad();
+    });
+  });
+
+  it('drops the previous selection once the replacement audio is ready', async () => {
+    let releaseLoad: () => void = () => undefined;
+    (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseLoad = resolve;
+        })
+    );
+    const first = new Blob([new Uint8Array([1])], { type: 'audio/wav' });
+    const { rerender } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={first} />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    const second = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
+    rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={second} />);
+    await act(async () => {
+      releaseLoad();
+    });
+    act(() => {
+      capturedOnWSReady?.(8, false);
+    });
+
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
   });
 
   it('does not paste while audio is playing', () => {

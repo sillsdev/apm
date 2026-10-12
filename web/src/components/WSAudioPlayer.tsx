@@ -1191,6 +1191,7 @@ function WSAudioPlayer(props: IProps) {
     setDuration(0);
     setProgress(0);
     setRegionCount(0);
+    setRegionSelected(false);
     wsPause();
     if (blob) {
       setReady(false);
@@ -1621,6 +1622,7 @@ function WSAudioPlayer(props: IProps) {
       waitingForAI ||
       hideWaveformEditTools ||
       oneShotUsed ||
+      !readyRef.current ||
       !regionSelectedRef.current
     )
       return false;
