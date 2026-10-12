@@ -1120,7 +1120,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "pasteFormat": string;
     "pasteError": string;
     "pasteNoChange": string;
-    "projectResourceConfigure": string;
     "recordResource": string;
     "reference": string;
     "research": string;
