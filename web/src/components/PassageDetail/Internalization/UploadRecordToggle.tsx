@@ -3,7 +3,11 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { IPassageDetailArtifactsStrings } from '../../../model';
 import { resourceSelector } from '../../../selector';
 
-export type AudioAddMode = 'upload' | 'record';
+/** The two ways to add audio in the "Add Audio Resource" dialog. */
+export enum AudioAddMode {
+  Upload = 'upload',
+  Record = 'record',
+}
 
 interface IProps {
   mode: AudioAddMode;
@@ -56,10 +60,14 @@ export function UploadRecordToggle({
           },
         })}
       >
-        <ToggleButton id="tab-upload" value="upload" disabled={disableUpload}>
+        <ToggleButton
+          id="tab-upload"
+          value={AudioAddMode.Upload}
+          disabled={disableUpload}
+        >
           {t.uploadTab}
         </ToggleButton>
-        <ToggleButton id="tab-record" value="record">
+        <ToggleButton id="tab-record" value={AudioAddMode.Record}>
           {t.recordResource}
         </ToggleButton>
       </ToggleButtonGroup>

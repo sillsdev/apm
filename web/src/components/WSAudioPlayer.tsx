@@ -209,8 +209,8 @@ interface IProps {
   hideControls?: boolean;
   /**
    * When false, this player registers none of its keyboard shortcuts (transport,
-   * region nav, and record) — so a second, non-owning player (e.g. an off-screen
-   * step in the add-resource wizard) yields all keys to the visible/owning one.
+   * region nav, and record) — e.g. used by a second, non-owning player (e.g. an off-screen
+   * step in the add-resource wizard) yielding all keys to the visible/owning one.
    * Default true. All of a player's hotkeys enable/disable together.
    */
   hotkeys?: boolean;

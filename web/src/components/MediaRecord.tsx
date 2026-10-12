@@ -107,6 +107,9 @@ interface IProps {
   disableDragSelection?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
   hideControls?: boolean;
+  /** Forwarded to WSAudioPlayer: when false, this recorder claims no keyboard
+   *  shortcuts (so an off-screen instance yields them). Default true. */
+  hotkeys?: boolean;
   onProgress?: (progress: number) => void;
   onDuration?: (duration: number) => void;
   hideToolbar?: boolean;
@@ -176,6 +179,7 @@ function MediaRecord(props: IProps) {
     disableDragSelection,
     controlsRef,
     hideControls,
+    hotkeys = true,
     onProgress,
     onDuration,
     hideToolbar,
@@ -900,6 +904,7 @@ function MediaRecord(props: IProps) {
         onProgress={onProgress}
         onDuration={handleWaveformDuration}
         controlsRef={controlsRef}
+        hotkeys={hotkeys}
         hideToolbar={hideToolbar}
         hideControls={hideControls}
         segments={segments}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
-import { UploadType } from '../../UploadType';
 import PassageDetailArtifacts from './PassageDetailArtifacts';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { createAppTheme } from '../../../theme';
@@ -30,9 +29,6 @@ jest.mock('react-redux', () => ({
   useSelector: () => ({
     title: 'Title',
     addAudioResource: 'Add Audio Resource',
-    uploadProject: 'Upload {0}',
-    currentResource: 'Current {0}',
-    tip1a: 'Choose scope',
     passageResource: 'Passage Resource',
     noteResource: 'Note Resource',
     bookResource: 'Book Resource',
@@ -40,14 +36,9 @@ jest.mock('react-redux', () => ({
     findResource: 'Find {0}',
     findResourceDesc: 'Find resource description',
     sharedResource: 'Shared {0}',
-    generalResources: 'General Resources',
-    generalResourcesIndividually:
-      'General resources should be uploaded individually',
     editAudioResource: 'Edit Audio Resource',
     editGeneralResource: 'Edit General Resource',
     editResource: 'Edit Resource',
-    editingFile: 'You are editing {0}',
-    selectPassagesSub: 'Select passages for {0}',
     confirmCloseTitle: 'Confirm Close',
     confirmClose: 'Discard changes?',
     keepOpen: 'Keep Open',
@@ -67,18 +58,6 @@ jest.mock('../../../selector', () => ({
 }));
 
 jest.mock('../../../crud', () => ({
-  ArtifactTypeSlug: {
-    Vernacular: 'vernacular',
-    WholeBackTranslation: 'wholebacktranslation',
-    PhraseBackTranslation: 'backtranslation',
-    CarefulSpeech: 'carefulspeech',
-    Retell: 'retell',
-    QandA: 'qanda',
-    Comment: 'comment',
-    Activity: 'activity',
-    Resource: 'resource',
-    SharedResource: 'sharedresource',
-  },
   remoteIdGuid: jest.fn(),
   useSecResCreate: () => ({
     AddSectionResource: jest.fn(),
@@ -101,32 +80,18 @@ jest.mock('../../../crud', () => ({
   }),
   ArtifactCategoryType: { Resource: 'resource' },
   usePlanType: () => () => ({ scripture: false, flat: false }),
-  usePlan: () => ({ getPlan: jest.fn(() => null) }),
-  useArtifactType: () => ({ getTypeId: jest.fn(() => '') }),
+  mediaFileName: jest.fn(() => ''),
 }));
 
-// Stable module-level arrays: the real useOrbitData hook returns the same
-// reference until the underlying data changes, so a mock that hands back a
-// fresh array literal on every call would falsely destabilize useMemo/useEffect
-// deps keyed on these results (e.g. resourceType/projResourceType above).
-// Names are prefixed with `mock` so babel-plugin-jest-hoist allows referencing
-// them from inside the hoisted jest.mock() factory below.
 const mockArtifactTypesResult = [
   { id: 'resource-type', attributes: { typename: 'resource' } },
-  {
-    id: 'project-resource-type',
-    attributes: { typename: 'projectresource' },
-  },
+  { id: 'project-resource-type', attributes: { typename: 'projectresource' } },
 ];
 const mockEmptyOrbitResult: unknown[] = [];
 
 jest.mock('../../../hoc/useOrbitData', () => ({
-  useOrbitData: (type: string) => {
-    if (type === 'artifacttype') {
-      return mockArtifactTypesResult;
-    }
-    return mockEmptyOrbitResult;
-  },
+  useOrbitData: (type: string) =>
+    type === 'artifacttype' ? mockArtifactTypesResult : mockEmptyOrbitResult,
 }));
 
 jest.mock('../../../context/useGlobal', () => ({
@@ -137,7 +102,6 @@ jest.mock('../../../context/useGlobal', () => ({
       remoteBusy: false,
       offline: false,
       offlineOnly: false,
-      progress: 0,
       plan: '',
     };
     return [values[key], jest.fn()];
@@ -160,19 +124,10 @@ jest.mock('../../../crud/isLinkedNote', () => ({
   isLinkedNote: jest.fn(() => false),
 }));
 
-jest.mock('../../../hoc/SnackBar', () => ({
-  useSnackBar: () => ({ showMessage: jest.fn() }),
-}));
-
 jest.mock('../../../utils', () => ({
   getSegments: jest.fn(() => '[]'),
   NamedRegions: { ProjectResource: 'ProjectResource' },
-  removeExtension: jest.fn(() => ({ name: 'topic' })),
-  isVisual: jest.fn(() => false),
   isUrl: jest.fn(() => true),
-  useMobile: () => ({ isMobileWidth: false }),
-  safeFileBasename: jest.requireActual('../../../utils/safeFileBasename')
-    .safeFileBasename,
 }));
 
 jest.mock('../../../control', () => ({
@@ -203,75 +158,29 @@ jest.mock('./AddResource', () => ({
   ),
 }));
 
-jest.mock('../../Uploader', () => ({
+// The wizard owns the whole upload flow; here we only assert the parent hands
+// it the right launch request.
+jest.mock('./AddResourceWizard', () => ({
   __esModule: true,
-  default: ({
-    isOpen,
-    uploadType,
-    ready,
-    validationMessage,
-    onFiles,
-    metaData,
-  }: {
-    isOpen?: boolean;
-    uploadType?: UploadType;
-    ready?: () => boolean;
-    validationMessage?: string;
-    onFiles?: (files: File[]) => void;
-    metaData?: React.ReactNode;
-  }) => {
-    if (!isOpen) return null;
-    return (
-      <div>
-        {metaData}
-        <button
-          type="button"
-          onClick={() =>
-            onFiles?.([
-              new File(['a'], 'a.mp3', { type: 'audio/mpeg' }),
-              new File(['b'], 'b.mp3', { type: 'audio/mpeg' }),
-            ])
-          }
-        >
-          select-two-files
-        </button>
-        {validationMessage && <div>{validationMessage}</div>}
-        <button type="button" disabled={!ready?.()}>
-          {uploadType === UploadType.ProjectResource ? 'Next' : 'Upload'}
-        </button>
-      </div>
-    );
-  },
+  default: ({ launch }: { launch: unknown }) => (
+    <div data-testid="wizard-launch">
+      {launch ? JSON.stringify(launch) : 'closed'}
+    </div>
+  ),
 }));
 
 jest.mock('./SortableHeader', () => () => null);
 jest.mock('.', () => ({
-  AIGenerated: 'ai-generated',
   SortableItem: () => null,
-  useFullReference: () => jest.fn(() => ''),
 }));
-jest.mock('../../../control/LinkEdit', () => ({
-  LinkEdit: () => null,
-}));
-
-jest.mock('../../../control/MarkDownEdit', () => ({
-  MarkDownEdit: () => null,
-}));
-
-jest.mock('../../../control/MarkDownView', () => ({
-  MarkDownView: () => null,
-}));
-
 jest.mock('../../MediaUpload', () => ({
   __esModule: true,
   UriLinkType: 'text/uri-list',
   MarkDownType: 'text/markdown',
-  FaithbridgeType: 'audio/mpeg/s3link',
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
-jest.mock('./SelectSections', () => () => null);
-jest.mock('./ProjectResourceConfigure', () => () => null);
+jest.mock('./ResourceData', () => () => null);
 jest.mock('../../AlertDialog', () => () => null);
 jest.mock('./FindTabs', () => () => null);
 jest.mock('./FindBibleBrain', () => () => null);
@@ -279,19 +188,16 @@ jest.mock('../../LimitedMediaPlayer', () => () => null);
 jest.mock('./PassageResourceButton', () => ({
   PassageResourceButton: () => null,
 }));
-jest.mock('../../Sheet/SelectArtifactCategory', () => {
-  const MockSelectArtifactCategory = (): React.ReactElement => (
-    <div>category-select</div>
-  );
-  return MockSelectArtifactCategory;
-});
+jest.mock('../../../control/MarkDownView', () => ({
+  MarkDownView: () => null,
+}));
 
 const mockUsePassageDetailContext =
   usePassageDetailContext as jest.MockedFunction<
     typeof usePassageDetailContext
   >;
 
-describe('PassageDetailArtifacts general resource uploads', () => {
+describe('PassageDetailArtifacts', () => {
   beforeEach(() => {
     mockUsePassageDetailContext.mockReturnValue({
       rowData: [],
@@ -312,23 +218,24 @@ describe('PassageDetailArtifacts general resource uploads', () => {
     } as never);
   });
 
-  it('disables Next and shows the validation message for multi-file general uploads', () => {
+  const renderComponent = () =>
     render(
       <ThemeProvider theme={theme}>
         <PassageDetailArtifacts />
       </ThemeProvider>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
-    fireEvent.change(screen.getByLabelText('Title'), {
-      target: { value: 'Resource description' },
-    });
-    fireEvent.click(screen.getByLabelText('Upload Project'));
-    fireEvent.click(screen.getByRole('button', { name: 'select-two-files' }));
+  it('starts with the add-resource wizard closed', () => {
+    renderComponent();
+    expect(screen.getByTestId('wizard-launch')).toHaveTextContent('closed');
+  });
 
-    expect(
-      screen.getByText('General resources should be uploaded individually')
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  it('launches the wizard with an add request when Add Audio is chosen', () => {
+    renderComponent();
+    fireEvent.click(screen.getByRole('button', { name: 'open-audio-upload' }));
+
+    const launch = screen.getByTestId('wizard-launch');
+    expect(launch).toHaveTextContent('"kind":"add"');
+    expect(launch).toHaveTextContent('"action":"audio"');
   });
 });

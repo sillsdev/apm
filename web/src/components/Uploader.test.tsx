@@ -23,6 +23,17 @@ jest.mock('./MediaUpload', () => ({
   FaithbridgeType: 'audio/mpeg/s3link',
 }));
 
+// Embedded-mode children (not exercised by these tests); stub so their heavy
+// deps (DataGrid, MediaRecord) don't load.
+jest.mock('./MediaUploadContent', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+jest.mock('./PassageRecordPanel', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock('../store', () => ({
   uploadFiles: jest.fn(() => ({ type: 'UPLOAD_LIST' })),
   nextUpload: jest.fn(() => ({ type: 'NEXT_UPLOAD' })),
