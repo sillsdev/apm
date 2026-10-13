@@ -6212,8 +6212,8 @@
                <context context-type="sourcefile">MediaUpload.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mediaUpload.toobig">
-            <source>File is too large ({0}MB). File Limit is {1}MB</source>
+         <trans-unit id="mediaUpload.fileTooBig">
+            <source>File is too large: {0}. File Limit is {1}MB</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaTab.tsx</context>

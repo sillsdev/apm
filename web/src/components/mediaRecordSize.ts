@@ -13,7 +13,7 @@ export async function wavChannelCount(blob: Blob): Promise<number> {
   const header = new DataView(await blob.slice(0, 24).arrayBuffer());
   const riff = header.getUint32(0, false);
   const wave = header.getUint32(8, false);
-  if (riff !== 0x52494646 || wave !== 0x45564145) return 1;
+  if (riff !== 0x52494646 || wave !== 0x57415645) return 1;
   return header.getUint16(22, true) >= 2 ? 2 : 1;
 }
 

@@ -547,7 +547,7 @@ function MediaRecord(props: IProps) {
   // While recording, audioBlob is the previous take (it only refreshes after
   // stop via onBlobReady). Estimate from the live duration so the size warning
   // shows before a long take is wasted; the blob size takes over once recording
-  // stops. This estimate is the size gate to enable save; the compressed file is not checked again.
+  // stops. Save also refuses the encoded blob when it is over the limit.
   const estimatedBytes = useMemo(
     () =>
       recording
@@ -621,7 +621,7 @@ function MediaRecord(props: IProps) {
 
   const tooBigMessage = (template: string, bytes: number) =>
     template
-      .replace('{0}', Math.round(bytes).toString())
+      .replace('{0}', Math.round(bytes / 1000000).toString())
       .replace('{1}', sizeLimit.toString());
 
   useEffect(() => {

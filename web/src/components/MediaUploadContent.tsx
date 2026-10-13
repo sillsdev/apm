@@ -17,7 +17,10 @@ import { mediaUploadSelector } from '../selector';
 import { LinkEdit } from '../control/LinkEdit';
 import { MarkDownEdit } from '../control/MarkDownEdit';
 import { isUrl } from '../utils';
-import { filterFilesBySizeLimit } from '../utils/filterFilesBySizeLimit';
+import {
+  filterFilesBySizeLimit,
+  oversizedFileList,
+} from '../utils/filterFilesBySizeLimit';
 import { typeLimit } from '../utils/typeLimit';
 import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
 import { UploadType } from './UploadType';
@@ -312,8 +315,8 @@ function MediaUploadContent(props: IProps) {
     const { accepted, rejected } = filterFilesBySizeLimit(files, sizelimit);
     if (rejected.length > 0) {
       showMessage(
-        t.toobig
-          .replace('{0}', rejected.map((f) => f.name).join(', '))
+        t.fileTooBig
+          .replace('{0}', oversizedFileList(rejected))
           .replace('{1}', sizelimit.toString())
       );
     }

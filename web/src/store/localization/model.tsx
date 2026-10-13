@@ -1036,7 +1036,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "resourceTitle": string;
     "task": string;
     "title": string;
-    "toobig": string;
+    "fileTooBig": string;
     "upload": string;
 };
 

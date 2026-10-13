@@ -1,4 +1,4 @@
-import { filterFilesBySizeLimit } from '../utils/filterFilesBySizeLimit';
+import { filterFilesBySizeLimit, oversizedFileList } from '../utils/filterFilesBySizeLimit';
 import { typeLimit } from '../utils/typeLimit';
 import { UploadType } from './UploadType';
 
@@ -55,5 +55,14 @@ describe('filterFilesBySizeLimit', () => {
     );
     expect(accepted).toHaveLength(0);
     expect(rejected).toEqual(files);
+  });
+
+  it('lists each oversized filename with its own size', () => {
+    expect(
+      oversizedFileList([
+        { name: 'take.wav', size: mb(31) },
+        { name: 'clip.ogg', size: mb(40.4) },
+      ])
+    ).toBe('take.wav (31MB), clip.ogg (40MB)');
   });
 });

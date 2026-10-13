@@ -1,7 +1,9 @@
+import { convertToWav } from '../utils/wav';
 import {
   OPUS_MONO_COMPRESSION,
   RECORD_PCM16_BYTES_PER_SECOND,
   estimatedUploadBytes,
+  wavChannelCount,
 } from './mediaRecordSize';
 
 describe('estimatedUploadBytes', () => {
@@ -54,5 +56,14 @@ describe('estimatedUploadBytes', () => {
       2
     );
     expect(stereo).toBe(mono * 1.5);
+  });
+
+  it('reads two channels from an editor WAV header', async () => {
+    const blob = await convertToWav(new Float32Array(8), new Float32Array(8), {
+      isFloat: true,
+      numChannels: 2,
+      sampleRate: 48_000,
+    });
+    expect(await wavChannelCount(blob)).toBe(2);
   });
 });

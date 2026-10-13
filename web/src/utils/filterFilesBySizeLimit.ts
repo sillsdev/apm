@@ -15,3 +15,12 @@ export const filterFilesBySizeLimit = (
   }
   return { accepted, rejected };
 };
+
+/** `{name} ({size}MB)` for each file, comma-separated. */
+export function oversizedFileList(
+  files: { name: string; size: number }[]
+): string {
+  return files
+    .map((f) => `${f.name} (${Math.round(f.size / 1000000)}MB)`)
+    .join(', ');
+}

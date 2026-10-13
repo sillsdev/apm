@@ -1091,7 +1091,7 @@ const initialState = {
 			"resourceTitle": "Upload Resources",
 			"task": "You can upload audio files in .mp3, .m4a, .wav or .ogg format.",
 			"title": "Upload Audio",
-			"toobig": "File is too large ({0}MB). File Limit is {1}MB",
+			"fileTooBig": "File is too large: {0}. File Limit is {1}MB",
 			"upload": "Upload",
 		}
 	}),
