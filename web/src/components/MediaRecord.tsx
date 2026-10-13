@@ -40,7 +40,8 @@ import {
   OPUS_MONO_COMPRESSION,
   RECORD_PCM16_BYTES_PER_SECOND,
   estimatedUploadBytes,
-  wavChannelCount,
+  wavSourceFacts,
+  AudioSource,
 } from '../utils/mediaRecordSize';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
@@ -284,8 +285,14 @@ function MediaRecord(props: IProps) {
   const [processingRecording, setProcessingRecordingx] = useState(false);
   const processingRecordingRef = useRef(false);
   const [tooBig, setTooBig] = useState(false);
-  /** Channels in the editor WAV. Live capture with no prior take is mono. */
-  const [channels, setChannels] = useState(1);
+  /** Header read for the current blob. Save stays off until this matches audioBlob. */
+  const [wavFacts, setWavFacts] = useState<{
+    blob?: Blob;
+    channels: number;
+    source: AudioSource;
+  }>({ channels: 1, source: 'pcm' });
+  /** Blob whose encoded size already failed the limit. The estimate must not clear it. */
+  const oversizedBlobRef = useRef<Blob | undefined>(undefined);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
   const [converting, setConverting] = useState(false);
@@ -502,6 +509,9 @@ function MediaRecord(props: IProps) {
     ]
   );
 
+  const sizePending = !recording && !!audioBlob && wavFacts.blob !== audioBlob;
+  const channels = wavFacts.blob === audioBlob ? wavFacts.channels : 1;
+
   useEffect(() => {
     const wantsSave = wantsSaveVisible && !saveRef.current;
     const alreadyQueued =
@@ -511,6 +521,7 @@ function MediaRecord(props: IProps) {
       blobReady &&
       waveformDuration > 0 &&
       !tooBig &&
+      !sizePending &&
       !alreadyQueued;
     setCanSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -519,6 +530,7 @@ function MediaRecord(props: IProps) {
     blobReady,
     processingRecording,
     tooBig,
+    sizePending,
     converting,
     uploading,
     recording,
@@ -533,13 +545,19 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if (!audioBlob) {
-      setChannels(1);
+      setWavFacts({ channels: 1, source: 'pcm' });
       return;
     }
     let cancelled = false;
-    void wavChannelCount(audioBlob).then((count) => {
-      if (!cancelled) setChannels(count);
-    });
+    // A failed header read must not leave Save disabled. Price the file as-is.
+    void wavSourceFacts(audioBlob)
+      .then((facts) => {
+        if (!cancelled) setWavFacts({ blob: audioBlob, ...facts });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setWavFacts({ blob: audioBlob, channels: 1, source: 'encoded' });
+      });
     return () => {
       cancelled = true;
     };
@@ -549,20 +567,30 @@ function MediaRecord(props: IProps) {
   // stop via onBlobReady). Estimate from the live duration so the size warning
   // shows before a long take is wasted; the blob size takes over once recording
   // stops. Save also refuses the encoded blob when it is over the limit.
-  const estimatedBytes = useMemo(
-    () =>
-      recording
-        ? estimatedUploadBytes(
-            Math.round(waveformDuration * RECORD_PCM16_BYTES_PER_SECOND),
-            compression,
-            { sourceIsFloat32Wav: false, channels }
-          )
-        : estimatedUploadBytes(audioBlob?.size ?? 0, compression, {
-            sourceIsFloat32Wav: true,
-            channels,
-          }),
-    [recording, waveformDuration, audioBlob, compression, channels]
-  );
+  // Until the header is read, price the blob at its own size so an ogg/mp3 is
+  // not treated as float32.
+  const estimatedBytes = useMemo(() => {
+    if (recording) {
+      return estimatedUploadBytes(
+        Math.round(waveformDuration * RECORD_PCM16_BYTES_PER_SECOND),
+        compression,
+        { source: 'pcm', channels }
+      );
+    }
+    if (!audioBlob || sizePending) return audioBlob?.size ?? 0;
+    return estimatedUploadBytes(audioBlob.size, compression, {
+      source: wavFacts.source,
+      channels: wavFacts.channels,
+    });
+  }, [
+    recording,
+    waveformDuration,
+    audioBlob,
+    compression,
+    channels,
+    sizePending,
+    wavFacts,
+  ]);
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
 
@@ -624,18 +652,28 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     const limitBytes = sizeLimit * MB;
+    if (sizePending) {
+      setTooBig(true);
+      return;
+    }
+    const rejectedThisBlob =
+      audioBlob !== undefined && audioBlob === oversizedBlobRef.current;
     const rejectOversized = (message: string) => {
+      oversizedBlobRef.current = audioBlob;
       showMessage(message, AlertSeverity.Error);
       setWarning(message);
       setTooBig(true);
-      setConverting(false);
       handleSaveFailed(new Error(message));
     };
-    const big = estimatedBytes > limitBytes;
+    const big = rejectedThisBlob || estimatedBytes > limitBytes;
     setTooBig(big);
-    if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * MB)
-      setWarning(tooBigMessage(big ? t.toobig : t.toobigwarn, estimatedBytes));
-    else setWarning('');
+    if (!rejectedThisBlob) {
+      if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * MB)
+        setWarning(
+          tooBigMessage(big ? t.toobig : t.toobigwarn, estimatedBytes)
+        );
+      else setWarning('');
+    }
 
     if (saveRequested(toolId)) {
       if (!saveRef.current) {
@@ -649,19 +687,16 @@ function MediaRecord(props: IProps) {
             setStatusText(t.compressing);
             setConverting(true);
             convertToFormat(audioBlob, mimeType)
-              .then((convert_blob) => {
-                if (convert_blob.size > limitBytes) {
-                  rejectOversized(
-                    tooBigMessage(t.tooBigAfterCompression, convert_blob.size)
-                  );
-                  return;
-                }
-                return doUpload(convert_blob, mimeType, filetype)
-                  .then(() => {
-                    convertComplete();
-                  })
-                  .catch(handleSaveFailed);
-              })
+              .then((convert_blob) =>
+                convert_blob.size > limitBytes
+                  ? rejectOversized(
+                      tooBigMessage(t.tooBigAfterCompression, convert_blob.size)
+                    )
+                  : doUpload(convert_blob, mimeType, filetype).then(
+                      convertComplete,
+                      handleSaveFailed
+                    )
+              )
               .catch((error) => {
                 // If conversion fails, show error and save as WAV instead
                 const errMsg =
@@ -711,7 +746,7 @@ function MediaRecord(props: IProps) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, estimatedBytes, toolsChanged, mimeType, toolId]);
+  }, [audioBlob, estimatedBytes, sizePending, toolsChanged, mimeType, toolId]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {
@@ -890,6 +925,7 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if ((preload ?? 0) > 0 && !loading) {
+      // handleLoadAudio reports its own failure and clears loading.
       void handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -904,6 +940,7 @@ function MediaRecord(props: IProps) {
     }
     // Skip while saving — mediaId may update when the new mediafile syncs in.
     if (!loading) {
+      // handleLoadAudio reports its own failure and clears loading.
       void handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -918,6 +955,7 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (loading || !mediaId) return;
     if (loadRequestedIdRef.current === mediaId) return;
+    // handleLoadAudio reports its own failure and clears loading.
     void handleLoadAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, mediaId]);
@@ -973,6 +1011,7 @@ function MediaRecord(props: IProps) {
           waveformDuration <= 0 ||
           processingRecording ||
           tooBig ||
+          sizePending ||
           (wantsSaveVisible && !blobReady)
         }
         mediaSaveInProgress={mediaSaveInProgress}

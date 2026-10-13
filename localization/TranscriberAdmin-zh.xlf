@@ -6106,14 +6106,14 @@
       </unit>
       <unit id="passageRecord.toobig">
          <segment>
-            <source>File is too large. File Limit is {1}MB</source>
-            <target>文件过大。文件限制为 {1}MB</target>
+            <source>File is too large ({0}MB). File Limit is {1}MB</source>
+            <target>文件过大 ({0}MB)。文件限制为 {1}MB</target>
          </segment>
       </unit>
       <unit id="passageRecord.toobigwarn">
          <segment>
-            <source>File is near size limit {1}MB</source>
-            <target>文件大小接近限制 {1}MB</target>
+            <source>File is near size limit {0}/{1}MB</source>
+            <target>文件大小接近限制 {0}/{1}MB</target>
          </segment>
       </unit>
       <unit id="passageRecord.uncompressed">

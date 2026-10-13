@@ -6039,14 +6039,14 @@
       </unit>
       <unit id="passageRecord.toobig">
          <segment>
-            <source>File is too large. File Limit is {1}MB</source>
-            <target>Файл слишком большой. Максимальный размер файла: {1} МБ.</target>
+            <source>File is too large ({0}MB). File Limit is {1}MB</source>
+            <target>Файл слишком большой ({0} МБ). Максимальный размер файла: {1} МБ.</target>
          </segment>
       </unit>
       <unit id="passageRecord.toobigwarn">
          <segment>
-            <source>File is near size limit {1}MB</source>
-            <target>Размер файла близок к пределу {1} МБ.</target>
+            <source>File is near size limit {0}/{1}MB</source>
+            <target>Размер файла близок к пределу {0}/{1} МБ.</target>
          </segment>
       </unit>
       <unit id="passageRecord.uncompressed">

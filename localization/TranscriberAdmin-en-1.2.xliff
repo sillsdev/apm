@@ -7002,7 +7002,7 @@
             <source>Compression failed but the file is too big to save uncompressed.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">mediaRecord.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.defaultFilename">
@@ -7058,21 +7058,21 @@
             <source>File is too large ({0}MB). File Limit is {1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.tooBigAfterCompression">
             <source>Our estimate was incorrect. The file is too large after compression ({0}MB). File Limit is {1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">mediaRecord.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.toobigwarn">
             <source>File is near size limit {0}/{1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.uncompressed">

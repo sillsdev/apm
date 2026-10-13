@@ -192,6 +192,7 @@ export const Uploader = (props: IProps) => {
     } else successCount.current = 0;
     //force finishMessage to show a message
     fileList.current = [new File([], 'test.txt')];
+    // finishMessage only schedules snackbars. Upload bookkeeping is already done.
     void finishMessage();
   };
   const clearErrors = () => {
@@ -305,6 +306,7 @@ export const Uploader = (props: IProps) => {
     if (next < uploadList.length && !cancelled.current) {
       doUpload(next);
     } else if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
+      // Upload already succeeded. A failed refresh must still close the dialog.
       void pullTableList(
         'mediafile',
         mediaIdRef.current,
@@ -312,11 +314,15 @@ export const Uploader = (props: IProps) => {
         remote,
         backup,
         errorReporter
-      ).then(() => {
-        void finishMessage();
-        onOpen(false); //do this just for uploader
-      });
+      )
+        .catch(() => undefined)
+        .then(() => {
+          // finishMessage only schedules snackbars. Upload bookkeeping is already done.
+          void finishMessage();
+          onOpen(false); //do this just for uploader
+        });
     } else {
+      // finishMessage only schedules snackbars. Upload bookkeeping is already done.
       void finishMessage();
       onOpen(false); //do this just for uploader
     }
@@ -447,6 +453,7 @@ export const Uploader = (props: IProps) => {
         UploadType.FaithbridgeLink,
       ].includes(uploadType)
     ) {
+      // Renaming is best-effort and must not block the upload.
       void preUpload(files);
       uploadFiles(files);
     }

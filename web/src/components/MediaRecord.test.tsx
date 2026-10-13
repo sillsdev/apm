@@ -84,17 +84,41 @@ jest.mock('../hoc/SnackBar', () => ({
 
 jest.mock('../context/UnsavedContext', () => {
   const React = jest.requireActual<typeof import('react')>('react');
-  return {
-    UnsavedContext: React.createContext({
-      state: {
-        toolsChanged: 0,
-        saveRequested: () => mockSaveRequested(),
-        saveCompleted: (...args: unknown[]) => mockSaveCompleted(...args),
-        clearRequested: () => false,
-        clearCompleted: jest.fn(),
-      },
-    }),
-  };
+  const UnsavedContext = React.createContext({
+    state: {
+      toolsChanged: 0,
+      saveRequested: () => mockSaveRequested(),
+      saveCompleted: (...args: unknown[]) => mockSaveCompleted(...args),
+      clearRequested: () => false,
+      clearCompleted: jest.fn(),
+    },
+  });
+  function TestUnsavedProvider({ children }: { children: React.ReactNode }) {
+    const [toolsChanged, setToolsChanged] = React.useState(0);
+    const value = React.useMemo(
+      () => ({
+        state: {
+          toolsChanged,
+          saveRequested: () => mockSaveRequested(),
+          saveCompleted: (...args: unknown[]) => {
+            mockSaveCompleted(...args);
+            if (String(args[1] ?? '').includes('after compression')) {
+              setToolsChanged((n: number) => n + 1);
+            }
+          },
+          clearRequested: () => false,
+          clearCompleted: jest.fn(),
+        },
+      }),
+      [toolsChanged]
+    );
+    return (
+      <UnsavedContext.Provider value={value}>
+        {children}
+      </UnsavedContext.Provider>
+    );
+  }
+  return { UnsavedContext, TestUnsavedProvider };
 });
 
 jest.mock('../context/usePassageDetailContext', () => ({
@@ -167,6 +191,7 @@ describe('MediaRecord save gating', () => {
     wsLoadingHistory = [];
     capturedAfterUploadCb = undefined;
     jest.clearAllMocks();
+    mockSaveCompleted.mockReset();
     mockEnv.isElectron = false;
     mockEnv.online = true;
     mockSizeLimit = 1;
@@ -294,21 +319,21 @@ describe('MediaRecord save gating', () => {
   };
 
   it('prices a live stereo take at 1.5 times the same mono duration', async () => {
-    // 62.5s of 48 kHz 16-bit is 0.50MB mono and 0.75MB at 96 kbps stereo.
+    // 62.5s of 48 kHz 16-bit is 0.53MB mono and 0.79MB at 96 kbps stereo, with headroom.
     await recordLive(62.5);
     await waitFor(() => {
-      expect(document.getElementById('size')?.textContent).toBe('0.50MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.53MB');
     });
 
     await recordLive(62.5, wavWithChannels(2));
     await waitFor(() => {
-      expect(document.getElementById('size')?.textContent).toBe('0.75MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.79MB');
     });
   });
 
   it('warns near the limit while recording and stays quiet further below it', async () => {
     mockSizeLimit = 30;
-    await recordLive(3500);
+    await recordLive(3333);
     await waitFor(() => {
       expect(document.getElementById('size')?.textContent).toBe('28.00MB');
     });
@@ -316,7 +341,7 @@ describe('MediaRecord save gating', () => {
     expect(latestWsProps?.isSaveDisabled).toBe(false);
 
     act(() => {
-      latestWsProps?.onDuration?.(3687.5);
+      latestWsProps?.onDuration?.(3512);
     });
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
@@ -327,12 +352,21 @@ describe('MediaRecord save gating', () => {
     expect(latestWsProps?.isSaveDisabled).toBe(false);
   });
 
+  /** Float32 editor WAV of `size` bytes. Format tag 3, channel count at offset 22. */
+  const float32Wav = (size: number, channels = 1) => {
+    const bytes = new Uint8Array(size);
+    const view = new DataView(bytes.buffer);
+    view.setUint32(0, 0x52494646, false);
+    view.setUint32(8, 0x57415645, false);
+    view.setUint16(20, 3, true);
+    view.setUint16(22, channels, true);
+    return new Blob([bytes], { type: 'audio/wav' });
+  };
+
   it('blocks a take the 64 kbps estimate puts over the limit', async () => {
     const setCanSave = jest.fn();
-    // 30 MB float32 is 0.75 MB at ratio 20 and 1.25 MB at 64 kbps (ratio 12).
-    const blob = new Blob([new Uint8Array(30 * 1000000)], {
-      type: 'audio/wav',
-    });
+    // 30 MB float32 is 1.31 MB at 64 kbps with 5% headroom.
+    const blob = float32Wav(30 * 1000000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
@@ -346,20 +380,35 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big 1.25MB/1MB'
+        'Too big 1.31MB/1MB'
       );
-      expect(document.getElementById('size')?.textContent).toBe('1.25MB');
+      expect(document.getElementById('size')?.textContent).toBe('1.31MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });
   });
 
   it('shows an error when the compressed file exceeds the limit', async () => {
-    mockSaveRequested = () => true;
+    let requested = true;
+    mockSaveRequested = () => requested;
+    mockSaveCompleted.mockImplementation(
+      (_toolId: unknown, message?: string) => {
+        if (message?.includes('after compression')) requested = false;
+      }
+    );
     mockConvertToFormat = jest.fn(
       async () => new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/ogg' })
     );
-    render(<MediaRecord {...defaultProps} />);
+    const { TestUnsavedProvider } = jest.requireMock(
+      '../context/UnsavedContext'
+    ) as {
+      TestUnsavedProvider: React.ComponentType<{ children: React.ReactNode }>;
+    };
+    render(
+      <TestUnsavedProvider>
+        <MediaRecord {...defaultProps} />
+      </TestUnsavedProvider>
+    );
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
 
@@ -377,16 +426,45 @@ describe('MediaRecord save gating', () => {
         'Too big after compression 2.00MB/1MB',
         'error'
       );
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big after compression 2.00MB/1MB'
+      );
+      expect(latestWsProps?.isSaveDisabled).toBe(true);
     });
     expect(mockUploadMedia).not.toHaveBeenCalled();
+  });
+
+  it('prices a downloaded ogg at its file size', async () => {
+    const setCanSave = jest.fn();
+    const calls: boolean[] = [];
+    setCanSave.mockImplementation((allowed: boolean) => {
+      calls.push(allowed);
+    });
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/ogg' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(document.getElementById('size')?.textContent).toBe('2.00MB');
+      expect(latestWsProps?.isSaveDisabled).toBe(true);
+      expect(setCanSave).toHaveBeenLastCalledWith(false);
+    });
+    expect(calls).not.toContain(true);
   });
 
   it('keeps save enabled when a mono float32 take is under the compressed limit', async () => {
     const setCanSave = jest.fn();
     // 21 MB float32 WAV is under a 1 MB compressed limit at 64 kbps.
-    const blob = new Blob([new Uint8Array(21 * 1000000)], {
-      type: 'audio/wav',
-    });
+    const blob = float32Wav(21 * 1000000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
@@ -402,9 +480,9 @@ describe('MediaRecord save gating', () => {
       expect(latestWsProps?.showWaveformSave).toBe(true);
       expect(latestWsProps?.isSaveDisabled).toBe(false);
       expect(setCanSave).toHaveBeenLastCalledWith(true);
-      expect(document.getElementById('size')?.textContent).toBe('0.88MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.92MB');
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big warn 0.88/1'
+        'Too big warn 0.92/1'
       );
     });
   });
@@ -441,9 +519,7 @@ describe('MediaRecord save gating', () => {
   it('warns with the compressed limit when a mono float32 take exceeds it', async () => {
     const setCanSave = jest.fn();
     // typeLimit is 1 MB. Float32 mono → 16-bit / 12 must clear 1 MB: > 24 MB.
-    const blob = new Blob([new Uint8Array(41 * 1000000)], {
-      type: 'audio/wav',
-    });
+    const blob = float32Wav(41 * 1000000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
@@ -457,9 +533,9 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big 1.71MB/1MB'
+        'Too big 1.79MB/1MB'
       );
-      expect(document.getElementById('size')?.textContent).toBe('1.71MB');
+      expect(document.getElementById('size')?.textContent).toBe('1.79MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });

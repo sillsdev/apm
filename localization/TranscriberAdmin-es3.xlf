@@ -5031,13 +5031,13 @@
          </segment>
       </unit><unit id="passageRecord.toobig">
          <segment>
-            <source>File is too large. File Limit is {1}MB</source>
-            <target>El archivo es demasiado grande. El límite del archivo es {1}MB</target>
+            <source>File is too large ({0}MB). File Limit is {1}MB</source>
+            <target>El archivo es demasiado grande ({0}MB). El límite del archivo es {1}MB</target>
          </segment>
       </unit><unit id="passageRecord.toobigwarn">
          <segment>
-            <source>File is near size limit {1}MB</source>
-            <target>El archivo está cerca del límite de tamaño {1}MB</target>
+            <source>File is near size limit {0}/{1}MB</source>
+            <target>El archivo está cerca del límite de tamaño {0}/{1}MB</target>
          </segment>
       </unit><unit id="passageRecord.uncompressed">
          <segment>
