@@ -924,13 +924,17 @@ function WSAudioPlayer(props: IProps) {
         // onRecording(true) fires only after startRecording succeeds — not while
         // the mic is still being acquired (see recordingStartPendingRef for that
         // window). Consumers should treat onRecording(true) as "capture active".
-        startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
-          recordingStartPendingRef.current = false;
-          if (value) {
-            warnedMicLossRef.current = false;
-            setRecording(true);
-          }
-        });
+        startRecording(RECORD_PREVIEW_TIMESLICE_MS)
+          .then((value) => {
+            recordingStartPendingRef.current = false;
+            if (value) {
+              warnedMicLossRef.current = false;
+              setRecording(true);
+            }
+          })
+          .catch(() => {
+            recordingStartPendingRef.current = false;
+          });
 
         insertingRef.current = durationRef.current > 0;
         recordOverwritePosition.current = insertingRef.current
@@ -1043,10 +1047,10 @@ function WSAudioPlayer(props: IProps) {
       }
     };
 
-    updateDevices();
+    void updateDevices();
 
     const handleDeviceChange = () => {
-      updateDevices();
+      void updateDevices();
     };
 
     navigator.mediaDevices.addEventListener?.(
@@ -1125,7 +1129,7 @@ function WSAudioPlayer(props: IProps) {
 
   useEffect(() => {
     if (initialposition !== undefined) {
-      if (ready) wsGoto(initialposition);
+      if (ready) void wsGoto(initialposition);
       else initialPosRef.current = initialposition;
       setInitialPosition && setInitialPosition(undefined);
     }
@@ -1155,7 +1159,7 @@ function WSAudioPlayer(props: IProps) {
     const region = parseRegions(segmentsRef.current);
     if (setPosition && region.regions.length) {
       const start = region.regions[0].start;
-      wsGoto(start);
+      void wsGoto(start);
     }
     const params = parseRegionParams(segmentsRef.current, defaultRegionParams);
     if (params && params !== defaultRegionParams && onSegmentParamChange)
@@ -1185,7 +1189,7 @@ function WSAudioPlayer(props: IProps) {
     if (blob) {
       setReady(false);
       setBusy && setBusy(true); //turned off on ready
-      wsLoad(blob, 0);
+      void wsLoad(blob, 0);
     } else {
       setReady(true);
       setBusy && setBusy(false);
@@ -1238,7 +1242,7 @@ function WSAudioPlayer(props: IProps) {
         nowplaying = regionPlayed ? true : wsTogglePlay();
       } else nowplaying = wsTogglePlay();
       if (nowplaying && Math.abs(wsPosition() - durationRef.current) < 0.2)
-        wsGoto(0);
+        void wsGoto(0);
       setPlaying(nowplaying);
       if (onPlayStatus) {
         onPlayStatus(nowplaying);
@@ -1261,7 +1265,7 @@ function WSAudioPlayer(props: IProps) {
     const now = Date.now();
     if (now - lastTogglePlayRef.current < TOGGLE_PLAY_DEBOUNCE_MS) return;
     lastTogglePlayRef.current = now;
-    handlePlayStatus(!playingRef.current);
+    void handlePlayStatus(!playingRef.current);
   }, [handlePlayStatus]);
 
   const handlePlayPauseHotkey = useCallback(() => {
@@ -1277,7 +1281,7 @@ function WSAudioPlayer(props: IProps) {
 
   const handleHomeHotkey = useCallback(() => {
     if (!readyRef.current || recordingRef.current) return false;
-    wsGoto(0);
+    void wsGoto(0);
     return true;
   }, [wsGoto]);
 
@@ -1285,7 +1289,7 @@ function WSAudioPlayer(props: IProps) {
     if (!readyRef.current || recordingRef.current) return false;
     wsPause();
     setPlaying(false);
-    wsGoto(durationRef.current);
+    void wsGoto(durationRef.current);
     return true;
   }, [wsGoto, wsPause, setPlaying]);
 
@@ -1343,7 +1347,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (isPlaying !== undefined) handlePlayStatus(isPlaying);
+    if (isPlaying !== undefined) void handlePlayStatus(isPlaying);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, request, duration]);
 
@@ -1495,7 +1499,7 @@ function WSAudioPlayer(props: IProps) {
     if (segmentsRef.current) loadRegions();
 
     if (setBusy) setBusy(false);
-    if (initialPosRef.current) wsGoto(initialPosRef.current);
+    if (initialPosRef.current) void wsGoto(initialPosRef.current);
     initialPosRef.current = undefined;
   }
 
@@ -1529,7 +1533,7 @@ function WSAudioPlayer(props: IProps) {
   };
 
   const setPlaybackRate = (value: number) => {
-    const newVal = parseFloat(value.toFixed(2));
+    const newVal = Number.parseFloat(value.toFixed(2));
     playbackRef.current = newVal;
     setPlaybackRatex(newVal);
   };
@@ -1630,17 +1634,25 @@ function WSAudioPlayer(props: IProps) {
     if (editBlocked() || !canCutRef.current) return false;
     setPlaying(false);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
-    wsRegionDelete().then((mutated) => {
-      if (mutated) handleChanged();
-    });
+    wsRegionDelete()
+      .then((mutated) => {
+        if (mutated) void handleChanged();
+      })
+      .catch(() => {
+        preserveZoomOnReloadRef.current = undefined;
+      });
     return true;
   }, [editBlocked, setPlaying, wsRegionDelete, handleChanged]);
 
   const handleUndo = useCallback(() => {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
-    wsUndo().then(() => {
-      handleChanged();
-    });
+    wsUndo()
+      .then(() => {
+        void handleChanged();
+      })
+      .catch(() => {
+        preserveZoomOnReloadRef.current = undefined;
+      });
   }, [wsUndo, handleChanged]);
 
   const handleCopyRegion = useCallback(() => {
@@ -1655,10 +1667,13 @@ function WSAudioPlayer(props: IProps) {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsPaste()
       .then((mutated) => {
-        if (mutated) handleChanged();
+        if (mutated) void handleChanged();
       })
       .finally(() => {
         setPasteBusy(false);
+      })
+      .catch(() => {
+        preserveZoomOnReloadRef.current = undefined;
       });
     return true;
   }, [editBlocked, wsPaste, handleChanged]);
@@ -1860,48 +1875,47 @@ function WSAudioPlayer(props: IProps) {
       }
       if (!reload) throw new Exception('need reload defined.');
       cancelAIRef.current = false;
-      try {
-        doingProcess(true);
-        const filename = `${Date.now()}ai.wav`;
-        wsRegionBlob().then((blob) => {
-          if (blob) {
-            requestAudioAi({
-              func,
-              cancelRef: cancelAIRef,
-              file: new File([blob], filename, { type: 'audio/wav' }),
-              targetVoice,
-              cb: (file: File | Error) => {
-                if (file instanceof File) {
-                  const regionblob = new Blob([file], { type: file.type });
-                  if (regionblob) {
-                    wsRegionReplace(regionblob).then((newblob) => {
-                      if (newblob) reload(newblob);
-                      void handleChanged();
-                    });
-                  }
-                } else {
-                  if ((file as Error).message !== 'canceled') {
-                    const { display, logText } = audioAiError(
-                      func,
-                      targetVoice,
-                      file
-                    );
-                    showMessage(display, AlertSeverity.Error);
-                    logError(Severity.error, errorReporter, logText);
-                  }
-                }
-                doingProcess(false);
-              },
-            });
-          } else {
-            doingProcess(false);
-          }
-        });
-      } catch (error: any) {
+      const failAi = (error: any) => {
         const { display, logText } = audioAiError(func, targetVoice, error);
         logError(Severity.error, errorReporter, logText);
         showMessage(display, AlertSeverity.Error);
         doingProcess(false);
+      };
+      try {
+        doingProcess(true);
+        const filename = `${Date.now()}ai.wav`;
+        wsRegionBlob()
+          .then((blob) => {
+            if (blob) {
+              requestAudioAi({
+                func,
+                cancelRef: cancelAIRef,
+                file: new File([blob], filename, { type: 'audio/wav' }),
+                targetVoice,
+                cb: (file: File | Error) => {
+                  if (file instanceof File) {
+                    const regionblob = new Blob([file], { type: file.type });
+                    if (regionblob) {
+                      wsRegionReplace(regionblob)
+                        .then((newblob) => {
+                          if (newblob) reload(newblob);
+                          void handleChanged();
+                        })
+                        .catch(failAi);
+                    }
+                  } else if ((file as Error).message !== 'canceled') {
+                    failAi(file);
+                  }
+                  doingProcess(false);
+                },
+              }).catch(failAi);
+            } else {
+              doingProcess(false);
+            }
+          })
+          .catch(failAi);
+      } catch (error: any) {
+        failAi(error);
       }
     });
   };
@@ -2106,7 +2120,7 @@ function WSAudioPlayer(props: IProps) {
           key="normalize"
           id="normalize"
           onClick={() => {
-            handleNormal();
+            void handleNormal();
             handleMoreMenuClose();
           }}
           disabled={isControlDisabled}
