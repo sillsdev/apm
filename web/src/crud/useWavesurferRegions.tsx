@@ -90,6 +90,9 @@ export const getSegmentRegionColor = (index: number, alpha: number = 0.28) => {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 };
 
+/** Same tint as a drag-created record selection. */
+const DRAG_SELECTION_COLOR = 'rgba(255, 0, 0, 0.1)';
+
 const withRegionColorAlpha = (color: string, alpha: number) => {
   const match = color.match(
     /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/
@@ -764,7 +767,7 @@ export function useWaveSurferRegions(
       // This ensures the internal listeners set up by enableDragSelection aren't removed
       if (singleRegionRef.current && !disableDragSelectionRef.current) {
         regionsPlugin.enableDragSelection({
-          color: 'rgba(255, 0, 0, 0.1)',
+          color: DRAG_SELECTION_COLOR,
         });
       }
       // Apply recorded-boundary locks for existing segments (TT-7666).
@@ -1238,6 +1241,18 @@ export function useWaveSurferRegions(
     return false;
   };
 
+  /** Highlight [start, end). region-created sets drag, the selection, and onRegion. */
+  const wsSelectSpan = (start: number, end: number) => {
+    if (!wsRef.current || !(end > start)) return false;
+    const created = Regions()?.addRegion({
+      start,
+      end,
+      color: DRAG_SELECTION_COLOR,
+      resize: true,
+    });
+    return Boolean(created);
+  };
+
   function wsAutoSegment(loop: boolean = false, params: IRegionParams) {
     if (!wsRef.current) return 0;
     const regions = mergeVerses(extractRegions(params));
@@ -1464,6 +1479,7 @@ export function useWaveSurferRegions(
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
+    wsSelectSpan,
     prepareForDestroy,
   };
 }

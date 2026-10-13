@@ -24,7 +24,7 @@ import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions, useMobile } from '../utils';
 import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
-import { pasteSpan, sliceAudioBuffer } from './audioClipboard';
+import { pastedSelection, pasteSpan, sliceAudioBuffer } from './audioClipboard';
 
 const noop = () => {};
 
@@ -295,6 +295,7 @@ export function useWaveSurfer(
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
+    wsSelectSpan,
     prepareForDestroy,
   } = useWaveSurferRegions(
     singleRegionOnly,
@@ -984,6 +985,9 @@ export function useWaveSurfer(
     } else {
       await insertAudioData(clip, span.start, span.end);
     }
+    const selection = pastedSelection(span, clip.length, clip.sampleRate);
+    if (selection && singleRegionOnly)
+      wsSelectSpan(selection.start, selection.end);
     return true;
   };
 
