@@ -954,6 +954,7 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "duration": string;
     "fileAttached": string;
     "fileName": string;
+    "fileTooBig": string;
     "filter": string;
     "graphicRightsAdd": string;
     "graphicRightsTitle": string;
@@ -985,7 +986,6 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "savingComplete": string;
     "selectFiles": string;
     "size": string;
-    "fileTooBig": string;
     "unsupported": string;
     "uploadComplete": string;
     "user": string;
@@ -1013,6 +1013,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "dragDropMultiple": string;
     "dragDropSingle": string;
     "faithbridgeTitle": string;
+    "fileTooBig": string;
     "githubSupport": string;
     "graphicTask": string;
     "graphicTitle": string;
@@ -1036,7 +1037,6 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "resourceTitle": string;
     "task": string;
     "title": string;
-    "fileTooBig": string;
     "upload": string;
 };
 

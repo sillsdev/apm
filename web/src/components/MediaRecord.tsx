@@ -35,12 +35,13 @@ import { useStepTool } from '../crud/useStepTool';
 import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
 import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
+import { MB, mb } from '../utils/mb';
 import {
   OPUS_MONO_COMPRESSION,
   RECORD_PCM16_BYTES_PER_SECOND,
   estimatedUploadBytes,
   wavChannelCount,
-} from './mediaRecordSize';
+} from '../utils/mediaRecordSize';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
@@ -554,15 +555,12 @@ function MediaRecord(props: IProps) {
         ? estimatedUploadBytes(
             Math.round(waveformDuration * RECORD_PCM16_BYTES_PER_SECOND),
             compression,
-            false,
-            channels
+            { sourceIsFloat32Wav: false, channels }
           )
-        : estimatedUploadBytes(
-            audioBlob?.size ?? 0,
-            compression,
-            true,
-            channels
-          ),
+        : estimatedUploadBytes(audioBlob?.size ?? 0, compression, {
+            sourceIsFloat32Wav: true,
+            channels,
+          }),
     [recording, waveformDuration, audioBlob, compression, channels]
   );
   const { isMobile: isMobileView } = useMobile();
@@ -621,14 +619,21 @@ function MediaRecord(props: IProps) {
 
   const tooBigMessage = (template: string, bytes: number) =>
     template
-      .replace('{0}', (bytes / 1000000).toFixed(2))
+      .replace('{0}', (bytes / MB).toFixed(2))
       .replace('{1}', sizeLimit.toString());
 
   useEffect(() => {
-    const limitBytes = sizeLimit * 1000000;
+    const limitBytes = sizeLimit * MB;
+    const rejectOversized = (message: string) => {
+      showMessage(message, AlertSeverity.Error);
+      setWarning(message);
+      setTooBig(true);
+      setConverting(false);
+      handleSaveFailed(new Error(message));
+    };
     const big = estimatedBytes > limitBytes;
     setTooBig(big);
-    if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * 1000000)
+    if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * MB)
       setWarning(tooBigMessage(big ? t.toobig : t.toobigwarn, estimatedBytes));
     else setWarning('');
 
@@ -645,16 +650,10 @@ function MediaRecord(props: IProps) {
             setConverting(true);
             convertToFormat(audioBlob, mimeType)
               .then((convert_blob) => {
-                if (convert_blob.size > sizeLimit * 1000000) {
-                  const message = tooBigMessage(
-                    t.tooBigAfterCompression,
-                    convert_blob.size
+                if (convert_blob.size > limitBytes) {
+                  rejectOversized(
+                    tooBigMessage(t.tooBigAfterCompression, convert_blob.size)
                   );
-                  showMessage(message, AlertSeverity.Error);
-                  setWarning(message);
-                  setTooBig(true);
-                  setConverting(false);
-                  handleSaveFailed(new Error(message));
                   return;
                 }
                 return doUpload(convert_blob, mimeType, filetype)
@@ -665,24 +664,23 @@ function MediaRecord(props: IProps) {
               })
               .catch((error) => {
                 // If conversion fails, show error and save as WAV instead
-                const big = audioBlob.size > sizeLimit * 1000000;
                 const errMsg =
                   error instanceof Error ? error.message : String(error ?? '');
-                const errorMessage = big
-                  ? `${t.compressErrorTooBig} ${tooBigMessage(t.toobig, audioBlob.size)} ${errMsg}`
-                  : `${t.compressError}  ${errMsg}`;
+                if (audioBlob.size > limitBytes) {
+                  rejectOversized(
+                    `${t.compressErrorTooBig} ${tooBigMessage(t.toobig, audioBlob.size)} ${errMsg}`
+                  );
+                  return;
+                }
+                const errorMessage = `${t.compressError}  ${errMsg}`;
                 showMessage(errorMessage);
                 setConverting(false);
-                if (!big) {
-                  doUpload(audioBlob, 'audio/wav', 'wav')
-                    .then(() => {
-                      setLoading(false);
-                      onReady?.();
-                    })
-                    .catch(handleSaveFailed);
-                } else {
-                  handleSaveFailed(new Error(errorMessage));
-                }
+                doUpload(audioBlob, 'audio/wav', 'wav')
+                  .then(() => {
+                    setLoading(false);
+                    onReady?.();
+                  })
+                  .catch(handleSaveFailed);
               });
           } else {
             doUpload(audioBlob, mimeType, filetype)
@@ -1004,7 +1002,7 @@ function MediaRecord(props: IProps) {
         >
           {showSize && (
             <Typography sx={{ mr: 3 }} id="size">
-              {`${(estimatedBytes / 1000000).toFixed(2)}MB`}
+              {mb(estimatedBytes)}
             </Typography>
           )}
           {metaData}

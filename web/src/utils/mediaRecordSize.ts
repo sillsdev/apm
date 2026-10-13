@@ -22,14 +22,13 @@ export async function wavChannelCount(blob: Blob): Promise<number> {
  * Editor takes are float32 WAV (4 bytes/sample). `compression` is how many times
  * smaller a mono upload is than 16-bit PCM; 1 means the float32 WAV is uploaded.
  * A stereo pair is 96 kbps, so the same duration is 1.5 times the mono upload.
- * ponytail: fixed 64/96 kbps ratio, not a measured encode. Loose gate against huge files.
  */
 export function estimatedUploadBytes(
   sourceBytes: number,
   compression: number,
-  sourceIsFloat32Wav: boolean,
-  channels = 1
+  options: { sourceIsFloat32Wav: boolean; channels?: number }
 ): number {
+  const { sourceIsFloat32Wav, channels = 1 } = options;
   const ratio = compression > 0 ? compression : 1;
   const count = channels >= 2 ? 2 : 1;
   if (ratio === 1) {

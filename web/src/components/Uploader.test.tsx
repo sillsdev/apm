@@ -32,7 +32,7 @@ jest.mock('../selector', () => ({
   mediaTabSelector: () => ({
     uploadComplete: '{0} of {1} files uploaded successfully.',
     unsupported: '{0}',
-    toobig: '{0} {1} {2}',
+    fileTooBig: '{0} {1} {2}',
     selectFiles: 'Select files',
   }),
   sharedSelector: () => ({

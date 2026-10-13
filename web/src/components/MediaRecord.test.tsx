@@ -9,6 +9,7 @@ type WsAudioPlayerProps = {
   loading?: boolean;
   setChanged?: (changed: boolean) => void;
   onDuration?: (duration: number) => void;
+  onRecording?: (recording: boolean) => void;
   setBlobReady?: (ready: boolean) => void;
   onBlobReady?: (blob: Blob | undefined) => void;
   onLoadError?: (error: unknown) => void;
@@ -20,6 +21,7 @@ let latestWsProps: WsAudioPlayerProps | undefined;
 /** Every `loading` value WSAudioPlayer was rendered with, in order. */
 let wsLoadingHistory: (boolean | undefined)[] = [];
 let mockSaveRequested: () => boolean;
+let mockSizeLimit = 1;
 let mockUploadMedia: jest.Mock;
 let mockConvertToFormat: jest.Mock;
 /** MediaRecord's own myAfterUploadCb, captured from the useMediaUpload props. */
@@ -35,7 +37,7 @@ jest.mock('../../api-variable', () => ({
 }));
 
 jest.mock('../utils/typeLimit', () => ({
-  typeLimit: () => 1,
+  typeLimit: () => mockSizeLimit,
 }));
 
 jest.mock('./WSAudioPlayer', () => {
@@ -167,6 +169,7 @@ describe('MediaRecord save gating', () => {
     jest.clearAllMocks();
     mockEnv.isElectron = false;
     mockEnv.online = true;
+    mockSizeLimit = 1;
     mockSaveRequested = () => false;
     mockUploadMedia = jest.fn().mockResolvedValue(undefined);
     mockConvertToFormat = jest.fn((blob: Blob) => Promise.resolve(blob));
@@ -266,6 +269,62 @@ describe('MediaRecord save gating', () => {
     await waitFor(() => {
       expect(latestWsProps?.isSaveDisabled).toBe(true);
     });
+  });
+
+  /** 24-byte header. Channel count is the uint16 at offset 22. */
+  const wavWithChannels = (channels: number) => {
+    const bytes = new Uint8Array(24);
+    const view = new DataView(bytes.buffer);
+    view.setUint32(0, 0x52494646, false);
+    view.setUint32(8, 0x57415645, false);
+    view.setUint16(22, channels, true);
+    return new Blob([bytes], { type: 'audio/wav' });
+  };
+
+  const recordLive = async (duration: number, blob?: Blob) => {
+    cleanup();
+    latestWsProps = undefined;
+    render(<MediaRecord {...defaultProps} />);
+    await waitFor(() => expect(latestWsProps?.onRecording).toBeDefined());
+    act(() => {
+      if (blob) latestWsProps?.onBlobReady?.(blob);
+      latestWsProps?.onRecording?.(true);
+      latestWsProps?.onDuration?.(duration);
+    });
+  };
+
+  it('prices a live stereo take at 1.5 times the same mono duration', async () => {
+    // 62.5s of 48 kHz 16-bit is 0.50MB mono and 0.75MB at 96 kbps stereo.
+    await recordLive(62.5);
+    await waitFor(() => {
+      expect(document.getElementById('size')?.textContent).toBe('0.50MB');
+    });
+
+    await recordLive(62.5, wavWithChannels(2));
+    await waitFor(() => {
+      expect(document.getElementById('size')?.textContent).toBe('0.75MB');
+    });
+  });
+
+  it('warns near the limit while recording and stays quiet further below it', async () => {
+    mockSizeLimit = 30;
+    await recordLive(3500);
+    await waitFor(() => {
+      expect(document.getElementById('size')?.textContent).toBe('28.00MB');
+    });
+    expect(document.getElementById('warning')).toBeNull();
+    expect(latestWsProps?.isSaveDisabled).toBe(false);
+
+    act(() => {
+      latestWsProps?.onDuration?.(3687.5);
+    });
+    await waitFor(() => {
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big warn 29.50/30'
+      );
+    });
+    expect(document.getElementById('size')?.textContent).toBe('29.50MB');
+    expect(latestWsProps?.isSaveDisabled).toBe(false);
   });
 
   it('blocks a take the 64 kbps estimate puts over the limit', async () => {
@@ -371,7 +430,8 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(mockShowMessage).toHaveBeenCalledWith(
-        'Compress error too big Too big 2.00MB/1MB encode failed'
+        'Compress error too big Too big 2.00MB/1MB encode failed',
+        'error'
       );
     });
     expect(mockUploadMedia).not.toHaveBeenCalled();

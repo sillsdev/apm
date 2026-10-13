@@ -1825,6 +1825,12 @@
             <target>கோப்புப் பெயர்</target>
          </segment>
       </unit>
+      <unit id="mediaTab.fileTooBig">
+         <segment>
+            <source>File {0} is too large {1}. File Limit is {2}MB</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaTab.filter">
          <segment>
             <source>Filter</source>
@@ -1951,12 +1957,6 @@
             <target>அளவு (கேபி)</target>
          </segment>
       </unit>
-      <unit id="mediaTab.toobig">
-         <segment>
-            <source>File {0} is too large {1}. File Limit is {2}MB</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="mediaTab.unsupported">
          <segment>
             <source>File {0} is an unsupported file type.</source>
@@ -2023,6 +2023,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaUpload.fileTooBig">
+         <segment>
+            <source>Too large: {0}. File Limit is {1}MB</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaUpload.graphicTask">
          <segment>
             <source>Drag and drop a file here, or click here to browse for the file. Formats accepted are .png, .jpg (or .jpeg) and .webp.</source>
@@ -2086,12 +2092,6 @@
       <unit id="mediaUpload.title">
          <segment>
             <source>Upload Audio</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="mediaUpload.toobig">
-         <segment>
-            <source>Too large: {0}. File Limit is {1}MB</source>
             <target/>
          </segment>
       </unit>
