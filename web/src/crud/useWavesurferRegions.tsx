@@ -1241,20 +1241,16 @@ export function useWaveSurferRegions(
     return false;
   };
 
-  /** Highlight [start, end) as the current record selection. */
+  /** Highlight [start, end). region-created sets drag, the selection, and onRegion. */
   const wsSelectSpan = (start: number, end: number) => {
     if (!wsRef.current || !(end > start)) return false;
     const created = Regions()?.addRegion({
       start,
       end,
       color: DRAG_SELECTION_COLOR,
-      drag: singleRegionRef.current,
       resize: true,
     });
-    if (!created) return false;
-    setCurrentRegion(created);
-    onRegion(numRegions(), true);
-    return true;
+    return Boolean(created);
   };
 
   function wsAutoSegment(loop: boolean = false, params: IRegionParams) {

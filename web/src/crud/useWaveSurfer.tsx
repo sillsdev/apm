@@ -986,7 +986,8 @@ export function useWaveSurfer(
       await insertAudioData(clip, span.start, span.end);
     }
     const selection = pastedSelection(span, clip.length, clip.sampleRate);
-    if (selection) wsSelectSpan(selection.start, selection.end);
+    if (selection && singleRegionOnly)
+      wsSelectSpan(selection.start, selection.end);
     return true;
   };
 

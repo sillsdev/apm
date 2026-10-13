@@ -51,6 +51,7 @@ jest.mock('wavesurfer.js/dist/plugins/regions', () => {
         remove: jest.fn(),
       };
       this.regionList.push(r);
+      this.emit('region-created', r);
       return r;
     }
     enableDragSelection = jest.fn();
@@ -580,7 +581,7 @@ describe('useWaveSurferRegions — the +/- controls on a recorded segment (TT-76
 });
 
 describe('useWaveSurferRegions — paste selection', () => {
-  it('selects the span that was just pasted', () => {
+  it('selects the span that was just pasted', async () => {
     const plugin = newPlugin();
     const ws: any = {
       getActivePlugins: () => [plugin],
@@ -611,14 +612,16 @@ describe('useWaveSurferRegions — paste selection', () => {
       result.current.setupRegions(ws);
     });
 
-    act(() => {
+    await act(async () => {
       result.current.wsSelectSpan(1.5, 3);
     });
 
     expect(result.current.currentRegion()).toEqual(
-      expect.objectContaining({ start: 1.5, end: 3 })
+      expect.objectContaining({ start: 1.5, end: 3, drag: true })
     );
+    expect(onCurrentRegion).toHaveBeenCalledTimes(1);
     expect(onCurrentRegion).toHaveBeenCalledWith({ start: 1.5, end: 3 }, 0);
+    expect(onRegion).toHaveBeenCalledTimes(1);
     expect(onRegion).toHaveBeenCalledWith(1, true);
   });
 });
