@@ -173,7 +173,7 @@ export const useAudioAi = (): AudioAIResult => {
     targetVoice: string | undefined,
     cb: (file: File | Error) => void
   ): Promise<void> => {
-    if (getGlobal('offline') || !token) return;
+    if (getGlobal('offline') || !getGlobal('connected') || !token) return;
     const result = await axiosGet(
       `S3Files/put/AI/${file.name}/wav`,
       undefined,
@@ -232,7 +232,10 @@ export const useAudioAi = (): AudioAIResult => {
     targetVoice,
     cb,
   }: IRequestAudio): Promise<void> => {
-    if (getGlobal('offline')) return;
+    if (getGlobal('offline') || !getGlobal('connected')) {
+      cb(new Error('offline'));
+      return;
+    }
     const useS3 = true; // file.size > 6000000 || Boolean(targetVoice);  V2 doesn't work with data in request
     // larger sizes give Network Error
     if (useS3)

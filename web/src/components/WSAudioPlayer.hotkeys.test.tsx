@@ -24,6 +24,7 @@ let capturedOnWSReady:
 let capturedOnWSRegion:
   ((count: number, newRegion: boolean) => void) | undefined;
 let capturedOnPlayStatus: ((playing: boolean) => void) | undefined;
+let capturedOnWSCanUndo: ((canUndo: boolean) => void) | undefined;
 let capturedOnCurrentRegion:
   | ((
       region: { start: number; end: number } | undefined,
@@ -106,6 +107,7 @@ jest.mock('../crud/useWaveSurfer', () => ({
     capturedOnWSReady = args[2] as typeof capturedOnWSReady;
     capturedOnWSRegion = args[5] as typeof capturedOnWSRegion;
     capturedOnPlayStatus = args[7] as typeof capturedOnPlayStatus;
+    capturedOnWSCanUndo = args[6] as typeof capturedOnWSCanUndo;
     capturedOnCurrentRegion = args[14] as typeof capturedOnCurrentRegion;
     capturedOnCanPaste = args[24] as typeof capturedOnCanPaste;
     return waveSurferMock;
@@ -149,6 +151,10 @@ jest.mock('react-redux', () => ({
     copyRegion: 'Copy [{0}]',
     cutRegion: 'Cut [{0}]',
     pasteRegion: 'Paste [{0}]',
+    cutFailed: 'Cut failed: {0}',
+    pasteFailed: 'Paste failed: {0}',
+    undoFailed: 'Undo failed: {0}',
+    recordStartFailed: 'Recording could not start: {0}',
     reduceNoise: 'Reduce noise',
     downloadMedia: 'Download',
     microphoneDisconnected:
@@ -166,8 +172,10 @@ jest.mock('../selector', () => ({
   sharedSelector: jest.fn(),
 }));
 
+const mockSetGlobal = jest.fn();
+const mockGlobals: Record<string, unknown> = {};
 jest.mock('../context/useGlobal', () => ({
-  useGlobal: () => [undefined, jest.fn()],
+  useGlobal: (key: string) => [mockGlobals[key], mockSetGlobal],
 }));
 
 const mockShowMessage = jest.fn();
@@ -186,27 +194,44 @@ jest.mock('../hoc/SnackBar', () => ({
   }),
 }));
 
+const mockGetOrgDefault = jest.fn();
 jest.mock('../crud/useOrgDefaults', () => ({
   useOrgDefaults: () => ({
-    getOrgDefault: jest.fn(),
+    getOrgDefault: (key: unknown) => mockGetOrgDefault(key),
   }),
   orgDefaultFeatures: {},
   orgDefaultVoices: {},
 }));
 
+const mockRequestAudioAi =
+  jest.fn<(request: { cb: (file: File | Error) => void }) => Promise<void>>();
 jest.mock('../utils/useAudioAi', () => ({
-  useAudioAi: () => ({ requestAudioAi: jest.fn() }),
+  AudioAiFunc: {
+    noiseRemoval: 'noiseremoval',
+    voiceConversion: 'voiceconversion',
+  },
+  useAudioAi: () => ({
+    requestAudioAi: (request: { cb: (file: File | Error) => void }) =>
+      mockRequestAudioAi(request),
+  }),
 }));
 
+const mockLogError = jest.fn();
+const mockCheckOnline = jest.fn<(cb: (online: boolean) => void) => void>();
 jest.mock('../utils', () => ({
   dataPath: jest.fn(),
   PathType: { MEDIA: 'media' },
   Severity: { error: 'error' },
-  useCheckOnline: () => jest.fn(),
+  useCheckOnline: () => (cb: (online: boolean) => void) => mockCheckOnline(cb),
   LocalKey: { microphoneId: 'microphoneId' },
   localUserKey: (key: string) => key,
   useMobile: () => ({ isMobile: false, isMobileWidth: false }),
-  logError: jest.fn(),
+  logError: (...args: unknown[]) => mockLogError(...args),
+  aeroTaskErrorParts: (_detail: string, summary: string) => ({
+    summary,
+    details: '',
+  }),
+  axiosErrorMessage: (error: { message?: string }) => error.message ?? '',
 }));
 
 jest.mock('../control', () => ({
@@ -232,6 +257,11 @@ jest.mock('../control', () => ({
     <>{children}</>
   ),
   RecordButton: () => null,
+}));
+
+jest.mock('../control/NoChickenIcon', () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock('../crud/useVoiceUrl', () => ({
@@ -306,6 +336,7 @@ describe('WSAudioPlayer record hotkeys', () => {
     capturedOnWSReady = undefined;
     capturedOnWSRegion = undefined;
     capturedOnPlayStatus = undefined;
+    capturedOnWSCanUndo = undefined;
     capturedOnCurrentRegion = undefined;
     capturedOnCanPaste = undefined;
     (waveSurferMock.wsPaste as jest.Mock).mockImplementation(async () => true);
@@ -316,6 +347,11 @@ describe('WSAudioPlayer record hotkeys', () => {
     (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
       async () => undefined
     );
+    mockGlobals.organization = undefined;
+    mockCheckOnline.mockReset();
+    mockRequestAudioAi.mockReset();
+    mockRequestAudioAi.mockImplementation(() => Promise.resolve());
+    mockGetOrgDefault.mockReset();
   });
 
   afterEach(cleanup);
@@ -628,6 +664,83 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(waveSurferMock.wsPaste).toHaveBeenCalledTimes(2);
   });
 
+  function expectReported(message: string) {
+    expect(mockLogError).toHaveBeenCalledWith(
+      'error',
+      undefined,
+      expect.objectContaining({ message: 'boom' })
+    );
+    expect(mockShowMessage).toHaveBeenCalledWith(message, 'error');
+  }
+
+  it('reports a cut failure', async () => {
+    (waveSurferMock.wsRegionDelete as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    await act(async () => {
+      latestHotkey('CTRL+X')();
+    });
+
+    expectReported('Cut failed: boom');
+  });
+
+  it('reports a paste failure', async () => {
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCanPaste?.(true);
+    });
+
+    await act(async () => {
+      latestHotkey('CTRL+V')();
+    });
+
+    expectReported('Paste failed: boom');
+  });
+
+  it('reports an undo failure', async () => {
+    (waveSurferMock.wsUndo as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSCanUndo?.(true);
+    });
+
+    await act(async () => {
+      fireEvent.click(document.getElementById('wsUndo') as HTMLElement);
+    });
+
+    expectReported('Undo failed: boom');
+  });
+
+  it('reports a recording start failure', async () => {
+    mockStartRecording.mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+    });
+
+    await act(async () => {
+      latestHotkey(RECORD_KEY)();
+    });
+
+    expectReported('Recording could not start: boom');
+  });
+
   it('does not copy or paste while a text field is focused', () => {
     render(<WSAudioPlayer {...defaultProps} />);
     act(() => {
@@ -685,6 +798,84 @@ describe('WSAudioPlayer record hotkeys', () => {
     rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={blob} />);
 
     expect(queryByText('Loading')).toBeNull();
+  });
+
+  async function startNoiseRemoval(setBusy: (busy: boolean) => void) {
+    mockGlobals.organization = 'org';
+    mockGetOrgDefault.mockReturnValue({ noNoise: true });
+    mockCheckOnline.mockImplementation((cb: (online: boolean) => void) => {
+      cb(true);
+    });
+    (waveSurferMock.wsRegionBlob as jest.Mock).mockImplementation(
+      async () => new Blob([new Uint8Array([1])], { type: 'audio/wav' })
+    );
+    render(
+      <WSAudioPlayer
+        {...defaultProps}
+        allowNoNoise
+        reload={jest.fn()}
+        setBusy={setBusy}
+      />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+    });
+    fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
+    fireEvent.click(document.getElementById('noiseRemoval') as HTMLElement);
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  it('keeps AI busy until the region replace finishes', async () => {
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    let resolveReplace: (blob: Blob) => void = () => undefined;
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(
+      () =>
+        new Promise<Blob>((resolve) => {
+          resolveReplace = resolve;
+        })
+    );
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    act(() => {
+      aiCallback?.(new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    await act(async () => {
+      resolveReplace(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
+    });
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  it('clears AI busy once when the AI result is an error', async () => {
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    const setBusy = jest.fn();
+    await startNoiseRemoval(setBusy);
+    const falseCalls = () =>
+      setBusy.mock.calls.filter((call) => call[0] === false).length;
+    const before = falseCalls();
+
+    act(() => {
+      aiCallback?.(new Error('failed'));
+    });
+
+    expect(falseCalls() - before).toBe(1);
+    expect(screen.queryByText('AI in progress')).toBeNull();
   });
 });
 

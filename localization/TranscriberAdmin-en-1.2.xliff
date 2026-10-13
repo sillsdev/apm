@@ -12364,6 +12364,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.cutFailed">
+            <source>Cut failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.cutRegion">
             <source>Cut [{0}]</source>
             <target/>
@@ -12448,6 +12455,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.pasteFailed">
+            <source>Paste failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.pasteRegion">
             <source>Paste [{0}]</source>
             <target/>
@@ -12502,6 +12516,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.recordStartFailed">
+            <source>Recording could not start: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.reduceNoise">
@@ -12614,6 +12635,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.undoFailed">
+            <source>Undo failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.undoTip">

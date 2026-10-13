@@ -159,7 +159,8 @@ comment explaining why the owner cannot be relied on there.
 - **No floating promises.** A promise that is not awaited has a `.catch`, or a
   `void` with a comment saying why a rejection is safe to ignore.
 - **`async`/`await` over chains.** New code uses `async`/`await` rather than
-  nested `.then` callbacks.
+  nested `.then` callbacks. A synchronous handler may use a `.then` chain when
+  it has to return before the work finishes.
 - **Explicit request states.** A component that fetches renders loading and
   error states as well as success, modelled as one `status` union (see State).
 - **No stale results.** An async result is applied only if it is still

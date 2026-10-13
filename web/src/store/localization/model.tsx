@@ -2070,6 +2070,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "convertVoiceAi": string;
     "clear": string;
     "copyRegion": string;
+    "cutFailed": string;
     "cutRegion": string;
     "fasterTip": string;
     "loopoff": string;
@@ -2082,6 +2083,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "normalize": string;
     "normalizeFail": string;
     "normalizeInProgress": string;
+    "pasteFailed": string;
     "pasteRegion": string;
     "pauseTip": string;
     "playTip": string;
@@ -2090,6 +2092,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "recognizeSpeech": string;
     "recognizeSpeechSettings": string;
     "record": string;
+    "recordStartFailed": string;
     "reduceNoise": string;
     "reduceNoiseAi": string;
     "reset": string;
@@ -2106,6 +2109,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "stopTip": string;
     "timerTip": string;
     "tooQuiet": string;
+    "undoFailed": string;
     "undoTip": string;
     "voiceconversionFailed": string;
 };

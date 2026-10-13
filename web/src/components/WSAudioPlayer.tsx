@@ -521,6 +521,14 @@ function WSAudioPlayer(props: IProps) {
 
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
+  const reportFailure = useCallback(
+    (err: unknown, template: string) => {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logError(Severity.error, errorReporter, error);
+      showMessage(template.replace('{0}', error.message), AlertSeverity.Error);
+    },
+    [errorReporter, showMessage]
+  );
   const [style, setStyle] = useState({
     cursor: busy || loading ? 'progress' : 'default',
   });
@@ -938,8 +946,9 @@ function WSAudioPlayer(props: IProps) {
               setRecording(true);
             }
           })
-          .catch(() => {
+          .catch((err: unknown) => {
             recordingStartPendingRef.current = false;
+            reportFailure(err, t.recordStartFailed);
           });
 
         insertingRef.current = durationRef.current > 0;
@@ -984,6 +993,8 @@ function WSAudioPlayer(props: IProps) {
     loading,
     busy,
     waveformLoading,
+    reportFailure,
+    t.recordStartFailed,
   ]);
 
   const notifySegmentInteraction = useCallback(() => {
@@ -1649,11 +1660,20 @@ function WSAudioPlayer(props: IProps) {
       .then((mutated) => {
         if (mutated) void handleChanged();
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         preserveZoomOnReloadRef.current = undefined;
+        reportFailure(err, t.cutFailed);
       });
     return true;
-  }, [editBlocked, canCut, setPlaying, wsRegionDelete, handleChanged]);
+  }, [
+    editBlocked,
+    canCut,
+    setPlaying,
+    wsRegionDelete,
+    handleChanged,
+    reportFailure,
+    t.cutFailed,
+  ]);
 
   const handleUndo = useCallback(() => {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
@@ -1661,10 +1681,11 @@ function WSAudioPlayer(props: IProps) {
       .then(() => {
         void handleChanged();
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         preserveZoomOnReloadRef.current = undefined;
+        reportFailure(err, t.undoFailed);
       });
-  }, [wsUndo, handleChanged]);
+  }, [wsUndo, handleChanged, reportFailure, t.undoFailed]);
 
   const handleCopyRegion = useCallback(() => {
     if (editBlocked() || !canCopy) return false;
@@ -1684,11 +1705,19 @@ function WSAudioPlayer(props: IProps) {
         pasteInFlightRef.current = false;
         setPasteBusy(false);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         preserveZoomOnReloadRef.current = undefined;
+        reportFailure(err, t.pasteFailed);
       });
     return true;
-  }, [editBlocked, canPaste, wsPaste, handleChanged]);
+  }, [
+    editBlocked,
+    canPaste,
+    wsPaste,
+    handleChanged,
+    reportFailure,
+    t.pasteFailed,
+  ]);
 
   useEffect(() => {
     if (!allowRecord) return;
@@ -1906,19 +1935,17 @@ function WSAudioPlayer(props: IProps) {
                 targetVoice,
                 cb: (file: File | Error) => {
                   if (file instanceof File) {
-                    const regionblob = new Blob([file], { type: file.type });
-                    if (regionblob) {
-                      wsRegionReplace(regionblob)
-                        .then((newblob) => {
-                          if (newblob) reload(newblob);
-                          void handleChanged();
-                        })
-                        .catch(failAi);
-                    }
-                  } else if ((file as Error).message !== 'canceled') {
-                    failAi(file);
+                    wsRegionReplace(new Blob([file], { type: file.type }))
+                      .then((newblob) => {
+                        if (newblob) reload(newblob);
+                        void handleChanged();
+                        doingProcess(false);
+                      })
+                      .catch(failAi);
+                    return;
                   }
-                  doingProcess(false);
+                  if (file.message !== 'canceled') failAi(file);
+                  else doingProcess(false);
                 },
               }).catch(failAi);
             } else {
