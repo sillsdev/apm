@@ -368,10 +368,11 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(latestHotkey('CTRL+V')()).toBe(false);
     expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
 
-    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
     act(() => {
+      capturedOnWSReady?.(10, false);
       capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
       capturedOnWSRegion?.(1, true);
+      capturedOnCanPaste?.(true);
     });
     expect(latestHotkey('CTRL+C')()).toBe(true);
     expect(waveSurferMock.wsCopyRegion).toHaveBeenCalled();
@@ -398,10 +399,33 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
 
     act(() => {
+      capturedOnWSReady?.(10, false);
       capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
     });
     expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeEnabled();
+  });
+
+  it('disables cut and paste until the player is ready', () => {
+    const blob = new Blob([new Uint8Array([1])], { type: 'audio/wav' });
+    render(<WSAudioPlayer {...defaultProps} loading={false} blob={blob} />);
+    act(() => {
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+      capturedOnCanPaste?.(true);
+    });
+
+    expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Paste [CTRL+V]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(true);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).toHaveBeenCalled();
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
   });
 
   it('does not cut while a replacement blob is still loading', async () => {
@@ -467,9 +491,9 @@ describe('WSAudioPlayer record hotkeys', () => {
   });
 
   it('does not paste while audio is playing', () => {
-    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
     render(<WSAudioPlayer {...defaultProps} />);
     act(() => {
+      capturedOnWSReady?.(10, false);
       capturedOnCanPaste?.(true);
       capturedOnPlayStatus?.(true);
     });
@@ -482,10 +506,10 @@ describe('WSAudioPlayer record hotkeys', () => {
   });
 
   it('does not paste while save is in progress', () => {
-    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
     render(<WSAudioPlayer {...defaultProps} mediaSaveInProgress />);
 
     act(() => {
+      capturedOnWSReady?.(10, false);
       capturedOnCanPaste?.(true);
     });
 
@@ -504,9 +528,9 @@ describe('WSAudioPlayer record hotkeys', () => {
           resolvePaste = resolve;
         })
     );
-    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
     render(<WSAudioPlayer {...defaultProps} />);
     act(() => {
+      capturedOnWSReady?.(10, false);
       capturedOnCanPaste?.(true);
     });
 

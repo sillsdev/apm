@@ -487,7 +487,7 @@ function WSAudioPlayer(props: IProps) {
   // react to whether the playhead is near an existing boundary.
   const [regionBounds, setRegionBounds] = useState<IRegion[]>([]);
   const [canUndo, setCanUndo] = useState(false);
-  const [canPaste, setCanPaste] = useState(false);
+  const [hasClipboard, setHasClipboard] = useState(false);
   const recordStartPosition = useRef(0);
   const recordOverwritePosition = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
@@ -588,10 +588,10 @@ function WSAudioPlayer(props: IProps) {
   /** True after Stop until final `onRecordStop` finishes — blocks late preview ticks. */
   const recordPreviewSuppressedRef = useRef(false);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
-  const [regionSelected, setRegionSelectedx] = useState(false);
-  const regionSelectedRef = useRef(false);
-  const [pasteBusy, setPasteBusyx] = useState(false);
-  const pasteBusyRef = useRef(false);
+  const [pasteBusy, setPasteBusy] = useState(false);
+  const canCopyRef = useRef(false);
+  const canCutRef = useRef(false);
+  const canPasteRef = useRef(false);
   // Recording timer refs for local progress/duration while recording
   const recElapsedRef = useRef<number>(0);
   const recTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -627,15 +627,6 @@ function WSAudioPlayer(props: IProps) {
     pxPerSecRef.current = px;
     setPxPerSecx(px);
   }, []);
-  const setRegionSelected = useCallback((value: boolean) => {
-    regionSelectedRef.current = value;
-    setRegionSelectedx(value);
-  }, []);
-  const setPasteBusy = useCallback((value: boolean) => {
-    pasteBusyRef.current = value;
-    setPasteBusyx(value);
-  }, []);
-
   useEffect(() => {
     setMyMediaId(mediaId ?? '');
   }, [mediaId]);
@@ -748,10 +739,9 @@ function WSAudioPlayer(props: IProps) {
       //onPlayStatus && onPlayStatus(true);
       //}
       currentSegmentRef.current = currentSegment;
-      setRegionSelected(currentSegment !== undefined);
       onCurrentSegment && onCurrentSegment(currentSegment, index);
     },
-    [onCurrentSegment, setRegionSelected]
+    [onCurrentSegment]
   );
 
   const {
@@ -775,7 +765,6 @@ function WSAudioPlayer(props: IProps) {
     wsRegionReplace,
     wsCopyRegion,
     wsPaste,
-    wsHasClipboard,
     wsUndo,
     wsInsertAudio,
     wsFillPx,
@@ -1191,7 +1180,7 @@ function WSAudioPlayer(props: IProps) {
     setDuration(0);
     setProgress(0);
     setRegionCount(0);
-    setRegionSelected(false);
+    currentSegmentRef.current = undefined;
     wsPause();
     if (blob) {
       setReady(false);
@@ -1526,8 +1515,8 @@ function WSAudioPlayer(props: IProps) {
   function onWSCanUndo(canUndo: boolean) {
     setCanUndo(canUndo);
   }
-  function onWSCanPaste(canPaste: boolean) {
-    setCanPaste(canPaste);
+  function onWSCanPaste(hasClipboard: boolean) {
+    setHasClipboard(hasClipboard);
   }
   function onWSPlayStatus(status: boolean) {
     setPlaying(status);
@@ -1614,32 +1603,38 @@ function WSAudioPlayer(props: IProps) {
     setConfirmAction(t.clearRecording);
   }, [t.clearRecording]);
 
-  const handleCutRegion = useCallback(() => {
-    if (
+  const editToolsOpen =
+    !recording && !waitingForAI && !oneShotUsed && !hideWaveformEditTools;
+  const canCopy = editToolsOpen && currentSegmentRef.current !== undefined;
+  const canCut = canCopy && ready;
+  const canPaste =
+    editToolsOpen &&
+    hasClipboard &&
+    ready &&
+    !playing &&
+    !pasteBusy &&
+    !mediaSaveInProgress;
+  canCopyRef.current = canCopy;
+  canCutRef.current = canCut;
+  canPasteRef.current = canPaste;
+
+  const editBlocked = useCallback(
+    () =>
       isTypingTarget() ||
       recordingRef.current ||
-      recordingStartPendingRef.current ||
-      waitingForAI ||
-      hideWaveformEditTools ||
-      oneShotUsed ||
-      !readyRef.current ||
-      !regionSelectedRef.current
-    )
-      return false;
+      recordingStartPendingRef.current,
+    []
+  );
+
+  const handleCutRegion = useCallback(() => {
+    if (editBlocked() || !canCutRef.current) return false;
     setPlaying(false);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsRegionDelete().then((mutated) => {
       if (mutated) handleChanged();
     });
     return true;
-  }, [
-    waitingForAI,
-    hideWaveformEditTools,
-    oneShotUsed,
-    setPlaying,
-    wsRegionDelete,
-    handleChanged,
-  ]);
+  }, [editBlocked, setPlaying, wsRegionDelete, handleChanged]);
 
   const handleUndo = useCallback(() => {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
@@ -1649,33 +1644,13 @@ function WSAudioPlayer(props: IProps) {
   }, [wsUndo, handleChanged]);
 
   const handleCopyRegion = useCallback(() => {
-    if (
-      isTypingTarget() ||
-      recordingRef.current ||
-      recordingStartPendingRef.current ||
-      waitingForAI ||
-      hideWaveformEditTools ||
-      oneShotUsed ||
-      !regionSelectedRef.current
-    )
-      return false;
+    if (editBlocked() || !canCopyRef.current) return false;
     return wsCopyRegion();
-  }, [waitingForAI, hideWaveformEditTools, oneShotUsed, wsCopyRegion]);
+  }, [editBlocked, wsCopyRegion]);
 
   const handlePaste = useCallback(() => {
-    if (
-      isTypingTarget() ||
-      recordingRef.current ||
-      recordingStartPendingRef.current ||
-      waitingForAI ||
-      hideWaveformEditTools ||
-      oneShotUsed ||
-      !wsHasClipboard() ||
-      playingRef.current ||
-      Boolean(mediaSaveInProgress) ||
-      pasteBusyRef.current
-    )
-      return false;
+    if (editBlocked() || !canPasteRef.current) return false;
+    canPasteRef.current = false;
     setPasteBusy(true);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsPaste()
@@ -1686,16 +1661,7 @@ function WSAudioPlayer(props: IProps) {
         setPasteBusy(false);
       });
     return true;
-  }, [
-    waitingForAI,
-    hideWaveformEditTools,
-    oneShotUsed,
-    mediaSaveInProgress,
-    wsHasClipboard,
-    wsPaste,
-    handleChanged,
-    setPasteBusy,
-  ]);
+  }, [editBlocked, wsPaste, handleChanged]);
 
   useEffect(() => {
     if (!allowRecord) return;
@@ -2344,7 +2310,7 @@ function WSAudioPlayer(props: IProps) {
             id="wsAudioCopy"
             aria-label={copyTip}
             onClick={handleCopyRegion}
-            disabled={recording || waitingForAI || !regionSelected}
+            disabled={!canCopy}
           >
             <ContentCopyIcon />
           </IconButton>
@@ -2352,7 +2318,7 @@ function WSAudioPlayer(props: IProps) {
       </LightTooltip>
     );
   const pasteRegionNode = !hideWaveformEditTools &&
-    canPaste &&
+    hasClipboard &&
     !oneShotUsed && (
       <LightTooltip id="wsAudioPasteTip" title={pasteTip}>
         <span>
@@ -2360,13 +2326,7 @@ function WSAudioPlayer(props: IProps) {
             id="wsAudioPaste"
             aria-label={pasteTip}
             onClick={handlePaste}
-            disabled={
-              recording ||
-              waitingForAI ||
-              playing ||
-              Boolean(mediaSaveInProgress) ||
-              pasteBusy
-            }
+            disabled={!canPaste}
           >
             <ContentPasteIcon />
           </IconButton>
@@ -2383,7 +2343,7 @@ function WSAudioPlayer(props: IProps) {
             id="wsAudioDeleteRegion"
             aria-label={cutTip}
             onClick={handleCutRegion}
-            disabled={recording || waitingForAI || !regionSelected}
+            disabled={!canCut}
           >
             <ContentCutIcon />
           </IconButton>
