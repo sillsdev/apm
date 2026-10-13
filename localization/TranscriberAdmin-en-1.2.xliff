@@ -6055,7 +6055,8 @@
             <source>File is too large: {0}. File Limit is {1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaUploadContent.tsx</context>
+            </context-group>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.githubSupport">
