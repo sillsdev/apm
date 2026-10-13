@@ -26,7 +26,7 @@ import * as actions from '../store';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
 import { useNum2BookCode } from '../utils/useNum2BookCode';
-import { projectDefaultToBurritoBookKey } from './akuoBookToUsfm';
+import { collectBurritoBooks } from './akuoBookToUsfm';
 import { BurritoHeader } from '../components/BurritoHeader';
 import { useLoadProjectData, useOfflnProjRead } from '../crud';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
@@ -40,14 +40,12 @@ export function BurritoBooks() {
   const { pathname } = useLocation();
   const { teamId } = useParams();
   const [view, setView] = React.useState('');
-  const [teamProjs, setTeamProjs] = React.useState<ProjectD[]>([]);
   const teams = useOrbitData<OrganizationD[]>('organization');
   const projects = useOrbitData<ProjectD[]>('project');
   const plans = useOrbitData<PlanD[]>('plan');
   const sections = useOrbitData<SectionD[]>('section');
   const passages = useOrbitData<PassageD[]>('passage');
   const [codeNum, setCodeNum] = React.useState<Map<string, number>>(new Map());
-  const [books, setBooks] = React.useState<string[]>([]);
   const [checked, setChecked] = React.useState<string[]>([]);
   const [loadingProjects, setLoadingProjects] = React.useState(false);
   const loadTimeoutRef = React.useRef<
@@ -69,6 +67,28 @@ export function BurritoBooks() {
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
   const { getProjectDefault } = useProjectDefaults();
   const num2BookCode = useNum2BookCode();
+  const teamIsKnown = Boolean(teamId && teams.some((org) => org.id === teamId));
+  const teamProjs = teamIsKnown
+    ? projects.filter((p) => related(p, 'organization') === teamId)
+    : [];
+
+  const bookSort = (a: string, b: string) => {
+    const aNum = codeNum.get(a);
+    const bNum = codeNum.get(b);
+    if (aNum && bNum) return aNum - bNum;
+    if (aNum) return -1;
+    if (bNum) return 1;
+    return a.localeCompare(b);
+  };
+
+  const books = collectBurritoBooks({
+    projects: teamProjs.filter((p) => checked.includes(p.id)),
+    plans,
+    sections,
+    passages,
+    getProjectDefault,
+    num2BookCode,
+  }).sort(bookSort);
 
   const handleSave = () => {
     if (checked.length === 0) return;
@@ -117,15 +137,6 @@ export function BurritoBooks() {
     loadNext(0);
   };
 
-  const bookSort = (a: string, b: string) => {
-    const aNum = codeNum.get(a);
-    const bNum = codeNum.get(b);
-    if (aNum && bNum) return aNum - bNum;
-    if (aNum) return -1;
-    if (bNum) return 1;
-    return a.localeCompare(b);
-  };
-
   const bookName = (book: string) => {
     const catalog = allBookData.find((b) => b.code === book)?.short;
     if (catalog) return catalog;
@@ -147,64 +158,20 @@ export function BurritoBooks() {
   }, []);
 
   React.useEffect(() => {
-    if (teamId && teams) {
-      const team = teams.some((t) => t.id === teamId);
-      if (team) {
-        const teamProjs = projects.filter(
-          (p) => related(p, 'organization') === teamId
-        );
-        setTeamProjs(teamProjs);
-        const teamProjIds = new Set(teamProjs.map((p) => p.id));
-        const curProjects = getOrgDefault(burritoProjects, teamId) as string[];
-        if (curProjects) {
-          setChecked(curProjects.filter((p) => teamProjIds.has(p)));
-        }
-        const curBooks = getOrgDefault(burritoBooks, teamId) as string[];
-        if (curBooks) {
-          setBooks(curBooks);
-        }
-      }
+    if (!teamId || !teamIsKnown) return;
+    const teamProjIds = new Set(teamProjs.map((p) => p.id));
+    const curProjects = getOrgDefault(burritoProjects, teamId);
+    if (Array.isArray(curProjects)) {
+      setChecked(
+        curProjects.filter(
+          (id): id is string => typeof id === 'string' && teamProjIds.has(id)
+        )
+      );
     }
+    // teamProjs and getOrgDefault are read for this team only. Listing them
+    // would re-apply the saved selection over in-progress checkbox edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamId, teams, projects]);
-
-  React.useEffect(() => {
-    const newBooks: Set<string> = new Set();
-    teamProjs
-      .filter((p) => checked.includes(p.id))
-      .forEach((proj) => {
-        const planRec = plans.find((p) => related(p, 'project') === proj.id);
-        const sectionRecs = sections.filter(
-          (s) => related(s, 'plan') === planRec?.id
-        );
-        const passageRecs = sectionRecs.map((s) =>
-          passages.find((p) => related(p, 'section') === s.id)
-        );
-        let book: string | undefined = undefined;
-        passageRecs.forEach((p) => {
-          const passageBook = p?.attributes?.book;
-          if (!passageBook) return;
-          if (book && book !== passageBook) {
-            console.warn('multiple books in one project');
-          }
-          book = passageBook;
-          newBooks.add(passageBook);
-        });
-        // General projects store the book on the project default, not on passages.
-        if (!book) {
-          const projectBook = getProjectDefault(projDefBook, proj);
-          if (typeof projectBook === 'string' && projectBook.trim()) {
-            const fromDefault = projectDefaultToBurritoBookKey(
-              projectBook,
-              num2BookCode
-            );
-            if (fromDefault) newBooks.add(fromDefault);
-          }
-        }
-      });
-    setBooks(Array.from(newBooks).sort(bookSort));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checked, plans, sections, passages, teamProjs]);
+  }, [teamId, teamIsKnown]);
 
   React.useEffect(() => {
     if (!booksLoaded) {
