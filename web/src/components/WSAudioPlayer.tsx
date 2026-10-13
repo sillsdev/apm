@@ -589,9 +589,15 @@ function WSAudioPlayer(props: IProps) {
   const recordPreviewSuppressedRef = useRef(false);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const [pasteBusy, setPasteBusy] = useState(false);
-  const canCopyRef = useRef(false);
-  const canCutRef = useRef(false);
-  const canPasteRef = useRef(false);
+  const pasteInFlightRef = useRef(false);
+  //When the blob prop changes, this comparison runs during render and sets currentSegmentRef to undefined before Copy and Cut read it.
+  const [trackedBlob, setTrackedBlob] = useState(blob);
+  const [trackedReset, setTrackedReset] = useState(doReset);
+  if (blob !== trackedBlob || doReset !== trackedReset) {
+    setTrackedBlob(blob);
+    setTrackedReset(doReset);
+    currentSegmentRef.current = undefined;
+  }
   // Recording timer refs for local progress/duration while recording
   const recElapsedRef = useRef<number>(0);
   const recTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -1184,7 +1190,6 @@ function WSAudioPlayer(props: IProps) {
     setDuration(0);
     setProgress(0);
     setRegionCount(0);
-    currentSegmentRef.current = undefined;
     wsPause();
     if (blob) {
       setReady(false);
@@ -1607,20 +1612,26 @@ function WSAudioPlayer(props: IProps) {
     setConfirmAction(t.clearRecording);
   }, [t.clearRecording]);
 
-  const editToolsOpen =
-    !recording && !waitingForAI && !oneShotUsed && !hideWaveformEditTools;
-  const canCopy = editToolsOpen && currentSegmentRef.current !== undefined;
-  const canCut = canCopy && ready;
-  const canPaste =
-    editToolsOpen &&
-    hasClipboard &&
-    ready &&
-    !playing &&
-    !pasteBusy &&
-    !mediaSaveInProgress;
-  canCopyRef.current = canCopy;
-  canCutRef.current = canCut;
-  canPasteRef.current = canPaste;
+  type WaveformEdit = 'notallowed' | 'playing' | 'saving' | 'busy' | 'allowed';
+  const waveformEdit: WaveformEdit =
+    recording ||
+    waitingForAI ||
+    oneShotUsed ||
+    hideWaveformEditTools ||
+    !ready ||
+    pasteBusy
+      ? 'notallowed'
+      : playing
+        ? 'playing'
+        : mediaSaveInProgress
+          ? 'saving'
+          : busy
+            ? 'busy'
+            : 'allowed';
+  const regionSelected = currentSegmentRef.current !== undefined;
+  const canCopy = waveformEdit !== 'notallowed' && regionSelected;
+  const canCut = waveformEdit === 'allowed' && regionSelected;
+  const canPaste = waveformEdit === 'allowed' && hasClipboard;
 
   const editBlocked = useCallback(
     () =>
@@ -1631,7 +1642,7 @@ function WSAudioPlayer(props: IProps) {
   );
 
   const handleCutRegion = useCallback(() => {
-    if (editBlocked() || !canCutRef.current) return false;
+    if (editBlocked() || !canCut) return false;
     setPlaying(false);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsRegionDelete()
@@ -1642,7 +1653,7 @@ function WSAudioPlayer(props: IProps) {
         preserveZoomOnReloadRef.current = undefined;
       });
     return true;
-  }, [editBlocked, setPlaying, wsRegionDelete, handleChanged]);
+  }, [editBlocked, canCut, setPlaying, wsRegionDelete, handleChanged]);
 
   const handleUndo = useCallback(() => {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
@@ -1656,13 +1667,13 @@ function WSAudioPlayer(props: IProps) {
   }, [wsUndo, handleChanged]);
 
   const handleCopyRegion = useCallback(() => {
-    if (editBlocked() || !canCopyRef.current) return false;
+    if (editBlocked() || !canCopy) return false;
     return wsCopyRegion();
-  }, [editBlocked, wsCopyRegion]);
+  }, [editBlocked, canCopy, wsCopyRegion]);
 
   const handlePaste = useCallback(() => {
-    if (editBlocked() || !canPasteRef.current) return false;
-    canPasteRef.current = false;
+    if (editBlocked() || !canPaste || pasteInFlightRef.current) return false;
+    pasteInFlightRef.current = true;
     setPasteBusy(true);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsPaste()
@@ -1670,13 +1681,14 @@ function WSAudioPlayer(props: IProps) {
         if (mutated) void handleChanged();
       })
       .finally(() => {
+        pasteInFlightRef.current = false;
         setPasteBusy(false);
       })
       .catch(() => {
         preserveZoomOnReloadRef.current = undefined;
       });
     return true;
-  }, [editBlocked, wsPaste, handleChanged]);
+  }, [editBlocked, canPaste, wsPaste, handleChanged]);
 
   useEffect(() => {
     if (!allowRecord) return;
