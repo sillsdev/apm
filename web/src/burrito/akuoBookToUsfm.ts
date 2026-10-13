@@ -24,8 +24,9 @@ export function akuoBookToUsfm(
 }
 
 /**
- * Maps a project's `book` default (Akuo A##/B## or a general-resource 3-digit code)
- * to the burrito book key used in `burritoBooks`, export folder names, and section grouping.
+ * Maps a project's `book` default (Akuo A##/B##, a 3-digit general code, or a
+ * project-sort key such as A0104) to the burrito book key used in `burritoBooks`,
+ * export folder names, and section grouping.
  */
 export function projectDefaultToBurritoBookKey(
   projectBookDefault: string | undefined,
@@ -36,6 +37,9 @@ export function projectDefaultToBurritoBookKey(
   const mapped = akuoBookToUsfm(def, num2BookCode);
   if (mapped) return mapped;
   if (/^\d{3}$/.test(def)) return def;
+  // Project sort appends a two-digit index to the scripture slot (A01 + 04 → A0104).
+  // Keep that string as its own key so General content is not folded into the scripture book.
+  if (/^[@ABE]\d{4}$/.test(def)) return def;
   return undefined;
 }
 

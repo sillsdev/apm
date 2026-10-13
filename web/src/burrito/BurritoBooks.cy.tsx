@@ -146,7 +146,9 @@ const createTeamDataset = (): Record<string, MockRec[]> => ({
 });
 
 /** Scripture (passage book GEN) plus a General project whose book lives only on the project default. */
-const createScriptureAndGeneralDataset = (): Record<string, MockRec[]> => {
+const createScriptureAndGeneralDataset = (
+  book = '010'
+): Record<string, MockRec[]> => {
   const base = createTeamDataset();
   return {
     ...base,
@@ -157,7 +159,7 @@ const createScriptureAndGeneralDataset = (): Record<string, MockRec[]> => {
         type: 'project',
         attributes: {
           name: 'General Proj',
-          defaultParams: '{"book":"010"}',
+          defaultParams: `{"book":"${book}"}`,
           dateCreated: '',
           dateUpdated: '',
           lastModifiedBy: 0,
@@ -425,6 +427,24 @@ describe('BurritoBooks', () => {
 
     // Project checkboxes are also list items and already show "General Proj".
     // Scope to Selected Books so this fails until the General book key is collected.
+    cy.contains('h5', 'Selected Books')
+      .parent()
+      .within(() => {
+        cy.get('.MuiListItem-root').should('have.length', 2);
+        cy.contains('.MuiListItem-root', 'Genesis').should('be.visible');
+        cy.contains('.MuiListItem-root', 'General Proj').should('be.visible');
+      });
+  });
+
+  it('lists the General project when its book default is a project-sort key', () => {
+    const memory = createBurritoMockMemory(
+      createScriptureAndGeneralDataset('A0104')
+    );
+    mountBurritoBooks(createInitialState(memory));
+
+    cy.get(`#checkbox-list-label-${PROJ_ID}`).click();
+    cy.get(`#checkbox-list-label-${GEN_PROJ_ID}`).click();
+
     cy.contains('h5', 'Selected Books')
       .parent()
       .within(() => {

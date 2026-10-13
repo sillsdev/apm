@@ -48,6 +48,12 @@ describe('projectDefaultToBurritoBookKey', () => {
     expect(projectDefaultToBurritoBookKey('000', num2)).toBe('000');
   });
 
+  it('keeps project-sort general keys instead of mapping them to scripture', () => {
+    expect(projectDefaultToBurritoBookKey('A0104', num2)).toBe('A0104');
+    expect(projectDefaultToBurritoBookKey('B0108', num2)).toBe('B0108');
+    expect(projectDefaultToBurritoBookKey('E0104', num2)).toBe('E0104');
+  });
+
   it('returns undefined for unrecognized non-Akuo strings', () => {
     expect(
       projectDefaultToBurritoBookKey('not-a-book-code', num2)
@@ -112,6 +118,20 @@ describe('collectBurritoBooks', () => {
         }
       )
     ).toEqual(['GEN']);
+  });
+
+  it('uses a project-sort general key when passages have no book', () => {
+    expect(
+      collect(
+        { 'proj-g': 'A0104' },
+        {
+          projects: [project('proj-g')],
+          plans: [planFor('plan-g', 'proj-g')],
+          sections: [sectionFor('sec-g', 'plan-g')],
+          passages: [passageFor('pas-g', 'sec-g')],
+        }
+      )
+    ).toEqual(['A0104']);
   });
 
   it('uses the project book default when passages have no book', () => {
