@@ -192,7 +192,7 @@ export const Uploader = (props: IProps) => {
     } else successCount.current = 0;
     //force finishMessage to show a message
     fileList.current = [new File([], 'test.txt')];
-    finishMessage();
+    void finishMessage();
   };
   const clearErrors = () => {
     let err = errMsgs.pop();
@@ -223,7 +223,15 @@ export const Uploader = (props: IProps) => {
       setComplete(0);
       setBusy(false);
       cancelled.current = successCount.current <= 0;
-      if (finish) finish(planIdRef.current, mediaIdRef.current);
+      if (finish) {
+        finish(planIdRef.current, mediaIdRef.current).catch((err: unknown) => {
+          logError(
+            Severity.error,
+            errorReporter,
+            infoMsg(err as Error, 'upload finish failed')
+          );
+        });
+      }
     }, 1000);
   };
 
@@ -297,7 +305,7 @@ export const Uploader = (props: IProps) => {
     if (next < uploadList.length && !cancelled.current) {
       doUpload(next);
     } else if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
-      pullTableList(
+      void pullTableList(
         'mediafile',
         mediaIdRef.current,
         memory,
@@ -305,11 +313,11 @@ export const Uploader = (props: IProps) => {
         backup,
         errorReporter
       ).then(() => {
-        finishMessage();
+        void finishMessage();
         onOpen(false); //do this just for uploader
       });
     } else {
-      finishMessage();
+      void finishMessage();
       onOpen(false); //do this just for uploader
     }
   };
@@ -439,7 +447,7 @@ export const Uploader = (props: IProps) => {
         UploadType.FaithbridgeLink,
       ].includes(uploadType)
     ) {
-      preUpload(files);
+      void preUpload(files);
       uploadFiles(files);
     }
     fileList.current = files;
@@ -514,7 +522,12 @@ export const Uploader = (props: IProps) => {
 
   useEffect(() => {
     if (importList && importList.length > 0) {
-      uploadMedia(importList);
+      uploadMedia(importList).catch((err: unknown) => {
+        showMessage(
+          err instanceof Error ? err.message : String(err),
+          AlertSeverity.Error
+        );
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importList]);

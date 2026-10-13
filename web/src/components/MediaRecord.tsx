@@ -890,7 +890,7 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if ((preload ?? 0) > 0 && !loading) {
-      handleLoadAudio();
+      void handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload]);
@@ -904,7 +904,7 @@ function MediaRecord(props: IProps) {
     }
     // Skip while saving — mediaId may update when the new mediafile syncs in.
     if (!loading) {
-      handleLoadAudio();
+      void handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
@@ -918,7 +918,7 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (loading || !mediaId) return;
     if (loadRequestedIdRef.current === mediaId) return;
-    handleLoadAudio();
+    void handleLoadAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, mediaId]);
 
