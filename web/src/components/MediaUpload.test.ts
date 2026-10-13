@@ -66,6 +66,6 @@ describe('filterFilesBySizeLimit', () => {
         { name: 'take.wav', size: mb(31) },
         { name: 'clip.ogg', size: mb(40.4) },
       ])
-    ).toBe('take.wav (31MB), clip.ogg (40MB)');
+    ).toBe('take.wav (31.00MB), clip.ogg (40.40MB)');
   });
 });

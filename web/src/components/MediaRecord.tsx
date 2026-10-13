@@ -621,7 +621,7 @@ function MediaRecord(props: IProps) {
 
   const tooBigMessage = (template: string, bytes: number) =>
     template
-      .replace('{0}', Math.round(bytes / 1000000).toString())
+      .replace('{0}', (bytes / 1000000).toFixed(2))
       .replace('{1}', sizeLimit.toString());
 
   useEffect(() => {

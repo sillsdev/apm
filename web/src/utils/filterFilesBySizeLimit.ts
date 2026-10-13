@@ -21,6 +21,6 @@ export function oversizedFileList(
   files: { name: string; size: number }[]
 ): string {
   return files
-    .map((f) => `${f.name} (${Math.round(f.size / 1000000)}MB)`)
+    .map((f) => `${f.name} (${(f.size / 1000000).toFixed(2)}MB)`)
     .join(', ');
 }

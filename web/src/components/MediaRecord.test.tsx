@@ -126,6 +126,7 @@ jest.mock('react-redux', () => ({
         loading: 'Loading',
         processing: 'Processing...',
         compressError: 'Compress error',
+        compressErrorTooBig: 'Compress error too big',
         toobig: 'Too big {0}MB/{1}MB',
         toobigwarn: 'Too big warn {0}/{1}',
         tooBigAfterCompression: 'Too big after compression {0}MB/{1}MB',
@@ -286,7 +287,7 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big 1MB/1MB'
+        'Too big 1.25MB/1MB'
       );
       expect(document.getElementById('size')?.textContent).toBe('1.25MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
@@ -314,7 +315,7 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(mockShowMessage).toHaveBeenCalledWith(
-        'Too big after compression 2MB/1MB',
+        'Too big after compression 2.00MB/1MB',
         'error'
       );
     });
@@ -344,7 +345,7 @@ describe('MediaRecord save gating', () => {
       expect(setCanSave).toHaveBeenLastCalledWith(true);
       expect(document.getElementById('size')?.textContent).toBe('0.88MB');
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big warn 1/1'
+        'Too big warn 0.88/1'
       );
     });
   });
@@ -369,7 +370,9 @@ describe('MediaRecord save gating', () => {
     });
 
     await waitFor(() => {
-      expect(mockShowMessage).toHaveBeenCalledWith('Too big 2MB/1MB');
+      expect(mockShowMessage).toHaveBeenCalledWith(
+        'Compress error too big Too big 2.00MB/1MB encode failed'
+      );
     });
     expect(mockUploadMedia).not.toHaveBeenCalled();
     expect(onSaveRejected).toHaveBeenCalled();
@@ -394,7 +397,7 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big 2MB/1MB'
+        'Too big 1.71MB/1MB'
       );
       expect(document.getElementById('size')?.textContent).toBe('1.71MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
