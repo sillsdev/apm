@@ -1,4 +1,3 @@
-import React from 'react';
 import { act, cleanup, render } from '@testing-library/react';
 import { UploadType } from './UploadType';
 

@@ -1,4 +1,5 @@
 import {
+  OPUS_MONO_COMPRESSION,
   RECORD_PCM16_BYTES_PER_SECOND,
   estimatedUploadBytes,
 } from './mediaRecordSize';
@@ -8,20 +9,50 @@ describe('estimatedUploadBytes', () => {
 
   it('keeps a 57 minute mono float32 take under a 30 MB compressed limit', () => {
     const float32Wav = minute * 48_000 * 4;
-    const estimated = estimatedUploadBytes(float32Wav, 20, true);
-    expect(estimated / 1_000_000).toBeCloseTo(16.416, 3);
+    const estimated = estimatedUploadBytes(
+      float32Wav,
+      OPUS_MONO_COMPRESSION,
+      true
+    );
+    expect(estimated / 1_000_000).toBeCloseTo(27.36, 2);
     expect(estimated).toBeLessThan(30 * 1_000_000);
+  });
+
+  it('prices a 64 kbps file of 43309332 bytes over a 30 MB limit', () => {
+    const encoded = 43_309_332;
+    const float32Wav = encoded * OPUS_MONO_COMPRESSION * 2;
+    expect(estimatedUploadBytes(float32Wav, OPUS_MONO_COMPRESSION, true)).toBe(
+      encoded
+    );
+    expect(encoded).toBeGreaterThan(30 * 1_000_000);
   });
 
   it('matches that estimate from the live 16-bit rate', () => {
     const pcm16 = minute * RECORD_PCM16_BYTES_PER_SECOND;
-    expect(estimatedUploadBytes(pcm16, 20, false)).toBe(
-      estimatedUploadBytes(minute * 48_000 * 4, 20, true)
+    expect(estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, false)).toBe(
+      estimatedUploadBytes(minute * 48_000 * 4, OPUS_MONO_COMPRESSION, true)
     );
   });
 
   it('counts a saved WAV as the float32 file', () => {
     const float32Wav = minute * 48_000 * 4;
     expect(estimatedUploadBytes(float32Wav, 1, true)).toBe(float32Wav);
+  });
+
+  it('prices a stereo take at 1.5 times mono for the same duration', () => {
+    const monoFloat32 = 60 * 48_000 * 4;
+    const mono = estimatedUploadBytes(
+      monoFloat32,
+      OPUS_MONO_COMPRESSION,
+      true,
+      1
+    );
+    const stereo = estimatedUploadBytes(
+      monoFloat32 * 2,
+      OPUS_MONO_COMPRESSION,
+      true,
+      2
+    );
+    expect(stereo).toBe(mono * 1.5);
   });
 });

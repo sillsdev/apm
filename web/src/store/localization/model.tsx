@@ -985,7 +985,7 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "savingComplete": string;
     "selectFiles": string;
     "size": string;
-    "toobig": string;
+    "fileTooBig": string;
     "unsupported": string;
     "uploadComplete": string;
     "user": string;
@@ -1166,6 +1166,7 @@ export interface IPassageRecordStrings extends Localize.LocalizedStringsMethods 
     "compressed": string;
     "compressing": string;
     "compressError": string;
+    "compressErrorTooBig": string;
     "defaultFilename": string;
     "fileName": string;
     "loading": string;
@@ -1174,6 +1175,7 @@ export interface IPassageRecordStrings extends Localize.LocalizedStringsMethods 
     "saving": string;
     "title": string;
     "toobig": string;
+    "tooBigAfterCompression": string;
     "toobigwarn": string;
     "uncompressed": string;
 };

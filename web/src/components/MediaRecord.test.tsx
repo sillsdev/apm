@@ -74,6 +74,7 @@ jest.mock('../crud', () => ({
 }));
 
 jest.mock('../hoc/SnackBar', () => ({
+  AlertSeverity: { Error: 'error' },
   useSnackBar: () => ({
     showMessage: (...args: unknown[]) => mockShowMessage(...args),
   }),
@@ -125,8 +126,9 @@ jest.mock('react-redux', () => ({
         loading: 'Loading',
         processing: 'Processing...',
         compressError: 'Compress error',
-        toobig: 'Too big {1}',
-        toobigwarn: 'Too big warn {1}',
+        toobig: 'Too big {0}MB/{1}MB',
+        toobigwarn: 'Too big warn {0}/{1}',
+        tooBigAfterCompression: 'Too big after compression {0}MB/{1}MB',
       };
     }
     return {
@@ -265,10 +267,63 @@ describe('MediaRecord save gating', () => {
     });
   });
 
+  it('blocks a take the 64 kbps estimate puts over the limit', async () => {
+    const setCanSave = jest.fn();
+    // 30 MB float32 is 0.75 MB at ratio 20 and 1.25 MB at 64 kbps (ratio 12).
+    const blob = new Blob([new Uint8Array(30 * 1000000)], {
+      type: 'audio/wav',
+    });
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => {
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big 1MB/1MB'
+      );
+      expect(document.getElementById('size')?.textContent).toBe('1.25MB');
+      expect(latestWsProps?.isSaveDisabled).toBe(true);
+      expect(setCanSave).toHaveBeenLastCalledWith(false);
+    });
+  });
+
+  it('shows an error when the compressed file exceeds the limit', async () => {
+    mockSaveRequested = () => true;
+    mockConvertToFormat = jest.fn(
+      async () => new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/ogg' })
+    );
+    render(<MediaRecord {...defaultProps} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockShowMessage).toHaveBeenCalledWith(
+        'Too big after compression 2MB/1MB',
+        'error'
+      );
+    });
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+  });
+
   it('keeps save enabled when a mono float32 take is under the compressed limit', async () => {
     const setCanSave = jest.fn();
-    // 21 MB float32 WAV ≈ 0.53 MB compressed (21 / 2 / 20). The old check
-    // treated this as over a 20 MB raw limit.
+    // 21 MB float32 WAV is under a 1 MB compressed limit at 64 kbps.
     const blob = new Blob([new Uint8Array(21 * 1000000)], {
       type: 'audio/wav',
     });
@@ -287,16 +342,42 @@ describe('MediaRecord save gating', () => {
       expect(latestWsProps?.showWaveformSave).toBe(true);
       expect(latestWsProps?.isSaveDisabled).toBe(false);
       expect(setCanSave).toHaveBeenLastCalledWith(true);
-      expect(document.getElementById('size')?.textContent).toBe('0.53MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.88MB');
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big warn 1'
+        'Too big warn 1/1'
       );
     });
   });
 
+  it('does not upload the wav when compression fails and the wav exceeds the limit', async () => {
+    mockSaveRequested = () => true;
+    mockConvertToFormat = jest.fn(async () => {
+      throw new Error('encode failed');
+    });
+    const onSaveRejected = jest.fn();
+    render(<MediaRecord {...defaultProps} onSaveRejected={onSaveRejected} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/wav' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockShowMessage).toHaveBeenCalledWith('Too big 2MB/1MB');
+    });
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+    expect(onSaveRejected).toHaveBeenCalled();
+  });
+
   it('warns with the compressed limit when a mono float32 take exceeds it', async () => {
     const setCanSave = jest.fn();
-    // typeLimit is 1 MB. Float32 mono → 16-bit / 20 must clear 1 MB: > 40 MB.
+    // typeLimit is 1 MB. Float32 mono → 16-bit / 12 must clear 1 MB: > 24 MB.
     const blob = new Blob([new Uint8Array(41 * 1000000)], {
       type: 'audio/wav',
     });
@@ -312,8 +393,10 @@ describe('MediaRecord save gating', () => {
     });
 
     await waitFor(() => {
-      expect(document.getElementById('warning')?.textContent).toBe('Too big 1');
-      expect(document.getElementById('size')?.textContent).toBe('1.02MB');
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big 2MB/1MB'
+      );
+      expect(document.getElementById('size')?.textContent).toBe('1.71MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });

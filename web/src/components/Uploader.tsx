@@ -493,7 +493,7 @@ export const Uploader = (props: IProps) => {
           uploadError.substring(0, uploadError.indexOf(':unsupported'))
         );
       else if (uploadError.indexOf('toobig') > 0) {
-        msg = t.toobig
+        msg = t.fileTooBig
           .replace(
             '{0}',
             uploadError.substring(0, uploadError.indexOf(':toobig'))

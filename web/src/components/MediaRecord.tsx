@@ -26,7 +26,7 @@ import {
   useMediaUpload,
   convertToFormat,
 } from '../crud';
-import { useSnackBar } from '../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
 import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
@@ -36,8 +36,10 @@ import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
 import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
 import {
+  OPUS_MONO_COMPRESSION,
   RECORD_PCM16_BYTES_PER_SECOND,
   estimatedUploadBytes,
+  wavChannelCount,
 } from './mediaRecordSize';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
@@ -271,7 +273,7 @@ function MediaRecord(props: IProps) {
   const initialMimeType = getMimeTypeFromSettings();
   const [mimeType, setMimeType] = useState(initialMimeType);
   const [compression, setCompression] = useState(
-    initialMimeType === 'audio/wav' ? 1 : 20
+    initialMimeType === 'audio/wav' ? 1 : OPUS_MONO_COMPRESSION
   );
   const [warning, setWarning] = useState('');
   const [waveformDuration, setWaveformDuration] = useState(0);
@@ -281,6 +283,8 @@ function MediaRecord(props: IProps) {
   const [processingRecording, setProcessingRecordingx] = useState(false);
   const processingRecordingRef = useRef(false);
   const [tooBig, setTooBig] = useState(false);
+  /** Channels in the editor WAV. Live capture with no prior take is mono. */
+  const [channels, setChannels] = useState(1);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
   const [converting, setConverting] = useState(false);
@@ -437,7 +441,7 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     const newMimeType = getMimeTypeFromSettings();
     setMimeType(newMimeType);
-    setCompression(newMimeType === 'audio/wav' ? 1 : 20);
+    setCompression(newMimeType === 'audio/wav' ? 1 : OPUS_MONO_COMPRESSION);
     // Show status message if allowWave is true but using compressed format
     // Only update if not currently showing a temporary status (saving, compressing, etc.)
     if (!uploading && !converting && !saveRef.current) {
@@ -526,22 +530,41 @@ function MediaRecord(props: IProps) {
     if (setCanCancel) setCanCancel(!converting && !uploading);
   }, [converting, uploading, setCanCancel]);
 
+  useEffect(() => {
+    if (!audioBlob) {
+      setChannels(1);
+      return;
+    }
+    let cancelled = false;
+    void wavChannelCount(audioBlob).then((count) => {
+      if (!cancelled) setChannels(count);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [audioBlob]);
+
   // While recording, audioBlob is the previous take (it only refreshes after
   // stop via onBlobReady). Estimate from the live duration so the size warning
   // shows before a long take is wasted; the blob size takes over once recording
-  // stops. Both are reported as the estimated compressed upload size.
+  // stops. This estimate is the size gate to enable save; the compressed file is not checked again.
   const estimatedBytes = useMemo(
     () =>
       recording
         ? estimatedUploadBytes(
             Math.round(waveformDuration * RECORD_PCM16_BYTES_PER_SECOND),
             compression,
-            false
+            false,
+            channels
           )
-        : estimatedUploadBytes(audioBlob?.size ?? 0, compression, true),
-    [recording, waveformDuration, audioBlob, compression]
+        : estimatedUploadBytes(
+            audioBlob?.size ?? 0,
+            compression,
+            true,
+            channels
+          ),
+    [recording, waveformDuration, audioBlob, compression, channels]
   );
-
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
 
@@ -595,13 +618,18 @@ function MediaRecord(props: IProps) {
     },
     [toolId, saveCompleted, onReady, onSaveRejected]
   );
+
+  const tooBigMessage = (template: string, bytes: number) =>
+    template
+      .replace('{0}', Math.round(bytes).toString())
+      .replace('{1}', sizeLimit.toString());
+
   useEffect(() => {
-    const big = estimatedBytes > sizeLimit * 1000000;
+    const limitBytes = sizeLimit * 1000000;
+    const big = estimatedBytes > limitBytes;
     setTooBig(big);
     if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * 1000000)
-      setWarning(
-        (big ? t.toobig : t.toobigwarn).replace('{1}', sizeLimit.toString())
-      );
+      setWarning(tooBigMessage(big ? t.toobig : t.toobigwarn, estimatedBytes));
     else setWarning('');
 
     if (saveRequested(toolId)) {
@@ -616,26 +644,45 @@ function MediaRecord(props: IProps) {
             setStatusText(t.compressing);
             setConverting(true);
             convertToFormat(audioBlob, mimeType)
-              .then((convert_blob) =>
-                doUpload(convert_blob, mimeType, filetype)
+              .then((convert_blob) => {
+                if (convert_blob.size > sizeLimit * 1000000) {
+                  const message = tooBigMessage(
+                    t.tooBigAfterCompression,
+                    convert_blob.size
+                  );
+                  showMessage(message, AlertSeverity.Error);
+                  setWarning(message);
+                  setTooBig(true);
+                  setConverting(false);
+                  handleSaveFailed(new Error(message));
+                  return;
+                }
+                return doUpload(convert_blob, mimeType, filetype)
                   .then(() => {
                     convertComplete();
                   })
-                  .catch(handleSaveFailed)
-              )
+                  .catch(handleSaveFailed);
+              })
               .catch((error) => {
                 // If conversion fails, show error and save as WAV instead
-                const errorMessage =
-                  t.compressError +
-                  (error instanceof Error ? '    ' + error.message : '');
+                const big = audioBlob.size > sizeLimit * 1000000;
+                const errMsg =
+                  error instanceof Error ? error.message : String(error ?? '');
+                const errorMessage = big
+                  ? `${t.compressErrorTooBig} ${tooBigMessage(t.toobig, audioBlob.size)} ${errMsg}`
+                  : `${t.compressError}  ${errMsg}`;
                 showMessage(errorMessage);
                 setConverting(false);
-                doUpload(audioBlob, 'audio/wav', 'wav')
-                  .then(() => {
-                    setLoading(false);
-                    onReady?.();
-                  })
-                  .catch(handleSaveFailed);
+                if (!big) {
+                  doUpload(audioBlob, 'audio/wav', 'wav')
+                    .then(() => {
+                      setLoading(false);
+                      onReady?.();
+                    })
+                    .catch(handleSaveFailed);
+                } else {
+                  handleSaveFailed(new Error(errorMessage));
+                }
               });
           } else {
             doUpload(audioBlob, mimeType, filetype)
@@ -969,7 +1016,6 @@ function MediaRecord(props: IProps) {
   if (!showSize && !metaData) {
     return content;
   }
-
   return effectiveMobileView ? (
     content
   ) : (
