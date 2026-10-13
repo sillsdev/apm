@@ -1,4 +1,7 @@
-import { filterFilesBySizeLimit, oversizedFileList } from '../utils/filterFilesBySizeLimit';
+import {
+  filterFilesBySizeLimit,
+  oversizedFileList,
+} from '../utils/filterFilesBySizeLimit';
 import { typeLimit } from '../utils/typeLimit';
 import { UploadType } from './UploadType';
 
