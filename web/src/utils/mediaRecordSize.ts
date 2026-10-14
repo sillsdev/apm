@@ -10,9 +10,10 @@ export const OPUS_STEREO_OVER_MONO = 96 / 64;
 
 /**
  * Above the 64/96 kbps target so Ogg overhead and a VBR spike fail before encode.
- * ponytail: fixed 5%. A file this holds back can still fit after a measured encode.
+ * A take this priced at 29.12 MB encoded to 31.29 MB.
+ * fixed 15%.
  */
-export const OPUS_ESTIMATE_HEADROOM = 1.05;
+export const OPUS_ESTIMATE_HEADROOM = 1.15;
 
 /** Float32 mono at WavRecorder's preferred 48 kHz. Live estimate when saving as WAV. */
 export const RECORD_FLOAT32_BYTES_PER_SECOND = 48_000 * 4;

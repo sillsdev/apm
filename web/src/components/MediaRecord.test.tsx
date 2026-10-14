@@ -314,21 +314,21 @@ describe('MediaRecord save gating', () => {
   };
 
   it('prices a live stereo take at 1.5 times the same mono duration', async () => {
-    // 62.5s of 48 kHz 16-bit is 0.53MB mono and 0.79MB at 96 kbps stereo, with headroom.
+    // 62.5s at 64 kbps with 15% headroom is 0.57MB mono and 0.86MB stereo.
     await recordLive(62.5);
     await waitFor(() => {
-      expect(document.getElementById('size')?.textContent).toBe('0.53MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.57MB');
     });
 
     await recordLive(62.5, wavWithChannels(2));
     await waitFor(() => {
-      expect(document.getElementById('size')?.textContent).toBe('0.79MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.86MB');
     });
   });
 
   it('warns near the limit while recording and stays quiet further below it', async () => {
     mockSizeLimit = 30;
-    await recordLive(3333);
+    await recordLive(3043);
     await waitFor(() => {
       expect(document.getElementById('size')?.textContent).toBe('28.00MB');
     });
@@ -336,7 +336,7 @@ describe('MediaRecord save gating', () => {
     expect(latestWsProps?.isSaveDisabled).toBe(false);
 
     act(() => {
-      latestWsProps?.onDuration?.(3512);
+      latestWsProps?.onDuration?.(3206);
     });
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
@@ -352,7 +352,7 @@ describe('MediaRecord save gating', () => {
 
   it('blocks a take the 64 kbps estimate puts over the limit', async () => {
     const setCanSave = jest.fn();
-    // 156 s at 64 kbps with 5% headroom is 1.31 MB.
+    // 156 s at 64 kbps with 15% headroom is 1.44 MB.
     const blob = float32Wav(1000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
@@ -367,9 +367,9 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big 1.31MB/1MB'
+        'Too big 1.44MB/1MB'
       );
-      expect(document.getElementById('size')?.textContent).toBe('1.31MB');
+      expect(document.getElementById('size')?.textContent).toBe('1.44MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });
@@ -521,7 +521,7 @@ describe('MediaRecord save gating', () => {
     });
     await waitFor(() => {
       // 12 s at 64 kbps with headroom.
-      expect(document.getElementById('size')?.textContent).toBe('0.10MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.11MB');
     });
 
     requested = true;
@@ -565,7 +565,7 @@ describe('MediaRecord save gating', () => {
 
     // Saving re-encodes it to Opus, so the 2 MB source size does not matter.
     await waitFor(() => {
-      expect(document.getElementById('size')?.textContent).toBe('0.10MB');
+      expect(document.getElementById('size')?.textContent).toBe('0.11MB');
       expect(latestWsProps?.isSaveDisabled).toBe(false);
       expect(setCanSave).toHaveBeenLastCalledWith(true);
     });
@@ -573,7 +573,7 @@ describe('MediaRecord save gating', () => {
 
   it('keeps save enabled when a mono take is under the compressed limit', async () => {
     const setCanSave = jest.fn();
-    // 110 s at 64 kbps with 5% headroom is 0.92 MB, under a 1 MB limit.
+    // 100 s at 64 kbps with 15% headroom is 0.92 MB, under a 1 MB limit.
     const blob = float32Wav(1000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
@@ -582,7 +582,7 @@ describe('MediaRecord save gating', () => {
     act(() => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
-      latestWsProps?.onDuration?.(110);
+      latestWsProps?.onDuration?.(100);
       latestWsProps?.onBlobReady?.(blob);
     });
 
@@ -734,7 +734,7 @@ describe('MediaRecord save gating', () => {
       );
     });
     await waitFor(() =>
-      expect(document.getElementById('size')?.textContent).toBe('0.10MB')
+      expect(document.getElementById('size')?.textContent).toBe('0.11MB')
     );
 
     onSaveRejected.mockClear();
@@ -820,7 +820,7 @@ describe('MediaRecord save gating', () => {
   it('prices an edited stereo mp3 at the stereo rate', async () => {
     const setCanSave = jest.fn();
     // The editor re-exports an edited stereo mp3 as a stereo WAV. 142 s at
-    // 96 kbps with 5% headroom is 1.79 MB, over a 1 MB limit.
+    // 96 kbps with 15% headroom is 1.96 MB, over a 1 MB limit.
     const blob = float32Wav(1000, 2);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
@@ -835,9 +835,9 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(document.getElementById('warning')?.textContent).toBe(
-        'Too big 1.79MB/1MB'
+        'Too big 1.96MB/1MB'
       );
-      expect(document.getElementById('size')?.textContent).toBe('1.79MB');
+      expect(document.getElementById('size')?.textContent).toBe('1.96MB');
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });

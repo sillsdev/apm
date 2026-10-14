@@ -107,21 +107,21 @@ describe('useRecordSizeLimit Opus estimate', () => {
   });
 
   it('warns near the limit and blocks over it while still recording', () => {
-    // 30 MB at 64 kbps plus 5% headroom is about 59.5 minutes.
+    // 30 MB at 64 kbps plus 15% headroom is about 54 minutes.
     const { result, rerender } = renderHook(
       (next: RecordSizeLimitInput) => useRecordSizeLimit(next),
-      { initialProps: opus({ recording: true, waveformDuration: 3300 }) }
+      { initialProps: opus({ recording: true, waveformDuration: 3000 }) }
     );
     expect(result.current.sizeStatus).toBe('ok');
 
-    rerender(opus({ recording: true, waveformDuration: 3500 }));
+    rerender(opus({ recording: true, waveformDuration: 3206 }));
     expect(result.current.sizeStatus).toBe('warn');
     expect(result.current.sizeBlocksSave).toBe(false);
 
-    rerender(opus({ recording: true, waveformDuration: 3600 }));
+    rerender(opus({ recording: true, waveformDuration: 3300 }));
     expect(result.current.sizeStatus).toBe('over');
     expect(result.current.sizeBlocksSave).toBe(true);
-    expect(result.current.sizeWarning).toBe('Too big 30.24MB/30MB');
+    expect(result.current.sizeWarning).toBe('Too big 30.36MB/30MB');
   });
 });
 

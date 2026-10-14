@@ -28,13 +28,18 @@ describe('estimatedOpusBytes', () => {
     expect(estimatedOpusBytes(60, 1)).toBe(
       60 * OPUS_MONO_BYTES_PER_SECOND * OPUS_ESTIMATE_HEADROOM
     );
-    expect(estimatedOpusBytes(60, 1)).toBeCloseTo(504_000);
+    expect(estimatedOpusBytes(60, 1)).toBeCloseTo(552_000);
   });
 
-  it('keeps a 57 minute mono take under a 30 MB limit', () => {
+  it('prices a take the 5% estimate called 29.12 MB at least as high as its 31.29 MB encode', () => {
+    const seconds = 29.12e6 / (OPUS_MONO_BYTES_PER_SECOND * 1.05);
+    expect(estimatedOpusBytes(seconds, 1)).toBeGreaterThanOrEqual(31.29e6);
+  });
+
+  it('prices a 57 minute mono take over a 30 MB limit', () => {
     const estimated = estimatedOpusBytes(57 * 60, 1);
-    expect(estimated / 1_000_000).toBeCloseTo(28.73, 2);
-    expect(estimated).toBeLessThan(30 * 1_000_000);
+    expect(estimated / 1_000_000).toBeCloseTo(31.46, 2);
+    expect(estimated).toBeGreaterThan(30 * 1_000_000);
   });
 
   it('prices stereo at 96 kbps, 1.5 times mono', () => {
