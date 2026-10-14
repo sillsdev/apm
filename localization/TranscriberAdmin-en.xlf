@@ -10558,6 +10558,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.changeFailed">
+         <segment>
+            <source>Could not update the recording: {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.convertVoice">
          <segment>
             <source>Convert Voice {0}</source>
@@ -10591,6 +10597,12 @@
       <unit id="wsAudioPlayer.copyRegion">
          <segment>
             <source>Copy [{0}]</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.cutFailed">
+         <segment>
+            <source>Cut failed: {0}</source>
             <target/>
          </segment>
       </unit>
@@ -10666,6 +10678,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.pasteFailed">
+         <segment>
+            <source>Paste failed: {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.pasteRegion">
          <segment>
             <source>Paste [{0}]</source>
@@ -10711,6 +10729,12 @@
       <unit id="wsAudioPlayer.record">
          <segment>
             <source>Record [{0}]</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.recordStartFailed">
+         <segment>
+            <source>Recording could not start: {0}</source>
             <target/>
          </segment>
       </unit>
@@ -10807,6 +10831,12 @@
       <unit id="wsAudioPlayer.tooQuiet">
          <segment>
             <source>The sample is too quiet.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.undoFailed">
+         <segment>
+            <source>Undo failed: {0}</source>
             <target/>
          </segment>
       </unit>
