@@ -99,7 +99,7 @@ export function PassageCard(props: IProps) {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: isChapter ? 0 : 1,
+          gap: isChapter ? 0 : 1.5,
           flex: 1,
         }}
       >
