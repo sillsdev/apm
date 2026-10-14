@@ -93,6 +93,7 @@ jest.mock('../context/HotKeyContext', () => {
 
 type UseWaveSurfer = typeof import('../crud/useWaveSurfer').useWaveSurfer;
 import WSAudioPlayer from './WSAudioPlayer';
+import { AudioAiError, AudioAiErrorCode } from '../utils/audioAiError';
 
 const { subscribe: mockSubscribe, unsubscribe: mockUnsubscribe } = (
   jest.requireMock('../context/HotKeyContext') as {
@@ -192,6 +193,9 @@ jest.mock('react-redux', () => ({
       'The microphone was disconnected. Select another microphone to record.',
     microphoneDisconnectedFallback:
       'The preferred microphone was disconnected. Default microphone selected.',
+    mustBeOnline: 'You must be online to use this feature',
+    expiredToken:
+      "Your login token has expired and can't be automatically renewed.  Please log out and login again.",
     getString: (key: string) => key,
   }),
   shallowEqual: jest.fn(),
@@ -385,7 +389,10 @@ describe('WSAudioPlayer record hotkeys', () => {
     mockGetOrgDefault.mockReset();
   });
 
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    (waveSurferMock.wsDuration as jest.Mock).mockReturnValue(0);
+  });
 
   it('re-subscribes F9 when loading finishes so the handler is not stale', () => {
     const { rerender } = render(
@@ -784,11 +791,12 @@ describe('WSAudioPlayer record hotkeys', () => {
     expectReported('Recording could not start: boom');
   });
 
-  it('reports a failed edit and leaves Save enabled', async () => {
+  it('reports a failed edit and leaves Save disabled', async () => {
     let blobReady = true;
     const setBlobReady = (ready: boolean) => {
       blobReady = ready;
     };
+    const onBlobReady = jest.fn();
     (waveSurferMock.wsBlob as jest.Mock).mockImplementationOnce(() =>
       Promise.reject(new Error('boom'))
     );
@@ -796,6 +804,7 @@ describe('WSAudioPlayer record hotkeys', () => {
     const props = {
       ...defaultProps,
       setBlobReady,
+      onBlobReady,
       handleSave: () => undefined,
       showWaveformSave: true,
     };
@@ -815,9 +824,9 @@ describe('WSAudioPlayer record hotkeys', () => {
     });
     view.rerender(<WSAudioPlayer {...props} isSaveDisabled={!blobReady} />);
 
-    expect(document.getElementById('rec-save')).toBeEnabled();
+    expect(onBlobReady).not.toHaveBeenCalled();
+    expect(document.getElementById('rec-save')).toBeDisabled();
     expectReported('Could not update the recording: boom');
-    (waveSurferMock.wsDuration as jest.Mock).mockReturnValue(0);
   });
 
   it('does not copy or paste while a text field is focused', () => {
@@ -954,6 +963,43 @@ describe('WSAudioPlayer record hotkeys', () => {
     });
 
     expect(falseCalls() - before).toBe(1);
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  async function deliverAiError(error: Error) {
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    mockShowMessage.mockClear();
+    act(() => {
+      aiCallback?.(error);
+    });
+  }
+
+  it('shows the online message when AI is skipped offline', async () => {
+    await deliverAiError(new AudioAiError(AudioAiErrorCode.offline));
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      'You must be online to use this feature',
+      'error'
+    );
+  });
+
+  it('shows the token message when AI is skipped with no token', async () => {
+    await deliverAiError(new AudioAiError(AudioAiErrorCode.noToken));
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      "Your login token has expired and can't be automatically renewed.  Please log out and login again.",
+      'error'
+    );
+  });
+
+  it('does not toast when AI is canceled', async () => {
+    await deliverAiError(new AudioAiError(AudioAiErrorCode.canceled));
+    expect(mockShowMessage).not.toHaveBeenCalled();
     expect(screen.queryByText('AI in progress')).toBeNull();
   });
 });

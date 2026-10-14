@@ -39,6 +39,7 @@ jest.mock('./loadBlob', () => ({
 }));
 
 import { AudioAiFunc, useAudioAi } from './useAudioAi';
+import { AudioAiError, AudioAiErrorCode } from './audioAiError';
 import { axiosGet } from './axios';
 
 describe('useAudioAi', () => {
@@ -57,7 +58,9 @@ describe('useAudioAi', () => {
     });
 
     expect(cb).toHaveBeenCalledTimes(1);
-    expect(cb.mock.calls[0][0]).toBeInstanceOf(Error);
+    const error = cb.mock.calls[0][0];
+    expect(error).toBeInstanceOf(AudioAiError);
+    expect((error as AudioAiError).code).toBe(AudioAiErrorCode.offline);
   });
 
   it('reports an error when the AI request is skipped because there is no token', async () => {
@@ -76,6 +79,8 @@ describe('useAudioAi', () => {
 
     expect(axiosGet).not.toHaveBeenCalled();
     expect(cb).toHaveBeenCalledTimes(1);
-    expect(cb.mock.calls[0][0]).toBeInstanceOf(Error);
+    const error = cb.mock.calls[0][0];
+    expect(error).toBeInstanceOf(AudioAiError);
+    expect((error as AudioAiError).code).toBe(AudioAiErrorCode.noToken);
   });
 });

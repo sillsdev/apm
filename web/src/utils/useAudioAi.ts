@@ -14,6 +14,7 @@ import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
 import { MediaFileAttributes } from '../model/mediafile';
 import { runWithUploadRetries } from '../store/upload/uploadRetry';
+import { AudioAiError, AudioAiErrorCode } from './audioAiError';
 
 interface fileTask {
   taskId: string;
@@ -54,7 +55,7 @@ export const useAudioAi = (): AudioAIResult => {
   const taskTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const getGlobal = useGetGlobal();
-  const cancelled = new Error('canceled');
+  const cancelled = new AudioAiError(AudioAiErrorCode.canceled);
 
   const cleanupTimer = (): void => {
     if (returnAsS3List.current.length === 0 && taskTimer.current) {
@@ -174,7 +175,11 @@ export const useAudioAi = (): AudioAIResult => {
     cb: (file: File | Error) => void
   ): Promise<void> => {
     if (getGlobal('offline') || !getGlobal('connected') || !token) {
-      cb(new Error(token ? 'offline' : 'no token'));
+      cb(
+        new AudioAiError(
+          token ? AudioAiErrorCode.offline : AudioAiErrorCode.noToken
+        )
+      );
       return;
     }
     const result = await axiosGet(
@@ -236,7 +241,7 @@ export const useAudioAi = (): AudioAIResult => {
     cb,
   }: IRequestAudio): Promise<void> => {
     if (getGlobal('offline') || !getGlobal('connected')) {
-      cb(new Error('offline'));
+      cb(new AudioAiError(AudioAiErrorCode.offline));
       return;
     }
     const useS3 = true; // file.size > 6000000 || Boolean(targetVoice);  V2 doesn't work with data in request

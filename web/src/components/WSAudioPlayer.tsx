@@ -84,6 +84,7 @@ import {
 } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
+import { AudioAiError, AudioAiErrorCode } from '../utils/audioAiError';
 import AeroTaskErrorMessage from '../business/asr/AeroTaskErrorMessage';
 import {
   aeroTaskErrorParts,
@@ -603,17 +604,25 @@ function WSAudioPlayer(props: IProps) {
     setCurrentSegmentx(value);
     currentSegmentRef.current = value;
   }, []);
-  const [pasteBusy, setPasteBusy] = useState(false);
-  const pasteInFlightRef = useRef(false);
-  // When the blob or reset changes, clear the selection during this render,
-  // before Copy and Cut read it.
+  const [pasteBusy, setPasteBusyx] = useState(false);
+  const pasteBusyRef = useRef(false);
+  const setPasteBusy = useCallback((value: boolean) => {
+    setPasteBusyx(value);
+    pasteBusyRef.current = value;
+  }, []);
+  // New audio drops the selection. State is adjusted here so this commit
+  // already has none. The ref is written by the setter before paint.
   const [trackedBlob, setTrackedBlob] = useState(blob);
   const [trackedReset, setTrackedReset] = useState(doReset);
   if (blob !== trackedBlob || doReset !== trackedReset) {
     setTrackedBlob(blob);
     setTrackedReset(doReset);
-    setCurrentSegment(undefined);
+    setCurrentSegmentx(undefined); //don't set the ref on render.  Will be done below in useLayoutEffect
   }
+  useLayoutEffect(() => {
+    setCurrentSegment(undefined);
+  }, [blob, doReset, setCurrentSegment]);
+
   // Recording timer refs for local progress/duration while recording
   const recElapsedRef = useRef<number>(0);
   const recTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -1429,16 +1438,8 @@ function WSAudioPlayer(props: IProps) {
       if (blob) {
         // Preview ticks may have already updated the waveform when adding to
         // existing audio; always sync blob/duration/save even if the final insert
-        // threw (TT-7384).
-        try {
-          await handleChanged();
-        } catch (err) {
-          logError(
-            Severity.error,
-            errorReporter,
-            err instanceof Error ? err : new Error(String(err))
-          );
-        }
+        // threw (TT-7384). handleChanged reports its own failure.
+        await handleChanged();
       }
     }
   }
@@ -1578,11 +1579,8 @@ function WSAudioPlayer(props: IProps) {
       const hasAudio = nextDuration > 0;
       setChanged && setChanged(hasAudio);
     } catch (err) {
-      const nextDuration = wsDuration();
-      setDuration(nextDuration);
-      const hasAudio = nextDuration > 0;
-      setBlobReady && setBlobReady(hasAudio);
-      setChanged && setChanged(hasAudio);
+      // The waveform already changed, but the parent never received a blob.
+      // Leave Save off so it cannot store the pre-edit audio.
       reportFailure(err, t.changeFailed);
     }
   }, [
@@ -1598,7 +1596,7 @@ function WSAudioPlayer(props: IProps) {
     reportFailure,
     t.changeFailed,
   ]);
-  // Rejection is reported inside handleChanged, which turns Save back on.
+  // Rejection is reported inside handleChanged. Save stays off: no blob was published.
   const publishChanged = useCallback(() => {
     void handleChanged();
   }, [handleChanged]);
@@ -1716,8 +1714,7 @@ function WSAudioPlayer(props: IProps) {
   }, [editBlocked, canCopy, wsCopyRegion]);
 
   const handlePaste = useCallback(() => {
-    if (editBlocked() || !canPaste || pasteInFlightRef.current) return false;
-    pasteInFlightRef.current = true;
+    if (editBlocked() || !canPaste || pasteBusyRef.current) return false;
     setPasteBusy(true);
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsPaste()
@@ -1725,7 +1722,6 @@ function WSAudioPlayer(props: IProps) {
         if (mutated) publishChanged();
       })
       .finally(() => {
-        pasteInFlightRef.current = false;
         setPasteBusy(false);
       })
       .catch((err: unknown) => {
@@ -1736,6 +1732,7 @@ function WSAudioPlayer(props: IProps) {
   }, [
     editBlocked,
     canPaste,
+    setPasteBusy,
     wsPaste,
     publishChanged,
     reportFailure,
@@ -1967,8 +1964,15 @@ function WSAudioPlayer(props: IProps) {
                       .catch(failAi);
                     return;
                   }
-                  if (file.message !== 'canceled') failAi(file);
-                  else doingProcess(false);
+                  if (file instanceof AudioAiError) {
+                    if (file.code !== AudioAiErrorCode.canceled) {
+                      logError(Severity.error, errorReporter, file);
+                      showMessage(ts.mustBeOnline, AlertSeverity.Error);
+                    }
+                    doingProcess(false);
+                    return;
+                  }
+                  failAi(file);
                 },
               }).catch(failAi);
             } else {
