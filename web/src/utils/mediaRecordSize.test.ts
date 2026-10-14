@@ -1,156 +1,111 @@
 import { convertToWav } from './wav';
 import {
+  CHUNK_HEADER_BYTES,
+  CHUNK_SIZE_OFFSET,
+  FMT_ID,
   OPUS_ESTIMATE_HEADROOM,
-  OPUS_MONO_COMPRESSION,
-  RECORD_PCM16_BYTES_PER_SECOND,
-  estimatedUploadBytes,
-  wavSourceFacts,
+  OPUS_MONO_BYTES_PER_SECOND,
+  RECORD_FLOAT32_BYTES_PER_SECOND,
+  RIFF_HEADER_BYTES,
+  RIFF_ID,
+  WAVE_ID,
+  estimatedLiveWavBytes,
+  estimatedOpusBytes,
+  wavChannelCount,
 } from './mediaRecordSize';
+import { wavBlob } from './__tests__/wavBlob';
 
-describe('estimatedUploadBytes', () => {
-  const minute = 57 * 60;
+/** The WAV the recorder and editor hand over: float32, as audioBufferToWavBlob writes it. */
+const editorWav = (channels: 1 | 2, sampleRate: number) =>
+  convertToWav(
+    new Float32Array(8),
+    channels === 2 ? new Float32Array(8) : null,
+    { isFloat: true, numChannels: channels, sampleRate }
+  );
 
-  it('keeps a 57 minute mono float32 take under a 30 MB compressed limit', () => {
-    const float32Wav = minute * 48_000 * 4;
-    const estimated = estimatedUploadBytes(float32Wav, OPUS_MONO_COMPRESSION, {
-      source: 'float32',
-    });
+describe('estimatedOpusBytes', () => {
+  it('prices mono at 64 kbps plus headroom', () => {
+    expect(estimatedOpusBytes(60, 1)).toBe(
+      60 * OPUS_MONO_BYTES_PER_SECOND * OPUS_ESTIMATE_HEADROOM
+    );
+    expect(estimatedOpusBytes(60, 1)).toBeCloseTo(504_000);
+  });
+
+  it('keeps a 57 minute mono take under a 30 MB limit', () => {
+    const estimated = estimatedOpusBytes(57 * 60, 1);
     expect(estimated / 1_000_000).toBeCloseTo(28.73, 2);
     expect(estimated).toBeLessThan(30 * 1_000_000);
   });
 
-  it('prices a 64 kbps file above its exact size so a near-limit take is held back', () => {
-    const encoded = 43_309_332;
-    const float32Wav = encoded * OPUS_MONO_COMPRESSION * 2;
-    expect(
-      estimatedUploadBytes(float32Wav, OPUS_MONO_COMPRESSION, {
-        source: 'float32',
-      })
-    ).toBe(encoded * OPUS_ESTIMATE_HEADROOM);
-    expect(encoded).toBeGreaterThan(30 * 1_000_000);
-  });
-
-  it('matches that estimate from the live 16-bit rate', () => {
-    const pcm16 = minute * RECORD_PCM16_BYTES_PER_SECOND;
-    expect(
-      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, { source: 'live' })
-    ).toBe(
-      estimatedUploadBytes(minute * 48_000 * 4, OPUS_MONO_COMPRESSION, {
-        source: 'float32',
-      })
-    );
-    const mono = estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, {
-      source: 'live',
-    });
-    expect(
-      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, {
-        source: 'live',
-        channels: 2,
-      })
-    ).toBe(mono * 1.5);
-  });
-
-  it('counts a saved WAV as the float32 file', () => {
-    const float32Wav = minute * 48_000 * 4;
-    expect(estimatedUploadBytes(float32Wav, 1, { source: 'float32' })).toBe(
-      float32Wav
+  it('prices stereo at 96 kbps, 1.5 times mono', () => {
+    expect(estimatedOpusBytes(60, 2)).toBeCloseTo(
+      estimatedOpusBytes(60, 1) * 1.5
     );
   });
 
-  it('prices a 16-bit stereo WAV the same as float32 of that duration', () => {
-    const samples = 60 * 48_000;
-    const pcm16 = samples * 2 * 2;
-    const float32 = samples * 4 * 2;
-    expect(
-      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, {
-        source: 'pcm',
-        channels: 2,
-      })
-    ).toBe(
-      estimatedUploadBytes(float32, OPUS_MONO_COMPRESSION, {
-        source: 'float32',
-        channels: 2,
-      })
+  it('encodes more than two channels as stereo', () => {
+    expect(estimatedOpusBytes(60, 6)).toBe(estimatedOpusBytes(60, 2));
+  });
+
+  it('is zero for no audio', () => {
+    expect(estimatedOpusBytes(0, 1)).toBe(0);
+    expect(estimatedOpusBytes(-1, 2)).toBe(0);
+  });
+});
+
+describe('estimatedLiveWavBytes', () => {
+  it('prices a live take at the float32 file the recorder will write', () => {
+    expect(estimatedLiveWavBytes(10, 1)).toBe(
+      10 * RECORD_FLOAT32_BYTES_PER_SECOND
     );
-  });
-
-  it('counts a 16-bit WAV as that file when saving uncompressed', () => {
-    const stereo = 60 * 48_000 * 2 * 2;
-    const mono = 60 * 48_000 * 2;
-    expect(
-      estimatedUploadBytes(stereo, 1, { source: 'pcm', channels: 2 })
-    ).toBe(stereo);
-    expect(estimatedUploadBytes(mono, 1, { source: 'pcm' })).toBe(mono);
-  });
-
-  it('prices a stereo take at 1.5 times mono for the same duration', () => {
-    const monoFloat32 = 60 * 48_000 * 4;
-    const mono = estimatedUploadBytes(monoFloat32, OPUS_MONO_COMPRESSION, {
-      source: 'float32',
-      channels: 1,
-    });
-    const stereo = estimatedUploadBytes(
-      monoFloat32 * 2,
-      OPUS_MONO_COMPRESSION,
-      { source: 'float32', channels: 2 }
+    expect(estimatedLiveWavBytes(10, 2)).toBe(
+      2 * 10 * RECORD_FLOAT32_BYTES_PER_SECOND
     );
-    expect(stereo).toBe(mono * 1.5);
+    expect(estimatedLiveWavBytes(0, 1)).toBe(0);
+  });
+});
+
+describe('wavChannelCount', () => {
+  it('reads a mono recorder take', async () => {
+    expect(await wavChannelCount(await editorWav(1, 48_000))).toBe(1);
   });
 
-  it('prices an ogg or mp3 at its own size', () => {
-    expect(
-      estimatedUploadBytes(20_000_000, OPUS_MONO_COMPRESSION, {
-        source: 'encoded',
-      })
-    ).toBe(20_000_000);
+  it('reads a stereo 44.1 kHz WAV from an edited mp3', async () => {
+    expect(await wavChannelCount(await editorWav(2, 44_100))).toBe(2);
   });
 
-  it('reads a float32 editor WAV and treats anything else as already encoded', async () => {
-    const blob = await convertToWav(new Float32Array(8), new Float32Array(8), {
-      isFloat: true,
-      numChannels: 2,
-      sampleRate: 48_000,
-    });
-    expect(await wavSourceFacts(blob)).toEqual({
-      channels: 2,
-      source: 'float32',
-    });
+  it('counts a file that is not a WAV as mono', async () => {
     expect(
-      await wavSourceFacts(
-        new Blob([new Uint8Array(32)], { type: 'audio/ogg' })
+      await wavChannelCount(
+        new Blob([new Uint8Array(64)], { type: 'audio/mpeg' })
       )
-    ).toEqual({ channels: 1, source: 'encoded' });
+    ).toBe(1);
+    expect(await wavChannelCount(new Blob())).toBe(1);
   });
 
-  it('reads fmt after a JUNK chunk instead of the bytes at a fixed offset', async () => {
-    const junk = 4;
-    const fmtAt = 12 + 8 + junk;
-    const bytes = new Uint8Array(fmtAt + 8 + 16);
-    const view = new DataView(bytes.buffer);
-    view.setUint32(0, 0x52494646, false);
-    view.setUint32(8, 0x57415645, false);
-    view.setUint32(12, 0x4a554e4b, false);
-    view.setUint32(16, junk, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(fmtAt, 0x666d7420, false);
-    view.setUint32(fmtAt + 4, 16, true);
-    view.setUint16(fmtAt + 8, 3, true);
-    view.setUint16(fmtAt + 10, 2, true);
-    expect(
-      await wavSourceFacts(new Blob([bytes], { type: 'audio/wav' }))
-    ).toEqual({ channels: 2, source: 'float32' });
+  it('reads fmt after a JUNK chunk instead of at a fixed offset', async () => {
+    expect(await wavChannelCount(wavBlob({ junk: 4, channels: 2 }))).toBe(2);
+    expect(await wavChannelCount(wavBlob({ junk: 5, channels: 2 }))).toBe(2);
+  });
 
-    const shortFmt = new Uint8Array(12 + 8 + 4);
-    const shortView = new DataView(shortFmt.buffer);
-    shortView.setUint32(0, 0x52494646, false);
-    shortView.setUint32(8, 0x57415645, false);
-    shortView.setUint32(12, 0x666d7420, false);
-    shortView.setUint32(16, 4, true);
-    shortView.setUint16(20, 3, true);
-    shortView.setUint16(22, 2, true);
-    expect(
-      await wavSourceFacts(new Blob([shortFmt], { type: 'audio/wav' }))
-    ).toEqual({ channels: 1, source: 'encoded' });
+  it('counts truncated and malformed headers as mono', async () => {
+    const file = (bytes: Uint8Array<ArrayBuffer>) =>
+      wavChannelCount(new Blob([bytes], { type: 'audio/wav' }));
+    expect(await file(new Uint8Array(RIFF_HEADER_BYTES - 1))).toBe(1);
+
+    const notWave = new Uint8Array(RIFF_HEADER_BYTES);
+    new DataView(notWave.buffer).setUint32(0, RIFF_ID, false);
+    expect(await file(notWave)).toBe(1);
+
+    const overrun = new Uint8Array(RIFF_HEADER_BYTES + CHUNK_HEADER_BYTES);
+    const view = new DataView(overrun.buffer);
+    view.setUint32(0, RIFF_ID, false);
+    view.setUint32(8, WAVE_ID, false);
+    view.setUint32(RIFF_HEADER_BYTES, FMT_ID, false);
+    view.setUint32(RIFF_HEADER_BYTES + CHUNK_SIZE_OFFSET, 100, true);
+    expect(await file(overrun)).toBe(1);
+
+    expect(await wavChannelCount(wavBlob({ fmtSize: 4, channels: 2 }))).toBe(1);
+    expect(await wavChannelCount(wavBlob({ channels: 0 }))).toBe(1);
   });
 });

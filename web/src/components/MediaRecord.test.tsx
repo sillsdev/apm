@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import MediaRecord from './MediaRecord';
+import { wavBlob } from '../utils/__tests__/wavBlob';
 
 type WsAudioPlayerProps = {
   planId?: string;
@@ -14,6 +15,7 @@ type WsAudioPlayerProps = {
   onLoadError?: (error: unknown) => void;
   isSaveDisabled?: boolean;
   showWaveformSave?: boolean;
+  mediaSaveInProgress?: boolean;
 };
 
 let latestWsProps: WsAudioPlayerProps | undefined;
@@ -92,8 +94,10 @@ jest.mock('../context/UnsavedContext', () => {
       clearCompleted: jest.fn(),
     },
   });
+  const unsavedTest = { bump: () => {} };
   function TestUnsavedProvider({ children }: { children: React.ReactNode }) {
     const [toolsChanged, setToolsChanged] = React.useState(0);
+    unsavedTest.bump = () => setToolsChanged((n: number) => n + 1);
     const value = React.useMemo(
       () => ({
         state: {
@@ -117,7 +121,7 @@ jest.mock('../context/UnsavedContext', () => {
       </UnsavedContext.Provider>
     );
   }
-  return { UnsavedContext, TestUnsavedProvider };
+  return { UnsavedContext, TestUnsavedProvider, unsavedTest };
 });
 
 jest.mock('../context/usePassageDetailContext', () => ({
@@ -295,17 +299,7 @@ describe('MediaRecord save gating', () => {
     });
   });
 
-  /** fmt chunk. Channel count is the uint16 at offset 22. */
-  const wavWithChannels = (channels: number) => {
-    const bytes = new Uint8Array(36);
-    const view = new DataView(bytes.buffer);
-    view.setUint32(0, 0x52494646, false);
-    view.setUint32(8, 0x57415645, false);
-    view.setUint32(12, 0x666d7420, false);
-    view.setUint32(16, 16, true);
-    view.setUint16(22, channels, true);
-    return new Blob([bytes], { type: 'audio/wav' });
-  };
+  const wavWithChannels = (channels: number) => wavBlob({ channels });
 
   const recordLive = async (duration: number, blob?: Blob) => {
     cleanup();
@@ -353,23 +347,13 @@ describe('MediaRecord save gating', () => {
     expect(latestWsProps?.isSaveDisabled).toBe(false);
   });
 
-  /** Float32 editor WAV of `size` bytes. Format tag 3, channel count at offset 22. */
-  const float32Wav = (size: number, channels = 1) => {
-    const bytes = new Uint8Array(size);
-    const view = new DataView(bytes.buffer);
-    view.setUint32(0, 0x52494646, false);
-    view.setUint32(8, 0x57415645, false);
-    view.setUint32(12, 0x666d7420, false);
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 3, true);
-    view.setUint16(22, channels, true);
-    return new Blob([bytes], { type: 'audio/wav' });
-  };
+  const float32Wav = (size: number, channels = 1) =>
+    wavBlob({ size, channels });
 
   it('blocks a take the 64 kbps estimate puts over the limit', async () => {
     const setCanSave = jest.fn();
-    // 30 MB float32 is 1.31 MB at 64 kbps with 5% headroom.
-    const blob = float32Wav(30 * 1000000);
+    // 156 s at 64 kbps with 5% headroom is 1.31 MB.
+    const blob = float32Wav(1000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
@@ -377,7 +361,7 @@ describe('MediaRecord save gating', () => {
     act(() => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
-      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onDuration?.(156);
       latestWsProps?.onBlobReady?.(blob);
     });
 
@@ -502,12 +486,70 @@ describe('MediaRecord save gating', () => {
     expect(mockConvertToFormat).toHaveBeenCalledTimes(1);
   });
 
-  it('prices a downloaded ogg at its file size', async () => {
-    const setCanSave = jest.fn();
-    const calls: boolean[] = [];
-    setCanSave.mockImplementation((allowed: boolean) => {
-      calls.push(allowed);
+  it('rejects a later save of a take that is already too big', async () => {
+    let requested = false;
+    mockSaveRequested = () => requested;
+    mockSaveCompleted.mockImplementation(
+      (_toolId: unknown, message?: string) => {
+        if (message?.includes('after compression')) requested = false;
+      }
+    );
+    mockConvertToFormat = jest.fn(
+      async () => new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/ogg' })
+    );
+    const onSaveRejected = jest.fn();
+    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/wav' });
+    const { TestUnsavedProvider, unsavedTest } = jest.requireMock(
+      '../context/UnsavedContext'
+    ) as {
+      TestUnsavedProvider: React.ComponentType<{ children: React.ReactNode }>;
+      unsavedTest: { bump: () => void };
+    };
+    render(
+      <TestUnsavedProvider>
+        <MediaRecord {...defaultProps} onSaveRejected={onSaveRejected} />
+      </TestUnsavedProvider>
+    );
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
     });
+    await waitFor(() => {
+      // 12 s at 64 kbps with headroom.
+      expect(document.getElementById('size')?.textContent).toBe('0.10MB');
+    });
+
+    requested = true;
+    act(() => unsavedTest.bump());
+
+    await waitFor(() => {
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big after compression 2.00MB/1MB'
+      );
+    });
+    expect(mockConvertToFormat).toHaveBeenCalledTimes(1);
+    expect(onSaveRejected).toHaveBeenCalled();
+
+    onSaveRejected.mockClear();
+    mockSaveCompleted.mockClear();
+    requested = true;
+    act(() => unsavedTest.bump());
+
+    await waitFor(() => expect(onSaveRejected).toHaveBeenCalled());
+    expect(mockSaveCompleted).toHaveBeenCalledWith(
+      'record-tool',
+      'Too big after compression 2.00MB/1MB'
+    );
+    expect(mockConvertToFormat).toHaveBeenCalledTimes(1);
+  });
+
+  it('prices an opened ogg by its duration, not its file size', async () => {
+    const setCanSave = jest.fn();
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
@@ -521,18 +563,18 @@ describe('MediaRecord save gating', () => {
       );
     });
 
+    // Saving re-encodes it to Opus, so the 2 MB source size does not matter.
     await waitFor(() => {
-      expect(document.getElementById('size')?.textContent).toBe('2.00MB');
-      expect(latestWsProps?.isSaveDisabled).toBe(true);
-      expect(setCanSave).toHaveBeenLastCalledWith(false);
+      expect(document.getElementById('size')?.textContent).toBe('0.10MB');
+      expect(latestWsProps?.isSaveDisabled).toBe(false);
+      expect(setCanSave).toHaveBeenLastCalledWith(true);
     });
-    expect(calls).not.toContain(true);
   });
 
-  it('keeps save enabled when a mono float32 take is under the compressed limit', async () => {
+  it('keeps save enabled when a mono take is under the compressed limit', async () => {
     const setCanSave = jest.fn();
-    // 21 MB float32 WAV is under a 1 MB compressed limit at 64 kbps.
-    const blob = float32Wav(21 * 1000000);
+    // 110 s at 64 kbps with 5% headroom is 0.92 MB, under a 1 MB limit.
+    const blob = float32Wav(1000);
     render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
@@ -540,7 +582,7 @@ describe('MediaRecord save gating', () => {
     act(() => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
-      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onDuration?.(110);
       latestWsProps?.onBlobReady?.(blob);
     });
 
@@ -582,13 +624,33 @@ describe('MediaRecord save gating', () => {
     });
     expect(mockUploadMedia).not.toHaveBeenCalled();
     expect(onSaveRejected).toHaveBeenCalled();
+    const { logError, infoMsg } = jest.requireMock('../utils') as {
+      logError: jest.Mock;
+      infoMsg: jest.Mock;
+    };
+    expect(infoMsg).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'encode failed' }),
+      'compression failed'
+    );
+    expect(logError).toHaveBeenCalledWith(
+      'error',
+      undefined,
+      infoMsg.mock.results.at(-1)?.value
+    );
   });
 
-  it('warns with the compressed limit when a mono float32 take exceeds it', async () => {
-    const setCanSave = jest.fn();
-    // typeLimit is 1 MB. Float32 mono → 16-bit / 12 must clear 1 MB: > 24 MB.
-    const blob = float32Wav(41 * 1000000);
-    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+  it('ignores a compression result after the take has changed', async () => {
+    let resolveConvert: (blob: Blob) => void = () => undefined;
+    mockConvertToFormat = jest.fn(
+      () =>
+        new Promise<Blob>((resolve) => {
+          resolveConvert = resolve;
+        })
+    );
+    let requested = true;
+    mockSaveRequested = () => requested;
+    const onSaveRejected = jest.fn();
+    render(<MediaRecord {...defaultProps} onSaveRejected={onSaveRejected} />);
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
 
@@ -596,6 +658,178 @@ describe('MediaRecord save gating', () => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
       latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
+      );
+    });
+    await waitFor(() => expect(mockConvertToFormat).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(latestWsProps?.mediaSaveInProgress).toBe(true));
+    onSaveRejected.mockClear();
+    mockShowMessage.mockClear();
+    mockSaveCompleted.mockClear();
+
+    act(() => {
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
+      );
+    });
+    requested = false;
+    await act(async () => {
+      resolveConvert(
+        new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/ogg' })
+      );
+    });
+
+    await waitFor(() => expect(latestWsProps?.mediaSaveInProgress).toBe(false));
+    expect(mockShowMessage).not.toHaveBeenCalledWith(
+      'Too big after compression 2.00MB/1MB',
+      'error'
+    );
+    expect(onSaveRejected).toHaveBeenCalled();
+    expect(mockSaveCompleted).toHaveBeenCalledWith(
+      'record-tool',
+      'Media error'
+    );
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+    expect(document.getElementById('warning')?.textContent).not.toBe(
+      'Too big after compression 2.00MB/1MB'
+    );
+  });
+
+  it('keeps a successful stage when the recorder returns to idle', async () => {
+    let requested = false;
+    mockSaveRequested = () => requested;
+    mockSaveCompleted.mockImplementation(
+      (_toolId: unknown, message?: string) => {
+        if (!message) requested = false;
+      }
+    );
+    const onSaveRejected = jest.fn();
+    const onStageFile = jest.fn(async () => {
+      latestWsProps?.onBlobReady?.(undefined);
+    });
+    const { TestUnsavedProvider, unsavedTest } = jest.requireMock(
+      '../context/UnsavedContext'
+    ) as {
+      TestUnsavedProvider: React.ComponentType<{ children: React.ReactNode }>;
+      unsavedTest: { bump: () => void };
+    };
+    render(
+      <TestUnsavedProvider>
+        <MediaRecord
+          {...defaultProps}
+          onSaveRejected={onSaveRejected}
+          onStageFile={onStageFile}
+        />
+      </TestUnsavedProvider>
+    );
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
+      );
+    });
+    await waitFor(() =>
+      expect(document.getElementById('size')?.textContent).toBe('0.10MB')
+    );
+
+    onSaveRejected.mockClear();
+    mockSaveCompleted.mockClear();
+    requested = true;
+    act(() => unsavedTest.bump());
+
+    await waitFor(() => expect(onStageFile).toHaveBeenCalled());
+    expect(onSaveRejected).not.toHaveBeenCalled();
+    expect(mockSaveCompleted).toHaveBeenCalledWith('record-tool');
+    expect(mockSaveCompleted).not.toHaveBeenCalledWith(
+      'record-tool',
+      'Media error'
+    );
+  });
+
+  it('does not upload wav when the size check fails after compression', async () => {
+    mockSaveRequested = () => true;
+    mockConvertToFormat = jest.fn(async () => undefined as unknown as Blob);
+    const onSaveRejected = jest.fn();
+    render(<MediaRecord {...defaultProps} onSaveRejected={onSaveRejected} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    onSaveRejected.mockClear();
+    mockUploadMedia.mockClear();
+    mockShowMessage.mockClear();
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockConvertToFormat).toHaveBeenCalled();
+      expect(
+        onSaveRejected.mock.calls.length + mockShowMessage.mock.calls.length
+      ).toBeGreaterThan(0);
+    });
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+    expect(mockShowMessage).not.toHaveBeenCalledWith(
+      expect.stringContaining('Compress error'),
+      expect.anything()
+    );
+    expect(onSaveRejected).toHaveBeenCalled();
+  });
+
+  it('logs a wav header read failure and still prices the file', async () => {
+    const { logError, infoMsg } = jest.requireMock('../utils') as {
+      logError: jest.Mock;
+      infoMsg: jest.Mock;
+    };
+    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/wav' });
+    const headerError = new Error('header failed');
+    Object.defineProperty(blob, 'slice', {
+      value: () => ({
+        arrayBuffer: () => Promise.reject(headerError),
+      }),
+    });
+    render(<MediaRecord {...defaultProps} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => expect(logError).toHaveBeenCalled());
+    expect(infoMsg).toHaveBeenCalledWith(headerError, 'wav header read failed');
+    expect(logError).toHaveBeenCalledWith(
+      'error',
+      undefined,
+      infoMsg.mock.results.at(-1)?.value
+    );
+    await waitFor(() => expect(latestWsProps?.isSaveDisabled).toBe(false));
+  });
+
+  it('prices an edited stereo mp3 at the stereo rate', async () => {
+    const setCanSave = jest.fn();
+    // The editor re-exports an edited stereo mp3 as a stereo WAV. 142 s at
+    // 96 kbps with 5% headroom is 1.79 MB, over a 1 MB limit.
+    const blob = float32Wav(1000, 2);
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(142);
       latestWsProps?.onBlobReady?.(blob);
     });
 

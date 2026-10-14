@@ -1,8 +1,12 @@
-/** Mono 16-bit PCM at WavRecorder's 48 kHz. Live estimate before the blob exists. */
-export const RECORD_PCM16_BYTES_PER_SECOND = 48_000 * 2;
+/**
+ * Opusenc runs with its defaults (convertToWebM.ts passes no bitrate), which
+ * are 64 kbps mono and 96 kbps coupled stereo whatever the input sample rate.
+ * So the encoded size depends only on duration and channel count.
+ */
+export const OPUS_MONO_BYTES_PER_SECOND = 64_000 / 8;
 
-/** Opusenc's default is 64 kbps. Mono 16-bit 48 kHz is 768 kbps, so 768/64. */
-export const OPUS_MONO_COMPRESSION = 12;
+/** Coupled stereo defaults to 96 kbps, 1.5 times the mono stream. */
+export const OPUS_STEREO_OVER_MONO = 96 / 64;
 
 /**
  * Above the 64/96 kbps target so Ogg overhead and a VBR spike fail before encode.
@@ -10,86 +14,85 @@ export const OPUS_MONO_COMPRESSION = 12;
  */
 export const OPUS_ESTIMATE_HEADROOM = 1.05;
 
-/** Coupled stereo defaults to 96 kbps, 1.5 times the mono stream. */
-const STEREO_BITRATE_OVER_MONO = 96 / 64;
+/** Float32 mono at WavRecorder's preferred 48 kHz. Live estimate when saving as WAV. */
+export const RECORD_FLOAT32_BYTES_PER_SECOND = 48_000 * 4;
 
-/** float32 and pcm are files, so the byte length already includes every channel.
- *  live is the recording clock at mono 16-bit. encoded is ogg/mp3. */
-export type AudioSource = 'float32' | 'pcm' | 'live' | 'encoded';
+/** Big-endian RIFF fourcc. */
+export const RIFF_ID = 0x52494646;
+/** Big-endian WAVE form type. */
+export const WAVE_ID = 0x57415645;
+/** Big-endian fmt chunk id. */
+export const FMT_ID = 0x666d7420;
 
-/** Channel count and how to price the blob. Not a WAV means the bytes are already the file. */
-export async function wavSourceFacts(
-  blob: Blob
-): Promise<{ channels: number; source: AudioSource }> {
-  const encoded = { channels: 1, source: 'encoded' as const };
+export const RIFF_ID_OFFSET = 0;
+export const WAVE_ID_OFFSET = 8;
+export const RIFF_HEADER_BYTES = 12;
+export const CHUNK_HEADER_BYTES = 8;
+export const CHUNK_SIZE_OFFSET = 4;
+export const FMT_MIN_BYTES = 16;
+export const FMT_CHANNELS_OFFSET = 2;
+/** fmt bytes through the channel count. */
+export const FMT_CHANNELS_BYTES = 4;
+
+/** Opus upload size for a take of this length. Stereo and up encode as stereo. */
+export function estimatedOpusBytes(
+  durationSeconds: number,
+  channels: number
+): number {
+  const perSecond =
+    channels >= 2
+      ? OPUS_MONO_BYTES_PER_SECOND * OPUS_STEREO_OVER_MONO
+      : OPUS_MONO_BYTES_PER_SECOND;
+  return Math.max(0, durationSeconds) * perSecond * OPUS_ESTIMATE_HEADROOM;
+}
+
+/** Float32 WAV size of a live take, before the recorder hands over the file. */
+export function estimatedLiveWavBytes(
+  durationSeconds: number,
+  channels: number
+): number {
+  return (
+    Math.max(0, durationSeconds) *
+    RECORD_FLOAT32_BYTES_PER_SECOND *
+    (channels >= 2 ? 2 : 1)
+  );
+}
+
+/**
+ * Channel count from a WAV's fmt chunk. Anything that is not a readable WAV is
+ * 1: only edited takes can be saved, and the editor always hands over a WAV.
+ */
+export async function wavChannelCount(blob: Blob): Promise<number> {
   const read = async (offset: number, length: number) => {
     if (offset < 0 || length <= 0 || offset + length > blob.size) return;
     return new DataView(
       await blob.slice(offset, offset + length).arrayBuffer()
     );
   };
-  const head = await read(0, 12);
+  const head = await read(RIFF_ID_OFFSET, RIFF_HEADER_BYTES);
   if (
     !head ||
-    head.getUint32(0, false) !== 0x52494646 ||
-    head.getUint32(8, false) !== 0x57415645
+    head.getUint32(RIFF_ID_OFFSET, false) !== RIFF_ID ||
+    head.getUint32(WAVE_ID_OFFSET, false) !== WAVE_ID
   ) {
-    return encoded;
+    return 1;
   }
-  let offset = 12;
-  while (offset + 8 <= blob.size) {
-    const chunk = await read(offset, 8);
+  let offset = RIFF_HEADER_BYTES;
+  while (offset + CHUNK_HEADER_BYTES <= blob.size) {
+    const chunk = await read(offset, CHUNK_HEADER_BYTES);
     if (!chunk) break;
     const id = chunk.getUint32(0, false);
-    const size = chunk.getUint32(4, true);
-    const data = offset + 8;
+    const size = chunk.getUint32(CHUNK_SIZE_OFFSET, true);
+    const data = offset + CHUNK_HEADER_BYTES;
     if (size > blob.size - data) break;
-    if (id === 0x666d7420 && size >= 16) {
-      const fmt = await read(data, 4);
+    if (id === FMT_ID && size >= FMT_MIN_BYTES) {
+      const fmt = await read(data, FMT_CHANNELS_BYTES);
       if (!fmt) break;
-      const format = fmt.getUint16(0, true);
-      const channels = fmt.getUint16(2, true) >= 2 ? 2 : 1;
-      return { channels, source: format === 3 ? 'float32' : 'pcm' };
+      return Math.max(1, fmt.getUint16(FMT_CHANNELS_OFFSET, true));
     }
     const padded = size + (size & 1);
     if (padded > blob.size - data) break;
     offset = data + padded;
   }
-  return encoded;
-}
-
-/**
- * Expected upload size before the encode exists.
- * `compression` is how many times smaller a mono upload is than 16-bit PCM.
- * 1 uploads that file as-is. Live bytes are one channel, so channel count is
- * applied here; a file's length already includes every channel.
- * A stereo encode is 96 kbps, 1.5 times the mono upload for the same duration.
- * An encoded blob is priced at its own size.
- */
-export function estimatedUploadBytes(
-  sourceBytes: number,
-  compression: number,
-  options: { source: AudioSource; channels?: number }
-): number {
-  const { source, channels = 1 } = options;
-  const ratio = compression > 0 ? compression : 1;
-  const count = channels >= 2 ? 2 : 1;
-  const compressed = (pcm16Bytes: number) => {
-    const effectiveRatio =
-      count === 1 ? ratio : (ratio * count) / STEREO_BITRATE_OVER_MONO;
-    return (pcm16Bytes / effectiveRatio) * OPUS_ESTIMATE_HEADROOM;
-  };
-  switch (source) {
-    case 'encoded':
-      return sourceBytes;
-    case 'float32':
-      if (ratio === 1) return sourceBytes;
-      return compressed(sourceBytes / 2);
-    case 'pcm':
-      if (ratio === 1) return sourceBytes;
-      return compressed(sourceBytes);
-    case 'live':
-      if (ratio === 1) return sourceBytes * 2 * count;
-      return compressed(sourceBytes * count);
-  }
+  return 1;
 }

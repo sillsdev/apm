@@ -24,6 +24,7 @@ import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import PassageRecordDlg from './PassageRecordDlg';
 import { infoMsg, logError, restoreScroll, Severity } from '../utils';
+import { toError } from '../utils/toError';
 import { shallowEqual, useSelector } from 'react-redux';
 import { NextUploadProps } from '../store';
 import { useDispatch } from 'react-redux';
@@ -229,7 +230,7 @@ export const Uploader = (props: IProps) => {
           logError(
             Severity.error,
             errorReporter,
-            infoMsg(err as Error, 'upload finish failed')
+            infoMsg(toError(err), 'upload finish failed')
           );
         });
       }
@@ -481,16 +482,14 @@ export const Uploader = (props: IProps) => {
       await onStageFiles?.(files);
       return true;
     } catch (err) {
+      const error = toError(err);
       // Surface the failure (e.g. category creation) rather than silently
       // re-enabling the dialog with no feedback, and log it for diagnosis.
-      showMessage(
-        err instanceof Error ? err.message : String(err),
-        AlertSeverity.Error
-      );
+      showMessage(error.message, AlertSeverity.Error);
       logError(
         Severity.error,
         errorReporter,
-        infoMsg(err as Error, 'resource staging failed')
+        infoMsg(error, 'resource staging failed')
       );
       return false;
     }
@@ -529,10 +528,13 @@ export const Uploader = (props: IProps) => {
   useEffect(() => {
     if (importList && importList.length > 0) {
       uploadMedia(importList).catch((err: unknown) => {
-        showMessage(
-          err instanceof Error ? err.message : String(err),
-          AlertSeverity.Error
+        const error = toError(err);
+        logError(
+          Severity.error,
+          errorReporter,
+          infoMsg(error, 'import upload failed')
         );
+        showMessage(error.message, AlertSeverity.Error);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
