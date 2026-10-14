@@ -26,7 +26,7 @@ export function PassageCardHeader({
 
   return (
     <Box
-      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 51 }}
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 56 }}
     >
       <PassageGraphic
         cardInfo={cardInfo}
