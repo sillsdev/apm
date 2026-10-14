@@ -6057,7 +6057,6 @@
             <context-group>
                <context context-type="sourcefile">MediaUploadContent.tsx</context>
             </context-group>
-            </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.githubSupport">
             <source>Github markdown syntax supported</source>

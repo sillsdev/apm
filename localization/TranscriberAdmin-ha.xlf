@@ -1851,7 +1851,7 @@
       </unit>
       <unit id="mediaUpload.fileTooBig">
          <segment>
-            <source>Too large: {0}. File Limit is {1}MB</source>
+            <source>File is too large: {0}. File Limit is {1}MB</source>
             <target/>
          </segment>
       </unit>

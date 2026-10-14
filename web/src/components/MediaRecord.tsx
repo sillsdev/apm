@@ -574,7 +574,7 @@ function MediaRecord(props: IProps) {
       return estimatedUploadBytes(
         Math.round(waveformDuration * RECORD_PCM16_BYTES_PER_SECOND),
         compression,
-        { source: 'pcm', channels }
+        { source: 'live', channels }
       );
     }
     if (!audioBlob || sizePending) return audioBlob?.size ?? 0;
@@ -652,6 +652,9 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     const limitBytes = sizeLimit * MB;
+    if (oversizedBlobRef.current && oversizedBlobRef.current !== audioBlob) {
+      oversizedBlobRef.current = undefined;
+    }
     if (sizePending) {
       setTooBig(true);
       return;
@@ -772,6 +775,7 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
+    oversizedBlobRef.current = undefined;
     setFilechanged(false);
     setPendingSave(false);
     setWaveformDuration(0);

@@ -401,7 +401,7 @@ export const Uploader = (props: IProps) => {
       },
     });
   };
-  const preUpload = async (files: File[]) => {
+  const preUpload = (files: File[]) => {
     //   let name =
     //     uploadType === UploadType.IntellectualProperty
     //       ? 'Project'
@@ -453,8 +453,7 @@ export const Uploader = (props: IProps) => {
         UploadType.FaithbridgeLink,
       ].includes(uploadType)
     ) {
-      // Renaming is best-effort and must not block the upload.
-      void preUpload(files);
+      preUpload(files);
       uploadFiles(files);
     }
     fileList.current = files;

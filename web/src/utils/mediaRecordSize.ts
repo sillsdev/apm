@@ -13,8 +13,9 @@ export const OPUS_ESTIMATE_HEADROOM = 1.05;
 /** Coupled stereo defaults to 96 kbps, 1.5 times the mono stream. */
 const STEREO_BITRATE_OVER_MONO = 96 / 64;
 
-/** float32 is an editor WAV. pcm is 16-bit WAV or live capture. encoded is ogg/mp3. */
-export type AudioSource = 'float32' | 'pcm' | 'encoded';
+/** float32 and pcm are files, so the byte length already includes every channel.
+ *  live is the recording clock at mono 16-bit. encoded is ogg/mp3. */
+export type AudioSource = 'float32' | 'pcm' | 'live' | 'encoded';
 
 /** Channel count and how to price the blob. Not a WAV means the bytes are already the file. */
 export async function wavSourceFacts(
@@ -34,9 +35,10 @@ export async function wavSourceFacts(
 
 /**
  * Expected upload size before the encode exists.
- * Editor takes are float32 WAV (4 bytes/sample). `compression` is how many times
- * smaller a mono upload is than 16-bit PCM; 1 means the float32 WAV is uploaded.
- * A stereo pair is 96 kbps, so the same duration is 1.5 times the mono upload.
+ * `compression` is how many times smaller a mono upload is than 16-bit PCM.
+ * 1 uploads that file as-is. Live bytes are one channel, so channel count is
+ * applied here; a file's length already includes every channel.
+ * A stereo encode is 96 kbps, 1.5 times the mono upload for the same duration.
  * An encoded blob is priced at its own size.
  */
 export function estimatedUploadBytes(
@@ -46,13 +48,17 @@ export function estimatedUploadBytes(
 ): number {
   const { source, channels = 1 } = options;
   if (source === 'encoded') return sourceBytes;
-  const sourceIsFloat32Wav = source === 'float32';
   const ratio = compression > 0 ? compression : 1;
   const count = channels >= 2 ? 2 : 1;
   if (ratio === 1) {
-    return sourceIsFloat32Wav ? sourceBytes : sourceBytes * 2 * count;
+    return source === 'live' ? sourceBytes * 2 * count : sourceBytes;
   }
-  const pcm16Bytes = sourceIsFloat32Wav ? sourceBytes / 2 : sourceBytes * count;
+  const pcm16Bytes =
+    source === 'float32'
+      ? sourceBytes / 2
+      : source === 'live'
+        ? sourceBytes * count
+        : sourceBytes;
   const effectiveRatio =
     count === 1 ? ratio : (ratio * count) / STEREO_BITRATE_OVER_MONO;
   return (pcm16Bytes / effectiveRatio) * OPUS_ESTIMATE_HEADROOM;

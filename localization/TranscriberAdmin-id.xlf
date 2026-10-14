@@ -5187,8 +5187,8 @@
       </unit>
       <unit id="mediaUpload.fileTooBig">
          <segment>
-            <source>Too large: {0}. File Limit is {1}MB</source>
-            <target>Terlalu besar: {0}. Batas maksimal berkas sebesar {1}MB</target>
+            <source>File is too large: {0}. File Limit is {1}MB</source>
+            <target>Berkas terlalu besar: {0}. Batas maksimal berkas sebesar {1}MB</target>
          </segment>
       </unit>
       <unit id="mediaUpload.githubSupport">

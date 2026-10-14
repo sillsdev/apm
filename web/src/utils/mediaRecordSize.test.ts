@@ -33,12 +33,21 @@ describe('estimatedUploadBytes', () => {
   it('matches that estimate from the live 16-bit rate', () => {
     const pcm16 = minute * RECORD_PCM16_BYTES_PER_SECOND;
     expect(
-      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, { source: 'pcm' })
+      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, { source: 'live' })
     ).toBe(
       estimatedUploadBytes(minute * 48_000 * 4, OPUS_MONO_COMPRESSION, {
         source: 'float32',
       })
     );
+    const mono = estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, {
+      source: 'live',
+    });
+    expect(
+      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, {
+        source: 'live',
+        channels: 2,
+      })
+    ).toBe(mono * 1.5);
   });
 
   it('counts a saved WAV as the float32 file', () => {
@@ -46,6 +55,32 @@ describe('estimatedUploadBytes', () => {
     expect(estimatedUploadBytes(float32Wav, 1, { source: 'float32' })).toBe(
       float32Wav
     );
+  });
+
+  it('prices a 16-bit stereo WAV the same as float32 of that duration', () => {
+    const samples = 60 * 48_000;
+    const pcm16 = samples * 2 * 2;
+    const float32 = samples * 4 * 2;
+    expect(
+      estimatedUploadBytes(pcm16, OPUS_MONO_COMPRESSION, {
+        source: 'pcm',
+        channels: 2,
+      })
+    ).toBe(
+      estimatedUploadBytes(float32, OPUS_MONO_COMPRESSION, {
+        source: 'float32',
+        channels: 2,
+      })
+    );
+  });
+
+  it('counts a 16-bit WAV as that file when saving uncompressed', () => {
+    const stereo = 60 * 48_000 * 2 * 2;
+    const mono = 60 * 48_000 * 2;
+    expect(
+      estimatedUploadBytes(stereo, 1, { source: 'pcm', channels: 2 })
+    ).toBe(stereo);
+    expect(estimatedUploadBytes(mono, 1, { source: 'pcm' })).toBe(mono);
   });
 
   it('prices a stereo take at 1.5 times mono for the same duration', () => {

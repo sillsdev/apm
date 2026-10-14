@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import MediaRecord from './MediaRecord';
@@ -432,6 +431,64 @@ describe('MediaRecord save gating', () => {
       expect(latestWsProps?.isSaveDisabled).toBe(true);
     });
     expect(mockUploadMedia).not.toHaveBeenCalled();
+  });
+
+  it('allows the same take again after the recording is cleared', async () => {
+    let requested = true;
+    mockSaveRequested = () => requested;
+    mockSaveCompleted.mockImplementation(
+      (_toolId: unknown, message?: string) => {
+        if (message?.includes('after compression')) requested = false;
+      }
+    );
+    mockConvertToFormat = jest.fn(
+      async () => new Blob([new Uint8Array(2 * 1000000)], { type: 'audio/ogg' })
+    );
+    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/wav' });
+    const { TestUnsavedProvider } = jest.requireMock(
+      '../context/UnsavedContext'
+    ) as {
+      TestUnsavedProvider: React.ComponentType<{ children: React.ReactNode }>;
+    };
+    render(
+      <TestUnsavedProvider>
+        <MediaRecord {...defaultProps} />
+      </TestUnsavedProvider>
+    );
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => {
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big after compression 2.00MB/1MB'
+      );
+      expect(latestWsProps?.isSaveDisabled).toBe(true);
+    });
+
+    act(() => {
+      latestWsProps?.onBlobReady?.(undefined);
+    });
+    await waitFor(() => {
+      expect(document.getElementById('warning')).toBeNull();
+    });
+
+    act(() => {
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => {
+      expect(latestWsProps?.isSaveDisabled).toBe(false);
+    });
+    expect(document.getElementById('warning')?.textContent).not.toBe(
+      'Too big after compression 2.00MB/1MB'
+    );
   });
 
   it('prices a downloaded ogg at its file size', async () => {
