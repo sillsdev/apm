@@ -173,7 +173,10 @@ export const useAudioAi = (): AudioAIResult => {
     targetVoice: string | undefined,
     cb: (file: File | Error) => void
   ): Promise<void> => {
-    if (getGlobal('offline') || !getGlobal('connected') || !token) return;
+    if (getGlobal('offline') || !getGlobal('connected') || !token) {
+      cb(new Error(token ? 'offline' : 'no token'));
+      return;
+    }
     const result = await axiosGet(
       `S3Files/put/AI/${file.name}/wav`,
       undefined,

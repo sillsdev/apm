@@ -12322,6 +12322,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.changeFailed">
+            <source>Could not update the recording: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.convertVoice">
             <source>Convert Voice {0}</source>
             <target/>

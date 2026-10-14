@@ -1,7 +1,7 @@
 import { jest, describe, it, expect } from '@jest/globals';
 import { renderHook, act } from '@testing-library/react';
 
-const mockGetGlobal = jest.fn(() => true);
+const mockGetGlobal = jest.fn<(key: string) => boolean>(() => true);
 
 jest.mock('../context/useGlobal', () => ({
   useGlobal: () => [undefined, jest.fn()],
@@ -39,9 +39,11 @@ jest.mock('./loadBlob', () => ({
 }));
 
 import { AudioAiFunc, useAudioAi } from './useAudioAi';
+import { axiosGet } from './axios';
 
 describe('useAudioAi', () => {
   it('reports an error when the AI request is skipped because the app is offline', async () => {
+    mockGetGlobal.mockImplementation(() => true);
     const cb = jest.fn();
     const { result } = renderHook(() => useAudioAi());
 
@@ -54,6 +56,25 @@ describe('useAudioAi', () => {
       });
     });
 
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb.mock.calls[0][0]).toBeInstanceOf(Error);
+  });
+
+  it('reports an error when the AI request is skipped because there is no token', async () => {
+    mockGetGlobal.mockImplementation((key: string) => key === 'connected');
+    const cb = jest.fn();
+    const { result } = renderHook(() => useAudioAi());
+
+    await act(async () => {
+      await result.current.requestAudioAi({
+        func: AudioAiFunc.noiseRemoval,
+        cancelRef: { current: false },
+        file: new File(['x'], 'a.wav', { type: 'audio/wav' }),
+        cb,
+      });
+    });
+
+    expect(axiosGet).not.toHaveBeenCalled();
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb.mock.calls[0][0]).toBeInstanceOf(Error);
   });

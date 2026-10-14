@@ -10558,6 +10558,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.changeFailed">
+         <segment>
+            <source>Could not update the recording: {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.convertVoice">
          <segment>
             <source>Convert Voice {0}</source>

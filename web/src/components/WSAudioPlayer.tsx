@@ -595,16 +595,24 @@ function WSAudioPlayer(props: IProps) {
   const insertingRef = useRef(false);
   /** True after Stop until final `onRecordStop` finishes — blocks late preview ticks. */
   const recordPreviewSuppressedRef = useRef(false);
+  const [currentSegment, setCurrentSegmentx] = useState<IRegion | undefined>(
+    undefined
+  );
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
+  const setCurrentSegment = useCallback((value: IRegion | undefined) => {
+    setCurrentSegmentx(value);
+    currentSegmentRef.current = value;
+  }, []);
   const [pasteBusy, setPasteBusy] = useState(false);
   const pasteInFlightRef = useRef(false);
-  //When the blob prop changes, this comparison runs during render and sets currentSegmentRef to undefined before Copy and Cut read it.
+  // When the blob or reset changes, clear the selection during this render,
+  // before Copy and Cut read it.
   const [trackedBlob, setTrackedBlob] = useState(blob);
   const [trackedReset, setTrackedReset] = useState(doReset);
   if (blob !== trackedBlob || doReset !== trackedReset) {
     setTrackedBlob(blob);
     setTrackedReset(doReset);
-    currentSegmentRef.current = undefined;
+    setCurrentSegment(undefined);
   }
   // Recording timer refs for local progress/duration while recording
   const recElapsedRef = useRef<number>(0);
@@ -752,10 +760,10 @@ function WSAudioPlayer(props: IProps) {
       //wsPlayRegion(currentSegment);
       //onPlayStatus && onPlayStatus(true);
       //}
-      currentSegmentRef.current = currentSegment;
+      setCurrentSegment(currentSegment);
       onCurrentSegment && onCurrentSegment(currentSegment, index);
     },
-    [onCurrentSegment]
+    [onCurrentSegment, setCurrentSegment]
   );
 
   const {
@@ -1557,17 +1565,26 @@ function WSAudioPlayer(props: IProps) {
   const handleChanged = useCallback(async () => {
     setMyMediaId('');
     setBlobReady && setBlobReady(false);
-    const newblob = await wsBlob();
-    onBlobReady && onBlobReady(newblob);
-    setBlobReady && setBlobReady(newblob !== undefined);
-    if (setMimeType && newblob?.type) setMimeType(newblob?.type);
-    const nextDuration = wsDuration();
-    setDuration(nextDuration);
-    setProgress(wsPosition());
-    // Only positive duration counts as savable audio. A trim can yield 0:00 while the blob still
-    // has non-zero size (e.g. container/header only); those must not enable Save.
-    const hasAudio = nextDuration > 0;
-    setChanged && setChanged(hasAudio);
+    try {
+      const newblob = await wsBlob();
+      onBlobReady && onBlobReady(newblob);
+      setBlobReady && setBlobReady(newblob !== undefined);
+      if (setMimeType && newblob?.type) setMimeType(newblob?.type);
+      const nextDuration = wsDuration();
+      setDuration(nextDuration);
+      setProgress(wsPosition());
+      // Only positive duration counts as savable audio. A trim can yield 0:00 while the blob still
+      // has non-zero size (e.g. container/header only); those must not enable Save.
+      const hasAudio = nextDuration > 0;
+      setChanged && setChanged(hasAudio);
+    } catch (err) {
+      const nextDuration = wsDuration();
+      setDuration(nextDuration);
+      const hasAudio = nextDuration > 0;
+      setBlobReady && setBlobReady(hasAudio);
+      setChanged && setChanged(hasAudio);
+      reportFailure(err, t.changeFailed);
+    }
   }, [
     setChanged,
     setBlobReady,
@@ -1578,7 +1595,13 @@ function WSAudioPlayer(props: IProps) {
     setProgress,
     wsDuration,
     wsPosition,
+    reportFailure,
+    t.changeFailed,
   ]);
+  // Rejection is reported inside handleChanged, which turns Save back on.
+  const publishChanged = useCallback(() => {
+    void handleChanged();
+  }, [handleChanged]);
 
   const confirmedDelete = useCallback(() => {
     setProcessingRecording(false);
@@ -1639,7 +1662,7 @@ function WSAudioPlayer(props: IProps) {
           : busy
             ? 'busy'
             : 'allowed';
-  const regionSelected = currentSegmentRef.current !== undefined;
+  const regionSelected = currentSegment !== undefined;
   const canCopy = waveformEdit !== 'notallowed' && regionSelected;
   const canCut = waveformEdit === 'allowed' && regionSelected;
   const canPaste = waveformEdit === 'allowed' && hasClipboard;
@@ -1658,7 +1681,7 @@ function WSAudioPlayer(props: IProps) {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsRegionDelete()
       .then((mutated) => {
-        if (mutated) void handleChanged();
+        if (mutated) publishChanged();
       })
       .catch((err: unknown) => {
         preserveZoomOnReloadRef.current = undefined;
@@ -1670,7 +1693,7 @@ function WSAudioPlayer(props: IProps) {
     canCut,
     setPlaying,
     wsRegionDelete,
-    handleChanged,
+    publishChanged,
     reportFailure,
     t.cutFailed,
   ]);
@@ -1679,13 +1702,13 @@ function WSAudioPlayer(props: IProps) {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsUndo()
       .then(() => {
-        void handleChanged();
+        publishChanged();
       })
       .catch((err: unknown) => {
         preserveZoomOnReloadRef.current = undefined;
         reportFailure(err, t.undoFailed);
       });
-  }, [wsUndo, handleChanged, reportFailure, t.undoFailed]);
+  }, [wsUndo, publishChanged, reportFailure, t.undoFailed]);
 
   const handleCopyRegion = useCallback(() => {
     if (editBlocked() || !canCopy) return false;
@@ -1699,7 +1722,7 @@ function WSAudioPlayer(props: IProps) {
     preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsPaste()
       .then((mutated) => {
-        if (mutated) void handleChanged();
+        if (mutated) publishChanged();
       })
       .finally(() => {
         pasteInFlightRef.current = false;
@@ -1714,7 +1737,7 @@ function WSAudioPlayer(props: IProps) {
     editBlocked,
     canPaste,
     wsPaste,
-    handleChanged,
+    publishChanged,
     reportFailure,
     t.pasteFailed,
   ]);
@@ -1938,7 +1961,7 @@ function WSAudioPlayer(props: IProps) {
                     wsRegionReplace(new Blob([file], { type: file.type }))
                       .then((newblob) => {
                         if (newblob) reload(newblob);
-                        void handleChanged();
+                        publishChanged();
                         doingProcess(false);
                       })
                       .catch(failAi);
@@ -2055,7 +2078,7 @@ function WSAudioPlayer(props: IProps) {
         });
         const newblob = await wsRegionReplace(regionblob);
         if (newblob) reload(newblob);
-        void handleChanged();
+        publishChanged();
         await ipc?.delete(fileBeg);
         await ipc?.delete(fileEnd);
       }
