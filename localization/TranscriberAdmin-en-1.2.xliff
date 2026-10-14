@@ -12301,6 +12301,13 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiEstimatedTime">
+            <source>Estimated time {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.aiFailed">
             <source>AI function {1} failed {0}</source>
             <target/>

@@ -85,6 +85,7 @@ import {
   getSortedRegions,
   isLangSet,
 } from '../utils';
+import { applyVerseSegment } from '../utils/verseSegmentText';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 import { AllDone } from './AllDone';
@@ -129,6 +130,7 @@ import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
 import { useCheckOnline } from '../utils/useCheckOnline';
+import { useRole } from '../crud/useRole';
 import { useMobile } from '../utils/useMobile';
 import { useLocLangName } from '../utils/useLocLangName';
 import IndexedDBSource from '@orbit/indexeddb';
@@ -353,6 +355,7 @@ export function Transcriber(props: IProps) {
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { isMobile } = useMobile();
+  const { userIsSharedContentCreator } = useRole();
   const [features, setFeatures] = useState<IFeatures>();
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
@@ -1358,25 +1361,20 @@ export function Transcriber(props: IProps) {
   const handleStartRegion = (position: number) => {
     const segs = getSortedRegions(verseSegs.current || '');
     const ref = segs.find((s) => s.start === position)?.label;
-    const m = refMatch(ref || '');
-    if (ref && m) {
-      const vNum = ref.substring((m[1] as string).length + 1);
-      let refText = `\\v ${vNum} `;
-      const textArea = transcriptionRef.current
-        .firstChild as HTMLTextAreaElement;
-      const refPos = textArea.value.indexOf(refText);
-      // look for alternate verse markup format too
-      const refPos2 = textArea.value.indexOf(`\\v${vNum} `);
-      if (refPos === -1 && refPos2 === -1) {
-        // vNum is undefined for bad references
-        refText = vNum ? ' ' + refText : '';
-        if (parseInt(m[2] as string) === 1) {
-          refText = ` \\c ${m[1]} ` + refText;
-        }
-        insertAtCursor(textArea, refText);
-        setTextValue(textArea.value ?? '');
-      }
+    if (!ref || !refMatch(ref)) return;
+    const textArea = transcriptionRef.current
+      .firstChild as HTMLTextAreaElement;
+    const value = textArea.value ?? '';
+    // Same cursor rule as insertAtCursor: a caret at 0 with no range means append.
+    const start = textArea.selectionStart ?? 0;
+    const end = textArea.selectionEnd ?? start;
+    const cursor = start || start !== end ? start : value.length;
+    const edit = applyVerseSegment(value, ref, cursor);
+    if (edit.text !== value) {
+      textArea.value = edit.text;
+      setTextValue(edit.text);
     }
+    textArea.setSelectionRange(edit.caret, edit.caret);
   };
 
   return (
@@ -1448,7 +1446,10 @@ export function Transcriber(props: IProps) {
                             </LightTooltip>
                           </Grid>
                         )}
-                      {features?.aiTranscribe && !offline && role && (
+                      {features?.aiTranscribe &&
+                        !offline &&
+                        role &&
+                        userIsSharedContentCreator && (
                         <LightTooltip
                           title={
                             <Badge badgeContent={sharedStr.ai}>

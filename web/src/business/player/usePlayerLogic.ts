@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { getSegments } from '../../utils/namedSegments';
 import { JSONParse } from '../../utils/jsonParse';
 import {
@@ -51,13 +51,22 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     onSegment,
   } = props;
 
+  const loadedMediaIdRef = useRef<string | undefined>(undefined);
+
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
+    const mediaId = mediafileRef.current?.id;
+    const mediaChanged =
+      loadedMediaIdRef.current !== undefined &&
+      loadedMediaIdRef.current !== mediaId;
     if (allowSegment) {
+      // A suggestion belongs to the recording that was current when it was
+      // built. After the media id changes, show that recording's saved segments.
       segmentsRef.current =
-        suggestedSegments && suggestedSegments.length > 0
+        !mediaChanged && suggestedSegments && suggestedSegments.length > 0
           ? suggestedSegments
           : getSegments(allowSegment, segs);
+      loadedMediaIdRef.current = mediaId;
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);

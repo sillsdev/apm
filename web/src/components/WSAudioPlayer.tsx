@@ -51,6 +51,8 @@ import { RecordButton } from '../control/RecordButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { Button } from '../control';
+import { estimateAiTimeLabel } from '../control/estimateAiTime';
+import { useRole } from '../crud/useRole';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -461,6 +463,7 @@ function WSAudioPlayer(props: IProps) {
   const [myMediaId, setMyMediaId] = useState(mediaId ?? '');
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const { userIsSharedContentCreator } = useRole();
   const [org] = useGlobal('organization');
   const [features, setFeatures] = useState<IFeatures>();
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -1823,6 +1826,14 @@ function WSAudioPlayer(props: IProps) {
           >
             {processMsg}
           </Typography>
+          {duration > 0 && (
+            <Typography id="ai-time-estimate">
+              {t.aiEstimatedTime.replace(
+                '{0}',
+                estimateAiTimeLabel(duration)
+              )}
+            </Typography>
+          )}
           <Button
             id="ai-cancel"
             onClick={() => {
@@ -2056,6 +2067,7 @@ function WSAudioPlayer(props: IProps) {
       ),
       allowRecord === true &&
         features?.deltaVoice &&
+        userIsSharedContentCreator &&
         allowDeltaVoice !== false &&
         !offline && (
           <MenuItem
@@ -2082,6 +2094,7 @@ function WSAudioPlayer(props: IProps) {
         ),
       allowRecord === true &&
         features?.deltaVoice &&
+        userIsSharedContentCreator &&
         allowDeltaVoice !== false &&
         !offline && (
           <MenuItem

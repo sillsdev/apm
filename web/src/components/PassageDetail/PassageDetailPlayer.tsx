@@ -371,11 +371,12 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   const setPlayerSegments = (segments: string) => {
-    if (
-      !allowSegment ||
-      !segmentsRef.current ||
-      segmentsRef.current.indexOf('},{') === -1
-    ) {
+    const keepCurrentDivisions =
+      Boolean(allowSegment) &&
+      Boolean(segmentsRef.current) &&
+      segmentsRef.current.indexOf('},{') !== -1 &&
+      segments === segmentsRef.current;
+    if (!keepCurrentDivisions) {
       // Remember what locate applied so the waveform's later onSegmentChange
       // can be recognized without a wall-clock heuristic.
       pendingLocateSegmentsRef.current = segments;

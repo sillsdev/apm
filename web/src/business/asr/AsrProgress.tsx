@@ -16,6 +16,7 @@ import {
   ISharedStrings,
   IMainStrings,
   ITranscriberStrings,
+  IWsAudioPlayerStrings,
   MediaFileD,
 } from '../../model';
 import {
@@ -28,6 +29,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import {
   cardsSelector,
   mainSelector,
+  playerSelector,
   sharedSelector,
   transcriberSelector,
 } from '../../selector';
@@ -53,6 +55,7 @@ import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
+import { estimateAiTimeLabel } from '../../control/estimateAiTime';
 
 interface AsrProgressProps {
   mediaId: string;
@@ -93,6 +96,7 @@ export default function AsrProgress({
   const checkingRef = React.useRef(false);
   const timerDelay = 5000; //5 seconds
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
+  const tp: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tc: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
@@ -365,6 +369,11 @@ export default function AsrProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const aiDuration =
+    (
+      findRecord(memory, 'mediafile', mediaId) as MediaFileD | undefined
+    )?.attributes?.duration ?? 0;
+
   return (
     <Box
       sx={{
@@ -387,6 +396,14 @@ export default function AsrProgress({
         {pollProgress && pollProgress.total > 0 && (
           <Typography id="asr-progress-count">
             {pollProgress.completed}/{pollProgress.total}
+          </Typography>
+        )}
+        {aiDuration > 0 && (
+          <Typography id="asr-time-estimate">
+            {tp.aiEstimatedTime.replace(
+              '{0}',
+              estimateAiTimeLabel(aiDuration)
+            )}
           </Typography>
         )}
         {pollClip && (

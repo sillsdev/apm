@@ -65,6 +65,7 @@ function TranscribeReject(props: IProps) {
     setInProcess(false);
   };
   const handleCancel = () => {
+    setComment('');
     if (cancelMethod) {
       cancelMethod();
     }
@@ -83,6 +84,7 @@ function TranscribeReject(props: IProps) {
 
   useEffect(() => {
     setOpen(visible);
+    if (visible) setComment('');
   }, [visible]);
 
   return (

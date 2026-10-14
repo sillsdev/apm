@@ -83,6 +83,7 @@ import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromRefere
 import { rowTypes } from './rowTypes';
 import { PlanSheetRowCtx } from './PlanActionMenu';
 import { usePlanSheetFill } from './usePlanSheetFill';
+import { shouldOpenSheetContextMenu } from './sheetContextMenu';
 import { useRefErrTest } from './useRefErrTest';
 import { useShowIcon } from './useShowIcon';
 import {
@@ -909,6 +910,7 @@ export function PlanSheet(props: IProps) {
     i,
     j
   ) => {
+    if (!shouldOpenSheetContextMenu(e.target)) return;
     e.preventDefault();
     const absI = sheetToAbs(i);
     if (absI > 0 && !readonly) {

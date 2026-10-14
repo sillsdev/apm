@@ -50,10 +50,12 @@ import {
   isNoParatextWorkflow,
   resolvedProjectType,
 } from '../../../../crud/nextTranscriptionState';
+import { useRole } from '../../../../crud/useRole';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import {
   getSegments,
+  getSortedRegions,
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
@@ -65,6 +67,7 @@ import {
   type FontData,
 } from '../../../../crud/fontChoice';
 import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
+import { resolveStepSpellCheck } from '../../../../crud/stepSpellCheck';
 import {
   ArtifactTypeSlug,
   artifactStampsStepLanguage,
@@ -151,6 +154,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const [projType] = useGlobal('projType');
   const [organization] = useGlobal('organization');
   const [offline] = useGlobal('offline');
+  const { userIsSharedContentCreator } = useRole();
   const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
   const remote = coordinator?.getSource('remote') as JSONAPISource;
@@ -159,7 +163,10 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
     { aiTranscribe?: boolean } | undefined;
-  const showAsrButton = Boolean(features?.aiTranscribe) && !offline;
+  const showAsrButton =
+    Boolean(features?.aiTranscribe) &&
+    !offline &&
+    Boolean(userIsSharedContentCreator);
   const { getProjType } = useProjectType();
   const { slugFromId } = useArtifactType();
 
@@ -538,6 +545,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       fontSize?: string;
       rtl?: boolean;
       language?: unknown;
+      spellCheck?: boolean;
     };
     const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
     const hasStepLanguage = isLangSet(stepLang);
@@ -563,8 +571,13 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     const rec = {
       attributes: { language: langTag, defaultFont, defaultFontSize, rtl },
     } as Project;
+    const spellCheck = resolveStepSpellCheck(
+      lgSettings,
+      artifactTypeSlug,
+      langTag
+    );
     void getFontData(rec, artifactTypeId ?? 'project').then((data) => {
-      if (!cancelled) setProjData(data);
+      if (!cancelled) setProjData({ ...data, spellCheck });
     });
     return () => {
       cancelled = true;
@@ -742,9 +755,25 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     return {
       fontFamily: projData?.fontFamily || 'inherit',
       fontSize: projData?.fontSize || 'inherit',
-      direction: projData?.fontDir ? ('rtl' as const) : ('ltr' as const),
+      direction: projData?.fontDir === 'rtl' ? 'rtl' : 'ltr',
     };
   }, [projData]);
+
+  const savedSegments = mediafile?.attributes?.segments;
+  const transcriptionSegments = useMemo(() => {
+    if (!savedSegments) return undefined;
+    const saved = getSegments(NamedRegions.Transcription, savedSegments);
+    if (getSortedRegions(saved).length === 0) return undefined;
+    return saved;
+  }, [savedSegments]);
+  const verseMarks = useMemo(() => {
+    if (!savedSegments) return undefined;
+    const segs = getSortedRegions(
+      getSegments(NamedRegions.Verse, savedSegments)
+    );
+    if (segs.length === 0) return undefined;
+    return JSON.stringify({ regions: JSON.stringify(segs) });
+  }, [savedSegments]);
 
   return (
     <Box
@@ -773,6 +802,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         allowZoomAndSpeed={true}
         hideZoom={true}
         showTranscriptionButton={false}
+        suggestedSegments={transcriptionSegments}
+        verses={verseMarks}
         defaultSegParams={segParams}
         canSetDefaultParams={!isReadOnly && hasPermission && canSetOrgDefault}
         onProgress={handleProgress}

@@ -36,6 +36,7 @@ import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { useBoldClauseTranscriptionAsrSettings } from '../../../crud/getLwcTranslationAsrSettings';
+import { useRole } from '../../../crud/useRole';
 import {
   orgDefaultFeatures,
   useOrgDefaults,
@@ -129,6 +130,7 @@ export default function BoldClauseTranscriptionEditor({
     shallowEqual
   );
   const [offline] = useGlobal('offline');
+  const { userIsSharedContentCreator } = useRole();
   const [project] = useGlobal('project');
   const [organization] = useGlobal('organization');
   const teams = useOrbitData<OrganizationD[]>('organization');
@@ -377,7 +379,7 @@ export default function BoldClauseTranscriptionEditor({
       data-cy={`${idPrefix}-editor`}
     >
       <Stack spacing={1} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
-        {features?.aiTranscribe && !offline && (
+        {features?.aiTranscribe && !offline && userIsSharedContentCreator && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
             <LightTooltip
               title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
