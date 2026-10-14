@@ -2,7 +2,8 @@
  * Maps an Akuo-style project book slot (e.g. A01, B02 from project `book` default)
  * to a Paratext/USFM 3-letter book code using the same numbering as ApmData export.
  */
-import type { ProjectD } from '../model';
+import type { PassageD, PlanD, ProjectD, SectionD } from '../model';
+import related from '../crud/related';
 import { projDefBook } from '../crud/useProjectDefaults';
 import type { BurritoScopes } from './data/types';
 
@@ -12,18 +13,20 @@ export function akuoBookToUsfm(
 ): string | undefined {
   const bookParse = /^([AB])(\d\d)$/.exec(akuoBook.trim());
   if (!bookParse) return undefined;
-  const bookNum =
-    bookParse[1] === 'A'
-      ? parseInt(bookParse[2], 10)
-      : bookParse[1] === 'B'
-        ? parseInt(bookParse[2], 10) + 39
-        : 999;
+  const parsed = Number.parseInt(bookParse[2], 10);
+  let bookNum = 999;
+  if (bookParse[1] === 'A') {
+    bookNum = parsed;
+  } else if (bookParse[1] === 'B') {
+    bookNum = parsed + 39;
+  }
   return num2BookCode(bookNum);
 }
 
 /**
- * Maps a project's `book` default (Akuo A##/B## or a general-resource 3-digit code)
- * to the burrito book key used in `burritoBooks`, export folder names, and section grouping.
+ * Maps a project's `book` default (Akuo A##/B##, a 3-digit general code, or a
+ * project-sort key such as A0104) to the burrito book key used in `burritoBooks`,
+ * export folder names, and section grouping.
  */
 export function projectDefaultToBurritoBookKey(
   projectBookDefault: string | undefined,
@@ -34,7 +37,63 @@ export function projectDefaultToBurritoBookKey(
   const mapped = akuoBookToUsfm(def, num2BookCode);
   if (mapped) return mapped;
   if (/^\d{3}$/.test(def)) return def;
+  // Project sort appends a two-digit index to the scripture slot (A01 + 04 → A0104).
+  // Keep that string as its own key so General content is not folded into the scripture book.
+  if (/^[@ABE]\d{4}$/.test(def)) return def;
   return undefined;
+}
+
+/**
+ * Book keys for the checked projects on the burrito books screen.
+ * Passage `book` values win. When a project has none (General projects),
+ * the project `book` default is used instead.
+ */
+export function collectBurritoBooks({
+  projects,
+  plans,
+  sections,
+  passages,
+  getProjectDefault,
+  num2BookCode,
+}: {
+  projects: ProjectD[];
+  plans: PlanD[];
+  sections: SectionD[];
+  passages: PassageD[];
+  getProjectDefault: (key: string, project: ProjectD) => unknown;
+  num2BookCode: (bookNum: number) => string | undefined;
+}): string[] {
+  const newBooks = new Set<string>();
+  projects.forEach((proj) => {
+    const planRec = plans.find((p) => related(p, 'project') === proj.id);
+    const sectionRecs = sections.filter(
+      (s) => related(s, 'plan') === planRec?.id
+    );
+    const passageRecs = sectionRecs.map((s) =>
+      passages.find((p) => related(p, 'section') === s.id)
+    );
+    let book: string | undefined = undefined;
+    passageRecs.forEach((p) => {
+      const passageBook = p?.attributes?.book;
+      if (!passageBook) return;
+      if (book && book !== passageBook) {
+        console.warn('multiple books in one project');
+      }
+      book = passageBook;
+      newBooks.add(passageBook);
+    });
+    if (!book) {
+      const projectBook = getProjectDefault(projDefBook, proj);
+      if (typeof projectBook === 'string' && projectBook.trim()) {
+        const fromDefault = projectDefaultToBurritoBookKey(
+          projectBook,
+          num2BookCode
+        );
+        if (fromDefault) newBooks.add(fromDefault);
+      }
+    }
+  });
+  return Array.from(newBooks);
 }
 
 /** `currentScope` entry for one ApmData / intellectualproperty burrito project. */

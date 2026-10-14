@@ -6,6 +6,7 @@ import type {
   UserD,
 } from '../model';
 import { BurritoType } from './BurritoType';
+import { PassageTypeEnum } from '../model/passageType';
 
 jest.mock('react-redux', () => ({
   shallowEqual: () => true,
@@ -647,6 +648,85 @@ describe('useCreateBurrito', () => {
     expect(textCall).toBeDefined();
     expect(textCall[0].sections.map((s: { id: string }) => s.id)).toContain(
       'sec-g2'
+    );
+  });
+
+  it('includes General project sections in Notes export when the book default is a project-sort key', async () => {
+    const ipc = makeIpc();
+    const { user, team, bible, teamBible } = fixtures(teamId);
+
+    const generalProject = {
+      id: 'proj-g3',
+      type: 'project',
+      attributes: {
+        name: 'Shared Notes',
+        language: 'eng',
+        languageName: 'English',
+        defaultParams: '{}',
+      },
+      relationships: { organization: { data: { id: teamId } } },
+    } as any;
+    const generalPlan = {
+      id: 'plan-g3',
+      type: 'plan',
+      relationships: { project: { data: { id: 'proj-g3' } } },
+    } as any;
+    const generalSection = {
+      id: 'sec-g3',
+      type: 'section',
+      relationships: { plan: { data: { id: 'plan-g3' } } },
+      attributes: { sequencenum: 1 },
+    } as any;
+    const generalPassage = {
+      id: 'pas-g3',
+      type: 'passage',
+      relationships: { section: { data: { id: 'sec-g3' } } },
+      attributes: { sequencenum: 1, reference: 'p1' },
+    } as any;
+
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['A0104'],
+          burritoContents: [BurritoType.Notes],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: ['proj-g3'],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '1',
+        },
+        bookData: [
+          { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
+        ],
+        projBookById: { 'proj-g3': 'A0104' },
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [generalProject],
+          plan: [generalPlan],
+          section: [generalSection],
+          passage: [generalPassage],
+        },
+      }
+    );
+
+    const { result } = renderHook(() => useCreateBurrito(teamId));
+
+    await act(async () => {
+      await result.current.createBurrito();
+    });
+
+    const { useBurritoAudio } = require('./useBurritoAudio');
+    const innerAudio = useBurritoAudio.mock.results[0].value as jest.Mock;
+    const notesCall = innerAudio.mock.calls.find(
+      (c: any[]) => c[0]?.book === 'A0104'
+    );
+    expect(notesCall).toBeDefined();
+    expect(notesCall[0].passageTypeFilter).toBe(PassageTypeEnum.NOTE);
+    expect(notesCall[0].sections.map((s: { id: string }) => s.id)).toContain(
+      'sec-g3'
     );
   });
 
