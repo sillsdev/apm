@@ -121,4 +121,36 @@ describe('estimatedUploadBytes', () => {
       )
     ).toEqual({ channels: 1, source: 'encoded' });
   });
+
+  it('reads fmt after a JUNK chunk instead of the bytes at a fixed offset', async () => {
+    const junk = 4;
+    const fmtAt = 12 + 8 + junk;
+    const bytes = new Uint8Array(fmtAt + 8 + 16);
+    const view = new DataView(bytes.buffer);
+    view.setUint32(0, 0x52494646, false);
+    view.setUint32(8, 0x57415645, false);
+    view.setUint32(12, 0x4a554e4b, false);
+    view.setUint32(16, junk, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(fmtAt, 0x666d7420, false);
+    view.setUint32(fmtAt + 4, 16, true);
+    view.setUint16(fmtAt + 8, 3, true);
+    view.setUint16(fmtAt + 10, 2, true);
+    expect(
+      await wavSourceFacts(new Blob([bytes], { type: 'audio/wav' }))
+    ).toEqual({ channels: 2, source: 'float32' });
+
+    const shortFmt = new Uint8Array(12 + 8 + 4);
+    const shortView = new DataView(shortFmt.buffer);
+    shortView.setUint32(0, 0x52494646, false);
+    shortView.setUint32(8, 0x57415645, false);
+    shortView.setUint32(12, 0x666d7420, false);
+    shortView.setUint32(16, 4, true);
+    shortView.setUint16(20, 3, true);
+    shortView.setUint16(22, 2, true);
+    expect(
+      await wavSourceFacts(new Blob([shortFmt], { type: 'audio/wav' }))
+    ).toEqual({ channels: 1, source: 'encoded' });
+  });
 });

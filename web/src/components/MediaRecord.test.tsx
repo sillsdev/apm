@@ -295,12 +295,14 @@ describe('MediaRecord save gating', () => {
     });
   });
 
-  /** 24-byte header. Channel count is the uint16 at offset 22. */
+  /** fmt chunk. Channel count is the uint16 at offset 22. */
   const wavWithChannels = (channels: number) => {
-    const bytes = new Uint8Array(24);
+    const bytes = new Uint8Array(36);
     const view = new DataView(bytes.buffer);
     view.setUint32(0, 0x52494646, false);
     view.setUint32(8, 0x57415645, false);
+    view.setUint32(12, 0x666d7420, false);
+    view.setUint32(16, 16, true);
     view.setUint16(22, channels, true);
     return new Blob([bytes], { type: 'audio/wav' });
   };
@@ -357,6 +359,8 @@ describe('MediaRecord save gating', () => {
     const view = new DataView(bytes.buffer);
     view.setUint32(0, 0x52494646, false);
     view.setUint32(8, 0x57415645, false);
+    view.setUint32(12, 0x666d7420, false);
+    view.setUint32(16, 16, true);
     view.setUint16(20, 3, true);
     view.setUint16(22, channels, true);
     return new Blob([bytes], { type: 'audio/wav' });

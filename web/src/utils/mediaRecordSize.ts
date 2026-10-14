@@ -21,16 +21,41 @@ export type AudioSource = 'float32' | 'pcm' | 'live' | 'encoded';
 export async function wavSourceFacts(
   blob: Blob
 ): Promise<{ channels: number; source: AudioSource }> {
-  if (blob.size < 24) return { channels: 1, source: 'encoded' };
-  const header = new DataView(await blob.slice(0, 24).arrayBuffer());
-  const riff = header.getUint32(0, false);
-  const wave = header.getUint32(8, false);
-  if (riff !== 0x52494646 || wave !== 0x57415645) {
-    return { channels: 1, source: 'encoded' };
+  const encoded = { channels: 1, source: 'encoded' as const };
+  const read = async (offset: number, length: number) => {
+    if (offset < 0 || length <= 0 || offset + length > blob.size) return;
+    return new DataView(
+      await blob.slice(offset, offset + length).arrayBuffer()
+    );
+  };
+  const head = await read(0, 12);
+  if (
+    !head ||
+    head.getUint32(0, false) !== 0x52494646 ||
+    head.getUint32(8, false) !== 0x57415645
+  ) {
+    return encoded;
   }
-  const format = header.getUint16(20, true);
-  const channels = header.getUint16(22, true) >= 2 ? 2 : 1;
-  return { channels, source: format === 3 ? 'float32' : 'pcm' };
+  let offset = 12;
+  while (offset + 8 <= blob.size) {
+    const chunk = await read(offset, 8);
+    if (!chunk) break;
+    const id = chunk.getUint32(0, false);
+    const size = chunk.getUint32(4, true);
+    const data = offset + 8;
+    if (size > blob.size - data) break;
+    if (id === 0x666d7420 && size >= 16) {
+      const fmt = await read(data, 4);
+      if (!fmt) break;
+      const format = fmt.getUint16(0, true);
+      const channels = fmt.getUint16(2, true) >= 2 ? 2 : 1;
+      return { channels, source: format === 3 ? 'float32' : 'pcm' };
+    }
+    const padded = size + (size & 1);
+    if (padded > blob.size - data) break;
+    offset = data + padded;
+  }
+  return encoded;
 }
 
 /**
