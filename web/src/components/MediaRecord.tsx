@@ -652,9 +652,16 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     const limitBytes = sizeLimit * MB;
-    if (oversizedBlobRef.current && oversizedBlobRef.current !== audioBlob) {
+    // A missing blob is a gap, not a new file. reset() drops the rejection.
+    if (
+      audioBlob &&
+      oversizedBlobRef.current &&
+      oversizedBlobRef.current !== audioBlob
+    ) {
       oversizedBlobRef.current = undefined;
     }
+    const keepRejection =
+      oversizedBlobRef.current !== undefined && audioBlob === undefined;
     if (sizePending) {
       setTooBig(true);
       return;
@@ -668,9 +675,10 @@ function MediaRecord(props: IProps) {
       setTooBig(true);
       handleSaveFailed(new Error(message));
     };
-    const big = rejectedThisBlob || estimatedBytes > limitBytes;
+    const big =
+      rejectedThisBlob || keepRejection || estimatedBytes > limitBytes;
     setTooBig(big);
-    if (!rejectedThisBlob) {
+    if (!rejectedThisBlob && !keepRejection) {
       if (estimatedBytes > (sizeLimit - WARNINGLIMIT) * MB)
         setWarning(
           tooBigMessage(big ? t.toobig : t.toobigwarn, estimatedBytes)
@@ -680,7 +688,7 @@ function MediaRecord(props: IProps) {
 
     if (saveRequested(toolId)) {
       if (!saveRef.current) {
-        if (audioBlob && waveformDuration > 0) {
+        if (audioBlob && waveformDuration > 0 && !rejectedThisBlob) {
           onSaving && onSaving();
           saveRef.current = true;
           submittedBlobRef.current = audioBlob;
@@ -729,7 +737,7 @@ function MediaRecord(props: IProps) {
               .catch(handleSaveFailed);
           }
           return;
-        } else {
+        } else if (!rejectedThisBlob && !keepRejection) {
           // Save was requested with nothing to upload — a rejection like any
           // other, so auto-save parents must hear about it or they would keep
           // re-requesting on the next rising edge (TT-7583).

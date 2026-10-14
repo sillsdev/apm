@@ -47,19 +47,24 @@ export function estimatedUploadBytes(
   options: { source: AudioSource; channels?: number }
 ): number {
   const { source, channels = 1 } = options;
-  if (source === 'encoded') return sourceBytes;
   const ratio = compression > 0 ? compression : 1;
   const count = channels >= 2 ? 2 : 1;
-  if (ratio === 1) {
-    return source === 'live' ? sourceBytes * 2 * count : sourceBytes;
+  const compressed = (pcm16Bytes: number) => {
+    const effectiveRatio =
+      count === 1 ? ratio : (ratio * count) / STEREO_BITRATE_OVER_MONO;
+    return (pcm16Bytes / effectiveRatio) * OPUS_ESTIMATE_HEADROOM;
+  };
+  switch (source) {
+    case 'encoded':
+      return sourceBytes;
+    case 'float32':
+      if (ratio === 1) return sourceBytes;
+      return compressed(sourceBytes / 2);
+    case 'pcm':
+      if (ratio === 1) return sourceBytes;
+      return compressed(sourceBytes);
+    case 'live':
+      if (ratio === 1) return sourceBytes * 2 * count;
+      return compressed(sourceBytes * count);
   }
-  const pcm16Bytes =
-    source === 'float32'
-      ? sourceBytes / 2
-      : source === 'live'
-        ? sourceBytes * count
-        : sourceBytes;
-  const effectiveRatio =
-    count === 1 ? ratio : (ratio * count) / STEREO_BITRATE_OVER_MONO;
-  return (pcm16Bytes / effectiveRatio) * OPUS_ESTIMATE_HEADROOM;
 }

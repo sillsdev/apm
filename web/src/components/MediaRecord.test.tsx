@@ -433,7 +433,7 @@ describe('MediaRecord save gating', () => {
     expect(mockUploadMedia).not.toHaveBeenCalled();
   });
 
-  it('allows the same take again after the recording is cleared', async () => {
+  it('keeps a known-too-big take blocked when its blob drops out briefly', async () => {
     let requested = true;
     mockSaveRequested = () => requested;
     mockSaveCompleted.mockImplementation(
@@ -475,20 +475,27 @@ describe('MediaRecord save gating', () => {
     act(() => {
       latestWsProps?.onBlobReady?.(undefined);
     });
-    await waitFor(() => {
-      expect(document.getElementById('warning')).toBeNull();
-    });
-
     act(() => {
       latestWsProps?.onBlobReady?.(blob);
     });
 
     await waitFor(() => {
+      expect(document.getElementById('warning')?.textContent).toBe(
+        'Too big after compression 2.00MB/1MB'
+      );
+      expect(latestWsProps?.isSaveDisabled).toBe(true);
+    });
+    expect(mockConvertToFormat).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
+      );
+    });
+    await waitFor(() => {
       expect(latestWsProps?.isSaveDisabled).toBe(false);
     });
-    expect(document.getElementById('warning')?.textContent).not.toBe(
-      'Too big after compression 2.00MB/1MB'
-    );
+    expect(mockConvertToFormat).toHaveBeenCalledTimes(1);
   });
 
   it('prices a downloaded ogg at its file size', async () => {
