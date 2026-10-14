@@ -194,8 +194,6 @@ jest.mock('react-redux', () => ({
     microphoneDisconnectedFallback:
       'The preferred microphone was disconnected. Default microphone selected.',
     mustBeOnline: 'You must be online to use this feature',
-    expiredToken:
-      "Your login token has expired and can't be automatically renewed.  Please log out and login again.",
     getString: (key: string) => key,
   }),
   shallowEqual: jest.fn(),
@@ -989,10 +987,10 @@ describe('WSAudioPlayer record hotkeys', () => {
     );
   });
 
-  it('shows the token message when AI is skipped with no token', async () => {
+  it('shows the online message when AI is skipped with no token', async () => {
     await deliverAiError(new AudioAiError(AudioAiErrorCode.noToken));
     expect(mockShowMessage).toHaveBeenCalledWith(
-      "Your login token has expired and can't be automatically renewed.  Please log out and login again.",
+      'You must be online to use this feature',
       'error'
     );
   });
