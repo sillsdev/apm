@@ -1,7 +1,6 @@
 import { Typography, useTheme } from '@mui/material';
 import { PassageTypeEnum, IPlanSheetStrings, IState } from '../../model';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { passageTypeMap } from '../../control/RefRender';
 import { useContext } from 'react';
 import { PlanContext } from '../../context/PlanContext';
 import { useSelector, shallowEqual } from 'react-redux';
@@ -68,15 +67,7 @@ export function PassageRef({
         overflowWrap: 'anywhere',
       }}
     >
-      {showComment ? (
-        comment
-      ) : (
-        <>
-          {passageTypeMap[psgType]}
-          {' '}
-          {refText}
-        </>
-      )}
+      {showComment ? comment : refText}
     </Typography>
   );
 }
