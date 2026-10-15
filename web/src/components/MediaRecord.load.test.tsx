@@ -108,7 +108,13 @@ jest.mock('../utils', () => {
 jest.mock('react-redux', () => ({
   useSelector: (s: { name?: string }) =>
     s.name === 'passageRecordSelector'
-      ? { loading: 'Loading', saving: 'Saving' }
+      ? {
+          loading: 'Loading',
+          saving: 'Saving',
+          toobig: 'Too big {0}MB/{1}MB',
+          toobigwarn: 'Too big warn {0}/{1}',
+          tooBigAfterCompression: 'Too big after compression {0}MB/{1}MB',
+        }
       : { NoSaveWoMedia: 'no media', mediaError: 'Media error' },
   shallowEqual: jest.fn(),
 }));

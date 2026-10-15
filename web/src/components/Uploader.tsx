@@ -24,6 +24,7 @@ import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import PassageRecordDlg from './PassageRecordDlg';
 import { infoMsg, logError, restoreScroll, Severity } from '../utils';
+import { toError } from '../utils/toError';
 import { shallowEqual, useSelector } from 'react-redux';
 import { NextUploadProps } from '../store';
 import { useDispatch } from 'react-redux';
@@ -192,7 +193,8 @@ export const Uploader = (props: IProps) => {
     } else successCount.current = 0;
     //force finishMessage to show a message
     fileList.current = [new File([], 'test.txt')];
-    finishMessage();
+    // finishMessage only schedules snackbars. Upload bookkeeping is already done.
+    void finishMessage();
   };
   const clearErrors = () => {
     let err = errMsgs.pop();
@@ -223,7 +225,15 @@ export const Uploader = (props: IProps) => {
       setComplete(0);
       setBusy(false);
       cancelled.current = successCount.current <= 0;
-      if (finish) finish(planIdRef.current, mediaIdRef.current);
+      if (finish) {
+        finish(planIdRef.current, mediaIdRef.current).catch((err: unknown) => {
+          logError(
+            Severity.error,
+            errorReporter,
+            infoMsg(toError(err), 'upload finish failed')
+          );
+        });
+      }
     }, 1000);
   };
 
@@ -297,19 +307,24 @@ export const Uploader = (props: IProps) => {
     if (next < uploadList.length && !cancelled.current) {
       doUpload(next);
     } else if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
-      pullTableList(
+      // Upload already succeeded. A failed refresh must still close the dialog.
+      void pullTableList(
         'mediafile',
         mediaIdRef.current,
         memory,
         remote,
         backup,
         errorReporter
-      ).then(() => {
-        finishMessage();
-        onOpen(false); //do this just for uploader
-      });
+      )
+        .catch(() => undefined)
+        .then(() => {
+          // finishMessage only schedules snackbars. Upload bookkeeping is already done.
+          void finishMessage();
+          onOpen(false); //do this just for uploader
+        });
     } else {
-      finishMessage();
+      // finishMessage only schedules snackbars. Upload bookkeeping is already done.
+      void finishMessage();
       onOpen(false); //do this just for uploader
     }
   };
@@ -387,7 +402,7 @@ export const Uploader = (props: IProps) => {
       },
     });
   };
-  const preUpload = async (files: File[]) => {
+  const preUpload = (files: File[]) => {
     //   let name =
     //     uploadType === UploadType.IntellectualProperty
     //       ? 'Project'
@@ -467,16 +482,14 @@ export const Uploader = (props: IProps) => {
       await onStageFiles?.(files);
       return true;
     } catch (err) {
+      const error = toError(err);
       // Surface the failure (e.g. category creation) rather than silently
       // re-enabling the dialog with no feedback, and log it for diagnosis.
-      showMessage(
-        err instanceof Error ? err.message : String(err),
-        AlertSeverity.Error
-      );
+      showMessage(error.message, AlertSeverity.Error);
       logError(
         Severity.error,
         errorReporter,
-        infoMsg(err as Error, 'resource staging failed')
+        infoMsg(error, 'resource staging failed')
       );
       return false;
     }
@@ -493,7 +506,7 @@ export const Uploader = (props: IProps) => {
           uploadError.substring(0, uploadError.indexOf(':unsupported'))
         );
       else if (uploadError.indexOf('toobig') > 0) {
-        msg = t.toobig
+        msg = t.fileTooBig
           .replace(
             '{0}',
             uploadError.substring(0, uploadError.indexOf(':toobig'))
@@ -514,7 +527,15 @@ export const Uploader = (props: IProps) => {
 
   useEffect(() => {
     if (importList && importList.length > 0) {
-      uploadMedia(importList);
+      uploadMedia(importList).catch((err: unknown) => {
+        const error = toError(err);
+        logError(
+          Severity.error,
+          errorReporter,
+          infoMsg(error, 'import upload failed')
+        );
+        showMessage(error.message, AlertSeverity.Error);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importList]);

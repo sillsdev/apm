@@ -1,4 +1,6 @@
 {
   "*.+(js|jsx|ts|tsx)": ["eslint"],
-  "**/*.+(ts|js|tsx|jsx|json)": ["prettier --write", "git add"]
+  "*.{js,jsx,ts,tsx,json,css,md,mdx,html}": [
+    "prettier --config ../.prettierrc.yaml --ignore-path ../.prettierignore --write"
+  ]
 }

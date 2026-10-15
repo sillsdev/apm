@@ -19,13 +19,7 @@ import {
   waitForIt,
 } from '../utils';
 import { isElectron } from '../../api-variable';
-import {
-  IMediaState,
-  MediaSt,
-  useFetchMediaUrl,
-  useMediaUpload,
-  convertToFormat,
-} from '../crud';
+import { IMediaState, MediaSt, useFetchMediaUrl } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
@@ -35,10 +29,14 @@ import { useStepTool } from '../crud/useStepTool';
 import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
 import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
+import { mb } from '../utils/mb';
+import { toError } from '../utils/toError';
+import { useRecordSizeLimit } from './useRecordSizeLimit';
+import { useRecordSave } from './useRecordSave';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
-interface IProps {
+export interface IProps {
   toolId: string;
   artifactId: string | null;
   passageId: string | undefined;
@@ -211,9 +209,6 @@ function MediaRecord(props: IProps) {
     [toolSettings]
   );
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
-  const WARNINGLIMIT = 1;
-  /** Recorded WAV bytes/sec: mono 16-bit @ 48kHz (WavRecorder's preferred rate). */
-  const RECORD_WAV_BYTES_PER_SECOND = 96000;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
@@ -228,17 +223,20 @@ function MediaRecord(props: IProps) {
   mediaIdRef.current = mediaId;
   const [filetype, setFiletype] = useState('');
   const [originalBlob, setOriginalBlob] = useState<Blob>();
-  const [audioBlob, setAudioBlob] = useState<Blob>();
-  /** The take handed to the save in flight, so a failure knows what it queued. */
-  const submittedBlobRef = useRef<Blob | undefined>(undefined);
+  const [audioBlob, setAudioBlobx] = useState<Blob>();
+  const audioBlobRef = useRef(audioBlob);
+  const setAudioBlob = (value: Blob | undefined) => {
+    setAudioBlobx(value);
+    audioBlobRef.current = value;
+  };
   /**
    * TT-7365: the take a failed desktop save left in the Pending Media Uploads
    * queue. Saving it again unchanged would stage a second pending row for the
    * same recording, so Save stays off until the waveform holds a different take
    * (which uploads as a new version).
    */
-  const queuedTakeRef = useRef<Blob | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
+  const [queuedTake, setQueuedTake] = useState<Blob | undefined>();
+  const [loadBusy, setLoadBusy] = useState(false);
   /**
    * True only while handleLoadAudio is fetching a take. Deliberately not a
    * mirror of `loading`, which the save path sets too: gating the abandon paths
@@ -268,21 +266,15 @@ function MediaRecord(props: IProps) {
 
   const initialMimeType = getMimeTypeFromSettings();
   const [mimeType, setMimeType] = useState(initialMimeType);
-  const [compression, setCompression] = useState(
-    initialMimeType === 'audio/wav' ? 1 : 20
-  );
-  const [warning, setWarning] = useState('');
+  const saveAsWav = mimeType === 'audio/wav';
   const [waveformDuration, setWaveformDuration] = useState(0);
   /** Sticky flag: once edits exist, keep Save visible through transient duration/filechanged blips. */
   const [pendingSave, setPendingSavex] = useState(false);
   const pendingSaveRef = useRef(false);
   const [processingRecording, setProcessingRecordingx] = useState(false);
   const processingRecordingRef = useRef(false);
-  const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
-  const [converting, setConverting] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const {
     toolsChanged,
     saveRequested,
@@ -290,8 +282,6 @@ function MediaRecord(props: IProps) {
     clearRequested,
     clearCompleted,
   } = useContext(UnsavedContext).state;
-  const saveRef = useRef(false);
-  const mediaSaveInProgress = saveRequested(toolId) || uploading || converting;
   const extensions = useMemo(
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
@@ -362,60 +352,6 @@ function MediaRecord(props: IProps) {
     else return `${ts.NoSaveWoMedia} ${ts.NoSaveStayOnPage}`;
   };
 
-  const myAfterUploadCb = async (mediaId: string) => {
-    // Notify before any setState: canSave goes true again on the next commit,
-    // and auto-save parents must already know this take was rejected or they
-    // would retry it on that rising edge (TT-7583).
-    if (!mediaId) onSaveRejected?.();
-    // The take this id points at is already in the waveform, so the mediaId
-    // change it triggers must not blank it and fetch it back (TT-7609).
-    if (mediaId) loadRequestedIdRef.current = mediaId;
-    setUploading(false);
-    setPendingSave(false);
-    if (filechangedRef.current && mediaId) setFilechanged(false);
-    if (!mediaId) {
-      // isElectron means the take was written to disk and queued for retry
-      // rather than lost, so it must not be submitted a second time (TT-7365).
-      queuedTakeRef.current = isElectron ? submittedBlobRef.current : undefined;
-      const message = failureMessage();
-      showMessage(message);
-      setStatusText(message);
-      // Electron queue is a successful local save, not a tool saveError.
-      // Passing the queue text into saveCompleted left global `saveResult` as
-      // `"…Teams screen.;"` (UnsavedContext appends `;`), which survived a
-      // trip to Teams and was re-snacked by PassageDetailContext on Record
-      // remount while already online (TT-7720).
-      saveCompleted(toolId, isElectron ? undefined : message);
-    } else {
-      queuedTakeRef.current = undefined;
-      setStatusText(getCompressedStatusMessage());
-      saveCompleted(toolId);
-    }
-    saveRef.current = false;
-    await afterUploadCb(mediaId);
-  };
-
-  const uploadMedia = useMediaUpload({
-    artifactId,
-    passageId,
-    sourceMediaId,
-    sourceSegments,
-    performedBy,
-    planId,
-    topic,
-    languagebcp47,
-    afterUploadCb: myAfterUploadCb,
-    pendingRestore,
-    beforeUpload,
-  });
-
-  useEffect(() => {
-    setConverting(false);
-    setUploading(false);
-    saveRef.current = false;
-    setAudioBlob(undefined);
-  }, []);
-
   useEffect(() => {
     if (mediaId !== mediaState.id) fetchMediaUrl({ id: mediaId ?? '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -431,24 +367,6 @@ function MediaRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaState]);
 
-  // Update MIME type when tool settings change
-  useEffect(() => {
-    const newMimeType = getMimeTypeFromSettings();
-    setMimeType(newMimeType);
-    setCompression(newMimeType === 'audio/wav' ? 1 : 20);
-    // Show status message if allowWave is true but using compressed format
-    // Only update if not currently showing a temporary status (saving, compressing, etc.)
-    if (!uploading && !converting && !saveRef.current) {
-      setStatusText(getCompressedStatusMessage());
-    }
-  }, [
-    getMimeTypeFromSettings,
-    setStatusText,
-    uploading,
-    converting,
-    getCompressedStatusMessage,
-  ]);
-
   useEffect(() => {
     setExtension(mimeType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -460,34 +378,166 @@ function MediaRecord(props: IProps) {
     }
   }, [recording, filechanged]);
 
+  const reportHeaderError = useCallback(
+    (error: Error) => {
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(error, 'wav header read failed')
+      );
+    },
+    [reporter]
+  );
+
+  const {
+    sizeStatus,
+    sizeBlocksSave,
+    sizeWarning,
+    estimatedBytes,
+    limitBytes,
+    rejectionMessage,
+    rejectTake,
+    clearRejection,
+  } = useRecordSizeLimit({
+    audioBlob,
+    recording,
+    waveformDuration,
+    saveAsWav,
+    sizeLimit,
+    overTemplate: t.toobig,
+    warnTemplate: t.toobigwarn,
+    afterCompressionTemplate: t.tooBigAfterCompression,
+    compressFailedTemplate: t.compressErrorTooBig,
+    onHeaderError: reportHeaderError,
+  });
+
+  const reset = () => {
+    clearRejection();
+    setFilechanged(false);
+    setPendingSave(false);
+    setWaveformDuration(0);
+    setProcessingRecording(false);
+    setOriginalBlob(undefined);
+    setAudioBlob(undefined);
+    clearCompleted(toolId);
+  };
+
+  const onUploaded = async (
+    mediaId: string,
+    submittedBlob: Blob | undefined
+  ) => {
+    // Notify before any setState: canSave goes true again on the next commit,
+    // and auto-save parents must already know this take was rejected or they
+    // would retry it on that rising edge (TT-7583).
+    if (!mediaId) onSaveRejected?.();
+    // The take this id points at is already in the waveform, so the mediaId
+    // change it triggers must not blank it and fetch it back (TT-7609).
+    if (mediaId) loadRequestedIdRef.current = mediaId;
+    setPendingSave(false);
+    if (filechangedRef.current && mediaId) setFilechanged(false);
+    if (!mediaId) {
+      // isElectron means the take was written to disk and queued for retry
+      // rather than lost, so it must not be submitted a second time (TT-7365).
+      setQueuedTake(isElectron ? submittedBlob : undefined);
+      const message = failureMessage();
+      showMessage(message);
+      setStatusText(message);
+      // Electron queue is a successful local save, not a tool saveError.
+      // Passing the queue text into saveCompleted left global `saveResult` as
+      // `"…Teams screen.;"` (UnsavedContext appends `;`), which survived a
+      // trip to Teams and was re-snacked by PassageDetailContext on Record
+      // remount while already online (TT-7720).
+      saveCompleted(toolId, isElectron ? undefined : message);
+    } else {
+      setQueuedTake(undefined);
+      setStatusText(getCompressedStatusMessage());
+      saveCompleted(toolId);
+    }
+    await afterUploadCb(mediaId);
+  };
+
+  const { inFlight } = useRecordSave({
+    toolId,
+    audioBlob,
+    audioBlobRef,
+    waveformDuration,
+    mimeType,
+    filetype,
+    sizeStatus,
+    limitBytes,
+    rejectionMessage,
+    toolsChanged,
+    defaultFilename,
+    mediaError: ts.mediaError,
+    noSaveWoMedia: ts.NoSaveWoMedia,
+    compressing: t.compressing,
+    compressError: t.compressError,
+    saving: t.saving,
+    reporter,
+    onSaving,
+    onReady,
+    onSaveRejected,
+    onStageFile,
+    onUploaded,
+    upload: {
+      artifactId,
+      passageId,
+      sourceMediaId,
+      sourceSegments,
+      performedBy,
+      planId,
+      topic,
+      languagebcp47,
+      pendingRestore,
+      beforeUpload,
+    },
+    saveRequested,
+    saveCompleted,
+    clearRequested,
+    setStatusText,
+    setDoReset,
+    showMessage,
+    rejectTake,
+    reset,
+  });
+
+  const loading = loadBusy || inFlight;
+  const mediaSaveInProgress = saveRequested(toolId) || inFlight;
+
+  // Update MIME type when tool settings change
+  useEffect(() => {
+    const newMimeType = getMimeTypeFromSettings();
+    setMimeType(newMimeType);
+    // Show status message if allowWave is true but using compressed format
+    // Only update if not currently showing a temporary status (saving, compressing, etc.)
+    if (!inFlight) {
+      setStatusText(getCompressedStatusMessage());
+    }
+  }, [
+    getMimeTypeFromSettings,
+    setStatusText,
+    inFlight,
+    getCompressedStatusMessage,
+  ]);
+
   const wantsSaveVisible = useMemo(
     () =>
       waveformDuration > 0 &&
-      !converting &&
-      !uploading &&
+      !inFlight &&
       !recording &&
       (pendingSave || filechanged),
-    [
-      filechanged,
-      waveformDuration,
-      converting,
-      uploading,
-      recording,
-      pendingSave,
-    ]
+    [filechanged, waveformDuration, inFlight, recording, pendingSave]
   );
 
   const showProcessingRecordingMessage = useMemo(
     () =>
       !recording &&
-      !converting &&
-      !uploading &&
+      !inFlight &&
       (processingRecording ||
         (wantsSaveVisible && !blobReady && waveformDuration > 0)),
     [
       recording,
-      converting,
-      uploading,
+      inFlight,
       processingRecording,
       wantsSaveVisible,
       blobReady,
@@ -496,14 +546,12 @@ function MediaRecord(props: IProps) {
   );
 
   useEffect(() => {
-    const wantsSave = wantsSaveVisible && !saveRef.current;
-    const alreadyQueued =
-      audioBlob !== undefined && audioBlob === queuedTakeRef.current;
+    const alreadyQueued = audioBlob !== undefined && audioBlob === queuedTake;
     const needsSave =
-      wantsSave &&
+      wantsSaveVisible &&
       blobReady &&
       waveformDuration > 0 &&
-      !tooBig &&
+      !sizeBlocksSave &&
       !alreadyQueued;
     setCanSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -511,157 +559,20 @@ function MediaRecord(props: IProps) {
     wantsSaveVisible,
     blobReady,
     processingRecording,
-    tooBig,
-    converting,
-    uploading,
+    sizeBlocksSave,
     recording,
     toolsChanged,
     waveformDuration,
     audioBlob,
+    queuedTake,
   ]);
 
   useEffect(() => {
-    if (setCanCancel) setCanCancel(!converting && !uploading);
-  }, [converting, uploading, setCanCancel]);
-
-  // While recording, audioBlob is the previous take (it only refreshes after
-  // stop via onBlobReady). Estimate the eventual WAV size from the live
-  // duration instead so the size warning shows before a long take is wasted;
-  // the exact blob size takes over once recording stops.
-  const effectiveAudioBytes = useMemo(
-    () =>
-      recording
-        ? Math.round(waveformDuration * RECORD_WAV_BYTES_PER_SECOND)
-        : (audioBlob?.size ?? 0),
-    [recording, waveformDuration, audioBlob, RECORD_WAV_BYTES_PER_SECOND]
-  );
+    if (setCanCancel) setCanCancel(!inFlight);
+  }, [inFlight, setCanCancel]);
 
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
-
-  const doUpload = useCallback(
-    async (blob: Blob, mimeType: string, filetype: string) => {
-      const files = [
-        new File([blob], defaultFilename + '.' + filetype, {
-          type: mimeType,
-        }),
-      ];
-      if (onStageFile) {
-        // General-resource flow: hand the finished (already converted) take up
-        // to be uploaded later — after the user picks passages/sections — and
-        // clear the save state so the recorder returns to idle. `onStageFile` is
-        // async (it awaits category creation); await it so a failure rejects
-        // into the caller's `.catch(handleSaveFailed)` instead of being swallowed
-        // while the save is reported complete. The caller's `.then` still runs
-        // (setLoading(false)/convertComplete/onReady).
-        await onStageFile(files);
-        saveRef.current = false;
-        saveCompleted(toolId);
-        setStatusText('');
-        return;
-      }
-      setUploading(true);
-      setStatusText(t.saving);
-      await uploadMedia(files);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [defaultFilename, uploadMedia, onStageFile, toolId]
-  );
-
-  const convertComplete = () => {
-    setConverting(false);
-    setLoading(false);
-    onReady?.();
-  };
-
-  const handleSaveFailed = useCallback(
-    (error: unknown) => {
-      saveRef.current = false;
-      // Before the setState calls below, for the reason in myAfterUploadCb.
-      onSaveRejected?.();
-      setUploading(false);
-      setConverting(false);
-      setLoading(false);
-      const message =
-        error instanceof Error ? error.message : String(error ?? 'Save failed');
-      saveCompleted(toolId, message);
-      onReady?.();
-    },
-    [toolId, saveCompleted, onReady, onSaveRejected]
-  );
-  useEffect(() => {
-    const limit = sizeLimit * compression;
-    const big = effectiveAudioBytes > limit * 1000000;
-    setTooBig(big);
-    if (effectiveAudioBytes > (limit - WARNINGLIMIT) * 1000000)
-      setWarning(
-        (big ? t.toobig : t.toobigwarn).replace('{1}', limit.toString())
-      );
-    else setWarning('');
-
-    if (saveRequested(toolId)) {
-      if (!saveRef.current) {
-        if (audioBlob && waveformDuration > 0) {
-          onSaving && onSaving();
-          saveRef.current = true;
-          submittedBlobRef.current = audioBlob;
-          setLoading(true);
-          if (mimeType !== 'audio/wav') {
-            // Convert to target format
-            setStatusText(t.compressing);
-            setConverting(true);
-            convertToFormat(audioBlob, mimeType)
-              .then((convert_blob) =>
-                doUpload(convert_blob, mimeType, filetype)
-                  .then(() => {
-                    convertComplete();
-                  })
-                  .catch(handleSaveFailed)
-              )
-              .catch((error) => {
-                // If conversion fails, show error and save as WAV instead
-                const errorMessage =
-                  t.compressError +
-                  (error instanceof Error ? '    ' + error.message : '');
-                showMessage(errorMessage);
-                setConverting(false);
-                doUpload(audioBlob, 'audio/wav', 'wav')
-                  .then(() => {
-                    setLoading(false);
-                    onReady?.();
-                  })
-                  .catch(handleSaveFailed);
-              });
-          } else {
-            doUpload(audioBlob, mimeType, filetype)
-              .then(() => {
-                setLoading(false);
-                onReady?.();
-              })
-              .catch(handleSaveFailed);
-          }
-          return;
-        } else {
-          // Save was requested with nothing to upload — a rejection like any
-          // other, so auto-save parents must hear about it or they would keep
-          // re-requesting on the next rising edge (TT-7583).
-          onSaveRejected?.();
-          showMessage(ts.NoSaveWoMedia);
-          setStatusText(ts.NoSaveWoMedia);
-          saveCompleted(toolId, ts.NoSaveWoMedia);
-          onReady && onReady();
-        }
-      }
-    } else {
-      saveRef.current = false;
-      if (clearRequested(toolId)) {
-        reset();
-        setDoReset && setDoReset(true);
-      }
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, effectiveAudioBytes, toolsChanged, mimeType, toolId]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {
@@ -686,16 +597,6 @@ function MediaRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doReset]);
 
-  const reset = () => {
-    setFilechanged(false);
-    setPendingSave(false);
-    setWaveformDuration(0);
-    setProcessingRecording(false);
-    setOriginalBlob(undefined);
-    setAudioBlob(undefined);
-    clearCompleted(toolId);
-  };
-
   const handleRecordingCleared = useCallback(() => {
     setPendingSave(false);
     setBlobReady(true);
@@ -713,12 +614,12 @@ function MediaRecord(props: IProps) {
   };
 
   useEffect(() => {
-    if (loading && blobReady && originalBlob && !saveRef.current) {
+    if (loadBusy && blobReady && originalBlob) {
       loadInFlightRef.current = false;
-      setLoading(false);
-      setStatusText('');
+      setLoadBusy(false);
+      if (!inFlight) setStatusText('');
     }
-  }, [loading, blobReady, originalBlob, setStatusText]);
+  }, [loadBusy, blobReady, originalBlob, inFlight, setStatusText]);
   /**
    * A load in flight is being abandoned - the segment was navigated away from,
    * or the recorder was reset. Without this, `loading` never clears again: the
@@ -731,12 +632,12 @@ function MediaRecord(props: IProps) {
     if (!loadInFlightRef.current) return;
     loadInFlightRef.current = false;
     loadRequestedIdRef.current = undefined;
-    setLoading(false);
+    setLoadBusy(false);
     setStatusText('');
   };
   const stopLoading = () => {
     loadInFlightRef.current = false;
-    setLoading(false);
+    setLoadBusy(false);
     setStatusText('');
     onLoaded && onLoaded();
   };
@@ -803,8 +704,8 @@ function MediaRecord(props: IProps) {
     const requestedId = mediaId;
     loadRequestedIdRef.current = requestedId;
     loadInFlightRef.current = true;
-    setLoading(true);
-    // No status text here: setLoading(true) already puts the "Loading..."
+    setLoadBusy(true);
+    // No status text here: setLoadBusy(true) already puts the "Loading..."
     // overlay on the waveform below (TT-7570).
     setStatusText('');
     reset();
@@ -832,7 +733,7 @@ function MediaRecord(props: IProps) {
       logError(
         Severity.error,
         reporter,
-        infoMsg(error as Error, 'media load failed')
+        infoMsg(toError(error), 'media load failed')
       );
       blobError(ts.mediaError);
     }
@@ -840,7 +741,8 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if ((preload ?? 0) > 0 && !loading) {
-      handleLoadAudio();
+      // handleLoadAudio reports its own failure and clears loading.
+      void handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload]);
@@ -854,7 +756,8 @@ function MediaRecord(props: IProps) {
     }
     // Skip while saving — mediaId may update when the new mediafile syncs in.
     if (!loading) {
-      handleLoadAudio();
+      // handleLoadAudio reports its own failure and clears loading.
+      void handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
@@ -868,7 +771,8 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (loading || !mediaId) return;
     if (loadRequestedIdRef.current === mediaId) return;
-    handleLoadAudio();
+    // handleLoadAudio reports its own failure and clears loading.
+    void handleLoadAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, mediaId]);
 
@@ -922,7 +826,7 @@ function MediaRecord(props: IProps) {
           Boolean(isSaveDisabled) ||
           waveformDuration <= 0 ||
           processingRecording ||
-          tooBig ||
+          sizeBlocksSave ||
           (wantsSaveVisible && !blobReady)
         }
         mediaSaveInProgress={mediaSaveInProgress}
@@ -939,9 +843,9 @@ function MediaRecord(props: IProps) {
           {t.processing}
         </Typography>
       ) : (
-        warning && (
+        sizeWarning && (
           <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
-            {warning}
+            {sizeWarning}
           </Typography>
         )
       )}
@@ -952,7 +856,7 @@ function MediaRecord(props: IProps) {
         >
           {showSize && (
             <Typography sx={{ mr: 3 }} id="size">
-              {`${(effectiveAudioBytes / 1000000 / compression).toFixed(2)}MB`}
+              {mb(estimatedBytes)}
             </Typography>
           )}
           {metaData}
@@ -964,7 +868,6 @@ function MediaRecord(props: IProps) {
   if (!showSize && !metaData) {
     return content;
   }
-
   return effectiveMobileView ? (
     content
   ) : (
