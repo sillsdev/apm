@@ -68,15 +68,30 @@ describe('applyVerseSegment', () => {
 
 describe('openingChapter', () => {
   test('uses the passage start chapter', () => {
-    expect(openingChapter(2, '3:1')).toBe('2');
+    expect(openingChapter(2, '2:1-3:4', '3:1')).toBe('2');
+  });
+
+  test('uses the reference start chapter when startChapter is missing', () => {
+    expect(openingChapter(undefined, '1:12-2:26', '2:12')).toBe('1');
+    expect(openingChapter(0, '1:12-2:26', '2:12')).toBe('1');
   });
 
   test('falls back to the first verse segment chapter', () => {
-    expect(openingChapter(undefined, '2:12')).toBe('2');
-    expect(openingChapter(0, '2:12')).toBe('2');
+    expect(openingChapter(undefined, undefined, '2:12')).toBe('2');
+    expect(openingChapter(0, '', '2:12')).toBe('2');
   });
 
   test('defaults to chapter 1', () => {
-    expect(openingChapter(undefined, undefined)).toBe('1');
+    expect(openingChapter(undefined, undefined, undefined)).toBe('1');
+  });
+});
+
+describe('cross-chapter passage whose first segment is in its later chapter', () => {
+  test('marks chapter 2 instead of reusing the unmarked chapter 1 tag', () => {
+    const opening = openingChapter(undefined, '1:12-2:26', '2:12');
+    const text = '\\v 12 text';
+    const edit = applyVerseSegment(text, '2:12', text.length, opening);
+    expect(edit.text).toBe('\\v 12 text \\c 2  \\v 12 ');
+    expect(edit.caret).toBe(edit.text.length);
   });
 });

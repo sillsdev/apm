@@ -646,7 +646,11 @@ export function Transcriber(props: IProps) {
                 '',
                 firstRef,
                 0,
-                openingChapter(passage?.attributes?.startChapter, firstRef)
+                openingChapter(
+                  passage?.attributes?.startChapter,
+                  passage?.attributes?.reference,
+                  firstRef
+                )
               ).text.trimStart();
               if (textArea.value === 'undefined') textArea.value = '';
               insertAtCursor(textArea, refText);
@@ -1378,7 +1382,11 @@ export function Transcriber(props: IProps) {
       value,
       ref,
       cursor,
-      openingChapter(passage?.attributes?.startChapter, firstRef),
+      openingChapter(
+        passage?.attributes?.startChapter,
+        passage?.attributes?.reference,
+        firstRef
+      ),
       collapsedAtZero ? value.length : end
     );
     if (edit.text !== value) {

@@ -7,13 +7,17 @@ export interface VerseSegmentEdit {
 
 /**
  * Chapter of the text before any chapter marker: the passage's start chapter,
- * else the chapter of its first verse segment.
+ * else the chapter its reference starts in (as parseRef reads it), else the
+ * chapter of its first verse segment.
  */
 export function openingChapter(
   startChapter: number | undefined,
+  passageReference: string | undefined,
   firstReference: string | undefined
 ): string {
   if (startChapter) return startChapter.toString();
+  const fromReference = /^\s*(\d+):/.exec(passageReference ?? '')?.[1];
+  if (fromReference && parseInt(fromReference) > 0) return fromReference;
   return (firstReference && refMatch(firstReference)?.[1]) || '1';
 }
 
