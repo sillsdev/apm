@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 import { RecordIdentity } from '@orbit/records';
 import { GroupD } from '../../model';
 import TaskAvatar from '../../components/TaskAvatar';
@@ -19,9 +19,10 @@ export function PassageAssignee({ assign }: IProps) {
       : (findRecord(memory, 'group', assign.id) as GroupD)?.attributes?.name;
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <TaskAvatar assigned={assign} />
-      <Typography>{assigneeName}</Typography>
-    </Box>
+    <Tooltip title={assigneeName ?? ''}>
+      <Box sx={{ alignSelf: 'flex-start' }}>
+        <TaskAvatar assigned={assign} />
+      </Box>
+    </Tooltip>
   );
 }
