@@ -371,11 +371,13 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   const setPlayerSegments = (segments: string) => {
+    // A locate (e.g. a discussion's single region) must not replace a
+    // recording's saved divisions; it only seeks/plays below. Switching
+    // recordings reloads segments through usePlayerLogic.loadSegments.
     const keepCurrentDivisions =
       Boolean(allowSegment) &&
       Boolean(segmentsRef.current) &&
-      segmentsRef.current.indexOf('},{') !== -1 &&
-      segments === segmentsRef.current;
+      segmentsRef.current.indexOf('},{') !== -1;
     if (!keepCurrentDivisions) {
       // Remember what locate applied so the waveform's later onSegmentChange
       // can be recognized without a wall-clock heuristic.
