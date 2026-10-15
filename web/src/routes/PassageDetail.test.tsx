@@ -181,6 +181,14 @@ jest.mock(
   '../components/PassageDetail/mobile/TeamCheckReferenceMobile',
   () => mockNull
 );
+jest.mock(
+  '../components/PassageDetail/Prompt/PassageDetailPrompt',
+  () => mockNull
+);
+jest.mock(
+  '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile',
+  () => mockNull
+);
 
 import PassageDetail from './PassageDetail';
 import { navigationCancelled } from '../utils/useMyNavigate';
