@@ -129,6 +129,8 @@ import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
 import { useCheckOnline } from '../utils/useCheckOnline';
+import { canUseTrustedAiFeature } from '../crud/canUseTrustedAiFeature';
+import { useRole } from '../crud/useRole';
 import { useMobile } from '../utils/useMobile';
 import { useLocLangName } from '../utils/useLocLangName';
 import IndexedDBSource from '@orbit/indexeddb';
@@ -353,6 +355,7 @@ export function Transcriber(props: IProps) {
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { isMobile } = useMobile();
+  const { userIsSharedContentCreator } = useRole();
   const [features, setFeatures] = useState<IFeatures>();
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
@@ -1448,41 +1451,46 @@ export function Transcriber(props: IProps) {
                             </LightTooltip>
                           </Grid>
                         )}
-                      {features?.aiTranscribe && !offline && role && (
-                        <LightTooltip
-                          title={
-                            <Badge badgeContent={sharedStr.ai}>
-                              {asrTip ?? ''}
-                            </Badge>
-                          }
-                        >
-                          <span>
-                            <AsrButton
-                              id="asrButton"
-                              onClick={handleTranscribe}
-                              onSettings={openAsrLanguageSettings}
-                              showSettings={false}
-                              disabled={role !== 'transcriber'}
-                            >
-                              {!hasTranscription &&
-                              hasAiTasks &&
-                              role === 'transcriber' ? (
-                                <Badge variant="dot" color="primary">
+                      {canUseTrustedAiFeature(
+                        features?.aiTranscribe,
+                        offline,
+                        userIsSharedContentCreator
+                      ) &&
+                        role && (
+                          <LightTooltip
+                            title={
+                              <Badge badgeContent={sharedStr.ai}>
+                                {asrTip ?? ''}
+                              </Badge>
+                            }
+                          >
+                            <span>
+                              <AsrButton
+                                id="asrButton"
+                                onClick={handleTranscribe}
+                                onSettings={openAsrLanguageSettings}
+                                showSettings={false}
+                                disabled={role !== 'transcriber'}
+                              >
+                                {!hasTranscription &&
+                                hasAiTasks &&
+                                role === 'transcriber' ? (
+                                  <Badge variant="dot" color="primary">
+                                    <TranscriptionLogo
+                                      disabled={role !== 'transcriber'}
+                                      sx={{ height: 18, width: 18 }}
+                                    />
+                                  </Badge>
+                                ) : (
                                   <TranscriptionLogo
                                     disabled={role !== 'transcriber'}
                                     sx={{ height: 18, width: 18 }}
                                   />
-                                </Badge>
-                              ) : (
-                                <TranscriptionLogo
-                                  disabled={role !== 'transcriber'}
-                                  sx={{ height: 18, width: 18 }}
-                                />
-                              )}
-                            </AsrButton>
-                          </span>
-                        </LightTooltip>
-                      )}
+                                )}
+                              </AsrButton>
+                            </span>
+                          </LightTooltip>
+                        )}
                     </>
                   }
                 />

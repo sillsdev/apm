@@ -20,7 +20,8 @@ export const useRole = () => {
   const roles = React.useMemo(() => {
     const uniqueRoles = {} as IUniqueRoles;
     const allRoles = (
-      memory?.cache.query((q) => q.findRecords('role')) as RoleD[]
+      (memory?.cache?.query((q) => q.findRecords('role')) as
+        RoleD[] | undefined) ?? []
     ).filter((r) => r.attributes.orgRole);
     allRoles.forEach((r) => {
       if (offlineOnly !== Boolean(r?.keys?.remoteId)) {
@@ -35,11 +36,13 @@ export const useRole = () => {
   }, [orgRole]);
 
   const userIsSharedContentAdmin = useMemo(() => {
+    if (!memory) return undefined;
     const userRec = findRecord(memory, 'user', user) as User;
     return userRec?.attributes?.sharedContentAdmin;
   }, [memory, user]);
 
   const userIsSharedContentCreator = useMemo(() => {
+    if (!memory) return undefined;
     const userRec = findRecord(memory, 'user', user) as User;
     return (
       userRec?.attributes?.sharedContentAdmin ||

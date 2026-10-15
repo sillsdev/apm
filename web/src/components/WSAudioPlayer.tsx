@@ -51,6 +51,8 @@ import { RecordButton } from '../control/RecordButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { Button } from '../control';
+import { canUseTrustedAiFeature } from '../crud/canUseTrustedAiFeature';
+import { useRole } from '../crud/useRole';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -462,6 +464,7 @@ function WSAudioPlayer(props: IProps) {
   const [myMediaId, setMyMediaId] = useState(mediaId ?? '');
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const { userIsSharedContentCreator } = useRole();
   const [org] = useGlobal('organization');
   const [features, setFeatures] = useState<IFeatures>();
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -2099,6 +2102,14 @@ function WSAudioPlayer(props: IProps) {
     () => !ready || playing || recording || duration === 0 || waitingForAI,
     [ready, playing, recording, duration, waitingForAI]
   );
+  const showVoiceConversion =
+    allowRecord === true &&
+    allowDeltaVoice !== false &&
+    canUseTrustedAiFeature(
+      features?.deltaVoice,
+      offline,
+      userIsSharedContentCreator
+    );
   const renderMoreMenuItems = () =>
     [
       allowRecord === true && allowNoNoise && features?.noNoise && !offline && (
@@ -2125,62 +2136,56 @@ function WSAudioPlayer(props: IProps) {
           </Stack>
         </MenuItem>
       ),
-      allowRecord === true &&
-        features?.deltaVoice &&
-        allowDeltaVoice !== false &&
-        !offline && (
-          <MenuItem
-            key="voice-convert"
-            id="voiceChange"
-            onClick={() => {
-              handleVoiceChange();
-              handleMoreMenuClose();
-            }}
-            disabled={isControlDisabled}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <VoiceConversionLogo
-                sx={{
-                  width: '18pt',
-                  height: '18pt',
-                  flexShrink: 0,
-                }}
-                disabled={isControlDisabled}
-              />
-              <Typography variant="body2">{t.convertVoiceAi}</Typography>
-            </Stack>
-          </MenuItem>
-        ),
-      allowRecord === true &&
-        features?.deltaVoice &&
-        allowDeltaVoice !== false &&
-        !offline && (
-          <MenuItem
-            key="voice-convert-settings"
-            onClick={() => {
-              handleVoiceSettings();
-              handleMoreMenuClose();
-            }}
-            disabled={isControlDisabled && duration > 0}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <SettingsIcon
-                fontSize="small"
-                sx={{
-                  flexShrink: 0,
-                  color:
-                    isControlDisabled && duration > 0
-                      ? 'action.disabled'
-                      : 'secondary.light',
-                  opacity: 0.85,
-                }}
-              />
-              <Typography variant="body2">
-                {t.selectVoiceForConversion}
-              </Typography>
-            </Stack>
-          </MenuItem>
-        ),
+      showVoiceConversion && (
+        <MenuItem
+          key="voice-convert"
+          id="voiceChange"
+          onClick={() => {
+            handleVoiceChange();
+            handleMoreMenuClose();
+          }}
+          disabled={isControlDisabled}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <VoiceConversionLogo
+              sx={{
+                width: '18pt',
+                height: '18pt',
+                flexShrink: 0,
+              }}
+              disabled={isControlDisabled}
+            />
+            <Typography variant="body2">{t.convertVoiceAi}</Typography>
+          </Stack>
+        </MenuItem>
+      ),
+      showVoiceConversion && (
+        <MenuItem
+          key="voice-convert-settings"
+          onClick={() => {
+            handleVoiceSettings();
+            handleMoreMenuClose();
+          }}
+          disabled={isControlDisabled && duration > 0}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <SettingsIcon
+              fontSize="small"
+              sx={{
+                flexShrink: 0,
+                color:
+                  isControlDisabled && duration > 0
+                    ? 'action.disabled'
+                    : 'secondary.light',
+                opacity: 0.85,
+              }}
+            />
+            <Typography variant="body2">
+              {t.selectVoiceForConversion}
+            </Typography>
+          </Stack>
+        </MenuItem>
+      ),
       allowRecord === true && features?.normalize && isElectron && (
         <MenuItem
           key="normalize"
