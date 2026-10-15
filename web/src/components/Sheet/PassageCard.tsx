@@ -160,7 +160,9 @@ export function PassageCard(props: IProps) {
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {!isPersonal && <PassageAssignee assign={cardInfo.assign} />}
+              {!isPersonal && cardInfo.assign && (
+                <PassageAssignee assign={cardInfo.assign} />
+              )}
               <PassageStepButton
                 step={cardInfo.step}
                 discussionCount={cardInfo.stepDiscussionCount}

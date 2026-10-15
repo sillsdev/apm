@@ -552,7 +552,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.contains('Unassigned').should('not.exist');
   });
 
-  it('should show Unassigned with NoAccounts icon when assign does not exist', () => {
+  it('should not show assign section when assign does not exist', () => {
     const cardInfo = createMockSheet({
       assign: undefined,
     });
@@ -563,10 +563,10 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       isPersonal: false,
     });
 
-    // Should show "Unassigned" text
-    cy.contains('Unassigned').should('be.visible');
-    // Should show NoAccounts icon
-    cy.get('svg[data-testid="NoAccountsIcon"]').should('exist');
+    // Should not show "Unassigned" text
+    cy.contains('Unassigned').should('not.exist');
+    // Should not show NoAccounts icon
+    cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
   });
 
   it('should not show assign section for personal projects when assign exists', () => {
