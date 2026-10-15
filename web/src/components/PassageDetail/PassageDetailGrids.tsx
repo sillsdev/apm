@@ -307,7 +307,7 @@ const PassageDetailGrids = () => {
                 />
               )}
               {tool === ToolSlug.Verses && (
-                <PassageDetailMarkVerses width={playerPaneWidth} />
+                <PassageDetailMarkVerses width={paneWidth} />
               )}
               {tool === ToolSlug.CarefulSpeech && (
                 <PassageDetailCarefulSpeech width={playerPaneWidth} />
