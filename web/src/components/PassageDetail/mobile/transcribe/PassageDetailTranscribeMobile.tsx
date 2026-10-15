@@ -65,6 +65,7 @@ import {
   type FontData,
 } from '../../../../crud/fontChoice';
 import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
+import { resolveStepSpellCheck } from '../../../../crud/stepSpellCheck';
 import {
   ArtifactTypeSlug,
   artifactStampsStepLanguage,
@@ -181,9 +182,12 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const parsedSettings = useMemo(() => {
     try {
-      return JSON.parse(stepSettings || '{}') as { artifactTypeId?: string };
+      return JSON.parse(stepSettings || '{}') as {
+        artifactTypeId?: string;
+        spellCheck?: boolean;
+      };
     } catch {
-      return {} as { artifactTypeId?: string };
+      return {} as { artifactTypeId?: string; spellCheck?: boolean };
     }
   }, [stepSettings]);
 
@@ -421,6 +425,12 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         ? (slugFromId(artifactTypeId) as ArtifactTypeSlug)
         : ArtifactTypeSlug.Vernacular,
     [artifactTypeId, slugFromId]
+  );
+  // getFontData always returns spellCheck false, so the step flag is applied here.
+  const spellCheck = resolveStepSpellCheck(
+    parsedSettings,
+    artifactTypeSlug,
+    projData?.langTag
   );
   const noParatext = useMemo(
     () => isNoParatextWorkflow(resolvedType, artifactTypeSlug),
@@ -816,7 +826,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           family={fontStyle.fontFamily}
           url={projData?.url}
           lang={projData?.langTag || 'en'}
-          spellCheck={projData?.spellCheck === true}
+          spellCheck={spellCheck}
           onChange={handleTextChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
