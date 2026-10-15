@@ -59,13 +59,15 @@ function verseInSpan(
 /**
  * Insert the verse tag for a segment, or return the caret of the tag that is
  * already in that chapter. Text before any chapter marker is in the opening
- * chapter, as parseTranscription reads it.
+ * chapter, as parseTranscription reads it. An inserted tag replaces the
+ * selected text from cursor to selectionEnd, as insertAtCursor does.
  */
 export function applyVerseSegment(
   text: string,
   reference: string,
   cursor = text.length,
-  opening = '1'
+  opening = '1',
+  selectionEnd = cursor
 ): VerseSegmentEdit {
   const m = refMatch(reference);
   if (!reference || !m) return { text, caret: cursor };
@@ -80,6 +82,6 @@ export function applyVerseSegment(
   if (chapterInForce(text, cursor, opening) !== chapter) {
     insert = String.raw` \c ${chapter} ` + insert;
   }
-  const next = text.slice(0, cursor) + insert + text.slice(cursor);
+  const next = text.slice(0, cursor) + insert + text.slice(selectionEnd);
   return { text: next, caret: cursor + insert.length };
 }

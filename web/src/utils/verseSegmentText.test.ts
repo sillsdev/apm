@@ -47,6 +47,18 @@ describe('applyVerseSegment', () => {
     expect(edit.text.trimStart()).toBe('\\c 2  \\v 12 ');
   });
 
+  test('replaces the selected text with the inserted verse tag', () => {
+    const edit = applyVerseSegment('hello wrong world', '1:3', 6, '1', 11);
+    expect(edit.text).toBe('hello  \\v 3  world');
+    expect(edit.caret).toBe(12);
+  });
+
+  test('keeps the selected text when the verse tag is already there', () => {
+    const edit = applyVerseSegment('\\v 3 hello wrong', '1:3', 11, '1', 16);
+    expect(edit.text).toBe('\\v 3 hello wrong');
+    expect(edit.caret).toBe(0);
+  });
+
   test('leaves the transcription unchanged when the reference is empty', () => {
     const edit = applyVerseSegment('\\v 12 ', '');
     expect(edit.text).toBe('\\v 12 ');

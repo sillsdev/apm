@@ -1371,13 +1371,15 @@ export function Transcriber(props: IProps) {
     // Same cursor rule as insertAtCursor: a caret at 0 with no range means append.
     const start = textArea.selectionStart ?? 0;
     const end = textArea.selectionEnd ?? start;
-    const cursor = start || start !== end ? start : value.length;
+    const collapsedAtZero = !start && start === end;
+    const cursor = collapsedAtZero ? value.length : start;
     const firstRef = segs.find((s) => s?.label && refMatch(s.label))?.label;
     const edit = applyVerseSegment(
       value,
       ref,
       cursor,
-      openingChapter(passage?.attributes?.startChapter, firstRef)
+      openingChapter(passage?.attributes?.startChapter, firstRef),
+      collapsedAtZero ? value.length : end
     );
     if (edit.text !== value) {
       textArea.value = edit.text;
