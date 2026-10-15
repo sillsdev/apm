@@ -85,6 +85,7 @@ import {
   getSortedRegions,
   isLangSet,
 } from '../utils';
+import { applyVerseSegment } from '../utils/verseSegmentText';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 import { AllDone } from './AllDone';
@@ -1358,25 +1359,19 @@ export function Transcriber(props: IProps) {
   const handleStartRegion = (position: number) => {
     const segs = getSortedRegions(verseSegs.current || '');
     const ref = segs.find((s) => s.start === position)?.label;
-    const m = refMatch(ref || '');
-    if (ref && m) {
-      const vNum = ref.substring((m[1] as string).length + 1);
-      let refText = `\\v ${vNum} `;
-      const textArea = transcriptionRef.current
-        .firstChild as HTMLTextAreaElement;
-      const refPos = textArea.value.indexOf(refText);
-      // look for alternate verse markup format too
-      const refPos2 = textArea.value.indexOf(`\\v${vNum} `);
-      if (refPos === -1 && refPos2 === -1) {
-        // vNum is undefined for bad references
-        refText = vNum ? ' ' + refText : '';
-        if (parseInt(m[2] as string) === 1) {
-          refText = ` \\c ${m[1]} ` + refText;
-        }
-        insertAtCursor(textArea, refText);
-        setTextValue(textArea.value ?? '');
-      }
+    if (!ref || !refMatch(ref)) return;
+    const textArea = transcriptionRef.current.firstChild as HTMLTextAreaElement;
+    const value = textArea.value ?? '';
+    // Same cursor rule as insertAtCursor: a caret at 0 with no range means append.
+    const start = textArea.selectionStart ?? 0;
+    const end = textArea.selectionEnd ?? start;
+    const cursor = start || start !== end ? start : value.length;
+    const edit = applyVerseSegment(value, ref, cursor);
+    if (edit.text !== value) {
+      textArea.value = edit.text;
+      setTextValue(edit.text);
     }
+    textArea.setSelectionRange(edit.caret, edit.caret);
   };
 
   return (
