@@ -211,6 +211,10 @@ jest.mock('../context/useGlobal', () => ({
   useGlobal: (key: string) => [mockGlobals[key], mockSetGlobal],
 }));
 
+jest.mock('../crud/useRole', () => ({
+  useRole: () => ({ userIsSharedContentCreator: false }),
+}));
+
 const mockShowMessage = jest.fn();
 
 jest.mock('../hoc/SnackBar', () => ({

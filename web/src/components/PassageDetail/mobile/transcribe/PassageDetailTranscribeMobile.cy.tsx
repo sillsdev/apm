@@ -192,6 +192,7 @@ describe('PassageDetailTranscribeMobile', () => {
       aiTranscribe?: boolean;
       offline?: boolean;
       projectAttributes?: Record<string, unknown>;
+      sharedContentCreator?: boolean;
     } = {}
   ) => {
     const {
@@ -219,6 +220,7 @@ describe('PassageDetailTranscribeMobile', () => {
       aiTranscribe = true,
       offline = false,
       projectAttributes = {},
+      sharedContentCreator = true,
     } = options;
 
     const defaultMedia: MediaFileD = {
@@ -390,7 +392,16 @@ describe('PassageDetailTranscribeMobile', () => {
                 },
               ],
         orgworkflowstep: stepList,
-        user: [{ id: 'user-1', type: 'user', attributes: { name: 'User 1' } }],
+        user: [
+          {
+            id: 'user-1',
+            type: 'user',
+            attributes: {
+              name: 'User 1',
+              sharedContentCreator,
+            },
+          },
+        ],
         group: [],
         groupmembership: [],
       },
@@ -530,6 +541,16 @@ describe('PassageDetailTranscribeMobile', () => {
 
     cy.get('[data-cy="mobile-asr-control"]').should('be.visible');
     cy.get('#asrButton').should('be.visible').and('not.be.disabled');
+  });
+
+  it('hides Recognize Speech for a user who is not a shared-content creator', () => {
+    mountTranscribeMobile({
+      aiTranscribe: true,
+      sharedContentCreator: false,
+    });
+
+    cy.get('#asrButton').should('not.exist');
+    cy.get('#transcriptionText').should('be.visible');
   });
 
   it('hides ASR button when offline even if team aiTranscribe is enabled', () => {

@@ -3,6 +3,10 @@ import { render, screen } from '@testing-library/react';
 import { ToolSlug } from '../../../crud/toolSlug';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
+jest.mock('../../../crud/useRole', () => ({
+  useRole: () => ({ userIsSharedContentCreator: true }),
+}));
+
 jest.mock('../../../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
     if (key === 'offline') return [false];

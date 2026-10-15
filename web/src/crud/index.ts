@@ -33,6 +33,7 @@ export * from './usePlan';
 export * from './useProjectPlans';
 export * from './user';
 export * from './useRole';
+export * from './canUseTrustedAiFeature';
 export * from './useTableType';
 export * from './useTeamCreate';
 export * from './useTeamDelete';

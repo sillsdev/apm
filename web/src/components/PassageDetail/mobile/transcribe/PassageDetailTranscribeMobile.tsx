@@ -50,6 +50,8 @@ import {
   isNoParatextWorkflow,
   resolvedProjectType,
 } from '../../../../crud/nextTranscriptionState';
+import { canUseTrustedAiFeature } from '../../../../crud/canUseTrustedAiFeature';
+import { useRole } from '../../../../crud/useRole';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import {
@@ -151,6 +153,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const [projType] = useGlobal('projType');
   const [organization] = useGlobal('organization');
   const [offline] = useGlobal('offline');
+  const { userIsSharedContentCreator } = useRole();
   const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
   const remote = coordinator?.getSource('remote') as JSONAPISource;
@@ -159,7 +162,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
     { aiTranscribe?: boolean } | undefined;
-  const showAsrButton = Boolean(features?.aiTranscribe) && !offline;
+  const showAsrButton = canUseTrustedAiFeature(
+    features?.aiTranscribe,
+    offline,
+    userIsSharedContentCreator
+  );
   const { getProjType } = useProjectType();
   const { slugFromId } = useArtifactType();
 
