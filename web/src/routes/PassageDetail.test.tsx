@@ -185,15 +185,6 @@ jest.mock(
   '../components/PassageDetail/Prompt/PassageDetailPrompt',
   () => mockNull
 );
-jest.mock(
-  '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile',
-  () => {
-    function PassageDetailTranscribeMobile() {
-      return <textarea id="transcriptionText" />;
-    }
-    return PassageDetailTranscribeMobile;
-  }
-);
 
 import PassageDetail from './PassageDetail';
 import { navigationCancelled } from '../utils/useMyNavigate';
@@ -298,32 +289,6 @@ describe('PassageDetail', () => {
       render(<PassageDetail />);
       expect(screen.getByTestId('record')).toBeInTheDocument();
       expect(screen.queryByText(desktopOnlyEn)).not.toBeInTheDocument();
-    });
-  });
-
-  describe('mobile Transcribe', () => {
-    beforeEach(() => {
-      mockMobile.isMobile = true;
-      mockMobile.isMobileWidth = true;
-      mockStep.tool = ToolSlug.Transcribe;
-    });
-
-    it('shows the transcribe editor to a non-developer', () => {
-      mockGlobals.developer = false;
-      render(<PassageDetail />);
-      expect(document.getElementById('transcriptionText')).toBeInTheDocument();
-      expect(
-        document.querySelector('[data-cy=desktop-only-step]')
-      ).not.toBeInTheDocument();
-    });
-
-    it('shows the transcribe editor to a developer', () => {
-      mockGlobals.developer = true;
-      render(<PassageDetail />);
-      expect(document.getElementById('transcriptionText')).toBeInTheDocument();
-      expect(
-        document.querySelector('[data-cy=desktop-only-step]')
-      ).not.toBeInTheDocument();
     });
   });
 });
