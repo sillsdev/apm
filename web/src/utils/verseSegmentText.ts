@@ -5,19 +5,34 @@ export interface VerseSegmentEdit {
   caret: number;
 }
 
-function chapterInForce(text: string, cursor: number): string {
+/**
+ * Chapter of the text before any chapter marker: the passage's start chapter,
+ * else the chapter of its first verse segment.
+ */
+export function openingChapter(
+  startChapter: number | undefined,
+  firstReference: string | undefined
+): string {
+  if (startChapter) return startChapter.toString();
+  return (firstReference && refMatch(firstReference)?.[1]) || '1';
+}
+
+function chapterInForce(text: string, cursor: number, opening: string): string {
   const matches = [...text.slice(0, cursor).matchAll(/\\c (\d+)/g)];
-  if (matches.length === 0) return '1';
+  if (matches.length === 0) return opening;
   return matches[matches.length - 1][1];
 }
 
-/** Text range that belongs to this chapter. Chapter 1 is the text before the next chapter marker. */
+/** Text range that belongs to this chapter. The opening chapter is the text before the next chapter marker. */
 function chapterSpan(
   text: string,
-  chapter: string
+  chapter: string,
+  opening: string
 ): { start: number; end: number } | undefined {
-  if (chapter === '1') {
-    const next = text.search(/\\c (?!1\b)\d+/);
+  if (chapter === opening) {
+    const next = text.search(
+      new RegExp(String.raw`\\c (?!${opening}(?!\d))\d+`)
+    );
     return { start: 0, end: next === -1 ? text.length : next };
   }
   const found = new RegExp(String.raw`\\c ${chapter}(?!\d)`).exec(text);
@@ -43,12 +58,14 @@ function verseInSpan(
 
 /**
  * Insert the verse tag for a segment, or return the caret of the tag that is
- * already in that chapter.
+ * already in that chapter. Text before any chapter marker is in the opening
+ * chapter, as parseTranscription reads it.
  */
 export function applyVerseSegment(
   text: string,
   reference: string,
-  cursor = text.length
+  cursor = text.length,
+  opening = '1'
 ): VerseSegmentEdit {
   const m = refMatch(reference);
   if (!reference || !m) return { text, caret: cursor };
@@ -56,11 +73,11 @@ export function applyVerseSegment(
   const verse = reference.substring(chapter.length + 1);
   const spaced = String.raw`\v ${verse} `;
   const tight = String.raw`\v${verse} `;
-  const span = chapterSpan(text, chapter);
+  const span = chapterSpan(text, chapter, opening);
   const present = span ? verseInSpan(text, span, spaced, tight) : -1;
   if (present >= 0) return { text, caret: present };
   let insert = verse ? ' ' + spaced : '';
-  if (chapterInForce(text, cursor) !== chapter) {
+  if (chapterInForce(text, cursor, opening) !== chapter) {
     insert = String.raw` \c ${chapter} ` + insert;
   }
   const next = text.slice(0, cursor) + insert + text.slice(cursor);

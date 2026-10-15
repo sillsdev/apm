@@ -1,4 +1,4 @@
-import { applyVerseSegment } from './verseSegmentText';
+import { applyVerseSegment, openingChapter } from './verseSegmentText';
 
 // The transcription Next Segment produced for Ecclesiastes 1:12–2:26 (TT-6862).
 const missingChapter2Verses12To18 =
@@ -25,9 +25,46 @@ describe('applyVerseSegment', () => {
     expect(edit.caret).toBe(13);
   });
 
+  test('reuses the unmarked opening verse of a passage starting in chapter 2', () => {
+    const edit = applyVerseSegment('\\v 12 ', '2:12', 6, '2');
+    expect(edit.text).toBe('\\v 12 ');
+    expect(edit.caret).toBe(0);
+  });
+
+  test('advances from the unmarked opening verse without a chapter marker', () => {
+    const edit = applyVerseSegment('\\v 12 ', '2:13', 6, '2');
+    expect(edit.text).toBe('\\v 12  \\v 13 ');
+    expect(edit.caret).toBe(13);
+  });
+
+  test('marks the next chapter after an unmarked opening chapter 2', () => {
+    const edit = applyVerseSegment('\\v 12  \\v 13 ', '3:1', 13, '2');
+    expect(edit.text).toBe('\\v 12  \\v 13  \\c 3  \\v 1 ');
+  });
+
+  test('marks the chapter when the first segment is not in the opening chapter', () => {
+    const edit = applyVerseSegment('', '2:12', 0, '1');
+    expect(edit.text.trimStart()).toBe('\\c 2  \\v 12 ');
+  });
+
   test('leaves the transcription unchanged when the reference is empty', () => {
     const edit = applyVerseSegment('\\v 12 ', '');
     expect(edit.text).toBe('\\v 12 ');
     expect(edit.caret).toBe(6);
+  });
+});
+
+describe('openingChapter', () => {
+  test('uses the passage start chapter', () => {
+    expect(openingChapter(2, '3:1')).toBe('2');
+  });
+
+  test('falls back to the first verse segment chapter', () => {
+    expect(openingChapter(undefined, '2:12')).toBe('2');
+    expect(openingChapter(0, '2:12')).toBe('2');
+  });
+
+  test('defaults to chapter 1', () => {
+    expect(openingChapter(undefined, undefined)).toBe('1');
   });
 });

@@ -85,7 +85,7 @@ import {
   getSortedRegions,
   isLangSet,
 } from '../utils';
-import { applyVerseSegment } from '../utils/verseSegmentText';
+import { applyVerseSegment, openingChapter } from '../utils/verseSegmentText';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 import { AllDone } from './AllDone';
@@ -636,12 +636,18 @@ export function Transcriber(props: IProps) {
           const textArea = transcriptionRef.current
             .firstChild as HTMLTextAreaElement;
           if (!textArea.value || textArea.value === 'undefined') {
-            let refText = segs.find(
+            const firstRef = segs.find(
               (s) => s?.label && refMatch(s.label)
             )?.label;
-            const vNum = refText?.split(':')[1];
-            if (vNum) {
-              refText = `\\v ${vNum} `;
+            if (firstRef?.split(':')[1]) {
+              // Adds a chapter marker only if the first segment is not in the
+              // chapter parseTranscription assigns to unmarked text.
+              const refText = applyVerseSegment(
+                '',
+                firstRef,
+                0,
+                openingChapter(passage?.attributes?.startChapter, firstRef)
+              ).text.trimStart();
               if (textArea.value === 'undefined') textArea.value = '';
               insertAtCursor(textArea, refText);
               setTextValue(textArea.value ?? '');
@@ -1366,7 +1372,13 @@ export function Transcriber(props: IProps) {
     const start = textArea.selectionStart ?? 0;
     const end = textArea.selectionEnd ?? start;
     const cursor = start || start !== end ? start : value.length;
-    const edit = applyVerseSegment(value, ref, cursor);
+    const firstRef = segs.find((s) => s?.label && refMatch(s.label))?.label;
+    const edit = applyVerseSegment(
+      value,
+      ref,
+      cursor,
+      openingChapter(passage?.attributes?.startChapter, firstRef)
+    );
     if (edit.text !== value) {
       textArea.value = edit.text;
       setTextValue(edit.text);
