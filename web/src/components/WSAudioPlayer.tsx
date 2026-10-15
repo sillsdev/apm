@@ -152,6 +152,9 @@ interface IProps {
   isPlaying?: boolean;
   regionOnly?: boolean;
   request?: Date;
+  /** With `isPlaying` and `request`: play exactly this time range instead of
+   * the selected region (e.g. a located discussion on a divided recording). */
+  playRange?: IRegion;
   loading?: boolean;
   busy?: boolean;
   defaultRegionParams?: IRegionParams;
@@ -387,6 +390,7 @@ function WSAudioPlayer(props: IProps) {
     isPlaying,
     regionOnly,
     request,
+    playRange,
     loading,
     busy,
     defaultRegionParams,
@@ -780,6 +784,7 @@ function WSAudioPlayer(props: IProps) {
     wsClear,
     wsTogglePlay,
     wsPlayRegion,
+    wsPlayRange,
     wsBlob,
     wsRegionBlob,
     wsPause,
@@ -1246,20 +1251,24 @@ function WSAudioPlayer(props: IProps) {
   }, [busy, loading]);
 
   const handlePlayStatus = useCallback(
-    async (play: boolean) => {
+    async (play: boolean, range?: IRegion) => {
       if (durationRef.current === 0 || recordingRef.current) return false;
       if (play && beforePlay) {
         const skipDefault = await beforePlay();
         if (skipDefault === false) return playingRef.current;
       }
       const wouldReplayRegion =
-        play && (regionOnly || forceRegionOnly) && !!currentSegmentRef.current;
+        play &&
+        (!!range ||
+          ((regionOnly || forceRegionOnly) && !!currentSegmentRef.current));
       if (play === playingRef.current && !wouldReplayRegion) {
         return playingRef.current;
       }
       let nowplaying = play;
 
-      if (
+      if (play && range) {
+        nowplaying = wsPlayRange(range.start, range.end) || wsTogglePlay();
+      } else if (
         play &&
         (regionOnly || forceRegionOnly) &&
         currentSegmentRef.current
@@ -1287,6 +1296,7 @@ function WSAudioPlayer(props: IProps) {
       forceRegionOnly,
       wsPosition,
       wsPlayRegion,
+      wsPlayRange,
       wsTogglePlay,
       wsGoto,
       onPlayStatus,
@@ -1380,7 +1390,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (isPlaying !== undefined) void handlePlayStatus(isPlaying);
+    if (isPlaying !== undefined) void handlePlayStatus(isPlaying, playRange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, request, duration]);
 

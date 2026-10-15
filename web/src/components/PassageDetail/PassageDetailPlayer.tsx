@@ -373,8 +373,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
 
   const setPlayerSegments = (segments: string) => {
     // A locate (e.g. a discussion's single region) must not replace a
-    // recording's saved divisions; it only seeks/plays below. Switching
-    // recordings reloads segments through usePlayerLogic.loadSegments.
+    // recording's saved divisions; it only plays its own start..end below.
+    // Switching recordings reloads segments through usePlayerLogic.loadSegments.
     const keepCurrentDivisions =
       Boolean(allowSegment) &&
       Boolean(segmentsRef.current) &&
@@ -388,12 +388,14 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     }
     //TT 6149 but I wonder why this was here? if (!playingRef.current) {
     const segs = parseRegions(segments) as IRegions | undefined;
-    if (autoPlayOnSegmentLocate && (segs?.regions?.length ?? 0) > 0) {
-      setInitialPosition(segs?.regions[0]?.start ?? 0);
+    const region = segs?.regions?.[0];
+    if (autoPlayOnSegmentLocate && region) {
+      setInitialPosition(region.start);
       setRequestPlay({
         play: true,
         regionOnly: true,
         request: new Date(),
+        region,
       });
     }
     //}
@@ -485,6 +487,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         lockSegmentSelection={lockSegmentSelection}
         isSegmentRecorded={isSegmentRecorded}
         request={requestPlay.request}
+        playRange={requestPlay.region}
         loading={loading}
         busy={pdBusy}
         allowSegment={allowSegment}
