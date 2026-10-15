@@ -38,8 +38,6 @@ interface IProps {
   // I think we are moving towards using the dialog's X as the standard way to cancel instead of an explicit Cancel button.
   // hopefully in the future we can remove the explicit Cancel button entirely.
   hideCancel?: boolean | undefined;
-  /** Pre-select these files when the dialog opens (see MediaUploadContent). */
-  initialFiles?: File[] | undefined;
   /** Keep the selection after submit instead of clearing it (see MediaUploadContent). */
   keepFilesAfterSubmit?: boolean | undefined;
 }
@@ -66,7 +64,6 @@ function MediaUpload(props: IProps) {
     audioOnly,
     validationMessage,
     hideCancel,
-    initialFiles,
     keepFilesAfterSubmit,
   } = props;
   const { isMobile } = useMobile();
@@ -120,7 +117,6 @@ function MediaUpload(props: IProps) {
           audioOnly={audioOnly}
           validationMessage={validationMessage}
           hideCancel={hideCancel}
-          initialFiles={initialFiles}
           keepFilesAfterSubmit={keepFilesAfterSubmit}
         />
       </>

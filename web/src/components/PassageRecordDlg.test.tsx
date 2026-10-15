@@ -72,7 +72,6 @@ const ipRec = (rightsHolder: string) => ({
 const openRecordTab = (speaker: string) => {
   render(
     <PassageRecordDlg
-      visible
       onVisible={jest.fn()}
       onCancel={jest.fn()}
       mediaId=""
@@ -113,5 +112,47 @@ describe('PassageRecordDlg speaker rights', () => {
     mockIpRecs = [ipRec('Alice')];
     openRecordTab('');
     expect(capturedAllowRecord).toBe(false);
+  });
+});
+
+describe('PassageRecordDlg reopens fresh', () => {
+  beforeEach(() => {
+    capturedAllowRecord = undefined;
+    mockIpRecs = [];
+  });
+
+  const props = (over: Record<string, unknown> = {}) => ({
+    onVisible: jest.fn(),
+    onCancel: jest.fn(),
+    mediaId: '',
+    artifactId: null,
+    afterUploadCb: jest.fn().mockResolvedValue(undefined),
+    passageId: 'p1',
+    defaultFilename: 'file',
+    speaker: 'Alice',
+    onSpeaker: jest.fn(),
+    uploadType: UploadType.ProjectResource,
+    uploadMethod: undefined,
+    ...over,
+  });
+
+  // The dialog portals to document.body; record mode renders #recDlgContent.
+  const inRecordMode = () => Boolean(document.querySelector('#recDlgContent'));
+
+  it('mounts a fresh instance on each open (Uploader mounts only while open)', () => {
+    // The Uploader renders this dialog only while open, so closing = unmount.
+    const first = render(<PassageRecordDlg {...props()} />);
+    act(() => {
+      fireEvent.click(screen.getByTestId('tab-record'));
+    });
+    expect(inRecordMode()).toBe(true);
+
+    // Closing unmounts the dialog (tears down the recorder/mic).
+    first.unmount();
+    expect(inRecordMode()).toBe(false);
+
+    // Reopening mounts a new instance → back on the Upload tab.
+    render(<PassageRecordDlg {...props()} />);
+    expect(inRecordMode()).toBe(false);
   });
 });

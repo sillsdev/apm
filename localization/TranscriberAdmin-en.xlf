@@ -5758,12 +5758,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.projectResourceConfigure">
-         <segment>
-            <source>Chunk into Resources</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.recordResource">
          <segment>
             <source>Record</source>

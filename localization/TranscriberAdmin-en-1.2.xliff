@@ -6717,13 +6717,6 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
-         <trans-unit id="passageDetailArtifacts.projectResourceConfigure">
-      		<source>Chunk into Resources</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">AddResource.tsx</context>
-      		</context-group>
-      	</trans-unit>
          <trans-unit id="passageDetailArtifacts.recordResource">
             <source>Record</source>
             <target/>
