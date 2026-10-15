@@ -193,19 +193,17 @@ describe('PassageRef', () => {
         .and('not.contain.text', 'Genesis');
     });
 
-    it('should use RefRender component for non-PASSAGE types with passageRef', () => {
+    it('should render the reference text for non-PASSAGE types with passageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
         passageRef: '1',
-        comment: 'Chapter comment',
       });
 
       cy.get('.MuiTypography-h6').should('exist');
-      // RefRender component should be rendered - we'll check for its typical structure
       cy.get('.MuiTypography-h6').should('contain.text', '1');
     });
 
-    it('should append comment for CHAPTERNUMBER type when comment exists', () => {
+    it('should show only the comment for CHAPTERNUMBER type when comment exists', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
         passageRef: '1',
@@ -214,8 +212,7 @@ describe('PassageRef', () => {
 
       cy.get('.MuiTypography-h6')
         .should('exist')
-        .and('contain.text', '1')
-        .and('contain.text', 'Introduction');
+        .and('have.text', 'Introduction');
     });
 
     it('should not append comment for non-CHAPTERNUMBER types', () => {
@@ -440,9 +437,13 @@ describe('PassageRef', () => {
           );
 
           cy.get('.MuiTypography-h6').should(($noteEl) => {
+            // Compare MUI base classes only; non-PASSAGE refs add clamp styling
+            const muiClasses = (classes: string[]) =>
+              classes.filter((c) => c.startsWith('MuiTypography-'));
             const noteClasses = Array.from($noteEl[0].classList);
-            // Should have same base classes
-            expect(noteClasses).to.deep.equal(passageClasses);
+            expect(muiClasses(noteClasses)).to.deep.equal(
+              muiClasses(passageClasses)
+            );
           });
         });
     });
@@ -483,8 +484,7 @@ describe('PassageRef', () => {
       );
 
       cy.get('.MuiTypography-h6')
-        .should('contain.text', '1')
-        .and('contain.text', 'Chapter intro')
+        .should('have.text', 'Chapter intro')
         .and('not.contain.text', 'Genesis');
     });
 

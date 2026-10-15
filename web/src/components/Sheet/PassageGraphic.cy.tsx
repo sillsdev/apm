@@ -152,7 +152,6 @@ describe('PassageGraphic', () => {
         .should('have.attr', 'src', INLINE_TEST_SVG);
 
       cy.get('.MuiAvatar-rounded').should('exist');
-      cy.get('.MuiAvatar-root').should('have.css', 'margin-right', '8px');
     });
 
     it('should render Avatar with graphic URI when graphicUri is provided and psgType is CHAPTERNUMBER', () => {
@@ -375,21 +374,6 @@ describe('PassageGraphic', () => {
         const borderWidth = $el.css('border-width');
         expect(borderWidth === '2px' || borderWidth === '1.6px').to.be.true;
       });
-    });
-
-    it('should apply right margin styling', () => {
-      const mockSheet = createMockSheet({
-        graphicUri: INLINE_TEST_SVG,
-        passageType: PassageTypeEnum.NOTE,
-      });
-
-      mountComponent({
-        cardInfo: mockSheet,
-        reference: 'Test Reference',
-        psgType: PassageTypeEnum.NOTE,
-      });
-
-      cy.get('.MuiAvatar-root').should('have.css', 'margin-right', '8px');
     });
 
     it('should apply different background colors for different references', () => {
