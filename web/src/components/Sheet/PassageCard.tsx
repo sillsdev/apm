@@ -14,26 +14,15 @@ const minPassageCardHeight = 176;
 interface IProps {
   cardInfo: ISheet;
   handleViewStep: () => void;
-  onPlayStatus?: () => void;
   onGraphicClick?: () => void;
-  isPlaying: boolean;
-  isPlayActive?: boolean;
   isPersonal?: boolean;
   isCurrent?: boolean;
 }
 
 export function PassageCard(props: IProps) {
   const { isMobileWidth } = useMobile();
-  const {
-    cardInfo,
-    handleViewStep,
-    onPlayStatus,
-    onGraphicClick,
-    isPlaying,
-    isPlayActive,
-    isPersonal,
-    isCurrent,
-  } = props;
+  const { cardInfo, handleViewStep, onGraphicClick, isPersonal, isCurrent } =
+    props;
   const noteTitle = cardInfo?.sharedResource?.attributes.title;
   // Unsaved rows have no passage record yet, so fall back to the row fields.
   const ref =
@@ -64,14 +53,7 @@ export function PassageCard(props: IProps) {
   const theme = useTheme();
 
   const mediaId = cardInfo.mediaId?.id;
-  const playButton = mediaId ? (
-    <PassagePlayButton
-      mediaId={mediaId}
-      playing={isPlaying}
-      active={isPlayActive}
-      onToggle={onPlayStatus}
-    />
-  ) : null;
+  const playButton = mediaId ? <PassagePlayButton mediaId={mediaId} /> : null;
 
   return (
     <Card

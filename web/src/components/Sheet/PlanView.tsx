@@ -49,8 +49,6 @@ export function PlanView(props: IProps) {
   const { prjId } = useParams();
   const ctx = useContext(PlanContext);
   const { shared, publishingOn, canPublish } = ctx.state;
-  const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
-  const [playing, setPlaying] = useState(false);
   const [view, setView] = useState('');
   const [confirmPublish, setConfirmPublish] = useState(false);
   const publishRow = useRef<number>(-1);
@@ -81,15 +79,6 @@ export function PlanView(props: IProps) {
     const row = rowInfo.findIndex((r) => r.passage?.id === pasGuid);
     return row >= 0 ? pasGuid : undefined;
   }, [rowInfo, memory]);
-
-  const onPlayStatus = (mediaId: string) => {
-    if (mediaId === srcMediaId) {
-      setPlaying(!playing);
-    } else {
-      setSrcMediaId(mediaId);
-      setPlaying(true);
-    }
-  };
 
   const handleViewStep = (passageIndex: number) => {
     const passage = rowInfo[passageIndex].passage;
@@ -229,32 +218,24 @@ export function PlanView(props: IProps) {
                   columns={{ xs: 1, sm: 2, md: 4, lg: 5 }}
                   spacing={theme.layout.gap}
                 >
-                  {group.cards.map(({ row, index: i }) => {
-                    const mediaId = row.mediaId?.id;
-                    return (
-                      <Grid key={row.passage?.id} size={1}>
-                        <PassageCard
-                          cardInfo={row}
-                          handleViewStep={() => handleViewStep(i)}
-                          onPlayStatus={
-                            mediaId ? () => onPlayStatus(mediaId) : undefined
-                          }
-                          onGraphicClick={
-                            publishingView && editGraphic
-                              ? () => editGraphic(i)
-                              : undefined
-                          }
-                          isPlaying={playing && mediaId === srcMediaId}
-                          isPlayActive={mediaId === srcMediaId}
-                          isPersonal={isPersonal}
-                          isCurrent={
-                            !!currentPassageId &&
-                            row.passage?.id === currentPassageId
-                          }
-                        />
-                      </Grid>
-                    );
-                  })}
+                  {group.cards.map(({ row, index: i }) => (
+                    <Grid key={row.passage?.id} size={1}>
+                      <PassageCard
+                        cardInfo={row}
+                        handleViewStep={() => handleViewStep(i)}
+                        onGraphicClick={
+                          publishingView && editGraphic
+                            ? () => editGraphic(i)
+                            : undefined
+                        }
+                        isPersonal={isPersonal}
+                        isCurrent={
+                          !!currentPassageId &&
+                          row.passage?.id === currentPassageId
+                        }
+                      />
+                    </Grid>
+                  ))}
                 </Grid>
               )}
             </Stack>
