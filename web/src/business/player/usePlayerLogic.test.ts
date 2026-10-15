@@ -82,3 +82,34 @@ test('keeps a suggestion that arrives with the next recording', () => {
 
   expect(published[published.length - 1]).toBe(recordingBSuggestion);
 });
+
+test('keeps recording A regions off B after an empty selection in between', () => {
+  const published: string[] = [];
+  const props = {
+    allowSegment: NamedRegions.Transcription,
+    suggestedSegments: recordingARegions,
+    setDefaultSegments: (segments: string) => {
+      published.push(segments);
+    },
+    setRequestPlay: jest.fn(),
+    setInitialPosition: jest.fn(),
+    playerMediafile: media('recording-a', recordingARegions) as
+      MediaFile | undefined,
+    mediafileRef: { current: undefined as MediaFile | undefined },
+    segmentsRef: { current: '' },
+    durationRef: { current: 0 },
+    playingRef: { current: false },
+  };
+
+  const { rerender } = renderHook(
+    (hookProps: typeof props) => usePlayerLogic(hookProps),
+    { initialProps: props }
+  );
+
+  // The selected id has no media record, so the player media clears while
+  // recording A's suggestion stays in place.
+  rerender({ ...props, playerMediafile: undefined });
+  rerender({ ...props, playerMediafile: media('recording-b', '{}') });
+
+  expect(published[published.length - 1]).toBe('{}');
+});
