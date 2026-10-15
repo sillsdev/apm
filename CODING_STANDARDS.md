@@ -31,10 +31,6 @@ finding.
 - **Navigation** happens in the handler. The finding is a target path stored
   in state and navigated to during render.
 
-[docs/eliminate-effects.md](docs/eliminate-effects.md) lists known instances
-across the codebase. A diff that touches one of those files is a chance to fix
-it.
-
 ## Localized strings
 
 [docs/ai/localization.md](docs/ai/localization.md) is the source of truth.

@@ -18,6 +18,7 @@ import {
 } from './carefulSpeechBoundary';
 import { MediaFileD } from '../../../model';
 import { useProjectSegmentSave } from '../Internalization/useProjectSegmentSave';
+import { SuggestedSegments } from '../../../business/player/usePlayerLogic';
 
 export interface GuidedPhraseSegmentsOptions {
   /** Named-region bucket key (may be `BT:en`, not only NamedRegions enum). */
@@ -47,7 +48,20 @@ export function useGuidedPhraseSegments(
     shouldReseedFromVerses = false,
   } = options;
   const projectSegmentSave = useProjectSegmentSave();
-  const [phraseSegString, setPhraseSegString] = useState('{}');
+  const [phraseSegs, setPhraseSegs] = useState<SuggestedSegments>({
+    mediaId: '',
+    segments: '{}',
+  });
+  const phraseSegString = phraseSegs.segments;
+  // Tag each segmentation with the media showing when it was set, so the
+  // player never paints it onto a different recording (TT-7661).
+  const mediaIdRef = useRef(mediafile?.id ?? '');
+  mediaIdRef.current = mediafile?.id ?? '';
+  const setPhraseSegString = useCallback(
+    (segments: string) =>
+      setPhraseSegs({ mediaId: mediaIdRef.current, segments }),
+    []
+  );
   const [bootstrapped, setBootstrapped] = useState(false);
   const bootstrapInProgress = useRef(false);
   const scopeRef = useRef<string | undefined>(undefined);
@@ -86,7 +100,13 @@ export function useGuidedPhraseSegments(
     const allSegs = mediafile.attributes?.segments ?? '[]';
     const regionJson = readRegionJson(allSegs);
     if (hasPhraseRegions(regionJson)) setPhraseSegString(regionJson);
-  }, [mediafile, persistSegments, singleSegmentMode, readRegionJson]);
+  }, [
+    setPhraseSegString,
+    mediafile,
+    persistSegments,
+    singleSegmentMode,
+    readRegionJson,
+  ]);
 
   /**
    * Re-read boundaries for the scope now showing, unless it is the one already
@@ -108,7 +128,7 @@ export function useGuidedPhraseSegments(
       setPhraseSegString('{}');
       if (mediafileId) hydrateFromMediafile();
     },
-    [hydrateFromMediafile, namedRegion]
+    [setPhraseSegString, hydrateFromMediafile, namedRegion]
   );
 
   const loadRegionsOnPlayer = useCallback(
@@ -213,6 +233,7 @@ export function useGuidedPhraseSegments(
       bootstrapInProgress.current = false;
     }
   }, [
+    setPhraseSegString,
     controlsRef,
     mediafile,
     bootstrapped,
@@ -250,6 +271,7 @@ export function useGuidedPhraseSegments(
       return regionJson;
     },
     [
+      setPhraseSegString,
       controlsRef,
       mediafile,
       namedRegion,
@@ -279,6 +301,7 @@ export function useGuidedPhraseSegments(
     }
     return resegmentWithParams(boldDefaultSegParams as IRegionParams);
   }, [
+    setPhraseSegString,
     singleSegmentMode,
     createSingleSegmentJson,
     mediafile,
@@ -291,6 +314,7 @@ export function useGuidedPhraseSegments(
 
   return {
     phraseSegString,
+    phraseSegs,
     setPhraseSegString,
     bootstrapped,
     ensureSegments,

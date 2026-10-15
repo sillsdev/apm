@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { getSegments } from '../../utils/namedSegments';
 import { JSONParse } from '../../utils/jsonParse';
 import {
@@ -13,9 +13,17 @@ export interface RequestPlay {
   regionOnly: boolean;
   request: Date;
 }
+
+/** Segments a caller wants shown, tagged with the media they were made for so
+ * the player never paints them onto a different recording (TT-7661). */
+export interface SuggestedSegments {
+  mediaId: string;
+  segments: string;
+}
+
 interface PlayerLogicProps {
   allowSegment?: string | undefined;
-  suggestedSegments?: string | undefined;
+  suggestedSegments?: SuggestedSegments | undefined;
   position?: number | undefined;
   playing?: boolean | undefined;
   setPlaying?: ((playing: boolean) => void) | undefined;
@@ -51,24 +59,20 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     onSegment,
   } = props;
 
-  /** Media id the current `suggestedSegments` belong to. A suggestion that
-   * changes in the same render as the media id belongs to the incoming media;
-   * one left unchanged across a media change belongs to the outgoing media.
-   * `undefined` means not yet tied to a media (adopted by the next load). */
-  const suggestionMediaIdRef = useRef<string | undefined>(undefined);
+  /** The suggestion's segments, if it was made for `mediaId`. */
+  const suggestionFor = (mediaId: string | undefined) =>
+    mediaId !== undefined &&
+    suggestedSegments?.mediaId === mediaId &&
+    suggestedSegments.segments.length > 0
+      ? suggestedSegments.segments
+      : undefined;
 
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
-    const mediaId = mediafileRef.current?.id;
     if (allowSegment) {
-      const suggestionFits =
-        suggestionMediaIdRef.current === undefined ||
-        suggestionMediaIdRef.current === mediaId;
       segmentsRef.current =
-        suggestionFits && suggestedSegments && suggestedSegments.length > 0
-          ? suggestedSegments
-          : getSegments(allowSegment, segs);
-      if (suggestionFits) suggestionMediaIdRef.current = mediaId;
+        suggestionFor(mediafileRef.current?.id) ??
+        getSegments(allowSegment, segs);
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);
@@ -82,20 +86,17 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   }, [playerMediafile]);
 
   useEffect(() => {
-    // Runs after the effect above, so mediafileRef holds the incoming media.
-    suggestionMediaIdRef.current = mediafileRef.current?.id;
+    if (!allowSegment) return;
+    const suggestion = suggestionFor(playerMediafile?.id);
+    if (suggestion && segmentsRef.current !== suggestion) {
+      segmentsRef.current = suggestion;
+      setDefaultSegments(segmentsRef.current);
+      onSegment && onSegment(segmentsRef.current, true);
+    } else setSegmentToWhole();
+    // Keyed on the suggestion's fields, not its object identity, so callers
+    // need not memoize it. Media changes are handled by loadSegments below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestedSegments]);
-
-  useEffect(() => {
-    if (allowSegment)
-      if (suggestedSegments && segmentsRef.current !== suggestedSegments) {
-        segmentsRef.current = suggestedSegments;
-        setDefaultSegments(segmentsRef.current);
-        onSegment && onSegment(segmentsRef.current, true);
-      } else setSegmentToWhole();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowSegment, suggestedSegments]);
+  }, [allowSegment, suggestedSegments?.mediaId, suggestedSegments?.segments]);
 
   useEffect(() => {
     if (allowSegment) loadSegments();

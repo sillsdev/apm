@@ -207,7 +207,7 @@ jest.mock('../../PassageDetailPlayer', () => {
     suggestedSegments,
   }: DetailPlayerProps) => {
     const recordedSegments = React.useRef<string | undefined>(undefined);
-    const nextSegments = suggestedSegments ?? '';
+    const nextSegments = suggestedSegments?.segments ?? '';
     if (recordedSegments.current !== nextSegments) {
       recordedSegments.current = nextSegments;
       suggestedSegmentsOnPlayerMount.push(nextSegments);

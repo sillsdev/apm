@@ -32,6 +32,7 @@ import TranscriptionShow from '../TranscriptionShow';
 import { related } from '../../crud/related';
 import {
   RequestPlay,
+  SuggestedSegments,
   usePlayerLogic,
 } from '../../business/player/usePlayerLogic';
 import { smallButtonProps } from '../StepEditor';
@@ -69,7 +70,7 @@ export interface DetailPlayerProps {
   /** Hide the generic Add/Remove Segment and Reset controls (Careful Speech
    * supplies its own Split/Combine controls). */
   hideSegmentControls?: boolean;
-  suggestedSegments?: string;
+  suggestedSegments?: SuggestedSegments;
   forceRegionOnly?: boolean;
   verses?: string;
   defaultSegParams?: IRegionParams;
