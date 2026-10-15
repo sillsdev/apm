@@ -20,8 +20,8 @@ function chapterSpan(
     const next = text.search(/\\c (?!1\b)\d+/);
     return { start: 0, end: next === -1 ? text.length : next };
   }
-  const found = new RegExp(`\\\\c ${chapter}(?!\\d)`).exec(text);
-  if (!found || found.index === undefined) return undefined;
+  const found = new RegExp(String.raw`\\c ${chapter}(?!\d)`).exec(text);
+  if (found?.index === undefined) return undefined;
   const start = found.index + found[0].length;
   const next = text.slice(start).search(/\\c \d+/);
   return { start, end: next === -1 ? text.length : start + next };
@@ -54,14 +54,14 @@ export function applyVerseSegment(
   if (!reference || !m) return { text, caret: cursor };
   const chapter = m[1] as string;
   const verse = reference.substring(chapter.length + 1);
-  const spaced = `\\v ${verse} `;
-  const tight = `\\v${verse} `;
+  const spaced = String.raw`\v ${verse} `;
+  const tight = String.raw`\v${verse} `;
   const span = chapterSpan(text, chapter);
   const present = span ? verseInSpan(text, span, spaced, tight) : -1;
   if (present >= 0) return { text, caret: present };
   let insert = verse ? ' ' + spaced : '';
   if (chapterInForce(text, cursor) !== chapter) {
-    insert = ` \\c ${chapter} ` + insert;
+    insert = String.raw` \c ${chapter} ` + insert;
   }
   const next = text.slice(0, cursor) + insert + text.slice(cursor);
   return { text: next, caret: cursor + insert.length };
