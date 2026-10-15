@@ -1331,6 +1331,7 @@ const initialState = {
 			"movement": "Movement",
 			"moveUp": "Move up",
 			"nonNumber": "Do not change to non-number.",
+			"noteTitle": "Note title",
 			"noPublishDelete": "Do not delete published items.",
 			"insertFirstPassage": "Add Passage as first in {0} {1}",
 			"paratextRequired": "You must be a {0} user with access to FOBAI resources and project Editor or Publisher permission to use this feature.",
