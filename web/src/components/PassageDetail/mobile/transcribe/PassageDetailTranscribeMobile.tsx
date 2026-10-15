@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, Stack } from '@mui/material';
+import { Box, Direction, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ActivityStates,
@@ -54,6 +54,7 @@ import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import {
   getSegments,
+  getSortedRegions,
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
@@ -742,9 +743,25 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     return {
       fontFamily: projData?.fontFamily || 'inherit',
       fontSize: projData?.fontSize || 'inherit',
-      direction: projData?.fontDir ? ('rtl' as const) : ('ltr' as const),
+      direction: (projData?.fontDir || 'ltr') as Direction,
     };
   }, [projData]);
+
+  const savedSegments = mediafile?.attributes?.segments;
+  const transcriptionSegments = useMemo(() => {
+    if (!savedSegments) return undefined;
+    const saved = getSegments(NamedRegions.Transcription, savedSegments);
+    if (getSortedRegions(saved).length === 0) return undefined;
+    return saved;
+  }, [savedSegments]);
+  const verseMarks = useMemo(() => {
+    if (!savedSegments) return undefined;
+    const segs = getSortedRegions(
+      getSegments(NamedRegions.Verse, savedSegments)
+    );
+    if (segs.length === 0) return undefined;
+    return JSON.stringify({ regions: JSON.stringify(segs) });
+  }, [savedSegments]);
 
   return (
     <Box
@@ -773,6 +790,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         allowZoomAndSpeed={true}
         hideZoom={true}
         showTranscriptionButton={false}
+        suggestedSegments={transcriptionSegments}
+        verses={verseMarks}
         defaultSegParams={segParams}
         canSetDefaultParams={!isReadOnly && hasPermission && canSetOrgDefault}
         onProgress={handleProgress}

@@ -2165,5 +2165,79 @@ describe('PassageDetailTranscribeMobile', () => {
         .invoke('css', 'font-family')
         .should('match', /Ezra/i);
     });
+
+    it('shows left-to-right transcription for an ltr project', () => {
+      const workflowSteps = [
+        {
+          id: 'step-transcribe',
+          type: 'orgworkflowstep',
+          attributes: {
+            sequencenum: 1,
+            tool: JSON.stringify({ tool: 'transcribe', settings: '{}' }),
+          },
+        },
+      ];
+
+      mountTranscribeMobile({
+        currentstep: 'step-transcribe',
+        workflowSteps,
+        projectAttributes: {
+          language: 'en',
+          rtl: false,
+          defaultFont: 'Charis SIL',
+          defaultFontSize: '14pt',
+        },
+      });
+
+      cy.get('#transcriptionText', { timeout: 10000 }).should(
+        'have.css',
+        'direction',
+        'ltr'
+      );
+    });
+  });
+
+  it('shows a saved verse mark on the transcribe waveform', () => {
+    const regionInfo = JSON.stringify({
+      regions: [{ start: 0.2, end: 1.2, label: '2:8' }],
+    });
+    const verseSegments = JSON.stringify([
+      { name: 'Verse', regionInfo },
+      { name: 'Transcription', regionInfo },
+    ]);
+    const savedMedia = {
+      id: 'media-1',
+      type: 'mediafile',
+      attributes: {
+        versionNumber: 1,
+        transcription: 'Hello',
+        transcriptionstate: ActivityStates.Transcribing,
+        duration: 20,
+        position: 0,
+        segments: verseSegments,
+        dateCreated: '2026-01-01T00:00:00Z',
+      },
+      relationships: {
+        passage: { data: { type: 'passage', id: 'pass-1' } },
+        plan: { data: { type: 'plan', id: 'plan-1' } },
+      },
+    } as unknown as MediaFileD;
+    // The player context keeps the media row from before Mark Verses saved.
+    const stalePlayer = {
+      ...savedMedia,
+      attributes: { ...savedMedia.attributes, segments: '{}' },
+    } as unknown as MediaFileD;
+    mountTranscribeMobile({
+      transcription: 'Hello',
+      mediafiles: [savedMedia],
+      playerMediafile: stalePlayer,
+    });
+
+    cy.get('[part="region-content"]', {
+      includeShadowDom: true,
+      timeout: 10000,
+    })
+      .should('contain.text', '2:8')
+      .and('be.visible');
   });
 });
