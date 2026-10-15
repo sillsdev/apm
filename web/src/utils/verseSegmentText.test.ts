@@ -16,7 +16,7 @@ describe('applyVerseSegment', () => {
   test('moves the caret to chapter 2 verse 12 when that tag is already there', () => {
     const edit = applyVerseSegment(withChapter2Verse12, '2:12');
     expect(edit.text).toBe(withChapter2Verse12);
-    expect(edit.caret).toBe(179);
+    expect(edit.caret).toBe(185);
   });
 
   test('inserts the chapter and verse into an empty transcription', () => {
@@ -28,7 +28,7 @@ describe('applyVerseSegment', () => {
   test('reuses the unmarked opening verse of a passage starting in chapter 2', () => {
     const edit = applyVerseSegment('\\v 12 ', '2:12', 6, '2');
     expect(edit.text).toBe('\\v 12 ');
-    expect(edit.caret).toBe(0);
+    expect(edit.caret).toBe(6);
   });
 
   test('advances from the unmarked opening verse without a chapter marker', () => {
@@ -56,7 +56,33 @@ describe('applyVerseSegment', () => {
   test('keeps the selected text when the verse tag is already there', () => {
     const edit = applyVerseSegment('\\v 3 hello wrong', '1:3', 11, '1', 16);
     expect(edit.text).toBe('\\v 3 hello wrong');
-    expect(edit.caret).toBe(0);
+    expect(edit.caret).toBe(16);
+  });
+
+  test('puts the caret at the end of the existing verse text', () => {
+    const text = '\\v 1 first \\v 2 second \\v 4 fourth';
+    const first = applyVerseSegment(text, '1:1', 0, '1');
+    expect(first.text).toBe(text);
+    expect(first.caret).toBe('\\v 1 first'.length);
+    const second = applyVerseSegment(text, '1:2', 0, '1');
+    expect(second.caret).toBe('\\v 1 first \\v 2 second'.length);
+  });
+
+  test('typing and the next verse tag follow the revisited verse', () => {
+    const revisit = applyVerseSegment('\\v 1 first \\v 2 second', '1:2');
+    const typed =
+      revisit.text.slice(0, revisit.caret) +
+      ' new' +
+      revisit.text.slice(revisit.caret);
+    expect(typed).toBe('\\v 1 first \\v 2 second new');
+    const next = applyVerseSegment(typed, '1:3', revisit.caret + 4);
+    expect(next.text).toBe('\\v 1 first \\v 2 second new \\v 3 ');
+  });
+
+  test('ends the existing verse text at a chapter marker', () => {
+    const text = '\\v 26 end \\c 2  \\v 1 start';
+    const edit = applyVerseSegment(text, '1:26', 0, '1');
+    expect(edit.caret).toBe('\\v 26 end'.length);
   });
 
   test('leaves the transcription unchanged when the reference is empty', () => {

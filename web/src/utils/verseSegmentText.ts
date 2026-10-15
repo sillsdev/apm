@@ -17,7 +17,7 @@ export function openingChapter(
 ): string {
   if (startChapter) return startChapter.toString();
   const fromReference = /^\s*(\d+):/.exec(passageReference ?? '')?.[1];
-  if (fromReference && parseInt(fromReference) > 0) return fromReference;
+  if (fromReference && Number.parseInt(fromReference) > 0) return fromReference;
   return (firstReference && refMatch(firstReference)?.[1]) || '1';
 }
 
@@ -46,24 +46,34 @@ function chapterSpan(
   return { start, end: next === -1 ? text.length : start + next };
 }
 
-function verseInSpan(
+/**
+ * Caret for a verse tag already in the span: the end of that verse's text,
+ * before the next verse or chapter marker, so typing adds to this verse and
+ * the next inserted tag follows it. An empty verse puts the caret after its tag.
+ */
+function verseCaretInSpan(
   text: string,
   span: { start: number; end: number },
   spaced: string,
   tight: string
 ): number {
   const slice = text.slice(span.start, span.end);
-  const spacedAt = slice.indexOf(spaced);
-  const tightAt = slice.indexOf(tight);
-  const hits = [spacedAt, tightAt].filter((n) => n >= 0);
+  const hits = [spaced, tight]
+    .map((tag) => ({ at: slice.indexOf(tag), tag }))
+    .filter((hit) => hit.at >= 0)
+    .sort((a, b) => a.at - b.at);
   if (hits.length === 0) return -1;
-  return span.start + Math.min(...hits);
+  const tagEnd = hits[0].at + hits[0].tag.length;
+  const next = slice.slice(tagEnd).search(/\\(?:v ?|c )\d/);
+  const verseEnd = next === -1 ? slice.length : tagEnd + next;
+  const contentEnd = tagEnd + slice.slice(tagEnd, verseEnd).trimEnd().length;
+  return span.start + contentEnd;
 }
 
 /**
- * Insert the verse tag for a segment, or return the caret of the tag that is
- * already in that chapter. Text before any chapter marker is in the opening
- * chapter, as parseTranscription reads it. An inserted tag replaces the
+ * Insert the verse tag for a segment, or return the caret at the end of the
+ * text of the tag that is already in that chapter. Text before any chapter
+ * marker is in the opening chapter, as parseTranscription reads it. An inserted tag replaces the
  * selected text from cursor to selectionEnd, as insertAtCursor does.
  */
 export function applyVerseSegment(
@@ -80,7 +90,7 @@ export function applyVerseSegment(
   const spaced = String.raw`\v ${verse} `;
   const tight = String.raw`\v${verse} `;
   const span = chapterSpan(text, chapter, opening);
-  const present = span ? verseInSpan(text, span, spaced, tight) : -1;
+  const present = span ? verseCaretInSpan(text, span, spaced, tight) : -1;
   if (present >= 0) return { text, caret: present };
   let insert = verse ? ' ' + spaced : '';
   if (chapterInForce(text, cursor, opening) !== chapter) {
