@@ -51,6 +51,7 @@ import { RecordButton } from '../control/RecordButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { Button } from '../control';
+import { formatAiEstimatedTime } from '../control/estimateAiTime';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -1890,6 +1891,11 @@ function WSAudioPlayer(props: IProps) {
           >
             {processMsg}
           </Typography>
+          {duration > 0 && (
+            <Typography id="ai-time-estimate">
+              {formatAiEstimatedTime(t.aiEstimatedTime, duration)}
+            </Typography>
+          )}
           <Button
             id="ai-cancel"
             onClick={() => {

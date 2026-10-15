@@ -2061,6 +2061,7 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
 };
 
 export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods {
+    "aiEstimatedTime": string;
     "aiFailed": string;
     "aiInProgress": string;
     "beginVoiceConvert": string;

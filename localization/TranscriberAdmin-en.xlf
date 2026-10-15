@@ -10540,6 +10540,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.aiEstimatedTime">
+         <segment>
+            <source>Estimated time {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.aiFailed">
          <segment>
             <source>AI function {1} failed {0}</source>
