@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, Stack } from '@mui/material';
+import { Box, Direction, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ActivityStates,
@@ -743,7 +743,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     return {
       fontFamily: projData?.fontFamily || 'inherit',
       fontSize: projData?.fontSize || 'inherit',
-      direction: projData?.fontDir === 'rtl' ? 'rtl' : 'ltr',
+      direction: (projData?.fontDir || 'ltr') as Direction,
     };
   }, [projData]);
 
