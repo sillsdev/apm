@@ -51,22 +51,24 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     onSegment,
   } = props;
 
-  const loadedMediaIdRef = useRef<string | undefined>(undefined);
+  /** Media id the current `suggestedSegments` belong to. A suggestion that
+   * changes in the same render as the media id belongs to the incoming media;
+   * one left unchanged across a media change belongs to the outgoing media.
+   * `undefined` means not yet tied to a media (adopted by the next load). */
+  const suggestionMediaIdRef = useRef<string | undefined>(undefined);
 
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
     const mediaId = mediafileRef.current?.id;
-    const mediaChanged =
-      loadedMediaIdRef.current !== undefined &&
-      loadedMediaIdRef.current !== mediaId;
     if (allowSegment) {
-      // A suggestion belongs to the recording that was current when it was
-      // built. After the media id changes, show that recording's saved segments.
+      const suggestionFits =
+        suggestionMediaIdRef.current === undefined ||
+        suggestionMediaIdRef.current === mediaId;
       segmentsRef.current =
-        !mediaChanged && suggestedSegments && suggestedSegments.length > 0
+        suggestionFits && suggestedSegments && suggestedSegments.length > 0
           ? suggestedSegments
           : getSegments(allowSegment, segs);
-      loadedMediaIdRef.current = mediaId;
+      if (suggestionFits) suggestionMediaIdRef.current = mediaId;
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);
@@ -78,6 +80,12 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     mediafileRef.current = playerMediafile;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerMediafile]);
+
+  useEffect(() => {
+    // Runs after the effect above, so mediafileRef holds the incoming media.
+    suggestionMediaIdRef.current = mediafileRef.current?.id;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestedSegments]);
 
   useEffect(() => {
     if (allowSegment)
