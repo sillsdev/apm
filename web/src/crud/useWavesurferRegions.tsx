@@ -196,6 +196,9 @@ export function useWaveSurferRegions(
    *  not stop playback or trigger a seek-back, so audio continues into the new
    *  right-side region. Cleared after the first region-out matches it. */
   const splitTruncatedIdRef = useRef<string | undefined>(undefined);
+  /** Every cut made while playback continues, until the window below ends. */
+  const recentSplitIdsRef = useRef<string[]>([]);
+  const recentSplitEndsRef = useRef<number[]>([]);
   /** Time of a recent split that happened during playback. Any region-out
    *  whose end matches this time (within tolerance) should be ignored, since
    *  segment autosave can re-create the truncated region with a new ID — we
@@ -709,12 +712,16 @@ export function useWaveSurferRegions(
         if (isMarker(r)) return;
         // Ignore region-out for just-truncated split region (id or end-time
         // match) so playback continues into the new right region.
-        const matchesTruncatedId = r.id === splitTruncatedIdRef.current;
+        const matchesTruncatedId =
+          r.id === splitTruncatedIdRef.current ||
+          recentSplitIdsRef.current.includes(r.id);
         const matchesTruncatedEnd =
-          splitTruncatedEndRef.current !== undefined &&
-          Math.abs(r.end - splitTruncatedEndRef.current) < 0.01;
+          (splitTruncatedEndRef.current !== undefined &&
+            Math.abs(r.end - splitTruncatedEndRef.current) < 0.01) ||
+          recentSplitEndsRef.current.some(
+            (end) => Math.abs(r.end - end) < 0.01
+          );
         if (matchesTruncatedId || matchesTruncatedEnd) {
-          if (matchesTruncatedId) splitTruncatedIdRef.current = undefined;
           if (playRegionRef.current?.id === r.id) {
             playRegionRef.current = undefined;
           }
@@ -1126,13 +1133,20 @@ export function useWaveSurferRegions(
         // of the truncated region — segment autosave may re-create it with a
         // new id within the next second or so, and we want to ignore that
         // region-out too.
-        if (leftRegion) splitTruncatedIdRef.current = leftRegion.id;
+        if (leftRegion) {
+          splitTruncatedIdRef.current = leftRegion.id;
+          recentSplitIdsRef.current.push(leftRegion.id);
+        }
         splitTruncatedEndRef.current = split;
+        recentSplitEndsRef.current.push(split);
         if (splitTruncatedEndTimerRef.current) {
           clearTimeout(splitTruncatedEndTimerRef.current);
         }
         splitTruncatedEndTimerRef.current = setTimeout(() => {
           splitTruncatedEndRef.current = undefined;
+          splitTruncatedIdRef.current = undefined;
+          recentSplitIdsRef.current = [];
+          recentSplitEndsRef.current = [];
           splitTruncatedEndTimerRef.current = undefined;
         }, 3000);
       } else {
