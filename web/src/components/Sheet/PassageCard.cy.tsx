@@ -85,12 +85,15 @@ const mockStore = createStore(
 
 describe('PassageCard', { tags: '@smoke' }, () => {
   let mockHandleViewStep: ReturnType<typeof cy.stub>;
-  let mockOnPlayStatus: ReturnType<typeof cy.stub>;
 
   beforeEach(() => {
     // Create stubs for each test
     mockHandleViewStep = cy.stub().as('handleViewStep');
-    mockOnPlayStatus = cy.stub().as('onPlayStatus');
+    // Hold the media url request open so the button stays in its playing state
+    cy.intercept('GET', '**/mediafiles/*/fileurl', {
+      delay: 30000,
+      body: { data: { attributes: { 'audio-url': '' } } },
+    }).as('fileUrl');
   });
 
   const createInitialState = (
@@ -157,13 +160,11 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     ...overrides,
   });
 
-  // Helper function to mount PassageCard with required providers
-  const mountPassageCard = (
-    cardInfo: ISheet,
+  // Helper function to mount PassageCards with required providers
+  const mountPassageCards = (
+    cardInfos: ISheet[],
     props: {
       handleViewStep: () => void;
-      onPlayStatus?: () => void;
-      isPlaying: boolean;
       isPersonal?: boolean;
     },
     planContextOverrides: Partial<ICtxState> = {}
@@ -179,19 +180,26 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         <GlobalProvider init={initialState}>
           <DataProvider dataStore={mockMemory}>
             <PlanContext.Provider value={mockPlanContextValue as any}>
-              <PassageCard
-                cardInfo={cardInfo}
-                handleViewStep={props.handleViewStep}
-                onPlayStatus={props.onPlayStatus}
-                isPlaying={props.isPlaying}
-                isPersonal={props.isPersonal}
-              />
+              {cardInfos.map((cardInfo, i) => (
+                <PassageCard
+                  key={i}
+                  cardInfo={cardInfo}
+                  handleViewStep={props.handleViewStep}
+                  isPersonal={props.isPersonal}
+                />
+              ))}
             </PlanContext.Provider>
           </DataProvider>
         </GlobalProvider>
       </Provider>
     );
   };
+
+  const mountPassageCard = (
+    cardInfo: ISheet,
+    props: Parameters<typeof mountPassageCards>[1],
+    planContextOverrides: Partial<ICtxState> = {}
+  ) => mountPassageCards([cardInfo], props, planContextOverrides);
 
   const createMockSheet = (overrides: Partial<ISheet> = {}): ISheet => {
     return {
@@ -242,7 +250,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     const cardInfo = createMockSheet();
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should render the card
@@ -279,7 +286,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should show "Matthew 5:3" format
@@ -313,7 +319,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       cardInfo,
       {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       },
       { scripture: false }
     );
@@ -351,7 +356,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       cardInfo,
       {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       },
       { scripture: false }
     );
@@ -414,7 +418,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should show note title instead of passage reference
@@ -467,7 +470,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should show shared resource description as comment
@@ -481,43 +483,71 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      onPlayStatus: mockOnPlayStatus,
-      isPlaying: false,
     });
 
     cy.get('[data-testid="play-button"]').should('be.visible');
     cy.get('svg[data-testid="PlayArrowIcon"]').should('exist');
   });
 
-  it('should show pause icon when mediaId exists and isPlaying is true', () => {
+  it('should show pause icon after the play button is clicked', () => {
     const cardInfo = createMockSheet({
       mediaId: createMockRecordIdentity('media-1', 'mediafile'),
     });
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      onPlayStatus: mockOnPlayStatus,
-      isPlaying: true,
     });
 
-    cy.get('[data-testid="play-button"]').should('be.visible');
+    cy.get('[data-testid="play-button"]').click();
+    cy.wait('@fileUrl');
     cy.get('svg[data-testid="PauseIcon"]').should('exist');
     cy.get('svg[data-testid="PlayArrowIcon"]').should('not.exist');
   });
 
-  it('should call onPlayStatus when play button is clicked', () => {
+  it('should show play icon again when the pause button is clicked', () => {
     const cardInfo = createMockSheet({
       mediaId: createMockRecordIdentity('media-1', 'mediafile'),
     });
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      onPlayStatus: mockOnPlayStatus,
-      isPlaying: false,
     });
 
     cy.get('[data-testid="play-button"]').click();
-    cy.wrap(mockOnPlayStatus).should('have.been.called');
+    cy.get('svg[data-testid="PauseIcon"]').should('exist');
+    cy.get('[data-testid="play-button"]').click();
+    cy.get('svg[data-testid="PlayArrowIcon"]').should('exist');
+    cy.get('svg[data-testid="PauseIcon"]').should('not.exist');
+  });
+
+  it('should stop the playing passage when another passage is played', () => {
+    const first = createMockSheet({
+      mediaId: createMockRecordIdentity('media-1', 'mediafile'),
+    });
+    const second = createMockSheet({
+      mediaId: createMockRecordIdentity('media-2', 'mediafile'),
+      passage: { ...first.passage!, id: 'passage-2' },
+    });
+
+    mountPassageCards([first, second], {
+      handleViewStep: mockHandleViewStep,
+    });
+
+    cy.get('[data-testid="play-button"]').eq(0).click();
+    cy.get('[data-testid="play-button"]')
+      .eq(0)
+      .find('svg[data-testid="PauseIcon"]')
+      .should('exist');
+
+    cy.get('[data-testid="play-button"]').eq(1).click();
+    cy.get('[data-testid="play-button"]')
+      .eq(1)
+      .find('svg[data-testid="PauseIcon"]')
+      .should('exist');
+    cy.get('[data-testid="play-button"]')
+      .eq(0)
+      .find('svg[data-testid="PlayArrowIcon"]')
+      .should('exist');
   });
 
   it('should show empty box when no mediaId exists', () => {
@@ -527,7 +557,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should not show play button
@@ -543,7 +572,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
       isPersonal: false,
     });
 
@@ -559,7 +587,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
       isPersonal: false,
     });
 
@@ -576,7 +603,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
       isPersonal: true,
     });
 
@@ -595,7 +621,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
       isPersonal: true,
     });
 
@@ -612,7 +637,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Find the button containing the step text
@@ -627,7 +651,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     cy.contains('button', 'Review').should('be.visible');
@@ -638,7 +661,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should show ChevronRight icon in the button
@@ -675,7 +697,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should show comment from reference split
@@ -691,7 +712,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     cy.contains('Direct comment').should('be.visible');
@@ -706,7 +726,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Comment area should exist but be empty (contains non-breaking space)
@@ -736,7 +755,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should render RefRender component for non-PASSAGE types
@@ -768,25 +786,10 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
     mountPassageCard(cardInfo, {
       handleViewStep: mockHandleViewStep,
-      isPlaying: false,
     });
 
     // Should render but may not show reference text
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
-  });
-
-  it('should handle clicking play without an onPlayStatus callback', () => {
-    const cardInfo = createMockSheet({
-      mediaId: createMockRecordIdentity('media-1', 'mediafile'),
-    });
-
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    });
-
-    cy.get('[data-testid="play-button"]').click();
-    cy.get('svg[data-testid="PlayArrowIcon"]').should('exist');
   });
 
   // Tests for CHAPTERNUMBER passage type
@@ -816,7 +819,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show the reference with RefRender and comment
@@ -849,7 +851,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should not show separate comment section below title
@@ -881,7 +882,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
         isPersonal: false,
       });
 
@@ -915,7 +915,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should not show step button
@@ -948,15 +947,13 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        onPlayStatus: mockOnPlayStatus,
-        isPlaying: false,
       });
 
       // Should show play button in the centered box
       cy.get('[data-testid="play-button"]').should('be.visible');
     });
 
-    it('should show pause icon when playing for CHAPTERNUMBER type', () => {
+    it('should show pause icon after clicking play for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
@@ -981,11 +978,9 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        onPlayStatus: mockOnPlayStatus,
-        isPlaying: true,
       });
 
-      cy.get('[data-testid="play-button"]').should('be.visible');
+      cy.get('[data-testid="play-button"]').click();
       cy.get('svg[data-testid="PauseIcon"]').should('exist');
       cy.get('div[class*="MuiCard-root"]').should('be.visible');
     });
@@ -1015,7 +1010,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show the comment after the reference
@@ -1050,7 +1044,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show only the reference without any comment text
@@ -1087,7 +1080,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show only the reference without any comment text
@@ -1123,7 +1115,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show avatar with image source
@@ -1156,7 +1147,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show avatar with image source
@@ -1190,7 +1180,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show avatar with generated text
@@ -1223,7 +1212,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show avatar with generated text
@@ -1257,7 +1245,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should show avatar with border styling
@@ -1290,7 +1277,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should not show avatar for PASSAGE type
@@ -1321,7 +1307,6 @@ describe('PassageCard', { tags: '@smoke' }, () => {
 
       mountPassageCard(cardInfo, {
         handleViewStep: mockHandleViewStep,
-        isPlaying: false,
       });
 
       // Should not show avatar for BOOK type
