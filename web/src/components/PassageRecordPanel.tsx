@@ -78,7 +78,6 @@ export interface IPassageRecordPanelProps {
    *  on a later step. The upload tab forwards MediaUploadContent's own handle;
    *  the record tab exposes its Save here. */
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
-  // TODO should we be lifting the files up to the wizard to submit from there instead?
   onStartRecording?: (() => void) | undefined;
 }
 

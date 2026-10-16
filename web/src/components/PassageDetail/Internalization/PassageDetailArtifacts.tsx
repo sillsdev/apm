@@ -80,7 +80,8 @@ import { MarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { AddResourceAction } from './AddResourceAction';
-import AddResourceWizard, { WizardLaunch } from './AddResourceWizard';
+import AddResourceWizard from './AddResourceWizard';
+import { WizardLaunch } from './useAddResourceWizard';
 import { useResourceScopeLabels } from './useResourceScopeLabels';
 import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 

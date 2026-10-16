@@ -74,7 +74,8 @@ import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { AddResourceAction } from './AddResourceAction';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import IconMenu from '../../../control/IconMenu';
-import AddResourceWizard, { WizardLaunch } from './AddResourceWizard';
+import AddResourceWizard from './AddResourceWizard';
+import { WizardLaunch } from './useAddResourceWizard';
 import { useResourceScopeLabels } from './useResourceScopeLabels';
 import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 

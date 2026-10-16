@@ -2,7 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { createAppTheme } from '../../../theme';
-import AddResourceWizard, { WizardLaunch } from './AddResourceWizard';
+import AddResourceWizard from './AddResourceWizard';
+import { WizardLaunch } from './useAddResourceWizard';
 import { AddResourceAction } from './AddResourceAction';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 
