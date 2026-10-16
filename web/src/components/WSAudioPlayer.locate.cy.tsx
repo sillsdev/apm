@@ -95,9 +95,7 @@ function LocateHarness(props: HarnessProps) {
     regionOnly: false,
     request: new Date(),
   });
-  const [initialposition, setInitialPosition] = useState<number | undefined>(
-    0
-  );
+  const [initialposition, setInitialPosition] = useState<number | undefined>(0);
   const locate = () => {
     setInitialPosition(props.discussion.start);
     setRequestPlay({
