@@ -12,10 +12,21 @@ export interface RequestPlay {
   play: boolean | undefined;
   regionOnly: boolean;
   request: Date;
+  /** Play exactly this time range (e.g. a located discussion), whatever
+   * regions the waveform shows. */
+  region?: IRegion;
 }
+
+/** Segments a caller wants shown, tagged with the media they were made for so
+ * the player never paints them onto a different recording (TT-7661). */
+export interface SuggestedSegments {
+  mediaId: string;
+  segments: string;
+}
+
 interface PlayerLogicProps {
   allowSegment?: string | undefined;
-  suggestedSegments?: string | undefined;
+  suggestedSegments?: SuggestedSegments | undefined;
   position?: number | undefined;
   playing?: boolean | undefined;
   setPlaying?: ((playing: boolean) => void) | undefined;
@@ -51,13 +62,20 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     onSegment,
   } = props;
 
+  /** The suggestion's segments, if it was made for `mediaId`. */
+  const suggestionFor = (mediaId: string | undefined) =>
+    mediaId !== undefined &&
+    suggestedSegments?.mediaId === mediaId &&
+    suggestedSegments.segments.length > 0
+      ? suggestedSegments.segments
+      : undefined;
+
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
     if (allowSegment) {
       segmentsRef.current =
-        suggestedSegments && suggestedSegments.length > 0
-          ? suggestedSegments
-          : getSegments(allowSegment, segs);
+        suggestionFor(mediafileRef.current?.id) ??
+        getSegments(allowSegment, segs);
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);
@@ -71,14 +89,17 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   }, [playerMediafile]);
 
   useEffect(() => {
-    if (allowSegment)
-      if (suggestedSegments && segmentsRef.current !== suggestedSegments) {
-        segmentsRef.current = suggestedSegments;
-        setDefaultSegments(segmentsRef.current);
-        onSegment && onSegment(segmentsRef.current, true);
-      } else setSegmentToWhole();
+    if (!allowSegment) return;
+    const suggestion = suggestionFor(playerMediafile?.id);
+    if (suggestion && segmentsRef.current !== suggestion) {
+      segmentsRef.current = suggestion;
+      setDefaultSegments(segmentsRef.current);
+      onSegment && onSegment(segmentsRef.current, true);
+    } else setSegmentToWhole();
+    // Keyed on the suggestion's fields, not its object identity, so callers
+    // need not memoize it. Media changes are handled by loadSegments below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowSegment, suggestedSegments]);
+  }, [allowSegment, suggestedSegments?.mediaId, suggestedSegments?.segments]);
 
   useEffect(() => {
     if (allowSegment) loadSegments();

@@ -32,6 +32,7 @@ import TranscriptionShow from '../TranscriptionShow';
 import { related } from '../../crud/related';
 import {
   RequestPlay,
+  SuggestedSegments,
   usePlayerLogic,
 } from '../../business/player/usePlayerLogic';
 import { smallButtonProps } from '../StepEditor';
@@ -69,7 +70,7 @@ export interface DetailPlayerProps {
   /** Hide the generic Add/Remove Segment and Reset controls (Careful Speech
    * supplies its own Split/Combine controls). */
   hideSegmentControls?: boolean;
-  suggestedSegments?: string;
+  suggestedSegments?: SuggestedSegments;
   forceRegionOnly?: boolean;
   verses?: string;
   defaultSegParams?: IRegionParams;
@@ -371,11 +372,14 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   const setPlayerSegments = (segments: string) => {
-    if (
-      !allowSegment ||
-      !segmentsRef.current ||
-      segmentsRef.current.indexOf('},{') === -1
-    ) {
+    // A locate (e.g. a discussion's single region) must not replace a
+    // recording's saved divisions; it only plays its own start..end below.
+    // Switching recordings reloads segments through usePlayerLogic.loadSegments.
+    const keepCurrentDivisions =
+      Boolean(allowSegment) &&
+      Boolean(segmentsRef.current) &&
+      segmentsRef.current.indexOf('},{') !== -1;
+    if (!keepCurrentDivisions) {
       // Remember what locate applied so the waveform's later onSegmentChange
       // can be recognized without a wall-clock heuristic.
       pendingLocateSegmentsRef.current = segments;
@@ -384,12 +388,14 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     }
     //TT 6149 but I wonder why this was here? if (!playingRef.current) {
     const segs = parseRegions(segments) as IRegions | undefined;
-    if (autoPlayOnSegmentLocate && (segs?.regions?.length ?? 0) > 0) {
-      setInitialPosition(segs?.regions[0]?.start ?? 0);
+    const region = segs?.regions?.[0];
+    if (autoPlayOnSegmentLocate && region) {
+      setInitialPosition(region.start);
       setRequestPlay({
         play: true,
         regionOnly: true,
         request: new Date(),
+        region,
       });
     }
     //}
@@ -481,6 +487,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         lockSegmentSelection={lockSegmentSelection}
         isSegmentRecorded={isSegmentRecorded}
         request={requestPlay.request}
+        playRange={requestPlay.region}
         loading={loading}
         busy={pdBusy}
         allowSegment={allowSegment}

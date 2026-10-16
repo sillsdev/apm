@@ -1590,7 +1590,9 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         data-testid="player"
         allowSegment={NamedRegions.Verse}
         onSegment={handleSegment}
-        suggestedSegments={pastedSegments}
+        // pastedSegments is reset during render when mediafileId changes, so it
+        // always belongs to the current mediafileId.
+        suggestedSegments={{ mediaId: mediafileId, segments: pastedSegments }}
         allowZoomAndSpeed={true}
         controlsRef={playerControlsRef}
         applyRegionColor={applyRegionColor}
