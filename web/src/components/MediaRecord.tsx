@@ -51,6 +51,14 @@ interface IProps {
   keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   /**
+   * Optional batch callback, forwarded to this recorder's own useMediaUpload.
+   * It fires once, AFTER the uploaded take has been pulled into Orbit, so its
+   * ids resolve via the keyMap — unlike `afterUploadCb`, which reports per item
+   * before that pull. Hosts whose follow-up work mutates the new mediafile (set
+   * a topic, create a sectionresource) must use this, not `afterUploadCb`.
+   */
+  finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;
+  /**
    * Domain restore metadata for pending-upload Retry (TT-7363).
    */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
@@ -59,13 +67,6 @@ interface IProps {
    * `pendingRestore` can include newly created category ids.
    */
   beforeUpload?: () => Promise<void>;
-  /**
-   * When set, `doUpload` hands the finished (already converted) take here and
-   * returns instead of calling `uploadMedia` — the general-resource flow defers
-   * the upload until the user has chosen passages/sections (SelectSections).
-   * When absent, a saved take uploads immediately as usual.
-   */
-  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -156,9 +157,9 @@ function MediaRecord(props: IProps) {
     topic,
     languagebcp47,
     afterUploadCb,
+    finish,
     pendingRestore,
     beforeUpload,
-    onStageFile,
     setCanSave,
     setCanCancel,
     setStatusText,
@@ -399,17 +400,28 @@ function MediaRecord(props: IProps) {
     await afterUploadCb(mediaId);
   };
 
+  // MediaRecord owns its own useMediaUpload instance (a recorded take uploads
+  // here, not through the parent's instance). That is why two callback shapes
+  // exist: the record path reports per-item via this `afterUploadCb(mediaId)`,
+  // while the parent's batch/upload path reports via `finish(ids)`. Hosts that
+  // mix both (ResourceUploadStep, ProvideRights, PassageDetailItem) write a thin
+  // adapter between the two — see useMediaUpload's IMediaUploadProps.
   const uploadMedia = useMediaUpload({
-    artifactId,
-    passageId,
-    sourceMediaId,
-    sourceSegments,
-    performedBy,
-    planId,
-    topic,
-    languagebcp47,
-    afterUploadCb: myAfterUploadCb,
+    fields: {
+      artifactId,
+      passageId,
+      sourceMediaId,
+      sourceSegments,
+      performedBy,
+      localPlanId: planId,
+      topic,
+      languagebcp47,
+    },
     pendingRestore,
+    afterUploadCb: myAfterUploadCb,
+    // `finish` fires after the pull (resolvable ids); `afterUploadCb` per item
+    // before it. Hosts needing to mutate the new mediafile pass `finish`.
+    finish,
     beforeUpload,
   });
 
@@ -550,26 +562,12 @@ function MediaRecord(props: IProps) {
           type: mimeType,
         }),
       ];
-      if (onStageFile) {
-        // General-resource flow: hand the finished (already converted) take up
-        // to be uploaded later — after the user picks passages/sections — and
-        // clear the save state so the recorder returns to idle. `onStageFile` is
-        // async (it awaits category creation); await it so a failure rejects
-        // into the caller's `.catch(handleSaveFailed)` instead of being swallowed
-        // while the save is reported complete. The caller's `.then` still runs
-        // (setLoading(false)/convertComplete/onReady).
-        await onStageFile(files);
-        saveRef.current = false;
-        saveCompleted(toolId);
-        setStatusText('');
-        return;
-      }
       setUploading(true);
       setStatusText(t.saving);
       await uploadMedia(files);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [defaultFilename, uploadMedia, onStageFile, toolId]
+    [defaultFilename, uploadMedia]
   );
 
   const convertComplete = () => {

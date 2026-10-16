@@ -162,21 +162,14 @@ jest.mock('./AddResource', () => ({
 // it the right launch request.
 jest.mock('./AddResourceWizard', () => ({
   __esModule: true,
-  default: ({ launch }: { launch: unknown }) => (
-    <div data-testid="wizard-launch">
-      {launch ? JSON.stringify(launch) : 'closed'}
-    </div>
+  default: ({ launchSource }: { launchSource: unknown }) => (
+    <div data-testid="wizard-launch">{JSON.stringify(launchSource)}</div>
   ),
 }));
 
 jest.mock('./SortableHeader', () => () => null);
 jest.mock('.', () => ({
   SortableItem: () => null,
-}));
-jest.mock('../../MediaUpload', () => ({
-  __esModule: true,
-  UriLinkType: 'text/uri-list',
-  MarkDownType: 'text/markdown',
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
@@ -227,7 +220,7 @@ describe('PassageDetailArtifacts', () => {
 
   it('starts with the add-resource wizard closed', () => {
     renderComponent();
-    expect(screen.getByTestId('wizard-launch')).toHaveTextContent('closed');
+    expect(screen.queryByTestId('wizard-launch')).not.toBeInTheDocument();
   });
 
   it('launches the wizard with an add request when Add Audio is chosen', () => {

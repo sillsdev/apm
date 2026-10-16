@@ -16,8 +16,8 @@ import { IPassageDetailArtifactsStrings, MediaFileD } from '../../../model';
 import { passageDetailArtifactsSelector } from '../../../selector';
 import SelectArtifactCategory from '../../Sheet/SelectArtifactCategory';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
-import { MarkDownType, UriLinkType } from '../../MediaUpload';
-import { UploadType } from '../../UploadType';
+import { MarkDownType, UriLinkType } from '../../../utils/contentType';
+import { NO_LIST_TYPES, UploadType } from '../../UploadType';
 import { LinkEdit } from '../../../control/LinkEdit';
 import { MarkDownEdit } from '../../../control/MarkDownEdit';
 import { mediaContentType } from '../../../utils/contentType';
@@ -52,7 +52,7 @@ interface IProps {
   onDescriptionChange: (desc: string) => void;
   onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
   onTextChange?: ((text: string) => void) | undefined;
-  allowProject: boolean;
+  allowGeneralResourceOption: boolean;
   catRequired: boolean;
   catAllowNew?: boolean | undefined;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
@@ -72,7 +72,7 @@ export function ResourceData(props: IProps) {
     onPassResChange,
     catRequired,
     catAllowNew,
-    allowProject,
+    allowGeneralResourceOption,
     sectDesc,
     passDesc,
     media,
@@ -172,12 +172,8 @@ export function ResourceData(props: IProps) {
                 passDesc ?? t.passageResource
               )}
             />
-            {allowProject &&
-              ![
-                UploadType.Link,
-                UploadType.MarkDown,
-                UploadType.FaithbridgeLink,
-              ].includes(uploadType ?? UploadType.Resource) && (
+            {allowGeneralResourceOption &&
+              !NO_LIST_TYPES.includes(uploadType ?? UploadType.Resource) && (
                 <FormControlLabel
                   value={'general'}
                   control={<Radio />}

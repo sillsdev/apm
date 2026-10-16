@@ -48,8 +48,6 @@ type IRow = SelectSectionRow;
 
 interface IProps {
   initialItems?: RecordIdentity[];
-  /** Visual resources are written immediately, so the button says so. */
-  visual?: boolean;
   /**
    * True when clicking Next now performs the (deferred) media upload — the
    * new-add general-resource flow. The button then reads "Upload" instead of
@@ -78,8 +76,7 @@ interface IProps {
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, uploadsOnNext, uploading, onSelect, onBack } =
-    props;
+  const { initialItems, uploadsOnNext, uploading, onSelect, onBack } = props;
   const initialSelectionKey = (initialItems ?? [])
     .map((item) => `${item.type}:${item.id}`)
     .join('|');
@@ -311,7 +308,7 @@ export function SelectSections(props: IProps) {
             onClick={handleSelected}
             disabled={selected.size === 0 || uploading}
           >
-            {visual ? ta.createResources : uploadsOnNext ? ts.upload : ta.next}
+            {uploadsOnNext ? ts.upload : ta.next}
           </Button>
         </Box>
       </ActionRow>

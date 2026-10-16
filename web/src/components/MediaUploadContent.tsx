@@ -19,8 +19,12 @@ import { MarkDownEdit } from '../control/MarkDownEdit';
 import { isUrl } from '../utils';
 import { filterFilesBySizeLimit } from '../utils/filterFilesBySizeLimit';
 import { typeLimit } from '../utils/typeLimit';
-import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
-import { UploadType } from './UploadType';
+import {
+  FaithbridgeType,
+  MarkDownType,
+  UriLinkType,
+} from '../utils/contentType';
+import { NO_LIST_TYPES, UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
 import { Button } from '../control/Button';
 
@@ -166,7 +170,6 @@ interface IProps {
   onFiles?: ((files: File[]) => void) | undefined;
   inValue?: string | undefined;
   onValue?: ((value: string) => void) | undefined;
-  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   saveButtonText?: string | undefined;
   validationMessage?: string | undefined;
@@ -175,16 +178,23 @@ interface IProps {
   /** When true, render `DialogContent`/`DialogActions` without the wrapping Box
    *  so they are direct children of a shared Dialog paper (MUI flex handles the
    *  scroll region + pinned actions, matching the record body).
-   *  TODO future work: I would like to see if we can get rid of the wrapper altogether,
+   *  TODO cleanup: I would like to see if we can get rid of the wrapper altogether,
    * but don't have time to check all the usages now. */
-
   noWrapper?: boolean | undefined;
   /** Hide the bottom "Cancel" button (cancel is reached via the dialog's X). */
   hideCancel?: boolean | undefined;
   /** Keep the file selection after a successful submit instead of clearing it.
-   *  Used by the deferred general-resource flow, so the selection survives is still there
-   *  if the user hits next then back*/
+   *  Used by the deferred general-resource flow, where the body stays mounted
+   *  across the wizard steps: the selection must survive the upload (fired from
+   *  SelectSections) so it's still shown if the user steps back to this body. */
   keepFilesAfterSubmit?: boolean | undefined;
+  /** When set, the primary action button becomes a "proceed" button that calls
+   *  this instead of uploading; the real upload stays reachable through
+   *  `controlsRef.handleAddOrSave`. Used by the add-resource wizard's deferred
+   *  general-resource flow, where Next only advances and the upload fires later
+   *  from SelectSections, driven off the still-mounted selection. */
+  onNext?: (() => void) | undefined;
+  // TODO why do we need onNext, uploadMethod, and keepFilesAfterSubmit? Can we consolidate?
 }
 
 function MediaUploadContent(props: IProps) {
@@ -203,7 +213,6 @@ function MediaUploadContent(props: IProps) {
     onFiles,
     inValue,
     onValue,
-    onNonAudio,
     audioOnly,
     saveButtonText,
     validationMessage,
@@ -212,6 +221,7 @@ function MediaUploadContent(props: IProps) {
     noWrapper,
     hideCancel,
     keepFilesAfterSubmit,
+    onNext,
   } = props;
   const [name, setName] = useState('');
   const [files, setFilesx] = useState<File[]>([]);
@@ -341,8 +351,6 @@ function MediaUploadContent(props: IProps) {
           )
         );
       }
-      const nonAudio = goodFiles.some((f) => !f?.type.includes('audio'));
-      if (onNonAudio) onNonAudio(nonAudio);
       goodFiles = checkSizes(goodFiles, typeLimit(uploadType));
       setName(fileName(goodFiles));
       setFiles(goodFiles);
@@ -424,11 +432,7 @@ function MediaUploadContent(props: IProps) {
             aiip={false}
           />
         )}
-        {![
-          UploadType.Link,
-          UploadType.MarkDown,
-          UploadType.FaithbridgeLink,
-        ].includes(uploadType) ? (
+        {!NO_LIST_TYPES.includes(uploadType) ? (
           <Drop>
             {hasRights ? (
               <DropTarget
@@ -453,7 +457,7 @@ function MediaUploadContent(props: IProps) {
         {metaData}
         {progress && <LinearProgress variant="indeterminate" />}
       </DialogContent>
-      {!controlsRef && (
+      {(!controlsRef || onNext) && (
         <DialogActions>
           {!hideCancel && (
             <Button
@@ -476,7 +480,7 @@ function MediaUploadContent(props: IProps) {
           )}
           <Button
             id="uploadSave"
-            onClick={handleAddOrSave}
+            onClick={onNext ?? handleAddOrSave}
             variant="contained"
             color="primary"
             disabled={saveDisabled}

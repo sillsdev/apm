@@ -93,20 +93,12 @@ jest.mock('../../../crud', () => ({
   usePlan: () => ({ getPlan: jest.fn(() => null) }),
 }));
 
-jest.mock('./useProjectResourceSave', () => ({
-  useProjectResourceSave: () => jest.fn(),
-}));
-
-const mockIsVisual = jest.fn((_m?: unknown) => false);
 jest.mock('../../../utils', () => ({
-  isVisual: (m: unknown) => mockIsVisual(m),
-  removeExtension: () => ({ name: 'a' }),
   safeFileBasename: (s?: string) => s ?? '',
 }));
 
 jest.mock('./projectResourceAssignments', () => ({
   getProjectResourceAssignments: jest.fn(() => []),
-  removeUnselectedProjectResourceAssignments: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock('./resourceArtifactName', () => ({
@@ -151,46 +143,46 @@ jest.mock('../../../hoc/BigDialog', () => ({
 
 const file = (name: string) => new File([name], name, { type: 'audio/mpeg' });
 
-jest.mock('../../Uploader', () => {
+jest.mock('./ResourceUploadStep', () => {
   const { UploadType } = jest.requireActual('../../UploadType');
+  type ControlsRef = {
+    current: { handleAddOrSave: (() => void) | null; handleCancel: null };
+  };
   return {
     __esModule: true,
     default: ({
-      isOpen,
+      active,
       uploadType,
       ready,
       validationMessage,
       onFiles,
-      onStageFiles,
+      onNext,
+      submitRef,
       onStartRecording,
       finish,
-      importList,
       metaData,
-      onOpen,
     }: {
-      isOpen?: boolean;
+      active?: boolean;
       uploadType?: unknown;
       ready?: () => boolean;
       validationMessage?: string;
       onFiles?: (f: File[]) => void;
-      onStageFiles?: (f: File[]) => void;
+      onNext?: () => void;
+      submitRef?: ControlsRef;
       onStartRecording?: () => void;
-      finish?: (planId: string, ids: string[]) => void;
-      importList?: File[];
+      finish?: (ids?: string[]) => void;
       metaData?: React.ReactNode;
-      onOpen?: (open: boolean) => void;
     }) => {
       const isProject = uploadType === UploadType.ProjectResource;
+      // The body stays mounted and holds its own selection; invoking the
+      // exposed submit drives a successful upload (finish with one id), as the
+      // real upload's `finish` would. The wizard calls this from SelectSections.
+      if (submitRef) {
+        submitRef.current.handleAddOrSave = () => finish?.(['media-1']);
+      }
       return (
         <>
-          {/* The deferred upload runs headlessly while the dialog is closed;
-              expose a trigger whenever an importList-driven upload is in flight. */}
-          {importList && importList.length > 0 && (
-            <button type="button" onClick={() => finish?.('plan', ['media-1'])}>
-              finish-import
-            </button>
-          )}
-          {isOpen && (
+          {active && (
             <div data-testid="uploader">
               <span>uploader-open</span>
               {metaData}
@@ -203,32 +195,36 @@ jest.mock('../../Uploader', () => {
               <button type="button" onClick={() => onFiles?.([file('a')])}>
                 select-one-file
               </button>
-              <button type="button" onClick={() => onStageFiles?.([file('a')])}>
+              {/* Deferred flow: pick a file, then Next only advances (no upload
+                  here) — the retained selection is uploaded later by the wizard
+                  via submitRef. */}
+              <button
+                type="button"
+                onClick={() => {
+                  onFiles?.([file('a')]);
+                  onNext?.();
+                }}
+              >
                 stage-one-file
               </button>
               {/* A real recording reports recording-start (onStartRecording)
-                  when it begins, before Next stages it. */}
+                  when it begins, before Next advances. */}
               <button
                 type="button"
                 onClick={() => {
                   onStartRecording?.();
-                  onStageFiles?.([file('a')]);
+                  onFiles?.([file('a')]);
+                  onNext?.();
                 }}
               >
                 stage-one-recording
               </button>
-              <button
-                type="button"
-                onClick={() => finish?.('plan', ['media-1'])}
-              >
+              <button type="button" onClick={() => finish?.(['media-1'])}>
                 finish-upload
               </button>
               {validationMessage && <div>{validationMessage}</div>}
               <button type="button" disabled={!ready?.()}>
                 {isProject ? 'Next' : 'Upload'}
-              </button>
-              <button type="button" onClick={() => onOpen?.(false)}>
-                uploader-x
               </button>
             </div>
           )}
@@ -358,12 +354,24 @@ const mockContext = usePassageDetailContext as jest.MockedFunction<
   typeof usePassageDetailContext
 >;
 
-const renderWizard = (launch: WizardLaunch) =>
-  render(
+// Host mirrors the real parent: it renders the wizard only while open and
+// unmounts it on onClose (the wizard no longer hides itself).
+const renderWizard = (launchSource: WizardLaunch) => {
+  const Host = () => {
+    const [open, setOpen] = React.useState(true);
+    return open ? (
+      <AddResourceWizard
+        launchSource={launchSource}
+        onClose={() => setOpen(false)}
+      />
+    ) : null;
+  };
+  return render(
     <ThemeProvider theme={theme}>
-      <AddResourceWizard launch={launch} onLaunchHandled={jest.fn()} />
+      <Host />
     </ThemeProvider>
   );
+};
 
 // Drive the common add → General → stage path to the section-select step.
 const stageToSelectSections = () => {
@@ -381,7 +389,6 @@ const stageRecordingToSelectSections = () => {
 describe('AddResourceWizard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsVisual.mockReturnValue(false);
     mockContext.mockReturnValue({
       rowData: [],
       section: { id: 'section-1', attributes: { level: 0 } },
@@ -443,9 +450,9 @@ describe('AddResourceWizard', () => {
     renderWizard({ kind: 'add', action: AddResourceAction.Audio });
     stageToSelectSections();
 
-    // Choose sections → deferred upload fires → configure step.
+    // Choose sections → the wizard fires the deferred upload through submitRef,
+    // which completes → configure step.
     fireEvent.click(screen.getByText('sections-select'));
-    fireEvent.click(screen.getByText('finish-import'));
 
     await waitFor(() =>
       expect(screen.getByTestId('configure')).toBeInTheDocument()
@@ -461,7 +468,7 @@ describe('AddResourceWizard', () => {
 
   it('opens an existing general resource at section-select with no upload, advancing straight to configure', () => {
     renderWizard({
-      kind: 'editGeneral',
+      kind: 'editGeneralResource',
       media: {
         id: 'm1',
         type: 'mediafile',
@@ -476,28 +483,9 @@ describe('AddResourceWizard', () => {
     expect(screen.queryByText('sections-back')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText('sections-select'));
+    // The media already exists, so this advances straight to configure with no
+    // upload (the wizard never invokes the upload step's submit).
     expect(screen.getByTestId('configure')).toBeInTheDocument();
-    // No upload happened.
-    expect(screen.queryByText('finish-import')).not.toBeInTheDocument();
-  });
-
-  it('writes a visual resource directly and skips the configure step', async () => {
-    mockIsVisual.mockReturnValue(true);
-    renderWizard({
-      kind: 'editGeneral',
-      media: {
-        id: 'm1',
-        type: 'mediafile',
-        attributes: { originalFile: 'f.png' },
-      } as never,
-    });
-
-    fireEvent.click(screen.getByText('sections-select'));
-
-    await waitFor(() =>
-      expect(screen.queryByTestId('post-dialog')).not.toBeInTheDocument()
-    );
-    expect(screen.queryByTestId('configure')).not.toBeInTheDocument();
   });
 
   it('closes the section-select step via the X after a discard confirm when a recording was staged', () => {

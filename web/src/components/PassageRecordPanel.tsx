@@ -7,7 +7,9 @@ import {
   Typography,
   TypographyProps,
 } from '@mui/material';
-import MediaUploadContent from './MediaUploadContent';
+import MediaUploadContent, {
+  MediaUploadControlsRef,
+} from './MediaUploadContent';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   IPassageDetailArtifactsStrings,
@@ -42,6 +44,11 @@ export interface IPassageRecordPanelProps {
   mediaId: string;
   artifactId: string | null;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  /** Batch callback for the record tab's take, fired post-pull (resolvable
+   *  ids). Forwarded to MediaRecord's own useMediaUpload; the record tab's
+   *  follow-up work that mutates the new mediafile must use this, not
+   *  `afterUploadCb`. */
+  finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;
   passageId: string | undefined;
   planId?: string | undefined;
   metaData?: React.JSX.Element | undefined;
@@ -57,13 +64,21 @@ export interface IPassageRecordPanelProps {
     ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
   multiple?: boolean | undefined;
   inValue?: string | undefined;
-  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   validationMessage?: string | undefined;
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
   beforeUpload?: (() => Promise<void>) | undefined;
-  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
   keepFilesAfterSubmit?: boolean | undefined;
+  /** Deferred general-resource flow: the primary button advances to the next
+   *  wizard step instead of uploading. The real upload is exposed via
+   *  `controlsRef` and fired later from SelectSections. */
+  onNext?: (() => void) | undefined;
+  /** Imperative handle to this panel's active-tab submit (the real upload), so
+   *  the wizard can upload the retained selection/take while the panel is hidden
+   *  on a later step. The upload tab forwards MediaUploadContent's own handle;
+   *  the record tab exposes its Save here. */
+  controlsRef?: React.RefObject<MediaUploadControlsRef>;
+  // TODO should we be lifting the files up to the wizard to submit from there instead?
   onStartRecording?: (() => void) | undefined;
 }
 
@@ -80,6 +95,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     mediaId,
     artifactId,
     afterUploadCb,
+    finish,
     passageId,
     planId,
     defaultFilename,
@@ -95,13 +111,13 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     uploadMethod,
     multiple,
     inValue,
-    onNonAudio,
     audioOnly,
     validationMessage,
     pendingRestore,
     beforeUpload,
-    onStageFile,
     keepFilesAfterSubmit,
+    onNext,
+    controlsRef,
     onStartRecording,
   } = props;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
@@ -159,6 +175,9 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     setDialogWidth(getRefWidth(contentRef));
   }, []);
 
+  // TODO cleanup: factor out or at least make consistent the various width
+  // and resize detection we do in this codebase. Currently it appears to be
+  // necessary for the wavesurfer but I wonder if we could change that.
   useEffect(() => {
     if (mode !== AudioAddMode.Record) return;
     updateDialogWidth();
@@ -185,6 +204,18 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     uploadType === UploadType.ProjectResource
       ? resourceStrings.next
       : undefined;
+
+  // Expose the record tab's Save as the imperative submit so the wizard's
+  // SelectSections "Upload" can upload the retained take while this panel is
+  // hidden (it stays mounted). The upload tab sets this through
+  // MediaUploadContent's own controlsRef below; only one tab is mounted at a
+  // time, so whichever is active owns the handle.
+  useEffect(() => {
+    if (controlsRef && mode === AudioAddMode.Record) {
+      controlsRef.current.handleAddOrSave = () => startSave(myToolId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   return (
     <>
@@ -228,6 +259,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                 passageId={passageId}
                 planId={planId}
                 afterUploadCb={afterUploadCb}
+                finish={finish}
                 mediaId={mediaId}
                 onSaving={() => setBusy(true)}
                 onReady={() => setBusy(false)}
@@ -247,7 +279,6 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                 }}
                 pendingRestore={pendingRestore}
                 beforeUpload={beforeUpload}
-                onStageFile={onStageFile}
               />
             </Box>
             {metaData}
@@ -259,7 +290,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
               sx={{ m: 1, minWidth: '96px' }}
               color="primary"
               disabled={busy || (ready && !ready()) || !canSave || !hasRights}
-              onClick={() => startSave(myToolId)}
+              onClick={onNext ?? (() => startSave(myToolId))}
             >
               {saveButtonText || recordStrings.save}
             </Button>
@@ -272,6 +303,8 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
           onVisible={onVisible}
           uploadType={uploadType}
           saveButtonText={saveButtonText}
+          onNext={onNext}
+          controlsRef={controlsRef}
           multiple={multiple}
           uploadMethod={uploadMethod}
           cancelMethod={onCancel}
@@ -286,7 +319,6 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
           onFiles={onFiles}
           keepFilesAfterSubmit={keepFilesAfterSubmit}
           inValue={inValue}
-          onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           validationMessage={validationMessage}
         />

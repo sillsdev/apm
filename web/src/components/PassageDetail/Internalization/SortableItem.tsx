@@ -2,7 +2,7 @@ import { IRow } from '../../../context/PassageDetailContext';
 import { TableRow, PlayButton, DoneButton, ResourceEditAction } from '.';
 import { SectionResourceD } from '../../../model';
 import { ViewButton } from './ViewButton';
-import { MarkDownType, UriLinkType } from '../../MediaUpload';
+import { MarkDownType, UriLinkType } from '../../../utils/contentType';
 
 interface IProps {
   value: IRow;

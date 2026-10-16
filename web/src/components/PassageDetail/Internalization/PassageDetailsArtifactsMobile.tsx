@@ -38,7 +38,7 @@ import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
 import ResourceData from './ResourceData';
-import { MarkDownType, UriLinkType } from '../../MediaUpload';
+import { MarkDownType, UriLinkType } from '../../../utils/contentType';
 import { canSaveResourceEdit } from './resourceArtifactName';
 import { Box, Stack, Typography, MenuItem, MenuList } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -124,14 +124,16 @@ export function PassageDetailArtifactsMobile() {
     SectionResourceD | undefined
   >();
   const [allowEditSave, setAllowEditSave] = useState(false);
-  // Pending open request handed to the add-resource wizard (null = closed).
-  const [wizardLaunch, setWizardLaunch] = useState<WizardLaunch | null>(null);
-  // Bumped on every launch so the wizard remounts fresh each time it opens — it
-  // resets its own state by construction instead of a hand-maintained teardown.
-  const [wizardKey, setWizardKey] = useState(0);
-  const launchWizard = (next: WizardLaunch) => {
-    setWizardLaunch(next);
-    setWizardKey((k) => k + 1);
+  // The add-resource wizard is rendered only while open, so each open is a fresh
+  // mount (it seeds its state from launchSource and resets by unmounting on
+  // close — no hand-maintained teardown). wizardLaunchSource records which button
+  // opened it; it is not cleared on close.
+  const [wizardIsOpen, setWizardIsOpen] = useState(false);
+  const [wizardLaunchSource, setWizardLaunchSource] =
+    useState<WizardLaunch | null>(null);
+  const launchWizard = (source: WizardLaunch) => {
+    setWizardLaunchSource(source);
+    setWizardIsOpen(true);
   };
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [editAudio, setEditAudio] = useState<boolean>(false);
@@ -355,7 +357,7 @@ export function PassageDetailArtifactsMobile() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
       setResourceKind(ResourceTypeEnum.projectResource);
-      launchWizard({ kind: 'editGeneral', media: projectMedia });
+      launchWizard({ kind: 'editGeneralResource', media: projectMedia });
       return;
     }
     setEditResource(secRes);
@@ -616,7 +618,7 @@ export function PassageDetailArtifactsMobile() {
     );
   };
 
-  // The edit dialog never offers the General scope (allowProject=false), so the
+  // The (non-general-resource) edit dialog never offers the General scope (allowGeneralResourceOption=false), so the
   // toggle only moves between section and passage.
   const handlePassRes = (newValue: ResourceTypeEnum) => {
     setResourceKind(newValue);
@@ -707,12 +709,13 @@ export function PassageDetailArtifactsMobile() {
           ))}
         </VertListDnd>
       </Box>
-      <AddResourceWizard
-        key={wizardKey}
-        launch={wizardLaunch}
-        onLaunchHandled={() => setWizardLaunch(null)}
-        configureWidth={800}
-      />
+      {wizardIsOpen && wizardLaunchSource && (
+        <AddResourceWizard
+          launchSource={wizardLaunchSource}
+          onClose={() => setWizardIsOpen(false)}
+          configureWidth={800}
+        />
+      )}
       <BigDialog
         title={`Research - ${passageRef(passage) || ''}`.trim()}
         titleVariant="h6"
@@ -781,7 +784,7 @@ export function PassageDetailArtifactsMobile() {
           catRequired={false}
           resourceKind={resourceKind}
           onPassResChange={handlePassRes}
-          allowProject={false}
+          allowGeneralResourceOption={false}
           onTextChange={handleTextChange}
           wrapPreviewOverflow
           sectDesc={sectDesc}

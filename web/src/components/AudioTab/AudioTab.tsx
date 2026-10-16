@@ -285,7 +285,7 @@ export function AudioTab() {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [attachMap, attachVisible, autoMatch]);
 
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (mediaRemoteIds?: string[]) => {
     if (mediaRemoteIds && mediaRemoteIds.length === 1) {
       const id =
         remoteIdGuid(

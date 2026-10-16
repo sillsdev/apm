@@ -8,11 +8,6 @@ import { useMobile } from '../utils';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
-export const UriLinkType = 'text/uri-list';
-export const MarkDownType = 'text/markdown';
-export const Mp3Type = 'audio/mpeg';
-export const FaithbridgeType = 'audio/mpeg/s3link';
-
 interface IProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
@@ -31,7 +26,6 @@ interface IProps {
   onFiles?: ((files: File[]) => void) | undefined;
   inValue?: string | undefined;
   onValue?: ((value: string) => void) | undefined;
-  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   validationMessage?: string | undefined;
   /** Hide the bottom "Cancel" button (cancel is reached via the dialog's X). */
@@ -42,7 +36,7 @@ interface IProps {
   keepFilesAfterSubmit?: boolean | undefined;
 }
 
-function MediaUpload(props: IProps) {
+function MediaUploadDialog(props: IProps) {
   const {
     visible,
     onVisible,
@@ -60,7 +54,6 @@ function MediaUpload(props: IProps) {
     onFiles,
     inValue,
     onValue,
-    onNonAudio,
     audioOnly,
     validationMessage,
     hideCancel,
@@ -113,7 +106,6 @@ function MediaUpload(props: IProps) {
           onFiles={onFiles}
           inValue={inValue}
           onValue={onValue}
-          onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           validationMessage={validationMessage}
           hideCancel={hideCancel}
@@ -124,4 +116,4 @@ function MediaUpload(props: IProps) {
   );
 }
 
-export default MediaUpload;
+export default MediaUploadDialog;

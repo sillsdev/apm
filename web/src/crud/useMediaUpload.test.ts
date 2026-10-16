@@ -160,7 +160,7 @@ describe('useMediaUpload', () => {
   function renderUploadHook(props: {
     artifactId: string | null;
     passageId: string | undefined;
-    planId?: string;
+    localPlanId?: string;
     afterUploadCb: jest.Mock;
     beforeUpload?: () => Promise<void>;
     pendingRestore?: () => unknown;
@@ -169,12 +169,14 @@ describe('useMediaUpload', () => {
     const { useMediaUpload } = require('./useMediaUpload');
     return renderHook(() =>
       useMediaUpload({
-        artifactId: props.artifactId,
-        passageId: props.passageId,
-        planId: props.planId,
+        fields: {
+          artifactId: props.artifactId,
+          passageId: props.passageId,
+          localPlanId: props.localPlanId,
+        },
+        pendingRestore: props.pendingRestore,
         afterUploadCb: props.afterUploadCb,
         beforeUpload: props.beforeUpload,
-        pendingRestore: props.pendingRestore,
       })
     );
   }
@@ -443,10 +445,12 @@ describe('useMediaUpload', () => {
     const { result, rerender } = renderHook(
       (props: { performedBy?: string; topic?: string }) =>
         useMediaUpload({
-          artifactId: 'art-1',
-          passageId: 'psg-1',
-          performedBy: props.performedBy,
-          topic: props.topic,
+          fields: {
+            artifactId: 'art-1',
+            passageId: 'psg-1',
+            performedBy: props.performedBy,
+            topic: props.topic,
+          },
           afterUploadCb,
         }),
       { initialProps: { performedBy: '', topic: '' } }
