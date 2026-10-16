@@ -75,10 +75,14 @@ const DIVISIONS = JSON.stringify({
     { start: 4, end: 8 },
   ]),
 });
-const DISCUSSION = { start: 5, end: 6 };
+interface Range {
+  start: number;
+  end: number;
+}
 
 interface HarnessProps {
   blob: Blob;
+  discussion: Range;
   controlsRef: React.RefObject<WSAudioPlayerControls | null>;
   onProgress: (p: number) => void;
   onPlayStatus: (playing: boolean) => void;
@@ -95,12 +99,12 @@ function LocateHarness(props: HarnessProps) {
     0
   );
   const locate = () => {
-    setInitialPosition(DISCUSSION.start);
+    setInitialPosition(props.discussion.start);
     setRequestPlay({
       play: true,
       regionOnly: true,
       request: new Date(),
-      region: DISCUSSION,
+      region: props.discussion,
     });
   };
   return (
@@ -129,75 +133,95 @@ function LocateHarness(props: HarnessProps) {
 
 type WsCtSeam = { currentRegion: () => { start: number; end: number } };
 
+/** Locate `discussion` on an 8 s divided recording; return what played. */
+function locateAndRecord(discussion: Range) {
+  const controlsRef = React.createRef<WSAudioPlayerControls | null>();
+  const progress: number[] = [];
+  let recording = false;
+  let stopped = false;
+
+  cy.mount(
+    <Provider store={mockStore}>
+      <ThemeProvider theme={createTheme()}>
+        <GlobalProvider init={initialState}>
+          <OrbitContext.Provider value={orbitContextValue}>
+            <HotKeyContext.Provider
+              value={{
+                state: {
+                  subscribe: () => {},
+                  unsubscribe: () => {},
+                  localizeHotKey: (key: string) => key,
+                } as never,
+                setState: (() => {}) as never,
+              }}
+            >
+              <LocateHarness
+                blob={createMinimalWavBlob(8)}
+                discussion={discussion}
+                controlsRef={controlsRef}
+                onProgress={(p) => {
+                  if (recording) progress.push(p);
+                }}
+                onPlayStatus={(playing) => {
+                  if (recording && !playing) stopped = true;
+                }}
+              />
+            </HotKeyContext.Provider>
+          </OrbitContext.Provider>
+        </GlobalProvider>
+      </ThemeProvider>
+    </Provider>
+  );
+
+  cy.wrap(null, { timeout: 15000 }).should(() => {
+    expect(controlsRef.current?.isReady(), 'waveform ready').to.equal(true);
+    expect(controlsRef.current?.getDuration()).to.be.closeTo(8, 0.1);
+  });
+
+  // The user's current selection is the first division.
+  cy.then(() => controlsRef.current?.gotoTime(1));
+  cy.window().should((win) => {
+    const seam = (win as Window & { __wsCt?: WsCtSeam }).__wsCt;
+    expect(seam?.currentRegion()?.start, 'selected division').to.equal(0);
+  });
+
+  cy.then(() => {
+    recording = true;
+  });
+  cy.get('#locate').click();
+
+  // Long enough for a wrong playback to run the whole recording, so a
+  // failure reports where it played rather than a timeout.
+  cy.wrap(null, { timeout: 12000 }).should(() => {
+    expect(stopped, 'playback stopped').to.equal(true);
+  });
+
+  return cy.then(() => progress.filter((p) => p > 0));
+}
+
 describe('WSAudioPlayer discussion locate with divisions', () => {
   it('plays from the discussion start and stops at the discussion end', () => {
-    const controlsRef = React.createRef<WSAudioPlayerControls | null>();
-    const progress: number[] = [];
-    let recording = false;
-    let stopped = false;
-
-    cy.mount(
-      <Provider store={mockStore}>
-        <ThemeProvider theme={createTheme()}>
-          <GlobalProvider init={initialState}>
-            <OrbitContext.Provider value={orbitContextValue}>
-              <HotKeyContext.Provider
-                value={{
-                  state: {
-                    subscribe: () => {},
-                    unsubscribe: () => {},
-                    localizeHotKey: (key: string) => key,
-                  } as never,
-                  setState: (() => {}) as never,
-                }}
-              >
-                <LocateHarness
-                  blob={createMinimalWavBlob(8)}
-                  controlsRef={controlsRef}
-                  onProgress={(p) => {
-                    if (recording) progress.push(p);
-                  }}
-                  onPlayStatus={(playing) => {
-                    if (recording && !playing) stopped = true;
-                  }}
-                />
-              </HotKeyContext.Provider>
-            </OrbitContext.Provider>
-          </GlobalProvider>
-        </ThemeProvider>
-      </Provider>
-    );
-
-    cy.wrap(null, { timeout: 15000 }).should(() => {
-      expect(controlsRef.current?.isReady(), 'waveform ready').to.equal(true);
-      expect(controlsRef.current?.getDuration()).to.be.closeTo(8, 0.1);
-    });
-
-    // The user's current selection is the first division.
-    cy.then(() => controlsRef.current?.gotoTime(1));
-    cy.window().should((win) => {
-      const seam = (win as Window & { __wsCt?: WsCtSeam }).__wsCt;
-      expect(seam?.currentRegion()?.start, 'selected division').to.equal(0);
-    });
-
-    cy.then(() => {
-      recording = true;
-    });
-    cy.get('#locate').click();
-
-    cy.wrap(null, { timeout: 6000 }).should(() => {
-      expect(stopped, 'playback stopped').to.equal(true);
-    });
-
-    cy.then(() => {
-      const played = progress.filter((p) => p > 0);
+    const discussion = { start: 5, end: 6 };
+    locateAndRecord(discussion).then((played) => {
       cy.log(`played ${played[0]} .. ${played[played.length - 1]}`);
       expect(played.length, 'progress samples').to.be.greaterThan(0);
       expect(Math.min(...played), 'earliest position').to.be.at.least(
-        DISCUSSION.start - 0.1
+        discussion.start - 0.1
       );
       expect(Math.max(...played), 'latest position').to.be.at.most(
-        DISCUSSION.end + 0.25
+        discussion.end + 0.25
+      );
+    });
+  });
+
+  it('does not rewind a discussion that starts near the recording end', () => {
+    // Starts within the 0.2 s end-of-media rewind window.
+    const discussion = { start: 7.9, end: 8 };
+    locateAndRecord(discussion).then((played) => {
+      cy.log(`played ${played[0]} .. ${played[played.length - 1]}`);
+      expect(played.length, 'progress samples').to.be.greaterThan(0);
+      expect(Math.min(...played), 'earliest position').to.be.at.least(
+        discussion.start - 0.1
       );
     });
   });
