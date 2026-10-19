@@ -149,6 +149,7 @@ import {
   IProjectDialog,
 } from './Team/ProjectDialog/projectDialogTypes';
 import { SaveSegments } from './PassageDetail/SaveSegments';
+import { SuggestedSegments } from '../business/player/usePlayerLogic';
 
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
@@ -277,7 +278,7 @@ export function Transcriber(props: IProps) {
   const [assigned, setAssigned] = useState('');
   const [projData, setProjData] = useState<FontData>();
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
-  const [suggestedSegs, setSuggestedSegs] = useState<string>();
+  const [suggestedSegs, setSuggestedSegs] = useState<SuggestedSegments>();
   const verseSegs = useRef<string | undefined>(undefined);
   const [verseLabels, setVerseLabels] = useState<string[]>([]);
   const [contentVerses, setContentVerses] = useState<string[]>([]);
@@ -648,9 +649,10 @@ export function Transcriber(props: IProps) {
           }
         }
         verseSegs.current = JSON.stringify({ regions: JSON.stringify(segs) });
-        setSuggestedSegs(
-          getSegments(NamedRegions.Transcription, defaultSegments)
-        );
+        setSuggestedSegs({
+          mediaId: mediafile.id,
+          segments: getSegments(NamedRegions.Transcription, defaultSegments),
+        });
       }
     }
     mediaRef.current = mediafile;

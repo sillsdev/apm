@@ -13,23 +13,31 @@ export interface RequestPlay {
   regionOnly: boolean;
   request: Date;
 }
+
+/** Segments a caller wants shown, tagged with the media they were made for so
+ * the player never paints them onto a different recording (TT-7661). */
+export interface SuggestedSegments {
+  mediaId: string;
+  segments: string;
+}
+
 interface PlayerLogicProps {
-  allowSegment?: string | undefined;
-  suggestedSegments?: string | undefined;
-  position?: number | undefined;
-  playing?: boolean | undefined;
-  setPlaying?: ((playing: boolean) => void) | undefined;
-  setCurrentSegment?:
+  allowSegment: string | undefined;
+  suggestedSegments: SuggestedSegments | undefined;
+  position: number | undefined;
+  playing: boolean | undefined;
+  setPlaying: ((playing: boolean) => void) | undefined;
+  setCurrentSegment:
     ((segment: IRegion | undefined, index: number) => void) | undefined;
   setDefaultSegments: (segments: string) => void;
   setRequestPlay: (request: RequestPlay) => void;
   setInitialPosition: (position: number | undefined) => void;
-  playerMediafile?: MediaFile | undefined;
+  playerMediafile: MediaFile | undefined;
   mediafileRef: React.RefObject<MediaFile | undefined>;
   segmentsRef: React.RefObject<string>;
   durationRef: React.RefObject<number>;
   playingRef: React.RefObject<boolean | undefined>;
-  onSegment?: ((segments: string, whole: boolean) => void) | undefined;
+  onSegment: ((segments: string, whole: boolean) => void) | undefined;
 }
 
 export const usePlayerLogic = (props: PlayerLogicProps) => {
@@ -51,17 +59,24 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     onSegment,
   } = props;
 
+  /** The suggestion's segments, if it was made for `mediaId`. */
+  const suggestedSegmentsFor = (mediaId: string | undefined) =>
+    mediaId !== undefined &&
+    suggestedSegments?.mediaId === mediaId &&
+    suggestedSegments.segments.length > 0
+      ? suggestedSegments.segments
+      : undefined;
+
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
     if (allowSegment) {
       segmentsRef.current =
-        suggestedSegments && suggestedSegments.length > 0
-          ? suggestedSegments
-          : getSegments(allowSegment, segs);
+        suggestedSegmentsFor(mediafileRef.current?.id) ??
+        getSegments(allowSegment, segs);
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);
-    onSegment && onSegment(segmentsRef.current, true);
+    onSegment?.(segmentsRef.current, true);
   };
 
   useEffect(() => {
@@ -71,14 +86,17 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   }, [playerMediafile]);
 
   useEffect(() => {
-    if (allowSegment)
-      if (suggestedSegments && segmentsRef.current !== suggestedSegments) {
-        segmentsRef.current = suggestedSegments;
-        setDefaultSegments(segmentsRef.current);
-        onSegment && onSegment(segmentsRef.current, true);
-      } else setSegmentToWhole();
+    if (!allowSegment) return;
+    const suggestion = suggestedSegmentsFor(playerMediafile?.id);
+    if (suggestion && segmentsRef.current !== suggestion) {
+      segmentsRef.current = suggestion;
+      setDefaultSegments(segmentsRef.current);
+      onSegment?.(segmentsRef.current, true);
+    } else setSegmentToWhole();
+    // Keyed on the suggestion's fields, not its object identity, so callers
+    // need not memoize it. Media changes are handled by loadSegments below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowSegment, suggestedSegments]);
+  }, [allowSegment, suggestedSegments?.mediaId, suggestedSegments?.segments]);
 
   useEffect(() => {
     if (allowSegment) loadSegments();
@@ -110,7 +128,7 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
       // it (1-based; 0 means whole/none) rather than re-deriving from times.
       index = sortedIndex + 1;
     } else if (segment && segmentsRef.current) {
-      const sorted = parseRegions(segmentsRef.current).regions.sort(
+      const sorted = parseRegions(segmentsRef.current).regions.toSorted(
         (a: IRegion, b: IRegion) => a.start - b.start
       );
       const matchTol = 0.6;
@@ -130,15 +148,13 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
                 : segment.start < r.end - 0.01)
           ) + 1;
       }
-    } else {
-      if (setSegmentToWhole()) return;
-    }
-    setCurrentSegment && setCurrentSegment(segment, index);
+    } else if (setSegmentToWhole()) return;
+    setCurrentSegment?.(segment, index);
   };
 
   const onPlayStatus = (newPlaying: boolean) => {
     if (playingRef.current !== newPlaying) {
-      setPlaying && setPlaying(newPlaying);
+      setPlaying?.(newPlaying);
       playingRef.current = newPlaying;
       setRequestPlay({
         play: undefined,

@@ -4,11 +4,15 @@ import { IRegion } from '../crud/useWavesurferRegions';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
 import { MediaFile } from '../model';
 import { NamedRegions } from '../utils/namedSegments';
-import { RequestPlay, usePlayerLogic } from '../business/player/usePlayerLogic';
+import {
+  RequestPlay,
+  SuggestedSegments,
+  usePlayerLogic,
+} from '../business/player/usePlayerLogic';
 
 export interface HiddenPlayerProps {
   allowSegment?: NamedRegions | undefined;
-  suggestedSegments?: string;
+  suggestedSegments?: SuggestedSegments;
   onProgress?: (progress: number) => void;
   onDuration?: (duration: number) => void;
   position?: number;
@@ -68,6 +72,7 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
     segmentsRef,
     durationRef,
     playingRef,
+    onSegment: undefined,
   });
 
   return (

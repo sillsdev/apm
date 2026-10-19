@@ -52,6 +52,7 @@ import { isLinkedNote } from '../../crud/isLinkedNote';
 import { btDefaultSegParams } from './btDefaultSegParams';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
+import { SuggestedSegments } from '../../business/player/usePlayerLogic';
 
 const PlayerRow = styled('div')(() => ({
   width: '100%',
@@ -133,7 +134,11 @@ export function PassageDetailItem(props: IProps) {
     slugs[0] as ArtifactTypeSlug
   );
   const [currentVersion, setCurrentVersion] = useState(1);
-  const [segString, setSegString] = useState('{}');
+  const [suggestedSegs, setSuggestedSegs] = useState<SuggestedSegments>({
+    mediaId: '',
+    segments: '{}',
+  });
+  const segString = suggestedSegs.segments;
   const [allowRecord, setAllowRecord] = useState(
     !isPhraseSegmentArtifact(slugs[0] as ArtifactTypeSlug)
   );
@@ -208,11 +213,10 @@ export function PassageDetailItem(props: IProps) {
     const defaultSegments = mediaRec?.attributes?.segments ?? '{}';
     if (segments) {
       const newSegString = getSegments(segmentRegion, defaultSegments);
-      if (segString !== newSegString) {
-        setSegString(newSegString);
-        if (hasBtRecordings)
-          showMessage(t.segmentsChanged, AlertSeverity.Warning);
-      }
+      if (segString !== newSegString || suggestedSegs.mediaId !== mediafileId)
+        setSuggestedSegs({ mediaId: mediafileId, segments: newSegString });
+      if (segString !== newSegString && hasBtRecordings)
+        showMessage(t.segmentsChanged, AlertSeverity.Warning);
     }
     setVerses(getSegments(NamedRegions.Verse, defaultSegments));
     setCurrentVersion(mediaRec?.attributes?.versionNumber || 0);
@@ -395,7 +399,7 @@ export function PassageDetailItem(props: IProps) {
                       : undefined
                   }
                   defaultSegParams={segParams}
-                  suggestedSegments={segString}
+                  suggestedSegments={suggestedSegs}
                   forceRegionOnly={!oneTryOnly}
                   verses={verses}
                   canSetDefaultParams={editStep && canSetOrgDefault}

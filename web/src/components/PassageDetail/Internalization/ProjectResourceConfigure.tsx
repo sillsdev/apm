@@ -692,7 +692,10 @@ export const ProjectResourceConfigure = (props: IProps) => {
         allowZoom
         layoutMode="transport"
         onSegment={handleSegment}
-        suggestedSegments={pastedSegments}
+        suggestedSegments={{
+          mediaId: media?.id ?? '',
+          segments: pastedSegments,
+        }}
       />
       <StyledPaper id="proj-res-sheet" elevation={0}>
         {/* Only the table scrolls; it fills the region edge-to-edge (no padding

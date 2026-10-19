@@ -445,6 +445,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const {
     phraseSegString: clauseSegString,
+    phraseSegs: clauseSegs,
     setPhraseSegString: setClauseSegString,
     bootstrapped,
     ensureSegments,
@@ -497,10 +498,9 @@ export function PassageDetailGuidedPhraseRecord({
     [heardSet.size, clauseRegions]
   );
 
-  const suggestedSegmentsForPlayer = useMemo(() => {
-    if (!hasPhraseRegions(clauseSegString)) return undefined;
-    return clauseSegString;
-  }, [clauseSegString]);
+  const suggestedSegmentsForPlayer = hasPhraseRegions(clauseSegs.segments)
+    ? clauseSegs
+    : undefined;
 
   const completedIndices = useMemo(
     () =>

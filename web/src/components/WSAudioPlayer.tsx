@@ -1258,6 +1258,13 @@ function WSAudioPlayer(props: IProps) {
         return playingRef.current;
       }
       let nowplaying = play;
+      // Unbounded play from the end of the media starts over. Region play
+      // seeks to its own start, so it never rewinds.
+      const togglePlayFromStart = () => {
+        if (!playingRef.current && durationRef.current - wsPosition() < 0.2)
+          void wsGoto(0);
+        return wsTogglePlay();
+      };
 
       if (
         play &&
@@ -1272,10 +1279,8 @@ function WSAudioPlayer(props: IProps) {
           currentSegmentRef.current,
           resumeWithinSegment
         );
-        nowplaying = regionPlayed ? true : wsTogglePlay();
-      } else nowplaying = wsTogglePlay();
-      if (nowplaying && Math.abs(wsPosition() - durationRef.current) < 0.2)
-        void wsGoto(0);
+        nowplaying = regionPlayed ? true : togglePlayFromStart();
+      } else nowplaying = togglePlayFromStart();
       setPlaying(nowplaying);
       if (onPlayStatus) {
         onPlayStatus(nowplaying);

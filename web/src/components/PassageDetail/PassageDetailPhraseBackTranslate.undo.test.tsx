@@ -10,6 +10,7 @@ import { phraseBackTranslateConfig } from './guidedPhraseRecord/types';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import { NamedRegions } from '../../utils/namedSegments';
 import type { IGuidedPhraseRecordControlStrings } from './guidedPhraseRecord/types';
+import { SuggestedSegments } from '../../business/player/usePlayerLogic';
 
 /**
  * Multi-level segment-boundary Undo for Phrase Back Translate (TT-7437).
@@ -127,6 +128,7 @@ jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => {
       const [phraseSegString, setPhraseSegString] = ReactActual.useState(jsonA);
       return {
         phraseSegString,
+        phraseSegs: { mediaId: 'm1', segments: phraseSegString },
         setPhraseSegString,
         bootstrapped: true,
         ensureSegments: jest.fn().mockResolvedValue(true),
@@ -245,7 +247,7 @@ const controlStrings: IGuidedPhraseRecordControlStrings = {
 type SegmentCb = (seg: string, init: boolean) => Promise<void> | void;
 
 const currentSegments = () =>
-  playerProps?.suggestedSegments as string | undefined;
+  (playerProps?.suggestedSegments as SuggestedSegments | undefined)?.segments;
 
 // The waveform registers its region listener ONCE and keeps calling that same
 // (stale) callback afterwards — so capture it a single time and reuse it,
