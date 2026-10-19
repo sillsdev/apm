@@ -444,7 +444,6 @@ export function PassageDetailGuidedPhraseRecord({
   }, [config.constrainAutoSegmentWithVerses, mediafile]);
 
   const {
-    phraseSegString: clauseSegString,
     phraseSegs: clauseSegs,
     setPhraseSegString: setClauseSegString,
     bootstrapped,
@@ -468,6 +467,7 @@ export function PassageDetailGuidedPhraseRecord({
     shouldReseedFromVerses:
       config.constrainAutoSegmentWithVerses && !hasAnyOutputRecordings,
   });
+  const clauseSegString = clauseSegs.segments;
 
   // TT-7437: a live mirror of clauseSegString. The waveform holds a single,
   // stale onSegment closure (see ADR 0006 / handleRegionPlayEndRef), and one
@@ -498,7 +498,7 @@ export function PassageDetailGuidedPhraseRecord({
     [heardSet.size, clauseRegions]
   );
 
-  const suggestedSegmentsForPlayer = hasPhraseRegions(clauseSegs.segments)
+  const suggestedSegmentsForPlayer = hasPhraseRegions(clauseSegString)
     ? clauseSegs
     : undefined;
 

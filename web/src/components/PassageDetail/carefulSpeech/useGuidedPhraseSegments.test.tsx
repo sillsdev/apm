@@ -56,12 +56,12 @@ describe('useGuidedPhraseSegments - reset scope', () => {
     );
 
     act(() => result.current.resetForScope(mediafile.id));
-    expect(regionsOf(result.current.phraseSegString)).toEqual(SENA);
+    expect(regionsOf(result.current.phraseSegs.segments)).toEqual(SENA);
 
     // Same vernacular, next language's step.
     rerender({ namedRegion: phraseBtBoundaryRegionName('he') });
     act(() => result.current.resetForScope(mediafile.id));
-    expect(regionsOf(result.current.phraseSegString)).toEqual(HEBREW);
+    expect(regionsOf(result.current.phraseSegs.segments)).toEqual(HEBREW);
   });
 
   it('stays put when neither the audio nor the bucket moved', () => {
@@ -76,6 +76,6 @@ describe('useGuidedPhraseSegments - reset scope', () => {
     // A repeat call must not undo work done since - the guard that keeps
     // StrictMode's double-invoke from clobbering a started pass (TT-7360).
     act(() => result.current.resetForScope(mediafile.id));
-    expect(regionsOf(result.current.phraseSegString)).toEqual([]);
+    expect(regionsOf(result.current.phraseSegs.segments)).toEqual([]);
   });
 });
