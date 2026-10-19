@@ -2170,6 +2170,7 @@ const initialState = {
 	}),
 	"wsAudioPlayer": new LocalizedStrings({
 		"en": {
+			"aiEstimatedTime": "Estimated time {0}",
 			"aiFailed": "AI function {1} failed {0}",
 			"aiInProgress": "AI Service In Progress...  This is a remote service that may take a long time if the recording is large, or if there are other requests ahead of yours.",
 			"beginVoiceConvert": "Beginning voice conversion...",
