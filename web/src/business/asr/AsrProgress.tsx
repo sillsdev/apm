@@ -10,6 +10,7 @@ import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../../context/useGlobal';
+import { useOrbitData } from '../../hoc/useOrbitData';
 import { Button, ActionRow } from '../../control';
 import {
   ICardsStrings,
@@ -83,6 +84,7 @@ export default function AsrProgress({
   const { getAsrSettings } = useGetAsrSettings();
   const projectSegmentSave = useProjectSegmentSave();
   const [memory] = useGlobal('memory');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
   const { showMessage } = useSnackBar();
   const [taskId, setTaskIdx] = React.useState('');
@@ -369,9 +371,10 @@ export default function AsrProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const aiDuration =
-    (findRecord(memory, 'mediafile', mediaId) as MediaFileD | undefined)
-      ?.attributes?.duration ?? 0;
+  const aiDuration = React.useMemo(
+    () => mediafiles.find((m) => m.id === mediaId)?.attributes?.duration ?? 0,
+    [mediafiles, mediaId]
+  );
 
   return (
     <Box
@@ -397,11 +400,9 @@ export default function AsrProgress({
             {pollProgress.completed}/{pollProgress.total}
           </Typography>
         )}
-        {aiDuration > 0 && (
-          <Typography id="asr-time-estimate">
-            {formatAiEstimatedTime(tp.aiEstimatedTime, aiDuration)}
-          </Typography>
-        )}
+        <Typography id="asr-time-estimate">
+          {formatAiEstimatedTime(tp.aiEstimatedTime, aiDuration)}
+        </Typography>
         {pollClip && (
           <Box id="asr-clip-0">
             <Typography>

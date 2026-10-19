@@ -501,6 +501,7 @@ function WSAudioPlayer(props: IProps) {
   const [recording, setRecordingx] = useState(false);
   const [waitingForAI, setWaitingForAI] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | undefined>(undefined);
+  const [aiEstimateSeconds, setAiEstimateSeconds] = useState<number>();
   const readyRef = useRef(false);
   const [ready, setReadyx] = useState(false);
   const [progress, setProgressx] = useState(0);
@@ -783,6 +784,7 @@ function WSAudioPlayer(props: IProps) {
     wsPlayRegion,
     wsBlob,
     wsRegionBlob,
+    wsRegionDuration,
     wsPause,
     wsDuration,
     wsPosition,
@@ -1813,6 +1815,7 @@ function WSAudioPlayer(props: IProps) {
 
   const doingProcess = (inprogress: boolean, msg?: string) => {
     setProcessMsg(msg ?? t.aiInProgress);
+    if (!inprogress) setAiEstimateSeconds(undefined);
     setWaitingForAI(inprogress);
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
@@ -1891,9 +1894,9 @@ function WSAudioPlayer(props: IProps) {
           >
             {processMsg}
           </Typography>
-          {duration > 0 && (
+          {aiEstimateSeconds !== undefined && (
             <Typography id="ai-time-estimate">
-              {formatAiEstimatedTime(t.aiEstimatedTime, duration)}
+              {formatAiEstimatedTime(t.aiEstimatedTime, aiEstimateSeconds)}
             </Typography>
           )}
           <Button
@@ -1950,6 +1953,7 @@ function WSAudioPlayer(props: IProps) {
       };
       try {
         doingProcess(true);
+        setAiEstimateSeconds(wsRegionDuration());
         const filename = `${Date.now()}ai.wav`;
         wsRegionBlob()
           .then((blob) => {

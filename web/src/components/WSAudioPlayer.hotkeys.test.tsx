@@ -40,6 +40,7 @@ const waveSurferMock = {
   wsPlayRegion: jest.fn(),
   wsBlob: jest.fn(async () => undefined),
   wsRegionBlob: jest.fn(),
+  wsRegionDuration: jest.fn(() => 0),
   wsPause: jest.fn(),
   wsDuration: jest.fn(() => 0),
   wsPosition: jest.fn(() => 0),
@@ -173,6 +174,7 @@ jest.mock('react-redux', () => ({
     save: 'Save',
     clearRecording: 'Clear',
     aiInProgress: 'AI in progress',
+    aiEstimatedTime: 'Estimated time {0}',
     loading: 'Loading',
     playTip: 'Play {0}',
     pauseTip: 'Pause {0}',
@@ -886,7 +888,10 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(queryByText('Loading')).toBeNull();
   });
 
-  async function startNoiseRemoval(setBusy: (busy: boolean) => void) {
+  async function startNoiseRemoval(
+    setBusy: (busy: boolean) => void,
+    recordingSeconds = 10
+  ) {
     mockGlobals.organization = 'org';
     mockGetOrgDefault.mockReturnValue({ noNoise: true });
     mockCheckOnline.mockImplementation((cb: (online: boolean) => void) => {
@@ -904,7 +909,7 @@ describe('WSAudioPlayer record hotkeys', () => {
       />
     );
     act(() => {
-      capturedOnWSReady?.(10, false);
+      capturedOnWSReady?.(recordingSeconds, false);
     });
     fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
     fireEvent.click(document.getElementById('noiseRemoval') as HTMLElement);
@@ -940,6 +945,14 @@ describe('WSAudioPlayer record hotkeys', () => {
       resolveReplace(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
     });
     expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  it('estimates AI time from the selected region, not the whole recording', async () => {
+    (waveSurferMock.wsRegionDuration as jest.Mock).mockReturnValue(10);
+    await startNoiseRemoval(jest.fn(), 120);
+    expect(document.getElementById('ai-time-estimate')).toHaveTextContent(
+      'Estimated time ~0:20'
+    );
   });
 
   it('clears AI busy once when the AI result is an error', async () => {
