@@ -47,7 +47,16 @@ const renderOnRecordingA = () => {
     suggestedSegments: suggestion('recording-a', recordingARegions),
   };
   const { rerender } = renderHook(
-    (props: HookProps) => usePlayerLogic({ ...fixed, ...props }),
+    (props: HookProps) =>
+      usePlayerLogic({
+        ...fixed,
+        ...props,
+        position: undefined,
+        playing: undefined,
+        setPlaying: undefined,
+        setCurrentSegment: undefined,
+        onSegment: undefined,
+      }),
     { initialProps }
   );
   return { published, rerender };
