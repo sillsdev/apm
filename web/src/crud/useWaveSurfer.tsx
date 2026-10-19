@@ -618,18 +618,6 @@ export function useWaveSurfer(
 
   const wsPlay = () => setPlaying(true);
 
-  // Play start..end without selecting a region, so a range inside a larger
-  // region stops at its own end. Wavesurfer pauses at `end`; marking the ref
-  // playing lets the 'pause' handler report that stop.
-  const wsPlayRange = (start: number, end: number) => {
-    const ws = wavesurferRef.current;
-    if (!ws || !isReadyRef.current || end <= start) return false;
-    void wsGoto(start);
-    playingRef.current = true;
-    void ws.play(start, end);
-    return true;
-  };
-
   const wsPause = () => setPlaying(false);
 
   const wsPosition = () => progressRef.current;
@@ -1283,7 +1271,6 @@ export function useWaveSurfer(
     wsTogglePlay,
     wsPlay,
     wsPlayRegion,
-    wsPlayRange,
     wsPause,
     wsGoto,
     wsSetPlaybackRate,

@@ -12,9 +12,6 @@ export interface RequestPlay {
   play: boolean | undefined;
   regionOnly: boolean;
   request: Date;
-  /** Play exactly this time range (e.g. a located discussion), whatever
-   * regions the waveform shows. */
-  region?: IRegion;
 }
 
 /** Segments a caller wants shown, tagged with the media they were made for so
