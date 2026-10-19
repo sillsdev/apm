@@ -9,6 +9,8 @@ import {
   MediaFileD,
 } from '../model';
 import MediaUpload, { FaithbridgeType } from './MediaUpload';
+import MediaUploadContent from './MediaUploadContent';
+import PassageRecordPanel from './PassageRecordPanel';
 import { typeLimit } from '../utils/typeLimit';
 import {
   findRecord,
@@ -93,14 +95,20 @@ interface IProps {
    * actual upload is then driven through `importList`.
    */
   deferUpload?: boolean | undefined;
-  /** `recorded` is true when the staged file is a take from the record tab. */
-  onStageFiles?:
-    ((files: File[], recorded?: boolean) => void | Promise<void>) | undefined;
-  /** Pre-select these files when the dialog opens (see MediaUploadContent) —
-   *  used to restore a staged file after the Add Resource wizard's Back. */
-  initialFiles?: File[] | undefined;
+  onStageFiles?: ((files: File[]) => void | Promise<void>) | undefined;
+  /**
+   * Render the upload/record UI chrome-less (no dialog of its own) so a host —
+   * the add-resource wizard — can embed it as a show/hide step inside its own
+   * single dialog, which then owns the title, close, and confirm.
+   */
+  embedded?: boolean | undefined;
+  /** Reported up (embedded) once a recording starts, so the host can latch a
+   *  sticky flag and confirm on any later close (#719). */
+  onStartRecording?: (() => void) | undefined;
 }
 
+// TODO I don't like how Uploader is currently bifurcating. Can we split the
+// embedded, audioUploadOrRecord case out and use a shared hook?
 export const Uploader = (props: IProps) => {
   const {
     noBusy,
@@ -137,7 +145,8 @@ export const Uploader = (props: IProps) => {
     pendingRestore,
     deferUpload,
     onStageFiles,
-    initialFiles,
+    embedded,
+    onStartRecording,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -555,14 +564,94 @@ export const Uploader = (props: IProps) => {
 
   const hasImport = Boolean(importList && importList.length > 0);
 
+  if (embedded) {
+    // Host-owned chrome (the add-resource wizard's single dialog). Render the
+    // record/upload body directly; the upload orchestration (finish, onOpen,
+    // importList) is unchanged. We keep the panel
+    // mounted during a deferred upload (hasImport): the wizard's step CSS already
+    // hides it, and staying mounted preserves a recorded take + the Record tab so
+    // the user returns to it after going all the way to Configure and back.
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
+        {audioUploadOrRecord ? (
+          <PassageRecordPanel
+            active={isOpen}
+            onStartRecording={onStartRecording}
+            artifactId={artifactState?.id ?? VernacularTag}
+            passageId={passageId}
+            planId={planIdRef.current}
+            onVisible={onOpen}
+            mediaId={mediaId ?? ''}
+            afterUploadCb={afterUploadCb}
+            onCancel={uploadCancel}
+            metaData={metaData}
+            ready={ready}
+            defaultFilename={defaultFilename ?? 'resource'}
+            allowWave={false}
+            speaker={performedBy}
+            onSpeaker={handleSpeakerChange}
+            team={team}
+            uploadType={uploadType || UploadType.Media}
+            uploadMethod={effectiveUploadMethod}
+            // Only the record tab calls onStageFile (the upload tab stages via
+            // uploadMethod), so anything staged here is a recorded take (#719).
+            onStageFile={deferring ? onStageFiles : undefined}
+            multiple={multiple}
+            onFiles={onFiles}
+            keepFilesAfterSubmit={deferring}
+            inValue={inValue}
+            onNonAudio={onNonAudio}
+            audioOnly={audioOnly}
+            validationMessage={validationMessage}
+            pendingRestore={pendingRestore}
+            beforeUpload={beforeUpload}
+          />
+        ) : (
+          <MediaUploadContent
+            noWrapper
+            hideCancel
+            onVisible={onOpen}
+            uploadType={uploadType || UploadType.Media}
+            multiple={multiple}
+            uploadMethod={uploadMedia}
+            cancelMethod={uploadCancel}
+            metaData={metaData}
+            ready={ready}
+            speaker={performedBy}
+            onSpeaker={
+              !artifactState?.id &&
+              (uploadType || UploadType.Media) === UploadType.Media
+                ? handleSpeakerChange
+                : undefined
+            }
+            team={team}
+            onFiles={onFiles}
+            keepFilesAfterSubmit={deferring}
+            inValue={inValue}
+            onNonAudio={onNonAudio}
+            audioOnly={audioOnly}
+            validationMessage={validationMessage}
+          />
+        )}
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%' }}>
-      {audioUploadOrRecord && !hasImport && (
+      {audioUploadOrRecord && !hasImport && isOpen && (
         <PassageRecordDlg
           artifactId={artifactState?.id ?? VernacularTag}
           passageId={passageId}
           planId={planIdRef.current}
-          visible={isOpen}
           onVisible={onOpen}
           mediaId={mediaId ?? ''}
           afterUploadCb={afterUploadCb}
@@ -576,17 +665,8 @@ export const Uploader = (props: IProps) => {
           team={team}
           uploadType={uploadType || UploadType.Media}
           uploadMethod={effectiveUploadMethod}
-          // Only the record tab calls onStageFile (the upload tab stages via
-          // uploadMethod), so anything staged here is a recorded take.
-          onStageFile={
-            deferring
-              ? (files) => onStageFiles?.(files, /* recorded */ true)
-              : undefined
-          }
           multiple={multiple}
           onFiles={onFiles}
-          initialFiles={initialFiles}
-          keepFilesAfterSubmit={deferring}
           inValue={inValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
@@ -619,7 +699,6 @@ export const Uploader = (props: IProps) => {
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           onFiles={onFiles}
-          initialFiles={initialFiles}
           keepFilesAfterSubmit={deferring}
           validationMessage={validationMessage}
         />
