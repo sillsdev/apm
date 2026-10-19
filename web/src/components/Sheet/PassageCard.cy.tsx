@@ -922,7 +922,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       cy.get('svg[data-testid="ChevronRightIcon"]').should('not.exist');
     });
 
-    it('should show play button when mediaId exists for CHAPTERNUMBER type', () => {
+    it('should show speaker button when mediaId exists for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
@@ -949,11 +949,13 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         handleViewStep: mockHandleViewStep,
       });
 
-      // Should show play button in the centered box
-      cy.get('[data-testid="play-button"]').should('be.visible');
+      // Should show speaker button in the centered box
+      cy.get('[data-testid="speaker-button"]').should('be.visible');
+      cy.get('svg[data-testid="VolumeUpIcon"]').should('exist');
+      cy.get('[data-testid="play-button"]').should('not.exist');
     });
 
-    it('should show pause icon after clicking play for CHAPTERNUMBER type', () => {
+    it('should mark the speaker button pressed after clicking it for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
@@ -980,8 +982,12 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         handleViewStep: mockHandleViewStep,
       });
 
-      cy.get('[data-testid="play-button"]').click();
-      cy.get('svg[data-testid="PauseIcon"]').should('exist');
+      cy.get('[data-testid="speaker-button"]').click();
+      cy.get('[data-testid="speaker-button"]').should(
+        'have.attr',
+        'aria-pressed',
+        'true'
+      );
       cy.get('div[class*="MuiCard-root"]').should('be.visible');
     });
 

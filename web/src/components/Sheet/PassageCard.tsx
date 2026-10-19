@@ -2,6 +2,7 @@ import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { Box, Card, Typography, useTheme } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassagePlayButton } from './PassagePlayButton';
+import { PassageSpeakerButton } from './PassageSpeakerButton';
 import { PassageRef } from './PassageRef';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
@@ -53,7 +54,6 @@ export function PassageCard(props: IProps) {
   const theme = useTheme();
 
   const mediaId = cardInfo.mediaId?.id;
-  const playButton = mediaId ? <PassagePlayButton mediaId={mediaId} /> : null;
 
   return (
     <Card
@@ -66,6 +66,7 @@ export function PassageCard(props: IProps) {
         minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
         px: 2,
         py: 1.5,
         ...(isCurrent && {
@@ -94,16 +95,22 @@ export function PassageCard(props: IProps) {
               psgType={psgType}
               onGraphicClick={onGraphicClick}
             ></PassageCardHeader>
-            <Box
-              sx={{
-                display: 'flex',
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {playButton}
-            </Box>
+            {mediaId && (
+              // Centered on the whole card, not the space below the header.
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                  '& > *': { pointerEvents: 'auto' },
+                }}
+              >
+                <PassageSpeakerButton mediaId={mediaId} />
+              </Box>
+            )}
           </>
         ) : (
           <>
@@ -115,7 +122,7 @@ export function PassageCard(props: IProps) {
                 psgType={psgType}
                 onGraphicClick={onGraphicClick}
               >
-                {playButton}
+                {mediaId && <PassagePlayButton mediaId={mediaId} />}
               </PassageCardHeader>
               {cardInfo.kind === IwsKind.SectionPassage && (
                 <PassageRef
