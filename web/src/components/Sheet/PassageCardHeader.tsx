@@ -1,8 +1,9 @@
 import { ReactNode } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { PassageGraphic } from './PassageGraphic';
-import { PassageRef } from './PassageRef';
+import { PassageCardTitle } from './PassageCardTitle';
+import { usePassageRefText } from './usePassageRefText';
 import { useSectionIdDescription } from './useSectionIdDescription';
 
 interface IProps {
@@ -23,6 +24,11 @@ export function PassageCardHeader({
   children,
 }: IProps) {
   const getDescription = useSectionIdDescription();
+  const getRefText = usePassageRefText();
+  const title =
+    cardInfo.kind === IwsKind.Passage
+      ? getRefText({ psgType, book: cardInfo.book, passageRef, comment })
+      : getDescription(cardInfo);
 
   return (
     <Box
@@ -34,16 +40,7 @@ export function PassageCardHeader({
         psgType={psgType}
         onClick={onGraphicClick}
       />
-      {cardInfo.kind === IwsKind.Passage ? (
-        <PassageRef
-          psgType={psgType}
-          book={cardInfo.book}
-          passageRef={passageRef}
-          comment={comment}
-        />
-      ) : (
-        <Typography variant="h6">{getDescription(cardInfo)}</Typography>
-      )}
+      {title && <PassageCardTitle>{title}</PassageCardTitle>}
       {children}
     </Box>
   );

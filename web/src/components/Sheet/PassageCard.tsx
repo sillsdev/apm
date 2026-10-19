@@ -3,7 +3,8 @@ import { Box, Card, Typography, useTheme } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassagePlayButton } from './PassagePlayButton';
 import { PassageSpeakerButton } from './PassageSpeakerButton';
-import { PassageRef } from './PassageRef';
+import { PassageCardTitle } from './PassageCardTitle';
+import { usePassageRefText } from './usePassageRefText';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
 import { PassageStepButton } from './PassageStepButton';
@@ -52,6 +53,11 @@ export function PassageCard(props: IProps) {
   );
 
   const theme = useTheme();
+  const getRefText = usePassageRefText();
+  const sectionPassageTitle =
+    cardInfo.kind === IwsKind.SectionPassage
+      ? getRefText({ psgType, book: cardInfo.book, passageRef: ref, comment })
+      : '';
 
   const mediaId = cardInfo.mediaId?.id;
 
@@ -124,13 +130,8 @@ export function PassageCard(props: IProps) {
               >
                 {mediaId && <PassagePlayButton mediaId={mediaId} />}
               </PassageCardHeader>
-              {cardInfo.kind === IwsKind.SectionPassage && (
-                <PassageRef
-                  psgType={psgType}
-                  book={cardInfo.book}
-                  passageRef={ref}
-                  comment={comment}
-                />
+              {sectionPassageTitle && (
+                <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>
               )}
               <Typography
                 variant="body2"
