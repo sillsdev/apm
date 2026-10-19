@@ -72,6 +72,7 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
     segmentsRef,
     durationRef,
     playingRef,
+    onSegment: undefined,
   });
 
   return (
