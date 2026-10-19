@@ -1,5 +1,5 @@
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import { Box, Card, Typography, useTheme } from '@mui/material';
+import { Box, Card, Typography } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassagePlayButton } from './PassagePlayButton';
 import { PassageSpeakerButton } from './PassageSpeakerButton';
@@ -52,7 +52,6 @@ export function PassageCard(props: IProps) {
       : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
   );
 
-  const theme = useTheme();
   const getRefText = usePassageRefText();
   const sectionPassageTitle =
     cardInfo.kind === IwsKind.SectionPassage
@@ -133,19 +132,7 @@ export function PassageCard(props: IProps) {
               {sectionPassageTitle && (
                 <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>
               )}
-              <Typography
-                variant="body2"
-                color="grey"
-                sx={{
-                  lineHeight: theme.spacing(3.5),
-                  minWidth: 0,
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 1,
-                  overflow: 'hidden',
-                  overflowWrap: 'anywhere',
-                }}
-              >
+              <Typography noWrap variant="body2" color="grey">
                 {comment}
               </Typography>
             </Box>
