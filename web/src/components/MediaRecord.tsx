@@ -418,6 +418,18 @@ function MediaRecord(props: IProps) {
   // while the parent's batch/upload path reports via `finish(ids)`. Hosts that
   // mix both (ResourceUploadStep, ProvideRights, PassageDetailItem) write a thin
   // adapter between the two — see useMediaUpload's IMediaUploadProps.
+  //
+  // TODO cleanup: retire the host-facing `afterUploadCb` in favor of `finish`.
+  // `afterUploadCb` fires per item BEFORE run() pulls the new mediafile, so every
+  // host that mutates/links it (comments, rights, sectionresource, keyterm,
+  // title) must work around the unresolved id (remoteIdGuid-or-fallback, or
+  // useTitleSave's waitForIt); `finish` runs post-pull with resolvable ids and
+  // would delete those workarounds. Do it either centrally (fire the host cb
+  // from a post-pull finish wrapper here — ~1 file, but shifts ALL record flows
+  // at once and needs a full manual sweep) or per-host (make afterUploadCb
+  // optional, migrate one chain + its tests + its manual flow at a time, comments
+  // first as the canary since their link behavior may change). MediaRecord's own
+  // `myAfterUploadCb` stays either way — it's internal per-take state, not host work.
   const uploadMedia = useMediaUpload({
     fields: {
       artifactId,

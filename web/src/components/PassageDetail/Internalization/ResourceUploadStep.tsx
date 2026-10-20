@@ -144,10 +144,21 @@ export function ResourceUploadStep(props: IProps) {
     <Box
       sx={{
         width: '100%',
-        height: '100%',
+        // Grow via flex, not height:100% — the dialog paper has only a
+        // min-height, so a percentage height resolves to auto and the
+        // Upload/Next row would ride up under the content instead of pinning
+        // to the bottom (matches SelectSections' flex:1).
+        flex: '1 1 auto',
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
+        // The bodies' DialogActions sit inside the wizard's DialogContent, which
+        // already pads the edges; drop their own padding (and the record save
+        // button's margin) so both tabs' footer matches the other steps'
+        // ActionRow (flush sides, pb:1). Scoped here so the standalone
+        // Upload/Record dialogs keep their usual DialogActions spacing.
+        '& > .MuiDialogActions-root': { p: 0, pb: 1 },
+        '& > .MuiDialogActions-root > .MuiButton-root': { m: 0 },
       }}
     >
       {isAudioMode ? (

@@ -194,7 +194,7 @@ interface IProps {
    *  general-resource flow, where Next only advances and the upload fires later
    *  from SelectSections, driven off the still-mounted selection. */
   onNext?: (() => void) | undefined;
-  // TODO why do we need onNext, uploadMethod, and keepFilesAfterSubmit? Can we consolidate?
+  // TODO cleanup: see if we can consolidate onNext, uploadMethod, and keepFilesAfterSubmit.
 }
 
 function MediaUploadContent(props: IProps) {
