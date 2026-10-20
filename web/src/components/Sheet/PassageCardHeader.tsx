@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
 import { Box } from '@mui/material';
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { PassageGraphic } from './PassageGraphic';
+import { PassagePlayButton } from './PassagePlayButton';
 import { PassageCardTitle } from './PassageCardTitle';
 import { usePassageRefText } from './usePassageRefText';
 import { useSectionIdDescription } from './useSectionIdDescription';
@@ -12,7 +12,7 @@ interface IProps {
   description?: string;
   psgType: PassageTypeEnum;
   onGraphicClick?: () => void;
-  children?: ReactNode;
+  mediaId?: string;
 }
 
 export function PassageCardHeader({
@@ -21,7 +21,7 @@ export function PassageCardHeader({
   description,
   psgType,
   onGraphicClick,
-  children,
+  mediaId,
 }: IProps) {
   const getDescription = useSectionIdDescription();
   const getRefText = usePassageRefText();
@@ -50,7 +50,7 @@ export function PassageCardHeader({
           onClick={onGraphicClick}
         />
         {title && <PassageCardTitle>{title}</PassageCardTitle>}
-        {children}
+        {mediaId && <PassagePlayButton mediaId={mediaId} />}
       </Box>
       {sectionPassageTitle && (
         <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>

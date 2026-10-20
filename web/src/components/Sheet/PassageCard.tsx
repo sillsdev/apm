@@ -1,7 +1,6 @@
 import { ISheet, PassageTypeEnum } from '../../model';
 import { Box, Card, Typography } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { PassagePlayButton } from './PassagePlayButton';
 import { PassageSpeakerButton } from './PassageSpeakerButton';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
@@ -91,7 +90,7 @@ export function PassageCard(props: IProps) {
               description={description}
               psgType={psgType}
               onGraphicClick={onGraphicClick}
-            ></PassageCardHeader>
+            />
             {mediaId && (
               // Centered on the whole card, not the space below the header.
               <Box
@@ -118,9 +117,8 @@ export function PassageCard(props: IProps) {
                 description={description}
                 psgType={psgType}
                 onGraphicClick={onGraphicClick}
-              >
-                {mediaId && <PassagePlayButton mediaId={mediaId} />}
-              </PassageCardHeader>
+                mediaId={mediaId}
+              />
               <Typography noWrap variant="body2" color="grey">
                 {description}
               </Typography>
