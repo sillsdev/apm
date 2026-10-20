@@ -18,17 +18,21 @@ interface IProps {
   isCurrent?: boolean;
 }
 
-export function PassageCard(props: IProps) {
+export function PassageCard({
+  cardInfo,
+  handleViewStep,
+  onGraphicClick,
+  isPersonal,
+  isCurrent,
+}: IProps) {
   const { isMobileWidth } = useMobile();
-  const { cardInfo, handleViewStep, onGraphicClick, isPersonal, isCurrent } =
-    props;
-  const noteTitle = cardInfo?.sharedResource?.attributes.title;
+  const noteTitle = cardInfo.sharedResource?.attributes.title;
   // Unsaved rows have no passage record yet, so fall back to the row fields.
   const ref =
     noteTitle || cardInfo.passage?.attributes.reference || cardInfo.reference;
 
   const description =
-    cardInfo?.sharedResource?.attributes.description ||
+    cardInfo.sharedResource?.attributes.description ||
     (noteTitle ? cardInfo.reference?.split('|')[1] : '') ||
     cardInfo.comment;
 
@@ -38,18 +42,14 @@ export function PassageCard(props: IProps) {
 
   const passageId = cardInfo.passage?.id;
   const isChapter = psgType === PassageTypeEnum.CHAPTERNUMBER;
+  const mediaId = cardInfo.mediaId?.id;
 
-  // Chapter cards stretch their play button to fill the card, so they'd report
-  // the height they were given rather than what they need. At phone width
-  // there's one card per row, so there's nothing to line up with.
   const cardHeight = useCardHeight(minPassageCardHeight);
   const contentRef = useMeasureCardHeight(
     isChapter || isMobileWidth
       ? undefined
       : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
   );
-
-  const mediaId = cardInfo.mediaId?.id;
 
   return (
     <Card
@@ -72,69 +72,50 @@ export function PassageCard(props: IProps) {
         }),
       }}
     >
-      <Box
-        ref={contentRef}
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: isChapter ? 0 : 1.5,
-          flex: 1,
-        }}
-      >
-        {isChapter ? (
-          <>
-            <PassageCardHeader
-              cardInfo={cardInfo}
-              passageRef={ref}
-              description={description}
-              psgType={psgType}
-              onGraphicClick={onGraphicClick}
-            />
-            {mediaId && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  pointerEvents: 'none',
-                  '& > *': { pointerEvents: 'auto' },
-                }}
-              >
-                <PassageSpeakerButton mediaId={mediaId} />
-              </Box>
+      <Stack ref={contentRef} flex={1} justifyContent="space-between" gap={1.5}>
+        <Stack gap={1.5}>
+          <PassageCardHeader
+            cardInfo={cardInfo}
+            passageRef={ref}
+            description={description}
+            psgType={psgType}
+            onGraphicClick={onGraphicClick}
+            mediaId={isChapter ? undefined : mediaId}
+          />
+          {!isChapter && (
+            <Typography noWrap variant="body2" color="grey">
+              {description}
+            </Typography>
+          )}
+        </Stack>
+        {!isChapter && (
+          <Stack justifyContent="flex-end" gap={1.5} minHeight={80}>
+            {!isPersonal && cardInfo.assign && (
+              <PassageAssignee assign={cardInfo.assign} />
             )}
-          </>
-        ) : (
-          <>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <PassageCardHeader
-                cardInfo={cardInfo}
-                passageRef={ref}
-                description={description}
-                psgType={psgType}
-                onGraphicClick={onGraphicClick}
-                mediaId={mediaId}
-              />
-              <Typography noWrap variant="body2" color="grey">
-                {description}
-              </Typography>
-            </Box>
-            <Stack justifyContent="flex-end" gap={1.5} minHeight={80}>
-              {!isPersonal && cardInfo.assign && (
-                <PassageAssignee assign={cardInfo.assign} />
-              )}
-              <PassageStepButton
-                step={cardInfo.step}
-                discussionCount={cardInfo.stepDiscussionCount}
-                onClick={handleViewStep}
-              />
-            </Stack>
-          </>
+            <PassageStepButton
+              step={cardInfo.step}
+              discussionCount={cardInfo.stepDiscussionCount}
+              onClick={handleViewStep}
+            />
+          </Stack>
         )}
-      </Box>
+      </Stack>
+      {isChapter && mediaId && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            '& > *': { pointerEvents: 'auto' },
+          }}
+        >
+          <PassageSpeakerButton mediaId={mediaId} />
+        </Box>
+      )}
     </Card>
   );
 }

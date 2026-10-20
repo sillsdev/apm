@@ -550,7 +550,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       .should('exist');
   });
 
-  it('should show empty box when no mediaId exists', () => {
+  it('should not show play button when no mediaId exists', () => {
     const cardInfo = createMockSheet({
       mediaId: undefined,
     });
@@ -559,10 +559,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       handleViewStep: mockHandleViewStep,
     });
 
-    // Should not show play button
     cy.get('[data-testid="play-button"]').should('not.exist');
-    // Should have an empty box placeholder
-    cy.get('div[class*="MuiBox-root"]').should('have.length.at.least', 1);
   });
 
   it('should show TaskAvatar when assign exists', () => {
