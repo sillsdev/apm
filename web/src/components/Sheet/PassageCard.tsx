@@ -1,5 +1,5 @@
 import { ISheet, PassageTypeEnum } from '../../model';
-import { Box, Card, Typography } from '@mui/material';
+import { Box, Card, Stack, Typography } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassageSpeakerButton } from './PassageSpeakerButton';
 import { PassageCardHeader } from './PassageCardHeader';
@@ -92,7 +92,6 @@ export function PassageCard(props: IProps) {
               onGraphicClick={onGraphicClick}
             />
             {mediaId && (
-              // Centered on the whole card, not the space below the header.
               <Box
                 sx={{
                   position: 'absolute',
@@ -123,7 +122,7 @@ export function PassageCard(props: IProps) {
                 {description}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Stack justifyContent="flex-end" gap={1.5} minHeight={80}>
               {!isPersonal && cardInfo.assign && (
                 <PassageAssignee assign={cardInfo.assign} />
               )}
@@ -132,7 +131,7 @@ export function PassageCard(props: IProps) {
                 discussionCount={cardInfo.stepDiscussionCount}
                 onClick={handleViewStep}
               />
-            </Box>
+            </Stack>
           </>
         )}
       </Box>

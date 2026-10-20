@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { PassageGraphic } from './PassageGraphic';
 import { PassagePlayButton } from './PassagePlayButton';
@@ -37,10 +37,8 @@ export function PassageCardHeader({
   const subtitle = cardInfo.kind === IwsKind.SectionPassage ? refText : '';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-      <Box
-        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 56 }}
-      >
+    <Stack gap={0.5}>
+      <Stack direction="row" alignItems="center" gap={1.5} minHeight={56}>
         <PassageGraphic
           cardInfo={cardInfo}
           reference={passageRef}
@@ -64,8 +62,8 @@ export function PassageCardHeader({
           </Typography>
         )}
         {mediaId && <PassagePlayButton mediaId={mediaId} />}
-      </Box>
+      </Stack>
       {subtitle && <Typography variant="body1">{subtitle}</Typography>}
-    </Box>
+    </Stack>
   );
 }
