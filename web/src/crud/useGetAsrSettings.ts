@@ -39,8 +39,11 @@ import {
   stepSisterRecommendationKey,
   transcribeSettingsNeedSisterLanguage,
   withSisterRecommendations,
-  type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
+import {
+  parseTranscribeStepSettings,
+  type TranscribeStepSettings,
+} from './transcribeStepSettings';
 
 export {
   artifactTypeSlugFromSettings,
@@ -143,10 +146,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings) as Record<
-      string,
-      unknown
-    >;
+    const settings = parseTranscribeStepSettings(json?.settings);
     const raw = settings?.sisterRecommendations;
     if (typeof raw !== 'string') return undefined;
     try {
@@ -184,7 +184,11 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    return { step, json, settings: parseStepSettings(json?.settings) };
+    return {
+      step,
+      json,
+      settings: parseTranscribeStepSettings(json?.settings),
+    };
   };
 
   /**
@@ -218,9 +222,6 @@ export function useGetAsrSettings(team?: OrganizationD) {
     void memory.update((t) => UpdateRecord(t, step, user));
   };
 
-  const parseStepSettings = (settingsJson: string | undefined) =>
-    JSONParse(settingsJson ?? '{}') as TranscribeStepSettings;
-
   /** The step transcribes the vernacular, and this project's differs from the team's. */
   const usesProjectAsr = (settings: TranscribeStepSettings) =>
     projectDiffersFromOrg() &&
@@ -247,7 +248,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
+    const settings = parseTranscribeStepSettings(json?.settings);
     // A project whose language differs from the team's keeps its own ASR
     // choice (saved on Run), since the team default can't describe it.
     const projectOwnsAsr = usesProjectAsr(settings);
@@ -345,7 +346,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    if (!usesProjectAsr(parseStepSettings(json?.settings))) return;
+    if (!usesProjectAsr(parseTranscribeStepSettings(json?.settings))) return;
     const existing = normalizeAsrState(getProjectDefault(orgDefaultAsr));
     if (existing && asrStatesEqual(existing, asrState)) return;
     setProjectDefault(orgDefaultAsr, asrState);
@@ -357,7 +358,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
+    const settings = parseTranscribeStepSettings(json?.settings);
     return hasTranscribeStepLanguageSettings(
       json.tool,
       settings,
@@ -373,7 +374,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
+    const settings = parseTranscribeStepSettings(json?.settings);
     return transcribeSettingsNeedSisterLanguage(
       settings,
       slugFromId,

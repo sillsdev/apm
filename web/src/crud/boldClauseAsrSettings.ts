@@ -15,20 +15,7 @@ import {
   transcribeSettingsNeedSisterLanguage,
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
-
-type StepSettingsJson = string | object | undefined;
-
-function parseStepSettings(settingsJson: StepSettingsJson) {
-  if (!settingsJson) return {} as TranscribeStepSettings;
-  if (typeof settingsJson === 'object') {
-    return settingsJson as TranscribeStepSettings;
-  }
-  try {
-    return JSON.parse(settingsJson) as TranscribeStepSettings;
-  } catch {
-    return {} as TranscribeStepSettings;
-  }
-}
+import { parseTranscribeStepSettings } from './transcribeStepSettings';
 
 export function findUpstreamRecordingWorkflowStep(
   orgSteps: OrgWorkflowStepD[],
@@ -42,7 +29,7 @@ export function findUpstreamRecordingWorkflowStep(
       settings?: string | object;
     };
     if (json.tool !== upstreamTool) return false;
-    const settings = parseStepSettings(json.settings);
+    const settings = parseTranscribeStepSettings(json.settings);
     if (!settings?.artifactTypeId) return false;
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
     return slug === recordingArtifactSlug;
@@ -65,7 +52,7 @@ export function getUpstreamRecordingStepSettings(
   const json = JSONParse(step.attributes?.tool ?? '{}') as {
     settings?: string | object;
   };
-  return parseStepSettings(json.settings);
+  return parseTranscribeStepSettings(json.settings);
 }
 
 /**
@@ -80,7 +67,7 @@ export function boldClauseAsrSettingsSource(
   orgId: string | undefined,
   currentStepSettings?: unknown
 ): 'current' | 'upstream' {
-  const current = parseStepSettings(currentStepSettings as StepSettingsJson);
+  const current = parseTranscribeStepSettings(currentStepSettings);
   const currentNamesLanguage =
     Boolean(current?.artifactTypeId) &&
     artifactTypeSlugFromSettings(current, slugFromId) ===
@@ -136,7 +123,7 @@ export function resolveBoldClauseTranscriptionStepSettings({
     currentStepSettings
   );
   return source === 'current'
-    ? parseStepSettings(currentStepSettings as StepSettingsJson)
+    ? parseTranscribeStepSettings(currentStepSettings)
     : upstream;
 }
 

@@ -17,7 +17,6 @@ import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import { asrStatesEqual, type IAsrState } from '../../../business/asr/asrState';
-import { MediaFileD, OrganizationD, Project } from '@model/index';
 import {
   carefulTranscriptionSelector,
   lwcTranscriptionSelector,
@@ -30,6 +29,10 @@ import {
   ILwcTranscriptionStrings,
   ISharedStrings,
   ITranscriberStrings,
+  IWsAudioPlayerStrings,
+  MediaFileD,
+  OrganizationD,
+  Project,
 } from '@model/index';
 import { useGlobal } from '../../../context/useGlobal';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
@@ -46,15 +49,15 @@ import {
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
 import { hasTranscriptionTask } from '../../../utils/namedSegments';
+import { parseTranscribeStepSettings } from '../../../crud/transcribeStepSettings';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import type { FontData } from '../../../crud/fontChoice';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
 import { useTranscriptionAutosave } from './useTranscriptionAutosave';
-import { parseStepSettings, useBoldClauseAsr } from './useBoldClauseAsr';
+import { useBoldClauseAsr } from './useBoldClauseAsr';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
-import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
@@ -103,7 +106,7 @@ export default function BoldClauseTranscriptionEditor({
   flushSaveRef,
   artifactTypeId,
   transcriptionConfig,
-}: Props) {
+}: Readonly<Props>) {
   const t = useTranscriptionStrings(transcriptionConfig.stringsLayout);
   const tr: ITranscriberStrings = useSelector(
     transcriberSelector,
@@ -195,7 +198,7 @@ export default function BoldClauseTranscriptionEditor({
     if (!projRec) return;
     let cancelled = false;
 
-    const lgSettings = parseStepSettings(stepSettings);
+    const lgSettings = parseTranscribeStepSettings(stepSettings);
     const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
     const hasStepLanguage = isLangSet(stepLang);
 

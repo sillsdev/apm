@@ -4,10 +4,11 @@ import Memory from '@orbit/memory';
 import { findRecord } from './tryFindRecord';
 import { LocalKey } from '../utils';
 import { parseStepLanguageField } from './transcribeStepAsrSettings';
+import { resolveStepSpellCheck } from './stepSpellCheck';
 import {
-  resolveStepSpellCheck,
-  TranscribeStepSettingsJson,
-} from './stepSpellCheck';
+  parseTranscribeStepSettings,
+  type TranscribeStepSettings,
+} from './transcribeStepSettings';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 
 export interface IFontConfig {
@@ -63,7 +64,7 @@ export const getFontData = async (r: Project, artifactId?: string | null) => {
 
   const langTag = r?.attributes?.language;
   const fontFamily = r?.attributes?.defaultFont
-    ? r.attributes.defaultFont.split(',')[0].replace(/ /g, '')
+    ? r.attributes.defaultFont.split(',')[0].replaceAll(' ', '')
     : 'CharisSIL';
   const fontSize =
     lastFontData?.fontSize ?? r?.attributes?.defaultFontSize ?? 'large';
@@ -97,7 +98,7 @@ export const getArtTypeFontData = (
     'artifacttype',
     exportId
   ) as ArtifactTypeD;
-  let stepSettings: TranscribeStepSettingsJson = {
+  let stepSettings: TranscribeStepSettings = {
     language: 'English|en',
     font: 'CharisSIL',
   };
@@ -105,9 +106,9 @@ export const getArtTypeFontData = (
   orgSteps?.find((s) => {
     const toolData = JSON.parse(s.attributes?.tool || '{}');
     if (toolData?.settings) {
-      const settings = JSON.parse(toolData.settings);
+      const settings = parseTranscribeStepSettings(toolData.settings);
       if (
-        settings?.artifactTypeId ===
+        settings.artifactTypeId ===
         (artifactType?.keys?.remoteId ?? artifactType?.id)
       ) {
         stepSettings = settings;

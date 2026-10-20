@@ -12,11 +12,12 @@ import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
 import { isLangSet } from '../utils/langTag';
+import type { TranscribeStepSettings } from './transcribeStepSettings';
 
 export type SlugFromIdFn = (id: string) => string;
 export type GetOrgDefaultFn = (label: string, orgId?: string) => unknown;
 
-export type TranscribeStepSettings = Record<string, unknown>;
+export type { TranscribeStepSettings } from './transcribeStepSettings';
 
 export interface IStepLanguageInfo {
   languageName: string;
@@ -410,10 +411,7 @@ export async function buildWorkflowAsrStateFromSettings({
   }
   const { languageName, bcp47 } = parseStepLanguageField(settings?.language);
   const font = String(settings?.font ?? asrDefault.language.font);
-  const rtl =
-    settings?.rtl === true ||
-    settings?.rtl === 'true' ||
-    asrDefault.language.rtl;
+  const rtl = settings?.rtl === true || asrDefault.language.rtl;
   const sister = parseStepLanguageField(settings?.sisterlanguage);
   const sisterBcp = sister.bcp47;
   const asrBcp = await resolveAsrBcp47(bcp47, sisterBcp, token);

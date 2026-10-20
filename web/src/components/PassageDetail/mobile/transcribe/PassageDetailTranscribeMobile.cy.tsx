@@ -2165,5 +2165,61 @@ describe('PassageDetailTranscribeMobile', () => {
         .invoke('css', 'font-family')
         .should('match', /Ezra/i);
     });
+
+    it('spellchecks the transcription when the step spell check setting is on', () => {
+      const workflowSteps = [
+        {
+          id: 'step-transcribe',
+          type: 'orgworkflowstep',
+          attributes: {
+            sequencenum: 1,
+            tool: JSON.stringify({
+              tool: 'transcribe',
+              settings: JSON.stringify({ spellCheck: true }),
+            }),
+          },
+        },
+      ];
+
+      mountTranscribeMobile({
+        currentstep: 'step-transcribe',
+        workflowSteps,
+        offline: false,
+      });
+
+      cy.get('#transcriptionText', { timeout: 10000 }).should(
+        'have.attr',
+        'spellcheck',
+        'true'
+      );
+    });
+
+    it('spellchecks the transcription offline when the step spell check setting is on', () => {
+      const workflowSteps = [
+        {
+          id: 'step-transcribe',
+          type: 'orgworkflowstep',
+          attributes: {
+            sequencenum: 1,
+            tool: JSON.stringify({
+              tool: 'transcribe',
+              settings: JSON.stringify({ spellCheck: true }),
+            }),
+          },
+        },
+      ];
+
+      mountTranscribeMobile({
+        currentstep: 'step-transcribe',
+        workflowSteps,
+        offline: true,
+      });
+
+      cy.get('#transcriptionText', { timeout: 10000 }).should(
+        'have.attr',
+        'spellcheck',
+        'true'
+      );
+    });
   });
 });
