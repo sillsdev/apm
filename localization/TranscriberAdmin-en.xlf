@@ -10552,12 +10552,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.aiEstimatedTime">
-         <segment>
-            <source>Estimated time {0}</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="wsAudioPlayer.aiFailed">
          <segment>
             <source>AI function {1} failed {0}</source>
@@ -10567,6 +10561,18 @@
       <unit id="wsAudioPlayer.aiInProgress">
          <segment>
             <source>AI Service In Progress...  This is a remote service that may take a long time if the recording is large, or if there are other requests ahead of yours.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.aiTakingLonger">
+         <segment>
+            <source>Taking longer than usual: {0} elapsed</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.aiTimeRemaining">
+         <segment>
+            <source>About {0} remaining</source>
             <target/>
          </segment>
       </unit>

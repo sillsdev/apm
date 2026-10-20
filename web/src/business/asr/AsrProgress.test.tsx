@@ -80,7 +80,8 @@ jest.mock('../../model', () => ({}));
 
 jest.mock('react-redux', () => ({
   useSelector: () => ({
-    aiEstimatedTime: 'Estimated time {0}',
+    aiTimeRemaining: 'About {0} remaining',
+    aiTakingLonger: 'Taking longer than usual: {0} elapsed',
     aiWillContinue: '{0} will continue',
     recognizeSpeech: 'Recognize speech',
     close: 'Close',
@@ -91,7 +92,7 @@ jest.mock('react-redux', () => ({
 jest.mock('../../selector', () => ({
   cardsSelector: jest.fn(),
   mainSelector: jest.fn(),
-  playerSelector: jest.fn(),
+  wsAudioPlayerSelector: jest.fn(),
   sharedSelector: jest.fn(),
   transcriberSelector: jest.fn(),
 }));
@@ -139,6 +140,7 @@ const renderAsr = () =>
 describe('AsrProgress estimated time', () => {
   beforeEach(() => {
     mockOrbitListeners.clear();
+    localStorage.clear();
     // The transcription request stays in flight for the whole test.
     mockAxiosPost.mockReset();
     mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
@@ -152,7 +154,7 @@ describe('AsrProgress estimated time', () => {
     orbitMedia = [mediaWith(60)];
     renderAsr();
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
-      'Estimated time ~0:45'
+      'About 0:45 remaining'
     );
 
     act(() => {
@@ -161,16 +163,31 @@ describe('AsrProgress estimated time', () => {
     });
 
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
-      'Estimated time ~1:15'
+      'About 1:15 remaining'
     );
   });
 
-  it('shows the fallback estimate while transcribing a recording with no stored duration', () => {
+  it('shows only elapsed time while transcribing a recording with no stored duration', () => {
     orbitMedia = [mediaWith(0)];
     renderAsr();
     expect(mockAxiosPost).toHaveBeenCalled();
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
-      'Estimated time ~0:15'
+      /^0:00$/
+    );
+  });
+
+  it('estimates from earlier transcriptions with the same model', () => {
+    // total = 10 + 1 * duration
+    const samples = [10, 20, 40, 80, 160].map((d) => ({
+      durationSec: d,
+      totalMs: (10 + d) * 1000,
+      at: 0,
+    }));
+    localStorage.setItem('aiTiming-transcription:mms', JSON.stringify(samples));
+    orbitMedia = [mediaWith(60)];
+    renderAsr();
+    expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
+      'About 1:10 remaining'
     );
   });
 });
