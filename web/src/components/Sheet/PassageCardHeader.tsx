@@ -37,7 +37,7 @@ export function PassageCardHeader({
   const subtitle = cardInfo.kind === IwsKind.SectionPassage ? refText : '';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       <Box
         sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 56 }}
       >
@@ -65,22 +65,7 @@ export function PassageCardHeader({
         )}
         {mediaId && <PassagePlayButton mediaId={mediaId} />}
       </Box>
-      {subtitle && (
-        <Typography
-          variant="h6"
-          sx={{
-            display: '-webkit-box',
-            WebkitBoxOrient: 'vertical',
-            WebkitLineClamp: 2,
-            overflow: 'hidden',
-            minWidth: 0,
-            lineHeight: (theme) => theme.spacing(3.5),
-            overflowWrap: 'anywhere',
-          }}
-        >
-          {subtitle}
-        </Typography>
-      )}
+      {subtitle && <Typography variant="body1">{subtitle}</Typography>}
     </Box>
   );
 }
