@@ -1266,7 +1266,6 @@ export interface IPlanSheetStrings extends Localize.LocalizedStringsMethods {
     "movement": string;
     "moveUp": string;
     "nonNumber": string;
-    "noteTitle": string;
     "noPublishDelete": string;
     "insertFirstPassage": string;
     "paratextRequired": string;
@@ -1274,6 +1273,7 @@ export interface IPlanSheetStrings extends Localize.LocalizedStringsMethods {
     "passageEnd": string;
     "passageToPrevSection": string;
     "passageToNextSection": string;
+    "noteTitle": string;
     "pasting": string;
     "propagate": string;
     "publish": string;

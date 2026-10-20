@@ -6490,12 +6490,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="planSheet.noteTitle">
-         <segment>
-            <source>Note title</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="planSheet.noPublishDelete">
          <segment>
             <source>Do not delete published items.</source>
@@ -6535,6 +6529,12 @@
       <unit id="planSheet.passageToNextSection">
          <segment>
             <source>Move {pt} {0} Down</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.noteTitle">
+         <segment>
+            <source>Note title</source>
             <target/>
          </segment>
       </unit>

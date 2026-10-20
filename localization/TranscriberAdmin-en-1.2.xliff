@@ -7572,13 +7572,6 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="planSheet.noteTitle">
-            <source>Note title</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PlanSheet.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="planSheet.noPublishDelete">
             <source>Do not delete published items.</source>
             <target/>
@@ -7626,6 +7619,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.noteTitle">
+            <source>Note title</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">NoteTitleField.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="planSheet.pasting">
