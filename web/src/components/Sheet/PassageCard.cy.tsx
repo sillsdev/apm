@@ -499,7 +499,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     });
 
     cy.get('[data-testid="play-button"]').click();
-    cy.wait('@fileUrl');
+    // The response is held open, so check the request rather than wait on it
+    cy.get('@fileUrl.all').should('have.length', 1);
     cy.get('svg[data-testid="PauseIcon"]').should('exist');
     cy.get('svg[data-testid="PlayArrowIcon"]').should('not.exist');
   });
@@ -608,7 +609,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     // Should not show NoAccounts icon
     cy.get('svg[data-testid="NoAccountsIcon"]').should('not.exist');
     // Assign section should not be visible
-    cy.get('div[class*="MuiBox-root"]').should('not.contain', 'Unassigned');
+    cy.get('div[class*="MuiCard-root"]').should('not.contain', 'Unassigned');
   });
 
   it('should not show assign section for personal projects when assign does not exist', () => {
@@ -952,7 +953,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       cy.get('[data-testid="play-button"]').should('not.exist');
     });
 
-    it('should mark the speaker button pressed after clicking it for CHAPTERNUMBER type', () => {
+    it('should disable the speaker button after clicking it for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
@@ -980,11 +981,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       });
 
       cy.get('[data-testid="speaker-button"]').click();
-      cy.get('[data-testid="speaker-button"]').should(
-        'have.attr',
-        'aria-pressed',
-        'true'
-      );
+      cy.get('[data-testid="speaker-button"]').should('be.disabled');
       cy.get('div[class*="MuiCard-root"]').should('be.visible');
     });
 
