@@ -1,8 +1,7 @@
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { PassageGraphic } from './PassageGraphic';
 import { PassagePlayButton } from './PassagePlayButton';
-import { PassageCardTitle } from './PassageCardTitle';
 import { usePassageRefText } from './usePassageRefText';
 import { useSectionIdDescription } from './useSectionIdDescription';
 
@@ -48,10 +47,40 @@ export function PassageCardHeader({
           psgType={psgType}
           onClick={onGraphicClick}
         />
-        {title && <PassageCardTitle>{title}</PassageCardTitle>}
+        {title && (
+          <Typography
+            variant="h6"
+            sx={{
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2,
+              overflow: 'hidden',
+              minWidth: 0,
+              lineHeight: (theme) => theme.spacing(3.5),
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {title}
+          </Typography>
+        )}
         {mediaId && <PassagePlayButton mediaId={mediaId} />}
       </Box>
-      {subtitle && <PassageCardTitle>{subtitle}</PassageCardTitle>}
+      {subtitle && (
+        <Typography
+          variant="h6"
+          sx={{
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 2,
+            overflow: 'hidden',
+            minWidth: 0,
+            lineHeight: (theme) => theme.spacing(3.5),
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {subtitle}
+        </Typography>
+      )}
     </Box>
   );
 }
