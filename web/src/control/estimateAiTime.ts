@@ -21,9 +21,29 @@ export const AI_MIN_SAMPLES = 5;
 /** Below this spread of durations the slope can't be fitted reliably. */
 const MIN_DURATION_SPREAD_SEC = 1;
 
-/** Half the recording plus 15 seconds. Used until enough samples exist. */
-export function fallbackEstimateSeconds(durationSec: number): number {
-  return Math.round(durationSec * 0.5 + 15);
+/** Seconds per second of audio, plus fixed seconds. Noise removal and voice
+ * conversion were measured on the dev API (7 clips, 28-157 s): the warm fit,
+ * plus 5 s for the app's 10 s poll, plus the p95 overrun. Cold starts
+ * (+145 s and +48 s) are left to the "taking longer" message. Transcription
+ * hasn't been measured yet. */
+const FALLBACK_RATES = {
+  noiseremoval: { perSec: 0.55, fixedSec: 10 },
+  voiceconversion: { perSec: 0.15, fixedSec: 25 },
+  transcription: { perSec: 0.5, fixedSec: 15 },
+};
+
+/** Used until enough samples exist. */
+export function fallbackEstimateSeconds(
+  key: AiEstimateKey,
+  durationSec: number
+): number {
+  const { perSec, fixedSec } =
+    FALLBACK_RATES[
+      key.startsWith('transcription:')
+        ? 'transcription'
+        : (key as keyof typeof FALLBACK_RATES)
+    ];
+  return Math.round(durationSec * perSec + fixedSec);
 }
 
 /** Nearest-rank 95th percentile. Wait times are skewed by cold starts, so
@@ -112,6 +132,6 @@ export function estimateAiSeconds(
 ): number {
   const samples = readAiSamples(key);
   return samples.length < AI_MIN_SAMPLES
-    ? capped(fallbackEstimateSeconds(durationSec), capSec)
+    ? capped(fallbackEstimateSeconds(key, durationSec), capSec)
     : estimateFromSamples(samples, durationSec, capSec);
 }

@@ -16,12 +16,23 @@ const sample = (durationSec: number, totalSec: number): AiTimingSample => ({
 });
 
 describe('fallbackEstimateSeconds', () => {
-  it('estimates half the recording plus fifteen seconds', () => {
-    expect(fallbackEstimateSeconds(120)).toBe(75);
+  it('estimates noise removal as 0.55s per second of audio plus ten', () => {
+    expect(fallbackEstimateSeconds('noiseremoval', 120)).toBe(76);
   });
 
-  it('estimates fifteen seconds when the recording has no duration', () => {
-    expect(fallbackEstimateSeconds(0)).toBe(15);
+  it('estimates voice conversion as 0.15s per second of audio plus 25', () => {
+    expect(fallbackEstimateSeconds('voiceconversion', 120)).toBe(43);
+  });
+
+  it('estimates transcription as half the recording plus fifteen seconds', () => {
+    expect(fallbackEstimateSeconds('transcription:mms', 120)).toBe(75);
+    expect(fallbackEstimateSeconds('transcription:whisper', 120)).toBe(75);
+  });
+
+  it('estimates only the fixed time when the recording has no duration', () => {
+    expect(fallbackEstimateSeconds('noiseremoval', 0)).toBe(10);
+    expect(fallbackEstimateSeconds('voiceconversion', 0)).toBe(25);
+    expect(fallbackEstimateSeconds('transcription:mms', 0)).toBe(15);
   });
 });
 
@@ -91,7 +102,7 @@ describe('estimateAiSeconds', () => {
     [10, 20, 40, 80].forEach((d) =>
       recordAiSample('noiseremoval', sample(d, d * 3))
     );
-    expect(estimateAiSeconds('noiseremoval', 120)).toBe(75);
+    expect(estimateAiSeconds('noiseremoval', 120)).toBe(76);
   });
 
   it('uses the recorded samples once there are five', () => {
@@ -105,7 +116,7 @@ describe('estimateAiSeconds', () => {
     [10, 20, 40, 80, 160].forEach((d) =>
       recordAiSample('voiceconversion', sample(d, d * 3))
     );
-    expect(estimateAiSeconds('noiseremoval', 120)).toBe(75);
+    expect(estimateAiSeconds('noiseremoval', 120)).toBe(76);
   });
 
   it('caps the fallback too', () => {
@@ -122,7 +133,7 @@ describe('estimateAiSeconds', () => {
 
   it('uses the fallback when the stored samples are corrupt', () => {
     localStorage.setItem('aiTiming-noiseremoval', '{not json');
-    expect(estimateAiSeconds('noiseremoval', 120)).toBe(75);
+    expect(estimateAiSeconds('noiseremoval', 120)).toBe(76);
   });
 
   it('ignores stored entries that are not samples', () => {

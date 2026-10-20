@@ -958,7 +958,7 @@ describe('WSAudioPlayer record hotkeys', () => {
     (waveSurferMock.wsRegionDuration as jest.Mock).mockReturnValue(10);
     await startNoiseRemoval(jest.fn(), 120);
     expect(document.getElementById('ai-time-estimate')).toHaveTextContent(
-      'About 0:20 remaining'
+      'About 0:16 remaining'
     );
   });
 
