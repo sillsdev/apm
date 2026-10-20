@@ -76,7 +76,7 @@ const mockResetForScope = jest.fn();
 jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => ({
   useGuidedPhraseSegments: () => ({
     phraseSegs: { mediaId: '', segments: '[]' },
-    setPhraseSegString: jest.fn(),
+    setPhraseSegsForCurrentMedia: jest.fn(),
     bootstrapped: true,
     ensureSegments: jest.fn().mockResolvedValue(true),
     resetForScope: mockResetForScope,

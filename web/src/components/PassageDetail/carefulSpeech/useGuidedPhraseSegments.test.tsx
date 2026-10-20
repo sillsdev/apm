@@ -72,7 +72,9 @@ describe('useGuidedPhraseSegments - reset scope', () => {
     );
 
     act(() => result.current.resetForScope(mediafile.id));
-    act(() => result.current.setPhraseSegString('{"params":{},"regions":[]}'));
+    act(() =>
+      result.current.setPhraseSegsForCurrentMedia('{"params":{},"regions":[]}')
+    );
     // A repeat call must not undo work done since - the guard that keeps
     // StrictMode's double-invoke from clobbering a started pass (TT-7360).
     act(() => result.current.resetForScope(mediafile.id));

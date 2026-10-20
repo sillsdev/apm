@@ -314,7 +314,7 @@ export function useGuidedPhraseSegments(
 
   return {
     phraseSegs,
-    setPhraseSegString: setPhraseSegsForCurrentMedia,
+    setPhraseSegsForCurrentMedia,
     bootstrapped,
     ensureSegments,
     resetForScope,

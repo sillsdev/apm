@@ -125,10 +125,11 @@ jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => {
   const ReactActual = jest.requireActual<typeof import('react')>('react');
   return {
     useGuidedPhraseSegments: () => {
-      const [phraseSegString, setPhraseSegString] = ReactActual.useState(jsonA);
+      const [phraseSegString, setPhraseSegsForCurrentMedia] =
+        ReactActual.useState(jsonA);
       return {
         phraseSegs: { mediaId: 'm1', segments: phraseSegString },
-        setPhraseSegString,
+        setPhraseSegsForCurrentMedia,
         bootstrapped: true,
         ensureSegments: jest.fn().mockResolvedValue(true),
         resetForScope: jest.fn(),

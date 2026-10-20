@@ -445,7 +445,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const {
     phraseSegs: clauseSegs,
-    setPhraseSegString: setClauseSegString,
+    setPhraseSegsForCurrentMedia,
     bootstrapped,
     ensureSegments,
     resetForScope,
@@ -475,16 +475,16 @@ export function PassageDetailGuidedPhraseRecord({
   // committed segmentation from that stale closure made pushSegmentUndo
   // photograph an out-of-date state, so a single Undo reverted every edit at
   // once. The undo push and the "did the boundaries change" guard read this ref
-  // instead of the closure; setClauseSeg keeps it current synchronously so a
+  // instead of the closure; setClauseSegsForCurrentMedia keeps it current synchronously so a
   // second fire within one gesture (and the next add) see the real value.
   const clauseSegStringRef = useRef(clauseSegString);
   clauseSegStringRef.current = clauseSegString;
-  const setClauseSeg = useCallback(
+  const setClauseSegsForCurrentMedia = useCallback(
     (json: string) => {
       clauseSegStringRef.current = json;
-      setClauseSegString(json);
+      setPhraseSegsForCurrentMedia(json);
     },
-    [setClauseSegString]
+    [setPhraseSegsForCurrentMedia]
   );
 
   const clauseRegions = useMemo(
@@ -1176,7 +1176,7 @@ export function PassageDetailGuidedPhraseRecord({
   const handleSegment = useCallback(
     async (seg: string, init: boolean) => {
       if (init) {
-        setClauseSeg(seg);
+        setClauseSegsForCurrentMedia(seg);
         return;
       }
       // Read recording guards from refs: handleSegment is the once-registered
@@ -1222,12 +1222,12 @@ export function PassageDetailGuidedPhraseRecord({
       // otherwise let a second fire of the same gesture through as a fresh edit.
       if (regionBoundariesEqual(json, clauseSegStringRef.current)) return;
       pushSegmentUndo();
-      setClauseSeg(json);
+      setClauseSegsForCurrentMedia(json);
       await persistClauseSegments(json);
       applyColors();
     },
     [
-      setClauseSeg,
+      setClauseSegsForCurrentMedia,
       persistClauseSegments,
       phraseSegParams,
       applyColors,
@@ -1478,7 +1478,7 @@ export function PassageDetailGuidedPhraseRecord({
     }
     clearSegmentUndo();
     setCombineUndo(null);
-    setClauseSeg(baseline);
+    setClauseSegsForCurrentMedia(baseline);
     await persistClauseSegments(baseline);
     playerControlsRef.current?.loadRegionsJson?.(baseline);
     setRecordingPassStarted(false);
@@ -1508,7 +1508,7 @@ export function PassageDetailGuidedPhraseRecord({
     stepLanguageBcp47,
     memory,
     clearSegmentUndo,
-    setClauseSeg,
+    setClauseSegsForCurrentMedia,
     persistClauseSegments,
     bumpSuppressClauseAutoPlay,
     setCurrentSegment,
@@ -1582,7 +1582,7 @@ export function PassageDetailGuidedPhraseRecord({
       setCombineUndo(clauseSegString);
     }
     const json = regionsJsonFromList(updated, phraseSegParams);
-    setClauseSeg(json);
+    setClauseSegsForCurrentMedia(json);
     await persistClauseSegments(json);
     playerControlsRef.current?.loadRegionsJson?.(json);
     applyColors();
@@ -1597,7 +1597,7 @@ export function PassageDetailGuidedPhraseRecord({
     recordedClauseIndicesForTools,
     clauseSegString,
     phraseSegParams,
-    setClauseSeg,
+    setClauseSegsForCurrentMedia,
     persistClauseSegments,
     applyColors,
     setCurrentSegment,
@@ -1625,7 +1625,7 @@ export function PassageDetailGuidedPhraseRecord({
       setCombineUndo(clauseSegString);
     }
     const json = regionsJsonFromList(updated, phraseSegParams);
-    setClauseSeg(json);
+    setClauseSegsForCurrentMedia(json);
     await persistClauseSegments(json);
     playerControlsRef.current?.loadRegionsJson?.(json);
     applyColors();
@@ -1636,7 +1636,7 @@ export function PassageDetailGuidedPhraseRecord({
     recordedClauseIndicesForTools,
     clauseSegString,
     phraseSegParams,
-    setClauseSeg,
+    setClauseSegsForCurrentMedia,
     persistClauseSegments,
     applyColors,
     playCurrentClause,
@@ -1647,7 +1647,7 @@ export function PassageDetailGuidedPhraseRecord({
   const handleUndoCombine = useCallback(async () => {
     if (savingRecordingRef.current) return;
     if (!combineUndo) return;
-    setClauseSeg(combineUndo);
+    setClauseSegsForCurrentMedia(combineUndo);
     await persistClauseSegments(combineUndo);
     playerControlsRef.current?.loadRegionsJson?.(combineUndo);
     setCombineUndo(null);
@@ -1655,7 +1655,7 @@ export function PassageDetailGuidedPhraseRecord({
     void playCurrentClause(currentIndex);
   }, [
     combineUndo,
-    setClauseSeg,
+    setClauseSegsForCurrentMedia,
     persistClauseSegments,
     applyColors,
     playCurrentClause,
@@ -1668,7 +1668,7 @@ export function PassageDetailGuidedPhraseRecord({
     const prev = segmentUndoStackRef.current.pop();
     setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
     if (!prev) return;
-    setClauseSeg(prev);
+    setClauseSegsForCurrentMedia(prev);
     await persistClauseSegments(prev);
     playerControlsRef.current?.loadRegionsJson?.(prev);
     if (!recordingPassStarted) {
@@ -1684,7 +1684,7 @@ export function PassageDetailGuidedPhraseRecord({
       }
     }
   }, [
-    setClauseSeg,
+    setClauseSegsForCurrentMedia,
     persistClauseSegments,
     recordingPassStarted,
     applyResegmentResult,
