@@ -9,7 +9,7 @@ interface PassageRefTextArgs {
   psgType: PassageTypeEnum;
   book?: string;
   passageRef?: string;
-  comment?: string;
+  description?: string;
 }
 
 export const usePassageRefText = () => {
@@ -27,7 +27,7 @@ export const usePassageRefText = () => {
       : bookAbbreviation || t.unknownBook;
   };
 
-  return ({ psgType, book, passageRef, comment }: PassageRefTextArgs) => {
+  return ({ psgType, book, passageRef, description }: PassageRefTextArgs) => {
     if (psgType === PassageTypeEnum.PASSAGE) {
       return `${getBookName(book)} ${passageRef}`;
     }
@@ -36,8 +36,8 @@ export const usePassageRefText = () => {
       return '';
     }
 
-    if (psgType === PassageTypeEnum.CHAPTERNUMBER && comment) {
-      return comment;
+    if (psgType === PassageTypeEnum.CHAPTERNUMBER && description) {
+      return description;
     }
 
     // Strip the type prefix (e.g. "CHNUM 1" -> "1")

@@ -30,7 +30,7 @@ export function PassageCard(props: IProps) {
   const ref =
     noteTitle || cardInfo.passage?.attributes.reference || cardInfo.reference;
 
-  const comment =
+  const description =
     cardInfo?.sharedResource?.attributes.description ||
     (noteTitle ? cardInfo.reference?.split('|')[1] : '') ||
     cardInfo.comment;
@@ -55,7 +55,12 @@ export function PassageCard(props: IProps) {
   const getRefText = usePassageRefText();
   const sectionPassageTitle =
     cardInfo.kind === IwsKind.SectionPassage
-      ? getRefText({ psgType, book: cardInfo.book, passageRef: ref, comment })
+      ? getRefText({
+          psgType,
+          book: cardInfo.book,
+          passageRef: ref,
+          description,
+        })
       : '';
 
   const mediaId = cardInfo.mediaId?.id;
@@ -96,7 +101,7 @@ export function PassageCard(props: IProps) {
             <PassageCardHeader
               cardInfo={cardInfo}
               passageRef={ref}
-              comment={comment}
+              description={description}
               psgType={psgType}
               onGraphicClick={onGraphicClick}
             ></PassageCardHeader>
@@ -123,7 +128,7 @@ export function PassageCard(props: IProps) {
               <PassageCardHeader
                 cardInfo={cardInfo}
                 passageRef={ref}
-                comment={comment}
+                description={description}
                 psgType={psgType}
                 onGraphicClick={onGraphicClick}
               >
@@ -133,7 +138,7 @@ export function PassageCard(props: IProps) {
                 <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>
               )}
               <Typography noWrap variant="body2" color="grey">
-                {comment}
+                {description}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

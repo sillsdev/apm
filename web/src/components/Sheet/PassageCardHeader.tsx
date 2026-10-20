@@ -9,7 +9,7 @@ import { useSectionIdDescription } from './useSectionIdDescription';
 interface IProps {
   cardInfo: ISheet;
   passageRef?: string;
-  comment?: string;
+  description?: string;
   psgType: PassageTypeEnum;
   onGraphicClick?: () => void;
   children?: ReactNode;
@@ -18,7 +18,7 @@ interface IProps {
 export function PassageCardHeader({
   cardInfo,
   passageRef,
-  comment,
+  description,
   psgType,
   onGraphicClick,
   children,
@@ -27,7 +27,7 @@ export function PassageCardHeader({
   const getRefText = usePassageRefText();
   const title =
     cardInfo.kind === IwsKind.Passage
-      ? getRefText({ psgType, book: cardInfo.book, passageRef, comment })
+      ? getRefText({ psgType, book: cardInfo.book, passageRef, description })
       : getDescription(cardInfo);
 
   return (

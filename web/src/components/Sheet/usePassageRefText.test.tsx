@@ -64,7 +64,7 @@ describe('usePassageRefText', () => {
           psgType: PassageTypeEnum.PASSAGE,
           book: 'GEN',
           passageRef: '1:1-5',
-          comment: 'Test comment',
+          description: 'Test comment',
         })
       ).toBe('Genesis 1:1-5');
     });
@@ -139,7 +139,7 @@ describe('usePassageRefText', () => {
         getRefText({
           psgType: PassageTypeEnum.NOTE,
           book: 'GEN',
-          comment: 'Test comment',
+          description: 'Test comment',
         })
       ).toBe('');
     });
@@ -164,35 +164,35 @@ describe('usePassageRefText', () => {
       ).toBe('123');
     });
 
-    it('returns only the comment for CHAPTERNUMBER when there is one', () => {
+    it('returns only the description for CHAPTERNUMBER when there is one', () => {
       const getRefText = setup();
       expect(
         getRefText({
           psgType: PassageTypeEnum.CHAPTERNUMBER,
           passageRef: '1',
-          comment: 'Comment with "quotes" & symbols',
+          description: 'Comment with "quotes" & symbols',
         })
       ).toBe('Comment with "quotes" & symbols');
     });
 
-    it('returns the reference for CHAPTERNUMBER with an empty comment', () => {
+    it('returns the reference for CHAPTERNUMBER with an empty description', () => {
       const getRefText = setup();
       expect(
         getRefText({
           psgType: PassageTypeEnum.CHAPTERNUMBER,
           passageRef: '1',
-          comment: '',
+          description: '',
         })
       ).toBe('1');
     });
 
-    it('ignores the comment for non-CHAPTERNUMBER types', () => {
+    it('ignores the description for non-CHAPTERNUMBER types', () => {
       const getRefText = setup();
       expect(
         getRefText({
           psgType: PassageTypeEnum.NOTE,
           passageRef: 'Note reference',
-          comment: 'Note comment',
+          description: 'Note comment',
         })
       ).toBe('Note reference');
     });
