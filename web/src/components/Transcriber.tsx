@@ -26,6 +26,9 @@ import {
   IVProjectStrings,
   SectionD,
   MediaFileD,
+  IWsAudioPlayerStrings,
+  OrganizationD,
+  OrgWorkflowStepD,
 } from '../model';
 import {
   Badge,
@@ -39,7 +42,7 @@ import {
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
-import { Button, GrowingDiv, LightTooltip, rowSx } from '../control';
+import { Button, GrowingDiv, LightTooltip, rowSx, LastEdit } from '../control';
 import TranscribeReject from './TranscribeReject';
 import { useSnackBar } from '../hoc/SnackBar';
 import { formatTime } from '../control/formatTime';
@@ -70,6 +73,7 @@ import {
 import { MainAPI } from '@model/main-api';
 import { useGetAsrSettings } from '../crud/useGetAsrSettings';
 import { parseStepLanguageField } from '../crud/transcribeStepAsrSettings';
+import { parseTranscribeStepSettings } from '../crud/transcribeStepSettings';
 import {
   insertAtCursor,
   logError,
@@ -89,7 +93,6 @@ import { applyVerseSegment, openingChapter } from '../utils/verseSegmentText';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 import { AllDone } from './AllDone';
-import { LastEdit } from '../control';
 import { UpdateRecord, UpdateRelatedRecord } from '../model/baseModel';
 import * as action from '../store';
 import { translateParatextError } from '../utils/translateParatextError';
@@ -106,12 +109,7 @@ import {
   transcriberSelector,
   vProjectSelector,
 } from '../selector';
-import {
-  IWsAudioPlayerStrings,
-  OrganizationD,
-  OrgWorkflowStepD,
-} from '../model';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { IRegionParams } from '../crud/useWavesurferRegions';
 import PassageDetailPlayer, {
@@ -141,7 +139,6 @@ import {
   RecordOperation,
   RecordKeyMap,
 } from '@orbit/records';
-import { useDispatch } from 'react-redux';
 import { PassageTypeEnum } from '../model/passageType';
 import { addPt } from '../utils/addPt';
 import { Paratext } from '../assets/brands';
@@ -178,7 +175,7 @@ interface ITrans {
   segments?: string;
 }
 
-export function Transcriber(props: IProps) {
+export function Transcriber(props: Readonly<IProps>) {
   const {
     stepSettings,
     hasChecking,
@@ -501,8 +498,7 @@ export function Transcriber(props: IProps) {
     const getParatextIntegration = () => {
       const intfind = integrations.findIndex(
         (i) =>
-          i.attributes &&
-          i.attributes.name ===
+          i.attributes?.name ===
             integrationSlug(artifactTypeSlug, offlineOnly) &&
           Boolean(i.keys?.remoteId) !== offlineOnly
       );
@@ -536,8 +532,7 @@ export function Transcriber(props: IProps) {
     const getParatextIntegration = () => {
       const intfind = integrations.findIndex(
         (i) =>
-          i.attributes &&
-          i.attributes.name ===
+          i.attributes?.name ===
             integrationSlug(artifactTypeSlug, offlineOnly) &&
           Boolean(i.keys?.remoteId) !== offlineOnly
       );
@@ -746,8 +741,8 @@ export function Transcriber(props: IProps) {
     }
   }, []);
   useEffect(() => {
-    const lgSettings = JSON.parse(stepSettings || '{}');
-    const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
+    const lgSettings = parseTranscribeStepSettings(stepSettings);
+    const { bcp47: stepLang } = parseStepLanguageField(lgSettings.language);
     const hasStepLanguage = isLangSet(stepLang);
 
     const loadProjData = async () => {
@@ -755,9 +750,9 @@ export function Transcriber(props: IProps) {
         ? (findRecord(memory, 'project', project) as Project | undefined)
         : undefined;
       let langTag = hasStepLanguage ? stepLang : undefined;
-      let defaultFont = lgSettings?.font as string | undefined;
-      let rtl = lgSettings?.rtl ?? false;
-      let defaultFontSize = lgSettings?.fontSize as string | undefined;
+      let defaultFont = lgSettings.font;
+      let rtl = lgSettings.rtl ?? false;
+      let defaultFontSize = lgSettings.fontSize;
       const useProjectLang =
         artifactTypeSlug === ArtifactTypeSlug.Vernacular || !hasStepLanguage;
       if (useProjectLang && r) {
@@ -1153,7 +1148,7 @@ export function Transcriber(props: IProps) {
   };
   const handleReopen = async () => {
     waitForRemoteQueue('busy before reopen').then(() =>
-      doReopen().then(() => onReopen && onReopen())
+      doReopen().then(() => onReopen?.())
     );
   };
 
@@ -1171,7 +1166,7 @@ export function Transcriber(props: IProps) {
     if (!transcription) return;
     const newContentVerses: string[] = [];
     verseLabels.forEach((label) => {
-      const pat = new RegExp(`\\\\v\\s+${label}\\s+[^\\\\]`);
+      const pat = new RegExp(String.raw`\\v\s+${label}\s+[^\\]`);
       if (pat.test(transcription as string)) {
         newContentVerses.push(label);
       }
@@ -1296,7 +1291,7 @@ export function Transcriber(props: IProps) {
   const onPullTasks = (remoteId: string) => {
     pullTableList(
       'mediafile',
-      Array(remoteId),
+      new Array(remoteId),
       memory,
       remote,
       backup,
@@ -1360,11 +1355,8 @@ export function Transcriber(props: IProps) {
 
   useEffect(() => {
     setArtifactTypeSlug(
-      slug
-        ? slug
-        : artifactId
-          ? slugFromId(artifactId)
-          : ArtifactTypeSlug.Vernacular
+      slug ||
+        (artifactId ? slugFromId(artifactId) : ArtifactTypeSlug.Vernacular)
     );
   }, [slug, artifactId, slugFromId]);
 

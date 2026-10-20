@@ -26,6 +26,7 @@ import {
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
+import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -53,7 +54,10 @@ interface IProps {
   artifactTypeId: string | null;
 }
 
-export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
+export function PassageDetailTranscribe({
+  width,
+  artifactTypeId,
+}: Readonly<IProps>) {
   useRenderProfiler('PassageDetailTranscribe');
   const {
     mediafileId,
@@ -94,6 +98,10 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
       ? workflowStepSettingsRaw
       : JSON.stringify(workflowStepSettingsRaw);
   }, [workflowStepSettingsRaw]);
+  const parsedSettings = useMemo(
+    () => parseTranscribeStepSettings(stepSettings),
+    [stepSettings]
+  );
 
   interface IStep {
     id: string;
@@ -105,7 +113,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const parsedSteps = useMemo(() => {
     if (!orgWorkflowSteps) return [];
     return orgWorkflowSteps
-      .sort(
+      .toSorted(
         (a, b) =>
           (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
       )
@@ -129,7 +137,8 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const vernacularSteps = useMemo(() => {
     return parsedSteps.filter(
       (s) =>
-        s.tool === ToolSlug.Transcribe && !JSON.parse(s.settings).artifactTypeId
+        s.tool === ToolSlug.Transcribe &&
+        !parseTranscribeStepSettings(s.settings).artifactTypeId
     );
   }, [parsedSteps]);
 
@@ -172,10 +181,16 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     if (!currentstep) return undefined;
     if (!hasPermission) return 'view';
     if (!hasChecking) return 'transcriber';
-    if (JSON.parse(stepSettings || '{}')?.artifactTypeId) return 'transcriber';
+    if (parsedSettings.artifactTypeId) return 'transcriber';
     if ((vernacularSteps[0] as IStep)?.id === currentstep) return 'transcriber';
     return 'editor';
-  }, [currentstep, vernacularSteps, stepSettings, hasChecking, hasPermission]);
+  }, [
+    currentstep,
+    vernacularSteps,
+    parsedSettings,
+    hasChecking,
+    hasPermission,
+  ]);
 
   const handleComplete = (complete: boolean) => {
     waitForSave(undefined, 200).finally(async () => {
@@ -229,17 +244,9 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
       )
     )
       return undefined;
-    const { bcp47 } = parseMediaLanguageField(
-      (() => {
-        try {
-          return (JSON.parse(stepSettings) as { language?: unknown }).language;
-        } catch {
-          return undefined;
-        }
-      })()
-    );
+    const { bcp47 } = parseMediaLanguageField(parsedSettings.language);
     return bcp47 !== 'und' ? bcp47 : undefined;
-  }, [stepSettings, artifactTypeId, slugFromId]);
+  }, [parsedSettings, artifactTypeId, slugFromId]);
 
   const phraseArtifactSlug = useMemo(() => {
     if (!artifactTypeId) return null;

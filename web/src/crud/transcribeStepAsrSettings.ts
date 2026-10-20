@@ -13,11 +13,13 @@ import { ToolSlug } from './toolSlug';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
 import { isLangSet } from '../utils/langTag';
 import { JSONParse } from '../utils/jsonParse';
+import {
+  parseTranscribeStepSettings,
+  type TranscribeStepSettings,
+} from './transcribeStepSettings';
 
 export type SlugFromIdFn = (id: string) => string;
 export type GetOrgDefaultFn = (label: string, orgId?: string) => unknown;
-
-export type TranscribeStepSettings = Record<string, unknown>;
 
 export interface IStepSettingsRow {
   tool: string;
@@ -105,14 +107,6 @@ export function artifactUsesOrgVernacularLanguage(
   );
 }
 
-function parseToolSettings(
-  settings: TranscribeStepSettings | string | undefined
-): TranscribeStepSettings {
-  return typeof settings === 'string'
-    ? (JSONParse(settings || '{}') as TranscribeStepSettings)
-    : (settings ?? {});
-}
-
 /**
  * True when a Transcribe tool step is vernacular (including empty artifactTypeId).
  * Used to sync sister-language settings across Transcribe / Review Transcription.
@@ -124,8 +118,10 @@ export function isVernacularTranscribeStep(
 ): boolean {
   if (tool !== ToolSlug.Transcribe) return false;
   return (
-    artifactTypeSlugFromSettings(parseToolSettings(settings), slugFromId) ===
-    ArtifactTypeSlug.Vernacular
+    artifactTypeSlugFromSettings(
+      parseTranscribeStepSettings(settings),
+      slugFromId
+    ) === ArtifactTypeSlug.Vernacular
   );
 }
 
@@ -140,7 +136,10 @@ export function isVernacularLanguageTranscribeStep(
 ): boolean {
   if (tool !== ToolSlug.Transcribe) return false;
   return artifactUsesOrgVernacularLanguage(
-    artifactTypeSlugFromSettings(parseToolSettings(settings), slugFromId)
+    artifactTypeSlugFromSettings(
+      parseTranscribeStepSettings(settings),
+      slugFromId
+    )
   );
 }
 
@@ -168,7 +167,7 @@ export function withPropagatedVernacularSisterSettings<
     );
   }
 
-  const src = JSONParse(sourceSettings || '{}') as TranscribeStepSettings;
+  const src = parseTranscribeStepSettings(sourceSettings);
   const sisterlanguage = src.sisterlanguage;
   const selectRoman = src.selectRoman;
 
@@ -179,7 +178,7 @@ export function withPropagatedVernacularSisterSettings<
     if (!isVernacularLanguageTranscribeStep(r.tool, r.settings, slugFromId)) {
       return r;
     }
-    const peer = JSONParse(r.settings || '{}') as TranscribeStepSettings;
+    const peer = parseTranscribeStepSettings(r.settings);
     if (
       peer.sisterlanguage === sisterlanguage &&
       peer.selectRoman === selectRoman
@@ -222,7 +221,7 @@ export function withInheritedVernacularSisterSettings(
     };
     if (!isVernacularTranscribeStep(json.tool ?? '', json.settings, slugFromId))
       continue;
-    const peer = parseToolSettings(json.settings);
+    const peer = parseTranscribeStepSettings(json.settings);
     if (!isLangSet(sisterBcpFromSettings(peer))) continue;
     return {
       ...settings,
@@ -406,10 +405,7 @@ export function buildWorkflowAsrStateFromSettings(
   }
   const { languageName, bcp47 } = parseStepLanguageField(settings?.language);
   const font = String(settings?.font ?? asrDefault.language.font);
-  const rtl =
-    settings?.rtl === true ||
-    settings?.rtl === 'true' ||
-    asrDefault.language.rtl;
+  const rtl = settings?.rtl === true || asrDefault.language.rtl;
   const sister = parseStepLanguageField(settings?.sisterlanguage);
   const sisterBcp = sister.bcp47;
   const asrBcp = resolveAsrBcp47(bcp47, sisterBcp);

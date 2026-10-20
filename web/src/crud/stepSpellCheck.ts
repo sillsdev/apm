@@ -1,15 +1,5 @@
 import { ArtifactTypeSlug } from './artifactTypeSlug';
-
-export interface TranscribeStepSettingsJson {
-  artifactTypeId?: string;
-  language?: string;
-  sisterlanguage?: string;
-  font?: string;
-  rtl?: boolean;
-  spellCheck?: boolean;
-  fontSize?: string;
-  namedRegion?: string;
-}
+import type { TranscribeStepSettings } from './transcribeStepSettings';
 
 /** BCP47 tag matches an Electron/Chromium spell-checker language code. */
 export function hasSpellCheckerDictionary(
@@ -49,13 +39,11 @@ export function defaultSpellCheckForArtifact(
 
 /** Workflow step `tool.settings` is authoritative for Transcriber spell check. */
 export function resolveStepSpellCheck(
-  settings: TranscribeStepSettingsJson | Record<string, unknown>,
+  settings: TranscribeStepSettings,
   artifactTypeSlug: ArtifactTypeSlug | string | undefined,
   bcp47: string | undefined,
   availLangs?: string[]
 ): boolean {
-  if (settings?.spellCheck != null) {
-    return !!settings.spellCheck;
-  }
+  if (settings.spellCheck !== undefined) return settings.spellCheck;
   return defaultSpellCheckForArtifact(artifactTypeSlug, bcp47, availLangs);
 }

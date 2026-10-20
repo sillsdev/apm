@@ -17,7 +17,6 @@ import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import { asrStatesEqual, type IAsrState } from '../../../business/asr/asrState';
-import { MediaFileD, OrganizationD, Project } from '@model/index';
 import {
   carefulTranscriptionSelector,
   lwcTranscriptionSelector,
@@ -30,6 +29,10 @@ import {
   ILwcTranscriptionStrings,
   ISharedStrings,
   ITranscriberStrings,
+  IWsAudioPlayerStrings,
+  MediaFileD,
+  OrganizationD,
+  Project,
 } from '@model/index';
 import { useGlobal } from '../../../context/useGlobal';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
@@ -47,7 +50,7 @@ import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
-import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
+import { parseTranscribeStepSettings } from '../../../crud/transcribeStepSettings';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import type { FontData } from '../../../crud/fontChoice';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
@@ -55,23 +58,7 @@ import { useTranscriptionAutosave } from './useTranscriptionAutosave';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
-import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
-
-function parseStepSettings(settings: unknown): TranscribeStepSettingsJson {
-  if (!settings) return {};
-  if (typeof settings === 'string') {
-    try {
-      return JSON.parse(settings) as TranscribeStepSettingsJson;
-    } catch {
-      return {};
-    }
-  }
-  if (typeof settings === 'object') {
-    return settings as TranscribeStepSettingsJson;
-  }
-  return {};
-}
 
 type TranscriptionStrings =
   ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
@@ -117,7 +104,7 @@ export default function BoldClauseTranscriptionEditor({
   flushSaveRef,
   artifactTypeId,
   transcriptionConfig,
-}: Props) {
+}: Readonly<Props>) {
   const t = useTranscriptionStrings(transcriptionConfig.stringsLayout);
   const tr: ITranscriberStrings = useSelector(
     transcriberSelector,
@@ -154,7 +141,7 @@ export default function BoldClauseTranscriptionEditor({
       stepSettings
     );
   const asrTip = useMemo(() => {
-    const step = parseStepSettings(stepSettings);
+    const step = parseTranscribeStepSettings(stepSettings);
     const primary = parseStepLanguageField(step.language);
     const sister = parseStepLanguageField(step.sisterlanguage);
     const asrBcp = asrSettings?.language?.bcp47;
@@ -234,7 +221,7 @@ export default function BoldClauseTranscriptionEditor({
     if (!projRec) return;
     let cancelled = false;
 
-    const lgSettings = parseStepSettings(stepSettings);
+    const lgSettings = parseTranscribeStepSettings(stepSettings);
     const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
     const hasStepLanguage = isLangSet(stepLang);
 

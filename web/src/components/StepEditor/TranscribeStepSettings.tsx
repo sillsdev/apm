@@ -14,7 +14,7 @@ import {
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
-import { JSONParse, isLangSet } from '../../utils';
+import { isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
 import { MainAPI } from '@model/main-api';
 import {
@@ -23,7 +23,7 @@ import {
   FormControlLabel,
   FormLabel,
 } from '@mui/material';
-import { vProjectSelector } from '../../selector';
+import { vProjectSelector, transcriberSelector } from '../../selector';
 import { ITranscriberStrings, IVProjectStrings } from '../../model';
 
 const ipc = window?.api as MainAPI | undefined;
@@ -32,6 +32,7 @@ import {
   isoFromBcp47,
   needsSisterLanguage,
   preferredAsrMethodFromBcp47,
+  getPreferredAsrMethod,
 } from '../../business/asr/asrLanguages';
 import { AsrSettings } from '../../business/asr/AsrSettings';
 import {
@@ -40,7 +41,6 @@ import {
 } from '../../business/asr/useRecommendAsrLanguage';
 import { AsrTarget } from '../../business/asr/AsrTarget';
 import { shallowEqual, useSelector } from 'react-redux';
-import { transcriberSelector } from '../../selector';
 import {
   orgDefaultAsr,
   orgDefaultLangProps,
@@ -51,10 +51,12 @@ import {
   buildVernacularAsrState,
   formatStepLanguageField,
   parseStepLanguageField,
-  type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
+import {
+  parseTranscribeStepSettings,
+  type TranscribeStepSettings as ITranscribeStepSettings,
+} from '../../crud/transcribeStepSettings';
 import { IAsrState, normalizeAsrState } from '../../business/asr/asrState';
-import { getPreferredAsrMethod } from '../../business/asr/asrLanguages';
 import { useSnackBar } from '../../hoc/SnackBar';
 
 interface LangState {
@@ -170,7 +172,7 @@ export const TranscribeStepSettings = ({
 
   const vernacularAsrSettings = useCallback(
     (settingsJson: string): ITranscribeStepSettings => {
-      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
+      const settings = parseTranscribeStepSettings(settingsJson);
       const phonetic = settings.phonetic ?? false;
       return {
         ...settings,
@@ -185,7 +187,7 @@ export const TranscribeStepSettings = ({
   const syncOrgAsrIfVernacular = useCallback(
     (settingsJson: string) => {
       if (!org) return;
-      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
+      const settings = parseTranscribeStepSettings(settingsJson);
       const slug = slugFromId(
         String(settings.artifactTypeId ?? '')
       ) as ArtifactTypeSlug;
@@ -220,11 +222,8 @@ export const TranscribeStepSettings = ({
   );
 
   const handleSelect = (artifactTypeId: string | null) => {
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
-    const [, bcp47] = (json?.language as string | undefined)?.split('|') ?? [
-      '',
-      'und',
-    ];
+    const json = parseTranscribeStepSettings(toolSettings);
+    const { bcp47 } = parseStepLanguageField(json.language);
     const spellCheck = defaultSpellCheckForArtifact(
       slugFromId(artifactTypeId),
       isLangSet(bcp47) ? bcp47 : undefined,
@@ -242,12 +241,12 @@ export const TranscribeStepSettings = ({
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
     setLgState((state) => ({ ...state, spellCheck, changed: true }));
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
+    const json = parseTranscribeStepSettings(toolSettings);
     emitSettingsChange(JSON.stringify({ ...json, spellCheck }));
   };
 
   const phoneticSetting = useMemo(() => {
-    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
+    const json = parseTranscribeStepSettings(toolSettings);
     return json?.phonetic === true || json?.phonetic === 'true';
   }, [toolSettings]);
 
@@ -258,7 +257,7 @@ export const TranscribeStepSettings = ({
       lgState?.spellCheck !== val?.spellCheck
     ) {
       setLgState((state) => ({ ...state, ...val, changed: true }));
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      const json = parseTranscribeStepSettings(toolSettings);
       emitSettingsChange(
         JSON.stringify({
           ...json,
@@ -294,10 +293,11 @@ export const TranscribeStepSettings = ({
 
   useEffect(() => {
     if (toolSettings) {
-      const json = JSON.parse(toolSettings);
-      setInitialValue(json.artifactTypeId);
-      const { languageName, bcp47 } = parseStepLanguageField(json?.language);
-      const slug = slugFromId(json.artifactTypeId);
+      const json = parseTranscribeStepSettings(toolSettings);
+      const artId = json.artifactTypeId ?? null;
+      setInitialValue(artId);
+      const { languageName, bcp47 } = parseStepLanguageField(json.language);
+      const slug = slugFromId(artId);
       let sisterLang = parseStepLanguageField(json?.sisterlanguage);
       // Seed empty sister UI from org ASR when vernacular (or Q&A/Retell) needs a
       // sister language (e.g. Review step opened after Transcribe saved org ASR
@@ -326,11 +326,11 @@ export const TranscribeStepSettings = ({
       );
       setLgState((state) => ({
         ...state,
-        artId: json.artifactTypeId,
+        artId: artId ?? '',
         languageName,
         bcp47,
-        font: json.font,
-        rtl: json.rtl,
+        font: json.font ?? '',
+        rtl: json.rtl ?? false,
         spellCheck,
         changed: false,
       }));
@@ -360,7 +360,7 @@ export const TranscribeStepSettings = ({
     if (isLangSet(bcp47) && !isValidAsrLanguage(isoFromBcp47(bcp47))) {
       showMessage(tt.invalidSisterLang);
       setSisterLanguage(emptyLanguage());
-      const json = JSONParse(toolSettings) as Record<string, string>;
+      const json = parseTranscribeStepSettings(toolSettings);
       emitSettingsChange(
         JSON.stringify({
           ...json,
@@ -371,7 +371,7 @@ export const TranscribeStepSettings = ({
       return;
     }
     setSisterLanguage(val);
-    const json = JSONParse(toolSettings) as Record<string, string>;
+    const json = parseTranscribeStepSettings(toolSettings);
     emitSettingsChange(
       JSON.stringify({
         ...json,
@@ -428,8 +428,8 @@ export const TranscribeStepSettings = ({
   const readCachedRecommendations = (
     lang: string
   ): IAsrLanguageSuggestion[] | undefined => {
-    const json = JSONParse(toolSettings) as Record<string, string>;
-    if (!json?.sisterRecommendations) return undefined;
+    const json = parseTranscribeStepSettings(toolSettings);
+    if (typeof json.sisterRecommendations !== 'string') return undefined;
     try {
       const cached = JSON.parse(json.sisterRecommendations) as {
         forLanguage?: string;
@@ -447,7 +447,7 @@ export const TranscribeStepSettings = ({
     lang: string,
     found: IAsrLanguageSuggestion[]
   ) => {
-    const json = JSONParse(toolSettingsRef.current) as Record<string, string>;
+    const json = parseTranscribeStepSettings(toolSettingsRef.current);
     const lean = found.map((s) => ({
       languageName: s.languageName,
       iso: s.iso,
@@ -482,7 +482,7 @@ export const TranscribeStepSettings = ({
   }, [showSisterLanguage, primaryLanguageName, primaryIso]);
 
   const sisterSelectRoman = useMemo(() => {
-    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
+    const json = parseTranscribeStepSettings(toolSettings);
     if (json && Object.prototype.hasOwnProperty.call(json, 'selectRoman')) {
       return json.selectRoman === true || json.selectRoman === 'true';
     }
@@ -516,7 +516,7 @@ export const TranscribeStepSettings = ({
     if (!next) return;
     const nextPhonetic = next.target === AsrTarget.phonetic;
     if (nextPhonetic !== phoneticSetting) {
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      const json = parseTranscribeStepSettings(toolSettings);
       // Transliterate only applies to script transcription; clear it for phonetic.
       emitSettingsChange(
         JSON.stringify({
@@ -536,7 +536,7 @@ export const TranscribeStepSettings = ({
       return;
     }
     if (Boolean(next.selectRoman) !== sisterSelectRoman) {
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      const json = parseTranscribeStepSettings(toolSettings);
       emitSettingsChange(
         JSON.stringify({ ...json, selectRoman: Boolean(next.selectRoman) })
       );
