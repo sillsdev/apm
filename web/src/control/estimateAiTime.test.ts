@@ -24,14 +24,24 @@ describe('fallbackEstimateSeconds', () => {
     expect(fallbackEstimateSeconds('voiceconversion', 120)).toBe(43);
   });
 
-  it('estimates transcription as half the recording plus fifteen seconds', () => {
+  it('estimates omnilingual transcription as 0.21s per second plus 13', () => {
+    expect(fallbackEstimateSeconds('transcription:omnilingual', 120)).toBe(38);
+  });
+
+  it('estimates whisper transcription as 0.07s per second plus ten', () => {
+    expect(fallbackEstimateSeconds('transcription:whisper', 120)).toBe(18);
+  });
+
+  it('estimates unmeasured transcription methods as half the recording plus fifteen', () => {
     expect(fallbackEstimateSeconds('transcription:mms', 120)).toBe(75);
-    expect(fallbackEstimateSeconds('transcription:whisper', 120)).toBe(75);
+    expect(fallbackEstimateSeconds('transcription:phonetic', 120)).toBe(75);
   });
 
   it('estimates only the fixed time when the recording has no duration', () => {
     expect(fallbackEstimateSeconds('noiseremoval', 0)).toBe(10);
     expect(fallbackEstimateSeconds('voiceconversion', 0)).toBe(25);
+    expect(fallbackEstimateSeconds('transcription:omnilingual', 0)).toBe(13);
+    expect(fallbackEstimateSeconds('transcription:whisper', 0)).toBe(10);
     expect(fallbackEstimateSeconds('transcription:mms', 0)).toBe(15);
   });
 });

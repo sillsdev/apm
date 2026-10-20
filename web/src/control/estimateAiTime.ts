@@ -21,28 +21,31 @@ export const AI_MIN_SAMPLES = 5;
 /** Below this spread of durations the slope can't be fitted reliably. */
 const MIN_DURATION_SPREAD_SEC = 1;
 
-/** Seconds per second of audio, plus fixed seconds. Noise removal and voice
- * conversion were measured on the dev API (7 clips, 28-157 s): the warm fit,
- * plus 5 s for the app's 10 s poll, plus the p95 overrun. Cold starts
- * (+145 s and +48 s) are left to the "taking longer" message. Transcription
- * hasn't been measured yet. */
-const FALLBACK_RATES = {
+interface FallbackRate {
+  perSec: number;
+  fixedSec: number;
+}
+
+/** Seconds per second of audio, plus fixed seconds, measured on the dev API
+ * (7 clips, 28-157 s): the warm fit, plus half the app's poll interval (10 s
+ * for audio, 5 s for transcription), plus the p95 overrun. Cold starts
+ * (+145 s noise removal, +48 s voice conversion, +17 s omnilingual, +8 s
+ * whisper) are left to the "taking longer" message. */
+const FALLBACK_RATES: Partial<Record<AiEstimateKey, FallbackRate>> = {
   noiseremoval: { perSec: 0.55, fixedSec: 10 },
   voiceconversion: { perSec: 0.15, fixedSec: 25 },
-  transcription: { perSec: 0.5, fixedSec: 15 },
+  'transcription:omnilingual': { perSec: 0.21, fixedSec: 13 },
+  'transcription:whisper': { perSec: 0.07, fixedSec: 10 },
 };
+/** Transcription methods that haven't been measured. */
+const UNMEASURED_RATE: FallbackRate = { perSec: 0.5, fixedSec: 15 };
 
 /** Used until enough samples exist. */
 export function fallbackEstimateSeconds(
   key: AiEstimateKey,
   durationSec: number
 ): number {
-  const { perSec, fixedSec } =
-    FALLBACK_RATES[
-      key.startsWith('transcription:')
-        ? 'transcription'
-        : (key as keyof typeof FALLBACK_RATES)
-    ];
+  const { perSec, fixedSec } = FALLBACK_RATES[key] ?? UNMEASURED_RATE;
   return Math.round(durationSec * perSec + fixedSec);
 }
 
