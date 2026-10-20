@@ -63,7 +63,11 @@ export function PassageCardHeader({
         )}
         {mediaId && <PassagePlayButton mediaId={mediaId} />}
       </Stack>
-      {subtitle && <Typography variant="body1">{subtitle}</Typography>}
+      {subtitle && (
+        <Typography noWrap variant="body1">
+          {subtitle}
+        </Typography>
+      )}
     </Stack>
   );
 }
