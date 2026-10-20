@@ -1,10 +1,8 @@
-import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
+import { ISheet, PassageTypeEnum } from '../../model';
 import { Box, Card, Typography } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassagePlayButton } from './PassagePlayButton';
 import { PassageSpeakerButton } from './PassageSpeakerButton';
-import { PassageCardTitle } from './PassageCardTitle';
-import { usePassageRefText } from './usePassageRefText';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
 import { PassageStepButton } from './PassageStepButton';
@@ -51,17 +49,6 @@ export function PassageCard(props: IProps) {
       ? undefined
       : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
   );
-
-  const getRefText = usePassageRefText();
-  const sectionPassageTitle =
-    cardInfo.kind === IwsKind.SectionPassage
-      ? getRefText({
-          psgType,
-          book: cardInfo.book,
-          passageRef: ref,
-          description,
-        })
-      : '';
 
   const mediaId = cardInfo.mediaId?.id;
 
@@ -134,9 +121,6 @@ export function PassageCard(props: IProps) {
               >
                 {mediaId && <PassagePlayButton mediaId={mediaId} />}
               </PassageCardHeader>
-              {sectionPassageTitle && (
-                <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>
-              )}
               <Typography noWrap variant="body2" color="grey">
                 {description}
               </Typography>

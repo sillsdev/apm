@@ -25,23 +25,36 @@ export function PassageCardHeader({
 }: IProps) {
   const getDescription = useSectionIdDescription();
   const getRefText = usePassageRefText();
+  const refText = getRefText({
+    psgType,
+    book: cardInfo.book,
+    passageRef,
+    description,
+  });
   const title =
-    cardInfo.kind === IwsKind.Passage
-      ? getRefText({ psgType, book: cardInfo.book, passageRef, description })
-      : getDescription(cardInfo);
+    cardInfo.kind === IwsKind.Passage ? refText : getDescription(cardInfo);
+  // Section passages show the section heading beside the graphic and the
+  // passage reference on its own line beneath.
+  const sectionPassageTitle =
+    cardInfo.kind === IwsKind.SectionPassage ? refText : '';
 
   return (
-    <Box
-      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 56 }}
-    >
-      <PassageGraphic
-        cardInfo={cardInfo}
-        reference={passageRef}
-        psgType={psgType}
-        onClick={onGraphicClick}
-      />
-      {title && <PassageCardTitle>{title}</PassageCardTitle>}
-      {children}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 56 }}
+      >
+        <PassageGraphic
+          cardInfo={cardInfo}
+          reference={passageRef}
+          psgType={psgType}
+          onClick={onGraphicClick}
+        />
+        {title && <PassageCardTitle>{title}</PassageCardTitle>}
+        {children}
+      </Box>
+      {sectionPassageTitle && (
+        <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>
+      )}
     </Box>
   );
 }
