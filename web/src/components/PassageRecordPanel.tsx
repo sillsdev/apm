@@ -134,6 +134,8 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
+  // A take is loaded in the waveform (stays true after it has been uploaded).
+  const [hasTake, setHasTake] = useState(false);
   const [hasRights, setHasRights] = useState(false);
   // For blocking switch to Upload tab while
   // recording is in progress
@@ -214,7 +216,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
       controlsRef.current.handleAddOrSave = () => startSave(myToolId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, controlsRef]);
 
   return (
     <>
@@ -266,6 +268,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                 allowRecord={hasRights && active}
                 allowWave={allowWave}
                 setCanSave={setCanSave}
+                setHasTake={setHasTake}
                 setStatusText={setStatusText}
                 width={dialogWidth}
                 height={160}
@@ -288,7 +291,16 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
               id="rec-save"
               sx={{ m: 1, minWidth: '96px' }}
               color="primary"
-              disabled={busy || (ready && !ready()) || !canSave || !hasRights}
+              // In the deferred wizard flow this button advances (onNext) rather
+              // than saving, so gate it on a take being present, not on unsaved
+              // changes: a take already uploaded once clears canSave but must
+              // still be carryable forward when the user steps back here.
+              disabled={
+                busy ||
+                (ready && !ready()) ||
+                !(onNext ? hasTake : canSave) ||
+                !hasRights
+              }
               onClick={onNext ?? (() => startSave(myToolId))}
             >
               {saveButtonText || recordStrings.save}

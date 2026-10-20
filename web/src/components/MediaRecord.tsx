@@ -79,6 +79,17 @@ interface IProps {
   allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
   /**
+   * Reports whether a usable take is loaded in the waveform, independent of
+   * whether it counts as an unsaved change. Unlike `setCanSave`, this stays true
+   * after a take has been uploaded (the upload clears the dirty flags but leaves
+   * the take shown). The deferred add-resource wizard uses it to keep its "Next"
+   * button live when the user steps back to the still-mounted Record step after
+   * the take already uploaded once.
+   */
+  // TODO cleanup: combine a bunch of these props that describe what stage the recording is in
+  // into one lifecycle prop that sets the current stage as e.g. Recording, Saving, Loading, Unsaved, etc. Maybe even HasValidTake or HasInvalidTake?
+  setHasTake?: ((hasTake: boolean) => void) | undefined;
+  /**
    * Called when a save attempt is rejected — the upload failed or finished
    * without a mediaId. May fire more than once for a single failed save, so
    * handlers must be idempotent. Parents that auto-save on the rising edge of
@@ -161,6 +172,7 @@ function MediaRecord(props: IProps) {
     pendingRestore,
     beforeUpload,
     setCanSave,
+    setHasTake,
     setCanCancel,
     setStatusText,
     allowRecord,
@@ -539,6 +551,22 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (setCanCancel) setCanCancel(!converting && !uploading);
   }, [converting, uploading, setCanCancel]);
+
+  // A usable take is loaded in the waveform — the same readiness canSave
+  // requires, but without the (pendingSave || filechanged) dirty gate. A
+  // successful upload clears those flags (so canSave drops) yet leaves the take
+  // shown; this stays true so the deferred wizard's Next button survives a Back
+  // to the already-uploaded Record step.
+  const hasTake =
+    waveformDuration > 0 &&
+    blobReady &&
+    !tooBig &&
+    !converting &&
+    !uploading &&
+    !recording;
+  useEffect(() => {
+    setHasTake?.(hasTake);
+  }, [hasTake, setHasTake]);
 
   // While recording, audioBlob is the previous take (it only refreshes after
   // stop via onBlobReady). Estimate the eventual WAV size from the live

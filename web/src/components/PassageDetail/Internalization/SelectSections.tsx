@@ -228,7 +228,7 @@ export function SelectSections(props: IProps) {
           {allSelected ? ta.deselectAll : ta.selectAll}
         </Button>
       </Box>
-      <StyledPaper id="PassageList" sx={{ flex: 1, minHeight: 0 }}>
+      <StyledPaper id="PassageList" sx={{ flex: '0 1 auto', minHeight: 0 }}>
         {/* Plain striped table (theme MuiTable variant="striped"); no row-hover
             tint, so hovering a row never greys it. The checkbox hover feedback
             is unaffected. */}

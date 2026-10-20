@@ -50,9 +50,7 @@ export function AddResourceWizard({
                 ? w.t.selectPassagesSub.replace('{0}', w.getOrganizedBy(false))
                 : w.t.editingFile.replace(
                     '{0}',
-                    safeFileBasename(
-                      w.projMediaRef.current?.attributes?.originalFile
-                    )
+                    safeFileBasename(w.projMedia?.attributes?.originalFile)
                   )}
             </Typography>
           ) : undefined
@@ -112,10 +110,10 @@ export function AddResourceWizard({
                   <ResourceData
                     uploadType={w.uploadType}
                     catAllowNew={true} //if they can upload they can add cat
-                    initCategory={w.categoryIdRef.current || ''}
+                    initCategory={w.initCategory}
                     onCategoryChange={w.handleCategory}
                     catCommitRef={w.addCategorySaveRef}
-                    initDescription={w.descriptionRef.current}
+                    initDescription={w.initDescription}
                     onDescriptionChange={w.handleDescription}
                     catRequired={false}
                     resourceKind={w.resourceKind}
@@ -143,7 +141,7 @@ export function AddResourceWizard({
               initialItems={w.getInitialItems()}
               // The button uploads only when a media has not been created yet;
               // after a Back from configure the media exists, so it advances.
-              uploadsOnNext={w.isAddingAudioResource && !w.projMediaRef.current}
+              uploadsOnNext={w.isAddingAudioResource && !w.projMedia}
               uploading={w.uploading}
               onSelect={w.handleSectionsSelected}
               onBack={
@@ -159,9 +157,9 @@ export function AddResourceWizard({
               // maxWidth:100% clamps it to fill, extending the waveform to the
               // dialog's edge.
               width={configureWidth}
-              media={w.projMediaRef.current}
-              items={w.projIdentityRef.current}
-              candidateItems={w.projCandidateRef.current}
+              media={w.projMedia}
+              items={w.projIdentity}
+              candidateItems={w.projCandidate}
               resourceTypeId={w.resourceType}
               onOpen={onClose}
               onBack={

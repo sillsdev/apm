@@ -185,7 +185,7 @@ export function useAddResourceWizard({
   const [pendingCloseConfirmation, setPendingCloseConfirmation] =
     useState(false);
 
-  const cancelled = useRef(false); // TODO rename
+  const cancelled = useRef(false);
 
   // --- Deferred upload ---
   // The wizard chooses the file/take in the upload step but fires the real
@@ -579,15 +579,14 @@ export function useAddResourceWizard({
     resourceUploadValidationMessage,
     resourceKind,
     resourceType,
-    // refs shared across steps
+    initCategory: categoryIdRef.current || '',
+    initDescription: descriptionRef.current,
+    projMedia: projMediaRef.current,
+    projIdentity: projIdentityRef.current,
+    projCandidate: projCandidateRef.current,
     cancelled,
     artifactState,
-    categoryIdRef,
-    descriptionRef,
     addCategorySaveRef,
-    projMediaRef,
-    projIdentityRef,
-    projCandidateRef,
     submitRef,
     // section-select
     getInitialItems,
