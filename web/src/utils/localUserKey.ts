@@ -37,6 +37,7 @@ export enum LocalKey {
   carefulSpeaker = 'carefulSpeaker', // last speaker used for careful speech
   phraseBackSpeaker = 'phraseBackSpeaker', // last speaker used for phrase back translation
   lwcSpeaker = 'lwcSpeaker', // last speaker used for LWC translation
+  aiTiming = 'aiTiming', // per-device AI request timings (suffixed by operation); do NOT use LocalUserKey
 }
 
 export const localUserKey = (id: LocalKey): string => {

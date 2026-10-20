@@ -14,3 +14,13 @@ export class AudioAiError extends Error {
     this.code = code;
   }
 }
+
+/** The result didn't arrive within the poll limit. Kept as its own class so
+ * callers can record the time taken (TT-6276) while still reporting it as a
+ * failure; the message stays the one users and Bugsnag already see. */
+export class AudioAiTimeoutError extends Error {
+  constructor() {
+    super('AI result timed out');
+    this.name = 'AudioAiTimeoutError';
+  }
+}

@@ -14,7 +14,11 @@ import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
 import { MediaFileAttributes } from '../model/mediafile';
 import { runWithUploadRetries } from '../store/upload/uploadRetry';
-import { AudioAiError, AudioAiErrorCode } from './audioAiError';
+import {
+  AudioAiError,
+  AudioAiErrorCode,
+  AudioAiTimeoutError,
+} from './audioAiError';
 
 interface fileTask {
   taskId: string;
@@ -30,7 +34,7 @@ interface fileTask {
 const timerDelay = 10000; //10 seconds
 /** S3 URL returned but body still empty — stop after this many poll ticks. */
 const MAX_EMPTY_S3_RESULT_POLLS = 3;
-const S3_POLL_MAX_WAIT_MS = 10 * 60 * 1000;
+export const S3_POLL_MAX_WAIT_MS = 10 * 60 * 1000;
 
 export enum AudioAiFunc {
   noiseRemoval = 'noiseremoval',
@@ -93,7 +97,7 @@ export const useAudioAi = (): AudioAIResult => {
       task.pollStartedAt &&
       new Date().getTime() - task.pollStartedAt > S3_POLL_MAX_WAIT_MS
     ) {
-      throw new Error('AI result timed out');
+      throw new AudioAiTimeoutError();
     }
     task.polling = true;
     let result: unknown;

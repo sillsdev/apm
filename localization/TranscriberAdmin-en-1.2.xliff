@@ -12329,6 +12329,20 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiTakingLonger">
+            <source>Taking longer than usual: {0} elapsed</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AiTimeProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiTimeRemaining">
+            <source>About {0} remaining</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AiTimeProgress.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.beginVoiceConvert">
             <source>Beginning voice conversion...</source>
             <target/>

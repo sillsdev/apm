@@ -40,6 +40,7 @@ const waveSurferMock = {
   wsPlayRegion: jest.fn(),
   wsBlob: jest.fn(async () => undefined),
   wsRegionBlob: jest.fn(),
+  wsRegionDuration: jest.fn(() => 0),
   wsPause: jest.fn(),
   wsDuration: jest.fn(() => 0),
   wsPosition: jest.fn(() => 0),
@@ -93,7 +94,12 @@ jest.mock('../context/HotKeyContext', () => {
 
 type UseWaveSurfer = typeof import('../crud/useWaveSurfer').useWaveSurfer;
 import WSAudioPlayer from './WSAudioPlayer';
-import { AudioAiError, AudioAiErrorCode } from '../utils/audioAiError';
+import {
+  AudioAiError,
+  AudioAiErrorCode,
+  AudioAiTimeoutError,
+} from '../utils/audioAiError';
+import { readAiSamples } from '../control/estimateAiTime';
 
 const { subscribe: mockSubscribe, unsubscribe: mockUnsubscribe } = (
   jest.requireMock('../context/HotKeyContext') as {
@@ -173,6 +179,8 @@ jest.mock('react-redux', () => ({
     save: 'Save',
     clearRecording: 'Clear',
     aiInProgress: 'AI in progress',
+    aiTimeRemaining: 'About {0} remaining',
+    aiTakingLonger: 'Taking longer than usual: {0} elapsed',
     loading: 'Loading',
     playTip: 'Play {0}',
     pauseTip: 'Pause {0}',
@@ -239,6 +247,7 @@ jest.mock('../crud/useOrgDefaults', () => ({
 const mockRequestAudioAi =
   jest.fn<(request: { cb: (file: File | Error) => void }) => Promise<void>>();
 jest.mock('../utils/useAudioAi', () => ({
+  S3_POLL_MAX_WAIT_MS: 600000,
   AudioAiFunc: {
     noiseRemoval: 'noiseremoval',
     voiceConversion: 'voiceconversion',
@@ -886,7 +895,10 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(queryByText('Loading')).toBeNull();
   });
 
-  async function startNoiseRemoval(setBusy: (busy: boolean) => void) {
+  async function startNoiseRemoval(
+    setBusy: (busy: boolean) => void,
+    recordingSeconds = 10
+  ) {
     mockGlobals.organization = 'org';
     mockGetOrgDefault.mockReturnValue({ noNoise: true });
     mockCheckOnline.mockImplementation((cb: (online: boolean) => void) => {
@@ -904,7 +916,7 @@ describe('WSAudioPlayer record hotkeys', () => {
       />
     );
     act(() => {
-      capturedOnWSReady?.(10, false);
+      capturedOnWSReady?.(recordingSeconds, false);
     });
     fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
     fireEvent.click(document.getElementById('noiseRemoval') as HTMLElement);
@@ -940,6 +952,68 @@ describe('WSAudioPlayer record hotkeys', () => {
       resolveReplace(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
     });
     expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  it('estimates AI time from the selected region, not the whole recording', async () => {
+    (waveSurferMock.wsRegionDuration as jest.Mock).mockReturnValue(10);
+    await startNoiseRemoval(jest.fn(), 120);
+    expect(document.getElementById('ai-time-estimate')).toHaveTextContent(
+      'About 0:16 remaining'
+    );
+  });
+
+  it('remembers how long a finished AI request took', async () => {
+    localStorage.clear();
+    (waveSurferMock.wsRegionDuration as jest.Mock).mockReturnValue(10);
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
+      Promise.resolve(new Blob([new Uint8Array([2])], { type: 'audio/wav' }))
+    );
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    await act(async () => {
+      aiCallback?.(new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+    expect(readAiSamples('noiseremoval')).toEqual([
+      expect.objectContaining({ durationSec: 10 }),
+    ]);
+  });
+
+  it('remembers a timed-out AI request so later estimates allow for it', async () => {
+    localStorage.clear();
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    act(() => {
+      aiCallback?.(new AudioAiTimeoutError());
+    });
+    expect(readAiSamples('noiseremoval')).toHaveLength(1);
+  });
+
+  it('does not remember a canceled AI request', async () => {
+    localStorage.clear();
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    act(() => {
+      aiCallback?.(new AudioAiError(AudioAiErrorCode.canceled));
+    });
+    expect(readAiSamples('noiseremoval')).toHaveLength(0);
   });
 
   it('clears AI busy once when the AI result is an error', async () => {

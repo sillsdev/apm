@@ -51,6 +51,8 @@ import { RecordButton } from '../control/RecordButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { Button } from '../control';
+import { estimateAiSeconds, recordAiSample } from '../control/estimateAiTime';
+import AiTimeProgress from './AiTimeProgress';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -83,8 +85,16 @@ import {
   wsAudioPlayerSelector,
 } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
-import { AudioAiError, AudioAiErrorCode } from '../utils/audioAiError';
+import {
+  AudioAiFunc,
+  S3_POLL_MAX_WAIT_MS,
+  useAudioAi,
+} from '../utils/useAudioAi';
+import {
+  AudioAiError,
+  AudioAiErrorCode,
+  AudioAiTimeoutError,
+} from '../utils/audioAiError';
 import AeroTaskErrorMessage from '../business/asr/AeroTaskErrorMessage';
 import {
   aeroTaskErrorParts,
@@ -500,6 +510,10 @@ function WSAudioPlayer(props: IProps) {
   const [recording, setRecordingx] = useState(false);
   const [waitingForAI, setWaitingForAI] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | undefined>(undefined);
+  const [aiRun, setAiRun] = useState<{
+    startedAt: number;
+    estimateSec: number;
+  }>();
   const readyRef = useRef(false);
   const [ready, setReadyx] = useState(false);
   const [progress, setProgressx] = useState(0);
@@ -782,6 +796,7 @@ function WSAudioPlayer(props: IProps) {
     wsPlayRegion,
     wsBlob,
     wsRegionBlob,
+    wsRegionDuration,
     wsPause,
     wsDuration,
     wsPosition,
@@ -1817,6 +1832,7 @@ function WSAudioPlayer(props: IProps) {
 
   const doingProcess = (inprogress: boolean, msg?: string) => {
     setProcessMsg(msg ?? t.aiInProgress);
+    if (!inprogress) setAiRun(undefined);
     setWaitingForAI(inprogress);
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
@@ -1895,6 +1911,13 @@ function WSAudioPlayer(props: IProps) {
           >
             {processMsg}
           </Typography>
+          {aiRun && (
+            <AiTimeProgress
+              estimateSec={aiRun.estimateSec}
+              startedAt={aiRun.startedAt}
+              textId="ai-time-estimate"
+            />
+          )}
           <Button
             id="ai-cancel"
             onClick={() => {
@@ -1947,8 +1970,27 @@ function WSAudioPlayer(props: IProps) {
         showMessage(display, AlertSeverity.Error);
         doingProcess(false);
       };
+      const startedAt = Date.now();
+      const durationSec = wsRegionDuration();
+      // TT-6276: timed from the click to the result, so upload is included.
+      const recordTiming = () => {
+        if (cancelAIRef.current) return;
+        recordAiSample(func, {
+          durationSec,
+          totalMs: Date.now() - startedAt,
+          at: startedAt,
+        });
+      };
       try {
         doingProcess(true);
+        setAiRun({
+          startedAt,
+          estimateSec: estimateAiSeconds(
+            func,
+            durationSec,
+            S3_POLL_MAX_WAIT_MS / 1000
+          ),
+        });
         const filename = `${Date.now()}ai.wav`;
         wsRegionBlob()
           .then((blob) => {
@@ -1962,6 +2004,7 @@ function WSAudioPlayer(props: IProps) {
                   if (file instanceof File) {
                     wsRegionReplace(new Blob([file], { type: file.type }))
                       .then((newblob) => {
+                        recordTiming();
                         if (newblob) reload(newblob);
                         publishChanged();
                         doingProcess(false);
@@ -1977,6 +2020,8 @@ function WSAudioPlayer(props: IProps) {
                     doingProcess(false);
                     return;
                   }
+                  // The slow tail matters most to the estimate.
+                  if (file instanceof AudioAiTimeoutError) recordTiming();
                   failAi(file);
                 },
               }).catch(failAi);

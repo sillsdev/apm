@@ -2172,6 +2172,8 @@ const initialState = {
 		"en": {
 			"aiFailed": "AI function {1} failed {0}",
 			"aiInProgress": "AI Service In Progress...  This is a remote service that may take a long time if the recording is large, or if there are other requests ahead of yours.",
+			"aiTakingLonger": "Taking longer than usual: {0} elapsed",
+			"aiTimeRemaining": "About {0} remaining",
 			"beginVoiceConvert": "Beginning voice conversion...",
 			"changeFailed": "Could not update the recording: {0}",
 			"convertVoice": "Convert Voice {0}",

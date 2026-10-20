@@ -10,6 +10,7 @@ import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../../context/useGlobal';
+import { useOrbitData } from '../../hoc/useOrbitData';
 import { Button, ActionRow } from '../../control';
 import {
   ICardsStrings,
@@ -53,6 +54,19 @@ import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
+import {
+  AiEstimateKey,
+  estimateAiSeconds,
+  recordAiSample,
+} from '../../control/estimateAiTime';
+import AiTimeProgress from '../../components/AiTimeProgress';
+
+/** `key` is set only when this session started the request; a task resumed
+ * after a restart has no known start, so it gets no estimate or sample. */
+interface AsrRun {
+  startedAt: number;
+  key?: AiEstimateKey;
+}
 
 interface AsrProgressProps {
   mediaId: string;
@@ -80,12 +94,17 @@ export default function AsrProgress({
   const { getAsrSettings } = useGetAsrSettings();
   const projectSegmentSave = useProjectSegmentSave();
   const [memory] = useGlobal('memory');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
   const { showMessage } = useSnackBar();
   const [taskId, setTaskIdx] = React.useState('');
   const taskIdRef = React.useRef('');
   const [pollProgress, setPollProgress] = React.useState<AeroProgress>();
   const [pollClip, setPollClip] = React.useState<AeroPollClip>();
+  const [run, setRunx] = React.useState<AsrRun>(() => ({
+    startedAt: Date.now(),
+  }));
+  const runRef = React.useRef(run);
   const verseTimingsRef = React.useRef<AeroVerseTiming[]>([]);
   const appliedKeysRef = React.useRef<Set<string>>(new Set());
   const cleanupErrorShownRef = React.useRef(false);
@@ -128,6 +147,24 @@ export default function AsrProgress({
       setPollProgress(undefined);
       setPollClip(undefined);
     }
+  };
+  const setRun = (next: AsrRun) => {
+    setRunx(next);
+    runRef.current = next;
+  };
+  const recordRun = () => {
+    const { key, startedAt } = runRef.current;
+    const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+      MediaFileD | undefined;
+    const durationSec = mediaRec?.attributes?.duration ?? 0;
+    if (!key || durationSec <= 0) return;
+    recordAiSample(key, {
+      durationSec,
+      totalMs: Date.now() - startedAt,
+      at: startedAt,
+    });
+    // A failed cleanup keeps polling; don't record the same run twice.
+    setRun({ startedAt });
   };
   const setTranscribing = (adding: boolean) => {
     addingRef.current = adding;
@@ -234,6 +271,7 @@ export default function AsrProgress({
         return;
       }
       if (parsed.terminal) {
+        recordRun();
         const hasText = parsed.clip?.segments.some(
           (seg) =>
             (transcriptionText(seg.transcription, phonetic) ?? '').trim()
@@ -280,6 +318,7 @@ export default function AsrProgress({
     const romanize = asr?.selectRoman ?? false;
     const method = asr?.method ?? 'mms';
     const phoneticParam = phonetic ? '?phonetic=true' : '';
+    setRun({ startedAt: Date.now(), key: `transcription:${method}` });
     try {
       const response = (await axiosPost(
         `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}${phoneticParam}`,
@@ -365,6 +404,19 @@ export default function AsrProgress({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const aiDuration = React.useMemo(
+    () => mediafiles.find((m) => m.id === mediaId)?.attributes?.duration ?? 0,
+    [mediafiles, mediaId]
+  );
+  const estimateSec = React.useMemo(
+    () =>
+      run.key && aiDuration > 0
+        ? estimateAiSeconds(run.key, aiDuration)
+        : undefined,
+    [run.key, aiDuration]
+  );
+  const hasClipProgress = Boolean(pollProgress && pollProgress.total > 0);
+
   return (
     <Box
       sx={{
@@ -375,19 +427,23 @@ export default function AsrProgress({
       }}
     >
       <Stack spacing={1} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
-        {pollProgress && pollProgress.total > 0 ? (
-          <LinearProgress
-            id="asr-clip-progress"
-            variant="determinate"
-            value={aeroProgressPercent(pollProgress)}
-          />
+        {pollProgress && hasClipProgress ? (
+          <>
+            <LinearProgress
+              id="asr-clip-progress"
+              variant="determinate"
+              value={aeroProgressPercent(pollProgress)}
+            />
+            <Typography id="asr-progress-count">
+              {pollProgress.completed}/{pollProgress.total}
+            </Typography>
+          </>
         ) : (
-          <LinearProgress />
-        )}
-        {pollProgress && pollProgress.total > 0 && (
-          <Typography id="asr-progress-count">
-            {pollProgress.completed}/{pollProgress.total}
-          </Typography>
+          <AiTimeProgress
+            estimateSec={estimateSec}
+            startedAt={run.startedAt}
+            textId="asr-time-estimate"
+          />
         )}
         {pollClip && (
           <Box id="asr-clip-0">
