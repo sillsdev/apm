@@ -23,20 +23,19 @@ export function PassageCardHeader({
   onGraphicClick,
   mediaId,
 }: IProps) {
-  const getDescription = useSectionIdDescription();
+  const getSectionLabel = useSectionIdDescription();
   const getRefText = usePassageRefText();
+
   const refText = getRefText({
     psgType,
     book: cardInfo.book,
     passageRef,
     description,
   });
+
   const title =
-    cardInfo.kind === IwsKind.Passage ? refText : getDescription(cardInfo);
-  // Section passages show the section heading beside the graphic and the
-  // passage reference on its own line beneath.
-  const sectionPassageTitle =
-    cardInfo.kind === IwsKind.SectionPassage ? refText : '';
+    cardInfo.kind === IwsKind.Passage ? refText : getSectionLabel(cardInfo);
+  const subtitle = cardInfo.kind === IwsKind.SectionPassage ? refText : '';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -52,9 +51,7 @@ export function PassageCardHeader({
         {title && <PassageCardTitle>{title}</PassageCardTitle>}
         {mediaId && <PassagePlayButton mediaId={mediaId} />}
       </Box>
-      {sectionPassageTitle && (
-        <PassageCardTitle>{sectionPassageTitle}</PassageCardTitle>
-      )}
+      {subtitle && <PassageCardTitle>{subtitle}</PassageCardTitle>}
     </Box>
   );
 }
