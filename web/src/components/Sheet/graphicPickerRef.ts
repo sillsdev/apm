@@ -38,7 +38,7 @@ export function graphicPickerRefString(options: {
     if (computed.length > 0) return computed;
   } else if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
     const chapter = (row?.reference ?? '').match(/(\d+)$/);
-    const chapNum = chapter ? parseInt(chapter[1]) : undefined;
+    const chapNum = chapter ? Number.parseInt(chapter[1]) : undefined;
     const verses = verseCounts.get(firstBook);
     if (verses && chapNum && chapNum < verses.length) {
       return `${firstBook} ${chapNum}:1-${verses[chapNum - 1]}`;

@@ -63,7 +63,7 @@ export function applySheetCellChanges(options: {
       newsht[i] = {
         ...ws,
         [name as keyof SheetRecord]: isNumberCol
-          ? parseInt(value ?? '')
+          ? Number.parseInt(value ?? '')
           : value,
         sectionUpdated,
         passageUpdated,
