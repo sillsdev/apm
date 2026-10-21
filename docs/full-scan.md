@@ -20,7 +20,47 @@ docker run -d --name sonarqube -p 9000:9000 sonarqube:community
 
 3. Choose Create project → Local project, use the key `apm-vite`, and generate a token.
 
-4. Add a `sonar-project.properties` file at the repo root:
+4. Setup a admin token on Administration, Security, User.
+
+Put the token in your environment SONAR_TOKEN
+
+5. Local settings `code` (and `cursor`) settings
+
+Set up using the `SonarQube` side panel settings.
+
+Check your settings file C:\Users\<Your user>\AppData\Roaming\<Code or Cursor>\User\settings.json
+
+```json
+  "sonarlint.pathToNodeExecutable": "C:\\Users\\<your user>\\AppData\\Local\\mise\\installs\\node\\22.23.3\\node.exe",
+  "sonarlint.connectedMode.connections.sonarqube": [
+    {
+      "serverUrl": "http://localhost:9000",
+      "token": "squ_<your token>",
+      "connectionId": "http-localhost-9000",
+    },
+  ],
+```
+
+6. Setup `SonarQube-mcp` (likely in C:\Users\<Your user>\AppData\Roaming\<Code or Cursor>\User\mcp.json)
+
+```json
+		"sonarqube": {
+			"command": "docker",
+			"args": [
+				"run",
+				"-i",
+				"--rm",
+				"-e",
+				"SONARQUBE_TOKEN",
+				"sonarsource/sonarqube-mcp"
+			],
+			"env": {
+				"SONARQUBE_TOKEN": "squ_<your token>"
+			}
+		}
+```
+
+7. Add a `sonar-project.properties` file at the repo root:
 
 ```json
 sonar.projectKey=apm-vite
@@ -33,14 +73,14 @@ sonar.javascript.lcov.reportPaths=web/coverage/lcov.info
 
 The two localization files are excluded because they're generated.
 
-5. Run the scanner. It needs no install because it runs through npx. The token is the `env:SONAR_TOKEN` environment variable (`${env:SONAR_TOKEN}`):
+8. Run the scanner. It needs no install because it runs through npx. The token is the `env:SONAR_TOKEN` environment variable (`${env:SONAR_TOKEN}`):
 
 ```powershell
 cd web; npm run test:coverage; cd ..   \# optional: adds coverage data to the report
 npx sonarqube-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=${env:SONAR_TOKEN}"
 ```
 
-6. Look at the results under Issues, filtered by Type = Code Smell (newer versions call it "Maintainability"). You can sort by severity, rule or file.
+9. Look at the results under Issues, filtered by Type = Code Smell (newer versions call it "Maintainability"). You can sort by severity, rule or file.
 
 I've updated [sonar-project.properties](vscode-webview://1vvl62agp8nmso4u3onasscp49436tio9t463rhlr0pga78gsjbi/sonar-project.properties) but haven't run the scan, so it's not confirmed that this fixes the error. I changed three things:
 
