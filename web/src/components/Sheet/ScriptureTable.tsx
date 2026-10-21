@@ -26,7 +26,6 @@ import {
   PlanD,
   ISheet,
   IwsKind,
-  IMediaShare,
   IWorkflowStepsStrings,
   GroupMembership,
   Discussion,
@@ -86,7 +85,6 @@ import {
   useWaitForRemoteQueue,
   useCanPublish,
   useMobile,
-  refNumPat,
   generateUUID,
 } from '../../utils';
 import { addPt } from '../../utils/addPt';
@@ -96,7 +94,15 @@ import {
   passageTypeFromRef,
 } from '../../control/passageTypeFromRef';
 import { resolveSheetStartChapter } from './resolveSheetStartChapter';
-import { withUpdatedReference } from './withUpdatedReference';
+import {
+  computeGraphicRef,
+  graphicPickerRefString as buildGraphicPickerRef,
+} from './graphicPickerRef';
+import { isSheetFilterActive } from './isSheetFilterActive';
+import { addPassageTo } from './sheetRowEdit';
+import { getByIndex, sheetFirstBook } from './sheetRowIndex';
+import { useScriptureSheetEdits } from './useScriptureSheetEdits';
+import { useScriptureSheetSave } from './useScriptureSheetSave';
 import BigDialog from '../../hoc/BigDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -123,12 +129,9 @@ import {
   isSectionRow,
   isPassageRow,
   shtColumnHeads,
-  shtResequence,
-  wfResequencePassages,
   useWfLocalSave,
   useWfOnlineSave,
   useWfPaste,
-  shtNumChanges,
   getSheet,
   workSheet,
   refilterSheet,
@@ -138,11 +141,10 @@ import {
 import { ISTFilterState } from './filterMenu';
 import { getDefaultName } from './getDefaultName';
 import { PlanBar } from './PlanBar';
-import PlanSheet, { ICell, ICellChange } from './PlanSheet';
+import PlanSheet, { ICell } from './PlanSheet';
 import { PlanView } from './PlanView';
 import { createPendingTitleMediaQueue } from './pendingTitleMediaQueue';
 import type { TitleMediaPending } from './pendingTitleMediaQueue';
-import { resolveTitleMediaRowIndex } from './resolveTitleMediaRowIndex';
 
 const SaveWait = 500;
 
@@ -385,12 +387,12 @@ export function ScriptureTable(props: IProps) {
   const { canAddPublishing } = useCanPublish();
 
   const firstBook = useMemo(
-    () => {
-      return scripture
-        ? (sheet.find((b) => !b.deleted && (b.book ?? '') !== '')?.book ?? '')
+    () =>
+      scripture
+        ? sheetFirstBook(sheet)
         : ((getProjectDefault(projDefBook) as unknown as string | undefined) ??
-            'LUK');
-    },
+          'LUK'),
+    // getProjectDefault is a fresh function each render; the default is read when scripture is off.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [scripture, sheet]
   );
@@ -413,18 +415,10 @@ export function ScriptureTable(props: IProps) {
     [sheet]
   );
 
-  const filtered = useMemo(() => {
-    return (
-      !filterState.disabled &&
-      (filterState.minStep !== '' ||
-        filterState.maxStep !== '' ||
-        filterState.hideDone ||
-        filterState.minSection > minSection ||
-        (filterState.maxSection > -1 &&
-          filterState.maxSection < maximumSection) ||
-        filterState.assignedToMe)
-    );
-  }, [filterState, minSection, maximumSection]);
+  const filtered = useMemo(
+    () => isSheetFilterActive(filterState, minSection, maximumSection),
+    [filterState, minSection, maximumSection]
+  );
 
   const publishingTitle = (passageType: PassageTypeEnum) =>
     passageType + ' ' + firstBook;
@@ -534,742 +528,58 @@ export function ScriptureTable(props: IProps) {
     updateRef.current = value;
   }, []);
 
-  const runWhenSheetIdle = (label: string, fn: () => void) => {
-    if (savingRef.current || updateRef.current) {
-      waitForIt(
-        label,
-        () => !savingRef.current && !updateRef.current,
-        () => false,
-        50
-      )
-        .then(fn)
-        .catch(() => showMessage(t.saving));
-      return;
-    }
-    fn();
-  };
-
-  const sheetHasUnsavedChanges = useMemo(
-    () => isChanged(toolId),
-    [isChanged, toolId]
-  );
-
-  const blockWhileSavingOrUpdating = () =>
-    savingRef.current || updateRef.current;
-
-  const blockPublishingRows = () =>
-    sheetHasUnsavedChanges || blockWhileSavingOrUpdating();
-
-  const showBlockedPublishingMessage = () => {
-    if (sheetHasUnsavedChanges) showMessage(t.saveFirst);
-    else showMessage(t.saving);
-  };
-
-  const handleResequence = () => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    if (updateRef.current) return;
-    setUpdate(true);
-    const ws = shtResequence(sheetRef.current);
-    if (ws !== sheet) {
-      setSheet(ws);
-      setSectionArr([]);
-      setChanged(true);
-    }
-    setUpdate(false);
-  };
-
-  const insertAt = (arr: Array<any>, item: any, index?: number) => {
-    if (index === undefined) {
-      return [...arr.concat([item])];
-    } else {
-      const newArr = arr.map((v, i) =>
-        i < index ? v : i === index ? item : arr[i - 1]
-      );
-      return [...newArr.concat([arr.pop()])];
-    }
-  };
-
-  const updateRowAt = (arr: Array<any>, item: any, index: number) => {
-    const newArr = arr.map((v, i) =>
-      i < index ? v : i === index ? item : arr[i]
-    );
-    return newArr;
-  };
-
-  const NoSkip = false;
-  const findSection = (
-    myWorkflow: ISheet[],
-    sectionIndex: number,
-    before: boolean,
-    skipPublishing: boolean
-  ) => {
-    while (
-      sectionIndex >= 0 &&
-      sectionIndex < myWorkflow.length &&
-      ((myWorkflow[sectionIndex] as ISheet).deleted || skipPublishing
-        ? (myWorkflow[sectionIndex] as ISheet).level !== SheetLevel.Section
-        : !isSectionRow(myWorkflow[sectionIndex] as ISheet))
-    ) {
-      sectionIndex = sectionIndex + (before ? -1 : 1);
-    }
-    if (sectionIndex < 0 || sectionIndex === myWorkflow.length) return -1;
-    return sectionIndex;
-  };
-
-  const swapRows = (myWorkflow: ISheet[], i: number, j: number) => {
-    const passageRow = { ...myWorkflow[i] };
-    const swapRow = { ...myWorkflow[j] };
-    return updateRowAt(updateRowAt(myWorkflow, passageRow, j), swapRow, i);
-  };
-
-  const movePassageTo = (myWorkflow: ISheet[], i: number, before: boolean) => {
-    const mySectionIndex = findSection(myWorkflow, i, true, NoSkip);
-    myWorkflow = swapRows(myWorkflow, i, before ? i - 1 : i + 1);
-    return wfResequencePassages(myWorkflow, mySectionIndex, flat);
-  };
-  const moveSectionTo = (myWorkflow: ISheet[], i: number, before: boolean) => {
-    const swapSectionIndex = findSection(
-      myWorkflow,
-      before ? i - 1 : i + 1,
-      before,
-      NoSkip
-    );
-
-    const firstIndex = before ? swapSectionIndex : i;
-    const secondIndex = before ? i : swapSectionIndex;
-    let firstNum = (myWorkflow[firstIndex] as ISheet).sectionSeq;
-    let secondNum = (myWorkflow[secondIndex] as ISheet).sectionSeq;
-
-    const firstIsMovement =
-      (myWorkflow[firstIndex] as ISheet).passageType ===
-      PassageTypeEnum.MOVEMENT;
-    const secondIsMovement =
-      (myWorkflow[secondIndex] as ISheet).passageType ===
-      PassageTypeEnum.MOVEMENT;
-    if (firstIsMovement !== secondIsMovement) {
-      if (firstIsMovement) {
-        secondNum = nextNum(
-          (myWorkflow[secondIndex] as ISheet).sectionSeq,
-          PassageTypeEnum.MOVEMENT
-        );
-        firstNum = (myWorkflow[secondIndex] as ISheet).sectionSeq;
-      } else {
-        firstNum = nextNum(
-          firstIndex > 0
-            ? (myWorkflow[firstIndex - 1] as ISheet).sectionSeq
-            : 0,
-          PassageTypeEnum.MOVEMENT
-        );
-        secondNum = (myWorkflow[firstIndex] as ISheet).sectionSeq;
-      }
-    }
-    (myWorkflow[firstIndex] as ISheet).sectionSeq = secondNum;
-    (myWorkflow[firstIndex] as ISheet).sectionUpdated = currentDateTime();
-    for (
-      let ix = firstIndex + 1;
-      ix < myWorkflow.length &&
-      (myWorkflow[ix] as ISheet).sectionSeq === firstNum;
-      ix++
-    ) {
-      (myWorkflow[ix] as ISheet).sectionSeq = secondNum;
-      (myWorkflow[ix] as ISheet).passageUpdated = currentDateTime();
-    }
-    (myWorkflow[secondIndex] as ISheet).sectionSeq = firstNum;
-    (myWorkflow[secondIndex] as ISheet).sectionUpdated = currentDateTime();
-    for (
-      let ix = secondIndex + 1;
-      ix < myWorkflow.length &&
-      (myWorkflow[ix] as ISheet).sectionSeq === secondNum;
-      ix++
-    ) {
-      (myWorkflow[ix] as ISheet).sectionSeq = firstNum;
-      (myWorkflow[ix] as ISheet).passageUpdated = currentDateTime();
-    }
-
-    const sorted = [...myWorkflow].sort((a, b) => a.sectionSeq - b.sectionSeq);
-    return sorted;
-  };
-  const isPassageOrNote = (ws: ISheet[], i: number) =>
-    [PassageTypeEnum.PASSAGE, PassageTypeEnum.NOTE].includes(
-      (ws[i] as ISheet).passageType
-    );
-
-  const updatePassageRef = (id: string, val: string, sr?: SharedResourceD) => {
-    const ws = sheetRef.current;
-    const index = ws.findIndex((s) => s?.passage?.id === id);
-    if (index < 0) return;
-    const passageRow = { ...ws[index] };
-    const nested = updateRef.current;
-    if (!nested) setUpdate(true);
-    passageRow.reference = val;
-    passageRow.passageUpdated = currentDateTime();
-    passageRow.sharedResource = sr;
-    passageRow.passage = withUpdatedReference(passageRow.passage, val);
-    if (passageRow.passageType === PassageTypeEnum.NOTE && passageRow.passage) {
-      const gr = graphicFind(passageRow.passage, val);
-      passageRow.graphicUri = gr?.uri;
-      passageRow.graphicRights = gr?.rights;
-      passageRow.graphicFullSizeUrl = gr?.url;
-      passageRow.color = gr?.color;
-    }
-    setSheet(updateRowAt(ws, passageRow, index));
-    setEditRow((prev) => (prev?.passage?.id === id ? passageRow : prev));
-    if (!nested) setUpdate(false);
-  };
-
-  const updatePassageSeq = (ws: ISheet[], i: number, val: number) => {
-    const passageRow = { ...ws[i] };
-    passageRow.sectionSeq = val;
-    passageRow.passageUpdated = currentDateTime();
-    return updateRowAt(ws, passageRow, i);
-  };
-
-  const movePassageToNextSection = (
-    myWorkflow: ISheet[],
-    i: number,
-    before: boolean
-  ) => {
-    // don't set update flag as it is set in parent.
-    const skipPublishing =
-      (myWorkflow[i] as ISheet).passageType === PassageTypeEnum.PASSAGE;
-    const originalSectionIndex = findSection(
-      myWorkflow,
-      i,
-      before,
-      skipPublishing
-    );
-    const newSectionIndex = findSection(
-      myWorkflow,
-      before ? originalSectionIndex - 1 : i,
-      before,
-      skipPublishing
-    );
-    if (newSectionIndex < 0) return;
-    const newSeqVal = (myWorkflow[newSectionIndex] as ISheet).sectionSeq;
-    myWorkflow = updatePassageSeq(myWorkflow, i, newSeqVal);
-    let endRowIndex = newSectionIndex;
-
-    if (before) {
-      // find row following last row in target section
-      while (
-        ++endRowIndex < myWorkflow.length &&
-        !isSectionRow(myWorkflow[endRowIndex] as ISheet)
-      ) {
-        // intentionally empty
-      }
-      while (i > endRowIndex) {
-        myWorkflow = swapRows(myWorkflow, i, i - 1);
-        i--;
-      }
-      myWorkflow = wfResequencePassages(
-        wfResequencePassages(myWorkflow, originalSectionIndex + 1, flat),
-        newSectionIndex,
-        flat
-      );
-    } else {
-      while (
-        endRowIndex < myWorkflow.length - 2 &&
-        ((myWorkflow[endRowIndex] as ISheet).deleted ||
-          !isPassageOrNote(myWorkflow, endRowIndex + 1))
-      )
-        endRowIndex++;
-      while (i < endRowIndex) {
-        myWorkflow = swapRows(myWorkflow, i, i + 1);
-        i++;
-      }
-      myWorkflow = wfResequencePassages(
-        wfResequencePassages(myWorkflow, originalSectionIndex, flat),
-        newSectionIndex - 1,
-        flat
-      );
-    }
-
-    setSheet(myWorkflow);
-    setChanged(true);
-  };
-
-  const addPassageTo = (
-    level: SheetLevel,
-    myWorkflow: ISheet[],
-    ptype: PassageTypeEnum | undefined,
-    i?: number,
-    before?: boolean,
-    title?: string,
-    reference?: string
-  ) => {
-    let lastRow = myWorkflow.length - 1;
-    while (lastRow >= 0 && (myWorkflow[lastRow] as ISheet).deleted)
-      lastRow -= 1;
-    let index = i === undefined && lastRow >= 0 ? lastRow : i || 0;
-    const newRow = {
-      ...myWorkflow[index],
-      level: flat && level ? level : SheetLevel.Passage,
-      kind: flat ? IwsKind.SectionPassage : IwsKind.Passage,
-      book: scripture ? firstBook : '',
-      reference: reference ?? ptype ?? '',
-      mediaId: undefined,
-      comment: title ?? '',
-      passageUpdated: currentDateTime(),
-      passage: undefined,
-      passageType: ptype ?? PassageTypeEnum.PASSAGE,
-      mediaShared: shared ? IMediaShare.None : IMediaShare.NotPublic,
-      sharedResource: undefined,
-      graphicUri: undefined,
-      graphicRights: undefined,
-      graphicFullSizeUrl: undefined,
-      color: undefined,
-      deleted: false,
-      filtered: false,
-      // Must not inherit neighbor rowKey from the spread above.
-      rowKey: generateUUID(),
-    } as ISheet;
-
-    if (flat && isSectionRow(myWorkflow[index] as ISheet)) {
-      //no passage on this row yet
-      myWorkflow = wfResequencePassages(
-        updateRowAt(myWorkflow, newRow, index),
-        index,
-        flat
-      );
-      return myWorkflow;
-    } else {
-      myWorkflow = insertAt(
-        myWorkflow,
-        newRow,
-        index < lastRow ? index + 1 : undefined
-      );
-      /* how could this have ever been true? We've checked flat and section row above
-      if (
-        before &&
-        isSectionRow(myWorkflow[index]) &&
-        isPassageRow(myWorkflow[index])
-      ) {
-        //move passage data from section row to new empty row
-        xmovePassageDown(myWorkflow, index);
-      } */
-      while (index >= 0 && !isSectionRow(myWorkflow[index] as ISheet))
-        index -= 1;
-      return wfResequencePassages(myWorkflow, index, flat);
-    }
-  };
-
-  const getUndelIndex = (sheet: ISheet[], ix: number | undefined) => {
-    // find the undeleted index...
-    if (ix !== undefined) return getByIndex(sheet, ix).i;
-    return ix;
-  };
-  const nextSecSequence = (
-    ws: ISheet[],
-    i?: number,
-    flattype?: PassageTypeEnum
-  ) => {
-    const sequenceNums = ws.map((row, j) =>
-      !i || j < i ? (!row.deleted && row.sectionSeq) || 0 : 0
-    ) as number[];
-    return nextNum(Math.max(...sequenceNums, 0), flattype);
-  };
-  const newSection = (
-    level: SheetLevel,
-    ws: ISheet[],
-    i?: number,
-    type?: PassageTypeEnum
-  ) => {
-    const newRow = {
-      level,
-      kind: flat ? IwsKind.SectionPassage : IwsKind.Section,
-      sectionSeq: nextSecSequence(ws, i, type),
-      passageSeq: 0,
-      reference: '',
-      published: [] as PublishDestinationEnum[],
-      book: scripture ? firstBook : '',
-      sectionUpdated: currentDateTime(),
-      rowKey: generateUUID(),
-    } as ISheet;
-    return newRow;
-  };
-  const addSection = (
-    level: SheetLevel,
-    ix?: number,
-    ptype?: PassageTypeEnum
-  ) => {
-    runWhenSheetIdle('finish save or update before add section', () => {
-      setUpdate(true);
-      const i = getUndelIndex(sheetRef.current, ix);
-      let newRow = newSection(level, sheetRef.current, i);
-      if (ptype === PassageTypeEnum.MOVEMENT) {
-        newRow = { ...newRow, reference: publishingTitle(ptype) };
-      }
-      let newData = insertAt(sheetRef.current, newRow, i);
-      //if added in the middle...resequence
-      if (i !== undefined) newData = shtResequence(newData);
-      if (ptype === PassageTypeEnum.MOVEMENT) {
-        setSheet(newData);
-      } else {
-        setSheet(addPassageTo(level, newData, ptype, i));
-      }
-      setUpdate(false);
-      setChanged(true);
-    });
-  };
-
-  const addPassage = (
-    ptype?: PassageTypeEnum,
-    ix?: number,
-    before?: boolean
-  ) => {
-    runWhenSheetIdle('finish save or update before add passage', () => {
-      setUpdate(true);
-      const i = getUndelIndex(sheetRef.current, ix);
-      setSheet(
-        addPassageTo(SheetLevel.Passage, sheetRef.current, ptype, i, before)
-      );
-      setUpdate(false);
-      setChanged(true);
-    });
-  };
-  const movePassage = (ix: number, before: boolean, nextSection: boolean) => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    if (flat) return;
-    setUpdate(true);
-    const i = getUndelIndex(sheetRef.current, ix);
-    if (i !== undefined) {
-      if (nextSection) movePassageToNextSection(sheetRef.current, i, before);
-      else setSheet(movePassageTo(sheetRef.current, i, before));
-      setChanged(true);
-    }
-    setUpdate(false);
-  };
-
-  const doMoveSection = (ix: number, before: boolean) => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    setUpdate(true);
-    setSectionArr([]);
-    const i = getUndelIndex(sheetRef.current, ix);
-    if (i !== undefined) {
-      setSheet(moveSectionTo(sheetRef.current, i, before));
-      setChanged(true);
-    }
-    setUpdate(false);
-  };
-
-  const moveSection = (ix: number, before: boolean) => {
-    if (savingRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    doMoveSection(ix, before);
-  };
-
-  const getByIndex = (ws: ISheet[], index: number) => {
-    let n = 0;
-    let i = 0;
-    while (i < ws.length) {
-      if (!(ws[i] as ISheet).deleted && !(ws[i] as ISheet).filtered) {
-        if (n === index) break;
-        n += 1;
-      }
-      i += 1;
-    }
-    return { ws: i < ws.length ? ws[i] : undefined, i };
-  };
-
-  const doDetachMedia = async (ws: ISheet | undefined) => {
-    if (!ws) return false;
-    if (ws.passage) {
-      const attached = mediafiles.filter(
-        (m) => related(m, 'passage') === ws.passage?.id
-      ) as MediaFileD[];
-      if (detachPassage) {
-        for (let ix = 0; ix < attached.length; ix++) {
-          await detachPassage(
-            ws.passage?.id || '',
-            related(ws.passage, 'section'),
-            plan,
-            (attached[ix] as MediaFileD).id,
-            true
-          );
-        }
-      }
-    }
-    return true;
-  };
-
-  const markDelete = async (index: number) => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    setUpdate(true);
-    const { ws, i } = getByIndex(sheetRef.current, index);
-    const removeItem: number[] = [];
-
-    const doDelete = (sht: ISheet[], j: number, isSec?: boolean) => {
-      if (
-        (isSec && (sht[j] as ISheet).sectionId) ||
-        (!isSec && (sht[j] as ISheet).passage)
-      ) {
-        sht[j] = { ...sht[j], deleted: true } as ISheet;
-      } else {
-        removeItem.push(j);
-      }
-    };
-
-    if (ws) {
-      const newsht = [...sheetRef.current];
-      if (isSectionRow(ws)) {
-        let j = i;
-        let isSec = true;
-        while (j < newsht.length) {
-          doDelete(newsht, j, isSec);
-          j += 1;
-          isSec = false;
-          if (j === newsht.length) break;
-          if (isSectionRow(newsht[j] as ISheet)) break;
-        }
-      } else doDelete(newsht, i);
-      const myWork: ISheet[] = [];
-      newsht.forEach((ws, i) => {
-        if (!removeItem.includes(i)) myWork.push(ws);
-      });
-      setSheet([...shtResequence(myWork)]);
-      setChanged(true);
-    }
-    setUpdate(false);
-  };
-
-  const handleDelete = async (what: string, where: number[]) => {
-    if (what === 'Delete') {
-      await waitForIt(
-        'saving before delete',
-        () => {
-          return !savingRef.current;
-        },
-        () => false,
-        1500
-      );
-      await markDelete(where[0] ?? 0);
-      return true;
-    }
-    return false;
-  };
-
-  const getScheme = (where: number[]) => {
-    const { ws } = getByIndex(sheetRef.current, where[0] ?? 0);
-    return ws?.scheme?.id;
-  };
-
-  const getSectionsWhere = (where: number[]) => {
-    const selected = Array<SectionD>();
-    where.forEach((c) => {
-      const { ws } = getByIndex(sheetRef.current, c);
-      const one = sections.find((s) => s.id === ws?.sectionId?.id);
-      if (one) selected.push(one);
-    });
-    return selected;
-  };
-
-  const handleTablePaste = (rows: string[][]) => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return Array<Array<string>>();
-    }
-    if (offline && !offlineOnly) {
-      showMessage(ts.NoSaveOffline);
-      return Array<Array<string>>();
-    }
-    setUpdate(true);
-    const { valid, addedWorkflow } = paste(rows);
-    if (valid) {
-      setSheet(sheetRef.current.concat(addedWorkflow));
-      setChanged(true);
-      setUpdate(false);
-      return Array<Array<string>>();
-    }
-    setUpdate(false);
-    return rows;
-  };
-
-  const isValidNumber = (value: string): boolean => {
-    return /^-?[0-9.]+$/.test(value);
-  };
-
-  interface MyWorkflow extends ISheet {
-    [key: string]: any;
-  }
-  const applyCellChanges = (changes: ICellChange[]) => {
-    setUpdate(true);
-    const newsht = [...sheetRef.current];
-    changes.forEach((c) => {
-      const { ws, i } = getByIndex(newsht, c.row);
-      const myWf = ws as MyWorkflow | undefined;
-      const name = colNames[c.col];
-      const isNumberCol = c.col === secNumCol || c.col === passNumCol;
-
-      if (isNumberCol && !isValidNumber(c.value || '')) {
-        showMessage(s.nonNumber);
-      } else if (myWf && myWf[name as keyof MyWorkflow] !== c.value) {
-        const isSection = c.col < 2;
-        const sectionUpdated = isSection
-          ? currentDateTime()
-          : ws?.sectionUpdated;
-        const passageUpdated = isSection
-          ? ws?.passageUpdated
-          : currentDateTime();
-        const value = name === 'book' ? findBook(c.value as string) : c.value;
-        const passageType =
-          name === 'reference'
-            ? passageTypeFromRef(c.value as string, flat)
-            : ws?.passageType;
-        const passage =
-          name === 'reference'
-            ? withUpdatedReference(ws?.passage, c.value as string)
-            : ws?.passage;
-
-        newsht[i] = {
-          ...ws,
-          [name as keyof MyWorkflow]: isNumberCol
-            ? parseInt(value ?? '')
-            : value,
-          sectionUpdated,
-          passageUpdated,
-          passageType,
-          passage,
-        } as ISheet;
-      }
-    });
-    if (changes.length > 0) {
-      setSheet(newsht);
-      setChanged(true);
-    }
-    setUpdate(false);
-  };
-
-  const updateData = (changes: ICellChange[]) => {
-    if (savingRef.current || updateRef.current) {
-      waitForIt(
-        'finish save or update',
-        () => !savingRef.current && !updateRef.current,
-        () => false,
-        50
-      ).then(() => applyCellChanges(changes));
-      return;
-    }
-    applyCellChanges(changes);
-  };
-
-  const bumpUpdatedStamp = (prev?: string) => {
-    let stamp = currentDateTime();
-    const floor = lastSavedRef.current;
-    // isSectionUpdated uses strict `>`; equal timestamps skip persist (TT-7660).
-    if (floor && stamp <= floor) {
-      const nextMs = Date.parse(floor) + 1;
-      stamp = Number.isFinite(nextMs) ? new Date(nextMs).toISOString() : stamp;
-    }
-    if (prev && stamp <= prev) {
-      const nextMs = Date.parse(prev) + 1;
-      stamp = Number.isFinite(nextMs) ? new Date(nextMs).toISOString() : stamp;
-    }
-    return stamp;
-  };
-
-  titleMediaApplyRef.current = (pending: TitleMediaPending) => {
-    setUpdate(true);
-    const newsht = [...sheetRef.current];
-    const i = resolveTitleMediaRowIndex(newsht, pending);
-    const ws = i >= 0 && i < newsht.length ? newsht[i] : undefined;
-    if (!ws) {
-      setUpdate(false);
-      return;
-    }
-    if (isSectionRow(ws)) {
-      const sectionUpdated = bumpUpdatedStamp(ws.sectionUpdated);
-      newsht[i] = {
-        ...ws,
-        titleMediaId: pending.mediaId
-          ? { type: 'mediafile', id: pending.mediaId }
-          : undefined,
-        sectionUpdated,
-      } as ISheet;
-      setSheet(newsht);
-      setChanged(true);
-    } else if (isPassageRow(ws)) {
-      // CHNUM / passage-only rows — do not run after section branch:
-      // SectionPassage would otherwise overwrite titleMediaId (TT-7660).
-      const passageUpdated = bumpUpdatedStamp(ws.passageUpdated);
-      newsht[i] = {
-        ...ws,
-        mediaId: pending.mediaId
-          ? { type: 'mediafile', id: pending.mediaId }
-          : undefined,
-        passageUpdated,
-      } as ISheet;
-      setSheet(newsht);
-      setChanged(true);
-    }
-    setUpdate(false);
-  };
-
-  const getTitleMediaQueue = () => {
-    if (!titleMediaQueueRef.current) {
-      titleMediaQueueRef.current = createPendingTitleMediaQueue({
-        isBusy: () => savingRef.current || updateRef.current,
-        whenIdle: (fn) => {
-          // Retry forever on wait timeout — never drop title-media updates (TT-7660).
-          const tryWait = (): Promise<void> => {
-            if (!savingRef.current && !updateRef.current) {
-              fn();
-              return Promise.resolve();
-            }
-            return waitForIt(
-              'finish save or update before title media',
-              () => !savingRef.current && !updateRef.current,
-              () => false,
-              50
-            )
-              .then(() => {
-                fn();
-              })
-              .catch(() => {
-                showMessage(t.saving);
-                return tryWait();
-              });
-          };
-          return tryWait();
-        },
-        applyOne: (item) => titleMediaApplyRef.current(item),
-        requestSave: () => {
-          if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current);
-          // Only the sheet tool — bare startSave() marks every dirty tool,
-          // including MediaTitle-*rec mid-recording, which surfaces as
-          // NoSaveWoMedia ("check your internet") with no failed network call.
-          titleSaveTimer.current = setTimeout(() => startSave(toolId), 1000);
-        },
-      });
-    }
-    return titleMediaQueueRef.current;
-  };
-
-  const updateTitleMedia = async (index: number, mediaId: string) => {
-    const { ws } = getByIndex(sheetRef.current, index);
-    const pending: TitleMediaPending = {
-      index,
-      mediaId,
-      sectionId: ws?.sectionId?.id,
-      passageId: ws?.passage?.id,
-      rowKey: ws?.rowKey,
-      label: ws?.title,
-    };
-    getTitleMediaQueue().enqueue(pending);
-  };
+  const {
+    sheetHasUnsavedChanges,
+    blockWhileSavingOrUpdating,
+    blockPublishingRows,
+    showBlockedPublishingMessage,
+    handleResequence,
+    updatePassageRef,
+    addSection,
+    addPassage,
+    movePassage,
+    moveSection,
+    doDetachMedia,
+    handleDelete,
+    getScheme,
+    getSectionsWhere,
+    handleTablePaste,
+    updateData,
+  } = useScriptureSheetEdits({
+    sheet,
+    sheetRef,
+    savingRef,
+    updateRef,
+    setSheet,
+    setChanged,
+    setUpdate,
+    setSectionArr,
+    setEditRow,
+    showMessage,
+    savingMessage: t.saving,
+    saveFirstMessage: t.saveFirst,
+    nonNumberMessage: s.nonNumber,
+    noSaveOfflineMessage: ts.NoSaveOffline,
+    isChanged,
+    toolId,
+    flat,
+    scripture,
+    firstBook,
+    shared,
+    publishingTitle,
+    graphicFind,
+    mediafiles,
+    detachPassage,
+    plan,
+    sections,
+    offline,
+    offlineOnly,
+    paste,
+    colNames,
+    secNumCol,
+    passNumCol,
+    findBook,
+  });
 
   const saveIfChanged = (cb: () => void) => {
     if (myChangedRef.current) {
@@ -1357,44 +667,38 @@ export function ScriptureTable(props: IProps) {
     });
   };
 
-  const computeRef = (ref: string) => {
-    const m = refNumPat.exec(ref);
-    if (m) return m[1];
-    return ref;
-  };
   const getGraphicPickerRefString = (i: number) => {
     const { ws } = getByIndex(sheetRef.current, i);
     const passageType = passageTypeFromRef(ws?.reference ?? '', flat);
-    if (passageType === PassageTypeEnum.NOTE) {
-      if (ws?.passage) {
-        const noteRef = computeRef(curNoteRef(ws?.passage as PassageD));
-        if (noteRef.length > 0) return noteRef;
-      }
+    let noteRef = '';
+    let movementRef = '';
+    let sectionRef = '';
+    if (passageType === PassageTypeEnum.NOTE && ws?.passage) {
+      noteRef = curNoteRef(ws.passage as PassageD);
     } else if (passageType === PassageTypeEnum.MOVEMENT) {
-      const movementRef = computeRef(
-        computeMovementRef(ws?.sectionId?.id ?? '')
-      );
-      if (movementRef.length > 0) return movementRef;
-    } else if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
-      const chapter = (ws?.reference ?? '').match(/(\d+)$/);
-      const chapNum = chapter ? parseInt(chapter[1]) : undefined;
-      const verses = engVrs.get(firstBook);
-      if (verses && chapNum && chapNum < verses.length) {
-        return `${firstBook} ${chapNum}:1-${verses[chapNum - 1]}`;
-      }
-      return firstBook + ' ' + (chapter?.[1] ?? '1') + ':1-999';
-    } else if (
-      [PassageTypeEnum.BOOK, PassageTypeEnum.ALTBOOK].includes(passageType)
-    ) {
-      const verses = engVrs.get(firstBook);
-      if (verses) {
-        return (
-          firstBook + ' 1:1-' + verses.length + ':' + verses[verses.length - 1]
-        );
-      }
-      return firstBook + ' 1:1-999:999';
+      movementRef = computeMovementRef(ws?.sectionId?.id ?? '');
     }
-    return computeRef(computeSectionRef(ws?.sectionId?.id ?? ''));
+    const formattedEarly =
+      (passageType === PassageTypeEnum.NOTE &&
+        Boolean(ws?.passage) &&
+        computeGraphicRef(noteRef).length > 0) ||
+      (passageType === PassageTypeEnum.MOVEMENT &&
+        computeGraphicRef(movementRef).length > 0) ||
+      passageType === PassageTypeEnum.CHAPTERNUMBER ||
+      passageType === PassageTypeEnum.BOOK ||
+      passageType === PassageTypeEnum.ALTBOOK;
+    if (!formattedEarly) {
+      sectionRef = computeSectionRef(ws?.sectionId?.id ?? '');
+    }
+    return buildGraphicPickerRef({
+      row: ws,
+      flat,
+      firstBook,
+      verseCounts: engVrs,
+      noteRef,
+      movementRef,
+      sectionRef,
+    });
   };
 
   const handleGraphic = (i: number) => {
@@ -1591,130 +895,50 @@ export function ScriptureTable(props: IProps) {
     },
     [refreshSheet]
   );
-
-  // Save locally or online in batches
-  useEffect(() => {
-    let prevSave = '';
-    const handleSave = async () => {
-      const numChanges = shtNumChanges(sheetRef.current, prevSave);
-      if (firstMovement !== projFirstMovement)
-        setProjectDefault(projDefFirstMovement, firstMovement);
-      if (numChanges === 0) return;
-      for (const ws of sheetRef.current) {
-        if (ws.deleted) await doDetachMedia(ws);
-      }
-      setComplete(10);
-      const saveFn = async (sheet: ISheet[]) => {
-        // Prefer Orbit cache over closed-over React lists — publishing rows
-        // can exist on the sheet before the sections prop catches up (TT-7660).
-        const freshSections = memory.cache.query((q) =>
-          q.findRecords('section')
-        ) as SectionD[];
-        const freshPassages = memory.cache.query((q) =>
-          q.findRecords('passage')
-        ) as PassageD[];
-        if (!offlineOnly && numChanges > 10) {
-          return await onlineSave(sheet, prevSave);
-        }
-        await localSave(sheet, freshSections, freshPassages, prevSave);
-        return false;
-      };
-      if (numChanges > 50) setBusy(true);
-      const newsht = [...sheetRef.current];
-      await saveFn(newsht);
-      //update plan section count and lastmodified
-      await updateLastModified();
-      setBusy(false);
-    };
-    const setSaving = (value: boolean) => (savingRef.current = value);
-    const doneSavingSuccess = () => {
-      setSaving(false);
-      setChanged(false);
-      setLastSaved(currentDateTime()); // force refresh the sheet from saved data
-      saveCompleted(toolId);
-      setComplete(100);
-      setUpdate(false);
-      sheetSavePipelineRef.current = false;
-    };
-    const doneSavingFailure = (saveErr: string) => {
-      setSaving(false);
-      setUpdate(false);
-      setBusy(false);
-      saveCompleted(toolId, saveErr);
-      setComplete(100);
-      showMessage(saveErr);
-      sheetSavePipelineRef.current = false;
-    };
-    const finishAfterSave = () => {
-      if (doForceDataChanges.current) {
-        doForceDataChanges.current = false;
-        waitForRemoteQueue(t.publishingWarning)
-          .then(() => forceDataChanges())
-          .catch(() => {})
-          .finally(() => doneSavingSuccess());
-      } else {
-        doneSavingSuccess();
-      }
-    };
-    const save = () => {
-      if (savingRef.current || updateRef.current) {
-        waitForIt(
-          'finish save or update',
-          () => !savingRef.current && !updateRef.current,
-          () => false,
-          50
-        )
-          .then(() => save())
-          .catch(() => {
-            doneSavingFailure(ts.TooBusy);
-          });
-        return;
-      }
-      setSaving(true);
-      setUpdate(true);
-      prevSave = lastSaved || '';
-      showMessage(t.saving);
-      handleSave()
-        .then(finishAfterSave)
-        .catch(() => doneSavingFailure(ts.NoSaveWoMedia));
-    };
-    myChangedRef.current = isChanged(toolId);
-    if (saveRequested(toolId)) {
-      // MediaTitle (and other tools) clearing dirty state re-fires toolsChanged
-      // while scriptureTable startSave is still set — without this guard we
-      // launch a second save with the same prevSave (TT-7660).
-      if (sheetSavePipelineRef.current) return;
-      sheetSavePipelineRef.current = true;
-      //wait a beat for the save to register
-      setTimeout(() => {
-        waitForIt(
-          'saving sheet recordings',
-          () => !anySaving(toolId) && !updateRef.current,
-          () => false,
-          10000
-        ).finally(() => {
-          if (offlineOnly) {
-            save();
-          } else {
-            checkOnline((online) => {
-              if (!online) {
-                saveCompleted(toolId, ts.NoSaveOffline);
-                showMessage(ts.NoSaveOffline);
-                setSaving(false);
-                setUpdate(false);
-                sheetSavePipelineRef.current = false;
-              } else {
-                save();
-              }
-            });
-          }
-        });
-      }, 100);
-    } else if (clearRequested(toolId)) {
-      clearCompleted(toolId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged]);
+  const { updateTitleMedia } = useScriptureSheetSave({
+    sheetRef,
+    savingRef,
+    updateRef,
+    myChangedRef,
+    lastSavedRef,
+    titleSaveTimer,
+    titleMediaApplyRef,
+    titleMediaQueueRef,
+    doForceDataChanges,
+    sheetSavePipelineRef,
+    setSheet,
+    setChanged,
+    setUpdate,
+    setLastSaved,
+    setComplete,
+    setBusy,
+    showMessage,
+    t,
+    ts,
+    toolId,
+    firstMovement,
+    projFirstMovement,
+    setProjectDefault,
+    projDefFirstMovement,
+    doDetachMedia,
+    memory,
+    offlineOnly,
+    onlineSave,
+    localSave,
+    updateLastModified,
+    saveCompleted,
+    saveRequested,
+    clearRequested,
+    clearCompleted,
+    isChanged,
+    anySaving,
+    startSave,
+    checkOnline,
+    waitForRemoteQueue,
+    forceDataChanges,
+    toolsChanged,
+    lastSaved,
+  });
 
   // load data when tables change (and initally)
   useEffect(() => {
@@ -2004,17 +1228,17 @@ export function ScriptureTable(props: IProps) {
     PassageTypeEnum.CHAPTERNUMBER + ' ' + chapter.toString();
 
   const addChapterNumber = (newsht: ISheet[], chapter: number) => {
+    const sheetEdit = { flat, scripture, firstBook, shared };
     if (chapter > 0) {
       const title = chapterNumberTitle(chapter);
-      return addPassageTo(
-        SheetLevel.Section,
-        newsht,
-        PassageTypeEnum.CHAPTERNUMBER,
-        undefined,
-        undefined,
+      return addPassageTo({
+        level: SheetLevel.Section,
+        sheet: newsht,
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
         title,
-        chapterNumberReference(chapter)
-      );
+        reference: chapterNumberReference(chapter),
+        ...sheetEdit,
+      });
     }
     return newsht;
   };
