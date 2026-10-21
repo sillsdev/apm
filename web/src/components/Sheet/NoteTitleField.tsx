@@ -1,7 +1,4 @@
 import { TextField } from '@mui/material';
-import { IPlanSheetStrings } from '@model/index';
-import { useSelector, shallowEqual } from 'react-redux';
-import { planSheetSelector } from '../../selector';
 
 export function NoteTitleField({
   value,
@@ -12,7 +9,6 @@ export function NoteTitleField({
   onChange: (value: string) => void;
   readonly?: boolean;
 }>) {
-  const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   return (
     <TextField
       value={value}
@@ -24,7 +20,8 @@ export function NoteTitleField({
       spellCheck
       slotProps={{
         htmlInput: {
-          'aria-label': t.noteTitle,
+          // Accessibility-only label: intentionally not localized.
+          'aria-label': 'Note title',
           spellCheck: true,
           readOnly: readonly,
         },

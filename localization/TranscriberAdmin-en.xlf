@@ -6532,12 +6532,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="planSheet.noteTitle">
-         <segment>
-            <source>Note title</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="planSheet.pasting">
          <segment>
             <source>Pasting</source>
