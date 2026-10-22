@@ -12,6 +12,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
+import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
   ICarefulTranscriptionStrings,
@@ -42,19 +43,6 @@ import {
   type BoldClauseTranscriptionConfig,
 } from './boldClauseTranscription';
 
-function parseStepSettings(settings: unknown): Record<string, unknown> | null {
-  if (!settings) return null;
-  if (typeof settings === 'string') {
-    try {
-      return JSON.parse(settings) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
-  }
-  if (typeof settings === 'object') return settings as Record<string, unknown>;
-  return null;
-}
-
 interface IProps {
   width: number;
 }
@@ -71,7 +59,9 @@ function useTranscriptionStrings(
   return layout === 'carefulTranscription' ? careful : lwc;
 }
 
-export function PassageDetailBoldClauseTranscription({ width }: IProps) {
+export function PassageDetailBoldClauseTranscription({
+  width,
+}: Readonly<IProps>) {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -89,12 +79,12 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   const { waitForSave } = useContext(UnsavedContext).state;
 
   const stepSettingsParsed = useMemo(
-    () => parseStepSettings(settings),
+    () => parseTranscribeStepSettings(settings),
     [settings]
   );
 
   const artifactSlug = useMemo(() => {
-    const id = stepSettingsParsed?.artifactTypeId as string | undefined;
+    const id = stepSettingsParsed.artifactTypeId;
     if (!id) return null;
     const resolved =
       remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
@@ -130,7 +120,7 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
     useLwcTranslationClauses(mediafile);
 
   const recordingArtifactTypeId = useMemo((): string => {
-    const id = stepSettingsParsed?.artifactTypeId as string | undefined;
+    const id = stepSettingsParsed.artifactTypeId;
     if (id) {
       return (
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id

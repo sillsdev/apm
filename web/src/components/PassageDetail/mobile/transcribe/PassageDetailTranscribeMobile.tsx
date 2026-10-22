@@ -65,6 +65,8 @@ import {
   type FontData,
 } from '../../../../crud/fontChoice';
 import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
+import { parseTranscribeStepSettings } from '../../../../crud/transcribeStepSettings';
+import { resolveStepSpellCheck } from '../../../../crud/stepSpellCheck';
 import {
   ArtifactTypeSlug,
   artifactStampsStepLanguage,
@@ -102,7 +104,9 @@ interface IStep {
   settings: string;
 }
 
-export function PassageDetailTranscribeMobileContent({ width }: IProps) {
+export function PassageDetailTranscribeMobileContent({
+  width,
+}: Readonly<IProps>) {
   const {
     mediafileId,
     section,
@@ -179,13 +183,10 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       : JSON.stringify(workflowStepSettingsRaw);
   }, [workflowStepSettingsRaw]);
 
-  const parsedSettings = useMemo(() => {
-    try {
-      return JSON.parse(stepSettings || '{}') as { artifactTypeId?: string };
-    } catch {
-      return {} as { artifactTypeId?: string };
-    }
-  }, [stepSettings]);
+  const parsedSettings = useMemo(
+    () => parseTranscribeStepSettings(stepSettings),
+    [stepSettings]
+  );
 
   const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
 
@@ -246,7 +247,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const vernacularSteps = useMemo(() => {
     return parsedSteps.filter(
       (s) =>
-        s.tool === ToolSlug.Transcribe && !JSON.parse(s.settings).artifactTypeId
+        s.tool === ToolSlug.Transcribe &&
+        !parseTranscribeStepSettings(s.settings).artifactTypeId
     );
   }, [parsedSteps]);
 
@@ -302,9 +304,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   const handleComplete = useCallback(
     (complete: boolean) => {
-      const waitPending = pendingSegmentSaveRef.current
-        ? pendingSegmentSaveRef.current
-        : Promise.resolve();
+      const waitPending = pendingSegmentSaveRef.current ?? Promise.resolve();
 
       waitPending
         .then(() => waitForSave(undefined, 200))
@@ -422,6 +422,12 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         : ArtifactTypeSlug.Vernacular,
     [artifactTypeId, slugFromId]
   );
+  // getFontData always returns spellCheck false, so the step flag is applied here.
+  const spellCheck = resolveStepSpellCheck(
+    parsedSettings,
+    artifactTypeSlug,
+    projData?.langTag
+  );
   const noParatext = useMemo(
     () => isNoParatextWorkflow(resolvedType, artifactTypeSlug),
     [resolvedType, artifactTypeSlug]
@@ -533,13 +539,8 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     if (!projRec) return;
     let cancelled = false;
 
-    const lgSettings = JSON.parse(stepSettings || '{}') as {
-      font?: string;
-      fontSize?: string;
-      rtl?: boolean;
-      language?: unknown;
-    };
-    const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
+    const lgSettings = parsedSettings;
+    const { bcp47: stepLang } = parseStepLanguageField(lgSettings.language);
     const hasStepLanguage = isLangSet(stepLang);
 
     let langTag = hasStepLanguage ? stepLang : undefined;
@@ -569,7 +570,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     return () => {
       cancelled = true;
     };
-  }, [project, memory, artifactTypeId, stepSettings, artifactTypeSlug]);
+  }, [project, memory, artifactTypeId, parsedSettings, artifactTypeSlug]);
 
   const handleTextAdd = useCallback(
     (newText: string) => {
@@ -699,7 +700,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     (remoteId: string) => {
       pullTableList(
         'mediafile',
-        Array(remoteId),
+        new Array(remoteId),
         memory,
         remote,
         backup,
@@ -816,7 +817,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           family={fontStyle.fontFamily}
           url={projData?.url}
           lang={projData?.langTag || 'en'}
-          spellCheck={projData?.spellCheck === true}
+          spellCheck={spellCheck}
           onChange={handleTextChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -973,7 +974,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   );
 }
 
-export default function PassageDetailTranscribeMobile(props: IProps) {
+export default function PassageDetailTranscribeMobile(props: Readonly<IProps>) {
   const { currentstep, orgWorkflowSteps, section, passage, sharedResource } =
     usePassageDetailContext();
   const { canDoSectionStep } = useStepPermissions();
@@ -989,13 +990,10 @@ export default function PassageDetailTranscribeMobile(props: IProps) {
       : JSON.stringify(workflowStepSettingsRaw);
   }, [workflowStepSettingsRaw]);
 
-  const parsedSettings = useMemo(() => {
-    try {
-      return JSON.parse(stepSettings || '{}') as { artifactTypeId?: string };
-    } catch {
-      return {} as { artifactTypeId?: string };
-    }
-  }, [stepSettings]);
+  const parsedSettings = useMemo(
+    () => parseTranscribeStepSettings(stepSettings),
+    [stepSettings]
+  );
 
   const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
   const { slugFromId } = useArtifactType();
@@ -1028,7 +1026,8 @@ export default function PassageDetailTranscribeMobile(props: IProps) {
   const vernacularSteps = useMemo(() => {
     return parsedSteps.filter(
       (s) =>
-        s.tool === ToolSlug.Transcribe && !JSON.parse(s.settings).artifactTypeId
+        s.tool === ToolSlug.Transcribe &&
+        !parseTranscribeStepSettings(s.settings).artifactTypeId
     );
   }, [parsedSteps]);
 
@@ -1063,17 +1062,9 @@ export default function PassageDetailTranscribeMobile(props: IProps) {
       )
     )
       return undefined;
-    const { bcp47 } = parseMediaLanguageField(
-      (() => {
-        try {
-          return (JSON.parse(stepSettings) as { language?: unknown }).language;
-        } catch {
-          return undefined;
-        }
-      })()
-    );
+    const { bcp47 } = parseMediaLanguageField(parsedSettings.language);
     return isLangSet(bcp47) ? bcp47 : undefined;
-  }, [artifactTypeId, slugFromId, stepSettings]);
+  }, [artifactTypeId, slugFromId, parsedSettings]);
 
   return (
     <TranscriberProvider
