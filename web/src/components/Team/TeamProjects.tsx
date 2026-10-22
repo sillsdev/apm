@@ -7,7 +7,7 @@ import { related } from '../../crud';
 import { usePlan } from '../../crud/usePlan';
 import ImportTab from '../ImportTab';
 import { TeamItem } from '.';
-import { CardSizeProvider } from './CardSize';
+import { CardSizeProvider } from '../CardSize/CardSize';
 import PersonalItem from './PersonalItem';
 
 export const TeamProjects = () => {

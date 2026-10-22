@@ -7,7 +7,7 @@ import { cardsSelector } from '../selector';
 import AppLayout from '../components/App/AppLayout';
 import ContentLayout from '../components/App/ContentLayout';
 import { StepEditor } from '../components/StepEditor';
-import { CardSizeProvider } from '../components/Team/CardSize';
+import { CardSizeProvider } from '../components/CardSize/CardSize';
 import { ProjectCard } from '../components/Team/ProjectCard';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';

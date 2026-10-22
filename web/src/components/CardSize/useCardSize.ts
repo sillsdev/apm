@@ -5,16 +5,17 @@ import { CardSizeContext } from './CardSize';
 export const minCardHeight = 176;
 
 // Adapt cards' height to their tallest card
-export const useCardHeight = () =>
-  Math.max(useContext(CardSizeContext).tallest, minCardHeight);
+export const useCardHeight = (minHeight = minCardHeight) =>
+  Math.max(useContext(CardSizeContext).tallest, minHeight);
 
-export const useMeasureCardHeight = (id: string) => {
+// Pass an undefined id to leave a card out of the measurement
+export const useMeasureCardHeight = (id: string | undefined) => {
   const { reportHeight } = useContext(CardSizeContext);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const content = contentRef.current;
-    if (!content || typeof ResizeObserver === 'undefined') return;
+    if (!id || !content || typeof ResizeObserver === 'undefined') return;
 
     const measure = () => {
       const rows = Array.from(content.children) as HTMLElement[];
