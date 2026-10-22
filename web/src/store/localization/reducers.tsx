@@ -1340,7 +1340,6 @@ const initialState = {
 			"passageEnd": "Add Passage to End",
 			"passageToPrevSection": "Move {pt} {0} Up",
 			"passageToNextSection": "Move {pt} {0} Down",
-			"noteTitle": "Note title",
 			"pasting": "Pasting",
 			"propagate": "Propagate to all {0} in the {1}",
 			"publish": "Publish {0} {1}",

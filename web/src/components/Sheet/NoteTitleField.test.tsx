@@ -30,12 +30,12 @@ function TitleCell({ readonly = false }: { readonly?: boolean }) {
 
 describe('note title dictionary', () => {
   beforeEach(() => {
-    mockUseSelector.mockReturnValue({ noteTitle: 'Note title' });
+    mockUseSelector.mockReturnValue({ title: 'Title' });
   });
 
   it('does not open the sheet menu on a misspelled note title', () => {
     render(<TitleCell />);
-    const title = screen.getByRole('textbox', { name: 'Note title' });
+    const title = screen.getByRole('textbox', { name: 'Title' });
     expect(title).toHaveAttribute('spellcheck', 'true');
     expect(title).not.toHaveAttribute('readonly');
     fireEvent.change(title, { target: { value: 'Changed' } });
@@ -46,7 +46,7 @@ describe('note title dictionary', () => {
 
   it('does not change a read-only note title', () => {
     render(<TitleCell readonly />);
-    const title = screen.getByRole('textbox', { name: 'Note title' });
+    const title = screen.getByRole('textbox', { name: 'Title' });
     expect(title).toHaveAttribute('spellcheck', 'true');
     expect(title).toHaveAttribute('readonly');
     fireEvent.change(title, { target: { value: 'Changed' } });
