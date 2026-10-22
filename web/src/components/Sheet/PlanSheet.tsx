@@ -1,7 +1,6 @@
 import {
   useState,
   useEffect,
-  useLayoutEffect,
   useRef,
   useContext,
   useMemo,
@@ -21,7 +20,6 @@ import {
   InputAdornment,
   TextField,
   Typography,
-  debounce,
   styled,
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -50,7 +48,6 @@ import {
   cleanClipboard,
   localUserKey,
   LocalKey,
-  rememberCurrentPassage,
   positiveWholeOnly,
   logError,
   Severity,
@@ -80,25 +77,19 @@ import MediaPlayer from '../MediaPlayer';
 import { ExtraIcon } from '.';
 import FilterMenu, { ISTFilterState } from './filterMenu';
 import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
+import { firstReferenceErrorRow } from './firstReferenceErrorRow';
+import { isSheetFilterActive } from './isSheetFilterActive';
+import { remapSheetCellChanges } from './remapSheetCellChanges';
 import { rowTypes } from './rowTypes';
+import { lastPassageRowBelow, sectionRowAbove } from './sheetRowIndex';
+import { sheetCopyRange, sheetCopyText } from './sheetCopyText';
+import { usePlanSheetScroll } from './usePlanSheetScroll';
 import { PlanSheetRowCtx } from './PlanActionMenu';
 import { usePlanSheetFill } from './usePlanSheetFill';
 import { shouldOpenSheetContextMenu } from './sheetContextMenu';
 import { useRefErrTest } from './useRefErrTest';
 import { useShowIcon } from './useShowIcon';
-import {
-  curTopFromViewport,
-  isSheetScrollTarget,
-  overflowScrollParent,
-  overscanOf,
-  minDataRowHeight,
-  pageSizeForView,
-  scrollTopFloorForPad,
-  sheetWindow,
-  visibleClip,
-} from './sheetWindow';
 
-const DOWN_ARROW = 'ARROWDOWN';
 export const SectionSeqCol = 0;
 
 /** Stable DataSheet row type — must not change identity or the grid remounts mid-drag. */
@@ -471,15 +462,11 @@ export function PlanSheet(props: IProps) {
   };
 
   const onMovementAbove = () => {
-    //we'll find a section before we get past 0
-    let row = currentRowRef.current - 1;
-    while (!isSectionType(row)) row -= 1;
+    const row = sectionRowAbove(currentRowRef.current - 1, isSectionType);
     addSection(SheetLevel.Movement, row, PassageTypeEnum.MOVEMENT);
   };
   const onSectionAbove = () => {
-    //we'll find a section before we get past 0
-    let row = currentRowRef.current - 1;
-    while (!isSectionType(row)) row -= 1;
+    const row = sectionRowAbove(currentRowRef.current - 1, isSectionType);
     addSection(SheetLevel.Section, row);
   };
 
@@ -496,9 +483,7 @@ export function PlanSheet(props: IProps) {
     addPassage(undefined, currentRowRef.current - 1, false);
   };
   const onPassageLast = () => {
-    //we're on a section so find our last row and add it below it
-    let row = currentRowRef.current;
-    while (isPassageType(row + 1)) row++;
+    const row = lastPassageRowBelow(currentRowRef.current, isPassageType);
     addPassage(undefined, row, false);
   };
 
@@ -565,255 +550,48 @@ export function PlanSheet(props: IProps) {
   };
 
   // DataSheet only mounts a window of rows; map sheet index ↔ absolute row.
-  const sheetToAbs = (sheetI: number) =>
-    sheetI <= 0 ? sheetI : sheetI + windowFirstRef.current - 1;
-  const absToSheet = (absI: number) =>
-    absI <= 0 ? absI : absI - windowFirstRef.current + 1;
-
-  const sheetClip = (el: HTMLElement) => overflowScrollParent(el) ?? el;
-
-  const syncViewport = (remeasure = false) => {
-    const scroller = scrollRef.current;
-    const table = sheetRef.current?.querySelector(
-      'table.data-grid'
-    ) as HTMLTableElement | null;
-    const firstH = table?.rows?.[1]?.offsetHeight || 0;
-    if (firstH > 0 && (remeasure || rowHeightRef.current === 0)) {
-      setRowHeight(firstH);
-    }
-    const h = rowHeightRef.current; //set by setRowHeight
-    if (!scroller || h <= 0) return;
-    const { height: clipHeight } = visibleClip(scroller, 0, window.innerHeight);
-    const total = Math.max(0, data.length - 1);
-    const minH = minDataRowHeight(table) || h;
-    setPageSize(
-      Math.min(pageSizeForView(minH, clipHeight), Math.max(1, total || 1))
-    );
-  };
-
-  const releaseScrollCurTopIgnore = () => {
-    window.clearTimeout(ignoreScrollTimerRef.current);
-    ignoreScrollTimerRef.current = window.setTimeout(() => {
-      ignoreScrollTimerRef.current = 0;
-      ignoreScrollCurTopRef.current = false;
-    }, 200);
-  };
-
-  /** Slide virtual window only if `row` is not mounted. Do not recenter. */
-  const pinWindowToRow = (row: number): false | 'start' | 'end' => {
-    if (row < 1) return false;
-    const first = windowFirstRef.current;
-    const last = windowLastRef.current;
-    if (row >= first && row < last) return false;
-    const n = pageSizeRef.current;
-    const desiredTop = Math.min(
-      Math.max(1, data.length - n),
-      row < first ? row : Math.max(1, row - n + 1)
-    );
-    const edge = row < first ? 'start' : 'end';
-    if (desiredTop === curTop) return edge;
-    ignoreScrollCurTopRef.current = true;
-    setCurTop(desiredTop);
-    return edge;
-  };
-
-  /** Height of the sticky header row, which overlays the top of the scroller. */
-  const headerHeight = () => {
-    const table = sheetRef.current?.querySelector(
-      'table.data-grid'
-    ) as HTMLTableElement | null;
-    return (table?.rows?.[0] as HTMLElement | undefined)?.offsetHeight ?? 0;
-  };
-
-  /** Scroll the scroller only if the row is clipped. `force` after a remount. */
-  const alignRowInScroller = (
-    scroller: HTMLElement,
-    el: HTMLElement,
-    force?: 'start' | 'end'
-  ) => {
-    const er = el.getBoundingClientRect();
-    const sr = scroller.getBoundingClientRect();
-    // Rows pass under the sticky header, so the usable top starts below it.
-    const top = sr.top + headerHeight();
-    if (force === 'start' || er.top < top) {
-      scroller.scrollTop += er.top - top;
-    } else if (force === 'end' || er.bottom > sr.bottom) {
-      scroller.scrollTop += er.bottom - sr.bottom;
-    }
-  };
-
-  /** Keep absolute data row in view. No scroll while it is fully visible. */
-  const sheetScroll = () => {
-    const scroller = scrollRef.current;
-    const row = currentRowRef.current;
-    if (!scroller || row < 1) return false;
-
-    if (row <= 1) {
-      ignoreScrollCurTopRef.current = true;
-      // rows[1] is the first *mounted* row (windowFirst), not absolute row 1.
-      const remounted = windowFirstRef.current > 1;
-      if (curTop !== 1) setCurTop(1);
-      if (scroller.scrollTop !== 0) scroller.scrollTop = 0;
-      const intoView = () => {
-        const table = sheetRef.current?.querySelector(
-          'table.data-grid'
-        ) as HTMLTableElement | null;
-        const first = table?.rows?.[1] as HTMLElement | undefined;
-        const clip = sheetClip(scroller);
-        // Align in an ancestor only if row 1 is clipped — do not reset AppLayout to 0.
-        if (first && clip !== scroller) alignRowInScroller(clip, first);
-        releaseScrollCurTopIgnore();
-      };
-      window.cancelAnimationFrame(sheetScrollRafRef.current);
-      if (remounted) {
-        sheetScrollRafRef.current = requestAnimationFrame(() => {
-          sheetScrollRafRef.current = requestAnimationFrame(() => {
-            sheetScrollRafRef.current = 0;
-            intoView();
-          });
-        });
-      } else intoView();
-      return false;
-    }
-
-    const remounted = pinWindowToRow(row);
-    const intoView = (force?: 'start' | 'end') => {
-      const table = sheetRef.current?.querySelector(
-        'table.data-grid'
-      ) as HTMLTableElement | null;
-      const el = table?.rows?.[absToSheet(row)] as HTMLElement | undefined;
-      if (el) alignRowInScroller(sheetClip(scroller), el, force);
-      if (remounted) releaseScrollCurTopIgnore();
-    };
-    window.cancelAnimationFrame(sheetScrollRafRef.current);
-    if (remounted) {
-      sheetScrollRafRef.current = requestAnimationFrame(() => {
-        sheetScrollRafRef.current = requestAnimationFrame(() => {
-          sheetScrollRafRef.current = 0;
-          intoView(remounted);
-        });
-      });
-    } else intoView();
-    return false;
-  };
-  const sheetScrollRef = useRef(sheetScroll);
-  sheetScrollRef.current = sheetScroll;
-  const syncViewportRef = useRef(syncViewport);
-  syncViewportRef.current = syncViewport;
-
-  // Debounced: toolbar state + passage memory + ensure row is in view.
-  const commitCurrentRowNow = () => {
-    const row = currentRowRef.current;
-    if (row < 0) return;
-    setCurrentRowx((prev) => (prev === row ? prev : row));
-    if (row > 0) {
-      rememberCurrentPassage(memory, rowInfo[row - 1]?.passage?.id ?? '');
-    }
-    sheetScroll();
-  };
-  const commitCurrentRowNowRef = useRef(commitCurrentRowNow);
-  commitCurrentRowNowRef.current = commitCurrentRowNow;
-
-  const scheduleCommitCurrentRow = useMemo(
-    () => debounce(() => commitCurrentRowNowRef.current(), 100),
-    []
-  );
-
-  useEffect(
-    () => () => scheduleCommitCurrentRow.clear(),
-    [scheduleCommitCurrentRow]
-  );
-
-  const setCurrentRow = (row: number) => {
-    if (row > rowInfo.length) return;
-    if (row === currentRowRef.current && row === currentRow) return;
-    currentRowRef.current = row;
-    startRowRef.current = row;
-    const j = selectColRef.current;
-    setAbsSel({ startI: row, endI: row, startJ: j, endJ: j });
-    scheduleCommitCurrentRow.clear();
-    commitCurrentRowNow();
-  };
-
-  const handleSelect = (loc: DataSheet.Selection) => {
-    const sheetEnd = loc.end?.i;
-    if (sheetEnd === undefined) return;
-
-    // Sheet index 0 is the header: paste-target at the top, scroll-up when windowed.
-    if (sheetEnd === 0) {
-      if (windowFirstRef.current > 1) {
-        const rh = rowHeightRef.current;
-        const scroller = scrollRef.current;
-        if (scroller && rh) {
-          const target = sheetClip(scroller);
-          target.scrollTop = Math.max(
-            0,
-            target.scrollTop - rh * overscanOf(pageSizeRef.current)
-          );
-        }
-        return;
-      }
-      // True header (windowFirst === 1): whole-plan paste via parsePaste.
-      if (currentRowRef.current === 0 && startRowRef.current === 0) return;
-      currentRowRef.current = 0;
-      startRowRef.current = 0;
-      const j = loc.end?.j ?? 0;
-      selectColRef.current = j;
-      setAbsSel({ startI: 0, endI: 0, startJ: j, endJ: j });
-      setCurrentRowx((prev) => (prev === 0 ? prev : 0));
-      scheduleCommitCurrentRow();
-      return;
-    }
-
-    const absLocEnd = sheetToAbs(sheetEnd);
-    const absLocStart = sheetToAbs(loc.start?.i ?? sheetEnd);
-    if (
-      absLocEnd < windowFirstRef.current ||
-      absLocEnd >= windowLastRef.current
-    ) {
-      return;
-    }
-    const endJ = loc.end?.j ?? 0;
-    const startJ = loc.start?.j ?? endJ;
-    const isPoint = loc.start?.i === loc.end?.i && startJ === endJ;
-    // DataSheet `end` is the moving cell (drag / shift). Keep our original
-    // click as the range anchor — after we put focus in selected.start,
-    // loc.start is no longer the anchor.
-    const freezeAnchor =
-      !isPoint &&
-      startRowRef.current >= 1 &&
-      startRowRef.current !== currentRowRef.current;
-    const absFocus = absLocEnd;
-    const absAnchor = isPoint
-      ? absFocus
-      : freezeAnchor
-        ? startRowRef.current
-        : absLocStart;
-    const focusJ = endJ;
-    const sameAnchor =
-      absFocus === currentRowRef.current && absAnchor === startRowRef.current;
-    currentRowRef.current = absFocus;
-    startRowRef.current = absAnchor;
-    selectColRef.current = focusJ;
-    setAbsSel((prev) => {
-      const next = {
-        startI: absAnchor,
-        endI: absFocus,
-        startJ: freezeAnchor ? prev.startJ : startJ,
-        endJ: focusJ,
-      };
-      return prev.startI === next.startI &&
-        prev.endI === next.endI &&
-        prev.startJ === next.startJ &&
-        prev.endJ === next.endJ
-        ? prev
-        : next;
-    });
-    if (sameAnchor) return;
-    setCurrentRowx((prev) => (prev === absFocus ? prev : absFocus));
-    if (isPoint) queueMicrotask(() => sheetScrollRef.current());
-    scheduleCommitCurrentRow();
-  };
+  const {
+    sheetToAbs,
+    setCurrentRow,
+    handleSelect,
+    visibleData,
+    topPad,
+    bottomPad,
+    selected,
+    rowCtx,
+  } = usePlanSheetScroll({
+    data,
+    rowInfo,
+    memory,
+    rowHeight,
+    pageSize,
+    curTop,
+    setCurTop,
+    setRowHeight,
+    setPageSize,
+    currentRow,
+    setCurrentRowx,
+    active,
+    setActive,
+    absSel,
+    setAbsSel,
+    currentRowRef,
+    startRowRef,
+    selectColRef,
+    windowFirstRef,
+    windowLastRef,
+    prevWindowFirstRef,
+    ignoreScrollCurTopRef,
+    ignoreScrollTimerRef,
+    sheetScrollRafRef,
+    topPadElRef,
+    rowHeightRef,
+    pageSizeRef,
+    sheetRef,
+    scrollRef,
+    subscribe,
+    unsubscribe,
+  });
 
   const handleValueRender: DataSheet.ValueRenderer<ICell> = (cell) => {
     return cell?.className?.substring(0, 4) === 'book' && bookMap
@@ -893,14 +671,12 @@ export function PlanSheet(props: IProps) {
 
   const handleCellsChanged = (changes: Array<ICellChange>) => {
     if (readonly) return; //readonly
-    const colChanges = changes.map((c) => ({
-      ...c,
-      row: sheetToAbs(c.row) - 1,
-      col:
-        !hidePublishing && publishingOn
-          ? c.col - PrefixedCols - 1
-          : c.col - PrefixedCols,
-    }));
+    const colChanges = remapSheetCellChanges(changes, {
+      windowFirst: windowFirstRef.current,
+      prefixedCols: PrefixedCols,
+      hidePublishing,
+      publishingOn,
+    });
     updateData(colChanges);
   };
 
@@ -926,21 +702,14 @@ export function PlanSheet(props: IProps) {
   const handleNoContextMenu = () => setPosition(initialPosition);
 
   const handleSheetCopy = (start?: number, end?: number) => {
-    let content = '';
-    start = start ?? 0;
-    end = end ?? rowData.length;
-    if (
-      startRowRef.current !== -1 &&
-      startRowRef.current !== currentRowRef.current
-    ) {
-      start = startRowRef.current - 1;
-      end = currentRowRef.current;
-    }
-    for (let idx = start; idx < end; idx++) {
-      const row = [...rowData[idx]];
-      if (Boolean(row[0]) && (row[2] as string).startsWith('(')) row[2] = '';
-      content += row.join('\t') + '\n';
-    }
+    const range = sheetCopyRange(
+      start,
+      end,
+      rowData.length,
+      startRowRef.current,
+      currentRowRef.current
+    );
+    const content = sheetCopyText(rowData, range.start, range.end);
     navigator.clipboard.writeText(content).catch((reason) => {
       logError(
         Severity.error,
@@ -996,18 +765,10 @@ export function PlanSheet(props: IProps) {
     onFilterChange({ ...filterState, disabled: true }, false);
   };
 
-  const filtered = useMemo(() => {
-    return (
-      !filterState.disabled &&
-      (filterState.minStep !== '' ||
-        filterState.maxStep !== '' ||
-        filterState.hideDone ||
-        filterState.minSection > minimumSection ||
-        (filterState.maxSection > -1 &&
-          filterState.maxSection < maximumSection) ||
-        filterState.assignedToMe)
-    );
-  }, [filterState, minimumSection, maximumSection]);
+  const filtered = useMemo(
+    () => isSheetFilterActive(filterState, minimumSection, maximumSection),
+    [filterState, minimumSection, maximumSection]
+  );
 
   const planSheetFill = usePlanSheetFill({
     ...props,
@@ -1090,70 +851,6 @@ export function PlanSheet(props: IProps) {
     );
   };
 
-  const handleRowsPerPage = useMemo(
-    () => debounce(() => syncViewportRef.current(false), 100),
-    []
-  );
-
-  const scrolled = useMemo(
-    () =>
-      debounce(() => {
-        if (ignoreScrollCurTopRef.current) return;
-        const rh = rowHeightRef.current;
-        const scroller = scrollRef.current;
-        if (!rh || !scroller) return;
-        const table = sheetRef.current?.querySelector(
-          'table.data-grid'
-        ) as HTMLTableElement | null;
-        const firstData = table?.rows?.[1];
-        const clip = sheetClip(scroller);
-        const { top: clipTop } = visibleClip(scroller, 0, window.innerHeight);
-        // Padding and WarningDiv sit above the grid; measure the first mounted
-        // data row against the visible clip (inner scroller or AppLayout).
-        const next = firstData
-          ? curTopFromViewport(
-              clipTop,
-              firstData.getBoundingClientRect().top,
-              windowFirstRef.current,
-              rh
-            )
-          : Math.max(1, Math.floor(clip.scrollTop / rh));
-        setCurTop((t) => (t === next ? t : next));
-      }, 100),
-    []
-  );
-
-  useEffect(() => {
-    syncViewport();
-    const scroller = scrollRef.current;
-    window.addEventListener('resize', handleRowsPerPage);
-    const onScroll = (e: Event) => {
-      if (!isSheetScrollTarget(scrollRef.current, e.target)) return;
-      scrolled();
-    };
-    // Capture: AppLayout (or any ancestor) can be the element that actually scrolls.
-    window.addEventListener('scroll', onScroll, true);
-    const ro =
-      typeof ResizeObserver !== 'undefined' && scroller
-        ? new ResizeObserver(() => handleRowsPerPage())
-        : undefined;
-    if (scroller && ro) ro.observe(scroller);
-    const onDown = () => sheetScrollRef.current();
-    subscribe(DOWN_ARROW, onDown);
-
-    return () => {
-      unsubscribe(DOWN_ARROW);
-      window.removeEventListener('resize', handleRowsPerPage);
-      window.removeEventListener('scroll', onScroll, true);
-      ro?.disconnect();
-      handleRowsPerPage.clear();
-      scrolled.clear();
-      window.clearTimeout(ignoreScrollTimerRef.current);
-      window.cancelAnimationFrame(sheetScrollRafRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
     let timeoutRef: NodeJS.Timeout | undefined = undefined;
     if (rowInfo) {
@@ -1215,21 +912,14 @@ export function PlanSheet(props: IProps) {
   }, [toolsChanged]);
 
   const warningTest = (bookCol: number, refCol: number) => {
-    let refErr = false;
-    let firstErrRow: number | undefined;
-    if (refCol > 0) {
-      rowData.forEach((row, rowIndex) => {
-        if (isPassageType(rowIndex)) {
-          const hasRefErr = refErrTest(row[refCol]);
-          const missingBook = !row[bookCol]; // book is required
-          if (hasRefErr || missingBook) {
-            if (firstErrRow === undefined) firstErrRow = rowIndex + 1;
-            refErr = true;
-          }
-        }
-      });
-    }
-    if (refErr) {
+    const firstErrRow = firstReferenceErrorRow({
+      rowData,
+      bookCol,
+      refCol,
+      isPassage: isPassageType,
+      hasRefError: (cell) => refErrTest(cell),
+    });
+    if (firstErrRow !== undefined) {
       if (!warning) {
         setWarning(t.refErr);
         onWarning(true);
@@ -1344,85 +1034,6 @@ export function PlanSheet(props: IProps) {
     return isSectionType(currentRow - 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRow]);
-
-  const { first: windowFirst, last: windowLast } = sheetWindow(
-    curTop,
-    pageSize,
-    data.length
-  );
-  windowFirstRef.current = windowFirst;
-  windowLastRef.current = windowLast;
-
-  const visibleData = useMemo(() => {
-    if (data.length <= 1) return data as any[][];
-    return [data[0], ...data.slice(windowFirst, windowLast)] as any[][];
-  }, [data, windowFirst, windowLast]);
-
-  // Measure after rows exist and when rowHeight first locks (spacers appear).
-  useLayoutEffect(() => {
-    if (data.length <= 1) return;
-    syncViewport(rowHeightRef.current === 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.length, rowHeight]);
-
-  const topPad = rowHeight > 0 ? (windowFirst - 1) * rowHeight : 0;
-  const bottomPad =
-    rowHeight > 0 ? Math.max(0, data.length - windowLast) * rowHeight : 0;
-
-  // Programmatic window moves grow/shrink topPad; keep scrollTop in lockstep
-  // so the spacer never sits in the viewport (gap above the grid).
-  useLayoutEffect(() => {
-    const scroller = scrollRef.current;
-    const rh = rowHeightRef.current;
-    const prev = prevWindowFirstRef.current;
-    prevWindowFirstRef.current = windowFirst;
-    if (!scroller || !rh || prev === windowFirst) return;
-    if (!ignoreScrollCurTopRef.current) return;
-    const clip = sheetClip(scroller);
-    const pad = topPadElRef.current;
-    const floor = scrollTopFloorForPad(
-      clip.scrollTop,
-      clip.getBoundingClientRect().top,
-      pad?.getBoundingClientRect().bottom ?? 0,
-      pad?.offsetHeight ?? 0
-    );
-    clip.scrollTop = Math.max(
-      floor,
-      clip.scrollTop + (windowFirst - prev) * rh
-    );
-  }, [windowFirst, topPad]);
-
-  const clearActive = useCallback(() => setActive(-1), []);
-  const sheetCurrentI = useMemo(() => {
-    if (currentRow === 0) return windowFirst === 1 ? 0 : -1;
-    if (currentRow < windowFirst || currentRow >= windowLast) return -1;
-    return currentRow - windowFirst + 1;
-  }, [currentRow, windowFirst, windowLast]);
-  const rowCtx = useMemo(
-    () => ({ currentRow, activeRow: active, sheetCurrentI, clearActive }),
-    [currentRow, active, sheetCurrentI, clearActive]
-  );
-
-  const selected = useMemo((): DataSheet.Selection | null => {
-    const { startI, endI, startJ, endJ } = absSel;
-    if (endI < 0 && startI < 0) return null;
-    if (startI === 0 && endI === 0) {
-      return { start: { i: 0, j: startJ }, end: { i: 0, j: endJ } };
-    }
-    const lo = Math.min(startI, endI);
-    const hi = Math.max(startI, endI);
-    if (hi < windowFirst || lo >= windowLast) return null;
-    const toSheet = (abs: number) => {
-      if (abs <= 0) return 0;
-      const clamped = Math.min(Math.max(abs, windowFirst), windowLast - 1);
-      return clamped - windowFirst + 1;
-    };
-    return {
-      // DataSheet treats `start` as the current cell (arrows, Enter, typing).
-      start: { i: toSheet(endI), j: endJ },
-      end: { i: toSheet(startI), j: startJ },
-    };
-  }, [absSel, windowFirst, windowLast]);
 
   return (
     <ContentLayout
