@@ -15,6 +15,20 @@ For new English units use `<source>…</source>` with an empty `<target/>`, and 
 a `<context-group context-type="sourcefile">` pointing to the primary consuming
 file (e.g. `BurritoFormat.tsx`) so translators see where the string is used.
 
+### Aria labels: reuse a visible label's string
+
+Every new string is extra work for translators, so an `aria-label` (or other
+accessibility-only text) should **reuse the string already shown as the
+control's visible label** — a column header, field label, button text, or
+tooltip — instead of adding a new XLIFF unit. This also keeps the accessible
+name matching what sighted users see. For example, the Plan sheet's note title
+field uses `scriptureTable.title` ("Title", its column header) as its
+`aria-label`.
+
+Add a new string for an aria label only when no visible text names the control.
+Do not hard-code English instead: an unlocalized label is wrong for screen-reader
+users in other languages.
+
 ## Regenerating TypeScript after XLIFF changes
 
 From the **repo root** in **PowerShell**:
