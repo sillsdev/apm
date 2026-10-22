@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { IMediaTabStrings, IState, PassageD } from '../../model';
+import {
+  IMediaTabStrings,
+  ISharedStrings,
+  IState,
+  PassageD,
+} from '../../model';
 import {
   Box,
-  Checkbox,
   debounce,
   FormControlLabel,
+  Radio,
+  RadioGroup,
   Switch,
   Table,
   TableBody,
@@ -15,8 +21,9 @@ import {
 import { findRecord, useOrganizedBy } from '../../crud';
 import { GetReference, IPRow } from '.';
 import { StatusL } from './getPassages';
-import { useSelector } from 'react-redux';
-import { mediaTabSelector } from '../../selector';
+import { shallowEqual, useSelector } from 'react-redux';
+import { mediaTabSelector, sharedSelector } from '../../selector';
+import { Button } from '../../control';
 import { useGlobal } from '../../context/useGlobal';
 
 interface IProps {
@@ -34,15 +41,15 @@ export const PassageChooser = (props: IProps) => {
   const { data, row, visible, uploadMedia } = props;
   const [memory] = useGlobal('memory');
   const allBookData = useSelector((state: IState) => state.books.bookData);
-  const t: IMediaTabStrings = useSelector(mediaTabSelector);
+  const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { doAttach, setVisible, setUploadMedia, mediaRow } = props;
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
-  const [pcheck, setCheck] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
 
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedId, setSelectedId] = useState<number | undefined>();
 
   const refCell = (pRow: IPRow) => {
     const passage = findRecord(memory, 'passage', pRow.passageId) as PassageD;
@@ -97,26 +104,27 @@ export const PassageChooser = (props: IProps) => {
 
   const handleAttachedFilterChange = (e: any) => {
     setShowAttached(e.target.checked);
+    // Toggling the filter changes which rows are visible, so clear any
+    // selection to avoid saving a passage that is no longer shown.
+    setSelectedId(undefined);
   };
 
-  const handleToggle = (id: number) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    const checks = Array.from(next);
+  const handleSelect = (id: number) => {
+    setSelectedId(id);
+  };
+
+  const handleSave = () => {
     let mRow = row;
     if (uploadMedia) {
       mRow = mediaRow(uploadMedia);
       setUploadMedia(undefined);
     }
-    if (visible && checks.length === 1 && mRow >= 0) {
-      doAttach(mRow, checks[0]);
+    // selectedId will be defined (otherwise the Save button
+    // would have been disabled) but check for TypeScript's sake
+    if (visible && mRow >= 0 && selectedId !== undefined) {
+      doAttach(mRow, selectedId);
       setVisible(false);
-      return;
     }
-    const newId = checks[0] === pcheck ? checks[1] : checks[0];
-    setCheck(newId);
-    setSelectedIds(next);
   };
 
   return (
@@ -143,38 +151,62 @@ export const PassageChooser = (props: IProps) => {
         label={t.alreadyAssociated}
       />
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox" />
-              <TableCell sx={{ width: colWidth }}>{organizedBy}</TableCell>
-              <TableCell sx={{ width: colWidth }}>{t.reference}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedIds.has(r.id)}
-                    onChange={() => handleToggle(r.id)}
-                    slotProps={{
-                      input: {
-                        'aria-label': `${r.sectionDesc} ${r.reference}`.trim(),
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell sx={{ whiteSpace: 'break-spaces' }}>
-                  {r.sectionDesc}
-                </TableCell>
-                <TableCell sx={{ whiteSpace: 'break-spaces' }}>
-                  {refCell(r)}
-                </TableCell>
+        {/* RadioGroup wraps the rows so the radios share one keyboard group
+            and users can move between passages with the arrow keys. */}
+        <RadioGroup
+          value={selectedId ?? ''}
+          onChange={(e) => handleSelect(Number(e.target.value))}
+        >
+          <Table
+            size="small"
+            stickyHeader
+            variant="striped"
+            sx={{
+              '& thead th': { backgroundColor: 'custom.headerBackground' },
+            }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox" />
+                <TableCell sx={{ width: colWidth }}>{organizedBy}</TableCell>
+                <TableCell sx={{ width: colWidth }}>{t.reference}</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell padding="checkbox">
+                    <Radio
+                      value={r.id}
+                      slotProps={{
+                        input: {
+                          'aria-label':
+                            `${r.sectionDesc} ${r.reference}`.trim(),
+                        },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: 'break-spaces' }}>
+                    {r.sectionDesc}
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: 'break-spaces' }}>
+                    {refCell(r)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </RadioGroup>
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
+        <Button
+          id="passageChooserSave"
+          color="primary"
+          onClick={handleSave}
+          disabled={selectedId === undefined}
+        >
+          {ts.save}
+        </Button>
       </Box>
     </Box>
   );
