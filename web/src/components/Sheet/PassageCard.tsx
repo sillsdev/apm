@@ -1,5 +1,5 @@
 import { ISheet, PassageTypeEnum } from '../../model';
-import { Box, Card, Stack, Typography } from '@mui/material';
+import { Box, Card, Chip, Stack, Typography } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassageSpeakerButton } from './PassageSpeakerButton';
 import { PassageCardHeader } from './PassageCardHeader';
@@ -31,10 +31,9 @@ export function PassageCard({
   const ref =
     noteTitle || cardInfo.passage?.attributes.reference || cardInfo.reference;
 
+  const noteCategory = noteTitle ? cardInfo.reference?.split('|')[1] : '';
   const description =
-    cardInfo.sharedResource?.attributes.description ||
-    (noteTitle ? cardInfo.reference?.split('|')[1] : '') ||
-    cardInfo.comment;
+    cardInfo.sharedResource?.attributes.description || cardInfo.comment;
 
   const psgType = cardInfo.passage
     ? passageTypeFromRef(cardInfo.passage.attributes.reference, false)
@@ -90,9 +89,18 @@ export function PassageCard({
         </Stack>
         {!isChapter && (
           <Stack justifyContent="flex-end" gap={1.5} minHeight={80}>
-            {!isPersonal && cardInfo.assign && (
-              <PassageAssignee assign={cardInfo.assign} />
-            )}
+            <Stack
+              direction="row"
+              justifyContent="flex-end"
+              alignItems="center"
+            >
+              {noteCategory && (
+                <Chip size="small" sx={{ mr: 'auto' }} label={noteCategory} />
+              )}
+              {!isPersonal && cardInfo.assign && (
+                <PassageAssignee assign={cardInfo.assign} />
+              )}
+            </Stack>
             <PassageStepButton
               step={cardInfo.step}
               discussionCount={cardInfo.stepDiscussionCount}
