@@ -6,7 +6,7 @@ interface IProps {
   mediaId: string;
 }
 
-export function PassageSpeakerButton({ mediaId }: IProps) {
+export function TitleAudioButton({ mediaId }: IProps) {
   const { playing, loading, play, audio } = usePassagePlayback(mediaId);
 
   return (

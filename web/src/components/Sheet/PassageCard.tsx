@@ -1,7 +1,7 @@
 import { ISheet, PassageTypeEnum } from '../../model';
 import { Box, Card, Chip, Stack, Typography } from '@mui/material';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { PassageSpeakerButton } from './PassageSpeakerButton';
+import { TitleAudioButton } from './TitleAudioButton';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
 import { PassageStepButton } from './PassageStepButton';
@@ -121,7 +121,7 @@ export function PassageCard({
             '& > *': { pointerEvents: 'auto' },
           }}
         >
-          <PassageSpeakerButton mediaId={mediaId} />
+          <TitleAudioButton mediaId={mediaId} />
         </Box>
       )}
     </Card>
