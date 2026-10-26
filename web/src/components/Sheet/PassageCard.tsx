@@ -72,7 +72,7 @@ export function PassageCard({
       }}
     >
       <Stack ref={contentRef} flex={1} justifyContent="space-between" gap={1.5}>
-        <Stack gap={1.5}>
+        <Stack gap={0.5}>
           <PassageCardHeader
             cardInfo={cardInfo}
             passageRef={ref}
