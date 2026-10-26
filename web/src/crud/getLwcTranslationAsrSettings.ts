@@ -37,7 +37,7 @@ export function findUpstreamRecordingWorkflowStep(
     };
     if (json.tool !== upstreamTool) return false;
     const settings = parseTranscribeStepSettings(json.settings);
-    if (!settings?.artifactTypeId) return false;
+    if (!settings.artifactTypeId) return false;
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
     return slug === recordingArtifactSlug;
   });

@@ -2221,5 +2221,49 @@ describe('PassageDetailTranscribeMobile', () => {
         'true'
       );
     });
+
+    const mountPbtSpellCheck = (stepSettings: Record<string, unknown>) =>
+      mountTranscribeMobile({
+        mediafileId: 'media-vernacular',
+        currentstep: 'step-bt-transcribe',
+        mediafiles: [makeVernMedia(), makePbtMedia()],
+        artifactTypes: pbtArtifactTypes,
+        workflowSteps: [
+          {
+            id: 'step-bt-transcribe',
+            type: 'orgworkflowstep',
+            attributes: {
+              sequencenum: 1,
+              tool: JSON.stringify({
+                tool: 'transcribe',
+                settings: JSON.stringify({
+                  artifactTypeId: 'art-type-pbt',
+                  ...stepSettings,
+                }),
+              }),
+            },
+          },
+        ],
+      });
+
+    it('does not spellcheck when the step turns off spell check that is on by default', () => {
+      mountPbtSpellCheck({ spellCheck: false });
+
+      cy.get('#transcriptionText', { timeout: 10000 }).should(
+        'have.attr',
+        'spellcheck',
+        'false'
+      );
+    });
+
+    it('spellchecks phrase back translation by default when the step has no spell check setting', () => {
+      mountPbtSpellCheck({});
+
+      cy.get('#transcriptionText', { timeout: 10000 }).should(
+        'have.attr',
+        'spellcheck',
+        'true'
+      );
+    });
   });
 });

@@ -32,12 +32,6 @@ jest.mock('../utils/useWaitForRemoteQueue', () => ({
   useWaitForRemoteQueue: () => jest.fn(),
 }));
 
-// the hook reaches logErrorService, whose barrel pulls in ESM localization
-jest.mock('../utils/logErrorService', () => ({
-  Severity: { info: 0, error: 1, retry: 2 },
-  logError: jest.fn(),
-}));
-
 jest.mock('../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
     const mockValues: Record<string, unknown> = {

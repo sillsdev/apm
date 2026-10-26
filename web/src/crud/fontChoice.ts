@@ -4,8 +4,9 @@ import Memory from '@orbit/memory';
 import { findRecord } from './tryFindRecord';
 import { LocalKey } from '../utils';
 import { parseStepLanguageField } from './transcribeStepAsrSettings';
-import { resolveStepSpellCheck } from './stepSpellCheck';
+import { isStepSpellCheckOn } from './stepSpellCheck';
 import {
+  parseStepTool,
   parseTranscribeStepSettings,
   type TranscribeStepSettings,
 } from './transcribeStepSettings';
@@ -104,8 +105,8 @@ export const getArtTypeFontData = (
   };
 
   orgSteps?.find((s) => {
-    const toolData = JSON.parse(s.attributes?.tool || '{}');
-    if (toolData?.settings) {
+    const toolData = parseStepTool(s.attributes?.tool);
+    if (toolData.settings) {
       const settings = parseTranscribeStepSettings(toolData.settings);
       if (
         settings.artifactTypeId ===
@@ -117,15 +118,15 @@ export const getArtTypeFontData = (
     }
     return false;
   });
-  const { bcp47: langTag } = parseStepLanguageField(stepSettings?.language);
+  const { bcp47: langTag } = parseStepLanguageField(stepSettings.language);
   const fontDir = getRtl(langTag) ? 'rtl' : 'ltr';
-  const fontFamily = stepSettings?.font || 'CharisSIL';
+  const fontFamily = stepSettings.font || 'CharisSIL';
   const url = getFontUrl(fontFamily);
 
   const lastFontData = loadFontData(exportId);
   const artSlug = (artifactType?.attributes?.typename ??
     ArtifactTypeSlug.Vernacular) as ArtifactTypeSlug;
-  const spellCheck = resolveStepSpellCheck(stepSettings, artSlug, langTag);
+  const spellCheck = isStepSpellCheckOn(stepSettings, artSlug, langTag);
 
   const data: FontData = {
     langTag,

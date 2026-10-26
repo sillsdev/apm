@@ -1,7 +1,8 @@
 import { join } from 'path-browserify';
 // @ts-ignore we need this for electron which has this dependency
 import { Stats } from 'fs-extra';
-import { LocalKey, createFolder } from '.';
+import { LocalKey } from './localUserKey';
+import { createFolder } from './createFolder';
 import { DateTime } from 'luxon';
 import Bugsnag from '@bugsnag/js';
 import { AxiosError } from 'axios';
@@ -38,10 +39,8 @@ export function logError(
         if (error !== '' && Bugsnag.leaveBreadcrumb) {
           Bugsnag.leaveBreadcrumb(error);
         }
-      } else {
-        if (reporter)
-          Bugsnag.leaveBreadcrumb(error.message, { name: error.name });
-      }
+      } else if (reporter)
+        Bugsnag.leaveBreadcrumb(error.message, { name: error.name });
     }
   }
   if (typeof error !== 'string' || error !== '') {
@@ -138,12 +137,10 @@ export async function logFile(): Promise<string> {
     } else if (err) {
       console.log(JSON.stringify(err));
     }
+  } else if (!isToday(stats.ctime)) {
+    logFileHeader(logFullName);
   } else {
-    if (!isToday(stats.ctime)) {
-      logFileHeader(logFullName);
-    } else {
-      console.log(`using existing file ${logFullName}`);
-    }
+    console.log(`using existing file ${logFullName}`);
   }
   return logFullName;
 }

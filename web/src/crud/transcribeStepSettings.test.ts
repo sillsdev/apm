@@ -1,4 +1,19 @@
-import { parseTranscribeStepSettings } from './transcribeStepSettings';
+const mockLogError = jest.fn();
+
+jest.mock('../utils/logErrorService', () => ({
+  Severity: { info: 0, error: 1, retry: 2 },
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+jest.mock('../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
+
+import {
+  parseStepTool,
+  parseTranscribeStepSettings,
+  reportReplacedStepSettings,
+} from './transcribeStepSettings';
+import { Severity } from '../utils/logErrorService';
+
+beforeEach(() => mockLogError.mockClear());
 
 describe('parseTranscribeStepSettings', () => {
   const full = {
@@ -67,5 +82,89 @@ describe('parseTranscribeStepSettings', () => {
     expect(parseTranscribeStepSettings('"text"')).toEqual({});
     expect(parseTranscribeStepSettings('[1]')).toEqual({});
     expect(parseTranscribeStepSettings(42)).toEqual({});
+  });
+});
+
+describe('settings problem logging', () => {
+  // Problems are logged once per distinct message for the whole module, so
+  // each test uses its own input.
+  const loggedMessages = () =>
+    mockLogError.mock.calls.map((call) => call[2] as string);
+
+  test('logs malformed and non-object settings with a copy of the input', () => {
+    parseTranscribeStepSettings('{bad json one');
+    parseTranscribeStepSettings('[2]');
+    expect(mockLogError).toHaveBeenCalledWith(
+      Severity.error,
+      {},
+      'Unreadable transcribe step settings: {bad json one'
+    );
+    expect(loggedMessages()).toEqual([
+      'Unreadable transcribe step settings: {bad json one',
+      'Unreadable transcribe step settings: [2]',
+    ]);
+  });
+
+  test('truncates long input in the log', () => {
+    parseTranscribeStepSettings(`{${'x'.repeat(300)}`);
+    expect(loggedMessages()[0]).toHaveLength(
+      'Unreadable transcribe step settings: '.length + 201
+    );
+  });
+
+  test('does not log missing settings', () => {
+    parseTranscribeStepSettings(undefined);
+    parseTranscribeStepSettings(null);
+    parseTranscribeStepSettings('');
+    expect(mockLogError).not.toHaveBeenCalled();
+  });
+
+  test('logs a known field with the wrong type, but not null or legacy strings', () => {
+    parseTranscribeStepSettings(
+      JSON.stringify({ fontSize: true, font: null, rtl: 'true' })
+    );
+    expect(loggedMessages()).toEqual([
+      'Transcribe step setting fontSize has type boolean',
+    ]);
+  });
+
+  test('logs each distinct problem only once', () => {
+    parseTranscribeStepSettings('{bad json repeat');
+    parseTranscribeStepSettings('{bad json repeat');
+    parseTranscribeStepSettings(JSON.stringify({ namedRegion: 1 }));
+    parseTranscribeStepSettings(JSON.stringify({ namedRegion: 2 }));
+    expect(loggedMessages()).toEqual([
+      'Unreadable transcribe step settings: {bad json repeat',
+      'Transcribe step setting namedRegion has type number',
+    ]);
+  });
+
+  test('logs the full unreadable settings before a save replaces them', () => {
+    const original = `{${'y'.repeat(300)}`;
+    reportReplacedStepSettings(original);
+    reportReplacedStepSettings('{"rtl":true}');
+    reportReplacedStepSettings('');
+    expect(loggedMessages()).toEqual([
+      `Replacing unreadable transcribe step settings: ${original}`,
+    ]);
+  });
+});
+
+describe('parseStepTool', () => {
+  test('parses a tool string', () => {
+    expect(parseStepTool('{"tool":"transcribe"}')).toEqual({
+      tool: 'transcribe',
+    });
+    expect(parseStepTool(undefined)).toEqual({});
+    expect(mockLogError).not.toHaveBeenCalled();
+  });
+
+  test('reads an unreadable tool as empty and logs it', () => {
+    expect(parseStepTool('{bad tool')).toEqual({});
+    expect(mockLogError).toHaveBeenCalledWith(
+      Severity.error,
+      {},
+      'Unreadable workflow step tool: {bad tool'
+    );
   });
 });

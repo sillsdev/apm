@@ -156,7 +156,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string
     >;
     const settings = parseTranscribeStepSettings(json?.settings);
-    const raw = settings?.sisterRecommendations;
+    const raw = settings.sisterRecommendations;
     if (typeof raw !== 'string') return undefined;
     try {
       return parseCachedRecommendations(JSON.parse(raw), langName);

@@ -66,7 +66,7 @@ import {
 } from '../../../../crud/fontChoice';
 import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
 import { parseTranscribeStepSettings } from '../../../../crud/transcribeStepSettings';
-import { resolveStepSpellCheck } from '../../../../crud/stepSpellCheck';
+import { isStepSpellCheckOn } from '../../../../crud/stepSpellCheck';
 import {
   ArtifactTypeSlug,
   artifactStampsStepLanguage,
@@ -188,7 +188,7 @@ export function PassageDetailTranscribeMobileContent({
     [stepSettings]
   );
 
-  const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
+  const artifactTypeId = parsedSettings.artifactTypeId ?? null;
 
   const { rowData, transSelected } = useTodo();
 
@@ -423,7 +423,7 @@ export function PassageDetailTranscribeMobileContent({
     [artifactTypeId, slugFromId]
   );
   // getFontData always returns spellCheck false, so the step flag is applied here.
-  const spellCheck = resolveStepSpellCheck(
+  const spellCheck = isStepSpellCheckOn(
     parsedSettings,
     artifactTypeSlug,
     projData?.langTag
@@ -539,14 +539,13 @@ export function PassageDetailTranscribeMobileContent({
     if (!projRec) return;
     let cancelled = false;
 
-    const lgSettings = parsedSettings;
-    const { bcp47: stepLang } = parseStepLanguageField(lgSettings.language);
+    const { bcp47: stepLang } = parseStepLanguageField(parsedSettings.language);
     const hasStepLanguage = isLangSet(stepLang);
 
     let langTag = hasStepLanguage ? stepLang : undefined;
-    let defaultFont = lgSettings?.font;
-    let rtl = lgSettings?.rtl ?? false;
-    let defaultFontSize = lgSettings?.fontSize;
+    let defaultFont = parsedSettings.font;
+    let rtl = parsedSettings.rtl ?? false;
+    let defaultFontSize = parsedSettings.fontSize;
     const useProjectLang =
       artifactTypeSlug === ArtifactTypeSlug.Vernacular || !hasStepLanguage;
     if (useProjectLang) {
@@ -995,7 +994,7 @@ export default function PassageDetailTranscribeMobile(props: Readonly<IProps>) {
     [stepSettings]
   );
 
-  const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
+  const artifactTypeId = parsedSettings.artifactTypeId ?? null;
   const { slugFromId } = useArtifactType();
 
   const parsedSteps = useMemo(() => {
