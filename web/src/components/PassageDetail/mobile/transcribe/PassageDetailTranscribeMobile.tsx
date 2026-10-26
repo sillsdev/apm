@@ -6,7 +6,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, Stack } from '@mui/material';
+import { Box, IconButton, Stack } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ActivityStates,
@@ -583,6 +584,15 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
   );
 
+  const hasAiTask = useMemo(
+    () =>
+      getSegments(
+        NamedRegions.TRTask,
+        mediafile?.attributes?.segments || '{}'
+      ) !== '{}',
+    [mediafile]
+  );
+
   const asr = useTranscribeAsr({
     team,
     sharedStr,
@@ -590,6 +600,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     showMessage,
     onTextAdd: handleTextAdd,
     getCurrentText: getTextValue,
+    hasActiveTask: hasAiTask,
   });
 
   const handleTextChange = useCallback(
@@ -788,6 +799,14 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           data-cy="mobile-asr-control"
           sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
         >
+          <IconButton
+            id="asrButton-settings"
+            aria-label={tPlayer.recognizeSpeechSettings}
+            onClick={() => asr.setAsrLangVisible(true)}
+            size="small"
+          >
+            <SettingsIcon fontSize="small" />
+          </IconButton>
           <Button
             id="asrButton"
             variant="outlined"

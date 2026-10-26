@@ -24,8 +24,10 @@ import {
   ISharedStrings,
   ITranscriberStrings,
   IVProjectStrings,
+  IWsAudioPlayerStrings,
   SectionD,
   MediaFileD,
+  OrganizationD,
 } from '../model';
 import {
   Badge,
@@ -68,7 +70,7 @@ import {
   resolvedProjectType,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
-import { useGetAsrSettings } from '../crud/useGetAsrSettings';
+import { useAsrSettings } from './PassageDetail/transcribe/useTranscribeAsr';
 import { parseStepLanguageField } from '../crud/transcribeStepAsrSettings';
 import {
   insertAtCursor,
@@ -106,11 +108,6 @@ import {
   transcriberSelector,
   vProjectSelector,
 } from '../selector';
-import {
-  IWsAudioPlayerStrings,
-  OrganizationD,
-  OrgWorkflowStepD,
-} from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { IRegionParams } from '../crud/useWavesurferRegions';
@@ -344,9 +341,7 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
-  const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
+  const asrSettings = useAsrSettings(team, showMessage);
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
@@ -1250,7 +1245,7 @@ export function Transcriber(props: IProps) {
   };
 
   const handleAutoTranscribe = (trans: string) => {
-    const cleanTrans = trans.replace(/[0-9]+:[0-9]+.[0-9]+: /g, '').trim();
+    const cleanTrans = trans.replace(/\d+:\d+\.\d+: /g, '').trim();
     const curTrans: string = transcriptionRef.current?.firstChild?.value ?? '';
     if (curTrans.includes(cleanTrans)) return;
     const m = /\\v (\d+)\s?/.exec(cleanTrans);
@@ -1274,12 +1269,6 @@ export function Transcriber(props: IProps) {
     () => textValue !== '' && verseLabels.length <= contentVerses.length,
     [textValue, verseLabels.length, contentVerses.length]
   );
-  const asrSettings = useMemo(
-    () => getAsrSettings(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orgSteps, getAsrSettings]
-  );
-
   const asrTip = useMemo(() => {
     return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
       '{0}',
@@ -1317,16 +1306,17 @@ export function Transcriber(props: IProps) {
     setAsrLangVisible(true);
   };
 
-  // Confirm step-resolved ASR settings; user may override for this run only.
-  // When the resolved settings are already usable (a valid ASR language is
-  // known from saved org/project settings), skip the dialog and start directly.
   const handleTranscribe = () => {
     checkOnline((online) => {
       if (!online) {
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (isLangSet(asrSettings?.asrIso)) {
+      if (hasAiTasks) {
+        startAsr(asrSettings);
+        return;
+      }
+      if (asrSettings && isLangSet(asrSettings.asrIso)) {
         startAsr(asrSettings);
         return;
       }
@@ -1334,19 +1324,11 @@ export function Transcriber(props: IProps) {
     });
   };
 
-  const handleAsrLanguageClose = (
-    cancel: boolean,
-    asrState?: IAsrState,
-    setAsTeamDefault?: boolean
-  ) => {
+  const handleAsrLanguageClose = (cancel: boolean, asrState?: IAsrState) => {
     setAsrLangVisible(false);
     if (cancel) return;
     const asr = asrState ?? asrSettings;
-    if (isLangSet(asr?.asrIso)) {
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
-      startAsr(asr);
-    }
+    if (asr && isLangSet(asr.asrIso)) startAsr(asr);
   };
 
   const handleAsrProgressVisible = (v: boolean) => {
@@ -1480,7 +1462,6 @@ export function Transcriber(props: IProps) {
                               id="asrButton"
                               onClick={handleTranscribe}
                               onSettings={openAsrLanguageSettings}
-                              showSettings={false}
                               disabled={role !== 'transcriber'}
                             >
                               {!hasTranscription &&

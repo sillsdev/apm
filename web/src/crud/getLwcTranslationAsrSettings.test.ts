@@ -4,15 +4,21 @@ jest.mock('../utils', () => ({
     Boolean(bcp && bcp !== 'und' && bcp.length > 0),
 }));
 
+jest.mock('../utils/axios', () => ({
+  axiosGet: jest.fn(async () => ['whisper']),
+}));
+
+jest.mock('../context/TokenProvider', () => ({
+  TokenContext: {},
+}));
+
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import {
   buildBoldClauseTranscriptionAsrState,
-  buildLwcTranslationAsrState,
-  boldClauseTranscriptionHasAsrLanguage,
-  findLwcTranslationWorkflowStep,
-  getLwcTranslationStepSettings,
-  lwcTranslationHasAsrLanguage,
+  boldClauseTranscriptionStepLanguage,
+  findUpstreamRecordingWorkflowStep,
+  getUpstreamRecordingStepSettings,
 } from './getLwcTranslationAsrSettings';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { OrgWorkflowStepD } from '../model';
@@ -28,7 +34,7 @@ const asrDefault = {
     spellCheck: false,
   },
   asrIso: 'eng',
-  method: 'whisper',
+  asrMethod: 'whisper',
   dialect: undefined,
   selectRoman: false,
 };
@@ -55,7 +61,7 @@ function lwcTranslationStep(): OrgWorkflowStepD {
   } as OrgWorkflowStepD;
 }
 
-describe('findLwcTranslationWorkflowStep', () => {
+describe('findUpstreamRecordingWorkflowStep', () => {
   it('finds phrase back translate step with PBT artifact', () => {
     const steps = [
       {
@@ -71,53 +77,45 @@ describe('findLwcTranslationWorkflowStep', () => {
       lwcTranslationStep(),
     ];
 
-    expect(findLwcTranslationWorkflowStep(steps, slugFromId)?.id).toBe(
-      'lwc-step'
-    );
+    expect(
+      findUpstreamRecordingWorkflowStep(
+        steps,
+        slugFromId,
+        ToolSlug.PhraseBackTranslate,
+        ArtifactTypeSlug.PhraseBackTranslation
+      )?.id
+    ).toBe('lwc-step');
   });
 });
 
-describe('getLwcTranslationStepSettings', () => {
+describe('getUpstreamRecordingStepSettings', () => {
   it('returns language from upstream LWC Translation step', () => {
-    const settings = getLwcTranslationStepSettings(
+    const settings = getUpstreamRecordingStepSettings(
       [lwcTranslationStep()],
-      slugFromId
+      slugFromId,
+      ToolSlug.PhraseBackTranslate,
+      ArtifactTypeSlug.PhraseBackTranslation
     );
     expect(settings.language).toBe('English|en');
   });
 });
 
-describe('buildLwcTranslationAsrState', () => {
-  it('builds ASR state from upstream step language', () => {
-    const getOrgDefault = () => undefined;
-    const asr = buildLwcTranslationAsrState(
+describe('buildBoldClauseTranscriptionAsrState', () => {
+  it('builds ASR state from the upstream LWC Translation step language', async () => {
+    const asr = await buildBoldClauseTranscriptionAsrState(
       [lwcTranslationStep()],
       slugFromId,
-      getOrgDefault,
+      ToolSlug.PhraseBackTranslate,
+      ArtifactTypeSlug.PhraseBackTranslation,
+      () => undefined,
       'org1',
       asrDefault
     );
     expect(asr.language.bcp47).toBe('en');
     expect(asr.asrIso).toBe('eng');
   });
-});
 
-describe('lwcTranslationHasAsrLanguage', () => {
-  it('returns true when upstream step has language', () => {
-    const getOrgDefault = () => undefined;
-    expect(
-      lwcTranslationHasAsrLanguage(
-        [lwcTranslationStep()],
-        slugFromId,
-        getOrgDefault,
-        'org1'
-      )
-    ).toBe(true);
-  });
-});
-
-describe('buildBoldClauseTranscriptionAsrState', () => {
-  it('uses current Transcribe step language when upstream has none', () => {
+  it('uses current Transcribe step language when upstream has none', async () => {
     const getOrgDefault = () => undefined;
     const currentSettings = {
       artifactTypeId: 'pbt-type-id',
@@ -126,7 +124,7 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
         bcp47: 'en',
       }),
     };
-    const asr = buildBoldClauseTranscriptionAsrState(
+    const asr = await buildBoldClauseTranscriptionAsrState(
       [],
       slugFromId,
       ToolSlug.PhraseBackTranslate,
@@ -141,7 +139,7 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
     expect(asr.asrIso).toBe('eng');
   });
 
-  it('prefers current Transcribe step over upstream when both have language', () => {
+  it('prefers current Transcribe step over upstream when both have language', async () => {
     const getOrgDefault = () => undefined;
     const currentSettings = {
       artifactTypeId: 'pbt-type-id',
@@ -150,7 +148,7 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
         bcp47: 'fr',
       }),
     };
-    const asr = buildBoldClauseTranscriptionAsrState(
+    const asr = await buildBoldClauseTranscriptionAsrState(
       [lwcTranslationStep()],
       slugFromId,
       ToolSlug.PhraseBackTranslate,
@@ -164,42 +162,104 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
     expect(asr.language.bcp47).toBe('fr');
     expect(asr.asrIso).toBe('fra');
   });
-});
 
-describe('boldClauseTranscriptionHasAsrLanguage', () => {
-  it('returns true when only current Transcribe step has language', () => {
-    const getOrgDefault = () => undefined;
-    const currentSettings = {
-      artifactTypeId: 'pbt-type-id',
-      language: formatStepLanguageField({
-        languageName: 'English',
-        bcp47: 'en',
-      }),
-    };
-    expect(
-      boldClauseTranscriptionHasAsrLanguage(
-        [],
-        slugFromId,
-        ToolSlug.PhraseBackTranslate,
-        ArtifactTypeSlug.PhraseBackTranslation,
-        getOrgDefault,
-        'org1',
-        currentSettings
-      )
-    ).toBe(true);
+  it('does not fall back to English for LWC when no step names a language', async () => {
+    const asr = await buildBoldClauseTranscriptionAsrState(
+      [],
+      slugFromId,
+      ToolSlug.PhraseBackTranslate,
+      ArtifactTypeSlug.PhraseBackTranslation,
+      () => undefined,
+      'org1',
+      asrDefault
+    );
+    expect(asr.asrIso).toBe('und');
+    expect(asr.language.bcp47).toBe('und');
   });
 
-  it('returns true when language is on upstream step only', () => {
-    const getOrgDefault = () => undefined;
+  it('uses the org vernacular for Careful Speech when no step names a language', async () => {
+    const getOrgDefault = (label: string) =>
+      label === 'langProps'
+        ? { bcp47: 'fr', languageName: 'French', font: '', rtl: false }
+        : undefined;
+    const asr = await buildBoldClauseTranscriptionAsrState(
+      [],
+      slugFromId,
+      ToolSlug.CarefulSpeech,
+      ArtifactTypeSlug.CarefulSpeech,
+      getOrgDefault,
+      'org1',
+      asrDefault
+    );
+    expect(asr.asrIso).toBe('fra');
+  });
+});
+
+describe('boldClauseTranscriptionStepLanguage', () => {
+  const getOrgDefault = (label: string) =>
+    label === 'langProps'
+      ? { bcp47: 'ta', languageName: 'Tamil', font: '', rtl: false }
+      : undefined;
+
+  it('returns the LWC translation step language, not the vernacular', () => {
     expect(
-      boldClauseTranscriptionHasAsrLanguage(
-        [lwcTranslationStep()],
+      boldClauseTranscriptionStepLanguage({
+        orgSteps: [lwcTranslationStep()],
         slugFromId,
-        ToolSlug.PhraseBackTranslate,
-        ArtifactTypeSlug.PhraseBackTranslation,
+        upstreamTool: ToolSlug.PhraseBackTranslate,
+        recordingArtifactSlug: ArtifactTypeSlug.PhraseBackTranslation,
         getOrgDefault,
-        'org1'
-      )
-    ).toBe(true);
+        orgId: 'org1',
+      })
+    ).toBe('en');
+  });
+
+  it('leaves the LWC language for the user to pick when there is no step language', () => {
+    expect(
+      boldClauseTranscriptionStepLanguage({
+        orgSteps: [],
+        slugFromId,
+        upstreamTool: ToolSlug.PhraseBackTranslate,
+        recordingArtifactSlug: ArtifactTypeSlug.PhraseBackTranslation,
+        getOrgDefault,
+        orgId: 'org1',
+      })
+    ).toBe('und');
+  });
+
+  it('uses the vernacular for Careful Speech without a step language', () => {
+    expect(
+      boldClauseTranscriptionStepLanguage({
+        orgSteps: [],
+        slugFromId,
+        upstreamTool: ToolSlug.CarefulSpeech,
+        recordingArtifactSlug: ArtifactTypeSlug.CarefulSpeech,
+        getOrgDefault,
+        orgId: 'org1',
+      })
+    ).toBeUndefined();
+  });
+
+  it('is undefined when the step uses the vernacular artifact', () => {
+    const vernacularStep = {
+      id: 'v',
+      type: 'orgworkflowstep',
+      attributes: {
+        tool: JSON.stringify({
+          tool: ToolSlug.PhraseBackTranslate,
+          settings: { artifactTypeId: ArtifactTypeSlug.Vernacular },
+        }),
+      },
+    } as OrgWorkflowStepD;
+    expect(
+      boldClauseTranscriptionStepLanguage({
+        orgSteps: [vernacularStep],
+        slugFromId,
+        upstreamTool: ToolSlug.PhraseBackTranslate,
+        recordingArtifactSlug: ArtifactTypeSlug.Vernacular,
+        getOrgDefault,
+        orgId: 'org1',
+      })
+    ).toBeUndefined();
   });
 });

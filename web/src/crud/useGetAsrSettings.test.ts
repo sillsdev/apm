@@ -5,6 +5,17 @@ jest.mock('../utils', () => ({
   }),
 }));
 
+jest.mock('../utils/axios', () => ({
+  axiosGet: jest.fn(async (api: string) => {
+    if (String(api).endsWith('/tlh')) {
+      throw Object.assign(new Error('not found'), {
+        response: { status: 404 },
+      });
+    }
+    return ['whisper'];
+  }),
+}));
+
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import {
@@ -18,6 +29,10 @@ import {
   isVernacularTranscribeStep,
   parseStepLanguageField,
   sisterBcpFromSettings,
+  readSisterRecommendations,
+  stepSettingsFromAsrState,
+  stepSisterRecommendationKey,
+  withSisterRecommendations,
   withInheritedVernacularSisterSettings,
   withPropagatedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
@@ -34,7 +49,7 @@ const asrDefault = {
     spellCheck: false,
   },
   asrIso: 'eng',
-  method: 'whisper',
+  asrMethod: 'whisper',
   dialect: undefined,
   selectRoman: false,
 };
@@ -198,8 +213,8 @@ describe('buildWorkflowAsrStateFromSettings', () => {
     rtl: false,
   });
 
-  it('uses step language for PBT when artifactTypeId is a remote id', () => {
-    const state = buildWorkflowAsrStateFromSettings(
+  it('uses step language for PBT when artifactTypeId is a remote id', async () => {
+    const state = await buildWorkflowAsrStateFromSettings(
       {
         artifactTypeId: '99',
         language: 'English|en',
@@ -213,8 +228,8 @@ describe('buildWorkflowAsrStateFromSettings', () => {
     expect(state.asrIso).not.toBe('und');
   });
 
-  it('uses sister language when primary is not ASR-supported', () => {
-    const state = buildWorkflowAsrStateFromSettings(
+  it('uses sister language when primary is not ASR-supported', async () => {
+    const state = await buildWorkflowAsrStateFromSettings(
       {
         artifactTypeId: '99',
         language: 'Klingon|tlh',
@@ -230,8 +245,8 @@ describe('buildWorkflowAsrStateFromSettings', () => {
     expect(state.language.bcp47).toBe('en');
   });
 
-  it('propagates the persisted selectRoman (transliterate) flag', () => {
-    const state = buildWorkflowAsrStateFromSettings(
+  it('propagates the persisted selectRoman (transliterate) flag', async () => {
+    const state = await buildWorkflowAsrStateFromSettings(
       {
         artifactTypeId: '99',
         language: 'Klingon|tlh',
@@ -255,7 +270,7 @@ describe('buildWorkflowAsrStateFromSettings Q&A and Retell', () => {
         ? ArtifactTypeSlug.Retell
         : ArtifactTypeSlug.Vernacular;
 
-  it('Q&A uses org default asr for target and resolved language', () => {
+  it('Q&A uses org default asr for target and resolved language', async () => {
     const getOrgDefault = (label: string) => {
       if (label === orgDefaultLangProps) {
         return {
@@ -283,7 +298,7 @@ describe('buildWorkflowAsrStateFromSettings Q&A and Retell', () => {
       }
       return undefined;
     };
-    const state = buildWorkflowAsrStateFromSettings(
+    const state = await buildWorkflowAsrStateFromSettings(
       { artifactTypeId: 'qa' },
       slugFromId,
       getOrgDefault,
@@ -304,7 +319,7 @@ describe('buildVernacularAsrState', () => {
       ? { bcp47: 'tlh', languageName: 'Klingon', font: '', rtl: false }
       : undefined;
 
-  it('prefers org default asr over unsupported org langProps', () => {
+  it('prefers org default asr over unsupported org langProps', async () => {
     const getOrgDefaultWithAsr = (label: string) => {
       if (label === orgDefaultLangProps) {
         return { bcp47: 'tlh', languageName: 'Klingon', font: '', rtl: false };
@@ -327,7 +342,7 @@ describe('buildVernacularAsrState', () => {
       }
       return undefined;
     };
-    const state = buildVernacularAsrState(
+    const state = await buildVernacularAsrState(
       { artifactTypeId: 'retell' },
       getOrgDefaultWithAsr,
       'org-1',
@@ -338,8 +353,8 @@ describe('buildVernacularAsrState', () => {
     expect(state.language.bcp47).toBe('en');
   });
 
-  it('uses sister languageName from sisterlanguage field', () => {
-    const state = buildVernacularAsrState(
+  it('uses sister languageName from sisterlanguage field', async () => {
+    const state = await buildVernacularAsrState(
       {
         sisterlanguage: formatStepLanguageField({
           languageName: 'English',
@@ -354,8 +369,136 @@ describe('buildVernacularAsrState', () => {
     expect(state.language.languageName).toBe('English');
   });
 
-  it('propagates the persisted selectRoman (transliterate) flag', () => {
-    const state = buildVernacularAsrState(
+  it('leaves the method unset when the step kept the default', async () => {
+    const state = await buildVernacularAsrState(
+      {
+        sisterlanguage: formatStepLanguageField({
+          languageName: 'English',
+          bcp47: 'en',
+        }),
+        asrMethod: 'default',
+      },
+      getOrgDefault,
+      'org-1',
+      asrDefault
+    );
+    expect(state.asrMethod).toBeUndefined();
+  });
+
+  it('does not keep the previous org method when the step returns to the default', async () => {
+    const getOrgDefaultWithAsr = (label: string) => {
+      if (label === orgDefaultLangProps) {
+        return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
+      }
+      if (label === orgDefaultAsr) {
+        return {
+          target: AsrTarget.alphabet,
+          language: {
+            bcp47: 'am',
+            languageName: 'Amharic',
+            font: '',
+            rtl: false,
+            spellCheck: false,
+          },
+          asrIso: 'amh',
+          asrMethod: 'whisper',
+          dialect: undefined,
+          selectRoman: false,
+        };
+      }
+      return undefined;
+    };
+    const state = await buildVernacularAsrState(
+      { asrMethod: 'default' },
+      getOrgDefaultWithAsr,
+      'org-1',
+      asrDefault
+    );
+    expect(state.asrMethod).toBeUndefined();
+  });
+
+  it('keeps the team default method when the step did not choose one', async () => {
+    const getOrgDefaultWithAsr = (label: string) => {
+      if (label === orgDefaultLangProps) {
+        return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
+      }
+      if (label === orgDefaultAsr) {
+        return {
+          target: AsrTarget.alphabet,
+          language: {
+            bcp47: 'am',
+            languageName: 'Amharic',
+            font: '',
+            rtl: false,
+            spellCheck: false,
+          },
+          asrIso: 'amh',
+          asrMethod: 'whisper',
+          dialect: undefined,
+          selectRoman: false,
+        };
+      }
+      return undefined;
+    };
+    const state = await buildVernacularAsrState(
+      {},
+      getOrgDefaultWithAsr,
+      'org-1',
+      asrDefault
+    );
+    expect(state.asrMethod).toBe('whisper');
+  });
+
+  it('uses a method the step chose over the team default', async () => {
+    const getOrgDefaultWithAsr = (label: string) => {
+      if (label === orgDefaultLangProps) {
+        return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
+      }
+      if (label === orgDefaultAsr) {
+        return {
+          target: AsrTarget.alphabet,
+          language: {
+            bcp47: 'am',
+            languageName: 'Amharic',
+            font: '',
+            rtl: false,
+            spellCheck: false,
+          },
+          asrIso: 'amh',
+          asrMethod: 'whisper',
+          dialect: undefined,
+          selectRoman: false,
+        };
+      }
+      return undefined;
+    };
+    const state = await buildVernacularAsrState(
+      { asrMethod: 'mms' },
+      getOrgDefaultWithAsr,
+      'org-1',
+      asrDefault
+    );
+    expect(state.asrMethod).toBe('mms');
+  });
+
+  it('keeps a method the step chose', async () => {
+    const state = await buildVernacularAsrState(
+      {
+        sisterlanguage: formatStepLanguageField({
+          languageName: 'English',
+          bcp47: 'en',
+        }),
+        asrMethod: 'mms',
+      },
+      getOrgDefault,
+      'org-1',
+      asrDefault
+    );
+    expect(state.asrMethod).toBe('mms');
+  });
+
+  it('propagates the persisted selectRoman (transliterate) flag', async () => {
+    const state = await buildVernacularAsrState(
       {
         sisterlanguage: formatStepLanguageField({
           languageName: 'English',
@@ -370,7 +513,7 @@ describe('buildVernacularAsrState', () => {
     expect(state.selectRoman).toBe(true);
   });
 
-  it('applies step phonetic + selectRoman when the vernacular is itself the ASR language', () => {
+  it('applies step phonetic + selectRoman when the vernacular is itself the ASR language', async () => {
     const getOrgDefaultWithAsr = (label: string) => {
       if (label === orgDefaultLangProps) {
         return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
@@ -393,7 +536,7 @@ describe('buildVernacularAsrState', () => {
       }
       return undefined;
     };
-    const state = buildVernacularAsrState(
+    const state = await buildVernacularAsrState(
       { phonetic: false, selectRoman: true },
       getOrgDefaultWithAsr,
       'org-1',
@@ -404,8 +547,8 @@ describe('buildVernacularAsrState', () => {
     expect(state.selectRoman).toBe(true);
   });
 
-  it('clears transliterate when phonetic is selected', () => {
-    const state = buildVernacularAsrState(
+  it('clears transliterate when phonetic is selected', async () => {
+    const state = await buildVernacularAsrState(
       {
         sisterlanguage: formatStepLanguageField({
           languageName: 'English',
@@ -437,7 +580,7 @@ describe('buildVernacularAsrState project language override', () => {
     selectRoman: true,
   };
 
-  it('defaults to step settings (sister) when project matches org default', () => {
+  it('defaults to step settings (sister) when project matches org default', async () => {
     const projectLang = {
       bcp47: 'tlh',
       languageName: 'Klingon',
@@ -445,7 +588,7 @@ describe('buildVernacularAsrState project language override', () => {
       rtl: false,
       spellCheck: false,
     };
-    const state = buildVernacularAsrState(
+    const state = await buildVernacularAsrState(
       settings,
       getOrgDefault,
       'org-1',
@@ -458,7 +601,7 @@ describe('buildVernacularAsrState project language override', () => {
     expect(state.selectRoman).toBe(true);
   });
 
-  it('uses the project language and drops the sister when it differs', () => {
+  it('uses the project language and drops the sister when it differs', async () => {
     const projectLang = {
       bcp47: 'en',
       languageName: 'Project English',
@@ -466,7 +609,7 @@ describe('buildVernacularAsrState project language override', () => {
       rtl: false,
       spellCheck: false,
     };
-    const state = buildVernacularAsrState(
+    const state = await buildVernacularAsrState(
       settings,
       getOrgDefault,
       'org-1',
@@ -748,5 +891,81 @@ describe('withPropagatedVernacularSisterSettings (TT-7420)', () => {
       slugFromId
     );
     expect(next[1].settings).toBe(wbtRows[1].settings);
+  });
+});
+
+describe('stepSettingsFromAsrState', () => {
+  const asr = {
+    target: AsrTarget.alphabet,
+    language: {
+      bcp47: 'en',
+      languageName: 'English',
+      font: 'charissil',
+      rtl: false,
+      spellCheck: false,
+    },
+    asrIso: 'eng',
+    asrMethod: 'mms',
+    dialect: undefined,
+    selectRoman: true,
+  };
+
+  it('writes the sister language onto the step and leaves the step language', () => {
+    expect(
+      stepSettingsFromAsrState(
+        { artifactTypeId: 'pbt', language: 'Kannada|kn' },
+        asr
+      )
+    ).toEqual({
+      artifactTypeId: 'pbt',
+      language: 'Kannada|kn',
+      sisterlanguage: 'English|en',
+      phonetic: false,
+      selectRoman: true,
+      asrMethod: 'mms',
+    });
+  });
+
+  it('writes a picked language as the step language when the step has none', () => {
+    expect(
+      stepSettingsFromAsrState({ artifactTypeId: 'pbt' }, asr).language
+    ).toBe('English|en');
+  });
+
+  it('caches sister recommendations on the step for its own language', () => {
+    const settings = { artifactTypeId: 'pbt', language: 'Kannada|kn' };
+    expect(stepSisterRecommendationKey(settings)).toBe('Kannada');
+    const stored = withSisterRecommendations(settings, 'Kannada', [
+      {
+        languageName: 'English',
+        iso: 'eng',
+        methods: ['mms'],
+        reason: 'close',
+      },
+    ]);
+    expect(stored).toMatchObject(settings);
+    expect(readSisterRecommendations(stored, 'Kannada')).toEqual([
+      {
+        languageName: 'English',
+        iso: 'eng',
+        methods: ['mms'],
+        reason: 'close',
+      },
+    ]);
+    expect(readSisterRecommendations(stored, 'French')).toBeUndefined();
+  });
+
+  it('stores an unset method as default and drops transliterate for phonetic', () => {
+    expect(
+      stepSettingsFromAsrState(
+        { artifactTypeId: 'pbt', language: 'Kannada|kn', selectRoman: true },
+        { ...asr, asrMethod: undefined, target: AsrTarget.phonetic }
+      )
+    ).toMatchObject({
+      language: 'Kannada|kn',
+      asrMethod: 'default',
+      phonetic: true,
+      selectRoman: false,
+    });
   });
 });

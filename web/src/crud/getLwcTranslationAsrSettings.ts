@@ -1,12 +1,17 @@
 import React from 'react';
-import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
+import {
+  IAsrState,
+  asrStatesEqual,
+  normalizeAsrState,
+} from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
 import { OrgWorkflowStepD, Project } from '../model';
+import { TokenContext } from '../context/TokenProvider';
 import { useGlobal } from '../context/useGlobal';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { JSONParse, isLangSet } from '../utils';
-import { getPreferredAsrMethod } from '../business/asr/asrLanguages';
+import { logError, Severity } from '../utils/logErrorService';
 import { useArtifactType } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
@@ -15,11 +20,14 @@ import {
   artifactTypeSlugFromSettings,
   buildVernacularAsrState,
   buildWorkflowAsrStateFromSettings,
+  artifactUsesOrgVernacularLanguage,
+  asrTargetFromSettings,
   hasTranscribeStepLanguageSettings,
+  parseStepLanguageField,
   transcribeSettingsNeedSisterLanguage,
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
-import { orgDefaultLangProps, useOrgDefaults } from './useOrgDefaults';
+import { useOrgDefaults } from './useOrgDefaults';
 
 function parseStepSettings(settingsJson: string | object | undefined) {
   if (!settingsJson) return {} as TranscribeStepSettings;
@@ -71,50 +79,6 @@ export function getUpstreamRecordingStepSettings(
   return parseStepSettings(json.settings);
 }
 
-export function buildUpstreamRecordingAsrState(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  upstreamTool: string,
-  recordingArtifactSlug: string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined,
-  asrDefault: IAsrState,
-  projectLang?: ILanguage
-): IAsrState {
-  const settings = getUpstreamRecordingStepSettings(
-    orgSteps,
-    slugFromId,
-    upstreamTool,
-    recordingArtifactSlug
-  );
-  if (
-    recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech &&
-    !hasTranscribeStepLanguageSettings(
-      upstreamTool,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    )
-  ) {
-    return buildVernacularAsrState(
-      settings,
-      getOrgDefault,
-      orgId,
-      asrDefault,
-      projectLang
-    );
-  }
-  return buildWorkflowAsrStateFromSettings(
-    settings,
-    slugFromId,
-    getOrgDefault,
-    orgId,
-    asrDefault,
-    projectLang
-  );
-}
-
 /** Prefer the active Transcribe-step settings when they carry language for this artifact. */
 export function resolveBoldClauseTranscriptionStepSettings(
   orgSteps: OrgWorkflowStepD[],
@@ -151,7 +115,76 @@ export function resolveBoldClauseTranscriptionStepSettings(
   return upstream;
 }
 
-export function buildBoldClauseTranscriptionAsrState(
+/**
+ * Where bold-clause ASR takes its language from. Careful Speech is vernacular
+ * audio unless its recording step names another language. Other recordings
+ * (e.g. LWC translation) are never in the vernacular: without a step language
+ * the user picks one, rather than falling back to English or the vernacular.
+ */
+export type BoldClauseAsrSource =
+  { kind: 'vernacular' } | { kind: 'step'; primaryBcp47: string };
+
+export function boldClauseAsrSource(
+  settings: TranscribeStepSettings,
+  recordingArtifactSlug: string,
+  slugFromId: (id: string) => string
+): BoldClauseAsrSource {
+  const slug = settings?.artifactTypeId
+    ? artifactTypeSlugFromSettings(settings, slugFromId)
+    : undefined;
+  if (slug && artifactUsesOrgVernacularLanguage(slug)) {
+    return { kind: 'vernacular' };
+  }
+  const primary = slug ? parseStepLanguageField(settings.language).bcp47 : '';
+  if (isLangSet(primary)) return { kind: 'step', primaryBcp47: primary };
+  if (recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech) {
+    return { kind: 'vernacular' };
+  }
+  return { kind: 'step', primaryBcp47: 'und' };
+}
+
+export interface BoldClauseStepLanguageOptions {
+  orgSteps: OrgWorkflowStepD[];
+  slugFromId: (id: string) => string;
+  upstreamTool: string;
+  recordingArtifactSlug: string;
+  getOrgDefault: (label: string, orgId?: string) => unknown;
+  orgId: string | undefined;
+  currentStepSettings?: unknown;
+}
+
+/**
+ * The recording step's primary language when it, not the org/project
+ * vernacular, drives ASR ('und' when that step names none). Undefined when the
+ * vernacular applies.
+ */
+export function boldClauseTranscriptionStepLanguage({
+  orgSteps,
+  slugFromId,
+  upstreamTool,
+  recordingArtifactSlug,
+  getOrgDefault,
+  orgId,
+  currentStepSettings,
+}: BoldClauseStepLanguageOptions): string | undefined {
+  const settings = resolveBoldClauseTranscriptionStepSettings(
+    orgSteps,
+    slugFromId,
+    upstreamTool,
+    recordingArtifactSlug,
+    getOrgDefault,
+    orgId,
+    currentStepSettings
+  );
+  const source = boldClauseAsrSource(
+    settings,
+    recordingArtifactSlug,
+    slugFromId
+  );
+  return source.kind === 'step' ? source.primaryBcp47 : undefined;
+}
+
+export async function buildBoldClauseTranscriptionAsrState(
   orgSteps: OrgWorkflowStepD[],
   slugFromId: (id: string) => string,
   upstreamTool: string,
@@ -160,8 +193,9 @@ export function buildBoldClauseTranscriptionAsrState(
   orgId: string | undefined,
   asrDefault: IAsrState,
   projectLang?: ILanguage,
-  currentStepSettings?: unknown
-): IAsrState {
+  currentStepSettings?: unknown,
+  token?: string | null
+): Promise<IAsrState> {
   const settings = resolveBoldClauseTranscriptionStepSettings(
     orgSteps,
     slugFromId,
@@ -171,32 +205,31 @@ export function buildBoldClauseTranscriptionAsrState(
     orgId,
     currentStepSettings
   );
-  const hasStepLanguage =
-    hasTranscribeStepLanguageSettings(
-      ToolSlug.Transcribe,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    ) ||
-    hasTranscribeStepLanguageSettings(
-      upstreamTool,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    );
-  if (
-    recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech &&
-    !hasStepLanguage
-  ) {
+  const source = boldClauseAsrSource(
+    settings,
+    recordingArtifactSlug,
+    slugFromId
+  );
+  if (source.kind === 'vernacular') {
     return buildVernacularAsrState(
       settings,
       getOrgDefault,
       orgId,
       asrDefault,
-      projectLang
+      projectLang,
+      token
     );
+  }
+  if (!isLangSet(source.primaryBcp47)) {
+    // No language known for this recording: leave it unset for the user to pick.
+    return {
+      ...asrDefault,
+      target: settings?.artifactTypeId
+        ? asrTargetFromSettings(settings)
+        : asrDefault.target,
+      asrIso: 'und',
+      language: { ...asrDefault.language, bcp47: 'und', languageName: '' },
+    };
   }
   return buildWorkflowAsrStateFromSettings(
     settings,
@@ -204,19 +237,21 @@ export function buildBoldClauseTranscriptionAsrState(
     getOrgDefault,
     orgId,
     asrDefault,
-    projectLang
+    projectLang,
+    token
   );
 }
 
-export function boldClauseTranscriptionHasAsrLanguage(
+export async function boldClauseTranscriptionNeedsSisterLanguage(
   orgSteps: OrgWorkflowStepD[],
   slugFromId: (id: string) => string,
   upstreamTool: string,
   recordingArtifactSlug: string,
   getOrgDefault: (label: string, orgId?: string) => unknown,
   orgId: string | undefined,
-  currentStepSettings?: unknown
-): boolean {
+  currentStepSettings?: unknown,
+  token?: string | null
+): Promise<boolean> {
   const settings = resolveBoldClauseTranscriptionStepSettings(
     orgSteps,
     slugFromId,
@@ -226,227 +261,19 @@ export function boldClauseTranscriptionHasAsrLanguage(
     orgId,
     currentStepSettings
   );
-  if (
-    hasTranscribeStepLanguageSettings(
-      ToolSlug.Transcribe,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    ) ||
-    hasTranscribeStepLanguageSettings(
-      upstreamTool,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    )
-  ) {
-    return true;
-  }
-  if (recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech) {
-    const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      ILanguage | undefined;
-    return isLangSet(orgLang?.bcp47);
-  }
-  return false;
-}
-
-export function boldClauseTranscriptionNeedsSisterLanguage(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  upstreamTool: string,
-  recordingArtifactSlug: string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined,
-  currentStepSettings?: unknown
-): boolean {
-  const settings = resolveBoldClauseTranscriptionStepSettings(
-    orgSteps,
-    slugFromId,
-    upstreamTool,
+  const source = boldClauseAsrSource(
+    settings,
     recordingArtifactSlug,
-    getOrgDefault,
-    orgId,
-    currentStepSettings
+    slugFromId
   );
-  if (
-    recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech &&
-    !hasTranscribeStepLanguageSettings(
-      ToolSlug.Transcribe,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    ) &&
-    !hasTranscribeStepLanguageSettings(
-      upstreamTool,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    )
-  ) {
-    return transcribeSettingsNeedSisterLanguage(
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    );
-  }
+  // With no language to check there is no sister to need; the user picks one.
+  if (source.kind === 'step' && !isLangSet(source.primaryBcp47)) return false;
   return transcribeSettingsNeedSisterLanguage(
     settings,
     slugFromId,
     getOrgDefault,
-    orgId
-  );
-}
-
-export function upstreamRecordingHasAsrLanguage(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  upstreamTool: string,
-  recordingArtifactSlug: string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined
-): boolean {
-  const settings = getUpstreamRecordingStepSettings(
-    orgSteps,
-    slugFromId,
-    upstreamTool,
-    recordingArtifactSlug
-  );
-  if (
-    hasTranscribeStepLanguageSettings(
-      upstreamTool,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    )
-  ) {
-    return true;
-  }
-  if (recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech) {
-    const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
-      ILanguage | undefined;
-    return isLangSet(orgLang?.bcp47);
-  }
-  return false;
-}
-
-export function upstreamRecordingNeedsSisterLanguage(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  upstreamTool: string,
-  recordingArtifactSlug: string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined
-): boolean {
-  const settings = getUpstreamRecordingStepSettings(
-    orgSteps,
-    slugFromId,
-    upstreamTool,
-    recordingArtifactSlug
-  );
-  if (
-    recordingArtifactSlug === ArtifactTypeSlug.CarefulSpeech &&
-    !hasTranscribeStepLanguageSettings(
-      upstreamTool,
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    )
-  ) {
-    return transcribeSettingsNeedSisterLanguage(
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId
-    );
-  }
-  return transcribeSettingsNeedSisterLanguage(
-    settings,
-    slugFromId,
-    getOrgDefault,
-    orgId
-  );
-}
-
-export function findLwcTranslationWorkflowStep(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string
-): OrgWorkflowStepD | undefined {
-  return findUpstreamRecordingWorkflowStep(
-    orgSteps,
-    slugFromId,
-    ToolSlug.PhraseBackTranslate,
-    ArtifactTypeSlug.PhraseBackTranslation
-  );
-}
-
-export function getLwcTranslationStepSettings(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string
-): TranscribeStepSettings {
-  const step = findLwcTranslationWorkflowStep(orgSteps, slugFromId);
-  if (!step) return {};
-  const json = JSONParse(step.attributes?.tool ?? '{}') as {
-    settings?: string | object;
-  };
-  return parseStepSettings(json.settings);
-}
-
-export function buildLwcTranslationAsrState(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined,
-  asrDefault: IAsrState,
-  projectLang?: ILanguage
-): IAsrState {
-  return buildUpstreamRecordingAsrState(
-    orgSteps,
-    slugFromId,
-    ToolSlug.PhraseBackTranslate,
-    ArtifactTypeSlug.PhraseBackTranslation,
-    getOrgDefault,
     orgId,
-    asrDefault,
-    projectLang
-  );
-}
-
-export function lwcTranslationHasAsrLanguage(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined
-): boolean {
-  return upstreamRecordingHasAsrLanguage(
-    orgSteps,
-    slugFromId,
-    ToolSlug.PhraseBackTranslate,
-    ArtifactTypeSlug.PhraseBackTranslation,
-    getOrgDefault,
-    orgId
-  );
-}
-
-export function lwcTranslationNeedsSisterLanguage(
-  orgSteps: OrgWorkflowStepD[],
-  slugFromId: (id: string) => string,
-  getOrgDefault: (label: string, orgId?: string) => unknown,
-  orgId: string | undefined
-): boolean {
-  return upstreamRecordingNeedsSisterLanguage(
-    orgSteps,
-    slugFromId,
-    ToolSlug.PhraseBackTranslate,
-    ArtifactTypeSlug.PhraseBackTranslation,
-    getOrgDefault,
-    orgId
+    token
   );
 }
 
@@ -461,6 +288,8 @@ export function useBoldClauseTranscriptionAsrSettings(
   const [project] = useGlobal('project');
   const { getOrgDefault } = useOrgDefaults();
   const { slugFromId } = useArtifactType();
+  const [errorReporter] = useGlobal('errorReporter');
+  const [asrLoadFailed, setAsrLoadFailed] = React.useState(false);
 
   const asrDefault: IAsrState = React.useMemo(
     () => ({
@@ -473,7 +302,6 @@ export function useBoldClauseTranscriptionAsrSettings(
         spellCheck: false,
       },
       asrIso: 'eng',
-      method: getPreferredAsrMethod('eng'),
       dialect: undefined,
       selectRoman: false,
     }),
@@ -481,6 +309,13 @@ export function useBoldClauseTranscriptionAsrSettings(
   );
 
   const orgId = organization as string | undefined;
+  const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
+  const [asrSettings, setAsrSettings] = React.useState<IAsrState>(() => ({
+    ...asrDefault,
+    asrIso: 'und',
+    language: { ...asrDefault.language, bcp47: 'und', languageName: '' },
+  }));
+  const [needsSister, setNeedsSister] = React.useState(false);
 
   const projectLang = React.useMemo<ILanguage | undefined>(() => {
     if (!project) return undefined;
@@ -497,8 +332,9 @@ export function useBoldClauseTranscriptionAsrSettings(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project]);
 
-  const getAsrSettings = React.useCallback(
-    () =>
+  React.useEffect(() => {
+    let cancelled = false;
+    Promise.all([
       buildBoldClauseTranscriptionAsrState(
         orgSteps,
         slugFromId,
@@ -508,45 +344,9 @@ export function useBoldClauseTranscriptionAsrSettings(
         orgId,
         asrDefault,
         projectLang,
-        currentStepSettings
+        currentStepSettings,
+        token
       ),
-    [
-      orgSteps,
-      slugFromId,
-      upstreamTool,
-      recordingArtifactSlug,
-      getOrgDefault,
-      orgId,
-      asrDefault,
-      projectLang,
-      currentStepSettings,
-    ]
-  );
-
-  const hasRecordingLanguage = React.useCallback(
-    () =>
-      boldClauseTranscriptionHasAsrLanguage(
-        orgSteps,
-        slugFromId,
-        upstreamTool,
-        recordingArtifactSlug,
-        getOrgDefault,
-        orgId,
-        currentStepSettings
-      ),
-    [
-      orgSteps,
-      slugFromId,
-      upstreamTool,
-      recordingArtifactSlug,
-      getOrgDefault,
-      orgId,
-      currentStepSettings,
-    ]
-  );
-
-  const needsSisterLanguage = React.useCallback(
-    () =>
       boldClauseTranscriptionNeedsSisterLanguage(
         orgSteps,
         slugFromId,
@@ -554,39 +354,78 @@ export function useBoldClauseTranscriptionAsrSettings(
         recordingArtifactSlug,
         getOrgDefault,
         orgId,
-        currentStepSettings
+        currentStepSettings,
+        token
       ),
+    ])
+      .then(([next, needed]) => {
+        if (cancelled) return;
+        setAsrLoadFailed(false);
+        setAsrSettings((prev) => (asrStatesEqual(prev, next) ? prev : next));
+        setNeedsSister((prev) => (prev === needed ? prev : needed));
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        logError(
+          Severity.error,
+          errorReporter,
+          err instanceof Error ? err : new Error(String(err))
+        );
+        setAsrLoadFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // slugFromId (from useArtifactType) is recreated every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    orgSteps,
+    upstreamTool,
+    recordingArtifactSlug,
+    orgId,
+    getOrgDefault,
+    asrDefault,
+    projectLang,
+    currentStepSettings,
+    token,
+    errorReporter,
+  ]);
+
+  const needsSisterLanguage = React.useCallback(
+    () => needsSister,
+    [needsSister]
+  );
+
+  const asrIsoReady = isLangSet(normalizeAsrState(asrSettings)?.asrIso);
+
+  const stepLanguageBcp47 = React.useMemo(
+    () =>
+      boldClauseTranscriptionStepLanguage({
+        orgSteps,
+        slugFromId,
+        upstreamTool,
+        recordingArtifactSlug,
+        getOrgDefault,
+        orgId,
+        currentStepSettings,
+      }),
+    // slugFromId (from useArtifactType) is recreated every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       orgSteps,
-      slugFromId,
       upstreamTool,
       recordingArtifactSlug,
-      getOrgDefault,
       orgId,
+      getOrgDefault,
       currentStepSettings,
     ]
   );
 
-  const asrSettings = React.useMemo(() => getAsrSettings(), [getAsrSettings]);
-
-  const asrIsoReady = isLangSet(normalizeAsrState(asrSettings)?.asrIso);
-
   return {
-    getAsrSettings,
     asrSettings,
-    hasRecordingLanguage,
     needsSisterLanguage,
     asrIsoReady,
-  };
-}
-
-export function useLwcTranscriptionAsrSettings() {
-  const result = useBoldClauseTranscriptionAsrSettings(
-    ToolSlug.PhraseBackTranslate,
-    ArtifactTypeSlug.PhraseBackTranslation
-  );
-  return {
-    ...result,
-    hasLwcLanguage: result.hasRecordingLanguage,
+    asrLoadFailed,
+    stepLanguageBcp47,
   };
 }

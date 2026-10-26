@@ -1,0 +1,154 @@
+jest.mock('../../utils/axios', () => ({
+  axiosGet: jest.fn(),
+}));
+
+import { axiosGet } from '../../utils/axios';
+import {
+  asrLanguageFilter,
+  clearAsrLanguageValidityCache,
+  asrRequestMethod,
+  explicitAsrMethod,
+  getMethodsForAsr,
+  isValidAsrLanguage,
+  loadAsrLanguages,
+  resolveAsrBcp47,
+  specificAsrMethods,
+} from './asrLanguages';
+
+const mockAxiosGet = axiosGet as jest.Mock;
+
+describe('isValidAsrLanguage', () => {
+  beforeEach(() => {
+    mockAxiosGet.mockReset();
+    clearAsrLanguageValidityCache();
+  });
+
+  it('does not call aero when the iso is unset', async () => {
+    await expect(isValidAsrLanguage('und', 'token')).resolves.toBe(false);
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+  });
+
+  it('asks aero whether the iso is an ASR language', async () => {
+    mockAxiosGet.mockResolvedValue(['whisper']);
+    await expect(isValidAsrLanguage('eng', 'token')).resolves.toBe(true);
+    expect(mockAxiosGet).toHaveBeenCalledWith(
+      'aero/transcription/asrlanguages/eng',
+      undefined,
+      'token'
+    );
+  });
+
+  it('returns false when aero has no such language', async () => {
+    mockAxiosGet.mockRejectedValue({ response: { status: 404 } });
+    await expect(isValidAsrLanguage('tlh', 'token')).resolves.toBe(false);
+  });
+
+  it('does not call aero or reject the language when there is no token', async () => {
+    await expect(isValidAsrLanguage('eng', null)).resolves.toBe(true);
+    await expect(isValidAsrLanguage('eng', '')).resolves.toBe(true);
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+  });
+});
+
+describe('getMethodsForAsr', () => {
+  beforeEach(() => {
+    mockAxiosGet.mockReset();
+    clearAsrLanguageValidityCache();
+  });
+
+  it('returns the method names aero lists for the iso', async () => {
+    mockAxiosGet.mockResolvedValue(['omnilingual', 'mms']);
+    await expect(getMethodsForAsr('eng', 'token')).resolves.toEqual([
+      'omnilingual',
+      'mms',
+    ]);
+    expect(mockAxiosGet).toHaveBeenCalledWith(
+      'aero/transcription/asrlanguages/eng',
+      undefined,
+      'token'
+    );
+  });
+
+  it('does not call aero without a token, and still asks once a token arrives', async () => {
+    await expect(getMethodsForAsr('eng', null)).resolves.toEqual([]);
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+    mockAxiosGet.mockResolvedValue(['whisper']);
+    await expect(getMethodsForAsr('eng', 'token')).resolves.toEqual([
+      'whisper',
+    ]);
+    expect(mockAxiosGet).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('specificAsrMethods', () => {
+  it('hides the choice when fewer than two methods are available', () => {
+    expect(specificAsrMethods(['mms'])).toBeUndefined();
+    expect(specificAsrMethods([])).toBeUndefined();
+  });
+
+  it('offers the first listed method as the preferred one', () => {
+    expect(specificAsrMethods(['omnilingual', 'mms', 'whisper'])).toEqual({
+      preferred: 'omnilingual',
+      others: ['mms', 'whisper'],
+    });
+  });
+
+  it('treats default and empty as no explicit method', () => {
+    expect(explicitAsrMethod(undefined)).toBeUndefined();
+    expect(explicitAsrMethod('default')).toBeUndefined();
+    expect(explicitAsrMethod('whisper')).toBe('whisper');
+  });
+
+  it('sends no method for phonetic, even when one was chosen', () => {
+    expect(asrRequestMethod('mms', true)).toBeUndefined();
+    expect(asrRequestMethod('mms', false)).toBe('mms');
+    expect(asrRequestMethod('default', false)).toBeUndefined();
+  });
+});
+
+describe('loadAsrLanguages', () => {
+  beforeEach(() => {
+    mockAxiosGet.mockReset();
+    clearAsrLanguageValidityCache();
+  });
+
+  it('loads the picker list from aero once per session', async () => {
+    mockAxiosGet.mockResolvedValue(['aae', 'eng']);
+    await expect(loadAsrLanguages('token')).resolves.toEqual(
+      new Set(['aae', 'eng'])
+    );
+    await loadAsrLanguages('other-token');
+    expect(mockAxiosGet).toHaveBeenCalledTimes(1);
+    expect(mockAxiosGet).toHaveBeenCalledWith(
+      'aero/transcription/languages',
+      undefined,
+      'token'
+    );
+  });
+
+  it('does not ask aero without a token, and still asks once a token arrives', async () => {
+    await expect(loadAsrLanguages(null)).resolves.toEqual(new Set());
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+    mockAxiosGet.mockResolvedValue(['eng']);
+    await expect(loadAsrLanguages('token')).resolves.toEqual(new Set(['eng']));
+    expect(mockAxiosGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the configured sister language when it cannot ask aero', async () => {
+    await expect(resolveAsrBcp47('tlh', 'en', null)).resolves.toBe('en');
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+  });
+
+  it('keeps the primary language without a token when no sister is set', async () => {
+    await expect(resolveAsrBcp47('tlh', undefined, null)).resolves.toBe('tlh');
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+  });
+
+  it('filters the language picker with that list', async () => {
+    mockAxiosGet.mockResolvedValue(['eng']);
+    expect(asrLanguageFilter('en')).toBe(false);
+    await loadAsrLanguages('token');
+    expect(asrLanguageFilter('en')).toBe(true);
+    expect(asrLanguageFilter('fr')).toBe(false);
+  });
+});

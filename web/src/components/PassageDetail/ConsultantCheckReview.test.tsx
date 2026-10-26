@@ -41,6 +41,9 @@ jest.mock('../../context/usePassageDetailContext', () => () => ({
   mediafileId: mockMediafileId,
 }));
 jest.mock('@mui/icons-material', () => ({}));
+// transcribeStepAsrSettings pulls in the aero ASR client; keep axios (and the
+// utils barrel it imports) out of this component test.
+jest.mock('../../utils/axios', () => ({ axiosGet: jest.fn() }));
 jest.mock('../../selector', () => ({
   consultantSelector: jest.fn(),
 }));

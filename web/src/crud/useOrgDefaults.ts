@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { Organization, OrganizationD, RoleNames } from '../model';
 import { UpdateAttribute } from '../model/baseModel';
@@ -36,17 +36,23 @@ export const useOrgDefaults = () => {
   const [offlineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { getParam, setParam } = useJsonParams();
-  const getDefault = (label: string, org: Organization | OrganizationD) => {
-    return getParam(label, org.attributes?.defaultParams);
-  };
-  const getOrgDefault = (label: string, orgIn?: string) => {
-    const org = findRecord(
-      memory,
-      'organization',
-      orgIn ?? organization
-    ) as Organization;
-    return org ? getDefault(label, org) : undefined;
-  };
+  const getDefault = useCallback(
+    (label: string, org: Organization | OrganizationD) => {
+      return getParam(label, org.attributes?.defaultParams);
+    },
+    [getParam]
+  );
+  const getOrgDefault = useCallback(
+    (label: string, orgIn?: string) => {
+      const org = findRecord(
+        memory,
+        'organization',
+        orgIn ?? organization
+      ) as Organization;
+      return org ? getDefault(label, org) : undefined;
+    },
+    [getDefault, memory, organization]
+  );
   const setDefault = (label: string, value: any, org: Organization) => {
     const defaultParams =
       setParam(label, value, org.attributes.defaultParams) ?? '{}';
@@ -60,7 +66,7 @@ export const useOrgDefaults = () => {
     ) as OrganizationD;
     if (!org) return; // no defaults on Personal Team
     setDefault(label, value, org);
-    memory.update((t) =>
+    void memory.update((t) =>
       UpdateAttribute(
         t,
         org,

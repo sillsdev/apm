@@ -42,10 +42,11 @@ import {
   getFontData,
   findRecord,
   useStepTool,
+  pullTableList,
 } from '../../../crud';
-import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
+import { getSegments, NamedRegions } from '../../../utils/namedSegments';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
@@ -57,6 +58,8 @@ import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
 import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
+import IndexedDBSource from '@orbit/indexeddb';
+import JSONAPISource from '@orbit/jsonapi';
 
 function parseStepSettings(settings: unknown): TranscribeStepSettingsJson {
   if (!settings) return {};
@@ -131,13 +134,15 @@ export default function BoldClauseTranscriptionEditor({
   const [offline] = useGlobal('offline');
   const [project] = useGlobal('project');
   const [organization] = useGlobal('organization');
+  const [coordinator] = useGlobal('coordinator');
+  const [errorReporter] = useGlobal('errorReporter');
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
+  const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const teams = useOrbitData<OrganizationD[]>('organization');
   const team = useMemo(
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
   const { getOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
     { aiTranscribe?: boolean } | undefined;
@@ -147,12 +152,34 @@ export default function BoldClauseTranscriptionEditor({
   const [getName] = useLocLangName();
   const { currentstep } = usePassageDetailContext();
   const { settings: stepSettings } = useStepTool(currentstep);
-  const { asrSettings, asrIsoReady, needsSisterLanguage } =
-    useBoldClauseTranscriptionAsrSettings(
-      transcriptionConfig.upstreamTool,
-      transcriptionConfig.defaultArtifactSlug,
-      stepSettings
-    );
+  const {
+    asrSettings: resolvedAsr,
+    asrIsoReady: resolvedAsrIsoReady,
+    needsSisterLanguage: resolvedNeedsSister,
+    asrLoadFailed,
+    stepLanguageBcp47,
+  } = useBoldClauseTranscriptionAsrSettings(
+    transcriptionConfig.upstreamTool,
+    transcriptionConfig.defaultArtifactSlug,
+    stepSettings
+  );
+  // The dialog's choice for a step language (e.g. LWC translation), kept while
+  // the editor is open so the dialog doesn't reopen on every clause. It isn't
+  // saved: the saved project/team ASR defaults belong to the vernacular.
+  const [stepAsrChoice, setStepAsrChoice] = useState<{
+    forBcp47: string;
+    asr: IAsrState;
+  }>();
+  const chosenStepAsr =
+    stepLanguageBcp47 && stepAsrChoice?.forBcp47 === stepLanguageBcp47
+      ? stepAsrChoice.asr
+      : undefined;
+  const asrSettings = chosenStepAsr ?? resolvedAsr;
+  const asrIsoReady = chosenStepAsr ? true : resolvedAsrIsoReady;
+  const needsSisterLanguage = useCallback(
+    () => !chosenStepAsr && resolvedNeedsSister(),
+    [chosenStepAsr, resolvedNeedsSister]
+  );
   const asrTip = useMemo(() => {
     const step = parseStepSettings(stepSettings);
     const primary = parseStepLanguageField(step.language);
@@ -286,6 +313,14 @@ export default function BoldClauseTranscriptionEditor({
   );
 
   const hasText = text.trim().length > 0;
+  const hasAiTask = useMemo(
+    () =>
+      getSegments(
+        NamedRegions.TRTask,
+        mediafile?.attributes?.segments || '{}'
+      ) !== '{}',
+    [mediafile]
+  );
   const needsLanguagePicker = !asrIsoReady || needsSisterLanguage();
   const runAsrDisabled =
     navigationDisabled || hasText || !features?.aiTranscribe || offline;
@@ -306,16 +341,27 @@ export default function BoldClauseTranscriptionEditor({
   );
 
   const handleAsrLanguageClose = useCallback(
-    (cancel: boolean, asrState?: IAsrState, setAsTeamDefault?: boolean) => {
+    (cancel: boolean, asrState?: IAsrState) => {
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
       if (!isLangSet(asr?.asrIso)) return;
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
+      // Step-language ASR (e.g. LWC translation) is remembered for this editor
+      // so the dialog reopens on it; the team ASR default belongs to the vernacular.
+      if (stepLanguageBcp47) {
+        setStepAsrChoice({ forBcp47: stepLanguageBcp47, asr });
+      }
       startAsr(asr);
     },
-    [asrSettings, saveProjectAsrSettings, saveTeamAsrSettings, startAsr]
+    [asrSettings, stepLanguageBcp47, startAsr]
+  );
+
+  const stepAsr = useMemo(
+    () =>
+      stepLanguageBcp47
+        ? { primaryBcp47: stepLanguageBcp47, asr: asrSettings }
+        : undefined,
+    [stepLanguageBcp47, asrSettings]
   );
 
   const handleAsrClose = useCallback(() => {
@@ -324,33 +370,54 @@ export default function BoldClauseTranscriptionEditor({
     onAsrActiveChange(false);
   }, [onAsrActiveChange]);
 
+  const onPullTasks = useCallback(
+    (remoteMediaId: string) => {
+      // The task id comes back on the media file. Pull it so leaving this step
+      // and returning can resume the same transcription.
+      void pullTableList(
+        'mediafile',
+        [remoteMediaId],
+        memory,
+        remote,
+        backup,
+        errorReporter
+      );
+    },
+    [memory, remote, backup, errorReporter]
+  );
+
   const handleAutoTranslation = useCallback(() => {
     checkOnline((online) => {
       if (!online) {
         showMessage(ts.mustBeOnline);
         return;
       }
-      if (!asrIsoReady) {
-        showMessage(noLanguageMessage);
+      if (hasAiTask) {
+        startAsr();
+        return;
+      }
+      if (needsLanguagePicker) {
+        if (!asrIsoReady) {
+          // A failed settings load is not a missing language; say which.
+          showMessage(asrLoadFailed ? tr.asrRequestFailed : noLanguageMessage);
+        }
         openAsrLanguageSettings();
         return;
       }
-      if (needsSisterLanguage()) {
-        openAsrLanguageSettings();
-        return;
-      }
-      startAsr(asrSettings);
+      startAsr();
     });
   }, [
     checkOnline,
     showMessage,
     ts.mustBeOnline,
+    hasAiTask,
+    startAsr,
+    needsLanguagePicker,
     asrIsoReady,
+    asrLoadFailed,
+    tr.asrRequestFailed,
     noLanguageMessage,
     openAsrLanguageSettings,
-    needsSisterLanguage,
-    startAsr,
-    asrSettings,
   ]);
 
   const handleAsrResult = useCallback(
@@ -387,7 +454,6 @@ export default function BoldClauseTranscriptionEditor({
                   id={`${idPrefix}-asr`}
                   onClick={handleAutoTranslation}
                   onSettings={openAsrLanguageSettings}
-                  showSettings={needsLanguagePicker}
                   disabled={runAsrDisabled}
                 >
                   <TranscriptionLogo
@@ -447,7 +513,7 @@ export default function BoldClauseTranscriptionEditor({
               !asrStatesEqual(asrOverride, asrSettings)
             }
             setTranscription={handleAsrResult}
-            onPullTasks={() => undefined}
+            onPullTasks={onPullTasks}
             onClose={handleAsrClose}
           />
         </BigDialog>
@@ -467,6 +533,7 @@ export default function BoldClauseTranscriptionEditor({
           key={asrLangVisible ? 'open' : 'closed'}
           team={team}
           onClose={handleAsrLanguageClose}
+          stepAsr={stepAsr}
         />
       </BigDialog>
     </Box>

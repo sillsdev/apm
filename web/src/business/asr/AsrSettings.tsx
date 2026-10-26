@@ -1,4 +1,11 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import {
   Badge,
   Checkbox,
@@ -17,12 +24,22 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { getLangTag } from 'mui-language-picker';
+import { TokenContext } from '../../context/TokenProvider';
+import { useGlobal } from '../../context/useGlobal';
+import { logError, Severity } from '../../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
 import { AsrAlphabet } from './AsrAlphabet';
 import { asrScriptDetail } from './asrScriptDetail';
-import { needsSisterLanguage } from './asrLanguages';
+import {
+  asrMethodDefaultValue,
+  explicitAsrMethod,
+  getMethodsForAsr,
+  isoFromBcp47,
+  needsSisterLanguage,
+  specificAsrMethods,
+} from './asrLanguages';
 import { isLangSet } from '../../utils/langTag';
 import scriptNameData from '../../assets/scriptName';
 import { AsrTarget } from './AsrTarget';
@@ -58,11 +75,57 @@ export const AsrSettings = ({
   recommendKey,
 }: IAsrSettings) => {
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
+  const [errorReporter] = useGlobal('errorReporter');
   const [scriptName] = useState(
     () => new Map(scriptNameData as [string, string][])
   );
+  const [needsSister, setNeedsSister] = useState(false);
+  const [asrMethods, setAsrMethods] = useState<string[]>([]);
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'failed'>(
+    'loading'
+  );
 
-  const needsSister = needsSisterLanguage(vernacularBcp47);
+  const sisterBcp47 = asr.language?.bcp47;
+
+  useEffect(() => {
+    let cancelled = false;
+    const reportFailure = (err: unknown) => {
+      logError(
+        Severity.error,
+        errorReporter,
+        err instanceof Error ? err : new Error(String(err))
+      );
+    };
+    const fail = (err: unknown) => {
+      if (cancelled) return;
+      reportFailure(err);
+      setLoadStatus('failed');
+      setAsrMethods([]);
+    };
+    // The method list depends on the sister check, so both run in one pass.
+    setLoadStatus('loading');
+    needsSisterLanguage(vernacularBcp47, token)
+      .then((needed) => {
+        if (cancelled) return;
+        setNeedsSister(needed);
+        const methodBcp =
+          needed || !isLangSet(vernacularBcp47)
+            ? (sisterBcp47 ?? 'und')
+            : vernacularBcp47;
+        return getMethodsForAsr(isoFromBcp47(methodBcp), token);
+      })
+      .then((methods) => {
+        if (cancelled || !methods) return;
+        setAsrMethods(methods);
+        setLoadStatus('ready');
+      })
+      .catch(fail);
+    return () => {
+      cancelled = true;
+    };
+  }, [vernacularBcp47, sisterBcp47, token, errorReporter]);
+
   const phonetic = asr.target === AsrTarget.phonetic;
 
   // When the vernacular is itself the ASR language, transliterate is governed by
@@ -72,6 +135,11 @@ export const AsrSettings = ({
     return asrScriptDetail({ langTag: getLangTag(vernacularBcp47), scriptName })
       .showRoman;
   }, [vernacularBcp47, scriptName]);
+
+  // No primary language known (e.g. an LWC step without one): the user picks
+  // the ASR language itself in the same picker the sister language uses.
+  const choosePrimary = !isLangSet(vernacularBcp47);
+  const showLanguagePicker = needsSister || choosePrimary;
 
   const handleTargetChange = (_e: unknown, value: string) => {
     const nextPhonetic = value === AsrTarget.phonetic;
@@ -90,6 +158,41 @@ export const AsrSettings = ({
   const handleRomanChange = (_e: unknown, checked: boolean) => {
     setAsr((prev) => (prev ? { ...prev, selectRoman: checked } : prev));
   };
+
+  const handleMethodChange = (_e: unknown, value: string) => {
+    setAsr((prev) =>
+      prev
+        ? {
+            ...prev,
+            asrMethod: value === asrMethodDefaultValue ? undefined : value,
+          }
+        : prev
+    );
+  };
+
+  const chosenMethod = explicitAsrMethod(asr.asrMethod);
+  const listedOptions = specificAsrMethods(asrMethods);
+  const methodIsListed = Boolean(
+    listedOptions &&
+    chosenMethod &&
+    (chosenMethod === listedOptions.preferred ||
+      listedOptions.others.includes(chosenMethod))
+  );
+  // A method the service no longer lists is not a choice. Drop it so the
+  // request uses the preferred method.
+  useEffect(() => {
+    if (loadStatus !== 'ready' || !chosenMethod) return;
+    if (asrMethods.includes(chosenMethod)) return;
+    setAsr((prev) =>
+      prev && explicitAsrMethod(prev.asrMethod) === chosenMethod
+        ? { ...prev, asrMethod: undefined }
+        : prev
+    );
+  }, [loadStatus, chosenMethod, asrMethods, setAsr]);
+  const selectedMethod =
+    methodIsListed && chosenMethod !== listedOptions?.preferred
+      ? chosenMethod
+      : asrMethodDefaultValue;
 
   return (
     <Stack spacing={1} sx={{ mt: 1 }}>
@@ -115,7 +218,7 @@ export const AsrSettings = ({
           />
         </RadioGroup>
       </FormControl>
-      {!needsSister && vernacularShowRoman && (
+      {!showLanguagePicker && vernacularShowRoman && (
         <FormControlLabel
           sx={{ ml: 1 }}
           control={
@@ -128,10 +231,10 @@ export const AsrSettings = ({
           label={t.transliterate}
         />
       )}
-      {needsSister && (
+      {showLanguagePicker && (
         <>
           <Typography variant="body2" sx={{ ml: 1 }}>
-            {t.sisterLang}
+            {choosePrimary ? t.asrChooseLanguage : t.sisterLang}
           </Typography>
           {loading ? (
             <Stack
@@ -170,9 +273,9 @@ export const AsrSettings = ({
                     <Typography variant="subtitle2">{t.recommended}</Typography>
                   </Stack>
                   <List dense disablePadding>
-                    {suggestions.map((s, i) => (
+                    {suggestions.map((s) => (
                       <ListItem
-                        key={`sister-suggestion-${i}`}
+                        key={s.iso}
                         disableGutters
                         sx={{ py: 0.25, alignItems: 'flex-start' }}
                       >
@@ -192,6 +295,34 @@ export const AsrSettings = ({
             </Stack>
           )}
         </>
+      )}
+      {loadStatus === 'failed' && (
+        <Typography variant="body2" color="error" sx={{ ml: 1 }}>
+          {t.asrRequestFailed}
+        </Typography>
+      )}
+      {listedOptions && !phonetic && (
+        <FormControl component="fieldset" variant="standard" sx={{ ml: 1 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {t.asrMethodHint}
+          </Typography>
+          <FormLabel component="legend">{t.asrMethod}</FormLabel>
+          <RadioGroup value={selectedMethod} onChange={handleMethodChange}>
+            <FormControlLabel
+              value={asrMethodDefaultValue}
+              control={<Radio />}
+              label={t.asrMethodDefault.replace('{0}', listedOptions.preferred)}
+            />
+            {listedOptions.others.map((method) => (
+              <FormControlLabel
+                key={method}
+                value={method}
+                control={<Radio />}
+                label={method}
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
       )}
     </Stack>
   );

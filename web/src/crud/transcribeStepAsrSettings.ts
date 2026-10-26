@@ -1,9 +1,9 @@
 import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
-import { getLangTag } from 'mui-language-picker';
 import {
-  getPreferredAsrMethod,
+  asrMethodDefaultValue,
+  explicitAsrMethod,
   isoFromBcp47,
   isValidAsrLanguage,
   resolveAsrBcp47,
@@ -69,6 +69,99 @@ export function formatStepLanguageField(lang: {
   bcp47?: string;
 }): string {
   return `${lang.languageName ?? ''}|${lang.bcp47 ?? 'und'}`;
+}
+
+export interface IStoredSisterRecommendation {
+  languageName: string;
+  iso: string;
+  methods: string[];
+  reason?: string;
+}
+
+/**
+ * Cache key for sister recommendations stored on a step that has its own
+ * language. The name matches the step editor; the code is the fallback when
+ * the step has no name yet.
+ */
+export function stepSisterRecommendationKey(
+  settings: TranscribeStepSettings
+): string {
+  const lang = parseStepLanguageField(settings.language);
+  if (lang.languageName) return lang.languageName;
+  return isLangSet(lang.bcp47) ? lang.bcp47 : '';
+}
+
+export function readSisterRecommendations(
+  settings: TranscribeStepSettings,
+  forLanguage: string
+): IStoredSisterRecommendation[] | undefined {
+  const raw = settings.sisterRecommendations;
+  if (typeof raw !== 'string' || !forLanguage) return undefined;
+  try {
+    const cached = JSON.parse(raw) as {
+      forLanguage?: string;
+      suggestions?: IStoredSisterRecommendation[];
+    };
+    if (
+      cached?.forLanguage !== forLanguage ||
+      !Array.isArray(cached.suggestions)
+    )
+      return undefined;
+    return cached.suggestions;
+  } catch {
+    return undefined;
+  }
+}
+
+export function withSisterRecommendations(
+  settings: TranscribeStepSettings,
+  forLanguage: string,
+  suggestions: IStoredSisterRecommendation[]
+): TranscribeStepSettings {
+  const lean = suggestions.map((s) => ({
+    languageName: s.languageName,
+    iso: s.iso,
+    methods: s.methods,
+    reason: s.reason,
+  }));
+  return {
+    ...settings,
+    sisterRecommendations: JSON.stringify({
+      forLanguage,
+      suggestions: lean,
+    }),
+  };
+}
+
+/**
+ * ASR chosen on a step that does not use the vernacular. Stored on that step.
+ * A missing step language is the language they picked; otherwise a different
+ * language is the sister. The method is always stored so the step does not
+ * inherit the team method.
+ */
+export function stepSettingsFromAsrState(
+  settings: TranscribeStepSettings,
+  asrState: IAsrState
+): TranscribeStepSettings {
+  const phonetic = asrState.target === AsrTarget.phonetic;
+  const chosen = asrState.language;
+  const chosenBcp = chosen?.bcp47 ?? 'und';
+  const primary = parseStepLanguageField(settings.language).bcp47;
+  const next: TranscribeStepSettings = {
+    ...settings,
+    phonetic,
+    selectRoman: !phonetic && asrState.selectRoman === true,
+    asrMethod: explicitAsrMethod(asrState.asrMethod) ?? asrMethodDefaultValue,
+  };
+  if (!isLangSet(primary) && isLangSet(chosenBcp)) {
+    next.language = formatStepLanguageField(chosen);
+    return next;
+  }
+  next.sisterlanguage =
+    isLangSet(chosenBcp) && chosenBcp !== primary
+      ? formatStepLanguageField(chosen)
+      : formatStepLanguageField({ languageName: '', bcp47: 'und' });
+  return next;
 }
 
 export function sisterBcpFromSettings(
@@ -266,12 +359,13 @@ export function hasTranscribeStepLanguageSettings(
 }
 
 /** True when step language is set but ASR needs a sister language. */
-export function transcribeSettingsNeedSisterLanguage(
+export async function transcribeSettingsNeedSisterLanguage(
   settings: TranscribeStepSettings,
   slugFromId: SlugFromIdFn,
   getOrgDefault: GetOrgDefaultFn,
-  orgId: string | undefined
-): boolean {
+  orgId: string | undefined,
+  token?: string | null
+): Promise<boolean> {
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
   if (slug === ArtifactTypeSlug.QandA || slug === ArtifactTypeSlug.Retell) {
     const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
@@ -288,7 +382,7 @@ export function transcribeSettingsNeedSisterLanguage(
     primaryBcp = bcp47;
   }
   const iso = isoFromBcp47(primaryBcp);
-  if (!isLangSet(iso) || isValidAsrLanguage(iso)) return false;
+  if (!isLangSet(iso) || (await isValidAsrLanguage(iso, token))) return false;
   const sisterBcp = sisterBcpFromSettings(settings);
   return !isLangSet(sisterBcp);
 }
@@ -307,13 +401,28 @@ function stepSelectRoman(settings: TranscribeStepSettings): boolean {
   return settings?.selectRoman === true || settings?.selectRoman === 'true';
 }
 
-export function buildVernacularAsrState(
+/**
+ * The step's asrMethod wins when the key is present, including "default"
+ * (no method). A missing key keeps the method saved on the team default.
+ */
+function asrMethodFromStepOrTeam(
+  settings: TranscribeStepSettings,
+  teamMethod: unknown
+): string | undefined {
+  if (Object.hasOwn(settings, 'asrMethod')) {
+    return explicitAsrMethod(settings.asrMethod);
+  }
+  return explicitAsrMethod(teamMethod);
+}
+
+export async function buildVernacularAsrState(
   settings: TranscribeStepSettings,
   getOrgDefault: GetOrgDefaultFn,
   orgId: string | undefined,
   asrDefault: IAsrState,
-  projectLang?: ILanguage
-): IAsrState {
+  projectLang?: ILanguage,
+  token?: string | null
+): Promise<IAsrState> {
   const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
     ILanguage | undefined;
   const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
@@ -343,7 +452,7 @@ export function buildVernacularAsrState(
       ...orgAsr,
       target,
       selectRoman,
-      method: orgAsr.method ?? getPreferredAsrMethod(orgAsr.asrIso),
+      asrMethod: asrMethodFromStepOrTeam(settings, orgAsr.asrMethod),
       language: {
         ...orgAsr.language,
         font: orgLang?.font ?? orgAsr.language.font ?? asrDefault.language.font,
@@ -356,8 +465,7 @@ export function buildVernacularAsrState(
     ? projectLang!
     : (orgLang ?? asrDefault.language);
   const vernacularBcp = vernacular.bcp47 ?? 'und';
-  const asrBcp = resolveAsrBcp47(vernacularBcp, sisterBcp);
-  const langTag = getLangTag(asrBcp);
+  const asrBcp = await resolveAsrBcp47(vernacularBcp, sisterBcp, token);
   const asrIso = isoFromBcp47(asrBcp);
   const target = stepPhoneticIsSet(settings)
     ? asrTargetFromSettings(settings)
@@ -371,7 +479,7 @@ export function buildVernacularAsrState(
       !useProjectLang &&
       target === AsrTarget.alphabet &&
       stepSelectRoman(settings),
-    method: getPreferredAsrMethod(asrIso, langTag?.script),
+    asrMethod: explicitAsrMethod(settings?.asrMethod),
     language: {
       ...asrDefault.language,
       languageName:
@@ -385,14 +493,15 @@ export function buildVernacularAsrState(
   };
 }
 
-export function buildWorkflowAsrStateFromSettings(
+export async function buildWorkflowAsrStateFromSettings(
   settings: TranscribeStepSettings,
   slugFromId: SlugFromIdFn,
   getOrgDefault: GetOrgDefaultFn,
   orgId: string | undefined,
   asrDefault: IAsrState,
-  projectLang?: ILanguage
-): IAsrState {
+  projectLang?: ILanguage,
+  token?: string | null
+): Promise<IAsrState> {
   if (!settings?.artifactTypeId) return asrDefault;
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
   if (artifactUsesOrgVernacularLanguage(slug)) {
@@ -401,7 +510,8 @@ export function buildWorkflowAsrStateFromSettings(
       getOrgDefault,
       orgId,
       asrDefault,
-      projectLang
+      projectLang,
+      token
     );
   }
   const { languageName, bcp47 } = parseStepLanguageField(settings?.language);
@@ -412,8 +522,7 @@ export function buildWorkflowAsrStateFromSettings(
     asrDefault.language.rtl;
   const sister = parseStepLanguageField(settings?.sisterlanguage);
   const sisterBcp = sister.bcp47;
-  const asrBcp = resolveAsrBcp47(bcp47, sisterBcp);
-  const asrLangTag = getLangTag(asrBcp);
+  const asrBcp = await resolveAsrBcp47(bcp47, sisterBcp, token);
   const asrIso = isoFromBcp47(asrBcp);
   const target = asrTargetFromSettings(settings);
   return {
@@ -422,7 +531,7 @@ export function buildWorkflowAsrStateFromSettings(
     asrIso,
     // Transliterate defaults to false and is only valid for script transcription.
     selectRoman: target === AsrTarget.alphabet && stepSelectRoman(settings),
-    method: getPreferredAsrMethod(asrIso, asrLangTag?.script),
+    asrMethod: explicitAsrMethod(settings?.asrMethod),
     language: {
       ...asrDefault.language,
       languageName:

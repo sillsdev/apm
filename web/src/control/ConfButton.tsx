@@ -46,9 +46,6 @@ export default function ConfButton({
         ref={anchorRef}
         aria-label="Button group with a nested menu"
       >
-        <Button onClick={handleClick} id={id} title={title} disabled={disabled}>
-          {children}
-        </Button>
         {showSettings && (
           <Button
             disableTypography
@@ -66,6 +63,9 @@ export default function ConfButton({
             />
           </Button>
         )}
+        <Button onClick={handleClick} id={id} title={title} disabled={disabled}>
+          {children}
+        </Button>
       </ButtonGroup>
     </React.Fragment>
   );
