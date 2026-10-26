@@ -38,7 +38,7 @@ export function PassageCardHeader({
 
   return (
     <Stack gap={0.5}>
-      <Stack direction="row" alignItems="center" gap={1.5} minHeight={56}>
+      <Stack direction="row" alignItems="center" gap={1.5} minHeight={48}>
         <PassageGraphic
           cardInfo={cardInfo}
           reference={passageRef}
@@ -47,14 +47,14 @@ export function PassageCardHeader({
         />
         {title && (
           <Typography
-            variant="h6"
             sx={{
+              fontSize: '18px',
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
               WebkitLineClamp: 2,
               overflow: 'hidden',
               minWidth: 0,
-              lineHeight: (theme) => theme.spacing(3.5),
+              lineHeight: (theme) => theme.spacing(3),
               overflowWrap: 'anywhere',
             }}
           >
