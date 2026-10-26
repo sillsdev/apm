@@ -15,7 +15,7 @@ export function hasSpellCheckerDictionary(
 }
 
 /** Default spell check when step settings omit `spellCheck`. */
-export function defaultSpellCheckForArtifact(
+export function isSpellCheckOnByDefault(
   artifactTypeSlug: ArtifactTypeSlug | string | undefined,
   _bcp47?: string,
   _availLangs?: string[]
@@ -38,12 +38,12 @@ export function defaultSpellCheckForArtifact(
 }
 
 /** Workflow step `tool.settings` is authoritative for Transcriber spell check. */
-export function resolveStepSpellCheck(
+export function isStepSpellCheckOn(
   settings: TranscribeStepSettings,
   artifactTypeSlug: ArtifactTypeSlug | string | undefined,
   bcp47: string | undefined,
   availLangs?: string[]
 ): boolean {
   if (settings.spellCheck !== undefined) return settings.spellCheck;
-  return defaultSpellCheckForArtifact(artifactTypeSlug, bcp47, availLangs);
+  return isSpellCheckOnByDefault(artifactTypeSlug, bcp47, availLangs);
 }

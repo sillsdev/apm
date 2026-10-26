@@ -1,8 +1,8 @@
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import {
-  defaultSpellCheckForArtifact,
+  isSpellCheckOnByDefault,
   hasSpellCheckerDictionary,
-  resolveStepSpellCheck,
+  isStepSpellCheckOn,
 } from './stepSpellCheck';
 
 describe('hasSpellCheckerDictionary', () => {
@@ -20,12 +20,12 @@ describe('hasSpellCheckerDictionary', () => {
   });
 });
 
-describe('resolveStepSpellCheck', () => {
+describe('isStepSpellCheckOn', () => {
   const avail = ['en-US', 'es'];
 
   test('uses explicit step setting', () => {
     expect(
-      resolveStepSpellCheck(
+      isStepSpellCheckOn(
         { spellCheck: false },
         ArtifactTypeSlug.PhraseBackTranslation,
         'en',
@@ -33,7 +33,7 @@ describe('resolveStepSpellCheck', () => {
       )
     ).toBe(false);
     expect(
-      resolveStepSpellCheck(
+      isStepSpellCheckOn(
         { spellCheck: true },
         ArtifactTypeSlug.Vernacular,
         'en',
@@ -44,16 +44,16 @@ describe('resolveStepSpellCheck', () => {
 
   test('defaults vernacular and careful speech to false', () => {
     expect(
-      resolveStepSpellCheck({}, ArtifactTypeSlug.Vernacular, 'en', avail)
+      isStepSpellCheckOn({}, ArtifactTypeSlug.Vernacular, 'en', avail)
     ).toBe(false);
     expect(
-      resolveStepSpellCheck({}, ArtifactTypeSlug.CarefulSpeech, 'en', avail)
+      isStepSpellCheckOn({}, ArtifactTypeSlug.CarefulSpeech, 'en', avail)
     ).toBe(false);
   });
 
   test('defaults back translation to true when dictionary exists', () => {
     expect(
-      resolveStepSpellCheck(
+      isStepSpellCheckOn(
         {},
         ArtifactTypeSlug.PhraseBackTranslation,
         'en',
@@ -61,18 +61,13 @@ describe('resolveStepSpellCheck', () => {
       )
     ).toBe(true);
     expect(
-      resolveStepSpellCheck(
-        {},
-        ArtifactTypeSlug.WholeBackTranslation,
-        'es',
-        avail
-      )
+      isStepSpellCheckOn({}, ArtifactTypeSlug.WholeBackTranslation, 'es', avail)
     ).toBe(true);
   });
 
   test('defaults back translation to true even without dictionary (Desktop)', () => {
     expect(
-      resolveStepSpellCheck(
+      isStepSpellCheckOn(
         {},
         ArtifactTypeSlug.PhraseBackTranslation,
         'de',
@@ -80,7 +75,7 @@ describe('resolveStepSpellCheck', () => {
       )
     ).toBe(true);
     expect(
-      resolveStepSpellCheck(
+      isStepSpellCheckOn(
         {},
         ArtifactTypeSlug.PhraseBackTranslation,
         'und',
@@ -91,25 +86,23 @@ describe('resolveStepSpellCheck', () => {
 
   test('defaults back translation to true when checker languages are unavailable', () => {
     expect(
-      resolveStepSpellCheck({}, ArtifactTypeSlug.PhraseBackTranslation, 'de')
+      isStepSpellCheckOn({}, ArtifactTypeSlug.PhraseBackTranslation, 'de')
     ).toBe(true);
     expect(
-      resolveStepSpellCheck({}, ArtifactTypeSlug.WholeBackTranslation, 'de', [])
+      isStepSpellCheckOn({}, ArtifactTypeSlug.WholeBackTranslation, 'de', [])
     ).toBe(true);
   });
 });
 
-describe('defaultSpellCheckForArtifact', () => {
+describe('isSpellCheckOnByDefault', () => {
   test('matches resolve defaults', () => {
     expect(
-      defaultSpellCheckForArtifact(ArtifactTypeSlug.Vernacular, 'en', ['en'])
+      isSpellCheckOnByDefault(ArtifactTypeSlug.Vernacular, 'en', ['en'])
     ).toBe(false);
     expect(
-      defaultSpellCheckForArtifact(
-        ArtifactTypeSlug.PhraseBackTranslation,
-        'de',
-        ['en-US']
-      )
+      isSpellCheckOnByDefault(ArtifactTypeSlug.PhraseBackTranslation, 'de', [
+        'en-US',
+      ])
     ).toBe(true);
   });
 });

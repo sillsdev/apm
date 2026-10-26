@@ -1,3 +1,14 @@
+import bugsnagClient from '../auth/bugsnagClient';
+import { logError, Severity } from '../utils/logErrorService';
+import {
+  asBoolean,
+  asString,
+  isObject,
+  normalizeFields,
+  parseJsonObject,
+  type Normalize,
+} from '../utils/normalData';
+
 /** `languageName|bcp47`, or a legacy `ILanguage`-like object. */
 export type StepLanguageField =
   string | { languageName?: unknown; bcp47?: unknown };
@@ -14,25 +25,8 @@ export interface TranscribeStepSettings extends Record<string, unknown> {
   namedRegion?: string;
 }
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-/** Each returns the normalized value, or undefined to drop the field. */
-type Normalize = (value: unknown) => unknown;
-
 const asLanguage: Normalize = (value) =>
   typeof value === 'string' || isObject(value) ? value : undefined;
-
-const asString: Normalize = (value) =>
-  typeof value === 'string' ? value : undefined;
-
-// Older steps saved some flags as "true" / "false".
-const asBoolean: Normalize = (value) => {
-  if (typeof value === 'boolean') return value;
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return undefined;
-};
 
 const fieldNormalizers: Partial<Record<string, Normalize>> = {
   artifactTypeId: asString,
@@ -45,6 +39,25 @@ const fieldNormalizers: Partial<Record<string, Normalize>> = {
   namedRegion: asString,
 };
 
+// Settings are parsed in render memos and per-step loops, so report each
+// distinct problem once rather than on every call.
+const reported = new Set<string>();
+const report = (message: string) => {
+  if (reported.has(message)) return;
+  reported.add(message);
+  logError(Severity.error, bugsnagClient, message);
+};
+
+const MAX_PREVIEW = 200;
+const preview = (data: unknown) => {
+  const text =
+    typeof data === 'string' ? data : (JSON.stringify(data) ?? String(data));
+  return text.length > MAX_PREVIEW ? `${text.slice(0, MAX_PREVIEW)}…` : text;
+};
+
+const typeName = (value: unknown) =>
+  Array.isArray(value) ? 'array' : typeof value;
+
 /**
  * Parse transcribe step settings. Online steps store them as a JSON string;
  * offline Work Alone steps store an object. Settings come from persisted Orbit
@@ -53,20 +66,34 @@ const fieldNormalizers: Partial<Record<string, Normalize>> = {
 export function parseTranscribeStepSettings(
   settings: unknown
 ): TranscribeStepSettings {
-  let parsed: unknown = settings;
-  if (typeof settings === 'string') {
-    try {
-      parsed = JSON.parse(settings || '{}');
-    } catch {
-      return {};
+  const parsed = parseJsonObject(settings);
+  if (!parsed) {
+    report(`Unreadable transcribe step settings: ${preview(settings)}`);
+    return {};
+  }
+  return normalizeFields(parsed, fieldNormalizers, (key, value) => {
+    if (value !== null) {
+      report(`Transcribe step setting ${key} has type ${typeName(value)}`);
     }
+  });
+}
+
+/** Parse a workflow step `tool` attribute; unreadable data reads as {}. */
+export function parseStepTool(tool: unknown): Record<string, unknown> {
+  const parsed = parseJsonObject(tool);
+  if (!parsed) {
+    report(`Unreadable workflow step tool: ${preview(tool)}`);
+    return {};
   }
-  if (!isObject(parsed)) return {};
-  const result: TranscribeStepSettings = {};
-  for (const [key, value] of Object.entries(parsed)) {
-    const normalize = fieldNormalizers[key];
-    const normalized = normalize ? normalize(value) : value;
-    if (normalized !== undefined) result[key] = normalized;
-  }
-  return result;
+  return parsed;
+}
+
+/** Log settings we could not read before a save replaces them, so they can be recovered. */
+export function reportReplacedStepSettings(settings: unknown) {
+  if (parseJsonObject(settings)) return;
+  report(
+    `Replacing unreadable transcribe step settings: ${
+      typeof settings === 'string' ? settings : preview(settings)
+    }`
+  );
 }

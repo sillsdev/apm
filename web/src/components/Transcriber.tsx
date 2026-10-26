@@ -60,7 +60,7 @@ import {
   GetUser,
   saveFontData,
   loadFontData,
-  resolveStepSpellCheck,
+  isStepSpellCheckOn,
   pullTableList,
   orgDefaultFeatures,
   useOrganizedBy,
@@ -727,8 +727,8 @@ export function Transcriber(props: Readonly<IProps>) {
     }
   }, []);
   useEffect(() => {
-    const lgSettings = parseTranscribeStepSettings(stepSettings);
-    const { bcp47: stepLang } = parseStepLanguageField(lgSettings.language);
+    const parsedSettings = parseTranscribeStepSettings(stepSettings);
+    const { bcp47: stepLang } = parseStepLanguageField(parsedSettings.language);
     const hasStepLanguage = isLangSet(stepLang);
 
     const loadProjData = async () => {
@@ -736,9 +736,9 @@ export function Transcriber(props: Readonly<IProps>) {
         ? (findRecord(memory, 'project', project) as Project | undefined)
         : undefined;
       let langTag = hasStepLanguage ? stepLang : undefined;
-      let defaultFont = lgSettings.font;
-      let rtl = lgSettings.rtl ?? false;
-      let defaultFontSize = lgSettings.fontSize;
+      let defaultFont = parsedSettings.font;
+      let rtl = parsedSettings.rtl ?? false;
+      let defaultFontSize = parsedSettings.fontSize;
       const useProjectLang =
         artifactTypeSlug === ArtifactTypeSlug.Vernacular || !hasStepLanguage;
       if (useProjectLang && r) {
@@ -749,8 +749,8 @@ export function Transcriber(props: Readonly<IProps>) {
           (defaultFontSize ?? r.attributes?.defaultFontSize) || undefined;
       }
 
-      const spellCheck = resolveStepSpellCheck(
-        lgSettings,
+      const spellCheck = isStepSpellCheckOn(
+        parsedSettings,
         artifactTypeSlug,
         langTag,
         availSpellLangs

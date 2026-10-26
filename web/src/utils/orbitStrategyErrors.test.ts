@@ -12,15 +12,6 @@
 jest.mock('./handleUnauthorized', () => ({
   handleUnauthorized: jest.fn(),
 }));
-// logErrorService imports the utils barrel, which drags in the redux store and
-// react-localization (ESM) and fails to parse under ts-jest. Mirror the real
-// Severity values so orbitRetry's response.status still means what it means.
-jest.mock('./logErrorService', () => ({
-  __esModule: true,
-  default: jest.fn(),
-  logError: jest.fn(),
-  Severity: { info: 0, error: 1, retry: 2 },
-}));
 
 import type { RecordOperation, RecordTransform } from '@orbit/records';
 import { updateError } from './orbitStrategyErrors';
