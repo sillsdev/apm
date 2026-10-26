@@ -355,9 +355,9 @@ export default function MarkVersesTable({
                             : undefined
                         }
                         // Children are custom markup (icon + optional label), so
-                        // skip the Button's default Typography wrapper — a block
-                        // Stack inside a <p> would be invalid; we wrap the label
-                        // in its own Typography below to keep its styling.
+                        // skip the Button's default `<Typography noWrap>` label
+                        // wrapper (a span), which would otherwise force the icon
+                        // and label through one wrapper; the label keeps its own.
                         disableTypography
                         onClick={(event) => {
                           event.stopPropagation();
