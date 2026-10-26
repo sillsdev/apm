@@ -32,8 +32,7 @@ export function PassageCard({
     noteTitle || cardInfo.passage?.attributes.reference || cardInfo.reference;
 
   const noteCategory = noteTitle ? cardInfo.reference?.split('|')[1] : '';
-  const description =
-    cardInfo.sharedResource?.attributes.description || cardInfo.comment;
+  const description = cardInfo.comment;
 
   const psgType = cardInfo.passage
     ? passageTypeFromRef(cardInfo.passage.attributes.reference, false)
