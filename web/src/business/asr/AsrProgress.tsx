@@ -53,7 +53,7 @@ import { Stack, Typography } from '@mui/material';
 import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
-import { asrRequestMethod } from './asrLanguages';
+import { asrMethodDefaultValue, asrRequestMethod } from './asrMethod';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
 import {
   AiEstimateKey,
@@ -323,7 +323,11 @@ export default function AsrProgress({
     const romanize = asr?.selectRoman ?? false;
     const method = asrRequestMethod(asr?.asrMethod, phonetic);
     const phoneticParam = phonetic ? '?phonetic=true' : '';
-    setRun({ startedAt: Date.now(), key: `transcription:${method}` });
+    // Runs without a chosen method use the service default; time them together.
+    setRun({
+      startedAt: Date.now(),
+      key: `transcription:${method ?? asrMethodDefaultValue}`,
+    });
     try {
       const response = (await axiosPost(
         `mediafiles/${remId}/transcription/${iso}/${romanize}${method ? `/${method}` : ''}${phoneticParam}`,

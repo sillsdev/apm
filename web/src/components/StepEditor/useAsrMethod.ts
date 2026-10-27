@@ -1,17 +1,14 @@
 import { JSONParse } from '../../utils/jsonParse';
-
-/** Stored when the user wants the preferred method rather than a specific one. */
-export const asrMethodDefaultValue = 'default';
+import {
+  asrMethodDefaultValue,
+  explicitAsrMethod,
+} from '../../business/asr/asrMethod';
 
 /** Empty, missing, and "default" mean the service default, so the chosen method stays unset. */
 export function asrMethodFromSettings(settings: {
   asrMethod?: unknown;
 }): string | undefined {
-  if (typeof settings.asrMethod !== 'string' || !settings.asrMethod) {
-    return undefined;
-  }
-  if (settings.asrMethod === asrMethodDefaultValue) return undefined;
-  return settings.asrMethod;
+  return explicitAsrMethod(settings.asrMethod);
 }
 
 export function withAsrMethod(

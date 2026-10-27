@@ -27,6 +27,7 @@ import { getLangTag } from 'mui-language-picker';
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { logError, Severity } from '../../utils';
+import { toError } from '../../utils/toError';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
@@ -90,21 +91,17 @@ export const AsrSettings = ({
 
   useEffect(() => {
     let cancelled = false;
-    const reportFailure = (err: unknown) => {
-      logError(
-        Severity.error,
-        errorReporter,
-        err instanceof Error ? err : new Error(String(err))
-      );
-    };
     const fail = (err: unknown) => {
       if (cancelled) return;
-      reportFailure(err);
+      logError(Severity.error, errorReporter, toError(err));
       setLoadStatus('failed');
       setAsrMethods([]);
     };
-    // The method list depends on the sister check, so both run in one pass.
     setLoadStatus('loading');
+    // Without a token aero answers nothing, and an empty list read as 'ready'
+    // would drop the saved method. Stay loading until the token arrives.
+    if (!token) return;
+    // The method list depends on the sister check, so both run in one pass.
     needsSisterLanguage(vernacularBcp47, token)
       .then((needed) => {
         if (cancelled) return;
@@ -182,7 +179,8 @@ export const AsrSettings = ({
   // request uses the preferred method.
   useEffect(() => {
     if (loadStatus !== 'ready' || !chosenMethod) return;
-    if (asrMethods.includes(chosenMethod)) return;
+    // An empty list means no ASR language is picked yet, not a withdrawn method.
+    if (asrMethods.length === 0 || asrMethods.includes(chosenMethod)) return;
     setAsr((prev) =>
       prev && explicitAsrMethod(prev.asrMethod) === chosenMethod
         ? { ...prev, asrMethod: undefined }

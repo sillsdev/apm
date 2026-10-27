@@ -6,12 +6,13 @@ import {
 } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
-import { OrgWorkflowStepD, Project } from '../model';
+import { OrganizationD, OrgWorkflowStepD, Project } from '../model';
 import { TokenContext } from '../context/TokenProvider';
 import { useGlobal } from '../context/useGlobal';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { JSONParse, isLangSet } from '../utils';
 import { logError, Severity } from '../utils/logErrorService';
+import { toError } from '../utils/toError';
 import { useArtifactType } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
@@ -309,6 +310,11 @@ export function useBoldClauseTranscriptionAsrSettings(
   );
 
   const orgId = organization as string | undefined;
+  // Saving a team default mutates the org record in place, so getOrgDefault
+  // keeps its identity; this string changes with it and reruns the load.
+  const teams = useOrbitData<OrganizationD[]>('organization');
+  const orgDefaultParams = teams.find((o) => o.id === orgId)?.attributes
+    ?.defaultParams;
   const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
   const [asrSettings, setAsrSettings] = React.useState<IAsrState>(() => ({
     ...asrDefault,
@@ -366,23 +372,21 @@ export function useBoldClauseTranscriptionAsrSettings(
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        logError(
-          Severity.error,
-          errorReporter,
-          err instanceof Error ? err : new Error(String(err))
-        );
+        logError(Severity.error, errorReporter, toError(err));
         setAsrLoadFailed(true);
       });
     return () => {
       cancelled = true;
     };
     // slugFromId (from useArtifactType) is recreated every render.
+    // orgDefaultParams is not read here; it stands in for the org defaults.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     orgSteps,
     upstreamTool,
     recordingArtifactSlug,
     orgId,
+    orgDefaultParams,
     getOrgDefault,
     asrDefault,
     projectLang,

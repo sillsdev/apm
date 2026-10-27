@@ -1,7 +1,11 @@
 import React from 'react';
-import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
+import {
+  IAsrState,
+  asrStatesEqual,
+  normalizeAsrState,
+} from '../business/asr/asrState';
 import { IAsrLanguageSuggestion } from '../business/asr/useRecommendAsrLanguage';
-import { OrganizationD, OrgWorkflowStepD, Project } from '../model';
+import { OrganizationD, OrgWorkflowStepD, Project, ProjectD } from '../model';
 import { ILanguage } from '../control';
 import {
   orgDefaultAsr,
@@ -23,6 +27,8 @@ import { useArtifactType } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
 
 import {
+  artifactTypeSlugFromSettings,
+  artifactUsesOrgVernacularLanguage,
   buildVernacularAsrState,
   buildWorkflowAsrStateFromSettings,
   hasTranscribeStepLanguageSettings,
@@ -80,6 +86,16 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
 
   const orgId = team?.id ?? organization;
+  // Org defaults live on the organization record, which Orbit mutates in place,
+  // so getOrgDefault keeps its identity when a team default is saved. This
+  // string changes with them and lets getAsrSettings reload.
+  const teams = useOrbitData<OrganizationD[]>('organization');
+  const orgDefaultParams = teams.find((o) => o.id === orgId)?.attributes
+    ?.defaultParams;
+  // Same for the project's own ASR choice, saved on Run.
+  const projects = useOrbitData<ProjectD[]>('project');
+  const projectDefaultParams = projects.find((p) => p.id === project)
+    ?.attributes?.defaultParams;
 
   // The current project's vernacular language. When it differs from the org
   // default language the transcribe step was configured for, ASR resolution
@@ -227,6 +243,13 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const resolveStepSettings = (settings: TranscribeStepSettings) =>
     withInheritedVernacularSisterSettings(settings, orgSteps, slugFromId);
 
+  /** The step transcribes the vernacular, and this project's differs from the team's. */
+  const usesProjectAsr = (settings: TranscribeStepSettings) =>
+    projectDiffersFromOrg() &&
+    artifactUsesOrgVernacularLanguage(
+      artifactTypeSlugFromSettings(settings, slugFromId)
+    );
+
   const getAsrSettings = React.useCallback(async () => {
     const step = orgSteps.find((s) => s.id === currentstep);
     const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
@@ -234,6 +257,12 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string
     >;
     const settings = resolveStepSettings(parseStepSettings(json?.settings));
+    // A project whose language differs from the team's keeps its own ASR
+    // choice (saved on Run), since the team default can't describe it.
+    if (usesProjectAsr(settings)) {
+      const projAsr = normalizeAsrState(getProjectDefault(orgDefaultAsr));
+      if (projAsr && isLangSet(projAsr.asrIso)) return projAsr;
+    }
     const hasStepLang = hasTranscribeStepLanguageSettings(
       json.tool,
       settings,
@@ -265,10 +294,22 @@ export function useGetAsrSettings(team?: OrganizationD) {
       projectLang,
       token
     );
-    // slugFromId (from useArtifactType) is recreated every render. Including it
-    // makes getAsrSettings change every render and the load effect restarts.
+    // slugFromId, getProjectDefault and usesProjectAsr are recreated every
+    // render. Including them makes getAsrSettings change every render and the
+    // load effect restarts. orgDefaultParams and projectDefaultParams are not
+    // read here; they stand in for the defaults that getOrgDefault and
+    // getProjectDefault read from mutable Orbit memory.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgSteps, currentstep, orgId, projectLang, token, getOrgDefault]);
+  }, [
+    orgSteps,
+    currentstep,
+    orgId,
+    orgDefaultParams,
+    projectDefaultParams,
+    projectLang,
+    token,
+    getOrgDefault,
+  ]);
 
   /**
    * Whether the current user may save ASR settings as the team (org) default:
@@ -294,6 +335,25 @@ export function useGetAsrSettings(team?: OrganizationD) {
       setOrgDefault(orgDefaultLangProps, vernacular, orgId);
     }
     setOrgDefault(orgDefaultAsr, asrState, orgId);
+    // Drop any per-project choice so the new team default isn't shadowed.
+    setProjectDefault(orgDefaultAsr, undefined);
+  };
+
+  /**
+   * Remember the ASR settings a Run used, on the project, when the project's
+   * language differs from the team's. Otherwise the team default applies and
+   * nothing is saved.
+   */
+  const saveProjectAsrSettings = (asrState: IAsrState) => {
+    const step = orgSteps.find((s) => s.id === currentstep);
+    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
+      string,
+      string
+    >;
+    if (!usesProjectAsr(parseStepSettings(json?.settings))) return;
+    const existing = normalizeAsrState(getProjectDefault(orgDefaultAsr));
+    if (existing && asrStatesEqual(existing, asrState)) return;
+    setProjectDefault(orgDefaultAsr, asrState);
   };
 
   const hasTranscribeStepLanguageSettingsHook = () => {
@@ -363,6 +423,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
     canSetOrgDefault,
     canSetTeamAsrDefault,
     saveTeamAsrSettings,
+    saveProjectAsrSettings,
     saveStepAsrSettings,
     saveTranscribeStepSettings,
     hasTranscribeStepLanguageSettings: hasTranscribeStepLanguageSettingsHook,

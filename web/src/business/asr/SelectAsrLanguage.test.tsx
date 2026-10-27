@@ -17,6 +17,7 @@ const teamAsr = {
 
 const mockSaveTeamAsrSettings = jest.fn();
 const mockSaveStepAsrSettings = jest.fn();
+const mockSaveProjectAsrSettings = jest.fn();
 const mockShowMessage = jest.fn();
 const mockFetchRecommendations = jest.fn();
 const mockSeedSuggestions = jest.fn();
@@ -39,6 +40,7 @@ jest.mock('../../crud/useGetAsrSettings', () => ({
     canSetOrgDefault: mockCanSetOrgDefault,
     saveTeamAsrSettings: mockSaveTeamAsrSettings,
     saveStepAsrSettings: mockSaveStepAsrSettings,
+    saveProjectAsrSettings: mockSaveProjectAsrSettings,
   }),
 }));
 
@@ -133,6 +135,7 @@ describe('SelectAsrLanguage', () => {
   beforeEach(() => {
     mockSaveTeamAsrSettings.mockReset();
     mockSaveStepAsrSettings.mockReset();
+    mockSaveProjectAsrSettings.mockReset();
     mockShowMessage.mockReset();
     mockFetchRecommendations.mockReset();
     mockSeedSuggestions.mockReset();
@@ -160,7 +163,7 @@ describe('SelectAsrLanguage', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('runs with the team default settings, without saving them', async () => {
+  it('runs with the dialog settings, saving only for the project', async () => {
     const onClose = jest.fn();
     render(<SelectAsrLanguage onClose={onClose} />);
     await screen.findByTestId('asr-settings');
@@ -172,6 +175,26 @@ describe('SelectAsrLanguage', () => {
       expect.objectContaining({ asrIso: 'eng' })
     );
     expect(mockSaveTeamAsrSettings).not.toHaveBeenCalled();
+    // useGetAsrSettings decides whether the project's language needs its own.
+    expect(mockSaveProjectAsrSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ asrIso: 'eng' })
+    );
+  });
+
+  it('does not save step-language ASR to the project on Run', async () => {
+    const onClose = jest.fn();
+    render(
+      <SelectAsrLanguage
+        onClose={onClose}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+      />
+    );
+    await screen.findByTestId('asr-settings');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    expect(onClose).toHaveBeenCalled();
+    expect(mockSaveProjectAsrSettings).not.toHaveBeenCalled();
   });
 
   it('hides the team default button from non-admins', async () => {

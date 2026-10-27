@@ -35,7 +35,6 @@ import { useGlobal } from '../../../context/useGlobal';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
 import { useSnackBar } from '../../../hoc/SnackBar';
-import { useBoldClauseTranscriptionAsrSettings } from '../../../crud/getLwcTranslationAsrSettings';
 import {
   orgDefaultFeatures,
   useOrgDefaults,
@@ -46,13 +45,12 @@ import {
 } from '../../../crud';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
-import { getSegments, NamedRegions } from '../../../utils/namedSegments';
-import { useLocLangName } from '../../../utils/useLocLangName';
-import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
+import { hasTranscriptionTask } from '../../../utils/namedSegments';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import type { FontData } from '../../../crud/fontChoice';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
 import { useTranscriptionAutosave } from './useTranscriptionAutosave';
+import { parseStepSettings, useBoldClauseAsr } from './useBoldClauseAsr';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
@@ -60,21 +58,6 @@ import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
-
-function parseStepSettings(settings: unknown): TranscribeStepSettingsJson {
-  if (!settings) return {};
-  if (typeof settings === 'string') {
-    try {
-      return JSON.parse(settings) as TranscribeStepSettingsJson;
-    } catch {
-      return {};
-    }
-  }
-  if (typeof settings === 'object') {
-    return settings as TranscribeStepSettingsJson;
-  }
-  return {};
-}
 
 type TranscriptionStrings =
   ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
@@ -136,8 +119,6 @@ export default function BoldClauseTranscriptionEditor({
   const [organization] = useGlobal('organization');
   const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const teams = useOrbitData<OrganizationD[]>('organization');
   const team = useMemo(
     () => teams.find((o) => o.id === organization),
@@ -149,68 +130,21 @@ export default function BoldClauseTranscriptionEditor({
   const { showMessage } = useSnackBar();
   const { isMobile } = useMobile();
   const checkOnline = useCheckOnline(tr.run);
-  const [getName] = useLocLangName();
   const { currentstep } = usePassageDetailContext();
   const { settings: stepSettings } = useStepTool(currentstep);
   const {
-    asrSettings: resolvedAsr,
-    asrIsoReady: resolvedAsrIsoReady,
-    needsSisterLanguage: resolvedNeedsSister,
+    asrSettings,
+    asrIsoReady,
     asrLoadFailed,
-    stepLanguageBcp47,
-  } = useBoldClauseTranscriptionAsrSettings(
-    transcriptionConfig.upstreamTool,
-    transcriptionConfig.defaultArtifactSlug,
-    stepSettings
-  );
-  // The dialog's choice for a step language (e.g. LWC translation), kept while
-  // the editor is open so the dialog doesn't reopen on every clause. It isn't
-  // saved: the saved project/team ASR defaults belong to the vernacular.
-  const [stepAsrChoice, setStepAsrChoice] = useState<{
-    forBcp47: string;
-    asr: IAsrState;
-  }>();
-  const chosenStepAsr =
-    stepLanguageBcp47 && stepAsrChoice?.forBcp47 === stepLanguageBcp47
-      ? stepAsrChoice.asr
-      : undefined;
-  const asrSettings = chosenStepAsr ?? resolvedAsr;
-  const asrIsoReady = chosenStepAsr ? true : resolvedAsrIsoReady;
-  const needsSisterLanguage = useCallback(
-    () => !chosenStepAsr && resolvedNeedsSister(),
-    [chosenStepAsr, resolvedNeedsSister]
-  );
-  const asrTip = useMemo(() => {
-    const step = parseStepSettings(stepSettings);
-    const primary = parseStepLanguageField(step.language);
-    const sister = parseStepLanguageField(step.sisterlanguage);
-    const asrBcp = asrSettings?.language?.bcp47;
-    const primaryBcp = isLangSet(primary.bcp47) ? primary.bcp47 : asrBcp;
-    const primaryName = primaryBcp
-      ? getName(primaryBcp) ||
-        primary.languageName ||
-        asrSettings?.language?.languageName
-      : asrSettings?.language?.languageName;
-    const usingSister =
-      isLangSet(sister.bcp47) &&
-      isLangSet(asrBcp) &&
-      asrBcp === sister.bcp47 &&
-      asrBcp !== primaryBcp;
-    let langPart = primaryName?.trim()
-      ? `\u2039 ${primaryName.trim()} \u203A`
-      : '';
-    if (usingSister) {
-      const sisterName =
-        getName(sister.bcp47) ||
-        sister.languageName ||
-        asrSettings?.language?.languageName;
-      if (sisterName?.trim()) {
-        langPart += `${langPart ? ' ' : ''}\u2039 ${sisterName.trim()} \u203A`;
-      }
-    }
-    return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace('{0}', langPart);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asrSettings, stepSettings, tPlayer.recognizeSpeech]);
+    needsLanguagePicker,
+    rememberStepAsr,
+    stepAsr,
+    asrTip,
+  } = useBoldClauseAsr({
+    transcriptionConfig,
+    stepSettings,
+    recognizeSpeech: tPlayer.recognizeSpeech,
+  });
   const [asrVisible, setAsrVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>();
@@ -314,14 +248,9 @@ export default function BoldClauseTranscriptionEditor({
 
   const hasText = text.trim().length > 0;
   const hasAiTask = useMemo(
-    () =>
-      getSegments(
-        NamedRegions.TRTask,
-        mediafile?.attributes?.segments || '{}'
-      ) !== '{}',
+    () => hasTranscriptionTask(mediafile?.attributes?.segments),
     [mediafile]
   );
-  const needsLanguagePicker = !asrIsoReady || needsSisterLanguage();
   const runAsrDisabled =
     navigationDisabled || hasText || !features?.aiTranscribe || offline;
 
@@ -346,22 +275,10 @@ export default function BoldClauseTranscriptionEditor({
       if (cancel) return;
       const asr = asrState ?? asrSettings;
       if (!isLangSet(asr?.asrIso)) return;
-      // Step-language ASR (e.g. LWC translation) is remembered for this editor
-      // so the dialog reopens on it; the team ASR default belongs to the vernacular.
-      if (stepLanguageBcp47) {
-        setStepAsrChoice({ forBcp47: stepLanguageBcp47, asr });
-      }
+      rememberStepAsr(asr);
       startAsr(asr);
     },
-    [asrSettings, stepLanguageBcp47, startAsr]
-  );
-
-  const stepAsr = useMemo(
-    () =>
-      stepLanguageBcp47
-        ? { primaryBcp47: stepLanguageBcp47, asr: asrSettings }
-        : undefined,
-    [stepLanguageBcp47, asrSettings]
+    [asrSettings, rememberStepAsr, startAsr]
   );
 
   const handleAsrClose = useCallback(() => {
@@ -370,20 +287,20 @@ export default function BoldClauseTranscriptionEditor({
     onAsrActiveChange(false);
   }, [onAsrActiveChange]);
 
+  // The task id comes back on the media file. Pull it so leaving this step
+  // and returning can resume the same transcription. The coordinator registers
+  // 'remote' and 'backup' as these source types, as Transcriber also assumes.
   const onPullTasks = useCallback(
-    (remoteMediaId: string) => {
-      // The task id comes back on the media file. Pull it so leaving this step
-      // and returning can resume the same transcription.
+    (remoteMediaId: string) =>
       void pullTableList(
         'mediafile',
         [remoteMediaId],
         memory,
-        remote,
-        backup,
+        coordinator?.getSource('remote') as JSONAPISource,
+        coordinator?.getSource('backup') as IndexedDBSource,
         errorReporter
-      );
-    },
-    [memory, remote, backup, errorReporter]
+      ),
+    [memory, coordinator, errorReporter]
   );
 
   const handleAutoTranslation = useCallback(() => {

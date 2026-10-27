@@ -126,8 +126,10 @@ const mediaWith = (duration: number) =>
     attributes: { duration, transcription: '', segments: '{}' },
   }) as unknown as MediaFileD;
 
-const renderAsr = () =>
-  render(
+// postTranscribe awaits the saved ASR settings before it starts the run, so
+// let that settle before reading the estimate.
+const renderAsr = async () => {
+  const result = render(
     <AsrProgress
       mediaId="m1"
       phonetic={false}
@@ -136,6 +138,11 @@ const renderAsr = () =>
       onClose={jest.fn()}
     />
   );
+  await act(async () => {
+    await Promise.resolve();
+  });
+  return result;
+};
 
 describe('AsrProgress estimated time', () => {
   beforeEach(() => {
@@ -150,9 +157,9 @@ describe('AsrProgress estimated time', () => {
     cleanup();
   });
 
-  it('updates the estimate when the media record gains a new duration', () => {
+  it('updates the estimate when the media record gains a new duration', async () => {
     orbitMedia = [mediaWith(60)];
-    renderAsr();
+    await renderAsr();
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
       'About 0:45 remaining'
     );
@@ -167,25 +174,29 @@ describe('AsrProgress estimated time', () => {
     );
   });
 
-  it('shows only elapsed time while transcribing a recording with no stored duration', () => {
+  it('shows only elapsed time while transcribing a recording with no stored duration', async () => {
     orbitMedia = [mediaWith(0)];
-    renderAsr();
+    await renderAsr();
     expect(mockAxiosPost).toHaveBeenCalled();
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
       /^0:00$/
     );
   });
 
-  it('estimates from earlier transcriptions with the same model', () => {
+  it('estimates from earlier transcriptions with the same model', async () => {
     // total = 10 + 1 * duration
     const samples = [10, 20, 40, 80, 160].map((d) => ({
       durationSec: d,
       totalMs: (10 + d) * 1000,
       at: 0,
     }));
-    localStorage.setItem('aiTiming-transcription:mms', JSON.stringify(samples));
+    // No method chosen: the run is timed under the service default.
+    localStorage.setItem(
+      'aiTiming-transcription:default',
+      JSON.stringify(samples)
+    );
     orbitMedia = [mediaWith(60)];
-    renderAsr();
+    await renderAsr();
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
       'About 1:10 remaining'
     );

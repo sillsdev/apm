@@ -55,6 +55,7 @@ import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import {
   getSegments,
+  hasTranscriptionTask,
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
@@ -585,11 +586,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   );
 
   const hasAiTask = useMemo(
-    () =>
-      getSegments(
-        NamedRegions.TRTask,
-        mediafile?.attributes?.segments || '{}'
-      ) !== '{}',
+    () => hasTranscriptionTask(mediafile?.attributes?.segments),
     [mediafile]
   );
 

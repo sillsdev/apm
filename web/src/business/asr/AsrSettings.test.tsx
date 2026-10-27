@@ -63,6 +63,7 @@ jest.mock('../../utils', () => ({
 }));
 
 import { AsrSettings } from './AsrSettings';
+import { TokenContext } from '../../context/TokenProvider';
 
 const asrState = (method: string | undefined): IAsrState => ({
   target: AsrTarget.alphabet,
@@ -79,10 +80,18 @@ const asrState = (method: string | undefined): IAsrState => ({
   selectRoman: false,
 });
 
-function Harness({ method }: { method: string | undefined }) {
+function Harness({
+  method,
+  token = 'tok',
+}: {
+  method: string | undefined;
+  token?: string | null;
+}) {
   const [asr, setAsr] = useState<IAsrState | undefined>(asrState(method));
+  // The test only reads state.accessToken from the context.
+  const tokenValue = { state: { accessToken: token } } as never;
   return (
-    <>
+    <TokenContext.Provider value={tokenValue}>
       <span data-testid="chosen">{asr?.asrMethod ?? 'default'}</span>
       <AsrSettings
         asr={asr ?? asrState(method)}
@@ -92,7 +101,7 @@ function Harness({ method }: { method: string | undefined }) {
         loading={false}
         error=""
       />
-    </>
+    </TokenContext.Provider>
   );
 }
 
@@ -121,6 +130,24 @@ describe('AsrSettings method list', () => {
     render(<Harness method="mms" />);
 
     expect(await screen.findByRole('radio', { name: 'mms' })).toBeChecked();
+    expect(screen.getByTestId('chosen')).toHaveTextContent('mms');
+  });
+
+  it('keeps the chosen method while there is no token', async () => {
+    getMethodsForAsr.mockResolvedValue([]);
+    render(<Harness method="mms" token={null} />);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(getMethodsForAsr).not.toHaveBeenCalled();
+    expect(screen.getByTestId('chosen')).toHaveTextContent('mms');
+  });
+
+  it('keeps the chosen method when no methods are listed yet', async () => {
+    getMethodsForAsr.mockResolvedValue([]);
+    render(<Harness method="mms" />);
+
+    await waitFor(() => expect(getMethodsForAsr).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(screen.getByTestId('chosen')).toHaveTextContent('mms');
   });
 });

@@ -15,6 +15,7 @@ import { useGlobal } from '../../context/useGlobal';
 import { JSONParse } from '../../utils/jsonParse';
 import { isLangSet } from '../../utils/langTag';
 import { logError, Severity } from '../../utils/logErrorService';
+import { toError } from '../../utils/toError';
 import {
   isValidAsrLanguage,
   isoFromBcp47,
@@ -75,6 +76,7 @@ export function useTranscribeStepAsr({
   const [errorReporter] = useGlobal('errorReporter');
   const [offlineOnly] = useGlobal('offlineOnly');
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
+  const hasToken = token !== null;
   const tt: ITranscriberStrings = useSelector(
     transcriberSelector,
     shallowEqual
@@ -148,11 +150,7 @@ export function useTranscribeStepAsr({
         })
         .catch((err: unknown) => {
           if (requestId !== orgAsrSyncRequest.current) return;
-          logError(
-            Severity.error,
-            errorReporter,
-            err instanceof Error ? err : new Error(String(err))
-          );
+          logError(Severity.error, errorReporter, toError(err));
           showMessage(tt.asrSaveFailed);
         });
     },
@@ -186,11 +184,7 @@ export function useTranscribeStepAsr({
     let sisterLang = parseStepLanguageField(json?.sisterlanguage);
     const report = (err: unknown) => {
       if (cancelled) return;
-      logError(
-        Severity.error,
-        errorReporter,
-        err instanceof Error ? err : new Error(String(err))
-      );
+      logError(Severity.error, errorReporter, toError(err));
       showMessage(tt.asrRequestFailed);
     };
     const applySister = () => {
@@ -209,7 +203,7 @@ export function useTranscribeStepAsr({
       isLangSet(sisterLang.bcp47) ||
       !artifactUsesOrgVernacularLanguage(slug as ArtifactTypeSlug) ||
       !org ||
-      token === null
+      !hasToken
     ) {
       applySister();
     } else {
@@ -235,9 +229,11 @@ export function useTranscribeStepAsr({
     // slugFromId (from useArtifactType) is recreated every render, so listing it
     // here would re-run this initializer on every render and clobber in-progress
     // edits (e.g. the sister language the user just picked, before the change has
-    // propagated back through toolSettings). Only re-sync when settings change.
+    // propagated back through toolSettings). Only re-sync when settings change,
+    // or once when a token first arrives so the org sister can be checked;
+    // hasToken (not token) keeps token refreshes from re-running it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolSettings]);
+  }, [toolSettings, hasToken]);
 
   const applySisterLanguage = (val: ILanguage) => {
     const bcp47 = val?.bcp47 ?? 'und';
@@ -285,11 +281,7 @@ export function useTranscribeStepAsr({
       })
       .catch((err: unknown) => {
         if (requestId !== sisterChangeRequest.current) return;
-        logError(
-          Severity.error,
-          errorReporter,
-          err instanceof Error ? err : new Error(String(err))
-        );
+        logError(Severity.error, errorReporter, toError(err));
         showMessage(tt.asrRequestFailed);
       });
   };
@@ -320,11 +312,7 @@ export function useTranscribeStepAsr({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        logError(
-          Severity.error,
-          errorReporter,
-          err instanceof Error ? err : new Error(String(err))
-        );
+        logError(Severity.error, errorReporter, toError(err));
         showMessage(tt.asrRequestFailed);
       });
     return () => {

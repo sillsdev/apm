@@ -81,6 +81,7 @@ import {
   refMatch,
   integrationSlug,
   getSegments,
+  hasTranscriptionTask,
   NamedRegions,
   updateSegments,
   useWaitForRemoteQueue,
@@ -1257,12 +1258,7 @@ export function Transcriber(props: IProps) {
 
   const hasAiTasks = useMemo(() => {
     const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
-    return (
-      getSegments(
-        NamedRegions.TRTask,
-        mediaRec?.attributes?.segments || '{}'
-      ) !== '{}'
-    );
+    return hasTranscriptionTask(mediaRec?.attributes?.segments);
   }, [playerMediafile, mediarecs]);
 
   const hasTranscription = useMemo(

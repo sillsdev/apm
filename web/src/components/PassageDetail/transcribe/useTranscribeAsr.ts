@@ -11,6 +11,7 @@ import { useCheckOnline } from '../../../utils/useCheckOnline';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import { logError, Severity } from '../../../utils/logErrorService';
+import { toError } from '../../../utils/toError';
 import { useGlobal } from '../../../context/useGlobal';
 import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
@@ -46,11 +47,7 @@ export function useAsrSettings(
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        logError(
-          Severity.error,
-          errorReporter,
-          err instanceof Error ? err : new Error(String(err))
-        );
+        logError(Severity.error, errorReporter, toError(err));
         showMessage(t.asrRequestFailed);
       });
     return () => {

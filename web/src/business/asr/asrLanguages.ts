@@ -1,26 +1,12 @@
 import { getLangTag } from 'mui-language-picker';
 import { axiosGet } from '../../utils/axios';
 import { isLangSet } from '../../utils/langTag';
-import { asrMethodDefaultValue } from '../../components/StepEditor/useAsrMethod';
 
-export { asrMethodDefaultValue };
-
-/** A user-chosen method. Default and empty values are omitted from the request. */
-export function explicitAsrMethod(method: unknown): string | undefined {
-  if (typeof method !== 'string') return undefined;
-  const trimmed = method.trim();
-  if (!trimmed || trimmed === asrMethodDefaultValue) return undefined;
-  return trimmed;
-}
-
-/** Method sent on the transcription request. Phonetic sends none. */
-export function asrRequestMethod(
-  method: unknown,
-  phonetic: boolean
-): string | undefined {
-  if (phonetic) return undefined;
-  return explicitAsrMethod(method);
-}
+export {
+  asrMethodDefaultValue,
+  asrRequestMethod,
+  explicitAsrMethod,
+} from './asrMethod';
 
 /**
  * Methods to list under Default. Undefined when the choice should be hidden

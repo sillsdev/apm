@@ -1,6 +1,13 @@
 import * as React from 'react';
 import { ActionRow, Button, rowSx } from '../../control';
-import { styled, Box, BoxProps, Divider, Typography } from '@mui/material';
+import {
+  styled,
+  Box,
+  BoxProps,
+  Divider,
+  LinearProgress,
+  Typography,
+} from '@mui/material';
 import {
   ISharedStrings,
   ITranscriberStrings,
@@ -18,6 +25,7 @@ import {
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { logError, Severity } from '../../utils';
+import { toError } from '../../utils/toError';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useRecommendAsrLanguage } from './useRecommendAsrLanguage';
 import { useCheckOnline } from '../../utils/useCheckOnline';
@@ -36,7 +44,8 @@ interface ISelectAsrLanguage {
   team?: OrganizationD;
   /**
    * cancel=true dismisses; otherwise returns the ASR settings for this run.
-   * The choice is not saved; admins save a team default with its own button.
+   * Run saves the choice only for a project whose language differs from the
+   * team's; admins save a team default with its own button.
    */
   onClose: (cancel: boolean, asrState?: IAsrState) => void;
   /**
@@ -77,6 +86,7 @@ export default function SelectAsrLanguage({
     canSetOrgDefault,
     canSetTeamAsrDefault,
     saveTeamAsrSettings,
+    saveProjectAsrSettings,
     saveStepAsrSettings,
   } = useGetAsrSettings(team);
   const { suggestions, loading, error, fetchRecommendations, seedSuggestions } =
@@ -92,6 +102,10 @@ export default function SelectAsrLanguage({
         showMessage(ts.mustBeOnline);
         return;
       }
+      // A project whose language differs from the team's keeps this choice
+      // for its next run (a no-op otherwise). Step-language ASR is not the
+      // project's vernacular, so it is not saved here.
+      if (asrState && !stepAsr) saveProjectAsrSettings(asrState);
       onClose(false, asrState);
     });
   };
@@ -109,11 +123,7 @@ export default function SelectAsrLanguage({
       !isLangSet(asrState?.language?.bcp47));
 
   const reportLoadFailure = (err: unknown) => {
-    logError(
-      Severity.error,
-      errorReporter,
-      err instanceof Error ? err : new Error(String(err))
-    );
+    logError(Severity.error, errorReporter, toError(err));
     setLoadFailed(true);
   };
 
@@ -145,6 +155,10 @@ export default function SelectAsrLanguage({
     void fetchRecommendations(isoFromBcp47(bcp47), saveSisterRecommendations);
   };
 
+  const hasToken = token !== null;
+  // Set once the dialog holds its seeded settings; an edit is never reseeded.
+  const seeded = React.useRef(false);
+
   const seedDialog = async (isCancelled: () => boolean) => {
     const asr = stepAsr ? stepAsr.asr : await getAsrSettings();
     if (isCancelled()) return;
@@ -173,11 +187,15 @@ export default function SelectAsrLanguage({
       dialect: asr?.dialect,
       selectRoman: asr?.selectRoman ?? false,
     } as IAsrState);
+    seeded.current = true;
     setVernacularBcp47(bcp47);
     if (needsSister) loadSisterSuggestions(bcp47);
   };
 
   React.useEffect(() => {
+    // Without a token the sister check answers "no" and the saved settings
+    // can't resolve a sister, so wait for it rather than seed a wrong dialog.
+    if (!hasToken || seeded.current) return;
     let cancelled = false;
     seedDialog(() => cancelled).catch((err: unknown) => {
       if (!cancelled) reportLoadFailure(err);
@@ -185,10 +203,11 @@ export default function SelectAsrLanguage({
     return () => {
       cancelled = true;
     };
-    // Mount once. Later token or settings-loader identity changes must not
-    // reload the dialog over an edit already in progress.
+    // Seed once, when the token is first available. Later token refreshes or
+    // settings-loader identity changes must not reload the dialog over an edit
+    // already in progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasToken]);
 
   return (
     <StyledBox sx={{ minWidth: 120 }}>
@@ -197,6 +216,7 @@ export default function SelectAsrLanguage({
           {t.asrRequestFailed}
         </Typography>
       )}
+      {!asrState && !loadFailed && <LinearProgress />}
       {asrState && (
         <AsrSettings
           asr={asrState}

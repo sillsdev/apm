@@ -1,5 +1,11 @@
 import React from 'react';
-import { Stack, Typography, Checkbox, FormControlLabel } from '@mui/material';
+import {
+  Stack,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  LinearProgress,
+} from '@mui/material';
 import { ILanguage, Language } from '../../control/Language';
 import { getLangTag } from 'mui-language-picker';
 import { asrScriptDetail } from './asrScriptDetail';
@@ -11,6 +17,7 @@ import { AsrTarget } from './AsrTarget';
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { logError, Severity } from '../../utils';
+import { toError } from '../../utils/toError';
 import { asrLanguageFilter, loadAsrLanguages } from './asrLanguages';
 import { IAsrState } from './asrState';
 
@@ -44,11 +51,7 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
         })
         .catch((err: unknown) => {
           if (cancelled) return;
-          logError(
-            Severity.error,
-            errorReporter,
-            err instanceof Error ? err : new Error(String(err))
-          );
+          logError(Severity.error, errorReporter, toError(err));
           setListStatus('failed');
         });
     }
@@ -101,6 +104,8 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
           hideSpelling={true}
           hideFont={true}
         />
+        {/* The list stays empty until aero answers; show that it is coming. */}
+        {listStatus === 'loading' && <LinearProgress sx={{ mt: 0.5 }} />}
         {listStatus === 'failed' && (
           <Typography variant="body2" color="error">
             {t.asrRequestFailed}

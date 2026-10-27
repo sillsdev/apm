@@ -1,5 +1,5 @@
 import { ILanguage } from '../../control/Language';
-import { asrMethodDefaultValue } from '../../components/StepEditor/useAsrMethod';
+import { explicitAsrMethod } from './asrMethod';
 
 export interface IAsrState {
   target: string;
@@ -31,9 +31,6 @@ export function normalizeAsrState(raw: unknown): IAsrState | undefined {
   return { ...obj, asrIso: obj.asrIso ?? mmsIso ?? 'und' };
 }
 
-const normalizeMethod = (method?: string) =>
-  !method || method === asrMethodDefaultValue ? undefined : method;
-
 /** Fields that affect the transcription API request in AsrProgress. */
 export function asrStatesEqual(
   a: IAsrState | undefined,
@@ -44,7 +41,7 @@ export function asrStatesEqual(
   return (
     a.target === b.target &&
     a.asrIso === b.asrIso &&
-    normalizeMethod(a.asrMethod) === normalizeMethod(b.asrMethod) &&
+    explicitAsrMethod(a.asrMethod) === explicitAsrMethod(b.asrMethod) &&
     (a.dialect ?? undefined) === (b.dialect ?? undefined) &&
     Boolean(a.selectRoman) === Boolean(b.selectRoman) &&
     (a.language?.bcp47 ?? 'und') === (b.language?.bcp47 ?? 'und')
