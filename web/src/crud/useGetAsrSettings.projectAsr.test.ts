@@ -7,6 +7,8 @@ let mockOrgLanguage = 'en';
 let mockProjectAsr: unknown = undefined;
 let mockOrgAsr: unknown = undefined;
 const mockSetProjectDefault = jest.fn();
+// Team-default writes in order: the team-language helper's, then direct ones.
+let mockTeamWrites: string[] = [];
 
 const mockMemoryUpdate = jest.fn();
 const mockMemory = {
@@ -53,9 +55,17 @@ jest.mock('./useOrgDefaults', () => ({
         return { bcp47: mockOrgLanguage, languageName: 'Team language' };
       return label === 'asr' ? mockOrgAsr : undefined;
     },
-    setOrgDefault: () => undefined,
+    setOrgDefault: (label: string) => {
+      mockTeamWrites.push(label);
+    },
     canSetOrgDefault: true,
   }),
+}));
+
+jest.mock('./useSetTeamLanguage', () => ({
+  useSetTeamLanguage: () => () => {
+    mockTeamWrites.push('team language');
+  },
 }));
 
 jest.mock('./useProjectDefaults', () => ({
@@ -137,6 +147,7 @@ describe('useGetAsrSettings project ASR', () => {
     mockOrgAsr = undefined;
     mockStepTool = '{}';
     mockMemoryUpdate.mockReset();
+    mockTeamWrites = [];
     mockSetProjectDefault.mockReset();
   });
 
@@ -256,5 +267,12 @@ describe('useGetAsrSettings project ASR', () => {
     result.current.saveTeamAsrSettings(frenchAsr);
     expect(mockSteps[0].attributes.tool).toBe(original);
     expect(mockMemoryUpdate).not.toHaveBeenCalled();
+  });
+
+  it('sets the team language through the helper before saving the team ASR', () => {
+    // The helper clears the old language's team ASR; the new choice must land after.
+    const { result } = renderHook(() => useGetAsrSettings());
+    result.current.saveTeamAsrSettings(frenchAsr);
+    expect(mockTeamWrites).toEqual(['team language', 'asr']);
   });
 });

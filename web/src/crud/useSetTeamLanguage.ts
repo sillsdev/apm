@@ -1,4 +1,7 @@
 import type { ILanguage } from '../control/Language';
+import { useGlobal } from '../context/useGlobal';
+import type { ProjectD } from '../model';
+import { teamLanguageInUse } from './teamLanguageInUse';
 import { normalizeAsrState } from '../business/asr/asrState';
 import {
   orgDefaultAsr,
@@ -41,5 +44,29 @@ export function useSetTeamLanguage() {
       },
       orgId
     );
+  };
+}
+
+/**
+ * Creating a project offers its language as the team language, but only when
+ * no project of the team uses the current one: those projects rely on it and
+ * on its ASR settings.
+ */
+export function useSetTeamLanguageForNewProject() {
+  const { getOrgDefault } = useOrgDefaults();
+  const setTeamLanguage = useSetTeamLanguage();
+  const [memory] = useGlobal('memory');
+
+  return (language: ILanguage, teamId?: string) => {
+    if (teamId) {
+      const teamLang = getOrgDefault(orgDefaultLangProps, teamId) as
+        ILanguage | undefined;
+      // One-off read when the project is created; no subscription needed.
+      const projects = memory.cache.query((q) =>
+        q.findRecords('project')
+      ) as ProjectD[];
+      if (teamLanguageInUse(projects, teamId, teamLang?.bcp47)) return;
+    }
+    setTeamLanguage(language, teamId);
   };
 }

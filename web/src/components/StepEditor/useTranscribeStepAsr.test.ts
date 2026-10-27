@@ -90,7 +90,6 @@ const renderStepAsr = (currentSlug: string, toolSettings = '{}') => {
       onChange,
       primaryBcp47: 'am',
       currentSlug,
-      vernacularLanguage: amharic,
     })
   );
   return { ...view, onChange };
@@ -117,10 +116,36 @@ describe('useTranscribeStepAsr', () => {
     act(() => result.current.setAsr({ ...teamAsr, asrMethod: 'mms' }));
     expect(setOrgDefault).toHaveBeenCalledWith(
       'asr',
-      expect.objectContaining({ asrMethod: 'mms', asrIso: 'am-iso' }),
+      expect.objectContaining({ asrMethod: 'mms' }),
       'org-1'
     );
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('saves no ASR language when no sister is chosen, so the team language is resolved when run', () => {
+    const { result } = renderStepAsr('vernacular');
+    act(() => result.current.setAsr({ ...teamAsr, asrMethod: 'mms' }));
+    expect(setOrgDefault).toHaveBeenCalledWith(
+      'asr',
+      expect.objectContaining({ asrIso: 'und', asrMethod: 'mms' }),
+      'org-1'
+    );
+  });
+
+  it('saves a chosen sister as the team ASR language', () => {
+    const spanish = {
+      ...teamAsr,
+      language: { ...amharic, bcp47: 'es', languageName: 'Spanish' },
+      asrIso: 'es-iso',
+    };
+    mockTeamAsr = spanish;
+    const { result } = renderStepAsr('vernacular');
+    act(() => result.current.setAsr({ ...spanish, asrMethod: 'mms' }));
+    expect(setOrgDefault).toHaveBeenCalledWith(
+      'asr',
+      expect.objectContaining({ asrIso: 'es-iso', asrMethod: 'mms' }),
+      'org-1'
+    );
   });
 
   it('saves phonetic to the team default and drops transliterate', () => {

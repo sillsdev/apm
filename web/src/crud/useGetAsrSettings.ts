@@ -302,10 +302,10 @@ export function useGetAsrSettings(team?: OrganizationD) {
       token
     );
     // slugFromId, getOrgDefault, getProjectDefault, usesProjectAsr and
-    // savedProjectAsrApplies are recreated every render. Including them makes getAsrSettings change every
-    // render and the load effect restarts. Team and project defaults are read
-    // from memory when called; useAsrDefaultsVersion tells loaders when to call
-    // again.
+    // savedProjectAsrApplies are recreated every render. Including them makes
+    // getAsrSettings change every render and the load effect restarts. Team and
+    // project defaults are read from memory when called; useAsrDefaultsVersion
+    // tells loaders when to call again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgSteps, currentstep, orgId, projectLang, token]);
 

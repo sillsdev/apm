@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { Card, CardActionArea, Grid } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { VProject, DialogMode, ICardsStrings, ProjectD } from '../../model';
+import { VProject, DialogMode, ICardsStrings } from '../../model';
 import { cardsSelector } from '../../selector';
 import { TeamContext, TeamIdType } from '../../context/TeamContext';
 import { useGlobal } from '../../context/useGlobal';
@@ -11,8 +11,7 @@ import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
 import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
 import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
-import { teamLanguageInUse } from '../../crud/teamLanguageInUse';
-import { useSetTeamLanguage } from '../../crud/useSetTeamLanguage';
+import { useSetTeamLanguageForNewProject } from '../../crud/useSetTeamLanguage';
 import { useHome, useJsonParams } from '../../utils';
 import StickyRedirect from '../StickyRedirect';
 import { ProjectDialog } from './ProjectDialog';
@@ -34,15 +33,21 @@ export const AddCard = (props: IProps) => {
     projectCreate,
     teamProjects,
     personalProjects,
+    personalTeam,
     loadProject,
     generalBook,
   } = ctx.state;
+  // Personal projects belong to the user's personal team. Without a team id,
+  // org defaults and the dialog's member lists fall back to the global
+  // organization: the team of the last project opened, some other team.
+  // (generalBook keeps team?.id: with none it reads every personal project.)
+  const teamId = team?.id ?? personalTeam;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const cardHeight = useCardHeight();
 
   const { leaveHome } = useHome();
   const { getOrgDefault } = useOrgDefaults();
-  const setTeamLanguage = useSetTeamLanguage();
+  const setTeamLanguageForNewProject = useSetTeamLanguageForNewProject();
   const [open, setOpen] = useState(false);
   const [inProgress] = useState(false);
 
@@ -54,7 +59,6 @@ export const AddCard = (props: IProps) => {
   const languageRef = useRef<ILanguage>(initLang);
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25S
   const [, setBusy] = useGlobal('importexportBusy');
-  const [memory] = useGlobal('memory');
   const [steps] = useState([
     t.projectCreated,
     t.mediaUploaded,
@@ -70,33 +74,25 @@ export const AddCard = (props: IProps) => {
   const { setParam } = useJsonParams();
 
   useEffect(() => {
+    // The personal team id loads after mount; read its language once it does.
+    if (!teamId) return;
     const language = getOrgDefault(
       orgDefaultLangProps,
-      team?.id
+      teamId
     ) as typeof initLang;
     setLanguage(language ?? initLang, true);
+    // getOrgDefault and setLanguage are recreated every render; only a new
+    // team id should re-read the team language.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [teamId]);
 
   const setLanguage = (language: ILanguage, init?: boolean) => {
     languageRef.current = language;
     setLanguagex(language);
     setProjDef({ ...projDef, ...language });
-    if (!init && !keepTeamLanguage()) {
-      setTeamLanguage(language, team?.id);
+    if (!init && teamId) {
+      setTeamLanguageForNewProject(language, teamId);
     }
-  };
-
-  /** A new project's language becomes the team language only if no project uses the current one. */
-  const keepTeamLanguage = () => {
-    if (!team?.id) return false;
-    const teamLang = getOrgDefault(orgDefaultLangProps, team.id) as
-      ILanguage | undefined;
-    // One-off read when the project is created; no subscription needed.
-    const projects = memory.cache.query((q) =>
-      q.findRecords('project')
-    ) as ProjectD[];
-    return teamLanguageInUse(projects, team.id, teamLang?.bcp47);
   };
 
   const handleSolutionShow = (e: React.MouseEvent) => {
@@ -224,7 +220,7 @@ export const AddCard = (props: IProps) => {
         onCommit={handleCommit}
         nameInUse={nameInUse}
         values={projDef}
-        team={team?.id}
+        team={teamId || undefined}
       />
       <Progress
         title={t.uploadProgress}

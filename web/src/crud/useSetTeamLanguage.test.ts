@@ -17,7 +17,16 @@ jest.mock('./useOrgDefaults', () => ({
   }),
 }));
 
-import { useSetTeamLanguage } from './useSetTeamLanguage';
+// Projects in local memory, for the new-project rule.
+let mockProjects: unknown[] = [];
+jest.mock('../context/useGlobal', () => ({
+  useGlobal: () => [{ cache: { query: () => mockProjects } }, () => undefined],
+}));
+
+import {
+  useSetTeamLanguage,
+  useSetTeamLanguageForNewProject,
+} from './useSetTeamLanguage';
 
 const lang = (bcp47: string, languageName: string) => ({
   bcp47,
@@ -76,5 +85,41 @@ describe('useSetTeamLanguage', () => {
 
     expect(mockDefaults.asr).toBeUndefined();
     expect(setOrgDefault).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useSetTeamLanguageForNewProject', () => {
+  const projectIn = (language: string) => ({
+    id: `p-${language}`,
+    type: 'project',
+    attributes: { language },
+    relationships: {
+      organization: { data: { type: 'organization', id: 'org-1' } },
+    },
+  });
+
+  beforeEach(() => {
+    setOrgDefault.mockClear();
+    mockDefaults = { langProps: lang('xx', 'Old'), asr: spanishSisterAsr };
+  });
+
+  it('keeps the team language and its ASR while a project uses it', () => {
+    mockProjects = [projectIn('xx')];
+    const { result } = renderHook(() => useSetTeamLanguageForNewProject());
+    result.current(lang('en', 'English'), 'org-1');
+
+    expect(setOrgDefault).not.toHaveBeenCalled();
+    expect(mockDefaults.asr).toBe(spanishSisterAsr);
+  });
+
+  it('takes the new project language, clearing the old ASR, when none uses it', () => {
+    mockProjects = [projectIn('fr')];
+    const { result } = renderHook(() => useSetTeamLanguageForNewProject());
+    result.current(lang('en', 'English'), 'org-1');
+
+    expect(mockDefaults.langProps).toEqual(lang('en', 'English'));
+    expect(mockDefaults.asr).toEqual(
+      expect.objectContaining({ asrIso: 'und', asrMethod: undefined })
+    );
   });
 });

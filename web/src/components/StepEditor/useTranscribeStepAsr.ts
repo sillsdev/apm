@@ -52,15 +52,12 @@ export function useTranscribeStepAsr({
   onChange,
   primaryBcp47,
   currentSlug,
-  vernacularLanguage,
 }: {
   org: string;
   toolSettings: string;
   onChange: (toolSettings: string) => void;
   primaryBcp47: string;
   currentSlug: string;
-  /** The team language, for Vernacular, Q&A and Retell steps. */
-  vernacularLanguage: ILanguage;
 }) {
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
   // Re-render when the team ASR is saved: Orbit changes the record in place.
@@ -108,14 +105,15 @@ export function useTranscribeStepAsr({
   }, [offlineOnly, primaryBcp47, token, errorReporter, tt.asrRequestFailed]);
 
   /**
-   * The ASR language saved on the team: the chosen sister, else the team
-   * language itself, unless it needs a sister that hasn't been picked yet.
+   * Only a sister is saved as the team's ASR language. With none, transcription
+   * resolves the team language itself, or asks for a sister when the service
+   * can't transcribe it. Saving the team language here could store one the
+   * service rejects (e.g. before the sister check has answered).
    */
-  const teamAsrLanguage = (chosen: ILanguage | undefined): ILanguage => {
-    if (chosen && isLangSet(chosen.bcp47)) return chosen;
-    if (showSisterLanguage) return emptyLanguage();
-    return vernacularLanguage;
-  };
+  const teamAsrLanguage = (chosen: ILanguage | undefined): ILanguage =>
+    chosen && isLangSet(chosen.bcp47) && chosen.bcp47 !== primaryBcp47
+      ? chosen
+      : emptyLanguage();
 
   const save = (next: IAsrState) => {
     const phonetic = next.target === AsrTarget.phonetic;

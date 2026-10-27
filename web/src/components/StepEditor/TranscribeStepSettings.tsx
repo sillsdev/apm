@@ -145,7 +145,6 @@ export const TranscribeStepSettings = ({
     onChange,
     primaryBcp47,
     currentSlug,
-    vernacularLanguage,
   });
 
   const handleSelect = (artifactTypeId: string | null) => {
