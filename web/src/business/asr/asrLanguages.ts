@@ -27,11 +27,11 @@ export const isoFromBcp47 = (bcp47: string) => {
   return iso;
 };
 
-// ponytail: cached for the page session. A language published after load shows up on refresh.
+// cached for the page session. A language published after load shows up on refresh.
 const asrMethodsByIso = new Map<string, string[]>();
 const asrMethodsInflight = new Map<string, Promise<string[]>>();
 
-// ponytail: one fetch per page session. Refresh to pick up a newly published language.
+// one fetch per page session. Refresh to pick up a newly published language.
 let asrLanguageCodes: Set<string> | undefined;
 let asrLanguagesRequest: Promise<Set<string>> | undefined;
 

@@ -169,7 +169,7 @@ const firstClipFromResult = (result: unknown): AeroPollClip | undefined => {
   if (!result || typeof result !== 'object') return undefined;
   const raw = result as Record<string, unknown>;
   if (!Array.isArray(raw.items) || raw.items.length === 0) return undefined;
-  // ponytail: we only submit one clip; use items[0] until batch submit exists
+  // we only submit one clip; use items[0] until batch submit exists
   return parseClip(raw.items[0]);
 };
 
