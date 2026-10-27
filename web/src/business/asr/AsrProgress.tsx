@@ -54,7 +54,6 @@ import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { asrMethodDefaultValue, asrRequestMethod } from './asrMethod';
-import { getMethodsForAsr } from './asrLanguages';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
 import {
   AiEstimateKey,
@@ -316,18 +315,13 @@ export default function AsrProgress({
     onClose && onClose();
   };
 
-  /** Timing history for this run: one per model, and one for phonetic. */
-  const timingKey = async (
-    iso: string,
-    method: string | undefined
-  ): Promise<AiEstimateKey> => {
+  /**
+   * Timing history for this run: phonetic, the chosen method, or the service
+   * default. Not looked up, so the request isn't delayed for an estimate.
+   */
+  const timingKey = (method: string | undefined): AiEstimateKey => {
     if (phonetic) return 'transcription:phonetic';
-    if (method) return `transcription:${method}`;
-    // With no method chosen, aero runs the one it ranks first (cached from the
-    // settings dialog). A failed lookup only costs estimate accuracy; the
-    // transcription request reports its own errors.
-    const methods = await getMethodsForAsr(iso, token).catch(() => []);
-    return `transcription:${methods[0] ?? asrMethodDefaultValue}`;
+    return `transcription:${method ?? asrMethodDefaultValue}`;
   };
 
   const postTranscribe = async () => {
@@ -338,7 +332,7 @@ export default function AsrProgress({
     const romanize = asr?.selectRoman ?? false;
     const method = asrRequestMethod(asr?.asrMethod, phonetic);
     const phoneticParam = phonetic ? '?phonetic=true' : '';
-    setRun({ startedAt: Date.now(), key: await timingKey(iso, method) });
+    setRun({ startedAt: Date.now(), key: timingKey(method) });
     try {
       const response = (await axiosPost(
         `mediafiles/${remId}/transcription/${iso}/${romanize}${method ? `/${method}` : ''}${phoneticParam}`,

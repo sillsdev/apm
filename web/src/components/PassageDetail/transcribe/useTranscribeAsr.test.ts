@@ -10,6 +10,11 @@ jest.mock('../../../crud/useGetAsrSettings', () => ({
   }),
 }));
 
+// Reloads after a saved default changes; its Orbit tables aren't under test.
+jest.mock('../../../crud/useAsrDefaultsVersion', () => ({
+  useAsrDefaultsVersion: () => '',
+}));
+
 jest.mock('../../../utils/useCheckOnline', () => ({
   useCheckOnline: () => (cb: (online: boolean) => void) => cb(true),
 }));

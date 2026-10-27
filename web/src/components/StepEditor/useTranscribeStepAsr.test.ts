@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react';
 
 const setOrgDefault = jest.fn();
 const buildVernacularAsrState = jest.fn(async () => ({ asrIso: 'eng' }));
+const needsSisterLanguage = jest.fn(async () => false);
 
 jest.mock('../../crud/useArtifactType', () => ({
   useArtifactType: () => ({
@@ -24,6 +25,7 @@ jest.mock('../../utils/logErrorService', () => ({
   logError: jest.fn(),
 }));
 
+// Like the real hook, showMessage is a new function on every render.
 jest.mock('../../hoc/useSnackBar', () => ({
   useSnackBar: () => ({ showMessage: jest.fn() }),
 }));
@@ -51,7 +53,7 @@ jest.mock('react-redux', () => ({
 jest.mock('../../business/asr/asrLanguages', () => ({
   isValidAsrLanguage: async () => true,
   isoFromBcp47: (bcp: string) => bcp,
-  needsSisterLanguage: async () => false,
+  needsSisterLanguage: () => needsSisterLanguage(),
   explicitAsrMethod: (method: unknown) => method,
   resolveAsrBcp47: async (bcp: string) => bcp,
 }));
@@ -72,6 +74,23 @@ describe('useTranscribeStepAsr', () => {
   beforeEach(() => {
     setOrgDefault.mockReset();
     buildVernacularAsrState.mockClear();
+    needsSisterLanguage.mockClear();
+  });
+
+  it('checks the sister language once, not on every render', () => {
+    const { rerender } = renderHook(() =>
+      useTranscribeStepAsr({
+        org: 'org-1',
+        toolSettings: '{}',
+        onChange: jest.fn(),
+        primaryBcp47: 'fr',
+        currentSlug: 'vernacular',
+        clearMethod: (settings) => settings,
+      })
+    );
+    rerender();
+    rerender();
+    expect(needsSisterLanguage).toHaveBeenCalledTimes(1);
   });
 
   it('does not write the team ASR default when there is no token', () => {

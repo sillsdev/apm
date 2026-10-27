@@ -130,6 +130,10 @@ jest.mock('../../hoc/SnackBar', () => ({
 }));
 
 import SelectAsrLanguage from './SelectAsrLanguage';
+import { TokenContext } from '../../context/TokenProvider';
+
+// The dialog only reads state.accessToken from the context.
+const noToken = { state: { accessToken: null } } as never;
 
 describe('SelectAsrLanguage', () => {
   beforeEach(() => {
@@ -274,5 +278,15 @@ describe('SelectAsrLanguage', () => {
     expect(
       screen.queryByRole('button', { name: 'Save as team default' })
     ).not.toBeInTheDocument();
+  });
+
+  it('asks an offline session (no token) to go online instead of loading', () => {
+    render(
+      <TokenContext.Provider value={noToken}>
+        <SelectAsrLanguage onClose={jest.fn()} />
+      </TokenContext.Provider>
+    );
+    expect(screen.getByText('online')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 });

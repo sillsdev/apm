@@ -42,8 +42,8 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
 
   React.useEffect(() => {
     let cancelled = false;
-    // No token yet (common on first render): stay loading. This effect runs
-    // again when the token arrives, and only a failed request shows the error.
+    // Offline (no token) the list can't be asked for; only a failed request
+    // shows the error.
     if (token) {
       loadAsrLanguages(token)
         .then(() => {

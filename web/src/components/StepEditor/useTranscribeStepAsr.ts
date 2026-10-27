@@ -76,7 +76,6 @@ export function useTranscribeStepAsr({
   const [errorReporter] = useGlobal('errorReporter');
   const [offlineOnly] = useGlobal('offlineOnly');
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
-  const hasToken = token !== null;
   const tt: ITranscriberStrings = useSelector(
     transcriberSelector,
     shallowEqual
@@ -132,8 +131,8 @@ export function useTranscribeStepAsr({
       if (settings.artifactTypeId && !artifactUsesOrgVernacularLanguage(slug)) {
         return;
       }
-      // Without a token the ASR language can't be checked, and a guess written
-      // here becomes the team default. Sync on the next edit made online.
+      // Offline (no token) the ASR language can't be checked, and a guess
+      // written here becomes the team default. Sync on the next edit online.
       if (!token) return;
       const requestId = ++orgAsrSyncRequest.current;
       buildVernacularAsrState(
@@ -203,7 +202,8 @@ export function useTranscribeStepAsr({
       isLangSet(sisterLang.bcp47) ||
       !artifactUsesOrgVernacularLanguage(slug as ArtifactTypeSlug) ||
       !org ||
-      !hasToken
+      // Offline (no token) the service can't say whether a sister is needed.
+      token === null
     ) {
       applySister();
     } else {
@@ -229,11 +229,9 @@ export function useTranscribeStepAsr({
     // slugFromId (from useArtifactType) is recreated every render, so listing it
     // here would re-run this initializer on every render and clobber in-progress
     // edits (e.g. the sister language the user just picked, before the change has
-    // propagated back through toolSettings). Only re-sync when settings change,
-    // or once when a token first arrives so the org sister can be checked;
-    // hasToken (not token) keeps token refreshes from re-running it.
+    // propagated back through toolSettings). Only re-sync when settings change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolSettings, hasToken]);
+  }, [toolSettings]);
 
   const applySisterLanguage = (val: ILanguage) => {
     const bcp47 = val?.bcp47 ?? 'und';
@@ -318,14 +316,11 @@ export function useTranscribeStepAsr({
     return () => {
       cancelled = true;
     };
-  }, [
-    offlineOnly,
-    primaryBcp47,
-    token,
-    errorReporter,
-    showMessage,
-    tt.asrRequestFailed,
-  ]);
+    // showMessage is a new function every render. Listing it re-ran this check
+    // on every render, and while aero failed each error re-rendered and asked
+    // again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offlineOnly, primaryBcp47, token, errorReporter, tt.asrRequestFailed]);
 
   return {
     sisterLanguage,

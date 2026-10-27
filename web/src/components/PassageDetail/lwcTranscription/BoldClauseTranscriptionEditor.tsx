@@ -371,6 +371,7 @@ export default function BoldClauseTranscriptionEditor({
                   id={`${idPrefix}-asr`}
                   onClick={handleAutoTranslation}
                   onSettings={openAsrLanguageSettings}
+                  settingsLabel={tPlayer.recognizeSpeechSettings}
                   disabled={runAsrDisabled}
                 >
                   <TranscriptionLogo

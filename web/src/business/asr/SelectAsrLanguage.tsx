@@ -57,6 +57,16 @@ interface ISelectAsrLanguage {
   stepAsr?: { primaryBcp47: string; asr: IAsrState };
 }
 
+/** Progress while the dialog loads, or why it can't. */
+function SeedingStatus({ message }: { message?: string }) {
+  if (!message) return <LinearProgress />;
+  return (
+    <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+      {message}
+    </Typography>
+  );
+}
+
 const emptyAsrLanguage = {
   bcp47: 'und',
   languageName: '',
@@ -73,8 +83,6 @@ export default function SelectAsrLanguage({
   const [asrState, setAsrState] = React.useState<IAsrState>();
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [errorReporter] = useGlobal('errorReporter');
-  const [offline] = useGlobal('offline');
-  const [connected] = useGlobal('connected');
   const [vernacularBcp47, setVernacularBcp47] = React.useState('und');
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -157,9 +165,8 @@ export default function SelectAsrLanguage({
     void fetchRecommendations(isoFromBcp47(bcp47), saveSisterRecommendations);
   };
 
+  // Only an offline session has no token; ASR needs the service, so it can't load.
   const hasToken = token !== null;
-  // Set once the dialog holds its seeded settings; an edit is never reseeded.
-  const seeded = React.useRef(false);
 
   const seedDialog = async (isCancelled: () => boolean) => {
     const asr = stepAsr ? stepAsr.asr : await getAsrSettings();
@@ -189,15 +196,12 @@ export default function SelectAsrLanguage({
       dialect: asr?.dialect,
       selectRoman: asr?.selectRoman ?? false,
     } as IAsrState);
-    seeded.current = true;
     setVernacularBcp47(bcp47);
     if (needsSister) loadSisterSuggestions(bcp47);
   };
 
   React.useEffect(() => {
-    // Without a token the sister check answers "no" and the saved settings
-    // can't resolve a sister, so wait for it rather than seed a wrong dialog.
-    if (!hasToken || seeded.current) return;
+    if (!hasToken) return;
     let cancelled = false;
     seedDialog(() => cancelled).catch((err: unknown) => {
       if (!cancelled) reportLoadFailure(err);
@@ -205,15 +209,12 @@ export default function SelectAsrLanguage({
     return () => {
       cancelled = true;
     };
-    // Seed once, when the token is first available. Later token refreshes or
-    // settings-loader identity changes must not reload the dialog over an edit
-    // already in progress.
+    // Mount once. Later token refreshes or settings-loader identity changes
+    // must not reload the dialog over an edit already in progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasToken]);
+  }, []);
 
   const seeding = !asrState && !loadFailed;
-  // Seeding waits for a token, which an offline session never gets.
-  const offlineWithoutToken = !hasToken && (Boolean(offline) || !connected);
 
   return (
     <StyledBox sx={{ minWidth: 120 }}>
@@ -222,14 +223,9 @@ export default function SelectAsrLanguage({
           {t.asrRequestFailed}
         </Typography>
       )}
-      {seeding &&
-        (offlineWithoutToken ? (
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            {ts.mustBeOnline}
-          </Typography>
-        ) : (
-          <LinearProgress />
-        ))}
+      {seeding && (
+        <SeedingStatus message={hasToken ? undefined : ts.mustBeOnline} />
+      )}
       {asrState && (
         <AsrSettings
           asr={asrState}

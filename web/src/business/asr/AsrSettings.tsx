@@ -98,8 +98,8 @@ export const AsrSettings = ({
       setAsrMethods([]);
     };
     setLoadStatus('loading');
-    // Without a token aero answers nothing, and an empty list read as 'ready'
-    // would drop the saved method. Stay loading until the token arrives.
+    // Offline (no token) aero answers nothing, and an empty list read as
+    // 'ready' would drop the saved method. Stay loading instead.
     if (!token) return;
     // The method list depends on the sister check, so both run in one pass.
     needsSisterLanguage(vernacularBcp47, token)

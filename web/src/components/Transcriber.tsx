@@ -1458,6 +1458,7 @@ export function Transcriber(props: IProps) {
                               id="asrButton"
                               onClick={handleTranscribe}
                               onSettings={openAsrLanguageSettings}
+                              settingsLabel={tPlayer.recognizeSpeechSettings}
                               disabled={role !== 'transcriber'}
                             >
                               {!hasTranscription &&

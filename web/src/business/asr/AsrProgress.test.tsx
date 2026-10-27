@@ -49,11 +49,8 @@ jest.mock('../../context/TokenProvider', () => {
 });
 
 const mockAxiosPost = jest.fn<() => Promise<unknown>>();
-// Methods aero lists for a language, best first.
-let mockAsrMethods: string[] = [];
 jest.mock('../../utils/axios', () => ({
-  axiosGet: async (url: string) =>
-    url.includes('asrlanguages') ? mockAsrMethods : undefined,
+  axiosGet: jest.fn(),
   axiosPost: () => mockAxiosPost(),
 }));
 
@@ -121,7 +118,6 @@ jest.mock(
 );
 
 import AsrProgress from './AsrProgress';
-import { clearAsrLanguageValidityCache } from './asrLanguages';
 
 const mediaWith = (duration: number) =>
   ({
@@ -152,8 +148,6 @@ describe('AsrProgress estimated time', () => {
   beforeEach(() => {
     mockOrbitListeners.clear();
     localStorage.clear();
-    clearAsrLanguageValidityCache();
-    mockAsrMethods = [];
     // The transcription request stays in flight for the whole test.
     mockAxiosPost.mockReset();
     mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
@@ -196,10 +190,9 @@ describe('AsrProgress estimated time', () => {
       totalMs: (10 + d) * 1000,
       at: 0,
     }));
-    // No method chosen: the run is timed under the method aero ranks first.
-    mockAsrMethods = ['w2v-bert', 'mms'];
+    // No method chosen: the run is timed under the service default.
     localStorage.setItem(
-      'aiTiming-transcription:w2v-bert',
+      'aiTiming-transcription:default',
       JSON.stringify(samples)
     );
     orbitMedia = [mediaWith(60)];
@@ -215,7 +208,6 @@ describe('AsrProgress estimated time', () => {
       totalMs: (10 + d) * 1000,
       at: 0,
     }));
-    mockAsrMethods = ['w2v-bert'];
     localStorage.setItem(
       'aiTiming-transcription:phonetic',
       JSON.stringify(samples)

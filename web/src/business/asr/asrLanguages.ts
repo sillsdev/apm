@@ -138,7 +138,7 @@ export async function isValidAsrLanguage(
   token?: string | null
 ): Promise<boolean> {
   if (!isLangSet(iso)) return false;
-  // Can't ask yet. Leaving the language in place beats marking it unsupported.
+  // Offline: can't ask. Leaving the language in place beats marking it unsupported.
   if (!canAskAero(token)) return true;
   const methods = await loadAsrMethods(iso, token);
   return methods.length > 0;
@@ -164,8 +164,8 @@ export async function resolveAsrBcp47(
   sisterBcp: string | undefined,
   token?: string | null
 ): Promise<string> {
-  // Without a token aero can't say whether the primary is supported. A sister is
-  // only configured when the primary needed one, so trust it.
+  // Offline (no token) aero can't say whether the primary is supported. A
+  // sister is only configured when the primary needed one, so trust it.
   if (!canAskAero(token) && isLangSet(sisterBcp)) return sisterBcp;
   const primaryIso = isoFromBcp47(primaryBcp);
   const needsSister =

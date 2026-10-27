@@ -800,6 +800,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
             id="asrButton-settings"
             aria-label={tPlayer.recognizeSpeechSettings}
             onClick={() => asr.setAsrLangVisible(true)}
+            disabled={isReadOnly}
             size="small"
           >
             <SettingsIcon fontSize="small" />

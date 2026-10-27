@@ -231,36 +231,6 @@ jest.mock('../../../control', () => ({
   ),
 }));
 
-jest.mock('../../../control/ConfButton', () => ({
-  __esModule: true,
-  default: ({
-    children,
-    id,
-    disabled,
-    showSettings = true,
-    onClick,
-    onSettings,
-  }: {
-    children: React.ReactNode;
-    id?: string;
-    disabled?: boolean;
-    showSettings?: boolean;
-    onClick?: () => void;
-    onSettings?: () => void;
-  }) => (
-    <div>
-      <button type="button" id={id} disabled={disabled} onClick={onClick}>
-        {children}
-      </button>
-      {showSettings && (
-        <button type="button" id={`${id}-settings`} onClick={onSettings}>
-          settings
-        </button>
-      )}
-    </div>
-  ),
-}));
-
 jest.mock('../../../control/TranscriptionLogo', () => ({
   __esModule: true,
   default: () => <span>logo</span>,
@@ -344,13 +314,22 @@ describe('BoldClauseTranscriptionEditor', () => {
     ).toBeDisabled();
   });
 
+  it('disables the settings gear with Auto Translation, so Run cannot bypass it', () => {
+    render(
+      <BoldClauseTranscriptionEditor {...baseProps} text="existing text" />
+    );
+    expect(
+      screen.getByRole('button', { name: 'Speech Settings' })
+    ).toBeDisabled();
+  });
+
   it('enables Auto Translation when text is empty', () => {
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
     expect(
       screen.getByRole('button', { name: /Auto Translation/i })
     ).not.toBeDisabled();
     expect(
-      screen.getByRole('button', { name: 'settings' })
+      screen.getByRole('button', { name: 'Speech Settings' })
     ).toBeInTheDocument();
   });
 
@@ -369,7 +348,7 @@ describe('BoldClauseTranscriptionEditor', () => {
       screen.getByRole('button', { name: /Auto Translation/i })
     ).not.toBeDisabled();
     expect(
-      screen.getByRole('button', { name: 'settings' })
+      screen.getByRole('button', { name: 'Speech Settings' })
     ).toBeInTheDocument();
   });
 
@@ -434,7 +413,7 @@ describe('BoldClauseTranscriptionEditor', () => {
     });
     mockSelectAsrProps = undefined;
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
-    fireEvent.click(screen.getByRole('button', { name: 'settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Speech Settings' }));
 
     expect(selectAsrProps()?.stepAsr).toEqual({
       primaryBcp47: 'kn',
@@ -458,11 +437,11 @@ describe('BoldClauseTranscriptionEditor', () => {
       stepLanguageBcp47: 'kn',
     });
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
-    fireEvent.click(screen.getByRole('button', { name: 'settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Speech Settings' }));
     act(() => selectAsrProps()?.onClose(false, chosen));
 
     expect(
-      screen.getByRole('button', { name: 'settings' })
+      screen.getByRole('button', { name: 'Speech Settings' })
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Auto Translation/i }));
     expect(screen.getByTestId('asr-progress-dialog')).toBeInTheDocument();
@@ -480,7 +459,7 @@ describe('BoldClauseTranscriptionEditor', () => {
   it('opens settings from the gear even when the settings are ready', () => {
     mockSelectAsrProps = undefined;
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
-    fireEvent.click(screen.getByRole('button', { name: 'settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Speech Settings' }));
 
     expect(screen.getByTestId('select-asr-language')).toBeInTheDocument();
   });
