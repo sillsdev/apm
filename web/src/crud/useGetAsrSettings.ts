@@ -23,8 +23,10 @@ import { useOrbitData } from '../hoc/useOrbitData';
 import { JSONParse, isLangSet } from '../utils';
 import { UpdateRecord } from '../model/baseModel';
 import { AsrTarget } from '../business/asr/AsrTarget';
+import { needsSisterLanguage } from '../business/asr/asrLanguages';
 import { useArtifactType } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
+import { useSetTeamLanguage } from './useSetTeamLanguage';
 
 import {
   artifactTypeSlugFromSettings,
@@ -37,7 +39,6 @@ import {
   stepSisterRecommendationKey,
   transcribeSettingsNeedSisterLanguage,
   withSisterRecommendations,
-  withInheritedVernacularSisterSettings,
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
 
@@ -50,7 +51,6 @@ export {
   buildWorkflowAsrStateFromSettings,
   parseStepLanguageField,
   formatStepLanguageField,
-  withInheritedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
 export type {
   SlugFromIdFn,
@@ -80,6 +80,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const [project] = useGlobal('project');
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const { getProjectDefault, setProjectDefault } = useProjectDefaults();
+  const setTeamLanguage = useSetTeamLanguage();
   const { slugFromId } = useArtifactType();
   const ctx = React.useContext(PassageDetailContext);
   const currentstep = ctx?.state?.currentstep;
@@ -229,10 +230,6 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const parseStepSettings = (settingsJson: string | undefined) =>
     JSONParse(settingsJson ?? '{}') as TranscribeStepSettings;
 
-  /** Step settings with vernacular sister inherited for Q&A / Retell when missing. */
-  const resolveStepSettings = (settings: TranscribeStepSettings) =>
-    withInheritedVernacularSisterSettings(settings, orgSteps, slugFromId);
-
   /** The step transcribes the vernacular, and this project's differs from the team's. */
   const usesProjectAsr = (settings: TranscribeStepSettings) =>
     projectDiffersFromOrg() &&
@@ -240,19 +237,37 @@ export function useGetAsrSettings(team?: OrganizationD) {
       artifactTypeSlugFromSettings(settings, slugFromId)
     );
 
+  /**
+   * A saved project choice in another language is a sister, which applies
+   * only while the project's language needs one. Earlier builds saved every
+   * Run here, including the team's sister for a project the service can
+   * transcribe directly; the dialog hides the picker then, so it couldn't be
+   * changed.
+   */
+  const savedProjectAsrApplies = async (projAsr: IAsrState) => {
+    const projBcp = projectLang?.bcp47 ?? 'und';
+    if (projAsr.language?.bcp47 === projBcp) return true;
+    return needsSisterLanguage(projBcp, token);
+  };
+
   const getAsrSettings = React.useCallback(async () => {
     const step = orgSteps.find((s) => s.id === currentstep);
     const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
       string,
       string
     >;
-    const settings = resolveStepSettings(parseStepSettings(json?.settings));
+    const settings = parseStepSettings(json?.settings);
     // A project whose language differs from the team's keeps its own ASR
     // choice (saved on Run), since the team default can't describe it.
     const projectOwnsAsr = usesProjectAsr(settings);
     if (projectOwnsAsr) {
       const projAsr = normalizeAsrState(getProjectDefault(orgDefaultAsr));
-      if (projAsr && isLangSet(projAsr.asrIso)) return projAsr;
+      if (
+        projAsr &&
+        isLangSet(projAsr.asrIso) &&
+        (await savedProjectAsrApplies(projAsr))
+      )
+        return projAsr;
     }
     const hasStepLang = hasTranscribeStepLanguageSettings(
       json.tool,
@@ -286,12 +301,13 @@ export function useGetAsrSettings(team?: OrganizationD) {
       projectLang,
       token
     );
-    // slugFromId, getProjectDefault and usesProjectAsr are recreated every
-    // render. Including them makes getAsrSettings change every render and the
-    // load effect restarts. Team and project defaults are read from memory when
-    // called; useAsrDefaultsVersion tells loaders when to call again.
+    // slugFromId, getOrgDefault, getProjectDefault, usesProjectAsr and
+    // savedProjectAsrApplies are recreated every render. Including them makes getAsrSettings change every
+    // render and the load effect restarts. Team and project defaults are read
+    // from memory when called; useAsrDefaultsVersion tells loaders when to call
+    // again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgSteps, currentstep, orgId, projectLang, token, getOrgDefault]);
+  }, [orgSteps, currentstep, orgId, projectLang, token]);
 
   /**
    * Whether the current user may save ASR settings as the team (org) default:
@@ -313,8 +329,10 @@ export function useGetAsrSettings(team?: OrganizationD) {
    */
   const saveTeamAsrSettings = (asrState: IAsrState) => {
     const vernacular = getVernacularLanguage();
-    if (isLangSet(vernacular?.bcp47)) {
-      setOrgDefault(orgDefaultLangProps, vernacular, orgId);
+    // Set the language first: a change clears the old language's team ASR,
+    // which the new choice then replaces.
+    if (vernacular && isLangSet(vernacular.bcp47)) {
+      setTeamLanguage(vernacular, orgId);
     }
     setOrgDefault(orgDefaultAsr, asrState, orgId);
     // Drop any per-project choice so the new team default isn't shadowed.
@@ -344,7 +362,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = resolveStepSettings(parseStepSettings(json?.settings));
+    const settings = parseStepSettings(json?.settings);
     return hasTranscribeStepLanguageSettings(
       json.tool,
       settings,
@@ -360,7 +378,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = resolveStepSettings(parseStepSettings(json?.settings));
+    const settings = parseStepSettings(json?.settings);
     return transcribeSettingsNeedSisterLanguage(
       settings,
       slugFromId,

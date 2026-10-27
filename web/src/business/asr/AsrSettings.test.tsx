@@ -125,6 +125,18 @@ describe('AsrSettings method list', () => {
     ).toBeChecked();
   });
 
+  it('saves Default rather than the method the service ranks first', async () => {
+    getMethodsForAsr.mockResolvedValue(['whisper', 'mms']);
+    render(<Harness method="whisper" />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('chosen')).toHaveTextContent('default')
+    );
+    expect(
+      screen.getByRole('radio', { name: 'Default (whisper)' })
+    ).toBeChecked();
+  });
+
   it('keeps a method the service still lists', async () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'mms']);
     render(<Harness method="mms" />);

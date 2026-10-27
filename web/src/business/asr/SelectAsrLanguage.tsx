@@ -58,7 +58,7 @@ interface ISelectAsrLanguage {
 }
 
 /** Progress while the dialog loads, or why it can't. */
-function SeedingStatus({ message }: { message?: string }) {
+function SeedingStatus({ message }: Readonly<{ message?: string }>) {
   if (!message) return <LinearProgress />;
   return (
     <Typography variant="body2" color="error" sx={{ mb: 1 }}>

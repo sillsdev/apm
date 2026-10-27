@@ -30,10 +30,7 @@ import {
   getToolSettings,
   remoteIdGuid,
 } from '../../crud';
-import {
-  parseStepLanguageField,
-  withPropagatedVernacularSisterSettings,
-} from '../../crud/transcribeStepAsrSettings';
+import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -243,15 +240,12 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleSettingsChange = (settings: string) => {
+    // Vernacular, Q&A and Retell ASR lives in the team default, so only this
+    // step's settings change.
     setRows((prev) =>
-      withPropagatedVernacularSisterSettings(
-        prev,
-        toolSettingsRow,
-        settings,
-        slugFromId
-      ).map((r, i) =>
-        r.settings !== prev[i]?.settings
-          ? { ...r, prettySettings: prettySettings(r.tool, r.settings) }
+      prev.map((r, i) =>
+        i === toolSettingsRow
+          ? { ...r, settings, prettySettings: prettySettings(r.tool, settings) }
           : r
       )
     );

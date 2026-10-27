@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { Card, CardActionArea, Grid } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { VProject, DialogMode, ICardsStrings } from '../../model';
+import { VProject, DialogMode, ICardsStrings, ProjectD } from '../../model';
 import { cardsSelector } from '../../selector';
 import { TeamContext, TeamIdType } from '../../context/TeamContext';
 import { useGlobal } from '../../context/useGlobal';
@@ -11,6 +11,8 @@ import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
 import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
 import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
+import { teamLanguageInUse } from '../../crud/teamLanguageInUse';
+import { useSetTeamLanguage } from '../../crud/useSetTeamLanguage';
 import { useHome, useJsonParams } from '../../utils';
 import StickyRedirect from '../StickyRedirect';
 import { ProjectDialog } from './ProjectDialog';
@@ -39,7 +41,8 @@ export const AddCard = (props: IProps) => {
   const cardHeight = useCardHeight();
 
   const { leaveHome } = useHome();
-  const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  const { getOrgDefault } = useOrgDefaults();
+  const setTeamLanguage = useSetTeamLanguage();
   const [open, setOpen] = useState(false);
   const [inProgress] = useState(false);
 
@@ -51,6 +54,7 @@ export const AddCard = (props: IProps) => {
   const languageRef = useRef<ILanguage>(initLang);
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25S
   const [, setBusy] = useGlobal('importexportBusy');
+  const [memory] = useGlobal('memory');
   const [steps] = useState([
     t.projectCreated,
     t.mediaUploaded,
@@ -78,7 +82,21 @@ export const AddCard = (props: IProps) => {
     languageRef.current = language;
     setLanguagex(language);
     setProjDef({ ...projDef, ...language });
-    if (!init) setOrgDefault(orgDefaultLangProps, language, team?.id);
+    if (!init && !keepTeamLanguage()) {
+      setTeamLanguage(language, team?.id);
+    }
+  };
+
+  /** A new project's language becomes the team language only if no project uses the current one. */
+  const keepTeamLanguage = () => {
+    if (!team?.id) return false;
+    const teamLang = getOrgDefault(orgDefaultLangProps, team.id) as
+      ILanguage | undefined;
+    // One-off read when the project is created; no subscription needed.
+    const projects = memory.cache.query((q) =>
+      q.findRecords('project')
+    ) as ProjectD[];
+    return teamLanguageInUse(projects, team.id, teamLang?.bcp47);
   };
 
   const handleSolutionShow = (e: React.MouseEvent) => {

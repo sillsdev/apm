@@ -148,7 +148,11 @@ export function useTranscribeAsr({
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      const cleanTrans = trans.replace(/\d+:\d+\.\d+: /g, '').trim();
+      // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
+      // longer digit run from matching at a suffix and leaving a stray digit.
+      const cleanTrans = trans
+        .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
+        .trim();
       const curTrans = getCurrentText();
       if (curTrans.includes(cleanTrans)) return;
       const m = /\\v (\d+)\s?/.exec(cleanTrans);

@@ -1,14 +1,6 @@
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
-import { useArtifactType } from '../../crud/useArtifactType';
 import type { ILanguage } from '../../control/Language';
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
@@ -17,6 +9,7 @@ import { isLangSet } from '../../utils/langTag';
 import { logError, Severity } from '../../utils/logErrorService';
 import { toError } from '../../utils/toError';
 import {
+  explicitAsrMethod,
   isValidAsrLanguage,
   isoFromBcp47,
   needsSisterLanguage,
@@ -24,19 +17,16 @@ import {
 import { AsrTarget } from '../../business/asr/AsrTarget';
 import type { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
-import {
-  orgDefaultAsr,
-  orgDefaultLangProps,
-  useOrgDefaults,
-} from '../../crud/useOrgDefaults';
+import { orgDefaultAsr, useOrgDefaults } from '../../crud/useOrgDefaults';
+import { useAsrDefaultsVersion } from '../../crud/useAsrDefaultsVersion';
 import {
   artifactUsesOrgVernacularLanguage,
-  buildVernacularAsrState,
-  formatStepLanguageField,
-  parseStepLanguageField,
+  stepAsrFromSettings,
+  stepSettingsFromAsrState,
+  teamVernacularAsr,
   type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
-import { IAsrState, normalizeAsrState } from '../../business/asr/asrState';
+import type { IAsrState } from '../../business/asr/asrState';
 import { useSnackBar } from '../../hoc/useSnackBar';
 
 const emptyLanguage = (): ILanguage => ({
@@ -47,9 +37,14 @@ const emptyLanguage = (): ILanguage => ({
   spellCheck: false,
 });
 
+type SetAsr = (
+  action: IAsrState | undefined | ((prev: IAsrState) => IAsrState | undefined)
+) => void;
+
 /**
- * Sister-language load, validity, and the team ASR default. The step form
- * renders them; this hook owns the requests so the two do not drift.
+ * The step editor's ASR box. Vernacular, Q&A and Retell steps edit the team
+ * ASR default; a step with its own language (e.g. back translation) edits its
+ * own settings. The box shows `asr` and reports edits through `setAsr`.
  */
 export function useTranscribeStepAsr({
   org,
@@ -57,21 +52,19 @@ export function useTranscribeStepAsr({
   onChange,
   primaryBcp47,
   currentSlug,
-  clearMethod,
+  vernacularLanguage,
 }: {
   org: string;
   toolSettings: string;
   onChange: (toolSettings: string) => void;
   primaryBcp47: string;
   currentSlug: string;
-  clearMethod: (settings: Record<string, unknown>) => Record<string, unknown>;
+  /** The team language, for Vernacular, Q&A and Retell steps. */
+  vernacularLanguage: ILanguage;
 }) {
-  const [sisterLanguage, setSisterLanguage] =
-    useState<ILanguage>(emptyLanguage);
-  const sisterChangeRequest = useRef(0);
-  const orgAsrSyncRequest = useRef(0);
-  const { slugFromId } = useArtifactType();
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  // Re-render when the team ASR is saved: Orbit changes the record in place.
+  useAsrDefaultsVersion(org);
   const { showMessage } = useSnackBar();
   const [errorReporter] = useGlobal('errorReporter');
   const [offlineOnly] = useGlobal('offlineOnly');
@@ -80,225 +73,17 @@ export function useTranscribeStepAsr({
     transcriberSelector,
     shallowEqual
   );
+  const sisterChangeRequest = useRef(0);
 
-  const readVernacularFromOrg = useCallback(() => {
-    if (!org) return emptyLanguage();
-    return (
-      (getOrgDefault(orgDefaultLangProps, org) as ILanguage | undefined) ??
-      emptyLanguage()
-    );
-  }, [getOrgDefault, org]);
-
-  const asrDefault: IAsrState = useMemo(
-    () => ({
-      target: AsrTarget.alphabet,
-      language: {
-        bcp47: 'und',
-        languageName: 'unknown',
-        font: 'charissil',
-        rtl: false,
-        spellCheck: false,
-      },
-      asrIso: 'eng',
-      dialect: undefined,
-      selectRoman: false,
-    }),
-    []
+  const usesTeamAsr = artifactUsesOrgVernacularLanguage(
+    currentSlug as ArtifactTypeSlug
   );
-
-  const vernacularAsrSettings = useCallback(
-    (settingsJson: string): ITranscribeStepSettings => {
-      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
-      const phonetic = settings.phonetic ?? false;
-      return {
-        ...settings,
-        phonetic,
-        sisterlanguage:
-          settings.sisterlanguage ?? formatStepLanguageField(sisterLanguage),
-      };
-    },
-    [sisterLanguage]
-  );
-
-  const syncOrgAsrIfVernacular = useCallback(
-    (settingsJson: string) => {
-      if (!org) return;
-      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
-      const slug = slugFromId(
-        settings.artifactTypeId?.toString() ?? ''
-      ) as ArtifactTypeSlug;
-      // Empty artifactTypeId is vernacular; Q&A/Retell also sync org ASR.
-      if (settings.artifactTypeId && !artifactUsesOrgVernacularLanguage(slug)) {
-        return;
-      }
-      // Offline (no token) the ASR language can't be checked, and a guess
-      // written here becomes the team default. Sync on the next edit online.
-      if (!token) return;
-      const requestId = ++orgAsrSyncRequest.current;
-      buildVernacularAsrState(
-        vernacularAsrSettings(settingsJson),
-        getOrgDefault,
-        org,
-        asrDefault,
-        undefined,
-        token
-      )
-        .then((asrState) => {
-          if (requestId !== orgAsrSyncRequest.current) return;
-          setOrgDefault(orgDefaultAsr, asrState, org);
-        })
-        .catch((err: unknown) => {
-          if (requestId !== orgAsrSyncRequest.current) return;
-          logError(Severity.error, errorReporter, toError(err));
-          showMessage(tt.asrSaveFailed);
-        });
-    },
-    [
-      org,
-      slugFromId,
-      getOrgDefault,
-      setOrgDefault,
-      asrDefault,
-      vernacularAsrSettings,
-      token,
-      errorReporter,
-      showMessage,
-      tt.asrSaveFailed,
-    ]
-  );
-
-  const emitSettingsChange = useCallback(
-    (settingsJson: string) => {
-      onChange(settingsJson);
-      syncOrgAsrIfVernacular(settingsJson);
-    },
-    [onChange, syncOrgAsrIfVernacular]
-  );
-
-  useEffect(() => {
-    if (!toolSettings) return;
-    let cancelled = false;
-    const json = JSON.parse(toolSettings);
-    const slug = slugFromId(json.artifactTypeId);
-    let sisterLang = parseStepLanguageField(json?.sisterlanguage);
-    const report = (err: unknown) => {
-      if (cancelled) return;
-      logError(Severity.error, errorReporter, toError(err));
-      showMessage(tt.asrRequestFailed);
-    };
-    const applySister = () => {
-      if (cancelled) return;
-      setSisterLanguage((state) => ({
-        ...state,
-        languageName: sisterLang.languageName,
-        bcp47: sisterLang.bcp47,
-      }));
-    };
-    // Seed empty sister UI from org ASR when vernacular (or Q&A/Retell) needs a
-    // sister language (e.g. Review step opened after Transcribe saved org ASR
-    // but before peers synced).
-    if (
-      offlineOnly ||
-      isLangSet(sisterLang.bcp47) ||
-      !artifactUsesOrgVernacularLanguage(slug as ArtifactTypeSlug) ||
-      !org ||
-      // Offline (no token) the service can't say whether a sister is needed.
-      token === null
-    ) {
-      applySister();
-    } else {
-      const vernacular = readVernacularFromOrg();
-      needsSisterLanguage(vernacular?.bcp47 ?? 'und', token)
-        .then((needed) => {
-          if (cancelled || !needed) return;
-          const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, org));
-          if (isLangSet(orgAsr?.language?.bcp47)) {
-            sisterLang = {
-              languageName: orgAsr.language.languageName ?? '',
-              bcp47: orgAsr.language.bcp47 ?? 'und',
-            };
-          }
-        })
-        .catch(report)
-        .then(applySister)
-        .catch(report);
-    }
-    return () => {
-      cancelled = true;
-    };
-    // slugFromId (from useArtifactType) is recreated every render, so listing it
-    // here would re-run this initializer on every render and clobber in-progress
-    // edits (e.g. the sister language the user just picked, before the change has
-    // propagated back through toolSettings). Only re-sync when settings change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolSettings]);
-
-  const applySisterLanguage = (val: ILanguage) => {
-    const bcp47 = val?.bcp47 ?? 'und';
-    // The picker fires onChange once on mount with its initial (current) value.
-    // Ignore that echo so opening the picker doesn't re-save the same language.
-    if (
-      bcp47 === (sisterLanguage?.bcp47 ?? 'und') &&
-      (val?.languageName ?? '') === (sisterLanguage?.languageName ?? '')
-    ) {
-      return;
-    }
-    const requestId = ++sisterChangeRequest.current;
-    const check = isLangSet(bcp47)
-      ? isValidAsrLanguage(isoFromBcp47(bcp47), token)
-      : Promise.resolve(true);
-    check
-      .then((valid) => {
-        if (requestId !== sisterChangeRequest.current) return;
-        if (!valid) {
-          showMessage(tt.invalidSisterLang);
-          setSisterLanguage(emptyLanguage());
-          const json = clearMethod(
-            JSONParse(toolSettings) as Record<string, unknown>
-          );
-          emitSettingsChange(
-            JSON.stringify({
-              ...json,
-              sisterlanguage: formatStepLanguageField(emptyLanguage()),
-              selectRoman: false,
-            })
-          );
-          return;
-        }
-        setSisterLanguage(val);
-        const json = clearMethod(
-          JSONParse(toolSettings) as Record<string, unknown>
-        );
-        emitSettingsChange(
-          JSON.stringify({
-            ...json,
-            sisterlanguage: formatStepLanguageField(val),
-            selectRoman: false,
-          })
-        );
-      })
-      .catch((err: unknown) => {
-        if (requestId !== sisterChangeRequest.current) return;
-        logError(Severity.error, errorReporter, toError(err));
-        showMessage(tt.asrRequestFailed);
-      });
-  };
-
-  const sisterSelectRoman = useMemo(() => {
-    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
-    if (json && Object.hasOwn(json, 'selectRoman')) {
-      return json.selectRoman === true || json.selectRoman === 'true';
-    }
-    // When sister UI was seeded from org ASR, also adopt its transliterate flag.
-    if (
-      artifactUsesOrgVernacularLanguage(currentSlug as ArtifactTypeSlug) &&
-      org
-    ) {
-      const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, org));
-      return orgAsr?.selectRoman === true;
-    }
-    return false;
-  }, [toolSettings, currentSlug, org, getOrgDefault]);
+  const settings = (JSONParse(toolSettings || '{}') ??
+    {}) as ITranscribeStepSettings;
+  const asr: IAsrState = usesTeamAsr
+    ? (teamVernacularAsr(getOrgDefault, org, settings) ??
+      stepAsrFromSettings({}))
+    : stepAsrFromSettings(settings);
 
   const [showSisterLanguage, setShowSisterLanguage] = useState(false);
   useEffect(() => {
@@ -322,12 +107,75 @@ export function useTranscribeStepAsr({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offlineOnly, primaryBcp47, token, errorReporter, tt.asrRequestFailed]);
 
-  return {
-    sisterLanguage,
-    sisterSelectRoman,
-    showSisterLanguage,
-    emitSettingsChange,
-    syncOrgAsrIfVernacular,
-    applySisterLanguage,
+  /**
+   * The ASR language saved on the team: the chosen sister, else the team
+   * language itself, unless it needs a sister that hasn't been picked yet.
+   */
+  const teamAsrLanguage = (chosen: ILanguage | undefined): ILanguage => {
+    if (chosen && isLangSet(chosen.bcp47)) return chosen;
+    if (showSisterLanguage) return emptyLanguage();
+    return vernacularLanguage;
   };
+
+  const save = (next: IAsrState) => {
+    const phonetic = next.target === AsrTarget.phonetic;
+    const cleaned: IAsrState = {
+      ...next,
+      asrMethod: explicitAsrMethod(next.asrMethod),
+      // Transliterate only applies to script transcription.
+      selectRoman: !phonetic && next.selectRoman === true,
+    };
+    if (usesTeamAsr) {
+      const language = teamAsrLanguage(cleaned.language);
+      setOrgDefault(
+        orgDefaultAsr,
+        { ...cleaned, language, asrIso: isoFromBcp47(language.bcp47) },
+        org
+      );
+      return;
+    }
+    const json = JSON.stringify(stepSettingsFromAsrState(settings, cleaned));
+    if (json !== JSON.stringify(settings)) onChange(json);
+  };
+
+  /** Validate a new sister language with the service, then save it. */
+  const saveSister = (next: IAsrState) => {
+    const bcp47 = next.language?.bcp47 ?? 'und';
+    // A new language starts on the service default method, without transliterate.
+    const reset = { ...next, asrMethod: undefined, selectRoman: false };
+    const requestId = ++sisterChangeRequest.current;
+    const check = isLangSet(bcp47)
+      ? isValidAsrLanguage(isoFromBcp47(bcp47), token)
+      : Promise.resolve(true);
+    check
+      .then((valid) => {
+        if (requestId !== sisterChangeRequest.current) return;
+        if (valid) {
+          save(reset);
+          return;
+        }
+        showMessage(tt.invalidSisterLang);
+        save({ ...reset, language: emptyLanguage(), asrIso: 'und' });
+      })
+      .catch((err: unknown) => {
+        if (requestId !== sisterChangeRequest.current) return;
+        logError(Severity.error, errorReporter, toError(err));
+        showMessage(tt.asrRequestFailed);
+      });
+  };
+
+  const setAsr: SetAsr = (action) => {
+    const next = typeof action === 'function' ? action(asr) : action;
+    if (!next) return;
+    // The picker reports its current value once on mount; only a different
+    // language is a change.
+    const langChanged =
+      (next.language?.bcp47 ?? 'und') !== (asr.language?.bcp47 ?? 'und') ||
+      (next.language?.languageName ?? '') !==
+        (asr.language?.languageName ?? '');
+    if (langChanged) saveSister(next);
+    else save(next);
+  };
+
+  return { asr, setAsr, showSisterLanguage };
 }

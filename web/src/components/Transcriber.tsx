@@ -41,7 +41,7 @@ import {
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
-import { Button, GrowingDiv, LightTooltip, rowSx } from '../control';
+import { Button, GrowingDiv, LightTooltip, rowSx, LastEdit } from '../control';
 import TranscribeReject from './TranscribeReject';
 import { useSnackBar } from '../hoc/SnackBar';
 import { formatTime } from '../control/formatTime';
@@ -92,7 +92,6 @@ import { applyVerseSegment, openingChapter } from '../utils/verseSegmentText';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 import { AllDone } from './AllDone';
-import { LastEdit } from '../control';
 import { UpdateRecord, UpdateRelatedRecord } from '../model/baseModel';
 import * as action from '../store';
 import { translateParatextError } from '../utils/translateParatextError';
@@ -109,7 +108,7 @@ import {
   transcriberSelector,
   vProjectSelector,
 } from '../selector';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { IRegionParams } from '../crud/useWavesurferRegions';
 import PassageDetailPlayer, {
@@ -139,7 +138,6 @@ import {
   RecordOperation,
   RecordKeyMap,
 } from '@orbit/records';
-import { useDispatch } from 'react-redux';
 import { PassageTypeEnum } from '../model/passageType';
 import { addPt } from '../utils/addPt';
 import { Paratext } from '../assets/brands';
@@ -176,7 +174,7 @@ interface ITrans {
   segments?: string;
 }
 
-export function Transcriber(props: IProps) {
+export function Transcriber(props: Readonly<IProps>) {
   const {
     stepSettings,
     hasChecking,
@@ -497,8 +495,7 @@ export function Transcriber(props: IProps) {
     const getParatextIntegration = () => {
       const intfind = integrations.findIndex(
         (i) =>
-          i.attributes &&
-          i.attributes.name ===
+          i.attributes?.name ===
             integrationSlug(artifactTypeSlug, offlineOnly) &&
           Boolean(i.keys?.remoteId) !== offlineOnly
       );
@@ -532,8 +529,7 @@ export function Transcriber(props: IProps) {
     const getParatextIntegration = () => {
       const intfind = integrations.findIndex(
         (i) =>
-          i.attributes &&
-          i.attributes.name ===
+          i.attributes?.name ===
             integrationSlug(artifactTypeSlug, offlineOnly) &&
           Boolean(i.keys?.remoteId) !== offlineOnly
       );
@@ -896,7 +892,6 @@ export function Transcriber(props: IProps) {
           comment
         )
       );
-      //todo ?? if (IsVernacular(media))
       setLastSaved(currentDateTime());
       if (onReject) onReject(media.attributes.transcriptionstate);
     },
@@ -1130,7 +1125,7 @@ export function Transcriber(props: IProps) {
   };
 
   const doReopen = async () => {
-    if (Object.prototype.hasOwnProperty.call(previous, state)) {
+    if (Object.hasOwn(previous, state)) {
       await memory.update(
         UpdateMediaStateOps(
           (mediafile as MediaFileD).id,
@@ -1147,9 +1142,9 @@ export function Transcriber(props: IProps) {
       if (setComplete) setComplete(false);
     }
   };
-  const handleReopen = async () => {
+  const handleReopen = () => {
     waitForRemoteQueue('busy before reopen').then(() =>
-      doReopen().then(() => onReopen && onReopen())
+      doReopen().then(() => onReopen?.())
     );
   };
 
@@ -1167,7 +1162,7 @@ export function Transcriber(props: IProps) {
     if (!transcription) return;
     const newContentVerses: string[] = [];
     verseLabels.forEach((label) => {
-      const pat = new RegExp(`\\\\v\\s+${label}\\s+[^\\\\]`);
+      const pat = new RegExp(String.raw`\\v\s+${label}\s+[^\\]`);
       if (pat.test(transcription as string)) {
         newContentVerses.push(label);
       }
@@ -1246,7 +1241,11 @@ export function Transcriber(props: IProps) {
   };
 
   const handleAutoTranscribe = (trans: string) => {
-    const cleanTrans = trans.replace(/\d+:\d+\.\d+: /g, '').trim();
+    // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
+    // longer digit run from matching at a suffix and leaving a stray digit.
+    const cleanTrans = trans
+      .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
+      .trim();
     const curTrans: string = transcriptionRef.current?.firstChild?.value ?? '';
     if (curTrans.includes(cleanTrans)) return;
     const m = /\\v (\d+)\s?/.exec(cleanTrans);
@@ -1281,7 +1280,7 @@ export function Transcriber(props: IProps) {
   const onPullTasks = (remoteId: string) => {
     pullTableList(
       'mediafile',
-      Array(remoteId),
+      new Array(remoteId),
       memory,
       remote,
       backup,
@@ -1338,11 +1337,8 @@ export function Transcriber(props: IProps) {
 
   useEffect(() => {
     setArtifactTypeSlug(
-      slug
-        ? slug
-        : artifactId
-          ? slugFromId(artifactId)
-          : ArtifactTypeSlug.Vernacular
+      slug ||
+        (artifactId ? slugFromId(artifactId) : ArtifactTypeSlug.Vernacular)
     );
   }, [slug, artifactId, slugFromId]);
 
@@ -1586,7 +1582,7 @@ export function Transcriber(props: IProps) {
                     id="transcriber.reopen"
                     disabled={
                       !transSelected ||
-                      !Object.prototype.hasOwnProperty.call(previous, state) ||
+                      !Object.hasOwn(previous, state) ||
                       playing ||
                       !hasPermission
                     }

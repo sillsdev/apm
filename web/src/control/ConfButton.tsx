@@ -48,11 +48,18 @@ export default function ConfButton({
 
   return (
     <React.Fragment>
-      <ButtonGroup variant="contained" color="inherit" ref={anchorRef}>
+      {/* The theme gives each button size a fixed height; sizing the group
+          keeps the gear and the main button the same height. */}
+      <ButtonGroup
+        variant="contained"
+        color="inherit"
+        size="small"
+        ref={anchorRef}
+      >
         {showSettings && (
           <Button
             disableTypography
-            size="small"
+            sx={{ minWidth: 0 }}
             onClick={handleSettings}
             aria-label={settingsLabel}
             disabled={disabled && !allowSettings}
@@ -67,7 +74,16 @@ export default function ConfButton({
             />
           </Button>
         )}
-        <Button onClick={handleClick} id={id} title={title} disabled={disabled}>
+        {/* No Typography wrapper: an icon inside it sits on the text baseline,
+            above centre. The button's own flex layout centres icon and text. */}
+        <Button
+          disableTypography
+          sx={{ whiteSpace: 'nowrap' }}
+          onClick={handleClick}
+          id={id}
+          title={title}
+          disabled={disabled}
+        >
           {children}
         </Button>
       </ButtonGroup>

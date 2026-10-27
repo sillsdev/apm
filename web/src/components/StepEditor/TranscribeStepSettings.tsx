@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type SetStateAction,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArtifactTypeSlug,
   defaultSpellCheckForArtifact,
@@ -34,7 +27,6 @@ import {
   useRecommendAsrLanguage,
   IAsrLanguageSuggestion,
 } from '../../business/asr/useRecommendAsrLanguage';
-import { AsrTarget } from '../../business/asr/AsrTarget';
 import { shallowEqual, useSelector } from 'react-redux';
 import { transcriberSelector } from '../../selector';
 import { orgDefaultLangProps, useOrgDefaults } from '../../crud/useOrgDefaults';
@@ -42,10 +34,11 @@ import {
   artifactUsesOrgVernacularLanguage,
   formatStepLanguageField,
   parseStepLanguageField,
+  stepEditorShowsLanguage,
+  stepLanguageArtifactSlugs,
 } from '../../crud/transcribeStepAsrSettings';
-import { IAsrState } from '../../business/asr/asrState';
-import { useAsrMethod } from './useAsrMethod';
 import { useTranscribeStepAsr } from './useTranscribeStepAsr';
+import { useSetTeamLanguage } from '../../crud/useSetTeamLanguage';
 
 interface LangState {
   artId: string;
@@ -112,9 +105,8 @@ export const TranscribeStepSettings = ({
   const [vernacularLanguage, setVernacularLanguage] =
     useState<ILanguage>(emptyLanguage);
   const vernacularPickerInit = useRef(true);
-  const { chosenMethod, replaceMethod, clearMethod } =
-    useAsrMethod(toolSettings);
-  const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  const { getOrgDefault } = useOrgDefaults();
+  const setTeamLanguage = useSetTeamLanguage();
   const [offlineOnly] = useGlobal('offlineOnly'); // constant for the session
   const {
     suggestions,
@@ -126,11 +118,6 @@ export const TranscribeStepSettings = ({
   } = useRecommendAsrLanguage();
   const toolSettingsRef = useRef(toolSettings);
   toolSettingsRef.current = toolSettings;
-  const langSlugs = [
-    ArtifactTypeSlug.WholeBackTranslation,
-    ArtifactTypeSlug.PhraseBackTranslation,
-    ArtifactTypeSlug.CarefulSpeech,
-  ];
   const readVernacularFromOrg = useCallback(() => {
     if (!org) return emptyLanguage();
     return (
@@ -143,7 +130,7 @@ export const TranscribeStepSettings = ({
     () => slugFromId(lgState.artId),
     [lgState.artId, slugFromId]
   );
-  const hasLang = langSlugs.includes(currentSlug);
+  const hasLang = stepLanguageArtifactSlugs.includes(currentSlug);
   const showSpellCheckOnly = !hasLang;
   const primaryBcp47 = useMemo(() => {
     if (artifactUsesOrgVernacularLanguage(currentSlug as ArtifactTypeSlug))
@@ -152,20 +139,13 @@ export const TranscribeStepSettings = ({
     return 'und';
   }, [currentSlug, vernacularLanguage?.bcp47, lgState.bcp47, hasLang]);
 
-  const {
-    sisterLanguage,
-    sisterSelectRoman,
-    showSisterLanguage,
-    emitSettingsChange,
-    syncOrgAsrIfVernacular,
-    applySisterLanguage,
-  } = useTranscribeStepAsr({
+  const { asr, setAsr, showSisterLanguage } = useTranscribeStepAsr({
     org,
     toolSettings,
     onChange,
     primaryBcp47,
     currentSlug,
-    clearMethod,
+    vernacularLanguage,
   });
 
   const handleSelect = (artifactTypeId: string | null) => {
@@ -186,19 +166,14 @@ export const TranscribeStepSettings = ({
       changed: false,
     }));
     const { spellCheck: _omit, ...rest } = json;
-    emitSettingsChange(JSON.stringify({ ...rest, artifactTypeId }));
+    onChange(JSON.stringify({ ...rest, artifactTypeId }));
   };
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
     setLgState((state) => ({ ...state, spellCheck, changed: true }));
     const json = JSONParse(toolSettings) as Record<string, unknown>;
-    emitSettingsChange(JSON.stringify({ ...json, spellCheck }));
+    onChange(JSON.stringify({ ...json, spellCheck }));
   };
-
-  const phoneticSetting = useMemo(() => {
-    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
-    return json?.phonetic === true || json?.phonetic === 'true';
-  }, [toolSettings]);
 
   const handleLanguageChange = (val: ILanguage) => {
     if (
@@ -208,7 +183,7 @@ export const TranscribeStepSettings = ({
     ) {
       setLgState((state) => ({ ...state, ...val, changed: true }));
       const json = JSONParse(toolSettings) as Record<string, unknown>;
-      emitSettingsChange(
+      onChange(
         JSON.stringify({
           ...json,
           language: formatStepLanguageField(val),
@@ -227,8 +202,7 @@ export const TranscribeStepSettings = ({
     }
     setVernacularLanguage(val);
     if (org) {
-      setOrgDefault(orgDefaultLangProps, val, org);
-      syncOrgAsrIfVernacular(toolSettings);
+      setTeamLanguage(val, org);
     }
   };
 
@@ -288,8 +262,12 @@ export const TranscribeStepSettings = ({
 
   const primaryIso = useMemo(() => isoFromBcp47(primaryBcp47), [primaryBcp47]);
 
-  // ASR settings need the speech service, so a Work Alone Offline session hides them.
-  const showAsrSettings = isLangSet(primaryBcp47) && !offlineOnly;
+  // ASR settings go with the language they transcribe, and need the speech
+  // service, so a Work Alone Offline session hides them.
+  const showAsrSettings =
+    stepEditorShowsLanguage(currentSlug) &&
+    isLangSet(primaryBcp47) &&
+    !offlineOnly;
 
   const readCachedRecommendations = (
     lang: string
@@ -332,7 +310,12 @@ export const TranscribeStepSettings = ({
   };
 
   useEffect(() => {
-    if (showSisterLanguage && primaryLanguageName && isLangSet(primaryIso)) {
+    if (
+      showAsrSettings &&
+      showSisterLanguage &&
+      primaryLanguageName &&
+      isLangSet(primaryIso)
+    ) {
       const cached = readCachedRecommendations(primaryLanguageName);
       if (cached !== undefined) {
         seedSuggestions(cached);
@@ -345,59 +328,7 @@ export const TranscribeStepSettings = ({
       reset();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSisterLanguage, primaryLanguageName, primaryIso]);
-
-  const sisterAsr: IAsrState = useMemo(
-    () => ({
-      target: phoneticSetting ? AsrTarget.phonetic : AsrTarget.alphabet,
-      language: sisterLanguage,
-      asrIso: isoFromBcp47(sisterLanguage?.bcp47 ?? 'und'),
-      asrMethod: chosenMethod,
-      dialect: undefined,
-      selectRoman: sisterSelectRoman,
-    }),
-    [phoneticSetting, sisterLanguage, sisterSelectRoman, chosenMethod]
-  );
-
-  // Single adapter that maps AsrSettings' IAsrState edits back to the step
-  // settings JSON: transcription type (phonetic), sister language, transliterate.
-  const setBoxAsr = (action: SetStateAction<IAsrState | undefined>) => {
-    const next = typeof action === 'function' ? action(sisterAsr) : action;
-    if (!next) return;
-    const nextPhonetic = next.target === AsrTarget.phonetic;
-    if (nextPhonetic !== phoneticSetting) {
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
-      // Transliterate only applies to script transcription; clear it for phonetic.
-      emitSettingsChange(
-        JSON.stringify({
-          ...json,
-          phonetic: nextPhonetic,
-          ...(nextPhonetic ? { selectRoman: false } : {}),
-        })
-      );
-      return;
-    }
-    const langChanged =
-      (next.language?.bcp47 ?? 'und') !== (sisterLanguage?.bcp47 ?? 'und') ||
-      (next.language?.languageName ?? '') !==
-        (sisterLanguage?.languageName ?? '');
-    if (langChanged) {
-      applySisterLanguage(next.language);
-      return;
-    }
-    if (Boolean(next.selectRoman) !== sisterSelectRoman) {
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
-      emitSettingsChange(
-        JSON.stringify({ ...json, selectRoman: Boolean(next.selectRoman) })
-      );
-      return;
-    }
-    const nextSettings = replaceMethod(
-      JSONParse(toolSettings) as Record<string, unknown>,
-      next.asrMethod
-    );
-    if (nextSettings) emitSettingsChange(JSON.stringify(nextSettings));
-  };
+  }, [showAsrSettings, showSisterLanguage, primaryLanguageName, primaryIso]);
 
   return (
     <>
@@ -473,8 +404,8 @@ export const TranscribeStepSettings = ({
             {tt.aiAutomaticTranscription}
           </FormLabel>
           <AsrSettings
-            asr={sisterAsr}
-            setAsr={setBoxAsr}
+            asr={asr}
+            setAsr={setAsr}
             vernacularBcp47={primaryBcp47}
             recommendKey={primaryLanguageName}
             suggestions={suggestions}

@@ -25,16 +25,12 @@ import {
   buildWorkflowAsrStateFromSettings,
   formatStepLanguageField,
   hasTranscribeStepLanguageSettings,
-  isVernacularLanguageTranscribeStep,
-  isVernacularTranscribeStep,
   parseStepLanguageField,
   sisterBcpFromSettings,
   readSisterRecommendations,
   stepSettingsFromAsrState,
   stepSisterRecommendationKey,
   withSisterRecommendations,
-  withInheritedVernacularSisterSettings,
-  withPropagatedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
@@ -385,38 +381,6 @@ describe('buildVernacularAsrState', () => {
     expect(state.asrMethod).toBeUndefined();
   });
 
-  it('does not keep the previous org method when the step returns to the default', async () => {
-    const getOrgDefaultWithAsr = (label: string) => {
-      if (label === orgDefaultLangProps) {
-        return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
-      }
-      if (label === orgDefaultAsr) {
-        return {
-          target: AsrTarget.alphabet,
-          language: {
-            bcp47: 'am',
-            languageName: 'Amharic',
-            font: '',
-            rtl: false,
-            spellCheck: false,
-          },
-          asrIso: 'amh',
-          asrMethod: 'whisper',
-          dialect: undefined,
-          selectRoman: false,
-        };
-      }
-      return undefined;
-    };
-    const state = await buildVernacularAsrState(
-      { asrMethod: 'default' },
-      getOrgDefaultWithAsr,
-      'org-1',
-      asrDefault
-    );
-    expect(state.asrMethod).toBeUndefined();
-  });
-
   it('keeps the team default method when the step did not choose one', async () => {
     const getOrgDefaultWithAsr = (label: string) => {
       if (label === orgDefaultLangProps) {
@@ -447,38 +411,6 @@ describe('buildVernacularAsrState', () => {
       asrDefault
     );
     expect(state.asrMethod).toBe('whisper');
-  });
-
-  it('uses a method the step chose over the team default', async () => {
-    const getOrgDefaultWithAsr = (label: string) => {
-      if (label === orgDefaultLangProps) {
-        return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
-      }
-      if (label === orgDefaultAsr) {
-        return {
-          target: AsrTarget.alphabet,
-          language: {
-            bcp47: 'am',
-            languageName: 'Amharic',
-            font: '',
-            rtl: false,
-            spellCheck: false,
-          },
-          asrIso: 'amh',
-          asrMethod: 'whisper',
-          dialect: undefined,
-          selectRoman: false,
-        };
-      }
-      return undefined;
-    };
-    const state = await buildVernacularAsrState(
-      { asrMethod: 'mms' },
-      getOrgDefaultWithAsr,
-      'org-1',
-      asrDefault
-    );
-    expect(state.asrMethod).toBe('mms');
   });
 
   it('keeps a method the step chose', async () => {
@@ -513,7 +445,7 @@ describe('buildVernacularAsrState', () => {
     expect(state.selectRoman).toBe(true);
   });
 
-  it('applies step phonetic + selectRoman when the vernacular is itself the ASR language', async () => {
+  it('uses the team default over values older builds left on the step', async () => {
     const getOrgDefaultWithAsr = (label: string) => {
       if (label === orgDefaultLangProps) {
         return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
@@ -529,7 +461,7 @@ describe('buildVernacularAsrState', () => {
             spellCheck: false,
           },
           asrIso: 'amh',
-          method: 'whisper',
+          asrMethod: 'whisper',
           dialect: undefined,
           selectRoman: false,
         };
@@ -537,14 +469,51 @@ describe('buildVernacularAsrState', () => {
       return undefined;
     };
     const state = await buildVernacularAsrState(
-      { phonetic: false, selectRoman: true },
+      {
+        sisterlanguage: formatStepLanguageField({
+          languageName: 'English',
+          bcp47: 'en',
+        }),
+        asrMethod: 'mms',
+        phonetic: true,
+        selectRoman: true,
+      },
       getOrgDefaultWithAsr,
       'org-1',
       asrDefault
     );
     expect(state.asrIso).toBe('amh');
+    expect(state.asrMethod).toBe('whisper');
     expect(state.target).toBe(AsrTarget.alphabet);
-    expect(state.selectRoman).toBe(true);
+    expect(state.selectRoman).toBe(false);
+  });
+
+  it('with nothing saved, uses the team language when it can be transcribed', async () => {
+    const state = await buildVernacularAsrState(
+      {},
+      (label: string) =>
+        label === orgDefaultLangProps
+          ? { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false }
+          : undefined,
+      'org-1',
+      asrDefault,
+      undefined,
+      'tok'
+    );
+    expect(state.asrIso).toBe('amh');
+    expect(state.language.languageName).toBe('Amharic');
+  });
+
+  it('with nothing saved, leaves the language unset when the team language needs a sister', async () => {
+    const state = await buildVernacularAsrState(
+      {},
+      getOrgDefault,
+      'org-1',
+      asrDefault,
+      undefined,
+      'tok'
+    );
+    expect(state.asrIso).toBe('und');
   });
 
   it('clears transliterate when phonetic is selected', async () => {
@@ -623,274 +592,41 @@ describe('buildVernacularAsrState project language override', () => {
     // sister + transliterate were configured for the org default language.
     expect(state.selectRoman).toBe(false);
   });
-});
 
-describe('isVernacularTranscribeStep', () => {
-  const slugFromId = (id: string) =>
-    id === 'wbt'
-      ? ArtifactTypeSlug.WholeBackTranslation
-      : id === 'qa'
-        ? ArtifactTypeSlug.QandA
-        : ArtifactTypeSlug.Vernacular;
-
-  it('treats Transcribe with empty artifactTypeId as vernacular', () => {
-    expect(
-      isVernacularTranscribeStep(ToolSlug.Transcribe, '{}', slugFromId)
-    ).toBe(true);
-  });
-
-  it('treats Transcribe with vernacular artifact as vernacular', () => {
-    expect(
-      isVernacularTranscribeStep(
-        ToolSlug.Transcribe,
-        JSON.stringify({ artifactTypeId: 'vern' }),
-        slugFromId
-      )
-    ).toBe(true);
-  });
-
-  it('rejects Q&A and non-Transcribe tools', () => {
-    expect(
-      isVernacularTranscribeStep(
-        ToolSlug.Transcribe,
-        JSON.stringify({ artifactTypeId: 'qa' }),
-        slugFromId
-      )
-    ).toBe(false);
-    expect(
-      isVernacularTranscribeStep(
-        ToolSlug.Record,
-        JSON.stringify({ artifactTypeId: 'vern' }),
-        slugFromId
-      )
-    ).toBe(false);
-  });
-});
-
-describe('isOrgVernacularLanguageTranscribeStep', () => {
-  const slugFromId = (id: string) =>
-    id === 'qa'
-      ? ArtifactTypeSlug.QandA
-      : id === 'retell'
-        ? ArtifactTypeSlug.Retell
-        : id === 'wbt'
-          ? ArtifactTypeSlug.WholeBackTranslation
-          : ArtifactTypeSlug.Vernacular;
-
-  it('includes vernacular, Q&A, and Retell Transcribe steps', () => {
-    expect(
-      isVernacularLanguageTranscribeStep(
-        ToolSlug.Transcribe,
-        JSON.stringify({ artifactTypeId: 'vern' }),
-        slugFromId
-      )
-    ).toBe(true);
-    expect(
-      isVernacularLanguageTranscribeStep(
-        ToolSlug.Transcribe,
-        JSON.stringify({ artifactTypeId: 'qa' }),
-        slugFromId
-      )
-    ).toBe(true);
-    expect(
-      isVernacularLanguageTranscribeStep(
-        ToolSlug.Transcribe,
-        JSON.stringify({ artifactTypeId: 'retell' }),
-        slugFromId
-      )
-    ).toBe(true);
-  });
-
-  it('rejects WBT and non-Transcribe tools', () => {
-    expect(
-      isVernacularLanguageTranscribeStep(
-        ToolSlug.Transcribe,
-        JSON.stringify({ artifactTypeId: 'wbt' }),
-        slugFromId
-      )
-    ).toBe(false);
-    expect(
-      isVernacularLanguageTranscribeStep(
-        ToolSlug.Record,
-        JSON.stringify({ artifactTypeId: 'qa' }),
-        slugFromId
-      )
-    ).toBe(false);
-  });
-});
-
-describe('withInheritedVernacularSisterSettings', () => {
-  const slugFromId = (id: string) =>
-    id === 'qa'
-      ? ArtifactTypeSlug.QandA
-      : id === 'retell'
-        ? ArtifactTypeSlug.Retell
-        : id === 'wbt'
-          ? ArtifactTypeSlug.WholeBackTranslation
-          : ArtifactTypeSlug.Vernacular;
-
-  const orgSteps = [
-    {
-      attributes: {
-        tool: JSON.stringify({
-          tool: ToolSlug.Transcribe,
-          settings: JSON.stringify({
-            artifactTypeId: 'vern',
-            sisterlanguage: formatStepLanguageField({
-              languageName: 'English',
-              bcp47: 'en',
-            }),
-            selectRoman: true,
-          }),
-        }),
-      },
-    },
-  ];
-
-  it('copies vernacular sister onto Q&A settings when missing', () => {
-    const next = withInheritedVernacularSisterSettings(
-      { artifactTypeId: 'qa' },
-      orgSteps,
-      slugFromId
+  it('does not send the step method for a project in another language', async () => {
+    const projectLang = {
+      bcp47: 'en',
+      languageName: 'Project English',
+      font: 'pf',
+      rtl: false,
+      spellCheck: false,
+    };
+    const state = await buildVernacularAsrState(
+      { ...settings, asrMethod: 'mms' },
+      getOrgDefault,
+      'org-1',
+      asrDefault,
+      projectLang
     );
-    expect(next.sisterlanguage).toBe('English|en');
-    expect(next.selectRoman).toBe(true);
+    expect(state.asrMethod).toBeUndefined();
   });
 
-  it('copies vernacular sister onto Retell settings when missing', () => {
-    const next = withInheritedVernacularSisterSettings(
-      { artifactTypeId: 'retell' },
-      orgSteps,
-      slugFromId
+  it('keeps the step method when the project matches the team language', async () => {
+    const projectLang = {
+      bcp47: 'tlh',
+      languageName: 'Klingon',
+      font: 'pf',
+      rtl: false,
+      spellCheck: false,
+    };
+    const state = await buildVernacularAsrState(
+      { ...settings, asrMethod: 'mms' },
+      getOrgDefault,
+      'org-1',
+      asrDefault,
+      projectLang
     );
-    expect(next.sisterlanguage).toBe('English|en');
-    expect(next.selectRoman).toBe(true);
-  });
-
-  it('keeps an existing Q&A sisterlanguage', () => {
-    const next = withInheritedVernacularSisterSettings(
-      {
-        artifactTypeId: 'qa',
-        sisterlanguage: formatStepLanguageField({
-          languageName: 'Spanish',
-          bcp47: 'es',
-        }),
-      },
-      orgSteps,
-      slugFromId
-    );
-    expect(next.sisterlanguage).toBe('Spanish|es');
-  });
-
-  it('does not inherit for WBT steps', () => {
-    const next = withInheritedVernacularSisterSettings(
-      { artifactTypeId: 'wbt', language: 'French|fr' },
-      orgSteps,
-      slugFromId
-    );
-    expect(next.sisterlanguage).toBeUndefined();
-  });
-});
-
-describe('withPropagatedVernacularSisterSettings (TT-7420)', () => {
-  const slugFromId = (id: string) =>
-    id === 'wbt'
-      ? ArtifactTypeSlug.WholeBackTranslation
-      : id === 'qa'
-        ? ArtifactTypeSlug.QandA
-        : id === 'retell'
-          ? ArtifactTypeSlug.Retell
-          : ArtifactTypeSlug.Vernacular;
-
-  const rows = [
-    {
-      tool: ToolSlug.Transcribe,
-      settings: JSON.stringify({ artifactTypeId: 'vern' }),
-    },
-    {
-      tool: ToolSlug.Transcribe,
-      settings: JSON.stringify({
-        artifactTypeId: 'vern',
-        sisterlanguage: 'Old|xx',
-      }),
-    },
-    {
-      tool: ToolSlug.Transcribe,
-      settings: JSON.stringify({
-        artifactTypeId: 'wbt',
-        language: 'French|fr',
-      }),
-    },
-    {
-      tool: ToolSlug.Transcribe,
-      settings: JSON.stringify({ artifactTypeId: 'qa' }),
-    },
-    {
-      tool: ToolSlug.Transcribe,
-      settings: JSON.stringify({ artifactTypeId: 'retell' }),
-    },
-  ];
-
-  it('copies sisterlanguage and selectRoman to peer vernacular Transcribe steps', () => {
-    const sourceSettings = JSON.stringify({
-      artifactTypeId: 'vern',
-      sisterlanguage: formatStepLanguageField({
-        languageName: 'Tamil',
-        bcp47: 'ta',
-      }),
-      selectRoman: true,
-    });
-    const next = withPropagatedVernacularSisterSettings(
-      rows,
-      0,
-      sourceSettings,
-      slugFromId
-    );
-    expect(next[0].settings).toBe(sourceSettings);
-    expect(JSON.parse(next[1].settings)).toMatchObject({
-      artifactTypeId: 'vern',
-      sisterlanguage: 'Tamil|ta',
-      selectRoman: true,
-    });
-    // Whole Back Translation keeps its own language settings.
-    expect(JSON.parse(next[2].settings)).toEqual({
-      artifactTypeId: 'wbt',
-      language: 'French|fr',
-    });
-    // Community Test Q&A / Retell share vernacular sister ASR.
-    expect(JSON.parse(next[3].settings)).toMatchObject({
-      artifactTypeId: 'qa',
-      sisterlanguage: 'Tamil|ta',
-      selectRoman: true,
-    });
-    expect(JSON.parse(next[4].settings)).toMatchObject({
-      artifactTypeId: 'retell',
-      sisterlanguage: 'Tamil|ta',
-      selectRoman: true,
-    });
-  });
-
-  it('does not propagate when the source step is not vernacular', () => {
-    const sourceSettings = JSON.stringify({
-      artifactTypeId: 'wbt',
-      language: 'French|fr',
-      sisterlanguage: 'English|en',
-      selectRoman: true,
-    });
-    const wbtRows = [
-      { tool: ToolSlug.Transcribe, settings: sourceSettings },
-      {
-        tool: ToolSlug.Transcribe,
-        settings: JSON.stringify({ artifactTypeId: 'vern' }),
-      },
-    ];
-    const next = withPropagatedVernacularSisterSettings(
-      wbtRows,
-      0,
-      sourceSettings,
-      slugFromId
-    );
-    expect(next[1].settings).toBe(wbtRows[1].settings);
+    expect(state.asrMethod).toBe('mms');
   });
 });
 

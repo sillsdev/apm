@@ -631,7 +631,13 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
   useEffect(() => {
     const params = getOrgDefault(NamedRegions.Transcription) as IRegionParams;
-    if (params) setSegParams(params);
+    if (!params) return;
+    // getOrgDefault is recreated every render and parses a fresh object, so
+    // only update when the saved values differ; otherwise this re-renders and
+    // runs again forever.
+    setSegParams((prev) =>
+      JSON.stringify(prev) === JSON.stringify(params) ? prev : params
+    );
   }, [getOrgDefault]);
 
   const onSegmentParamChange = useCallback(

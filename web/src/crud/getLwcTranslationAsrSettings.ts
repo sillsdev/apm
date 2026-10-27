@@ -375,8 +375,8 @@ export function useBoldClauseTranscriptionAsrSettings(
     return () => {
       cancelled = true;
     };
-    // slugFromId (from useArtifactType) is recreated every render.
-    // defaultsVersion is not read; it reloads after a team default is saved.
+    // slugFromId and getOrgDefault are recreated every render. defaultsVersion
+    // is not read; it reloads after a team default is saved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     orgSteps,
@@ -384,7 +384,6 @@ export function useBoldClauseTranscriptionAsrSettings(
     recordingArtifactSlug,
     orgId,
     defaultsVersion,
-    getOrgDefault,
     asrDefault,
     projectLang,
     currentStepSettings,
@@ -410,14 +409,15 @@ export function useBoldClauseTranscriptionAsrSettings(
         orgId,
         currentStepSettings,
       }),
-    // slugFromId (from useArtifactType) is recreated every render.
+    // slugFromId and getOrgDefault are recreated every render; defaultsVersion
+    // stands in for the team defaults getOrgDefault reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       orgSteps,
       upstreamTool,
       recordingArtifactSlug,
       orgId,
-      getOrgDefault,
+      defaultsVersion,
       currentStepSettings,
     ]
   );

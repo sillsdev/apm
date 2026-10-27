@@ -175,12 +175,16 @@ export const AsrSettings = ({
     (chosenMethod === listedOptions.preferred ||
       listedOptions.others.includes(chosenMethod))
   );
-  // A method the service no longer lists is not a choice. Drop it so the
-  // request uses the preferred method.
+  // Only a listed method other than the service's first choice is a choice.
+  // A withdrawn method, or the current first choice (shown as Default), is
+  // dropped so Default is what gets saved and sent, and the request follows
+  // the service if its first choice changes.
   useEffect(() => {
     if (loadStatus !== 'ready' || !chosenMethod) return;
     // An empty list means no ASR language is picked yet, not a withdrawn method.
-    if (asrMethods.length === 0 || asrMethods.includes(chosenMethod)) return;
+    if (asrMethods.length === 0) return;
+    const [preferred] = asrMethods;
+    if (asrMethods.includes(chosenMethod) && chosenMethod !== preferred) return;
     setAsr((prev) =>
       prev && explicitAsrMethod(prev.asrMethod) === chosenMethod
         ? { ...prev, asrMethod: undefined }

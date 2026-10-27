@@ -113,7 +113,7 @@ export function formatSegmentTranscription(
   verse: string
 ): string {
   if (!verse) return text;
-  return `\\v ${verse} ${text}`;
+  return String.raw`\v ${verse} ${text}`;
 }
 
 /** One string for `setTranscription` so replace-style callers keep every segment. */
@@ -127,7 +127,7 @@ export function clipTranscription(
   const parts: string[] = [];
   clip.segments.forEach((segment, segIx) => {
     const text = transcriptionText(segment.transcription, phonetic);
-    if (text === undefined || !text.trim()) return;
+    if (!text?.trim()) return;
     const verse = verseForSegment(segment.start, segIx, verses);
     if (verse && skipVerses?.includes(verse)) return;
     parts.push(formatSegmentTranscription(text.trim(), verse));

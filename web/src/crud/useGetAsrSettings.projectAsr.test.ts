@@ -8,7 +8,9 @@ let mockProjectAsr: unknown = undefined;
 let mockOrgAsr: unknown = undefined;
 const mockSetProjectDefault = jest.fn();
 
+const mockMemoryUpdate = jest.fn();
 const mockMemory = {
+  update: (...args: unknown[]) => mockMemoryUpdate(...args),
   cache: {
     query: (fn: (q: any) => any) =>
       fn({
@@ -79,11 +81,14 @@ jest.mock('../context/useGlobal', () => ({
 
 // The current step's tool settings; '{}' is a vernacular Transcribe step.
 let mockStepTool = '{}';
+// The step records from the latest render, so a test can see what was written.
+let mockSteps: { id: string; attributes: { tool: string } }[] = [];
 jest.mock('../hoc/useOrbitData', () => ({
-  useOrbitData: (table: string) =>
-    table === 'orgworkflowstep'
-      ? [{ id: 'step-1', attributes: { tool: mockStepTool } }]
-      : [],
+  useOrbitData: (table: string) => {
+    if (table !== 'orgworkflowstep') return [];
+    mockSteps = [{ id: 'step-1', attributes: { tool: mockStepTool } }];
+    return mockSteps;
+  },
 }));
 
 jest.mock('./useArtifactType', () => ({
@@ -131,6 +136,7 @@ describe('useGetAsrSettings project ASR', () => {
     mockProjectAsr = undefined;
     mockOrgAsr = undefined;
     mockStepTool = '{}';
+    mockMemoryUpdate.mockReset();
     mockSetProjectDefault.mockReset();
   });
 
@@ -160,6 +166,38 @@ describe('useGetAsrSettings project ASR', () => {
     await expect(result.current.getAsrSettings()).resolves.toEqual(
       expect.objectContaining({ asrIso: 'fra' })
     );
+  });
+
+  it('uses the language of a new project, not the team sister', async () => {
+    // Team language 'xx' transcribed through a Spanish sister;
+    // the new project is French and has no saved choice of its own.
+    mockOrgLanguage = 'xx';
+    mockOrgAsr = {
+      ...frenchAsr,
+      language: { ...frenchAsr.language, bcp47: 'es', languageName: 'Spanish' },
+      asrIso: 'spa',
+    };
+    mockStepTool = JSON.stringify({
+      tool: 'transcribe',
+      settings: JSON.stringify({ sisterlanguage: 'Spanish|es' }),
+    });
+    const { result } = renderHook(() => useGetAsrSettings());
+    const asr = await result.current.getAsrSettings();
+    expect(asr?.language?.bcp47).toBe('fr');
+  });
+
+  it('ignores a saved sister the project language does not need', async () => {
+    // French can be transcribed directly (every language is supported here),
+    // so a saved Spanish choice from an earlier Run no longer applies.
+    mockProjectAsr = {
+      ...frenchAsr,
+      language: { ...frenchAsr.language, bcp47: 'es', languageName: 'Spanish' },
+      asrIso: 'spa',
+    };
+    const { result } = renderHook(() => useGetAsrSettings());
+    const asr = await result.current.getAsrSettings();
+    expect(asr?.asrIso).not.toBe('spa');
+    expect(asr?.language?.bcp47).toBe('fr');
   });
 
   it('does not use the team ASR for a project in another language', async () => {
@@ -207,4 +245,16 @@ describe('useGetAsrSettings project ASR', () => {
       expect(mockSetProjectDefault).not.toHaveBeenCalled();
     }
   );
+
+  it('saves a team default to the team only, leaving workflow steps alone', () => {
+    const original = JSON.stringify({
+      tool: 'transcribe',
+      settings: JSON.stringify({ sisterlanguage: 'Italian|it' }),
+    });
+    mockStepTool = original;
+    const { result } = renderHook(() => useGetAsrSettings());
+    result.current.saveTeamAsrSettings(frenchAsr);
+    expect(mockSteps[0].attributes.tool).toBe(original);
+    expect(mockMemoryUpdate).not.toHaveBeenCalled();
+  });
 });

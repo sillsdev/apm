@@ -12,17 +12,11 @@ import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
 import { isLangSet } from '../utils/langTag';
-import { JSONParse } from '../utils/jsonParse';
 
 export type SlugFromIdFn = (id: string) => string;
 export type GetOrgDefaultFn = (label: string, orgId?: string) => unknown;
 
 export type TranscribeStepSettings = Record<string, unknown>;
-
-export interface IStepSettingsRow {
-  tool: string;
-  settings: string;
-}
 
 export interface IStepLanguageInfo {
   languageName: string;
@@ -187,6 +181,25 @@ export function artifactTypeSlugFromSettings(
   return slugFromId(String(settings.artifactTypeId)) as ArtifactTypeSlug;
 }
 
+/** Artifacts whose Transcribe step names its own language. */
+export const stepLanguageArtifactSlugs: readonly string[] = [
+  ArtifactTypeSlug.WholeBackTranslation,
+  ArtifactTypeSlug.PhraseBackTranslation,
+  ArtifactTypeSlug.CarefulSpeech,
+];
+
+/**
+ * Whether the step editor shows a language, and so the ASR settings for it:
+ * the team language on Vernacular, or the step's own language. Q&A and Retell
+ * use the team's, set on the Vernacular step, so they show neither.
+ */
+export function stepEditorShowsLanguage(slug: string): boolean {
+  return (
+    slug === ArtifactTypeSlug.Vernacular ||
+    stepLanguageArtifactSlugs.includes(slug)
+  );
+}
+
 /** Vernacular, Q&A, and Retell transcribe steps use org vernacular language settings. */
 export function artifactUsesOrgVernacularLanguage(
   slug: ArtifactTypeSlug
@@ -196,136 +209,6 @@ export function artifactUsesOrgVernacularLanguage(
     slug === ArtifactTypeSlug.QandA ||
     slug === ArtifactTypeSlug.Retell
   );
-}
-
-function parseToolSettings(
-  settings: TranscribeStepSettings | string | undefined
-): TranscribeStepSettings {
-  return typeof settings === 'string'
-    ? (JSONParse(settings || '{}') as TranscribeStepSettings)
-    : (settings ?? {});
-}
-
-/**
- * True when a Transcribe tool step is vernacular (including empty artifactTypeId).
- * Used to sync sister-language settings across Transcribe / Review Transcription.
- */
-export function isVernacularTranscribeStep(
-  tool: string,
-  settings: TranscribeStepSettings | string | undefined,
-  slugFromId: SlugFromIdFn
-): boolean {
-  if (tool !== ToolSlug.Transcribe) return false;
-  return (
-    artifactTypeSlugFromSettings(parseToolSettings(settings), slugFromId) ===
-    ArtifactTypeSlug.Vernacular
-  );
-}
-
-/**
- * Vernacular, Community Test Q&A, and Community Test Retell Transcribe steps
- * share the org vernacular language (and its ASR sister).
- */
-export function isVernacularLanguageTranscribeStep(
-  tool: string,
-  settings: TranscribeStepSettings | string | undefined,
-  slugFromId: SlugFromIdFn
-): boolean {
-  if (tool !== ToolSlug.Transcribe) return false;
-  return artifactUsesOrgVernacularLanguage(
-    artifactTypeSlugFromSettings(parseToolSettings(settings), slugFromId)
-  );
-}
-
-/**
- * Copies sisterlanguage (+ selectRoman) from a vernacular-language Transcribe
- * step onto peer vernacular / Q&A / Retell Transcribe steps so they share the
- * same ASR sister choice.
- */
-export function withPropagatedVernacularSisterSettings<
-  T extends IStepSettingsRow,
->(
-  rows: T[],
-  sourceIndex: number,
-  sourceSettings: string,
-  slugFromId: SlugFromIdFn
-): T[] {
-  const source = rows[sourceIndex];
-  if (!source) return rows;
-
-  if (
-    !isVernacularLanguageTranscribeStep(source.tool, sourceSettings, slugFromId)
-  ) {
-    return rows.map((r, i) =>
-      i === sourceIndex ? { ...r, settings: sourceSettings } : r
-    );
-  }
-
-  const src = JSONParse(sourceSettings || '{}') as TranscribeStepSettings;
-  const sisterlanguage = src.sisterlanguage;
-  const selectRoman = src.selectRoman;
-
-  return rows.map((r, i) => {
-    if (i === sourceIndex) {
-      return { ...r, settings: sourceSettings };
-    }
-    if (!isVernacularLanguageTranscribeStep(r.tool, r.settings, slugFromId)) {
-      return r;
-    }
-    const peer = JSONParse(r.settings || '{}') as TranscribeStepSettings;
-    if (
-      peer.sisterlanguage === sisterlanguage &&
-      peer.selectRoman === selectRoman
-    ) {
-      return r;
-    }
-    return {
-      ...r,
-      settings: JSON.stringify({
-        ...peer,
-        sisterlanguage,
-        selectRoman,
-      }),
-    };
-  });
-}
-
-export interface IOrgStepToolRow {
-  attributes?: { tool?: string };
-}
-
-/**
- * For Community Test Q&A / Retell (and any vernacular-language Transcribe step
- * missing sisterlanguage), copy sisterlanguage + selectRoman from a peer
- * vernacular Transcribe step so auto transcription uses the vernacular sister.
- */
-export function withInheritedVernacularSisterSettings(
-  settings: TranscribeStepSettings,
-  orgSteps: IOrgStepToolRow[],
-  slugFromId: SlugFromIdFn
-): TranscribeStepSettings {
-  const slug = artifactTypeSlugFromSettings(settings, slugFromId);
-  if (!artifactUsesOrgVernacularLanguage(slug)) return settings;
-  if (isLangSet(sisterBcpFromSettings(settings))) return settings;
-
-  for (const step of orgSteps) {
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as {
-      tool?: string;
-      settings?: string;
-    };
-    if (!isVernacularTranscribeStep(json.tool ?? '', json.settings, slugFromId))
-      continue;
-    const peer = parseToolSettings(json.settings);
-    if (!isLangSet(sisterBcpFromSettings(peer))) continue;
-    return {
-      ...settings,
-      sisterlanguage: peer.sisterlanguage,
-      ...(peer.selectRoman !== undefined
-        ? { selectRoman: peer.selectRoman }
-        : {}),
-    };
-  }
-  return settings;
 }
 
 export function hasTranscribeStepLanguageSettings(
@@ -358,7 +241,7 @@ export function hasTranscribeStepLanguageSettings(
   return isLangSet(bcp47);
 }
 
-/** True when step language is set but ASR needs a sister language. */
+/** True when the step's language can't be transcribed and no sister is chosen. */
 export async function transcribeSettingsNeedSisterLanguage(
   settings: TranscribeStepSettings,
   slugFromId: SlugFromIdFn,
@@ -367,56 +250,90 @@ export async function transcribeSettingsNeedSisterLanguage(
   token?: string | null
 ): Promise<boolean> {
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
-  if (slug === ArtifactTypeSlug.QandA || slug === ArtifactTypeSlug.Retell) {
-    const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
-    if (isLangSet(orgAsr?.asrIso)) return false;
-  }
   let primaryBcp: string;
+  let sisterBcp: string;
   if (artifactUsesOrgVernacularLanguage(slug)) {
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
       ILanguage | undefined;
     primaryBcp = orgLang?.bcp47 ?? 'und';
+    // The team's saved ASR language is the sister when it isn't the team language.
+    const saved = teamVernacularAsr(getOrgDefault, orgId, settings);
+    const savedBcp = saved?.language?.bcp47 ?? 'und';
+    sisterBcp = savedBcp !== primaryBcp ? savedBcp : 'und';
   } else {
-    const { bcp47 } = parseStepLanguageField(settings.language);
-    if (!isLangSet(bcp47)) return false;
-    primaryBcp = bcp47;
+    primaryBcp = parseStepLanguageField(settings.language).bcp47;
+    sisterBcp = sisterBcpFromSettings(settings);
   }
+  if (!isLangSet(primaryBcp) || isLangSet(sisterBcp)) return false;
   const iso = isoFromBcp47(primaryBcp);
-  if (!isLangSet(iso) || (await isValidAsrLanguage(iso, token))) return false;
-  const sisterBcp = sisterBcpFromSettings(settings);
-  return !isLangSet(sisterBcp);
+  return isLangSet(iso) && !(await isValidAsrLanguage(iso, token));
 }
 
-function stepPhoneticIsSet(settings: TranscribeStepSettings): boolean {
-  return (
-    settings?.phonetic === true ||
-    settings?.phonetic === 'true' ||
-    settings?.phonetic === false ||
-    settings?.phonetic === 'false'
-  );
-}
-
-/** The persisted transliterate (Romanize) choice for the step's sister ASR. */
+/** The persisted transliterate (Romanize) choice. */
 function stepSelectRoman(settings: TranscribeStepSettings): boolean {
   return settings?.selectRoman === true || settings?.selectRoman === 'true';
 }
 
+const unsetLanguage = (): ILanguage => ({
+  bcp47: 'und',
+  languageName: '',
+  font: '',
+  rtl: false,
+  spellCheck: false,
+});
+
 /**
- * The step's asrMethod wins when the key is present, including "default"
- * (no method). A missing key keeps the method saved on the team default.
+ * ASR stored on a step: its phonetic choice, sister language (the ASR
+ * language when it isn't the step's own), method, and transliterate.
  */
-function asrMethodFromStepOrTeam(
-  settings: TranscribeStepSettings,
-  teamMethod: unknown
-): string | undefined {
-  if (Object.hasOwn(settings, 'asrMethod')) {
-    return explicitAsrMethod(settings.asrMethod);
-  }
-  return explicitAsrMethod(teamMethod);
+export function stepAsrFromSettings(
+  settings: TranscribeStepSettings
+): IAsrState {
+  const sister = parseStepLanguageField(settings?.sisterlanguage);
+  const target = asrTargetFromSettings(settings);
+  return {
+    target,
+    language: { ...unsetLanguage(), ...sister },
+    asrIso: isLangSet(sister.bcp47) ? isoFromBcp47(sister.bcp47) : 'und',
+    asrMethod: explicitAsrMethod(settings?.asrMethod),
+    dialect: undefined,
+    selectRoman: target === AsrTarget.alphabet && stepSelectRoman(settings),
+  };
 }
 
+/**
+ * The team's saved ASR for Vernacular, Q&A and Retell: transcription type,
+ * ASR language (a sister when it isn't the team language), method and
+ * transliterate. Teams saved before the team default held all of these fall
+ * back to the values older builds kept on the step. Undefined when neither
+ * has anything.
+ */
+export function teamVernacularAsr(
+  getOrgDefault: GetOrgDefaultFn,
+  orgId: string | undefined,
+  legacyStepSettings?: TranscribeStepSettings
+): IAsrState | undefined {
+  const teamAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
+  if (teamAsr) return teamAsr;
+  if (!legacyStepSettings) return undefined;
+  const legacy = stepAsrFromSettings(legacyStepSettings);
+  const hasAny =
+    isLangSet(legacy.asrIso) ||
+    legacy.asrMethod !== undefined ||
+    legacy.target === AsrTarget.phonetic ||
+    legacy.selectRoman === true;
+  return hasAny ? legacy : undefined;
+}
+
+/**
+ * ASR for Vernacular, Q&A and Retell, from the team default (see
+ * teamVernacularAsr). With no saved ASR language, the team language is used
+ * when the service can transcribe it, else none ('und') so the user picks one.
+ * A project in another language transcribes its own language with the
+ * service's default method; the team's choices were made for the team language.
+ */
 export async function buildVernacularAsrState(
-  settings: TranscribeStepSettings,
+  legacyStepSettings: TranscribeStepSettings,
   getOrgDefault: GetOrgDefaultFn,
   orgId: string | undefined,
   asrDefault: IAsrState,
@@ -425,70 +342,43 @@ export async function buildVernacularAsrState(
 ): Promise<IAsrState> {
   const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
     ILanguage | undefined;
-  const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
-  const sister = parseStepLanguageField(settings?.sisterlanguage);
-
-  // The step settings (sister language and the synced org ASR) were configured
-  // for the org default vernacular language. When the project's vernacular
-  // matches it, default to those step settings. When it differs, the saved
-  // config doesn't apply, so transcribe in the project language instead (and
-  // drop the org-default-based sister / transliterate choice).
+  const saved = teamVernacularAsr(getOrgDefault, orgId, legacyStepSettings);
+  const target = saved?.target ?? asrDefault.target;
   const orgBcp = orgLang?.bcp47 ?? 'und';
   const projBcp = projectLang?.bcp47 ?? 'und';
-  const useProjectLang = isLangSet(projBcp) && projBcp !== orgBcp;
 
-  const sisterBcp = useProjectLang ? 'und' : sister.bcp47;
-  const hasStepSister = isLangSet(sisterBcp);
-
-  // Retell, Q&A, and synced Vernacular store the resolved ASR language in org ASR.
-  if (!useProjectLang && isLangSet(orgAsr?.asrIso) && !hasStepSister) {
-    const target = stepPhoneticIsSet(settings)
-      ? asrTargetFromSettings(settings)
-      : orgAsr.target;
-    // Transliterate defaults to false and is only valid for script transcription.
-    const selectRoman =
-      target === AsrTarget.alphabet && stepSelectRoman(settings);
+  if (isLangSet(projBcp) && projBcp !== orgBcp) {
+    const asrBcp = await resolveAsrBcp47(projBcp, undefined, token);
     return {
-      ...orgAsr,
+      ...asrDefault,
       target,
-      selectRoman,
-      asrMethod: asrMethodFromStepOrTeam(settings, orgAsr.asrMethod),
-      language: {
-        ...orgAsr.language,
-        font: orgLang?.font ?? orgAsr.language.font ?? asrDefault.language.font,
-        rtl: orgLang?.rtl ?? orgAsr.language.rtl ?? asrDefault.language.rtl,
-      },
+      asrIso: isoFromBcp47(asrBcp),
+      selectRoman: false,
+      asrMethod: undefined,
+      language: { ...asrDefault.language, ...projectLang, bcp47: asrBcp },
     };
   }
 
-  const vernacular = useProjectLang
-    ? projectLang!
-    : (orgLang ?? asrDefault.language);
-  const vernacularBcp = vernacular.bcp47 ?? 'und';
-  const asrBcp = await resolveAsrBcp47(vernacularBcp, sisterBcp, token);
-  const asrIso = isoFromBcp47(asrBcp);
-  const target = stepPhoneticIsSet(settings)
-    ? asrTargetFromSettings(settings)
-    : (orgAsr?.target ?? asrDefault.target);
+  const font =
+    orgLang?.font ?? saved?.language?.font ?? asrDefault.language.font;
+  const rtl = orgLang?.rtl ?? saved?.language?.rtl ?? asrDefault.language.rtl;
+  if (saved && isLangSet(saved.asrIso)) {
+    return { ...saved, target, language: { ...saved.language, font, rtl } };
+  }
+
+  const asrBcp = await resolveAsrBcp47(orgBcp, undefined, token);
   return {
     ...asrDefault,
     target,
-    asrIso,
-    // Transliterate defaults to false and is only valid for script transcription.
-    selectRoman:
-      !useProjectLang &&
-      target === AsrTarget.alphabet &&
-      stepSelectRoman(settings),
-    asrMethod: explicitAsrMethod(settings?.asrMethod),
+    asrIso: isoFromBcp47(asrBcp),
+    selectRoman: target === AsrTarget.alphabet && saved?.selectRoman === true,
+    asrMethod: saved?.asrMethod,
     language: {
       ...asrDefault.language,
-      languageName:
-        asrBcp === sisterBcp && isLangSet(sisterBcp)
-          ? sister.languageName
-          : (vernacular.languageName ?? ''),
+      languageName: orgLang?.languageName ?? '',
       bcp47: asrBcp,
-      font: vernacular.font ?? asrDefault.language.font,
-      rtl: vernacular.rtl ?? asrDefault.language.rtl,
+      font,
+      rtl,
     },
   };
 }

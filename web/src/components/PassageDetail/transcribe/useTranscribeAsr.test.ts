@@ -150,4 +150,35 @@ describe('useTranscribeAsr', () => {
     expect(result.current.asrLangVisible).toBe(true);
     expect(result.current.asrProgressVisible).toBe(false);
   });
+
+  it('strips timestamp prefixes without clipping a longer digit run', async () => {
+    getAsrSettings.mockResolvedValue({
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      dialect: undefined,
+    });
+    const onTextAdd = jest.fn();
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd,
+        getCurrentText: () => '',
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => {
+      result.current.handleAutoTranscribe('0:01.200: hello 1:02.300: world');
+    });
+    act(() => {
+      result.current.handleAutoTranscribe('12345678901:1.2: hi');
+    });
+
+    expect(onTextAdd).toHaveBeenNthCalledWith(1, ' hello world', true);
+    expect(onTextAdd).toHaveBeenNthCalledWith(2, ' 12345678901:1.2: hi', true);
+  });
 });
