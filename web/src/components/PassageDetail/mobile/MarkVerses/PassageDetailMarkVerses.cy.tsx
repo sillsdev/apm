@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import MarkVersesTable from './MarkVersesTable';
 import type { ICell } from './PassageDetailMarkVerses';
 import { RefStatus } from '../../../../utils/markVersesSegmentColors';
+import { GlobalProvider, GlobalState } from '../../../../context/GlobalContext';
 
 const sampleData: ICell[][] = [
   [
@@ -19,11 +20,14 @@ const sampleData: ICell[][] = [
   ],
 ];
 
-const mountTable = () => {
+// MarkVersesTable reads useMobile(), which needs the global mobileView flag.
+const mountTable = (data: ICell[][] = sampleData) => {
   cy.mount(
-    <ThemeProvider theme={createTheme()}>
-      <MarkVersesTable data={sampleData} />
-    </ThemeProvider>
+    <GlobalProvider init={{ mobileView: false } as GlobalState}>
+      <ThemeProvider theme={createTheme()}>
+        <MarkVersesTable data={data} />
+      </ThemeProvider>
+    </GlobalProvider>
   );
 };
 
@@ -46,7 +50,7 @@ describe('MarkVersesTable', () => {
   });
 
   it('keeps reference as text when the row has no timestamps', () => {
-    const dataWithoutLimits = [
+    const dataWithoutLimits: ICell[][] = [
       [
         { value: 'Start-Stop', readOnly: true },
         { value: 'Reference', readOnly: true },
@@ -61,11 +65,7 @@ describe('MarkVersesTable', () => {
         },
       ],
     ];
-    cy.mount(
-      <ThemeProvider theme={createTheme()}>
-        <MarkVersesTable data={dataWithoutLimits} />
-      </ThemeProvider>
-    );
+    mountTable(dataWithoutLimits);
 
     cy.get('[aria-label="verse-reference-1"]').should('contain.text', '2:11');
     cy.get('[aria-label="verse-reference-1"]').should('not.match', 'input');
