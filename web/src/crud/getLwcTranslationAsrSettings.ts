@@ -6,7 +6,7 @@ import {
 } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
-import { OrganizationD, OrgWorkflowStepD, Project } from '../model';
+import { OrgWorkflowStepD, Project } from '../model';
 import { TokenContext } from '../context/TokenProvider';
 import { useGlobal } from '../context/useGlobal';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -29,6 +29,7 @@ import {
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
 import { useOrgDefaults } from './useOrgDefaults';
+import { useAsrDefaultsVersion } from './useAsrDefaultsVersion';
 
 function parseStepSettings(settingsJson: string | object | undefined) {
   if (!settingsJson) return {} as TranscribeStepSettings;
@@ -310,11 +311,7 @@ export function useBoldClauseTranscriptionAsrSettings(
   );
 
   const orgId = organization as string | undefined;
-  // Saving a team default mutates the org record in place, so getOrgDefault
-  // keeps its identity; this string changes with it and reruns the load.
-  const teams = useOrbitData<OrganizationD[]>('organization');
-  const orgDefaultParams = teams.find((o) => o.id === orgId)?.attributes
-    ?.defaultParams;
+  const defaultsVersion = useAsrDefaultsVersion(orgId);
   const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
   const [asrSettings, setAsrSettings] = React.useState<IAsrState>(() => ({
     ...asrDefault,
@@ -379,14 +376,14 @@ export function useBoldClauseTranscriptionAsrSettings(
       cancelled = true;
     };
     // slugFromId (from useArtifactType) is recreated every render.
-    // orgDefaultParams is not read here; it stands in for the org defaults.
+    // defaultsVersion is not read; it reloads after a team default is saved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     orgSteps,
     upstreamTool,
     recordingArtifactSlug,
     orgId,
-    orgDefaultParams,
+    defaultsVersion,
     getOrgDefault,
     asrDefault,
     projectLang,

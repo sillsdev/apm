@@ -73,6 +73,8 @@ export default function SelectAsrLanguage({
   const [asrState, setAsrState] = React.useState<IAsrState>();
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [errorReporter] = useGlobal('errorReporter');
+  const [offline] = useGlobal('offline');
+  const [connected] = useGlobal('connected');
   const [vernacularBcp47, setVernacularBcp47] = React.useState('und');
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -209,6 +211,10 @@ export default function SelectAsrLanguage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasToken]);
 
+  const seeding = !asrState && !loadFailed;
+  // Seeding waits for a token, which an offline session never gets.
+  const offlineWithoutToken = !hasToken && (Boolean(offline) || !connected);
+
   return (
     <StyledBox sx={{ minWidth: 120 }}>
       {loadFailed && (
@@ -216,7 +222,14 @@ export default function SelectAsrLanguage({
           {t.asrRequestFailed}
         </Typography>
       )}
-      {!asrState && !loadFailed && <LinearProgress />}
+      {seeding &&
+        (offlineWithoutToken ? (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {ts.mustBeOnline}
+          </Typography>
+        ) : (
+          <LinearProgress />
+        ))}
       {asrState && (
         <AsrSettings
           asr={asrState}

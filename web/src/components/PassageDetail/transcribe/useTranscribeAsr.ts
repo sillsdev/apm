@@ -7,6 +7,7 @@ import {
   ITranscriberStrings,
 } from '../../../model';
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
+import { useAsrDefaultsVersion } from '../../../crud/useAsrDefaultsVersion';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
@@ -34,6 +35,7 @@ export function useAsrSettings(
   showMessage: (msg: string) => void
 ) {
   const { getAsrSettings } = useGetAsrSettings(team);
+  const asrDefaults = useAsrDefaultsVersion(team?.id);
   const [errorReporter] = useGlobal('errorReporter');
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const [asrSettings, setAsrSettings] = useState<IAsrState>();
@@ -54,9 +56,10 @@ export function useAsrSettings(
       cancelled = true;
     };
     // showMessage is a new function every render. Listing it restarts this
-    // load on every keystroke.
+    // load on every keystroke. asrDefaults is not read; it reloads after a
+    // team or project default is saved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAsrSettings, errorReporter, t.asrRequestFailed]);
+  }, [getAsrSettings, asrDefaults, errorReporter, t.asrRequestFailed]);
 
   return asrSettings;
 }

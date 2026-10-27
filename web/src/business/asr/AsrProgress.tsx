@@ -54,6 +54,7 @@ import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { asrMethodDefaultValue, asrRequestMethod } from './asrMethod';
+import { getMethodsForAsr } from './asrLanguages';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
 import {
   AiEstimateKey,
@@ -315,6 +316,20 @@ export default function AsrProgress({
     onClose && onClose();
   };
 
+  /** Timing history for this run: one per model, and one for phonetic. */
+  const timingKey = async (
+    iso: string,
+    method: string | undefined
+  ): Promise<AiEstimateKey> => {
+    if (phonetic) return 'transcription:phonetic';
+    if (method) return `transcription:${method}`;
+    // With no method chosen, aero runs the one it ranks first (cached from the
+    // settings dialog). A failed lookup only costs estimate accuracy; the
+    // transcription request reports its own errors.
+    const methods = await getMethodsForAsr(iso, token).catch(() => []);
+    return `transcription:${methods[0] ?? asrMethodDefaultValue}`;
+  };
+
   const postTranscribe = async () => {
     const remId =
       remoteId('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ?? mediaId;
@@ -323,11 +338,7 @@ export default function AsrProgress({
     const romanize = asr?.selectRoman ?? false;
     const method = asrRequestMethod(asr?.asrMethod, phonetic);
     const phoneticParam = phonetic ? '?phonetic=true' : '';
-    // Runs without a chosen method use the service default; time them together.
-    setRun({
-      startedAt: Date.now(),
-      key: `transcription:${method ?? asrMethodDefaultValue}`,
-    });
+    setRun({ startedAt: Date.now(), key: await timingKey(iso, method) });
     try {
       const response = (await axiosPost(
         `mediafiles/${remId}/transcription/${iso}/${romanize}${method ? `/${method}` : ''}${phoneticParam}`,

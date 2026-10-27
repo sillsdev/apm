@@ -5,6 +5,7 @@ import type { IAsrState } from '../business/asr/asrState';
 let mockProjectLanguage = 'fr';
 let mockOrgLanguage = 'en';
 let mockProjectAsr: unknown = undefined;
+let mockOrgAsr: unknown = undefined;
 const mockSetProjectDefault = jest.fn();
 
 const mockMemory = {
@@ -45,10 +46,11 @@ jest.mock('./useOrgDefaults', () => ({
   orgDefaultAsr: 'asr',
   orgDefaultLangProps: 'langProps',
   useOrgDefaults: () => ({
-    getOrgDefault: (label: string) =>
-      label === 'langProps'
-        ? { bcp47: mockOrgLanguage, languageName: 'Team language' }
-        : undefined,
+    getOrgDefault: (label: string) => {
+      if (label === 'langProps')
+        return { bcp47: mockOrgLanguage, languageName: 'Team language' };
+      return label === 'asr' ? mockOrgAsr : undefined;
+    },
     setOrgDefault: () => undefined,
     canSetOrgDefault: true,
   }),
@@ -75,13 +77,14 @@ jest.mock('../context/useGlobal', () => ({
   },
 }));
 
-jest.mock('../hoc/useOrbitData', () => {
-  // A vernacular Transcribe step (no artifactTypeId).
-  const steps = [{ id: 'step-1', attributes: { tool: '{}' } }];
-  return {
-    useOrbitData: (table: string) => (table === 'orgworkflowstep' ? steps : []),
-  };
-});
+// The current step's tool settings; '{}' is a vernacular Transcribe step.
+let mockStepTool = '{}';
+jest.mock('../hoc/useOrbitData', () => ({
+  useOrbitData: (table: string) =>
+    table === 'orgworkflowstep'
+      ? [{ id: 'step-1', attributes: { tool: mockStepTool } }]
+      : [],
+}));
 
 jest.mock('./useArtifactType', () => ({
   useArtifactType: () => ({
@@ -126,6 +129,8 @@ describe('useGetAsrSettings project ASR', () => {
     mockProjectLanguage = 'fr';
     mockOrgLanguage = 'en';
     mockProjectAsr = undefined;
+    mockOrgAsr = undefined;
+    mockStepTool = '{}';
     mockSetProjectDefault.mockReset();
   });
 
@@ -156,4 +161,50 @@ describe('useGetAsrSettings project ASR', () => {
       expect.objectContaining({ asrIso: 'fra' })
     );
   });
+
+  it('does not use the team ASR for a project in another language', async () => {
+    // The team has an ASR default but no language of its own.
+    mockOrgLanguage = 'und';
+    mockOrgAsr = { ...frenchAsr, asrIso: 'eng', language: { bcp47: 'en' } };
+    const { result } = renderHook(() => useGetAsrSettings());
+    const asr = await result.current.getAsrSettings();
+    expect(asr?.asrIso).not.toBe('eng');
+  });
+
+  // slugFromId maps an artifactTypeId straight to its slug in this test.
+  const stepFor = (artifactTypeId: string) =>
+    JSON.stringify({
+      tool: 'transcribe',
+      settings: JSON.stringify({ artifactTypeId }),
+    });
+
+  it.each(['vernacular', 'qanda', 'retell'])(
+    'uses and saves project ASR on a %s step',
+    async (slug) => {
+      mockStepTool = stepFor(slug);
+      mockProjectAsr = frenchAsr;
+      const { result } = renderHook(() => useGetAsrSettings());
+      await expect(result.current.getAsrSettings()).resolves.toEqual(
+        expect.objectContaining({ asrIso: 'fra' })
+      );
+      result.current.saveProjectAsrSettings({ ...frenchAsr, asrIso: 'spa' });
+      expect(mockSetProjectDefault).toHaveBeenCalledWith(
+        'asr',
+        expect.objectContaining({ asrIso: 'spa' })
+      );
+    }
+  );
+
+  it.each(['backtranslation', 'wholebacktranslation', 'carefulspeech'])(
+    'neither uses nor saves project ASR on a %s step',
+    async (slug) => {
+      mockStepTool = stepFor(slug);
+      mockProjectAsr = frenchAsr;
+      const { result } = renderHook(() => useGetAsrSettings());
+      const asr = await result.current.getAsrSettings();
+      expect(asr?.asrIso).not.toBe('fra');
+      result.current.saveProjectAsrSettings({ ...frenchAsr, asrIso: 'spa' });
+      expect(mockSetProjectDefault).not.toHaveBeenCalled();
+    }
+  );
 });

@@ -49,8 +49,11 @@ jest.mock('../../context/TokenProvider', () => {
 });
 
 const mockAxiosPost = jest.fn<() => Promise<unknown>>();
+// Methods aero lists for a language, best first.
+let mockAsrMethods: string[] = [];
 jest.mock('../../utils/axios', () => ({
-  axiosGet: jest.fn(),
+  axiosGet: async (url: string) =>
+    url.includes('asrlanguages') ? mockAsrMethods : undefined,
   axiosPost: () => mockAxiosPost(),
 }));
 
@@ -118,6 +121,7 @@ jest.mock(
 );
 
 import AsrProgress from './AsrProgress';
+import { clearAsrLanguageValidityCache } from './asrLanguages';
 
 const mediaWith = (duration: number) =>
   ({
@@ -128,18 +132,18 @@ const mediaWith = (duration: number) =>
 
 // postTranscribe awaits the saved ASR settings before it starts the run, so
 // let that settle before reading the estimate.
-const renderAsr = async () => {
+const renderAsr = async (phonetic = false) => {
   const result = render(
     <AsrProgress
       mediaId="m1"
-      phonetic={false}
+      phonetic={phonetic}
       setTranscription={jest.fn()}
       onPullTasks={jest.fn()}
       onClose={jest.fn()}
     />
   );
   await act(async () => {
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
   return result;
 };
@@ -148,6 +152,8 @@ describe('AsrProgress estimated time', () => {
   beforeEach(() => {
     mockOrbitListeners.clear();
     localStorage.clear();
+    clearAsrLanguageValidityCache();
+    mockAsrMethods = [];
     // The transcription request stays in flight for the whole test.
     mockAxiosPost.mockReset();
     mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
@@ -190,13 +196,32 @@ describe('AsrProgress estimated time', () => {
       totalMs: (10 + d) * 1000,
       at: 0,
     }));
-    // No method chosen: the run is timed under the service default.
+    // No method chosen: the run is timed under the method aero ranks first.
+    mockAsrMethods = ['w2v-bert', 'mms'];
     localStorage.setItem(
-      'aiTiming-transcription:default',
+      'aiTiming-transcription:w2v-bert',
       JSON.stringify(samples)
     );
     orbitMedia = [mediaWith(60)];
     await renderAsr();
+    expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
+      'About 1:10 remaining'
+    );
+  });
+
+  it('times phonetic runs apart from script runs', async () => {
+    const samples = [10, 20, 40, 80, 160].map((d) => ({
+      durationSec: d,
+      totalMs: (10 + d) * 1000,
+      at: 0,
+    }));
+    mockAsrMethods = ['w2v-bert'];
+    localStorage.setItem(
+      'aiTiming-transcription:phonetic',
+      JSON.stringify(samples)
+    );
+    orbitMedia = [mediaWith(60)];
+    await renderAsr(true);
     expect(document.getElementById('asr-time-estimate')).toHaveTextContent(
       'About 1:10 remaining'
     );
