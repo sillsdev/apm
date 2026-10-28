@@ -61,6 +61,7 @@ import {
 } from '../../../../utils/namedSegments';
 import { logError, Severity } from '../../../../utils/logErrorService';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
+import { useTeamSegParams } from './useTeamSegParams';
 import {
   getFontData,
   loadFontData,
@@ -623,22 +624,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     };
   }, [setHideMobileHeader]);
 
-  const [segParams, setSegParams] = useState<IRegionParams>({
-    silenceThreshold: 0.004,
-    timeThreshold: 0.02,
-    segLenThreshold: 0.5,
-  });
-
-  useEffect(() => {
-    const params = getOrgDefault(NamedRegions.Transcription) as IRegionParams;
-    if (!params) return;
-    // getOrgDefault is recreated every render and parses a fresh object, so
-    // only update when the saved values differ; otherwise this re-renders and
-    // runs again forever.
-    setSegParams((prev) =>
-      JSON.stringify(prev) === JSON.stringify(params) ? prev : params
-    );
-  }, [getOrgDefault]);
+  const [segParams, setSegParams] = useTeamSegParams();
 
   const onSegmentParamChange = useCallback(
     (params: IRegionParams, teamDefault: boolean) => {
@@ -647,7 +633,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         setOrgDefault(NamedRegions.Transcription, params);
       }
     },
-    [canSetOrgDefault, hasPermission, setOrgDefault]
+    [canSetOrgDefault, hasPermission, setOrgDefault, setSegParams]
   );
 
   const onSegmentChange = useCallback(

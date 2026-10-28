@@ -2,12 +2,6 @@ import { getLangTag } from 'mui-language-picker';
 import { axiosGet } from '../../utils/axios';
 import { isLangSet } from '../../utils/langTag';
 
-export {
-  asrMethodDefaultValue,
-  asrRequestMethod,
-  explicitAsrMethod,
-} from './asrMethod';
-
 /**
  * Methods to list under Default. Undefined when the choice should be hidden
  * (fewer than two methods). The first entry is the one aero ranked highest.

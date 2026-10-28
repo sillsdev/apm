@@ -1,9 +1,8 @@
 import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
+import { explicitAsrMethod } from '../business/asr/asrMethod';
 import {
-  asrMethodDefaultValue,
-  explicitAsrMethod,
   isoFromBcp47,
   isValidAsrLanguage,
   resolveAsrBcp47,
@@ -130,8 +129,8 @@ export function withSisterRecommendations(
 /**
  * ASR chosen on a step that does not use the vernacular. Stored on that step.
  * A missing step language is the language they picked; otherwise a different
- * language is the sister. The method is always stored so the step does not
- * inherit the team method.
+ * language is the sister. No method means the service default; nothing else
+ * is inherited, so the key is left out (an older stored "default" too).
  */
 export function stepSettingsFromAsrState(
   settings: TranscribeStepSettings,
@@ -141,11 +140,13 @@ export function stepSettingsFromAsrState(
   const chosen = asrState.language;
   const chosenBcp = chosen?.bcp47 ?? 'und';
   const primary = parseStepLanguageField(settings.language).bcp47;
+  const { asrMethod: _oldMethod, ...rest } = settings;
+  const method = explicitAsrMethod(asrState.asrMethod);
   const next: TranscribeStepSettings = {
-    ...settings,
+    ...rest,
     phonetic,
     selectRoman: !phonetic && asrState.selectRoman === true,
-    asrMethod: explicitAsrMethod(asrState.asrMethod) ?? asrMethodDefaultValue,
+    ...(method ? { asrMethod: method } : {}),
   };
   if (!isLangSet(primary) && isLangSet(chosenBcp)) {
     next.language = formatStepLanguageField(chosen);

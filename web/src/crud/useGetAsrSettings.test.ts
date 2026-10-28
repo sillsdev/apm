@@ -691,17 +691,30 @@ describe('stepSettingsFromAsrState', () => {
     expect(readSisterRecommendations(stored, 'French')).toBeUndefined();
   });
 
-  it('stores an unset method as default and drops transliterate for phonetic', () => {
-    expect(
-      stepSettingsFromAsrState(
-        { artifactTypeId: 'pbt', language: 'Kannada|kn', selectRoman: true },
-        { ...asr, asrMethod: undefined, target: AsrTarget.phonetic }
-      )
-    ).toMatchObject({
+  it('leaves the method out when none is chosen and drops transliterate for phonetic', () => {
+    const next = stepSettingsFromAsrState(
+      {
+        artifactTypeId: 'pbt',
+        language: 'Kannada|kn',
+        selectRoman: true,
+        asrMethod: 'default',
+      },
+      { ...asr, asrMethod: undefined, target: AsrTarget.phonetic }
+    );
+    expect(next).toMatchObject({
       language: 'Kannada|kn',
-      asrMethod: 'default',
       phonetic: true,
       selectRoman: false,
     });
+    expect(Object.hasOwn(next, 'asrMethod')).toBe(false);
+  });
+
+  it('stores a chosen method', () => {
+    expect(
+      stepSettingsFromAsrState(
+        { artifactTypeId: 'pbt', language: 'Kannada|kn' },
+        { ...asr, asrMethod: 'mms' }
+      ).asrMethod
+    ).toBe('mms');
   });
 });

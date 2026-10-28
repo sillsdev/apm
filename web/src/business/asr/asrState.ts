@@ -1,5 +1,6 @@
 import { ILanguage } from '../../control/Language';
 import { explicitAsrMethod } from './asrMethod';
+import { AsrTarget } from './AsrTarget';
 
 export interface IAsrState {
   target: string;
@@ -14,6 +15,21 @@ export interface IAsrState {
   dialect: string | undefined;
   selectRoman?: boolean;
 }
+
+/** The fallback when nothing is saved: script transcription, no method. */
+export const defaultAsrState: IAsrState = {
+  target: AsrTarget.alphabet,
+  language: {
+    bcp47: 'und',
+    languageName: 'English',
+    font: 'charissil',
+    rtl: false,
+    spellCheck: false,
+  },
+  asrIso: 'eng',
+  dialect: undefined,
+  selectRoman: false,
+};
 
 /**
  * Coerce a persisted IAsrState read from org/project defaults. `asrIso` was once

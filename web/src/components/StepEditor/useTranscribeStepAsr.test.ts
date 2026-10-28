@@ -52,10 +52,6 @@ jest.mock('react-redux', () => ({
 }));
 
 jest.mock('../../business/asr/asrLanguages', () => ({
-  explicitAsrMethod: (method: unknown) =>
-    typeof method === 'string' && method && method !== 'default'
-      ? method
-      : undefined,
   isValidAsrLanguage: () => isValidAsrLanguage(),
   isoFromBcp47: (bcp: string) => (bcp === 'und' ? 'und' : `${bcp}-iso`),
   needsSisterLanguage: () => needsSisterLanguage(),

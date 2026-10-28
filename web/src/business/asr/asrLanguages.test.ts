@@ -6,14 +6,13 @@ import { axiosGet } from '../../utils/axios';
 import {
   asrLanguageFilter,
   clearAsrLanguageValidityCache,
-  asrRequestMethod,
-  explicitAsrMethod,
   getMethodsForAsr,
   isValidAsrLanguage,
   loadAsrLanguages,
   resolveAsrBcp47,
   specificAsrMethods,
 } from './asrLanguages';
+import { asrRequestMethod, explicitAsrMethod } from './asrMethod';
 
 const mockAxiosGet = axiosGet as jest.Mock;
 

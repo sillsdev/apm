@@ -2,6 +2,7 @@ import React from 'react';
 import {
   IAsrState,
   asrStatesEqual,
+  defaultAsrState,
   normalizeAsrState,
 } from '../business/asr/asrState';
 import { IAsrLanguageSuggestion } from '../business/asr/useRecommendAsrLanguage';
@@ -22,7 +23,6 @@ import { PassageDetailContext } from '../context/PassageDetailContext';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { JSONParse, isLangSet } from '../utils';
 import { UpdateRecord } from '../model/baseModel';
-import { AsrTarget } from '../business/asr/AsrTarget';
 import { needsSisterLanguage } from '../business/asr/asrLanguages';
 import { useArtifactType } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
@@ -57,20 +57,6 @@ export type {
   TranscribeStepSettings,
   IStepLanguageInfo,
 } from './transcribeStepAsrSettings';
-
-const asrDefault: IAsrState = {
-  target: AsrTarget.alphabet,
-  language: {
-    bcp47: 'und',
-    languageName: 'English',
-    font: 'charissil',
-    rtl: false,
-    spellCheck: false,
-  },
-  asrIso: 'eng',
-  dialect: undefined,
-  selectRoman: false,
-};
 
 export function useGetAsrSettings(team?: OrganizationD) {
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
@@ -287,7 +273,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
         settings,
         getOrgDefault,
         orgId,
-        asrDefault,
+        defaultAsrState,
         projectLang,
         token
       );
@@ -297,7 +283,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       slugFromId,
       getOrgDefault,
       orgId,
-      asrDefault,
+      defaultAsrState,
       projectLang,
       token
     );
@@ -425,7 +411,6 @@ export function useGetAsrSettings(team?: OrganizationD) {
     saveTeamAsrSettings,
     saveProjectAsrSettings,
     saveStepAsrSettings,
-    saveTranscribeStepSettings,
     hasTranscribeStepLanguageSettings: hasTranscribeStepLanguageSettingsHook,
     transcribeSettingsNeedSisterLanguage:
       transcribeSettingsNeedSisterLanguageHook,

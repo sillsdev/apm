@@ -91,7 +91,6 @@ jest.mock('../../business/asr/useRecommendAsrLanguage', () => ({
 }));
 
 jest.mock('../../business/asr/asrLanguages', () => ({
-  explicitAsrMethod: () => undefined,
   isoFromBcp47: (bcp: string) => bcp,
   isValidAsrLanguage: async () => true,
   resolveAsrBcp47: async (bcp: string) => bcp,

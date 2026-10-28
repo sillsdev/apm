@@ -17,11 +17,8 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { AsrSettings } from './AsrSettings';
 import { IAsrState } from './asrState';
-import {
-  explicitAsrMethod,
-  isoFromBcp47,
-  needsSisterLanguage,
-} from './asrLanguages';
+import { explicitAsrMethod } from './asrMethod';
+import { isoFromBcp47, needsSisterLanguage } from './asrLanguages';
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { logError, Severity } from '../../utils';

@@ -33,9 +33,8 @@ import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
 import { AsrAlphabet } from './AsrAlphabet';
 import { asrScriptDetail } from './asrScriptDetail';
+import { asrMethodDefaultValue, explicitAsrMethod } from './asrMethod';
 import {
-  asrMethodDefaultValue,
-  explicitAsrMethod,
   getMethodsForAsr,
   isoFromBcp47,
   needsSisterLanguage,

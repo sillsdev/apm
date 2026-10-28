@@ -2,9 +2,9 @@ import React from 'react';
 import {
   IAsrState,
   asrStatesEqual,
+  defaultAsrState,
   normalizeAsrState,
 } from '../business/asr/asrState';
-import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
 import { OrgWorkflowStepD, Project } from '../model';
 import { TokenContext } from '../context/TokenProvider';
@@ -293,30 +293,13 @@ export function useBoldClauseTranscriptionAsrSettings(
   const [errorReporter] = useGlobal('errorReporter');
   const [asrLoadFailed, setAsrLoadFailed] = React.useState(false);
 
-  const asrDefault: IAsrState = React.useMemo(
-    () => ({
-      target: AsrTarget.alphabet,
-      language: {
-        bcp47: 'und',
-        languageName: 'English',
-        font: 'charissil',
-        rtl: false,
-        spellCheck: false,
-      },
-      asrIso: 'eng',
-      dialect: undefined,
-      selectRoman: false,
-    }),
-    []
-  );
-
   const orgId = organization as string | undefined;
   const defaultsVersion = useAsrDefaultsVersion(orgId);
   const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
   const [asrSettings, setAsrSettings] = React.useState<IAsrState>(() => ({
-    ...asrDefault,
+    ...defaultAsrState,
     asrIso: 'und',
-    language: { ...asrDefault.language, bcp47: 'und', languageName: '' },
+    language: { ...defaultAsrState.language, bcp47: 'und', languageName: '' },
   }));
   const [needsSister, setNeedsSister] = React.useState(false);
 
@@ -345,7 +328,7 @@ export function useBoldClauseTranscriptionAsrSettings(
         recordingArtifactSlug,
         getOrgDefault,
         orgId,
-        asrDefault,
+        defaultAsrState,
         projectLang,
         currentStepSettings,
         token
@@ -384,7 +367,6 @@ export function useBoldClauseTranscriptionAsrSettings(
     recordingArtifactSlug,
     orgId,
     defaultsVersion,
-    asrDefault,
     projectLang,
     currentStepSettings,
     token,
