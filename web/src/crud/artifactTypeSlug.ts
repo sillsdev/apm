@@ -15,6 +15,7 @@ export enum ArtifactTypeSlug {
   Title = 'title',
   Graphic = 'graphic',
   AIResource = 'airesource',
+  Replacement = 'replacement',
 }
 
 /** Vernacular phrase steps that use segmented regions on the passage waveform. */

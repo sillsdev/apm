@@ -394,6 +394,13 @@
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="artifactType.replacement">
+            <source>Replacement</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AlertDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="artifactType.resource">
             <source>Resource</source>
             <target/>
