@@ -1,9 +1,12 @@
-import { Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import { PassageGraphic } from './PassageGraphic';
 import { PassagePlayButton } from './PassagePlayButton';
 import { usePassageRefText } from './usePassageRefText';
 import { useSectionIdDescription } from './useSectionIdDescription';
+import { useTitleSlack } from './useTitleSlack';
+
+const titleLines = 2;
 
 interface IProps {
   cardInfo: ISheet;
@@ -36,6 +39,11 @@ export function PassageCardHeader({
     cardInfo.kind === IwsKind.Passage ? refText : getSectionLabel(cardInfo);
   const subtitle = cardInfo.kind === IwsKind.SectionPassage ? refText : '';
 
+  const { titleRef, titleSlack } = useTitleSlack(
+    title,
+    Boolean(mediaId && title)
+  );
+
   return (
     <Stack gap={0.5}>
       <Stack direction="row" alignItems="center" gap={1.5} minHeight={48}>
@@ -47,11 +55,13 @@ export function PassageCardHeader({
         />
         {title && (
           <Typography
+            ref={titleRef}
+            title={title}
             sx={{
               fontSize: '18px',
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 2,
+              WebkitLineClamp: titleLines,
               overflow: 'hidden',
               minWidth: 0,
               lineHeight: (theme) => theme.spacing(3),
@@ -61,7 +71,14 @@ export function PassageCardHeader({
             {title}
           </Typography>
         )}
-        {mediaId && <PassagePlayButton mediaId={mediaId} />}
+        {mediaId && (
+          <Box
+            sx={{ position: 'relative', display: 'flex', flexShrink: 0 }}
+            style={{ insetInlineStart: title ? -titleSlack : 0 }}
+          >
+            <PassagePlayButton mediaId={mediaId} />
+          </Box>
+        )}
       </Stack>
       {subtitle && (
         <Typography noWrap variant="body1">
