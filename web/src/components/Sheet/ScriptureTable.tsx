@@ -295,8 +295,8 @@ export function ScriptureTable(props: IProps) {
         : undefined;
     const resourceId =
       ws?.kind === IwsKind.Section
-        ? parseInt(secRec?.keys?.remoteId ?? '0')
-        : parseInt(ws?.passage?.keys?.remoteId ?? '0');
+        ? Number.parseInt(secRec?.keys?.remoteId ?? '0')
+        : Number.parseInt(ws?.passage?.keys?.remoteId ?? '0');
     const graphicRec = graphics.find(
       (g) =>
         g.attributes.resourceType === resourceType &&
@@ -433,13 +433,13 @@ export function ScriptureTable(props: IProps) {
       filter.assignedToMe = false;
     }
 
-    if (filter.minStep && !isNaN(Number(filter.minStep)))
+    if (filter.minStep && !Number.isNaN(Number(filter.minStep)))
       filter.minStep = remoteIdGuid(
         'orgworkflowstep',
         filter.minStep,
         memory?.keyMap as RecordKeyMap
       ) as string;
-    if (filter.maxStep && !isNaN(Number(filter.maxStep)))
+    if (filter.maxStep && !Number.isNaN(Number(filter.maxStep)))
       filter.maxStep = remoteIdGuid(
         'orgworkflowstep',
         filter.maxStep,
@@ -715,8 +715,8 @@ export function ScriptureTable(props: IProps) {
           : undefined;
       const resourceId =
         ws?.kind === IwsKind.Section
-          ? parseInt(secRec?.keys?.remoteId ?? '0')
-          : parseInt(ws?.passage?.keys?.remoteId ?? '0');
+          ? Number.parseInt(secRec?.keys?.remoteId ?? '0')
+          : Number.parseInt(ws?.passage?.keys?.remoteId ?? '0');
       // if this graphic is a category or shared note graphic,
       // this passage doesn't own it.
       const owned = graphics.some(
