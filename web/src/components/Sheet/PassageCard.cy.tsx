@@ -424,7 +424,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.contains('Note Title').should('be.visible');
   });
 
-  it('should use sharedResource description as comment when available', () => {
+  it('should show the passage comment, not the sharedResource description', () => {
     const cardInfo = createMockSheet({
       sharedResource: {
         id: 'shared-1',
@@ -472,8 +472,9 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       handleViewStep: mockHandleViewStep,
     });
 
-    // Should show shared resource description as comment
-    cy.contains('Shared resource description').should('be.visible');
+    // Only the passage-level description is shown
+    cy.contains('Test comment').should('be.visible');
+    cy.contains('Shared resource description').should('not.exist');
   });
 
   it('should show play button when mediaId exists and not playing', () => {
@@ -730,7 +731,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
     cy.get('p[class*="MuiTypography-body2"]').should('exist');
   });
 
-  it('should handle non-PASSAGE passage types with RefRender', () => {
+  it('should strip the type prefix from non-PASSAGE references', () => {
     const cardInfo = createMockSheet({
       passage: {
         id: 'passage-1',
@@ -755,9 +756,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       handleViewStep: mockHandleViewStep,
     });
 
-    // Should render RefRender component for non-PASSAGE types
-    // The RefRender component will render the reference
-    cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
+    // Non-PASSAGE types show the reference with its type prefix stripped
+    cy.get('p[title="Devotional Note"]').should('be.visible');
   });
 
   it('should handle empty reference gracefully', () => {
@@ -819,9 +819,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         handleViewStep: mockHandleViewStep,
       });
 
-      // Should show the reference with RefRender and comment
-      cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
-      cy.contains('Chapter Introduction').should('be.visible');
+      // The comment replaces the chapter number as the title
+      cy.get('p[title="Chapter Introduction"]').should('be.visible');
     });
 
     it('should not show comment section for CHAPTERNUMBER type', () => {
@@ -985,7 +984,7 @@ describe('PassageCard', { tags: '@smoke' }, () => {
       cy.get('div[class*="MuiCard-root"]').should('be.visible');
     });
 
-    it('should show comment after reference when comment is defined for CHAPTERNUMBER type', () => {
+    it('should show the comment as the title when comment is defined for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         comment: 'Chapter Introduction',
@@ -1012,14 +1011,14 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         handleViewStep: mockHandleViewStep,
       });
 
-      // Should show the comment after the reference
-      cy.get('h6[class*="MuiTypography-h6"]').should(
-        'contain.text',
+      // The comment is shown as the title
+      cy.get('p[title="Chapter Introduction"]').should(
+        'have.text',
         'Chapter Introduction'
       );
     });
 
-    it('should not show comment after reference when comment is undefined for CHAPTERNUMBER type', () => {
+    it('should show the chapter number as the title when comment is undefined for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         comment: undefined, // Explicitly undefined
@@ -1046,16 +1045,11 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         handleViewStep: mockHandleViewStep,
       });
 
-      // Should show only the reference without any comment text
-      cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
-      // The h6 should not contain any comment text - only RefRender content
-      cy.get('h6[class*="MuiTypography-h6"]').should(
-        'not.contain.text',
-        'undefined'
-      );
+      // Should show only the chapter number
+      cy.get('p[title="1"]').should('be.visible').and('have.text', '1');
     });
 
-    it('should not show comment after reference when comment is empty string for CHAPTERNUMBER type', () => {
+    it('should show the chapter number as the title when comment is empty string for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
         reference: '1',
         comment: '', // Empty string
@@ -1082,10 +1076,8 @@ describe('PassageCard', { tags: '@smoke' }, () => {
         handleViewStep: mockHandleViewStep,
       });
 
-      // Should show only the reference without any comment text
-      cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
-      // Should not show any additional text after the reference
-      cy.get('h6[class*="MuiTypography-h6"]').should('not.contain.text', ' ');
+      // Should show only the chapter number
+      cy.get('p[title="1"]').should('be.visible').and('have.text', '1');
     });
   });
 
