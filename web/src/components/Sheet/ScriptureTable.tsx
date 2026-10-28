@@ -89,15 +89,9 @@ import {
 } from '../../utils';
 import { addPt } from '../../utils/addPt';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
-import {
-  isPublishingTitle,
-  passageTypeFromRef,
-} from '../../control/passageTypeFromRef';
+import { isPublishingTitle } from '../../control/passageTypeFromRef';
 import { resolveSheetStartChapter } from './resolveSheetStartChapter';
-import {
-  computeGraphicRef,
-  graphicPickerRefString as buildGraphicPickerRef,
-} from './graphicPickerRef';
+import { graphicPickerRefString as buildGraphicPickerRef } from './graphicPickerRef';
 import { isSheetFilterActive } from './isSheetFilterActive';
 import { addPassageTo } from './sheetRowEdit';
 import { getByIndex, sheetFirstBook } from './sheetRowIndex';
@@ -154,7 +148,7 @@ interface IProps {
   colNames: string[];
 }
 
-export function ScriptureTable(props: IProps) {
+export function ScriptureTable(props: Readonly<IProps>) {
   const { colNames } = props;
   const passages = useOrbitData<PassageD[]>('passage');
   const sections = useOrbitData<SectionD[]>('section');
@@ -669,35 +663,15 @@ export function ScriptureTable(props: IProps) {
 
   const getGraphicPickerRefString = (i: number) => {
     const { ws } = getByIndex(sheetRef.current, i);
-    const passageType = passageTypeFromRef(ws?.reference ?? '', flat);
-    let noteRef = '';
-    let movementRef = '';
-    let sectionRef = '';
-    if (passageType === PassageTypeEnum.NOTE && ws?.passage) {
-      noteRef = curNoteRef(ws.passage as PassageD);
-    } else if (passageType === PassageTypeEnum.MOVEMENT) {
-      movementRef = computeMovementRef(ws?.sectionId?.id ?? '');
-    }
-    const formattedEarly =
-      (passageType === PassageTypeEnum.NOTE &&
-        Boolean(ws?.passage) &&
-        computeGraphicRef(noteRef).length > 0) ||
-      (passageType === PassageTypeEnum.MOVEMENT &&
-        computeGraphicRef(movementRef).length > 0) ||
-      passageType === PassageTypeEnum.CHAPTERNUMBER ||
-      passageType === PassageTypeEnum.BOOK ||
-      passageType === PassageTypeEnum.ALTBOOK;
-    if (!formattedEarly) {
-      sectionRef = computeSectionRef(ws?.sectionId?.id ?? '');
-    }
+    const sectionId = ws?.sectionId?.id ?? '';
     return buildGraphicPickerRef({
       row: ws,
       flat,
       firstBook,
       verseCounts: engVrs,
-      noteRef,
-      movementRef,
-      sectionRef,
+      getNoteRef: () => curNoteRef(ws?.passage as PassageD),
+      getMovementRef: () => computeMovementRef(sectionId),
+      getSectionRef: () => computeSectionRef(sectionId),
     });
   };
 
@@ -1145,23 +1119,25 @@ export function ScriptureTable(props: IProps) {
 
   const hasBookTitle = async (bookType: PassageTypeEnum) => {
     if (
-      sheetRef.current.findIndex(
-        (s) => !s.deleted && s.passageType === bookType
-      ) < 0
+      !sheetRef.current.some((s) => !s.deleted && s.passageType === bookType)
     ) {
       //see if we have this book anywhere in the team
       //ask remote about this if we have a remote
-      const teamprojects = projects
-        .filter((p) => related(p, 'organization') === organization)
-        .map((p) => p.id);
-      const teamplans = plans
-        .filter((p) => teamprojects.includes(related(p, 'project')))
-        .map((p) => p.id);
+      const teamprojects = new Set(
+        projects
+          .filter((p) => related(p, 'organization') === organization)
+          .map((p) => p.id)
+      );
+      const teamplans = new Set(
+        plans
+          .filter((p) => teamprojects.has(related(p, 'project')))
+          .map((p) => p.id)
+      );
       let foundIt = Boolean(
-        sections.find(
+        sections.some(
           (s) =>
             s.attributes?.state === publishingTitle(bookType) &&
-            teamplans.includes(related(s, 'plan'))
+            teamplans.has(related(s, 'plan'))
         )
       );
       if (!foundIt && remote) {
@@ -1170,9 +1146,7 @@ export function ScriptureTable(props: IProps) {
             .findRecords('section')
             .filter({ attribute: 'state', value: publishingTitle(bookType) })
         )) as SectionD[];
-        foundIt = Boolean(
-          bts.find((s) => teamplans.includes(related(s, 'plan')))
-        );
+        foundIt = Boolean(bts.some((s) => teamplans.has(related(s, 'plan'))));
       }
       return foundIt;
     }

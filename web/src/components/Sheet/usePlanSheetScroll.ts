@@ -498,15 +498,11 @@ export function usePlanSheetScroll(deps: PlanSheetScrollDeps) {
 
   return {
     sheetToAbs,
-    absToSheet,
     setCurrentRow,
     handleSelect,
-    windowFirst,
-    windowLast,
     visibleData,
     topPad,
     bottomPad,
-    sheetCurrentI,
     selected,
     rowCtx,
   };

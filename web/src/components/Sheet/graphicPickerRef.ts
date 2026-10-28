@@ -14,27 +14,27 @@ export function graphicPickerRefString(options: {
   flat: boolean;
   firstBook: string;
   verseCounts: Map<string, number[]>;
-  noteRef: string;
-  movementRef: string;
-  sectionRef: string;
+  getNoteRef: () => string;
+  getMovementRef: () => string;
+  getSectionRef: () => string;
 }): string {
   const {
     row,
     flat,
     firstBook,
     verseCounts,
-    noteRef,
-    movementRef,
-    sectionRef,
+    getNoteRef,
+    getMovementRef,
+    getSectionRef,
   } = options;
   const passageType = passageTypeFromRef(row?.reference ?? '', flat);
   if (passageType === PassageTypeEnum.NOTE) {
     if (row?.passage) {
-      const computed = computeGraphicRef(noteRef);
+      const computed = computeGraphicRef(getNoteRef());
       if (computed.length > 0) return computed;
     }
   } else if (passageType === PassageTypeEnum.MOVEMENT) {
-    const computed = computeGraphicRef(movementRef);
+    const computed = computeGraphicRef(getMovementRef());
     if (computed.length > 0) return computed;
   } else if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
     const chapter = (row?.reference ?? '').match(/(\d+)$/);
@@ -55,5 +55,5 @@ export function graphicPickerRefString(options: {
     }
     return firstBook + ' 1:1-999:999';
   }
-  return computeGraphicRef(sectionRef);
+  return computeGraphicRef(getSectionRef());
 }

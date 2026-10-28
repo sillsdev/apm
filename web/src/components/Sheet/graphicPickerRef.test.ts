@@ -33,9 +33,9 @@ const refFor = (
     flat: false,
     firstBook: 'LUK',
     verseCounts: verses,
-    noteRef: refs.noteRef ?? '',
-    movementRef: refs.movementRef ?? '',
-    sectionRef: refs.sectionRef ?? 'Luke 1:1-4',
+    getNoteRef: () => refs.noteRef ?? '',
+    getMovementRef: () => refs.movementRef ?? '',
+    getSectionRef: () => refs.sectionRef ?? 'Luke 1:1-4',
   });
 
 describe('graphicPickerRefString', () => {
@@ -75,11 +75,31 @@ describe('graphicPickerRefString', () => {
         flat: false,
         firstBook: 'LUK',
         verseCounts: new Map(),
-        noteRef: '',
-        movementRef: '',
-        sectionRef: '',
+        getNoteRef: () => '',
+        getMovementRef: () => '',
+        getSectionRef: () => '',
       })
     ).toBe('LUK 1:1-999:999');
+  });
+
+  it('only looks up the section reference when it is used', () => {
+    const getSectionRef = jest.fn(() => 'Luke 1:1-4');
+    const call = (reference: string, movementRef = '') =>
+      graphicPickerRefString({
+        row: row({ reference }),
+        flat: false,
+        firstBook: 'LUK',
+        verseCounts: verses,
+        getNoteRef: () => '',
+        getMovementRef: () => movementRef,
+        getSectionRef,
+      });
+    call('BOOK');
+    call('CHNUM 1');
+    call('MOVE', 'Move 4:1-2');
+    expect(getSectionRef).not.toHaveBeenCalled();
+    call('MOVE');
+    expect(getSectionRef).toHaveBeenCalledTimes(1);
   });
 
   it('returns the section reference tail for an ordinary passage', () => {
