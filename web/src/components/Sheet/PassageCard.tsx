@@ -5,7 +5,6 @@ import { TitleAudioButton } from './TitleAudioButton';
 import { PassageCardHeader } from './PassageCardHeader';
 import { PassageAssignee } from './PassageAssignee';
 import { PassageStepButton } from './PassageStepButton';
-import { useMobile } from '../../utils';
 import { useCardHeight, useMeasureCardHeight } from '../CardSize/useCardSize';
 
 const minPassageCardHeight = 176;
@@ -25,7 +24,6 @@ export function PassageCard({
   isPersonal,
   isCurrent,
 }: IProps) {
-  const { isMobileWidth } = useMobile();
   const noteTitle = cardInfo.sharedResource?.attributes.title;
   // Unsaved rows have no passage record yet, so fall back to the row fields.
   const ref =
@@ -44,7 +42,7 @@ export function PassageCard({
 
   const cardHeight = useCardHeight(minPassageCardHeight);
   const contentRef = useMeasureCardHeight(
-    isChapter || isMobileWidth
+    isChapter
       ? undefined
       : (passageId ?? `${cardInfo.sectionId?.id}-${cardInfo.passageSeq}`)
   );
@@ -57,7 +55,7 @@ export function PassageCard({
       aria-current={isCurrent ? 'true' : undefined}
       sx={{
         boxSizing: 'border-box',
-        minHeight: isMobileWidth ? minPassageCardHeight : cardHeight,
+        minHeight: cardHeight,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
