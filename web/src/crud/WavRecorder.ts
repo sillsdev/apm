@@ -2,14 +2,39 @@ import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
 import { logAudioDiagnostic } from './audioDiagnostics';
 import type { APMRecorder } from './useWavRecorder';
 
+/** Saved takes are 48 kHz on every platform (Opus is 48 kHz internally). */
 const PREFERRED_RECORD_SAMPLE_RATE = 48000;
 
-function createRecorderAudioContext(): AudioContext {
+function captureTrackSampleRate(stream: MediaStream): number | undefined {
+  return stream.getAudioTracks?.()[0]?.getSettings?.().sampleRate;
+}
+
+// Capture at the mic's own rate. Chrome on macOS feeds silence from a
+// MediaStreamAudioSourceNode when the context rate differs (TT-7805).
+function createRecorderAudioContext(trackSampleRate?: number): AudioContext {
   try {
-    return new AudioContext({ sampleRate: PREFERRED_RECORD_SAMPLE_RATE });
+    return trackSampleRate
+      ? new AudioContext({ sampleRate: trackSampleRate })
+      : new AudioContext();
   } catch {
     return new AudioContext();
   }
+}
+
+function resampleAudioBuffer(
+  buffer: AudioBuffer,
+  sampleRate: number
+): Promise<AudioBuffer> {
+  const offline = new OfflineAudioContext(
+    buffer.numberOfChannels,
+    Math.ceil((buffer.length * sampleRate) / buffer.sampleRate),
+    sampleRate
+  );
+  const source = offline.createBufferSource();
+  source.buffer = buffer;
+  source.connect(offline.destination);
+  source.start();
+  return offline.startRendering();
 }
 
 /** New Float32 chunks since last preview emit (exported for unit tests). */
@@ -32,11 +57,13 @@ export function createWavRecorder(
   stream: MediaStream,
   onDataAvailable: (blob: Blob) => void
 ): APMRecorder {
-  const audioContext = createRecorderAudioContext();
+  const trackSampleRate = captureTrackSampleRate(stream);
+  const audioContext = createRecorderAudioContext(trackSampleRate);
   logAudioDiagnostic('wav-recorder-audio-context', {
     audioContext: {
       sampleRate: audioContext.sampleRate,
-      requestedSampleRate: PREFERRED_RECORD_SAMPLE_RATE,
+      requestedSampleRate: trackSampleRate,
+      savedSampleRate: PREFERRED_RECORD_SAMPLE_RATE,
       state: audioContext.state,
     },
   });
@@ -286,7 +313,21 @@ export function createWavRecorder(
   async function convertAudioDataToWav(): Promise<Blob> {
     // Convert audio data to WAV (for final stop result)
     const audioBuffer = createAudioBuffer();
-    return audioBufferToWavBlob(audioBuffer);
+    if (
+      audioBuffer.length === 0 ||
+      audioBuffer.sampleRate === PREFERRED_RECORD_SAMPLE_RATE
+    ) {
+      return audioBufferToWavBlob(audioBuffer);
+    }
+    try {
+      return audioBufferToWavBlob(
+        await resampleAudioBuffer(audioBuffer, PREFERRED_RECORD_SAMPLE_RATE)
+      );
+    } catch (e) {
+      // Keep the take at the capture rate rather than lose it.
+      console.error('WavRecorder resample to 48 kHz failed:', e);
+      return audioBufferToWavBlob(audioBuffer);
+    }
   }
 
   function stop(): Promise<Blob> {

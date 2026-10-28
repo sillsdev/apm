@@ -13,6 +13,10 @@
  * Assertions require waveform-backed duration to match ticks recorded (red without
  * the AudioMediaRecorder merge / stop pipeline fix).
  *
+ * TT-7805 runs the real AudioWorklet WavRecorder with a 44.1 kHz mock mic and
+ * models Chrome on macOS returning silence for a rate-mismatched stream source;
+ * it asserts the decoded stop take has signal (a silent take still has duration).
+ *
  * Future E2E smoke (deferred): login → Record step → Luke 4:1–13 → pause → save.
  */
 import React from 'react';
@@ -327,6 +331,17 @@ const mountMediaRecord = (
   );
 };
 
+// Unmount before closing the oscillator so track `ended` does not land on
+// a still-mounted take. Restore clock so the next test is not frozen.
+const teardownRecording = () => {
+  cy.mount(<></>);
+  cy.clock().then((clock) => clock.restore());
+  cy.window({ log: false }).then((win) => {
+    const ctx = win.__recordingMock?.audioContext;
+    if (ctx && ctx.state !== 'closed') void ctx.close();
+  });
+};
+
 describe('MediaRecord recording integration', { tags: '@recording' }, () => {
   beforeEach(() => {
     clockArmed = false;
@@ -336,16 +351,7 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
     });
   });
 
-  afterEach(() => {
-    // Unmount before closing the oscillator so track `ended` does not land on
-    // a still-mounted take. Restore clock so the next test is not frozen.
-    cy.mount(<></>);
-    cy.clock().then((clock) => clock.restore());
-    cy.window({ log: false }).then((win) => {
-      const ctx = win.__recordingMock?.audioContext;
-      if (ctx && ctx.state !== 'closed') void ctx.close();
-    });
-  });
+  afterEach(teardownRecording);
 
   it('shows Save after a short recording is paused (tracer bullet)', () => {
     mountMediaRecord();
@@ -425,3 +431,49 @@ describe('MediaRecord recording integration', { tags: '@recording' }, () => {
     assertWaveformDurationAtLeast(2);
   });
 });
+
+const peakOf = (buffer: AudioBuffer): number => {
+  let peak = 0;
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    for (const sample of buffer.getChannelData(ch)) {
+      peak = Math.max(peak, Math.abs(sample));
+    }
+  }
+  return peak;
+};
+
+/** The stop take is decoded once by wsInsertAudio; it becomes the waveform. */
+const assertRecordedTakeHasAudio = () => {
+  cy.window().should((win) => {
+    const decoded = win.__recordingMock?.decodedBuffers ?? [];
+    expect(decoded, 'decoded stop take').to.have.length.greaterThan(0);
+    expect(peakOf(decoded[decoded.length - 1])).to.be.greaterThan(0.01);
+  });
+};
+
+describe(
+  'MediaRecord recording on macOS Chrome — TT-7805',
+  { tags: '@recording' },
+  () => {
+    beforeEach(() => {
+      clockArmed = false;
+      // Real AudioWorklet WavRecorder; a 44.1 kHz USB mic as on a Mac Studio.
+      cy.installRecordingMocks({
+        captureSampleRate: 44100,
+        simulateMacSampleRateMismatch: true,
+      });
+    });
+
+    afterEach(teardownRecording);
+
+    it('keeps recorded audio after pause when the mic runs at 44.1 kHz', () => {
+      mountMediaRecord();
+      startRecording();
+      advanceRecordingTicks(3);
+      pauseRecording();
+
+      assertSaveReady();
+      assertRecordedTakeHasAudio();
+    });
+  }
+);

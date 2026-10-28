@@ -14,6 +14,9 @@ export interface RecordingMockHelpers {
   audioContext?: AudioContext;
   /** Fire `ended` on capture tracks so `listenForCaptureDeviceLoss` runs. */
   unplugCapture: () => void;
+  /** AudioBuffers the app decoded with decodeAudioData (newest last). */
+  decodedBuffers: AudioBuffer[];
+  simulateMacSampleRateMismatch: boolean;
 }
 
 declare global {
@@ -155,6 +158,14 @@ export interface InstallRecordingMocksOptions {
   forceMediaRecorderFallback?: boolean;
   /** When false with forceMediaRecorderFallback, keep native MediaRecorder. Default: false. */
   useMockMediaRecorder?: boolean;
+  /** Mock mic rate: capture context and track getSettings().sampleRate. Default: 48000. */
+  captureSampleRate?: number;
+  /**
+   * Model Chrome on macOS (TT-7805): a MediaStreamAudioSourceNode in a context
+   * whose rate differs from the mic track's rate yields silence. Real Chrome
+   * elsewhere resamples, so the fault needs this patch to reproduce.
+   */
+  simulateMacSampleRateMismatch?: boolean;
 }
 
 /**
@@ -180,6 +191,109 @@ function patchAudioContextResume(win: Window & typeof globalThis): void {
     return Promise.resolve();
   };
   proto.__apmResumePatched = true;
+}
+
+interface NativeRecordingGlobals {
+  AudioWorklet: unknown;
+  MediaRecorder: unknown;
+}
+
+const nativeGlobalsByWindow = new WeakMap<Window, NativeRecordingGlobals>();
+
+/** Captured on the first install, before any test replaces them. */
+function nativeRecordingGlobals(
+  win: Window & typeof globalThis
+): NativeRecordingGlobals {
+  let natives = nativeGlobalsByWindow.get(win);
+  if (!natives) {
+    natives = {
+      AudioWorklet: win.AudioWorklet,
+      MediaRecorder: win.MediaRecorder,
+    };
+    nativeGlobalsByWindow.set(win, natives);
+  }
+  return natives;
+}
+
+function setWindowGlobal(
+  win: Window & typeof globalThis,
+  name: keyof NativeRecordingGlobals,
+  value: unknown
+): void {
+  // Assignment is a no-op in Chrome (non-writable); redefine instead.
+  try {
+    Object.defineProperty(win, name, {
+      configurable: true,
+      writable: true,
+      value,
+    });
+  } catch {
+    try {
+      (win as unknown as Record<string, unknown>)[name] = value;
+    } catch {
+      /* keep native */
+    }
+  }
+}
+
+type PatchedAudioContextProto = AudioContext & {
+  __apmRateMismatchPatched?: boolean;
+  __apmDecodeCapturePatched?: boolean;
+};
+
+function audioContextProto(
+  win: Window & typeof globalThis
+): PatchedAudioContextProto | undefined {
+  return (
+    win.AudioContext as unknown as { prototype: PatchedAudioContextProto }
+  )?.prototype;
+}
+
+/** Patched once per window; `win.__recordingMock` gates each test. */
+function patchMediaStreamSourceRateMismatch(
+  win: Window & typeof globalThis
+): void {
+  const proto = audioContextProto(win);
+  if (!proto || proto.__apmRateMismatchPatched) return;
+  const native = proto.createMediaStreamSource;
+  proto.createMediaStreamSource = function (
+    this: AudioContext,
+    stream: MediaStream
+  ) {
+    const trackRate = stream.getAudioTracks()[0]?.getSettings().sampleRate;
+    if (
+      win.__recordingMock?.simulateMacSampleRateMismatch &&
+      trackRate &&
+      trackRate !== this.sampleRate
+    ) {
+      return native.call(this, this.createMediaStreamDestination().stream);
+    }
+    return native.call(this, stream);
+  };
+  proto.__apmRateMismatchPatched = true;
+}
+
+function patchDecodeCapture(win: Window & typeof globalThis): void {
+  const proto = audioContextProto(win);
+  if (!proto || proto.__apmDecodeCapturePatched) return;
+  const native = proto.decodeAudioData;
+  proto.decodeAudioData = function (
+    this: AudioContext,
+    data: ArrayBuffer,
+    success?: DecodeSuccessCallback | null,
+    error?: DecodeErrorCallback | null
+  ) {
+    return native.call(
+      this,
+      data,
+      (buffer) => {
+        win.__recordingMock?.decodedBuffers.push(buffer);
+        success?.(buffer);
+      },
+      error
+    );
+  };
+  proto.__apmDecodeCapturePatched = true;
 }
 
 function requestedExactDeviceId(
@@ -215,7 +329,8 @@ function mockAudioInputDevice(): MediaDeviceInfo {
 
 function presentCaptureTrack(
   track: MediaStreamTrack,
-  deviceId: () => string
+  deviceId: () => string,
+  sampleRate: number
 ): MediaStreamTrack {
   // Patch the native track. Object.create views are dropped by MediaStream.addTrack
   // / getAudioTracks, so ensureCaptureStreamUsable still sees muted oscillator tracks
@@ -243,17 +358,22 @@ function presentCaptureTrack(
     /* non-configurable */
   }
   const nativeGetSettings = track.getSettings.bind(track);
-  track.getSettings = () => ({ ...nativeGetSettings(), deviceId: deviceId() });
+  track.getSettings = () => ({
+    ...nativeGetSettings(),
+    deviceId: deviceId(),
+    sampleRate,
+  });
   return track;
 }
 
 function decorateCaptureStream(
   stream: MediaStream,
-  deviceId: () => string
+  deviceId: () => string,
+  sampleRate: number
 ): MediaStream {
   stream
     .getAudioTracks()
-    .forEach((track) => presentCaptureTrack(track, deviceId));
+    .forEach((track) => presentCaptureTrack(track, deviceId, sampleRate));
   try {
     Object.defineProperty(stream, 'active', {
       configurable: true,
@@ -277,14 +397,15 @@ function addOscillatorCapture(
   const dest = audioContext.createMediaStreamDestination();
   gain.connect(dest);
   oscillator.start();
-  return decorateCaptureStream(dest.stream, deviceId);
+  return decorateCaptureStream(dest.stream, deviceId, audioContext.sampleRate);
 }
 
 async function createCaptureAudioContext(
-  win: Window & typeof globalThis
+  win: Window & typeof globalThis,
+  sampleRate: number
 ): Promise<AudioContext> {
   patchAudioContextResume(win);
-  const audioContext = new win.AudioContext({ sampleRate: 48000 });
+  const audioContext = new win.AudioContext({ sampleRate });
   if (audioContext.state === 'suspended') {
     await audioContext.resume();
   }
@@ -300,13 +421,19 @@ export async function installRecordingMocks(
   win: Window & typeof globalThis,
   options: InstallRecordingMocksOptions = {}
 ): Promise<RecordingMockHelpers> {
-  const { forceMediaRecorderFallback = false, useMockMediaRecorder = false } =
-    options;
+  const {
+    forceMediaRecorderFallback = false,
+    useMockMediaRecorder = false,
+    captureSampleRate = 48000,
+    simulateMacSampleRateMismatch = false,
+  } = options;
 
   MockMediaRecorder.instances = [];
 
   patchAudioContextResume(win);
-  const audioContext = await createCaptureAudioContext(win);
+  patchMediaStreamSourceRateMismatch(win);
+  patchDecodeCapture(win);
+  const audioContext = await createCaptureAudioContext(win, captureSampleRate);
 
   // Stale saved mics are `{ exact }` now; they must appear in enumerateDevices
   // and on the track or acquire falls back and Record never reaches Pause/Stop.
@@ -343,36 +470,22 @@ export async function installRecordingMocks(
       }) as MediaTrackSupportedConstraints;
   }
 
-  if (forceMediaRecorderFallback) {
-    // Assignment is a no-op in Chrome (non-writable). isAudioWorkletAvailable()
-    // checks `typeof AudioWorklet === 'undefined'` first; hide the global.
-    try {
-      Object.defineProperty(win, 'AudioWorklet', {
-        configurable: true,
-        writable: true,
-        value: undefined,
-      });
-    } catch {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (win as any).AudioWorklet = undefined;
-      } catch {
-        /* keep native */
-      }
-    }
-    if (useMockMediaRecorder) {
-      try {
-        Object.defineProperty(win, 'MediaRecorder', {
-          configurable: true,
-          writable: true,
-          value: MockMediaRecorder,
-        });
-      } catch {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (win as any).MediaRecorder = MockMediaRecorder;
-      }
-    }
-  }
+  // The CT window persists across tests: restore natives a previous install
+  // replaced, or a WavRecorder test silently runs the fallback recorder.
+  const natives = nativeRecordingGlobals(win);
+  // isAudioWorkletAvailable() checks `typeof AudioWorklet === 'undefined'` first.
+  setWindowGlobal(
+    win,
+    'AudioWorklet',
+    forceMediaRecorderFallback ? undefined : natives.AudioWorklet
+  );
+  setWindowGlobal(
+    win,
+    'MediaRecorder',
+    forceMediaRecorderFallback && useMockMediaRecorder
+      ? MockMediaRecorder
+      : natives.MediaRecorder
+  );
 
   const helpers: RecordingMockHelpers = {
     getInstances: () => MockMediaRecorder.instances,
@@ -389,6 +502,8 @@ export async function installRecordingMocks(
         }
       });
     },
+    decodedBuffers: [],
+    simulateMacSampleRateMismatch,
   };
 
   win.__recordingMock = helpers;
