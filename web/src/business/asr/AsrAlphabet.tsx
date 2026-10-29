@@ -1,5 +1,11 @@
 import React from 'react';
-import { Stack, Typography, Checkbox, FormControlLabel } from '@mui/material';
+import {
+  Stack,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  LinearProgress,
+} from '@mui/material';
 import { ILanguage, Language } from '../../control/Language';
 import { getLangTag } from 'mui-language-picker';
 import { asrScriptDetail } from './asrScriptDetail';
@@ -8,7 +14,11 @@ import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AsrTarget } from './AsrTarget';
-import { asrLanguageFilter, preferredAsrMethodFromBcp47 } from './asrLanguages';
+import { TokenContext } from '../../context/TokenProvider';
+import { useGlobal } from '../../context/useGlobal';
+import { logError, Severity } from '../../utils';
+import { toError } from '../../utils/toError';
+import { asrLanguageFilter, loadAsrLanguages } from './asrLanguages';
 import { IAsrState } from './asrState';
 
 interface IAsrAlphabet {
@@ -21,9 +31,34 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
   const [showRoman, setShowRoman] = React.useState(false);
   const init = React.useRef(true);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
+  const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
+  const [errorReporter] = useGlobal('errorReporter');
+  const [listStatus, setListStatus] = React.useState<
+    'loading' | 'ready' | 'failed'
+  >('loading');
   const [scriptName] = React.useState(
     new Map(scriptNameData as [string, string][])
   );
+
+  React.useEffect(() => {
+    let cancelled = false;
+    // Offline (no token) the list can't be asked for; only a failed request
+    // shows the error.
+    if (token) {
+      loadAsrLanguages(token)
+        .then(() => {
+          if (!cancelled) setListStatus('ready');
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          logError(Severity.error, errorReporter, toError(err));
+          setListStatus('failed');
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [token, errorReporter]);
 
   React.useEffect(() => {
     const bcp47 = state?.language?.bcp47 ?? 'und';
@@ -34,10 +69,6 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
     });
     setScriptDetail(detail);
     setShowRoman(showRoman);
-    const method = preferredAsrMethodFromBcp47(bcp47);
-    if (method && method !== state.method) {
-      setState((prev) => (prev ? { ...prev, method } : prev));
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.language?.bcp47]);
 
@@ -49,12 +80,11 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
     const langTag = getLangTag(language?.bcp47 ?? 'und');
     let asrIso = langTag?.iso639_3 ?? 'und';
     if (langTag?.tag === 'zh-CN') asrIso = 'cmn';
-    const method = preferredAsrMethodFromBcp47(language?.bcp47 ?? 'und');
     setState({
       ...state,
       language,
       asrIso,
-      method,
+      asrMethod: undefined,
       dialect: undefined,
       selectRoman: false,
     });
@@ -66,13 +96,22 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
 
   return (
     <Stack direction="row" spacing={1} sx={{ mx: 1 }}>
-      <Language
-        {...state.language}
-        onChange={setLang}
-        filter={asrLanguageFilter}
-        hideSpelling={true}
-        hideFont={true}
-      />
+      <Stack>
+        <Language
+          {...state.language}
+          onChange={setLang}
+          filter={listStatus === 'ready' ? asrLanguageFilter : () => false}
+          hideSpelling={true}
+          hideFont={true}
+        />
+        {/* The list stays empty until aero answers; show that it is coming. */}
+        {listStatus === 'loading' && <LinearProgress sx={{ mt: 0.5 }} />}
+        {listStatus === 'failed' && (
+          <Typography variant="body2" color="error">
+            {t.asrRequestFailed}
+          </Typography>
+        )}
+      </Stack>
       <Stack direction="column">
         {scriptDetail ? <Typography>{scriptDetail}</Typography> : <></>}
         {showRoman && (

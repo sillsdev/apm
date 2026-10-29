@@ -2,6 +2,7 @@ import React from 'react';
 import {
   IAsrState,
   asrStatesEqual,
+  defaultAsrState,
   normalizeAsrState,
 } from '../business/asr/asrState';
 import { IAsrLanguageSuggestion } from '../business/asr/useRecommendAsrLanguage';
@@ -16,15 +17,16 @@ import {
   projDefSisterRecommendations,
   useProjectDefaults,
 } from './useProjectDefaults';
+import { TokenContext } from '../context/TokenProvider';
 import { useGlobal } from '../context/useGlobal';
 import { PassageDetailContext } from '../context/PassageDetailContext';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { JSONParse, isLangSet } from '../utils';
-import { getPreferredAsrMethod } from '../business/asr/asrLanguages';
 import { UpdateRecord } from '../model/baseModel';
-import { AsrTarget } from '../business/asr/AsrTarget';
+import { needsSisterLanguage } from '../business/asr/asrLanguages';
 import { useArtifactType } from './useArtifactType';
 import { findRecord } from './tryFindRecord';
+import { useSetTeamLanguage } from './useSetTeamLanguage';
 
 import {
   artifactTypeSlugFromSettings,
@@ -32,8 +34,11 @@ import {
   buildVernacularAsrState,
   buildWorkflowAsrStateFromSettings,
   hasTranscribeStepLanguageSettings,
+  readSisterRecommendations,
+  stepSettingsFromAsrState,
+  stepSisterRecommendationKey,
   transcribeSettingsNeedSisterLanguage,
-  withInheritedVernacularSisterSettings,
+  withSisterRecommendations,
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
 
@@ -46,7 +51,6 @@ export {
   buildWorkflowAsrStateFromSettings,
   parseStepLanguageField,
   formatStepLanguageField,
-  withInheritedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
 export type {
   SlugFromIdFn,
@@ -62,24 +66,11 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const [project] = useGlobal('project');
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const { getProjectDefault, setProjectDefault } = useProjectDefaults();
+  const setTeamLanguage = useSetTeamLanguage();
   const { slugFromId } = useArtifactType();
   const ctx = React.useContext(PassageDetailContext);
   const currentstep = ctx?.state?.currentstep;
-
-  const asrDefault: IAsrState = {
-    target: AsrTarget.alphabet,
-    language: {
-      bcp47: 'und',
-      languageName: 'English',
-      font: 'charissil',
-      rtl: false,
-      spellCheck: false,
-    },
-    asrIso: 'eng',
-    method: getPreferredAsrMethod('eng'),
-    dialect: undefined,
-    selectRoman: false,
-  };
+  const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
 
   const orgId = team?.id ?? organization;
 
@@ -184,51 +175,91 @@ export function useGetAsrSettings(team?: OrganizationD) {
     });
   };
 
+  const stepTool = (stepId: string | undefined) => {
+    const step = stepId
+      ? (findRecord(memory, 'orgworkflowstep', stepId) as
+          OrgWorkflowStepD | undefined)
+      : undefined;
+    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
+      string,
+      string
+    >;
+    return { step, json, settings: parseStepSettings(json?.settings) };
+  };
+
+  /**
+   * Sister recommendations cached on a step that uses its own language: the
+   * step its ASR settings are read from, which may not be the current step.
+   */
+  const getCachedStepSisterRecommendations = (
+    stepId: string | undefined
+  ): IAsrLanguageSuggestion[] | undefined => {
+    const { settings } = stepTool(stepId);
+    const stored = readSisterRecommendations(
+      settings,
+      stepSisterRecommendationKey(settings)
+    );
+    if (!stored) return undefined;
+    return stored.map((s) => ({ ...s, raw: s }));
+  };
+
+  const saveStepSisterRecommendations = (
+    stepId: string | undefined,
+    suggestions: IAsrLanguageSuggestion[]
+  ) => {
+    const { step, json, settings } = stepTool(stepId);
+    if (!step) return;
+    const key = stepSisterRecommendationKey(settings);
+    if (!key) return;
+    json.settings = JSON.stringify(
+      withSisterRecommendations(settings, key, suggestions)
+    );
+    step.attributes.tool = JSON.stringify(json);
+    void memory.update((t) => UpdateRecord(t, step, user));
+  };
+
   const parseStepSettings = (settingsJson: string | undefined) =>
     JSONParse(settingsJson ?? '{}') as TranscribeStepSettings;
 
-  /** Step settings with vernacular sister inherited for Q&A / Retell when missing. */
-  const resolveStepSettings = (settings: TranscribeStepSettings) =>
-    withInheritedVernacularSisterSettings(settings, orgSteps, slugFromId);
+  /** The step transcribes the vernacular, and this project's differs from the team's. */
+  const usesProjectAsr = (settings: TranscribeStepSettings) =>
+    projectDiffersFromOrg() &&
+    artifactUsesOrgVernacularLanguage(
+      artifactTypeSlugFromSettings(settings, slugFromId)
+    );
 
-  const getArtIdFromSettings = (settings: TranscribeStepSettings) => {
-    return String(settings?.artifactTypeId ?? '');
+  /**
+   * A saved project choice in another language is a sister, which applies
+   * only while the project's language needs one. Earlier builds saved every
+   * Run here, including the team's sister for a project the service can
+   * transcribe directly; the dialog hides the picker then, so it couldn't be
+   * changed.
+   */
+  const savedProjectAsrApplies = async (projAsr: IAsrState) => {
+    const projBcp = projectLang?.bcp47 ?? 'und';
+    if (projAsr.language?.bcp47 === projBcp) return true;
+    return needsSisterLanguage(projBcp, token);
   };
-  const getVernacularAsrState = (settings: TranscribeStepSettings) =>
-    buildVernacularAsrState(
-      settings,
-      getOrgDefault,
-      orgId,
-      asrDefault,
-      projectLang
-    );
 
-  const getWorkflowAsrState = (settings: TranscribeStepSettings) =>
-    buildWorkflowAsrStateFromSettings(
-      settings,
-      slugFromId,
-      getOrgDefault,
-      orgId,
-      asrDefault,
-      projectLang
-    );
-
-  const getAsrSettings = () => {
+  const getAsrSettings = React.useCallback(async () => {
     const step = orgSteps.find((s) => s.id === currentstep);
     const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
       string,
       string
     >;
-    const settings = resolveStepSettings(parseStepSettings(json?.settings));
-    const slug = artifactTypeSlugFromSettings(settings, slugFromId);
-
-    // A per-project ASR config (saved on Run) takes precedence over the
-    // org-level step settings, so the user's last choice always sticks.
-    if (artifactUsesOrgVernacularLanguage(slug)) {
+    const settings = parseStepSettings(json?.settings);
+    // A project whose language differs from the team's keeps its own ASR
+    // choice (saved on Run), since the team default can't describe it.
+    const projectOwnsAsr = usesProjectAsr(settings);
+    if (projectOwnsAsr) {
       const projAsr = normalizeAsrState(getProjectDefault(orgDefaultAsr));
-      if (isLangSet(projAsr?.asrIso)) return projAsr;
+      if (
+        projAsr &&
+        isLangSet(projAsr.asrIso) &&
+        (await savedProjectAsrApplies(projAsr))
+      )
+        return projAsr;
     }
-
     const hasStepLang = hasTranscribeStepLanguageSettings(
       json.tool,
       settings,
@@ -236,16 +267,42 @@ export function useGetAsrSettings(team?: OrganizationD) {
       getOrgDefault,
       orgId
     );
-    const artId = getArtIdFromSettings(settings);
-    if (!hasStepLang) {
-      const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
-      if (orgAsr) return orgAsr;
+    const artifactTypeId = settings?.artifactTypeId ?? '';
+    // No step language to go on (no current step, another tool, or a step
+    // whose own language isn't set): use the team ASR, resolved like the
+    // vernacular so one without a language (e.g. after the team language
+    // changed) gets the team language rather than none. The team ASR
+    // describes the team's language, never a project that differs.
+    const usesTeamAsr =
+      !hasStepLang &&
+      !projectOwnsAsr &&
+      Boolean(normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId)));
+    if (usesTeamAsr || !artifactTypeId) {
+      return buildVernacularAsrState(
+        settings,
+        getOrgDefault,
+        orgId,
+        defaultAsrState,
+        projectLang,
+        token
+      );
     }
-    if (!artId) {
-      return getVernacularAsrState(settings);
-    }
-    return getWorkflowAsrState(settings);
-  };
+    return buildWorkflowAsrStateFromSettings({
+      settings,
+      slugFromId,
+      getOrgDefault,
+      orgId,
+      asrDefault: defaultAsrState,
+      projectLang,
+      token,
+    });
+    // slugFromId, getOrgDefault, getProjectDefault, usesProjectAsr and
+    // savedProjectAsrApplies are recreated every render. Including them makes
+    // getAsrSettings change every render and the load effect restarts. Team and
+    // project defaults are read from memory when called; useAsrDefaultsVersion
+    // tells loaders when to call again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgSteps, currentstep, orgId, projectLang, token]);
 
   /**
    * Whether the current user may save ASR settings as the team (org) default:
@@ -267,19 +324,20 @@ export function useGetAsrSettings(team?: OrganizationD) {
    */
   const saveTeamAsrSettings = (asrState: IAsrState) => {
     const vernacular = getVernacularLanguage();
-    if (isLangSet(vernacular?.bcp47)) {
-      setOrgDefault(orgDefaultLangProps, vernacular, orgId);
+    // Set the language first: a change clears the old language's team ASR,
+    // which the new choice then replaces.
+    if (vernacular && isLangSet(vernacular.bcp47)) {
+      setTeamLanguage(vernacular, orgId);
     }
     setOrgDefault(orgDefaultAsr, asrState, orgId);
-    // Drop any per-project override so the new team default isn't shadowed.
+    // Drop any per-project choice so the new team default isn't shadowed.
     setProjectDefault(orgDefaultAsr, undefined);
   };
 
   /**
-   * Persist the chosen ASR settings to the project default so any change the user
-   * makes sticks (the team-default path saves to the org instead). Only applies to
-   * artifacts driven by the org/project vernacular; step-language artifacts keep
-   * their own per-step language settings.
+   * Remember the ASR settings a Run used, on the project, when the project's
+   * language differs from the team's. Otherwise the team default applies and
+   * nothing is saved.
    */
   const saveProjectAsrSettings = (asrState: IAsrState) => {
     const step = orgSteps.find((s) => s.id === currentstep);
@@ -287,9 +345,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
-    const slug = artifactTypeSlugFromSettings(settings, slugFromId);
-    if (!artifactUsesOrgVernacularLanguage(slug)) return;
+    if (!usesProjectAsr(parseStepSettings(json?.settings))) return;
     const existing = normalizeAsrState(getProjectDefault(orgDefaultAsr));
     if (existing && asrStatesEqual(existing, asrState)) return;
     setProjectDefault(orgDefaultAsr, asrState);
@@ -301,7 +357,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = resolveStepSettings(parseStepSettings(json?.settings));
+    const settings = parseStepSettings(json?.settings);
     return hasTranscribeStepLanguageSettings(
       json.tool,
       settings,
@@ -317,35 +373,44 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = resolveStepSettings(parseStepSettings(json?.settings));
+    const settings = parseStepSettings(json?.settings);
     return transcribeSettingsNeedSisterLanguage(
       settings,
       slugFromId,
       getOrgDefault,
-      orgId
+      orgId,
+      token
     );
   };
-  const saveTranscribeStepSettings = (settings: string) => {
-    const step = orgSteps.find((s) => s.id === currentstep);
+  /**
+   * ASR for a step that does not use the vernacular, saved on the step its
+   * settings are read from (e.g. the upstream recording step for LWC).
+   */
+  const saveStepAsrSettings = (
+    asrState: IAsrState,
+    stepId: string | undefined
+  ) => {
+    const { step, json, settings } = stepTool(stepId);
     if (!step) return;
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    json.settings = settings;
+    json.settings = JSON.stringify(
+      stepSettingsFromAsrState(settings, asrState)
+    );
     step.attributes.tool = JSON.stringify(json);
-    memory.update((t) => UpdateRecord(t, step, user));
+    void memory.update((t) => UpdateRecord(t, step, user));
   };
 
   return {
     getAsrSettings,
     getVernacularLanguage,
     getCachedSisterRecommendations,
+    getCachedStepSisterRecommendations,
     saveSisterRecommendations,
+    saveStepSisterRecommendations,
+    canSetOrgDefault,
     canSetTeamAsrDefault,
     saveTeamAsrSettings,
     saveProjectAsrSettings,
-    saveTranscribeStepSettings,
+    saveStepAsrSettings,
     hasTranscribeStepLanguageSettings: hasTranscribeStepLanguageSettingsHook,
     transcribeSettingsNeedSisterLanguage:
       transcribeSettingsNeedSisterLanguageHook,

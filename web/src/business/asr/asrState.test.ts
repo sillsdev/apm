@@ -1,5 +1,10 @@
 import { AsrTarget } from './AsrTarget';
-import { IAsrState, asrStatesEqual, normalizeAsrState } from './asrState';
+import {
+  IAsrState,
+  asrStatesEqual,
+  normalizeAsrState,
+  withoutPrimaryAsAsrLanguage,
+} from './asrState';
 
 const baseState = (): IAsrState => ({
   target: AsrTarget.alphabet,
@@ -11,7 +16,7 @@ const baseState = (): IAsrState => ({
     spellCheck: false,
   },
   asrIso: 'eng',
-  method: 'whisper',
+  asrMethod: 'whisper',
   dialect: undefined,
   selectRoman: false,
 });
@@ -35,11 +40,13 @@ describe('asrStatesEqual', () => {
     ).toBe(false);
   });
 
-  it('normalizes missing method to mms', () => {
+  it('treats a missing method as different from a named method', () => {
     const withMethod = baseState();
-    const withoutMethod = { ...baseState(), method: undefined };
-    const withMms = { ...baseState(), method: 'mms' };
-    expect(asrStatesEqual(withoutMethod, withMms)).toBe(true);
+    const withoutMethod = { ...baseState(), asrMethod: undefined };
+    const withDefault = { ...baseState(), asrMethod: 'default' };
+    const withMms = { ...baseState(), asrMethod: 'mms' };
+    expect(asrStatesEqual(withoutMethod, withDefault)).toBe(true);
+    expect(asrStatesEqual(withoutMethod, withMms)).toBe(false);
     expect(asrStatesEqual(withoutMethod, withMethod)).toBe(false);
   });
 });
@@ -58,5 +65,40 @@ describe('normalizeAsrState', () => {
   it('keeps asrIso when present', () => {
     const current = { asrIso: 'eng', mmsIso: 'old' };
     expect(normalizeAsrState(current)?.asrIso).toBe('eng');
+  });
+
+  it('drops the legacy auto-picked method', () => {
+    const legacy = { asrIso: 'eng', method: 'mms' };
+    const state = normalizeAsrState(legacy);
+    expect(state?.asrMethod).toBeUndefined();
+    expect(state).not.toHaveProperty('method');
+  });
+
+  it('keeps a chosen asrMethod', () => {
+    expect(
+      normalizeAsrState({ asrIso: 'eng', asrMethod: 'mms' })?.asrMethod
+    ).toBe('mms');
+  });
+});
+
+describe('withoutPrimaryAsAsrLanguage', () => {
+  it('replaces the primary with no ASR language when a sister is needed', () => {
+    const asr = withoutPrimaryAsAsrLanguage(baseState(), 'en', true);
+    expect(asr.language.bcp47).toBe('und');
+    expect(asr.asrIso).toBe('und');
+  });
+
+  it('keeps a chosen sister', () => {
+    const asr = withoutPrimaryAsAsrLanguage(baseState(), 'kn', true);
+    expect(asr.language.bcp47).toBe('en');
+  });
+
+  it('keeps the primary when it needs no sister, or the answer is unknown', () => {
+    expect(withoutPrimaryAsAsrLanguage(baseState(), 'en', false).asrIso).toBe(
+      'eng'
+    );
+    expect(
+      withoutPrimaryAsAsrLanguage(baseState(), 'en', undefined).asrIso
+    ).toBe('eng');
   });
 });

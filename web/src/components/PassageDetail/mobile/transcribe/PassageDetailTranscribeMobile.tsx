@@ -6,7 +6,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, Stack } from '@mui/material';
+import { Box, IconButton, Stack } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ActivityStates,
@@ -54,11 +55,13 @@ import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import {
   getSegments,
+  hasTranscriptionTask,
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
 import { logError, Severity } from '../../../../utils/logErrorService';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
+import { useTeamSegParams } from './useTeamSegParams';
 import {
   getFontData,
   loadFontData,
@@ -583,6 +586,11 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
   );
 
+  const hasAiTask = useMemo(
+    () => hasTranscriptionTask(mediafile?.attributes?.segments),
+    [mediafile]
+  );
+
   const asr = useTranscribeAsr({
     team,
     sharedStr,
@@ -590,6 +598,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     showMessage,
     onTextAdd: handleTextAdd,
     getCurrentText: getTextValue,
+    hasActiveTask: hasAiTask,
   });
 
   const handleTextChange = useCallback(
@@ -615,16 +624,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     };
   }, [setHideMobileHeader]);
 
-  const [segParams, setSegParams] = useState<IRegionParams>({
-    silenceThreshold: 0.004,
-    timeThreshold: 0.02,
-    segLenThreshold: 0.5,
-  });
-
-  useEffect(() => {
-    const params = getOrgDefault(NamedRegions.Transcription) as IRegionParams;
-    if (params) setSegParams(params);
-  }, [getOrgDefault]);
+  const [segParams, setSegParams] = useTeamSegParams();
 
   const onSegmentParamChange = useCallback(
     (params: IRegionParams, teamDefault: boolean) => {
@@ -633,7 +633,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
         setOrgDefault(NamedRegions.Transcription, params);
       }
     },
-    [canSetOrgDefault, hasPermission, setOrgDefault]
+    [canSetOrgDefault, hasPermission, setOrgDefault, setSegParams]
   );
 
   const onSegmentChange = useCallback(
@@ -788,6 +788,15 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           data-cy="mobile-asr-control"
           sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
         >
+          <IconButton
+            id="asrButton-settings"
+            aria-label={tPlayer.recognizeSpeechSettings}
+            onClick={() => asr.setAsrLangVisible(true)}
+            disabled={isReadOnly}
+            size="small"
+          >
+            <SettingsIcon fontSize="small" />
+          </IconButton>
           <Button
             id="asrButton"
             variant="outlined"

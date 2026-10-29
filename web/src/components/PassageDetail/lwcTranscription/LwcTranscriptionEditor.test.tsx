@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ToolSlug } from '../../../crud/toolSlug';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
@@ -37,29 +37,36 @@ jest.mock('../../../crud', () => ({
   }),
   findRecord: jest.fn(() => ({ id: 'proj1', type: 'project' })),
   useStepTool: () => ({ settings: mockStepSettings }),
+  pullTableList: jest.fn(),
 }));
 
 jest.mock('../../../hoc/useOrbitData', () => ({
   useOrbitData: jest.fn(() => [{ id: 'org1', type: 'organization' }]),
 }));
 
-jest.mock('../../../crud/useGetAsrSettings', () => ({
-  useGetAsrSettings: () => ({
-    saveProjectAsrSettings: jest.fn(),
-    saveTeamAsrSettings: jest.fn(),
-  }),
-}));
-
-const mockUseBoldClauseTranscriptionAsrSettings = jest.fn(() => ({
+interface MockBoldClauseAsr {
   asrSettings: {
-    target: 'language',
-    language: { bcp47: 'ta', languageName: 'Tamil' },
-  },
-  asrIsoReady: true,
-  needsSisterLanguage: () => false,
-}));
+    target: string;
+    language: { bcp47: string; languageName: string };
+    asrIso?: string;
+  };
+  asrIsoReady: boolean;
+  needsSisterLanguage: () => boolean;
+  stepLanguageBcp47?: string;
+  asrLoadFailed?: boolean;
+}
+const mockUseBoldClauseTranscriptionAsrSettings = jest.fn(
+  (): MockBoldClauseAsr => ({
+    asrSettings: {
+      target: 'language',
+      language: { bcp47: 'ta', languageName: 'Tamil' },
+    },
+    asrIsoReady: true,
+    needsSisterLanguage: () => false,
+  })
+);
 
-jest.mock('../../../crud/getLwcTranslationAsrSettings', () => ({
+jest.mock('../../../crud/useBoldClauseTranscriptionAsrSettings', () => ({
   useBoldClauseTranscriptionAsrSettings: () =>
     mockUseBoldClauseTranscriptionAsrSettings(),
 }));
@@ -138,9 +145,14 @@ jest.mock('../../../selector', () => ({
 
 jest.mock('../../../hoc/BigDialog', () => ({
   __esModule: true,
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="asr-progress-dialog">{children}</div>
-  ),
+  default: ({
+    children,
+    isOpen,
+  }: {
+    children: React.ReactNode;
+    isOpen?: boolean;
+  }) =>
+    isOpen ? <div data-testid="asr-progress-dialog">{children}</div> : null,
 }));
 
 jest.mock('react-redux', () => ({
@@ -219,34 +231,6 @@ jest.mock('../../../control', () => ({
   ),
 }));
 
-jest.mock('../../../control/ConfButton', () => ({
-  __esModule: true,
-  default: ({
-    children,
-    id,
-    disabled,
-    showSettings = true,
-    onSettings,
-  }: {
-    children: React.ReactNode;
-    id?: string;
-    disabled?: boolean;
-    showSettings?: boolean;
-    onSettings?: () => void;
-  }) => (
-    <div>
-      <button type="button" id={id} disabled={disabled}>
-        {children}
-      </button>
-      {showSettings && (
-        <button type="button" id={`${id}-settings`} onClick={onSettings}>
-          settings
-        </button>
-      )}
-    </div>
-  ),
-}));
-
 jest.mock('../../../control/TranscriptionLogo', () => ({
   __esModule: true,
   default: () => <span>logo</span>,
@@ -257,9 +241,19 @@ jest.mock('../../../business/asr/AsrProgress', () => ({
   default: () => null,
 }));
 
+type MockSelectAsrProps = {
+  onClose: (cancel: boolean, asr?: unknown) => void;
+  stepAsr?: { primaryBcp47: string; asr: unknown };
+};
+let mockSelectAsrProps: MockSelectAsrProps | undefined;
+// Read through a function so TypeScript does not narrow after a reset.
+const selectAsrProps = () => mockSelectAsrProps;
 jest.mock('../../../business/asr/SelectAsrLanguage', () => ({
   __esModule: true,
-  default: () => <div data-testid="select-asr-language" />,
+  default: (props: MockSelectAsrProps) => {
+    mockSelectAsrProps = props;
+    return <div data-testid="select-asr-language" />;
+  },
 }));
 
 jest.mock('./useTranscriptionAutosave', () => ({
@@ -320,14 +314,23 @@ describe('BoldClauseTranscriptionEditor', () => {
     ).toBeDisabled();
   });
 
+  it('disables the settings gear with Auto Translation, so Run cannot bypass it', () => {
+    render(
+      <BoldClauseTranscriptionEditor {...baseProps} text="existing text" />
+    );
+    expect(
+      screen.getByRole('button', { name: 'Speech Settings' })
+    ).toBeDisabled();
+  });
+
   it('enables Auto Translation when text is empty', () => {
     render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
     expect(
       screen.getByRole('button', { name: /Auto Translation/i })
     ).not.toBeDisabled();
     expect(
-      screen.queryByRole('button', { name: 'settings' })
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Speech Settings' })
+    ).toBeInTheDocument();
   });
 
   it('shows language settings gear when ASR language is not ready', () => {
@@ -345,7 +348,7 @@ describe('BoldClauseTranscriptionEditor', () => {
       screen.getByRole('button', { name: /Auto Translation/i })
     ).not.toBeDisabled();
     expect(
-      screen.getByRole('button', { name: 'settings' })
+      screen.getByRole('button', { name: 'Speech Settings' })
     ).toBeInTheDocument();
   });
 
@@ -394,5 +397,113 @@ describe('BoldClauseTranscriptionEditor', () => {
     const tip = screen.getByTestId('asr-tooltip');
     expect(tip).toHaveTextContent(/Kannada/);
     expect(tip).toHaveTextContent(/English/);
+  });
+
+  it('opens the ASR dialog on the step language', () => {
+    const stepAsr = {
+      target: 'language',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+    };
+    mockUseBoldClauseTranscriptionAsrSettings.mockReturnValue({
+      asrSettings: stepAsr,
+      asrIsoReady: false,
+      needsSisterLanguage: () => true,
+      stepLanguageBcp47: 'kn',
+    });
+    mockSelectAsrProps = undefined;
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Speech Settings' }));
+
+    expect(selectAsrProps()?.stepAsr).toEqual({
+      primaryBcp47: 'kn',
+      asr: stepAsr,
+    });
+  });
+
+  it('remembers the step-language choice so the dialog is not needed again', () => {
+    const chosen = {
+      target: 'language',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+    };
+    mockUseBoldClauseTranscriptionAsrSettings.mockReturnValue({
+      asrSettings: {
+        target: 'language',
+        language: { bcp47: 'kn', languageName: 'Kannada' },
+      },
+      asrIsoReady: false,
+      needsSisterLanguage: () => true,
+      stepLanguageBcp47: 'kn',
+    });
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Speech Settings' }));
+    act(() => selectAsrProps()?.onClose(false, chosen));
+
+    expect(
+      screen.getByRole('button', { name: 'Speech Settings' })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Auto Translation/i }));
+    expect(screen.getByTestId('asr-progress-dialog')).toBeInTheDocument();
+    expect(screen.queryByTestId('select-asr-language')).not.toBeInTheDocument();
+  });
+
+  it('runs transcription when the settings are ready', () => {
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    fireEvent.click(screen.getByRole('button', { name: /Auto Translation/i }));
+
+    expect(screen.getByTestId('asr-progress-dialog')).toBeInTheDocument();
+    expect(screen.queryByTestId('select-asr-language')).not.toBeInTheDocument();
+  });
+
+  it('opens settings from the gear even when the settings are ready', () => {
+    mockSelectAsrProps = undefined;
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Speech Settings' }));
+
+    expect(screen.getByTestId('select-asr-language')).toBeInTheDocument();
+  });
+
+  it('opens settings from Auto Translation when they are not set', () => {
+    mockUseBoldClauseTranscriptionAsrSettings.mockReturnValue({
+      asrSettings: {
+        target: 'language',
+        language: { bcp47: 'und', languageName: '' },
+      },
+      asrIsoReady: false,
+      needsSisterLanguage: () => true,
+    });
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    fireEvent.click(screen.getByRole('button', { name: /Auto Translation/i }));
+
+    expect(screen.getByTestId('select-asr-language')).toBeInTheDocument();
+  });
+
+  it('resumes a transcription already running on the recording', () => {
+    render(
+      <BoldClauseTranscriptionEditor
+        {...baseProps}
+        text=""
+        mediafile={
+          {
+            id: 'mf1',
+            type: 'mediafile',
+            attributes: {
+              transcription: '',
+              segments: JSON.stringify([
+                {
+                  name: 'TRTask',
+                  regionInfo: '{"regions":[{"label":"task-1"}]}',
+                },
+              ]),
+            },
+          } as never
+        }
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Auto Translation/i }));
+
+    expect(screen.getByTestId('asr-progress-dialog')).toBeInTheDocument();
+    expect(screen.queryByTestId('select-asr-language')).not.toBeInTheDocument();
   });
 });

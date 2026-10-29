@@ -1,4 +1,11 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import {
   Badge,
   Checkbox,
@@ -17,15 +24,29 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { getLangTag } from 'mui-language-picker';
+import { TokenContext } from '../../context/TokenProvider';
+import { useGlobal } from '../../context/useGlobal';
+import { logError, Severity } from '../../utils';
+import { toError } from '../../utils/toError';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
 import { AsrAlphabet } from './AsrAlphabet';
 import { asrScriptDetail } from './asrScriptDetail';
-import { needsSisterLanguage } from './asrLanguages';
+import {
+  asrMethodDefaultValue,
+  explicitAsrMethod,
+  listedAsrMethod,
+} from './asrMethod';
+import {
+  getMethodsForAsr,
+  isoFromBcp47,
+  specificAsrMethods,
+} from './asrLanguages';
 import { isLangSet } from '../../utils/langTag';
 import scriptNameData from '../../assets/scriptName';
 import { AsrTarget } from './AsrTarget';
+import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
 import { IAsrState } from './asrState';
 import { IAsrLanguageSuggestion } from './useRecommendAsrLanguage';
 
@@ -58,11 +79,56 @@ export const AsrSettings = ({
   recommendKey,
 }: IAsrSettings) => {
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
+  const [errorReporter] = useGlobal('errorReporter');
   const [scriptName] = useState(
     () => new Map(scriptNameData as [string, string][])
   );
+  const sisterBcp47 = asr.language?.bcp47;
+  const { needsSister: sisterAnswer, failed: sisterCheckFailed } =
+    useNeedsSisterLanguage(vernacularBcp47);
+  const needsSister = sisterAnswer === true;
+  // Methods are listed for the sister when one is needed (or when there is no
+  // primary language), else for the primary language.
+  const methodBcp47 =
+    needsSister || !isLangSet(vernacularBcp47)
+      ? (sisterBcp47 ?? 'und')
+      : vernacularBcp47;
 
-  const needsSister = needsSisterLanguage(vernacularBcp47);
+  const [methodList, setMethodList] = useState<{
+    forBcp47: string;
+    methods?: string[];
+    failed?: boolean;
+  }>();
+  useEffect(() => {
+    // Wait for the sister check, which never answers offline (no token): an
+    // empty list read as 'ready' would show the saved method as Default.
+    if (sisterAnswer === undefined || !token) return;
+    let cancelled = false;
+    getMethodsForAsr(isoFromBcp47(methodBcp47), token)
+      .then((methods) => {
+        if (!cancelled) setMethodList({ forBcp47: methodBcp47, methods });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        logError(Severity.error, errorReporter, toError(err));
+        setMethodList({ forBcp47: methodBcp47, failed: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [methodBcp47, sisterAnswer, token, errorReporter]);
+
+  // A list loaded for another language (before a change) doesn't apply.
+  const currentList =
+    sisterAnswer !== undefined && methodList?.forBcp47 === methodBcp47
+      ? methodList
+      : undefined;
+  const asrMethods = currentList?.methods ?? [];
+  let loadStatus: 'loading' | 'ready' | 'failed' = 'loading';
+  if (sisterCheckFailed || currentList?.failed) loadStatus = 'failed';
+  else if (currentList?.methods) loadStatus = 'ready';
+
   const phonetic = asr.target === AsrTarget.phonetic;
 
   // When the vernacular is itself the ASR language, transliterate is governed by
@@ -73,6 +139,20 @@ export const AsrSettings = ({
       .showRoman;
   }, [vernacularBcp47, scriptName]);
 
+  // No primary language known (e.g. an LWC step without one): the user picks
+  // the ASR language itself in the same picker the sister language uses.
+  const choosePrimary = !isLangSet(vernacularBcp47);
+  const showLanguagePicker = needsSister || choosePrimary;
+
+  const chosenMethod = explicitAsrMethod(asr.asrMethod);
+  // What the method choice really is: a method the service no longer lists,
+  // or now lists first, shows as Default. It is only dropped from the saved
+  // settings when the user changes something here, never by rendering.
+  const effectiveMethod =
+    loadStatus === 'ready'
+      ? listedAsrMethod(chosenMethod, asrMethods)
+      : chosenMethod;
+
   const handleTargetChange = (_e: unknown, value: string) => {
     const nextPhonetic = value === AsrTarget.phonetic;
     setAsr((prev) =>
@@ -82,14 +162,33 @@ export const AsrSettings = ({
             target: value as AsrTarget,
             // Transliterate only applies to script transcription.
             selectRoman: nextPhonetic ? false : prev.selectRoman,
+            asrMethod: effectiveMethod,
           }
         : prev
     );
   };
 
   const handleRomanChange = (_e: unknown, checked: boolean) => {
-    setAsr((prev) => (prev ? { ...prev, selectRoman: checked } : prev));
+    setAsr((prev) =>
+      prev
+        ? { ...prev, selectRoman: checked, asrMethod: effectiveMethod }
+        : prev
+    );
   };
+
+  const handleMethodChange = (_e: unknown, value: string) => {
+    setAsr((prev) =>
+      prev
+        ? {
+            ...prev,
+            asrMethod: value === asrMethodDefaultValue ? undefined : value,
+          }
+        : prev
+    );
+  };
+
+  const listedOptions = specificAsrMethods(asrMethods);
+  const selectedMethod = effectiveMethod ?? asrMethodDefaultValue;
 
   return (
     <Stack spacing={1} sx={{ mt: 1 }}>
@@ -115,7 +214,7 @@ export const AsrSettings = ({
           />
         </RadioGroup>
       </FormControl>
-      {!needsSister && vernacularShowRoman && (
+      {!showLanguagePicker && vernacularShowRoman && (
         <FormControlLabel
           sx={{ ml: 1 }}
           control={
@@ -128,10 +227,10 @@ export const AsrSettings = ({
           label={t.transliterate}
         />
       )}
-      {needsSister && (
+      {showLanguagePicker && (
         <>
           <Typography variant="body2" sx={{ ml: 1 }}>
-            {t.sisterLang}
+            {choosePrimary ? t.asrChooseLanguage : t.sisterLang}
           </Typography>
           {loading ? (
             <Stack
@@ -170,9 +269,9 @@ export const AsrSettings = ({
                     <Typography variant="subtitle2">{t.recommended}</Typography>
                   </Stack>
                   <List dense disablePadding>
-                    {suggestions.map((s, i) => (
+                    {suggestions.map((s) => (
                       <ListItem
-                        key={`sister-suggestion-${i}`}
+                        key={s.iso}
                         disableGutters
                         sx={{ py: 0.25, alignItems: 'flex-start' }}
                       >
@@ -192,6 +291,34 @@ export const AsrSettings = ({
             </Stack>
           )}
         </>
+      )}
+      {loadStatus === 'failed' && (
+        <Typography variant="body2" color="error" sx={{ ml: 1 }}>
+          {t.asrRequestFailed}
+        </Typography>
+      )}
+      {listedOptions && !phonetic && (
+        <FormControl component="fieldset" variant="standard" sx={{ ml: 1 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {t.asrMethodHint}
+          </Typography>
+          <FormLabel component="legend">{t.asrMethod}</FormLabel>
+          <RadioGroup value={selectedMethod} onChange={handleMethodChange}>
+            <FormControlLabel
+              value={asrMethodDefaultValue}
+              control={<Radio />}
+              label={t.asrMethodDefault.replace('{0}', listedOptions.preferred)}
+            />
+            {listedOptions.others.map((method) => (
+              <FormControlLabel
+                key={method}
+                value={method}
+                control={<Radio />}
+                label={method}
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
       )}
     </Stack>
   );

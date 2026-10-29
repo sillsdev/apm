@@ -36,6 +36,8 @@ export const useOrgDefaults = () => {
   const [offlineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { getParam, setParam } = useJsonParams();
+  // Recreated every render on purpose: org defaults are mutated in place, and
+  // callers memoize on getOrgDefault to pick up changes (e.g. isPermission).
   const getDefault = (label: string, org: Organization | OrganizationD) => {
     return getParam(label, org.attributes?.defaultParams);
   };
@@ -60,7 +62,7 @@ export const useOrgDefaults = () => {
     ) as OrganizationD;
     if (!org) return; // no defaults on Personal Team
     setDefault(label, value, org);
-    memory.update((t) =>
+    void memory.update((t) =>
       UpdateAttribute(
         t,
         org,

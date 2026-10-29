@@ -11,6 +11,7 @@ import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
 import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
 import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
+import { useSetTeamLanguageForNewProject } from '../../crud/useSetTeamLanguage';
 import { useHome, useJsonParams } from '../../utils';
 import StickyRedirect from '../StickyRedirect';
 import { ProjectDialog } from './ProjectDialog';
@@ -32,14 +33,21 @@ export const AddCard = (props: IProps) => {
     projectCreate,
     teamProjects,
     personalProjects,
+    personalTeam,
     loadProject,
     generalBook,
   } = ctx.state;
+  // Personal projects belong to the user's personal team. Without a team id,
+  // org defaults and the dialog's member lists fall back to the global
+  // organization: the team of the last project opened, some other team.
+  // (generalBook keeps team?.id: with none it reads every personal project.)
+  const teamId = team?.id ?? personalTeam;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const cardHeight = useCardHeight();
 
   const { leaveHome } = useHome();
-  const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  const { getOrgDefault } = useOrgDefaults();
+  const setTeamLanguageForNewProject = useSetTeamLanguageForNewProject();
   const [open, setOpen] = useState(false);
   const [inProgress] = useState(false);
 
@@ -66,19 +74,25 @@ export const AddCard = (props: IProps) => {
   const { setParam } = useJsonParams();
 
   useEffect(() => {
+    // The personal team id loads after mount; read its language once it does.
+    if (!teamId) return;
     const language = getOrgDefault(
       orgDefaultLangProps,
-      team?.id
+      teamId
     ) as typeof initLang;
     setLanguage(language ?? initLang, true);
+    // getOrgDefault and setLanguage are recreated every render; only a new
+    // team id should re-read the team language.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [teamId]);
 
   const setLanguage = (language: ILanguage, init?: boolean) => {
     languageRef.current = language;
     setLanguagex(language);
     setProjDef({ ...projDef, ...language });
-    if (!init) setOrgDefault(orgDefaultLangProps, language, team?.id);
+    if (!init && teamId) {
+      setTeamLanguageForNewProject(language, teamId);
+    }
   };
 
   const handleSolutionShow = (e: React.MouseEvent) => {
@@ -206,7 +220,7 @@ export const AddCard = (props: IProps) => {
         onCommit={handleCommit}
         nameInUse={nameInUse}
         values={projDef}
-        team={team?.id}
+        team={teamId || undefined}
       />
       <Progress
         title={t.uploadProgress}

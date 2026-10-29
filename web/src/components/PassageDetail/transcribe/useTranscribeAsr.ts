@@ -1,15 +1,22 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import {
   OrganizationD,
   IWsAudioPlayerStrings,
   ISharedStrings,
+  ITranscriberStrings,
 } from '../../../model';
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
+import { useAsrDefaultsVersion } from '../../../crud/useAsrDefaultsVersion';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
+import { logError, Severity } from '../../../utils/logErrorService';
+import { toError } from '../../../utils/toError';
+import { useGlobal } from '../../../context/useGlobal';
+import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
-import { IAsrState } from '../../../business/asr/asrState';
+import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
@@ -18,6 +25,58 @@ export interface UseTranscribeAsrProps {
   showMessage: (msg: string) => void;
   onTextAdd: (text: string, isAsr?: boolean) => void;
   getCurrentText: () => string;
+  /** The recording already has a transcription task to resume. */
+  hasActiveTask?: boolean;
+}
+
+export type AsrSettingsStatus = 'loading' | 'ready' | 'failed';
+
+/**
+ * Loaded team/step ASR settings, and whether they are still loading, loaded
+ * or failed to load. After a failure the last loaded settings (if any) stay.
+ * One owner for desktop and mobile transcribe.
+ */
+export function useAsrSettings(
+  team: OrganizationD | undefined,
+  showMessage: (msg: string) => void
+) {
+  const { getAsrSettings } = useGetAsrSettings(team);
+  const asrDefaults = useAsrDefaultsVersion(team?.id);
+  const [errorReporter] = useGlobal('errorReporter');
+  const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
+  const [result, setResult] = useState<{
+    status: AsrSettingsStatus;
+    asrSettings?: IAsrState;
+  }>({ status: 'loading' });
+
+  useEffect(() => {
+    let cancelled = false;
+    getAsrSettings()
+      .then((next) => {
+        if (cancelled) return;
+        setResult((prev) => ({
+          status: 'ready',
+          asrSettings: asrStatesEqual(prev.asrSettings, next)
+            ? prev.asrSettings
+            : next,
+        }));
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        logError(Severity.error, errorReporter, toError(err));
+        showMessage(t.asrRequestFailed);
+        setResult((prev) => ({ ...prev, status: 'failed' }));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // showMessage is a new function every render. Listing it restarts this
+    // load on every keystroke. asrDefaults is not read; it reloads after a
+    // team or project default is saved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getAsrSettings, asrDefaults, errorReporter, t.asrRequestFailed]);
+
+  return result;
 }
 
 export function useTranscribeAsr({
@@ -27,11 +86,11 @@ export function useTranscribeAsr({
   showMessage,
   onTextAdd,
   getCurrentText,
+  hasActiveTask = false,
 }: UseTranscribeAsrProps) {
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
+  const { asrSettings, status: asrStatus } = useAsrSettings(team, showMessage);
 
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
@@ -39,8 +98,6 @@ export function useTranscribeAsr({
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
   );
-
-  const asrSettings = useMemo(() => getAsrSettings(), [getAsrSettings]);
 
   const asrTip = useMemo(() => {
     return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
@@ -74,7 +131,11 @@ export function useTranscribeAsr({
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (isLangSet(asrSettings?.asrIso)) {
+      if (hasActiveTask) {
+        startAsr(asrSettings);
+        return;
+      }
+      if (asrSettings && isLangSet(asrSettings.asrIso)) {
         startAsr(asrSettings);
         return;
       }
@@ -84,28 +145,29 @@ export function useTranscribeAsr({
     checkOnline,
     showMessage,
     sharedStr.mustBeOnline,
+    hasActiveTask,
     asrSettings,
     startAsr,
     openAsrLanguageSettings,
   ]);
 
   const handleAsrLanguageClose = useCallback(
-    (cancel: boolean, asrState?: IAsrState, setAsTeamDefault?: boolean) => {
+    (cancel: boolean, asrState?: IAsrState) => {
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
-      if (isLangSet(asr?.asrIso)) {
-        if (setAsTeamDefault) saveTeamAsrSettings(asr);
-        else saveProjectAsrSettings(asr);
-        startAsr(asr);
-      }
+      if (asr && isLangSet(asr.asrIso)) startAsr(asr);
     },
-    [asrSettings, saveTeamAsrSettings, saveProjectAsrSettings, startAsr]
+    [asrSettings, startAsr]
   );
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      const cleanTrans = trans.replace(/[0-9]+:[0-9]+.[0-9]+: /g, '').trim();
+      // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
+      // longer digit run from matching at a suffix and leaving a stray digit.
+      const cleanTrans = trans
+        .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
+        .trim();
       const curTrans = getCurrentText();
       if (curTrans.includes(cleanTrans)) return;
       const m = /\\v (\d+)\s?/.exec(cleanTrans);
@@ -118,6 +180,7 @@ export function useTranscribeAsr({
 
   return {
     asrSettings,
+    asrStatus,
     asrTip,
     asrProgressVisible,
     setAsrProgressVisible,

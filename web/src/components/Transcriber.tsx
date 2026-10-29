@@ -24,8 +24,10 @@ import {
   ISharedStrings,
   ITranscriberStrings,
   IVProjectStrings,
+  IWsAudioPlayerStrings,
   SectionD,
   MediaFileD,
+  OrganizationD,
 } from '../model';
 import {
   Badge,
@@ -39,7 +41,7 @@ import {
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
-import { Button, GrowingDiv, LightTooltip, rowSx } from '../control';
+import { Button, GrowingDiv, LightTooltip, rowSx, LastEdit } from '../control';
 import TranscribeReject from './TranscribeReject';
 import { useSnackBar } from '../hoc/SnackBar';
 import { formatTime } from '../control/formatTime';
@@ -68,7 +70,7 @@ import {
   resolvedProjectType,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
-import { useGetAsrSettings } from '../crud/useGetAsrSettings';
+import { useTranscribeAsr } from './PassageDetail/transcribe/useTranscribeAsr';
 import { parseStepLanguageField } from '../crud/transcribeStepAsrSettings';
 import {
   insertAtCursor,
@@ -79,6 +81,7 @@ import {
   refMatch,
   integrationSlug,
   getSegments,
+  hasTranscriptionTask,
   NamedRegions,
   updateSegments,
   useWaitForRemoteQueue,
@@ -89,7 +92,6 @@ import { applyVerseSegment, openingChapter } from '../utils/verseSegmentText';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 import { AllDone } from './AllDone';
-import { LastEdit } from '../control';
 import { UpdateRecord, UpdateRelatedRecord } from '../model/baseModel';
 import * as action from '../store';
 import { translateParatextError } from '../utils/translateParatextError';
@@ -106,12 +108,7 @@ import {
   transcriberSelector,
   vProjectSelector,
 } from '../selector';
-import {
-  IWsAudioPlayerStrings,
-  OrganizationD,
-  OrgWorkflowStepD,
-} from '../model';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { IRegionParams } from '../crud/useWavesurferRegions';
 import PassageDetailPlayer, {
@@ -125,13 +122,10 @@ import { BigDialogBp } from '../hoc/BigDialogBp';
 import AsrButton from '../control/ConfButton';
 import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
-import { AsrTarget } from '../business/asr/AsrTarget';
-import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
+import { asrStatesEqual } from '../business/asr/asrState';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
-import { useCheckOnline } from '../utils/useCheckOnline';
 import { useMobile } from '../utils/useMobile';
-import { useLocLangName } from '../utils/useLocLangName';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -141,7 +135,6 @@ import {
   RecordOperation,
   RecordKeyMap,
 } from '@orbit/records';
-import { useDispatch } from 'react-redux';
 import { PassageTypeEnum } from '../model/passageType';
 import { addPt } from '../utils/addPt';
 import { Paratext } from '../assets/brands';
@@ -178,7 +171,7 @@ interface ITrans {
   segments?: string;
 }
 
-export function Transcriber(props: IProps) {
+export function Transcriber(props: Readonly<IProps>) {
   const {
     stepSettings,
     hasChecking,
@@ -344,24 +337,13 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
-    useGetAsrSettings(team);
-  const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
     shallowEqual
   );
-  const [getName] = useLocLangName();
-  const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { isMobile } = useMobile();
   const [features, setFeatures] = useState<IFeatures>();
-  const [asrProgressVisible, setAsrProgressVisible] = useState(false);
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
-  const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
-    undefined
-  );
   const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -501,8 +483,7 @@ export function Transcriber(props: IProps) {
     const getParatextIntegration = () => {
       const intfind = integrations.findIndex(
         (i) =>
-          i.attributes &&
-          i.attributes.name ===
+          i.attributes?.name ===
             integrationSlug(artifactTypeSlug, offlineOnly) &&
           Boolean(i.keys?.remoteId) !== offlineOnly
       );
@@ -536,8 +517,7 @@ export function Transcriber(props: IProps) {
     const getParatextIntegration = () => {
       const intfind = integrations.findIndex(
         (i) =>
-          i.attributes &&
-          i.attributes.name ===
+          i.attributes?.name ===
             integrationSlug(artifactTypeSlug, offlineOnly) &&
           Boolean(i.keys?.remoteId) !== offlineOnly
       );
@@ -900,7 +880,6 @@ export function Transcriber(props: IProps) {
           comment
         )
       );
-      //todo ?? if (IsVernacular(media))
       setLastSaved(currentDateTime());
       if (onReject) onReject(media.attributes.transcriptionstate);
     },
@@ -1134,7 +1113,7 @@ export function Transcriber(props: IProps) {
   };
 
   const doReopen = async () => {
-    if (Object.prototype.hasOwnProperty.call(previous, state)) {
+    if (Object.hasOwn(previous, state)) {
       await memory.update(
         UpdateMediaStateOps(
           (mediafile as MediaFileD).id,
@@ -1151,9 +1130,9 @@ export function Transcriber(props: IProps) {
       if (setComplete) setComplete(false);
     }
   };
-  const handleReopen = async () => {
+  const handleReopen = () => {
     waitForRemoteQueue('busy before reopen').then(() =>
-      doReopen().then(() => onReopen && onReopen())
+      doReopen().then(() => onReopen?.())
     );
   };
 
@@ -1171,7 +1150,7 @@ export function Transcriber(props: IProps) {
     if (!transcription) return;
     const newContentVerses: string[] = [];
     verseLabels.forEach((label) => {
-      const pat = new RegExp(`\\\\v\\s+${label}\\s+[^\\\\]`);
+      const pat = new RegExp(String.raw`\\v\s+${label}\s+[^\\]`);
       if (pat.test(transcription as string)) {
         newContentVerses.push(label);
       }
@@ -1249,54 +1228,46 @@ export function Transcriber(props: IProps) {
     }
   };
 
-  const handleAutoTranscribe = (trans: string) => {
-    const cleanTrans = trans.replace(/[0-9]+:[0-9]+.[0-9]+: /g, '').trim();
-    const curTrans: string = transcriptionRef.current?.firstChild?.value ?? '';
-    if (curTrans.includes(cleanTrans)) return;
-    const m = /\\v (\d+)\s?/.exec(cleanTrans);
-    const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
-    const space = /\s$/.test(curTrans) ? '' : ' ';
-    addText(space + cleanTrans.substring(index), true);
-    toolChanged(toolId, true);
-  };
-
   const hasAiTasks = useMemo(() => {
     const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
-    return (
-      getSegments(
-        NamedRegions.TRTask,
-        mediaRec?.attributes?.segments || '{}'
-      ) !== '{}'
-    );
+    return hasTranscriptionTask(mediaRec?.attributes?.segments);
   }, [playerMediafile, mediarecs]);
+
+  // The same ASR flow as mobile transcribe; ASR text goes at the end and
+  // marks the tool changed.
+  const {
+    asrSettings,
+    asrTip,
+    asrProgressVisible,
+    setAsrProgressVisible,
+    asrLangVisible,
+    setAsrLangVisible,
+    asrOverride,
+    phonetic,
+    handleTranscribe,
+    handleAsrLanguageClose,
+    handleAutoTranscribe,
+  } = useTranscribeAsr({
+    team,
+    sharedStr,
+    tPlayer,
+    showMessage,
+    onTextAdd: (text) => {
+      addText(text, true);
+      toolChanged(toolId, true);
+    },
+    getCurrentText: () => transcriptionRef.current?.firstChild?.value ?? '',
+    hasActiveTask: hasAiTasks,
+  });
 
   const hasTranscription = useMemo(
     () => textValue !== '' && verseLabels.length <= contentVerses.length,
     [textValue, verseLabels.length, contentVerses.length]
   );
-  const asrSettings = useMemo(
-    () => getAsrSettings(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orgSteps, getAsrSettings]
-  );
-
-  const asrTip = useMemo(() => {
-    return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
-      '{0}',
-      asrSettings?.language?.languageName?.trim()
-        ? `\u2039 ${
-            getName(asrSettings?.language.bcp47) ||
-            asrSettings?.language?.languageName
-          } \u203A`
-        : ''
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asrSettings]);
-
   const onPullTasks = (remoteId: string) => {
     pullTableList(
       'mediafile',
-      Array(remoteId),
+      new Array(remoteId),
       memory,
       remote,
       backup,
@@ -1304,49 +1275,6 @@ export function Transcriber(props: IProps) {
     ).then(() => {
       if (forceRefresh) forceRefresh();
     });
-  };
-
-  const startAsr = (asrOverrideState?: IAsrState) => {
-    const asr = asrOverrideState ?? asrSettings;
-    setAsrOverride(asrOverrideState);
-    setPhonetic(asr?.target === AsrTarget.phonetic);
-    setAsrProgressVisible(true);
-  };
-
-  const openAsrLanguageSettings = () => {
-    setAsrLangVisible(true);
-  };
-
-  // Confirm step-resolved ASR settings; user may override for this run only.
-  // When the resolved settings are already usable (a valid ASR language is
-  // known from saved org/project settings), skip the dialog and start directly.
-  const handleTranscribe = () => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(sharedStr.mustBeOnline);
-        return;
-      }
-      if (isLangSet(asrSettings?.asrIso)) {
-        startAsr(asrSettings);
-        return;
-      }
-      openAsrLanguageSettings();
-    });
-  };
-
-  const handleAsrLanguageClose = (
-    cancel: boolean,
-    asrState?: IAsrState,
-    setAsTeamDefault?: boolean
-  ) => {
-    setAsrLangVisible(false);
-    if (cancel) return;
-    const asr = asrState ?? asrSettings;
-    if (isLangSet(asr?.asrIso)) {
-      if (setAsTeamDefault) saveTeamAsrSettings(asr);
-      else saveProjectAsrSettings(asr);
-      startAsr(asr);
-    }
   };
 
   const handleAsrProgressVisible = (v: boolean) => {
@@ -1360,11 +1288,8 @@ export function Transcriber(props: IProps) {
 
   useEffect(() => {
     setArtifactTypeSlug(
-      slug
-        ? slug
-        : artifactId
-          ? slugFromId(artifactId)
-          : ArtifactTypeSlug.Vernacular
+      slug ||
+        (artifactId ? slugFromId(artifactId) : ArtifactTypeSlug.Vernacular)
     );
   }, [slug, artifactId, slugFromId]);
 
@@ -1479,8 +1404,8 @@ export function Transcriber(props: IProps) {
                             <AsrButton
                               id="asrButton"
                               onClick={handleTranscribe}
-                              onSettings={openAsrLanguageSettings}
-                              showSettings={false}
+                              onSettings={() => setAsrLangVisible(true)}
+                              settingsLabel={tPlayer.recognizeSpeechSettings}
                               disabled={role !== 'transcriber'}
                             >
                               {!hasTranscription &&
@@ -1608,7 +1533,7 @@ export function Transcriber(props: IProps) {
                     id="transcriber.reopen"
                     disabled={
                       !transSelected ||
-                      !Object.prototype.hasOwnProperty.call(previous, state) ||
+                      !Object.hasOwn(previous, state) ||
                       playing ||
                       !hasPermission
                     }

@@ -10108,6 +10108,62 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.asrChooseLanguage">
+            <source>Choose the language of this recording for automatic transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrMethod">
+            <source>Method</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrMethodDefault">
+            <source>Default ({0})</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrMethodHint">
+            <source>Choose a specific method only if the default method is not working well.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrRequestFailed">
+            <source>Speech recognition settings could not be loaded.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrSaveFailed">
+            <source>Speech recognition settings could not be saved.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useTranscribeStepAsr.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrSaveTeamDefault">
+            <source>Save as team default</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrTeamDefaultSaved">
+            <source>Saved as the team default.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.comment">
             <source>Comment</source>
             <target/>
@@ -10295,13 +10351,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="transcriber.invalidSisterLang">
-            <source>This language is not supported for speech recognition. Choose another sister language.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.sisterLang">

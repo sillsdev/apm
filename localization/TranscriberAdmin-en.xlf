@@ -8662,6 +8662,54 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.asrChooseLanguage">
+         <segment>
+            <source>Choose the language of this recording for automatic transcription.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethod">
+         <segment>
+            <source>Method</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethodDefault">
+         <segment>
+            <source>Default ({0})</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethodHint">
+         <segment>
+            <source>Choose a specific method only if the default method is not working well.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrRequestFailed">
+         <segment>
+            <source>Speech recognition settings could not be loaded.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSaveFailed">
+         <segment>
+            <source>Speech recognition settings could not be saved.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSaveTeamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrTeamDefaultSaved">
+         <segment>
+            <source>Saved as the team default.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.comment">
          <segment>
             <source>Comment</source>
@@ -8821,12 +8869,6 @@
       <unit id="transcriber.scriptTranscription">
          <segment>
             <source>Script</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="transcriber.invalidSisterLang">
-         <segment>
-            <source>This language is not supported for speech recognition. Choose another sister language.</source>
             <target/>
          </segment>
       </unit>

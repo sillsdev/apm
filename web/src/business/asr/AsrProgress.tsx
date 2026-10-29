@@ -53,6 +53,8 @@ import { Stack, Typography } from '@mui/material';
 import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
+import { asrMethodDefaultValue, asrRequestMethod } from './asrMethod';
+import { cachedAsrMethods } from './asrLanguages';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
 import {
   AiEstimateKey,
@@ -252,7 +254,11 @@ export default function AsrProgress({
     if (!current || checkingRef.current) return;
     checkingRef.current = true;
     try {
-      const response: any = await axiosGet(`aero/transcription/${current}`);
+      const response: any = await axiosGet(
+        `aero/transcription/${current}`,
+        undefined,
+        token
+      );
       const pollError = transcriptionPollError(response);
       if (pollError) {
         await showTaskFailure(pollError);
@@ -286,7 +292,7 @@ export default function AsrProgress({
         }
         return;
       }
-      console.log(`${current} not done`, response);
+      //console.log(`${current} not done`, response);
       setWorking(true);
     } catch (errResult: unknown) {
       await showTaskFailure(axiosErrorMessage(errResult));
@@ -310,18 +316,32 @@ export default function AsrProgress({
     onClose && onClose();
   };
 
+  /**
+   * Timing history for this run: phonetic, the chosen method, or the service
+   * default. Not looked up, so the request isn't delayed for an estimate.
+   */
+  const timingKey = (method: string | undefined): AiEstimateKey => {
+    if (phonetic) return 'transcription:phonetic';
+    return `transcription:${method ?? asrMethodDefaultValue}`;
+  };
+
   const postTranscribe = async () => {
     const remId =
       remoteId('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ?? mediaId;
-    const asr = asrState ?? (getAsrSettings() as IAsrState | undefined);
+    const asr = asrState ?? (await getAsrSettings());
     const iso = asr?.asrIso ?? 'eng';
     const romanize = asr?.selectRoman ?? false;
-    const method = asr?.method ?? 'mms';
+    const method = asrRequestMethod(
+      asr?.asrMethod,
+      phonetic,
+      cachedAsrMethods(iso)
+    );
     const phoneticParam = phonetic ? '?phonetic=true' : '';
-    setRun({ startedAt: Date.now(), key: `transcription:${method}` });
+    const methodPath = method ? `/${method}` : '';
+    setRun({ startedAt: Date.now(), key: timingKey(method) });
     try {
       const response = (await axiosPost(
-        `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}${phoneticParam}`,
+        `mediafiles/${remId}/transcription/${iso}/${romanize}${methodPath}${phoneticParam}`,
         undefined,
         token
       )) as { data: { data: MediaFileD } };

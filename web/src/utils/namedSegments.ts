@@ -61,6 +61,11 @@ export function getSegments(name: string, segments: string): string {
   return '{}';
 }
 
+/** True when a recording's segments hold a transcription task to resume. */
+export function hasTranscriptionTask(segments: string | undefined): boolean {
+  return getSegments(NamedRegions.TRTask, segments || '{}') !== '{}';
+}
+
 export function getSortedRegions(segments: string): IRegion[] {
   return parseRegions(segments).regions.sort((i, j) => i.start - j.start);
 }
