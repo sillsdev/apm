@@ -84,8 +84,6 @@ const initLang = {
 
 interface IProps {
   org: string;
-  orgRemoteId?: string;
-  stepSeq: number;
   isOpen: boolean;
   toolSettings: string;
   onChange: (toolSettings: string) => void;
@@ -93,8 +91,6 @@ interface IProps {
 
 export const TranscribeStepSettings = ({
   org,
-  orgRemoteId,
-  stepSeq,
   isOpen,
   toolSettings,
   onChange,
@@ -220,11 +216,11 @@ export const TranscribeStepSettings = ({
 
   const emitSettingsChange = useCallback(
     (settingsJson: string) => {
-      reportReplacedStepSettings(toolSettings, orgRemoteId, stepSeq);
+      reportReplacedStepSettings(toolSettings);
       onChange(settingsJson);
       syncOrgAsrIfVernacular(settingsJson);
     },
-    [toolSettings, orgRemoteId, stepSeq, onChange, syncOrgAsrIfVernacular]
+    [toolSettings, onChange, syncOrgAsrIfVernacular]
   );
 
   const handleSelect = (artifactTypeId: string | null) => {
@@ -454,7 +450,7 @@ export const TranscribeStepSettings = ({
     found: IAsrLanguageSuggestion[]
   ) => {
     const settings = parseTranscribeStepSettings(toolSettingsRef.current);
-    reportReplacedStepSettings(toolSettingsRef.current, orgRemoteId, stepSeq);
+    reportReplacedStepSettings(toolSettingsRef.current);
     const lean = found.map((s) => ({
       languageName: s.languageName,
       iso: s.iso,
