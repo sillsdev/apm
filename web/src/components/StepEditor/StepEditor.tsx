@@ -29,6 +29,7 @@ import {
   VernacularTag,
   getToolSettings,
   remoteIdGuid,
+  remoteId,
 } from '../../crud';
 import {
   parseStepLanguageField,
@@ -598,6 +599,12 @@ export const StepEditor = ({ process, org }: IProps) => {
         >
           <TranscribeStepSettings
             org={org}
+            orgRemoteId={remoteId(
+              'organization',
+              org,
+              memory?.keyMap as RecordKeyMap
+            )}
+            stepSeq={(rows[toolSettingsRow] as IStepRow).seq}
             isOpen={
               (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
             }
