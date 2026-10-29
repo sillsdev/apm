@@ -88,12 +88,19 @@ export function parseStepTool(tool: unknown): Record<string, unknown> {
   return parsed;
 }
 
-/** Log settings we could not read before a save replaces them, so they can be recovered. */
-export function reportReplacedStepSettings(settings: unknown) {
+/**
+ * Before a save replaces settings we could not read, log where they are (not
+ * their content) so the original can be looked up in the data and recovered.
+ */
+export function reportReplacedStepSettings(
+  settings: unknown,
+  orgRemoteId: string | undefined,
+  stepSeq: number
+) {
   if (parseJsonObject(settings)) return;
   report(
-    `Replacing unreadable transcribe step settings: ${
-      typeof settings === 'string' ? settings : preview(settings)
-    }`
+    `Replacing unreadable transcribe step settings: organization ${
+      orgRemoteId ?? 'not synced'
+    }, step sequence ${stepSeq}`
   );
 }
