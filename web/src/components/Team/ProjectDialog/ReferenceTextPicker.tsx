@@ -13,7 +13,7 @@ import {
   bibleLabel,
   CatalogBible,
   languageLabel,
-  PUBLIC_DOMAIN,
+  licenseText,
   ReferenceText,
   toReferenceText,
 } from '../../../business/referenceText/referenceText';
@@ -48,7 +48,7 @@ const filterOptions = createFilterOptions<Option>({
 // A saved snapshot whose entry left the catalog still has to be an option.
 const fromSnapshot = (r: ReferenceText): CatalogBible => ({ ...r });
 
-export function ReferenceTextPicker(props: ReferenceTextPickerProps) {
+export function ReferenceTextPicker(props: Readonly<ReferenceTextPickerProps>) {
   const {
     id,
     label,
@@ -105,11 +105,6 @@ export function ReferenceTextPicker(props: ReferenceTextPickerProps) {
 
   const selected = options.find((o) => o.bible.id === value?.id) ?? null;
 
-  const licenseText = (license: string) => {
-    if (!license) return t.licenseNotStated;
-    return license === PUBLIC_DOMAIN ? t.publicDomain : license;
-  };
-
   return (
     <Autocomplete
       id={id}
@@ -136,7 +131,7 @@ export function ReferenceTextPicker(props: ReferenceTextPickerProps) {
                 {[
                   usedIds.has(bible.id) && o.language,
                   bible.shortName,
-                  licenseText(bible.license),
+                  licenseText(bible.license, t),
                 ]
                   .filter(Boolean)
                   .join(' · ')}

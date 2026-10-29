@@ -1,7 +1,6 @@
 import { Box, Card, SxProps, Typography } from '@mui/material';
 import { WrapTitle } from '../../../../control/WrapTitle';
-import { ReferenceTextPlayButton } from '../ReferenceTextPlayButton';
-import { ViewButton } from '../ViewButton';
+import { ReferenceTextActions } from '../ReferenceTextActions';
 import { ReferenceTextStatus } from '../ReferenceTextStatus';
 import { ReferenceTextItemProps } from '../referenceTextItem';
 import { useReferenceTextLabels } from '../useReferenceTextLabels';
@@ -25,7 +24,7 @@ export function ReferenceTextCard({
   expandedId,
   setExpandedId,
   sx,
-}: IProps) {
+}: Readonly<IProps>) {
   const { referenceText } = passage;
   const labels = useReferenceTextLabels(referenceText, role);
 
@@ -63,14 +62,13 @@ export function ReferenceTextCard({
       </Typography>
       <ReferenceTextStatus passage={passage} />
       {passage.status === 'ready' && (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <ReferenceTextPlayButton
-            speaking={speaking}
-            progress={progress}
-            onClick={() => onPlay(role)}
-          />
-          <ViewButton id={role} cb={() => onView(role)} />
-        </Box>
+        <ReferenceTextActions
+          role={role}
+          speaking={speaking}
+          progress={progress}
+          onPlay={onPlay}
+          onView={onView}
+        />
       )}
     </Card>
   );

@@ -14,8 +14,6 @@ import {
 import { parseReferenceTexts, ReferenceText } from './referenceText';
 import { getChapters } from './referenceTextChapters';
 
-export type ReferenceTextRole = 'primary' | 'secondary';
-
 export type ReferenceTextPassage =
   | { status: 'none' }
   | { status: 'loading'; referenceText: ReferenceText }
@@ -28,32 +26,30 @@ export type ReferenceTextPassage =
       retry?: () => void;
     };
 
-// defaultParams.referenceTexts is ordered Primary then Secondary (ADR 0014)
-const roleIndex: Record<ReferenceTextRole, number> = {
-  primary: 0,
-  secondary: 1,
-};
-
 type FetchResult = { key: string } & (
   { text: string } | { error: ReferenceTextError }
 );
 
-/**
- * The passage's verse range read from the current project's Primary or
- * Secondary Reference Text, as one string ready for text-to-speech.
- */
-export const useReferenceTextPassage = (
-  passage: PassageD | undefined,
-  role: ReferenceTextRole
-): ReferenceTextPassage => {
+/** The current project's Reference Texts, Primary then Secondary (ADR 0014). */
+export const useProjectReferenceTexts = (): ReferenceText[] => {
   const [projectId] = useGlobal('project');
-  const [errorReporter] = useGlobal('errorReporter');
   const projects = useOrbitData<ProjectD[]>('project');
   const { getParam } = useJsonParams();
   const project = projects.find((p) => p.id === projectId);
-  const referenceText = parseReferenceTexts(
+  return parseReferenceTexts(
     getParam(projDefReferenceTexts, project?.attributes?.defaultParams)
-  )[roleIndex[role]];
+  );
+};
+
+/**
+ * The passage's verse range read from one of the project's Reference Texts
+ * (see useProjectReferenceTexts), as one string ready for text-to-speech.
+ */
+export const useReferenceTextPassage = (
+  passage: PassageD | undefined,
+  referenceText: ReferenceText | undefined
+): ReferenceTextPassage => {
+  const [errorReporter] = useGlobal('errorReporter');
   const plan = planPassage(passage, referenceText);
   const key =
     plan.status === 'fetch'
@@ -114,3 +110,5 @@ export const useReferenceTextPassage = (
     return { status: 'error', referenceText: fetched, error: 'empty' };
   return { status: 'ready', referenceText: fetched, text: result.text };
 };
+
+export { type ReferenceTextRole } from './referenceText';

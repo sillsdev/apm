@@ -1,10 +1,11 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   bibleLabel,
+  byRole,
   languageLabel,
   ReferenceText,
+  ReferenceTextRole,
 } from '../../../business/referenceText/referenceText';
-import { ReferenceTextRole } from '../../../business/referenceText/useReferenceTextPassage';
 import { IState, IVProjectStrings } from '../../../model';
 import { vProjectSelector } from '../../../selector';
 
@@ -17,8 +18,7 @@ export const useReferenceTextLabels = (
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
   return {
     bible: bibleLabel(referenceText, lang),
-    role:
-      role === 'primary' ? t.primaryReferenceText : t.secondaryReferenceText,
+    role: byRole(role, [t.primaryReferenceText, t.secondaryReferenceText]),
     language: languageLabel(referenceText, lang),
   };
 };

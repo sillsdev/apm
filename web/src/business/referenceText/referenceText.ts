@@ -1,6 +1,7 @@
 import codeNum from '../../assets/code-num.json';
 import akuoSort from '../../assets/akuosort.json';
 import { langName, UiLoc } from '../../utils/langName';
+import { IVProjectStrings } from '../../model';
 
 /** One entry of the bundled HelloAO catalog (`helloao_bibles.json`). */
 export interface CatalogBible {
@@ -41,7 +42,28 @@ export type ReferenceText = Pick<
 
 export type Testament = 'OT' | 'NT';
 
+export type ReferenceTextRole = 'primary' | 'secondary';
+
+// defaultParams.referenceTexts is ordered Primary then Secondary (ADR 0014)
+const roleIndex: Record<ReferenceTextRole, number> = {
+  primary: 0,
+  secondary: 1,
+};
+
+/** The role's entry in a Primary-then-Secondary list. */
+export const byRole = <T>(role: ReferenceTextRole, values: readonly T[]): T =>
+  values[roleIndex[role]];
+
 export const PUBLIC_DOMAIN = 'Public Domain';
+
+/** A catalog license in the UI language; only "Public Domain" and a missing license are translated. */
+export const licenseText = (
+  license: string,
+  t: Pick<IVProjectStrings, 'licenseNotStated' | 'publicDomain'>
+) => {
+  if (!license) return t.licenseNotStated;
+  return license === PUBLIC_DOMAIN ? t.publicDomain : license;
+};
 
 const FIRST_NT_BOOK = 40;
 const LAST_NT_BOOK = 66;

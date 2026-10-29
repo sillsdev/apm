@@ -6755,35 +6755,35 @@
          <trans-unit id="passageDetailArtifacts.referenceTextBookMissing">
             <source>This Bible does not include this book.</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextEmpty">
             <source>This Bible has no text for these verses.</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextFetchFailed">
             <source>The passage could not be loaded. Check your internet connection.</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextLoading">
             <source>Loading passage…</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextNoRange">
             <source>This passage has no verse range.</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
@@ -6791,13 +6791,13 @@
             <source>No voice for {0} on this device.</source>
             <target/>
             <context-group context-type="sourcefile">
-               <context context-type="sourcefile">ReferenceTextRows.tsx</context>
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextRetry">
             <source>Try again</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
@@ -6805,7 +6805,7 @@
             <source>The passage could not be spoken.</source>
             <target/>
             <context-group context-type="sourcefile">
-               <context context-type="sourcefile">ReferenceTextRows.tsx</context>
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.research">
@@ -11380,14 +11380,14 @@
          <trans-unit id="vProject.bibleListError">
             <source>The list of Bibles could not be loaded.</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.book">
             <source>Book</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
@@ -11401,7 +11401,7 @@
          <trans-unit id="vProject.chooseBookFirst">
             <source>Choose a book to see reference texts</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
@@ -11520,14 +11520,14 @@
          <trans-unit id="vProject.licenseNotStated">
             <source>License not stated</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.loadingBibles">
             <source>Loading Bibles…</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
@@ -11618,7 +11618,7 @@
          <trans-unit id="vProject.primaryReferenceText">
             <source>Primary Reference Text</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
@@ -11632,14 +11632,14 @@
          <trans-unit id="vProject.publicDomain">
             <source>Public Domain</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.referenceTextRemoved">
             <source>{0} was removed because it does not include {1}.</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
@@ -11667,7 +11667,7 @@
          <trans-unit id="vProject.secondaryReferenceText">
             <source>Secondary Reference Text</source>
             <target/>
-            <context-group>
+            <context-group context-type="sourcefile">
                <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
@@ -11737,8 +11737,8 @@
          <trans-unit id="vProject.usedInTeam">
             <source>Used in this team</source>
             <target/>
-            <context-group>
-               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="welcome.alone">

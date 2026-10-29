@@ -1,7 +1,6 @@
-import { Box, Stack } from '@mui/material';
+import { Box } from '@mui/material';
 import { TableRow } from './TableRow';
-import { ReferenceTextPlayButton } from './ReferenceTextPlayButton';
-import { ViewButton } from './ViewButton';
+import { ReferenceTextActions } from './ReferenceTextActions';
 import { ReferenceTextStatus } from './ReferenceTextStatus';
 import { ReferenceTextItemProps } from './referenceTextItem';
 import { useReferenceTextLabels } from './useReferenceTextLabels';
@@ -21,7 +20,7 @@ export function ReferenceTextTableRow({
   onView,
   passageId,
   showDragHandle,
-}: IProps) {
+}: Readonly<IProps>) {
   const { referenceText } = passage;
   const labels = useReferenceTextLabels(referenceText, role);
   const ready = passage.status === 'ready';
@@ -34,14 +33,14 @@ export function ReferenceTextTableRow({
         value={{
           passageId,
           playItem: ready && (
-            <Stack direction="row" sx={{ justifyContent: 'center' }}>
-              <ReferenceTextPlayButton
-                speaking={speaking}
-                progress={progress}
-                onClick={() => onPlay(role)}
-              />
-              <ViewButton id={role} cb={() => onView(role)} />
-            </Stack>
+            <ReferenceTextActions
+              role={role}
+              speaking={speaking}
+              progress={progress}
+              onPlay={onPlay}
+              onView={onView}
+              sx={{ justifyContent: 'center' }}
+            />
           ),
           artifactName: (
             <>

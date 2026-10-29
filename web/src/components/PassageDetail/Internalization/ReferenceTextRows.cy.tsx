@@ -72,6 +72,7 @@ const mockStore = createStore(
           primaryReferenceText: 'Primary Reference Text',
           secondaryReferenceText: 'Secondary Reference Text',
           licenseNotStated: 'License not stated',
+          publicDomain: 'Dominio público',
         },
       }),
       passageDetailArtifacts: new LocalizedStrings({
@@ -222,7 +223,7 @@ describe('ReferenceTextRows', () => {
       .find('button[aria-label="View"]')
       .click();
     cy.get('[role="dialog"]')
-      .contains('a', 'Public Domain')
+      .contains('a', 'Dominio público')
       .should('have.attr', 'href', 'https://example.org/pd');
   });
 });

@@ -19,7 +19,10 @@ jest.mock('./referenceTextChapters', () => ({
   getChapters: jest.fn(),
 }));
 
-import { useReferenceTextPassage } from './useReferenceTextPassage';
+import {
+  useProjectReferenceTexts,
+  useReferenceTextPassage,
+} from './useReferenceTextPassage';
 import { getChapters } from './referenceTextChapters';
 import { parseChapter } from './passageText';
 import { ReferenceText } from './referenceText';
@@ -62,11 +65,24 @@ beforeEach(() => {
   mockGetChapters.mockReset();
 });
 
+describe('useProjectReferenceTexts', () => {
+  it('reads the Reference Texts, Primary then Secondary', () => {
+    const { result } = renderHook(() => useProjectReferenceTexts());
+    expect(result.current).toEqual([primary, secondary]);
+  });
+
+  it('is empty when the project has none', () => {
+    setProject([]);
+    const { result } = renderHook(() => useProjectReferenceTexts());
+    expect(result.current).toEqual([]);
+  });
+});
+
 describe('useReferenceTextPassage', () => {
   it('reads the Primary Reference Text', async () => {
     mockGetChapters.mockResolvedValue([parseChapter(jhn3)]);
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3:1'), 'primary')
+      useReferenceTextPassage(passage('3:1'), primary)
     );
     expect(result.current).toEqual({
       status: 'loading',
@@ -84,16 +100,15 @@ describe('useReferenceTextPassage', () => {
   it('reads the Secondary Reference Text', async () => {
     mockGetChapters.mockResolvedValue([parseChapter(jhn3)]);
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3:1'), 'secondary')
+      useReferenceTextPassage(passage('3:1'), secondary)
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(mockGetChapters).toHaveBeenCalledWith('eng_t4t', 'JHN', [3]);
   });
 
-  it('is none when the project has no Secondary Reference Text', () => {
-    setProject([primary]);
+  it('is none without a Reference Text', () => {
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3:1'), 'secondary')
+      useReferenceTextPassage(passage('3:1'), undefined)
     );
     expect(result.current).toEqual({ status: 'none' });
     expect(mockGetChapters).not.toHaveBeenCalled();
@@ -102,7 +117,7 @@ describe('useReferenceTextPassage', () => {
   it('reports fetchFailed and logs the error', async () => {
     mockGetChapters.mockRejectedValue(new Error('offline'));
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3:1'), 'primary')
+      useReferenceTextPassage(passage('3:1'), primary)
     );
     await waitFor(() =>
       expect(result.current).toEqual({
@@ -120,7 +135,7 @@ describe('useReferenceTextPassage', () => {
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce([parseChapter(jhn3)]);
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3:1'), 'primary')
+      useReferenceTextPassage(passage('3:1'), primary)
     );
     await waitFor(() => expect(result.current.status).toBe('error'));
     const failed = result.current;
@@ -134,7 +149,7 @@ describe('useReferenceTextPassage', () => {
 
   it('offers no retry for errors a fetch cannot fix', () => {
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3'), 'primary')
+      useReferenceTextPassage(passage('3'), primary)
     );
     expect(result.current).not.toHaveProperty('retry');
   });
@@ -142,7 +157,7 @@ describe('useReferenceTextPassage', () => {
   it('reports empty when no verse is in range', async () => {
     mockGetChapters.mockResolvedValue([parseChapter(jhn3)]);
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3:20-25'), 'primary')
+      useReferenceTextPassage(passage('3:20-25'), primary)
     );
     await waitFor(() =>
       expect(result.current).toEqual({
@@ -155,7 +170,7 @@ describe('useReferenceTextPassage', () => {
 
   it('reports noRange without fetching', () => {
     const { result } = renderHook(() =>
-      useReferenceTextPassage(passage('3'), 'primary')
+      useReferenceTextPassage(passage('3'), primary)
     );
     expect(result.current).toEqual({
       status: 'error',
@@ -168,7 +183,7 @@ describe('useReferenceTextPassage', () => {
   it('shows loading again when the passage changes', async () => {
     mockGetChapters.mockResolvedValue([parseChapter(jhn3)]);
     const { result, rerender } = renderHook(
-      ({ p }) => useReferenceTextPassage(p, 'primary'),
+      ({ p }) => useReferenceTextPassage(p, primary),
       { initialProps: { p: passage('3:1') } }
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));

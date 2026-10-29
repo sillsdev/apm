@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { Box, List, ListItem } from '@mui/material';
 import {
   ReferenceTextRole,
+  useProjectReferenceTexts,
   useReferenceTextPassage,
 } from '../../../business/referenceText/useReferenceTextPassage';
+import { byRole } from '../../../business/referenceText/referenceText';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { ReferenceTextCard } from './mobile components/ReferenceTextCard';
-import { ReferenceTextDialog } from './ReferenceTextDialog';
+import {
+  ReferenceTextDialog,
+  ReferenceTextNotice,
+} from './ReferenceTextDialog';
 import { ReferenceTextTableRow } from './ReferenceTextTableRow';
 import { ShownReferenceTextPassage } from './referenceTextItem';
 import { useReferenceTextSpeech } from './useReferenceTextSpeech';
@@ -24,7 +29,7 @@ interface IProps {
 
 interface Viewing {
   role: ReferenceTextRole;
-  notice?: 'noVoice' | 'speakFailed';
+  notice?: ReferenceTextNotice;
 }
 
 /**
@@ -36,10 +41,17 @@ export function ReferenceTextRows({
   showDragHandle,
   expandedId,
   setExpandedId,
-}: IProps) {
+}: Readonly<IProps>) {
   const { passage } = usePassageDetailContext();
-  const primary = useReferenceTextPassage(passage, 'primary');
-  const secondary = useReferenceTextPassage(passage, 'secondary');
+  const referenceTexts = useProjectReferenceTexts();
+  const primary = useReferenceTextPassage(
+    passage,
+    byRole('primary', referenceTexts)
+  );
+  const secondary = useReferenceTextPassage(
+    passage,
+    byRole('secondary', referenceTexts)
+  );
   const speech = useReferenceTextSpeech();
   const [viewing, setViewing] = useState<Viewing>();
 
@@ -52,10 +64,11 @@ export function ReferenceTextRows({
     (entry): entry is [ReferenceTextRole, ShownReferenceTextPassage] =>
       entry[1].status !== 'none'
   );
-  const viewed = viewing?.role === 'secondary' ? secondary : primary;
+  const passages = [primary, secondary];
+  const viewed = byRole(viewing?.role ?? 'primary', passages);
 
   const handlePlay = async (role: ReferenceTextRole) => {
-    const value = role === 'primary' ? primary : secondary;
+    const value = byRole(role, passages);
     if (value.status !== 'ready') return;
     const outcome = await speech.toggle(role, value.referenceText, value.text);
     if (outcome === 'noVoice') setViewing({ role, notice: 'noVoice' });

@@ -35,9 +35,9 @@ describe('parseChapter', () => {
   it('rejects other shapes', () => {
     expect(parseChapter(undefined)).toBeUndefined();
     expect(parseChapter({})).toBeUndefined();
-    expect(parseChapter({ chapter: { number: '3', content: [] } })).toBe(
-      undefined
-    );
+    expect(
+      parseChapter({ chapter: { number: '3', content: [] } })
+    ).toBeUndefined();
     expect(parseChapter({ chapter: { number: 3 } })).toBeUndefined();
   });
 });
@@ -176,6 +176,21 @@ describe('planPassage', () => {
       book: 'JHN',
       range: range(3, 35, 4, 1),
     });
+  });
+
+  it('asks for the range of the current reference, not stale chapter fields', () => {
+    const edited = passage('JHN', '3:16-18');
+    Object.assign(edited.attributes, {
+      startChapter: 1,
+      startVerse: 1,
+      endChapter: 1,
+      endVerse: 5,
+    });
+    expect(planPassage(edited, bsb)).toMatchObject({
+      status: 'fetch',
+      range: range(3, 16, 3, 18),
+    });
+    expect(edited.attributes.startChapter).toBe(1);
   });
 
   it('treats a partial verse as the whole verse', () => {

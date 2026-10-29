@@ -3,6 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Fab from '@mui/material/Fab';
 import { FaPlay, FaPause, FaStop } from 'react-icons/fa';
 import { styled, SxProps, Tooltip, useTheme } from '@mui/material';
+import { PLAY_BUTTON_BG } from '../theme';
 
 // see: https://mui.com/material-ui/customization/how-to-customize/
 interface StyledBoxProps extends BoxProps {
@@ -41,7 +42,7 @@ export default function ProgressPlayButton({
   ariaLabel,
   playingIcon = 'pause',
   size = 20,
-  bgColor = '#bec0bfff',
+  bgColor = PLAY_BUTTON_BG,
   sx,
 }: Readonly<ProgressPlayButtonProps>) {
   const theme = useTheme();

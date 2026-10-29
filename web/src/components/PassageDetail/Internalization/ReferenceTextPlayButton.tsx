@@ -17,7 +17,7 @@ export function ReferenceTextPlayButton({
   speaking,
   progress,
   onClick,
-}: IProps) {
+}: Readonly<IProps>) {
   const t: IMediaActionsStrings = useSelector(
     mediaActionsSelector,
     shallowEqual

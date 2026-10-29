@@ -4,6 +4,7 @@ import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import {
   canonicalLanguage,
+  licenseText,
   ReferenceText,
 } from '../../../business/referenceText/referenceText';
 import { ReferenceTextRole } from '../../../business/referenceText/useReferenceTextPassage';
@@ -21,14 +22,16 @@ import {
 import { usePassageRef } from './usePassageRef';
 import { useReferenceTextLabels } from './useReferenceTextLabels';
 
+/** Why the text is shown instead of spoken, when Play opened it. */
+export type ReferenceTextNotice = 'noVoice' | 'speakFailed';
+
 interface IProps {
   role: ReferenceTextRole;
   referenceText: ReferenceText;
   text: string;
   passage: PassageD;
   mobile?: boolean;
-  /** Why the text is shown instead of spoken, when Play opened it. */
-  notice?: 'noVoice' | 'speakFailed';
+  notice?: ReferenceTextNotice;
   onClose: () => void;
 }
 
@@ -50,7 +53,7 @@ export function ReferenceTextDialog({
   );
   const labels = useReferenceTextLabels(referenceText, role);
   const { passageRef } = usePassageRef();
-  const license = referenceText.license || t.licenseNotStated;
+  const license = licenseText(referenceText.license, t);
 
   return (
     <BigDialog

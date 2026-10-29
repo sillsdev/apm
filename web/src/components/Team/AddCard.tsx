@@ -11,12 +11,9 @@ import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
 import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
 import { useSetTeamLanguageForNewProject } from '../../crud/useSetTeamLanguage';
-import {
-  projDefBook,
-  projDefReferenceTexts,
-  projDefStory,
-} from '../../crud/useProjectDefaults';
+import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
 import { useHome, useJsonParams } from '../../utils';
+import { useReferenceTextsParam } from '../../business/referenceText/useReferenceTextsParam';
 import StickyRedirect from '../StickyRedirect';
 import { ProjectDialog } from './ProjectDialog';
 import {
@@ -76,6 +73,7 @@ export const AddCard = (props: IProps) => {
   const [view] = useState('');
   const { getPlan } = usePlan();
   const { setParam } = useJsonParams();
+  const setReferenceTexts = useReferenceTextsParam();
 
   useEffect(() => {
     // The personal team id loads after mount; read its language once it does.
@@ -156,11 +154,7 @@ export const AddCard = (props: IProps) => {
       '{}'
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
-    defaultParams = setParam(
-      projDefReferenceTexts,
-      referenceTexts.length > 0 ? referenceTexts : undefined,
-      defaultParams
-    );
+    defaultParams = setReferenceTexts(referenceTexts, defaultParams);
     setLanguage({ bcp47, languageName, font, rtl, spellCheck });
     projectCreate(
       {

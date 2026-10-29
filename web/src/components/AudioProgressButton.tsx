@@ -24,7 +24,7 @@ export default function AudioProgressButton(
   const {
     src,
     size = 20,
-    bgColor = '#bec0bfff',
+    bgColor,
     onPlaying,
     onPaused,
     onEnded,

@@ -15,13 +15,10 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { Button, rowSx, spreadSx } from '../control';
 import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
-import {
-  projDefBook,
-  projDefReferenceTexts,
-  projDefStory,
-} from '../crud/useProjectDefaults';
+import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import BigDialog from '../hoc/BigDialog';
 import { LocalKey, localUserKey, useJsonParams } from '../utils';
+import { useReferenceTextsParam } from '../business/referenceText/useReferenceTextsParam';
 import { useIsPapLike } from '../utils/useIsPapLike';
 import { useMyNavigate } from '../utils/useMyNavigate';
 
@@ -112,6 +109,7 @@ export const ProjectsScreenInner = () => {
 
   const { projectCreate, generalBook } = ctx.state;
   const { setParam } = useJsonParams();
+  const setReferenceTexts = useReferenceTextsParam();
 
   const handleProjectCommit = async (values: any) => {
     const {
@@ -142,11 +140,7 @@ export const ProjectsScreenInner = () => {
       '{}'
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
-    defaultParams = setParam(
-      projDefReferenceTexts,
-      referenceTexts.length > 0 ? referenceTexts : undefined,
-      defaultParams
-    );
+    defaultParams = setReferenceTexts(referenceTexts, defaultParams);
     const vproj: VProject = {
       attributes: {
         name,

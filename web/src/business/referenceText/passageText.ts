@@ -40,12 +40,18 @@ export const planPassage = (
     return { status: 'none' };
   if (!hasBook(referenceText, attr.book))
     return { status: 'error', referenceText, error: 'bookNotInText' };
-  parseRef(passage);
+  // parseRef keeps chapter fields that are already set, which can be stale
+  // after the reference is edited, so parse a copy with them cleared
+  const parsed = {
+    ...passage,
+    attributes: { ...attr, startChapter: undefined },
+  } as PassageD;
+  parseRef(parsed);
   const range: VerseRange = {
-    startChapter: attr.startChapter ?? 0,
-    startVerse: attr.startVerse ?? 0,
-    endChapter: attr.endChapter ?? 0,
-    endVerse: attr.endVerse ?? 0,
+    startChapter: parsed.attributes.startChapter ?? 0,
+    startVerse: parsed.attributes.startVerse ?? 0,
+    endChapter: parsed.attributes.endChapter ?? 0,
+    endVerse: parsed.attributes.endVerse ?? 0,
   };
   // parseRef gives chapter 0 for a reference without `ch:v`, such as `3`
   if (!range.startChapter || !range.startVerse)

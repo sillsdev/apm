@@ -8,9 +8,11 @@ import {
 } from '@testing-library/react';
 
 const mockPassages: Record<string, unknown> = {};
+// Each role's Reference Text is a stand-in whose id is the role
 jest.mock('../../../business/referenceText/useReferenceTextPassage', () => ({
-  useReferenceTextPassage: (_p: unknown, role: string) =>
-    mockPassages[role] ?? { status: 'none' },
+  useProjectReferenceTexts: () => [{ id: 'primary' }, { id: 'secondary' }],
+  useReferenceTextPassage: (_p: unknown, referenceText: { id: string }) =>
+    mockPassages[referenceText.id] ?? { status: 'none' },
 }));
 jest.mock('../../../business/referenceText/speakReferenceText', () => ({
   speakReferenceText: jest.fn(),
@@ -56,6 +58,7 @@ jest.mock('../../../selector', () => ({
     primaryReferenceText: 'Primary Reference Text',
     secondaryReferenceText: 'Secondary Reference Text',
     licenseNotStated: 'License not stated',
+    publicDomain: 'Dominio público',
   }),
   passageDetailArtifactsSelector: () => ({
     passageResource: 'Passage',
@@ -261,10 +264,9 @@ describe('ReferenceTextRows', () => {
       'dir',
       'rtl'
     );
-    expect(screen.getByRole('link', { name: 'Public Domain' })).toHaveAttribute(
-      'href',
-      'https://example.org/pd'
-    );
+    expect(
+      screen.getByRole('link', { name: 'Dominio público' })
+    ).toHaveAttribute('href', 'https://example.org/pd');
     fireEvent.click(screen.getByText('close'));
     expect(dialog).not.toBeInTheDocument();
   });

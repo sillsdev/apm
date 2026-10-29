@@ -76,6 +76,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
+import { useReferenceTextsParam } from '../../business/referenceText/useReferenceTextsParam';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import Confirm from '../AlertDialog';
@@ -160,6 +161,7 @@ export const ProjectCard = (props: IProps) => {
   const { userIsOrgAdmin } = useRole();
   const { leaveHome } = useHome();
   const { getParam, setParam } = useJsonParams();
+  const setReferenceTexts = useReferenceTextsParam();
   const sections = useOrbitData<Section[]>('section');
   const getGlobal = useGetGlobal();
   const handleSelect = (project: VProjectD) => () => {
@@ -318,11 +320,7 @@ export const ProjectCard = (props: IProps) => {
       project?.attributes?.defaultParams
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
-    defaultParams = setParam(
-      projDefReferenceTexts,
-      referenceTexts.length > 0 ? referenceTexts : undefined,
-      defaultParams
-    );
+    defaultParams = setReferenceTexts(referenceTexts, defaultParams);
     projectUpdate({
       ...project,
       attributes: {
