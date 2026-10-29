@@ -17,21 +17,12 @@ import {
   buildWorkflowAsrStateFromSettings,
   hasTranscribeStepLanguageSettings,
   transcribeSettingsNeedSisterLanguage,
-  type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
+import {
+  parseTranscribeStepSettings,
+  type TranscribeStepSettings,
+} from './transcribeStepSettings';
 import { orgDefaultLangProps, useOrgDefaults } from './useOrgDefaults';
-
-function parseStepSettings(settingsJson: string | object | undefined) {
-  if (!settingsJson) return {} as TranscribeStepSettings;
-  if (typeof settingsJson === 'object') {
-    return settingsJson as TranscribeStepSettings;
-  }
-  try {
-    return JSON.parse(settingsJson) as TranscribeStepSettings;
-  } catch {
-    return {} as TranscribeStepSettings;
-  }
-}
 
 export function findUpstreamRecordingWorkflowStep(
   orgSteps: OrgWorkflowStepD[],
@@ -45,8 +36,8 @@ export function findUpstreamRecordingWorkflowStep(
       settings?: string | object;
     };
     if (json.tool !== upstreamTool) return false;
-    const settings = parseStepSettings(json.settings);
-    if (!settings?.artifactTypeId) return false;
+    const settings = parseTranscribeStepSettings(json.settings);
+    if (!settings.artifactTypeId) return false;
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
     return slug === recordingArtifactSlug;
   });
@@ -68,7 +59,7 @@ export function getUpstreamRecordingStepSettings(
   const json = JSONParse(step.attributes?.tool ?? '{}') as {
     settings?: string | object;
   };
-  return parseStepSettings(json.settings);
+  return parseTranscribeStepSettings(json.settings);
 }
 
 export function buildUpstreamRecordingAsrState(
@@ -131,7 +122,7 @@ export function resolveBoldClauseTranscriptionStepSettings(
     upstreamTool,
     recordingArtifactSlug
   );
-  const current = parseStepSettings(
+  const current = parseTranscribeStepSettings(
     currentStepSettings as string | object | undefined
   );
   if (
@@ -395,7 +386,7 @@ export function getLwcTranslationStepSettings(
   const json = JSONParse(step.attributes?.tool ?? '{}') as {
     settings?: string | object;
   };
-  return parseStepSettings(json.settings);
+  return parseTranscribeStepSettings(json.settings);
 }
 
 export function buildLwcTranslationAsrState(

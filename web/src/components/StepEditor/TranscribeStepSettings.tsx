@@ -8,13 +8,13 @@ import {
 } from 'react';
 import {
   ArtifactTypeSlug,
-  defaultSpellCheckForArtifact,
-  resolveStepSpellCheck,
+  isSpellCheckOnByDefault,
+  isStepSpellCheckOn,
   useArtifactType,
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
-import { JSONParse, isLangSet } from '../../utils';
+import { isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
 import { MainAPI } from '@model/main-api';
 import {
@@ -23,7 +23,7 @@ import {
   FormControlLabel,
   FormLabel,
 } from '@mui/material';
-import { vProjectSelector } from '../../selector';
+import { vProjectSelector, transcriberSelector } from '../../selector';
 import { ITranscriberStrings, IVProjectStrings } from '../../model';
 
 const ipc = window?.api as MainAPI | undefined;
@@ -32,6 +32,7 @@ import {
   isoFromBcp47,
   needsSisterLanguage,
   preferredAsrMethodFromBcp47,
+  getPreferredAsrMethod,
 } from '../../business/asr/asrLanguages';
 import { AsrSettings } from '../../business/asr/AsrSettings';
 import {
@@ -40,7 +41,6 @@ import {
 } from '../../business/asr/useRecommendAsrLanguage';
 import { AsrTarget } from '../../business/asr/AsrTarget';
 import { shallowEqual, useSelector } from 'react-redux';
-import { transcriberSelector } from '../../selector';
 import {
   orgDefaultAsr,
   orgDefaultLangProps,
@@ -51,10 +51,13 @@ import {
   buildVernacularAsrState,
   formatStepLanguageField,
   parseStepLanguageField,
-  type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
+import {
+  parseTranscribeStepSettings,
+  reportReplacedStepSettings,
+  type TranscribeStepSettings as ITranscribeStepSettings,
+} from '../../crud/transcribeStepSettings';
 import { IAsrState, normalizeAsrState } from '../../business/asr/asrState';
-import { getPreferredAsrMethod } from '../../business/asr/asrLanguages';
 import { useSnackBar } from '../../hoc/SnackBar';
 
 interface LangState {
@@ -81,6 +84,8 @@ const initLang = {
 
 interface IProps {
   org: string;
+  orgRemoteId?: string;
+  stepSeq: number;
   isOpen: boolean;
   toolSettings: string;
   onChange: (toolSettings: string) => void;
@@ -88,6 +93,8 @@ interface IProps {
 
 export const TranscribeStepSettings = ({
   org,
+  orgRemoteId,
+  stepSeq,
   isOpen,
   toolSettings,
   onChange,
@@ -170,7 +177,7 @@ export const TranscribeStepSettings = ({
 
   const vernacularAsrSettings = useCallback(
     (settingsJson: string): ITranscribeStepSettings => {
-      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
+      const settings = parseTranscribeStepSettings(settingsJson);
       const phonetic = settings.phonetic ?? false;
       return {
         ...settings,
@@ -185,7 +192,7 @@ export const TranscribeStepSettings = ({
   const syncOrgAsrIfVernacular = useCallback(
     (settingsJson: string) => {
       if (!org) return;
-      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
+      const settings = parseTranscribeStepSettings(settingsJson);
       const slug = slugFromId(
         String(settings.artifactTypeId ?? '')
       ) as ArtifactTypeSlug;
@@ -213,19 +220,17 @@ export const TranscribeStepSettings = ({
 
   const emitSettingsChange = useCallback(
     (settingsJson: string) => {
+      reportReplacedStepSettings(toolSettings, orgRemoteId, stepSeq);
       onChange(settingsJson);
       syncOrgAsrIfVernacular(settingsJson);
     },
-    [onChange, syncOrgAsrIfVernacular]
+    [toolSettings, orgRemoteId, stepSeq, onChange, syncOrgAsrIfVernacular]
   );
 
   const handleSelect = (artifactTypeId: string | null) => {
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
-    const [, bcp47] = (json?.language as string | undefined)?.split('|') ?? [
-      '',
-      'und',
-    ];
-    const spellCheck = defaultSpellCheckForArtifact(
+    const settings = parseTranscribeStepSettings(toolSettings);
+    const { bcp47 } = parseStepLanguageField(settings.language);
+    const spellCheck = isSpellCheckOnByDefault(
       slugFromId(artifactTypeId),
       isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
@@ -236,19 +241,19 @@ export const TranscribeStepSettings = ({
       spellCheck,
       changed: false,
     }));
-    const { spellCheck: _omit, ...rest } = json;
+    const { spellCheck: _omit, ...rest } = settings;
     emitSettingsChange(JSON.stringify({ ...rest, artifactTypeId }));
   };
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
     setLgState((state) => ({ ...state, spellCheck, changed: true }));
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
-    emitSettingsChange(JSON.stringify({ ...json, spellCheck }));
+    const settings = parseTranscribeStepSettings(toolSettings);
+    emitSettingsChange(JSON.stringify({ ...settings, spellCheck }));
   };
 
   const phoneticSetting = useMemo(() => {
-    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
-    return json?.phonetic === true || json?.phonetic === 'true';
+    const settings = parseTranscribeStepSettings(toolSettings);
+    return settings.phonetic === true || settings.phonetic === 'true';
   }, [toolSettings]);
 
   const handleLanguageChange = (val: ILanguage) => {
@@ -258,10 +263,10 @@ export const TranscribeStepSettings = ({
       lgState?.spellCheck !== val?.spellCheck
     ) {
       setLgState((state) => ({ ...state, ...val, changed: true }));
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      const settings = parseTranscribeStepSettings(toolSettings);
       emitSettingsChange(
         JSON.stringify({
-          ...json,
+          ...settings,
           language: formatStepLanguageField(val),
           font: val.font,
           rtl: val.rtl,
@@ -294,11 +299,12 @@ export const TranscribeStepSettings = ({
 
   useEffect(() => {
     if (toolSettings) {
-      const json = JSON.parse(toolSettings);
-      setInitialValue(json.artifactTypeId);
-      const { languageName, bcp47 } = parseStepLanguageField(json?.language);
-      const slug = slugFromId(json.artifactTypeId);
-      let sisterLang = parseStepLanguageField(json?.sisterlanguage);
+      const settings = parseTranscribeStepSettings(toolSettings);
+      const artId = settings.artifactTypeId ?? null;
+      setInitialValue(artId);
+      const { languageName, bcp47 } = parseStepLanguageField(settings.language);
+      const slug = slugFromId(artId);
+      let sisterLang = parseStepLanguageField(settings.sisterlanguage);
       // Seed empty sister UI from org ASR when vernacular (or Q&A/Retell) needs a
       // sister language (e.g. Review step opened after Transcribe saved org ASR
       // but before peers synced).
@@ -318,19 +324,19 @@ export const TranscribeStepSettings = ({
           }
         }
       }
-      const spellCheck = resolveStepSpellCheck(
-        json,
+      const spellCheck = isStepSpellCheckOn(
+        settings,
         slug,
         isLangSet(bcp47) ? bcp47 : undefined,
         availSpellLangs
       );
       setLgState((state) => ({
         ...state,
-        artId: json.artifactTypeId,
+        artId: artId ?? '',
         languageName,
         bcp47,
-        font: json.font,
-        rtl: json.rtl,
+        font: settings.font ?? '',
+        rtl: settings.rtl ?? false,
         spellCheck,
         changed: false,
       }));
@@ -360,10 +366,10 @@ export const TranscribeStepSettings = ({
     if (isLangSet(bcp47) && !isValidAsrLanguage(isoFromBcp47(bcp47))) {
       showMessage(tt.invalidSisterLang);
       setSisterLanguage(emptyLanguage());
-      const json = JSONParse(toolSettings) as Record<string, string>;
+      const settings = parseTranscribeStepSettings(toolSettings);
       emitSettingsChange(
         JSON.stringify({
-          ...json,
+          ...settings,
           sisterlanguage: formatStepLanguageField(emptyLanguage()),
           selectRoman: false,
         })
@@ -371,10 +377,10 @@ export const TranscribeStepSettings = ({
       return;
     }
     setSisterLanguage(val);
-    const json = JSONParse(toolSettings) as Record<string, string>;
+    const settings = parseTranscribeStepSettings(toolSettings);
     emitSettingsChange(
       JSON.stringify({
-        ...json,
+        ...settings,
         sisterlanguage: formatStepLanguageField(val),
         selectRoman: false,
       })
@@ -428,10 +434,10 @@ export const TranscribeStepSettings = ({
   const readCachedRecommendations = (
     lang: string
   ): IAsrLanguageSuggestion[] | undefined => {
-    const json = JSONParse(toolSettings) as Record<string, string>;
-    if (!json?.sisterRecommendations) return undefined;
+    const settings = parseTranscribeStepSettings(toolSettings);
+    if (typeof settings.sisterRecommendations !== 'string') return undefined;
     try {
-      const cached = JSON.parse(json.sisterRecommendations) as {
+      const cached = JSON.parse(settings.sisterRecommendations) as {
         forLanguage?: string;
         suggestions?: IAsrLanguageSuggestion[];
       };
@@ -447,7 +453,8 @@ export const TranscribeStepSettings = ({
     lang: string,
     found: IAsrLanguageSuggestion[]
   ) => {
-    const json = JSONParse(toolSettingsRef.current) as Record<string, string>;
+    const settings = parseTranscribeStepSettings(toolSettingsRef.current);
+    reportReplacedStepSettings(toolSettingsRef.current, orgRemoteId, stepSeq);
     const lean = found.map((s) => ({
       languageName: s.languageName,
       iso: s.iso,
@@ -456,7 +463,7 @@ export const TranscribeStepSettings = ({
     }));
     onChange(
       JSON.stringify({
-        ...json,
+        ...settings,
         sisterRecommendations: JSON.stringify({
           forLanguage: lang,
           suggestions: lean,
@@ -482,9 +489,9 @@ export const TranscribeStepSettings = ({
   }, [showSisterLanguage, primaryLanguageName, primaryIso]);
 
   const sisterSelectRoman = useMemo(() => {
-    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
-    if (json && Object.prototype.hasOwnProperty.call(json, 'selectRoman')) {
-      return json.selectRoman === true || json.selectRoman === 'true';
+    const settings = parseTranscribeStepSettings(toolSettings);
+    if (Object.hasOwn(settings, 'selectRoman')) {
+      return settings.selectRoman === true || settings.selectRoman === 'true';
     }
     // When sister UI was seeded from org ASR, also adopt its transliterate flag.
     if (
@@ -516,11 +523,11 @@ export const TranscribeStepSettings = ({
     if (!next) return;
     const nextPhonetic = next.target === AsrTarget.phonetic;
     if (nextPhonetic !== phoneticSetting) {
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      const settings = parseTranscribeStepSettings(toolSettings);
       // Transliterate only applies to script transcription; clear it for phonetic.
       emitSettingsChange(
         JSON.stringify({
-          ...json,
+          ...settings,
           phonetic: nextPhonetic,
           ...(nextPhonetic ? { selectRoman: false } : {}),
         })
@@ -536,9 +543,9 @@ export const TranscribeStepSettings = ({
       return;
     }
     if (Boolean(next.selectRoman) !== sisterSelectRoman) {
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      const settings = parseTranscribeStepSettings(toolSettings);
       emitSettingsChange(
-        JSON.stringify({ ...json, selectRoman: Boolean(next.selectRoman) })
+        JSON.stringify({ ...settings, selectRoman: Boolean(next.selectRoman) })
       );
     }
   };
