@@ -62,6 +62,7 @@ import Coordinator from '@orbit/coordinator';
 import { axiosPost } from '../../utils/axios';
 import { updateBackTranslationType } from '../../crud/updateBackTranslationType';
 import { updateConsultantWorkflowStep } from '../../crud/updateConsultantWorkflowStep';
+import { mediaReplacementsForPlans } from '../../crud/mediaReplacementsForPlans';
 import {
   InitializedRecord,
   RecordKeyMap,
@@ -1360,6 +1361,10 @@ export const importProjectToElectron =
       )
         .filter((psc) => passageids.includes(related(psc, 'passage')))
         .map((p) => p.id);
+      const mediareplacementids = mediaReplacementsForPlans(
+        memory,
+        planids
+      ).map((m) => m.id);
       const mediaids = (
         memory.cache.query((q) => q.findRecords('mediafile')) as (MediaFile &
           InitializedRecord)[]
@@ -1398,6 +1403,11 @@ export const importProjectToElectron =
       discussionids.forEach((id) =>
         delOpArray.push(
           tb.removeRecord({ type: 'discussion', id: id }).toOperation()
+        )
+      );
+      mediareplacementids.forEach((id) =>
+        delOpArray.push(
+          tb.removeRecord({ type: 'mediareplacement', id: id }).toOperation()
         )
       );
       mediaids.forEach((id) =>

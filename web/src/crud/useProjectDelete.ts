@@ -11,6 +11,7 @@ import {
   SectionResourceD,
 } from '../model';
 import { useOfflnProjDelete } from './useOfflnProjDelete';
+import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
 import { related } from '.';
 
 export const useProjectDelete = () => {
@@ -45,6 +46,9 @@ export const useProjectDelete = () => {
             })
           ) as MediaFileD[]
         ).map((m) => m.id);
+        const mediareplacements = mediaReplacementsForPlans(memory, [
+          planid,
+        ]).map((m) => m.id);
         const discussions = (
           memory?.cache.query((q) =>
             q.findRecords('discussion')
@@ -110,6 +114,16 @@ export const useProjectDelete = () => {
             t
               .removeRecord({
                 type: 'discussion',
+                id: id,
+              })
+              .toOperation()
+          )
+        );
+        mediareplacements.forEach((id) =>
+          ops.push(
+            t
+              .removeRecord({
+                type: 'mediareplacement',
                 id: id,
               })
               .toOperation()

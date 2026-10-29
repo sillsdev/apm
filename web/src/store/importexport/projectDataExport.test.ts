@@ -1329,3 +1329,70 @@ describe('graphic media omitted from PTF', () => {
     expect(idsIn(files, 'data/H_mediafiles.json')).toEqual(['media-vern']);
   });
 });
+
+describe('media replacements from the project plan', () => {
+  const dates = {
+    dateCreated: '2020-01-01T00:00:00.000Z',
+    dateUpdated: '2020-01-01T00:00:00.000Z',
+  };
+
+  const project = {
+    type: 'project',
+    id: 'proj-mine',
+    keys: { remoteId: 'proj-mine' },
+    attributes: { name: 'Mine', ...dates },
+    relationships: {
+      organization: rel('organization', 'org-mine'),
+      group: rel('group', 'group-mine'),
+    },
+  } as unknown as ProjectD;
+
+  const replacement = (id: string, planId: string) => ({
+    type: 'mediareplacement',
+    id,
+    keys: { remoteId: id },
+    attributes: { ...dates, selectionStart: 0, selectionEnd: 1 },
+    relationships: { plan: rel('plan', planId) },
+  });
+
+  const store: Record<string, unknown[]> = {
+    organization: [orgRec('org-mine', 'Mine Org')],
+    group: [
+      {
+        type: 'group',
+        id: 'group-mine',
+        keys: { remoteId: 'group-mine' },
+        attributes: { name: 'G', ...dates },
+        relationships: { owner: rel('organization', 'org-mine') },
+      },
+    ],
+    project: [project],
+    plan: [
+      {
+        type: 'plan',
+        id: 'plan-mine',
+        keys: { remoteId: 'plan-mine' },
+        attributes: dates,
+        relationships: { project: rel('project', 'proj-mine') },
+      },
+      {
+        type: 'plan',
+        id: 'plan-other',
+        keys: { remoteId: 'plan-other' },
+        attributes: dates,
+        relationships: { project: rel('project', 'proj-other') },
+      },
+    ],
+    mediareplacement: [
+      replacement('repl-mine', 'plan-mine'),
+      replacement('repl-other', 'plan-other'),
+    ],
+  };
+
+  it('exports replacements for this project plan only', async () => {
+    const files = await getProjectDataFiles(memoryStub(store), project);
+    expect(idsIn(files, 'data/I_mediareplacements.json')).toEqual([
+      'repl-mine',
+    ]);
+  });
+});

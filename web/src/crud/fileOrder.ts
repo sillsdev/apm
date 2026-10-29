@@ -9,6 +9,7 @@ export const updateableFiles = [
   { table: 'groupmembership', sort: 'D' },
   { table: 'intellectualproperty', sort: 'I' },
   { table: 'mediafile', sort: 'H' },
+  { table: 'mediareplacement', sort: 'I' },
   { table: 'orgkeyterm', sort: 'C' },
   { table: 'orgkeytermreference', sort: 'H' },
   { table: 'orgkeytermtarget', sort: 'I' },

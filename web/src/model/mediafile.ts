@@ -30,6 +30,7 @@ export interface MediaFileAttributes {
   topic: string;
   publishedAs: string;
   publishTo: string;
+  note?: string | null;
 }
 
 export interface MediaFile extends BaseModel {
@@ -45,6 +46,7 @@ export interface MediaFile extends BaseModel {
     orgWorkflowStep: RecordRelationship;
     recordedbyUser: RecordRelationship;
     sourceMedia: RecordRelationship;
+    renderSourceMedia: RecordRelationship;
   };
 }
 

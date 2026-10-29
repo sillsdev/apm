@@ -9,6 +9,7 @@ export * from './hasAnyRelated';
 export * from './loadData';
 export * from './logLoginAnalytics';
 export * from './media';
+export * from './mediaReplacementsForPlans';
 export * from './offlineError';
 export * from './orgWorkflowStepsUtils';
 export * from './passage';
