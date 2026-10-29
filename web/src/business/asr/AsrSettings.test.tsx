@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AsrTarget } from './AsrTarget';
 import type { IAsrState } from './asrState';
 
@@ -110,31 +110,38 @@ describe('AsrSettings method list', () => {
     getMethodsForAsr.mockReset();
   });
 
-  it('returns the choice to default when the service no longer lists that method', async () => {
+  it('shows Default for a method the service no longer lists, without saving it', async () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'w2v-bert']);
     render(<Harness method="mms" />);
 
-    await waitFor(() =>
-      expect(screen.getByTestId('chosen')).toHaveTextContent('default')
-    );
+    expect(
+      await screen.findByRole('radio', { name: 'Default (whisper)' })
+    ).toBeChecked();
     expect(
       screen.queryByRole('radio', { name: 'mms' })
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('radio', { name: 'Default (whisper)' })
-    ).toBeChecked();
+    // Rendering never changes the saved settings.
+    expect(screen.getByTestId('chosen')).toHaveTextContent('mms');
   });
 
-  it('saves Default rather than the method the service ranks first', async () => {
+  it('drops that method when the user changes the settings', async () => {
+    getMethodsForAsr.mockResolvedValue(['whisper', 'w2v-bert']);
+    render(<Harness method="mms" />);
+    await screen.findByRole('radio', { name: 'Default (whisper)' });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Phonetic' }));
+
+    expect(screen.getByTestId('chosen')).toHaveTextContent('default');
+  });
+
+  it('shows Default for the method the service ranks first, without saving it', async () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'mms']);
     render(<Harness method="whisper" />);
 
-    await waitFor(() =>
-      expect(screen.getByTestId('chosen')).toHaveTextContent('default')
-    );
     expect(
-      screen.getByRole('radio', { name: 'Default (whisper)' })
+      await screen.findByRole('radio', { name: 'Default (whisper)' })
     ).toBeChecked();
+    expect(screen.getByTestId('chosen')).toHaveTextContent('whisper');
   });
 
   it('keeps a method the service still lists', async () => {

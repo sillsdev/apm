@@ -33,16 +33,20 @@ import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
 import { AsrAlphabet } from './AsrAlphabet';
 import { asrScriptDetail } from './asrScriptDetail';
-import { asrMethodDefaultValue, explicitAsrMethod } from './asrMethod';
+import {
+  asrMethodDefaultValue,
+  explicitAsrMethod,
+  listedAsrMethod,
+} from './asrMethod';
 import {
   getMethodsForAsr,
   isoFromBcp47,
-  needsSisterLanguage,
   specificAsrMethods,
 } from './asrLanguages';
 import { isLangSet } from '../../utils/langTag';
 import scriptNameData from '../../assets/scriptName';
 import { AsrTarget } from './AsrTarget';
+import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
 import { IAsrState } from './asrState';
 import { IAsrLanguageSuggestion } from './useRecommendAsrLanguage';
 
@@ -80,47 +84,50 @@ export const AsrSettings = ({
   const [scriptName] = useState(
     () => new Map(scriptNameData as [string, string][])
   );
-  const [needsSister, setNeedsSister] = useState(false);
-  const [asrMethods, setAsrMethods] = useState<string[]>([]);
-  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'failed'>(
-    'loading'
-  );
-
   const sisterBcp47 = asr.language?.bcp47;
+  const { needsSister: sisterAnswer, failed: sisterCheckFailed } =
+    useNeedsSisterLanguage(vernacularBcp47);
+  const needsSister = sisterAnswer === true;
+  // Methods are listed for the sister when one is needed (or when there is no
+  // primary language), else for the primary language.
+  const methodBcp47 =
+    needsSister || !isLangSet(vernacularBcp47)
+      ? (sisterBcp47 ?? 'und')
+      : vernacularBcp47;
 
+  const [methodList, setMethodList] = useState<{
+    forBcp47: string;
+    methods?: string[];
+    failed?: boolean;
+  }>();
   useEffect(() => {
+    // Wait for the sister check, which never answers offline (no token): an
+    // empty list read as 'ready' would show the saved method as Default.
+    if (sisterAnswer === undefined || !token) return;
     let cancelled = false;
-    const fail = (err: unknown) => {
-      if (cancelled) return;
-      logError(Severity.error, errorReporter, toError(err));
-      setLoadStatus('failed');
-      setAsrMethods([]);
-    };
-    setLoadStatus('loading');
-    // Offline (no token) aero answers nothing, and an empty list read as
-    // 'ready' would drop the saved method. Stay loading instead.
-    if (!token) return;
-    // The method list depends on the sister check, so both run in one pass.
-    needsSisterLanguage(vernacularBcp47, token)
-      .then((needed) => {
-        if (cancelled) return;
-        setNeedsSister(needed);
-        const methodBcp =
-          needed || !isLangSet(vernacularBcp47)
-            ? (sisterBcp47 ?? 'und')
-            : vernacularBcp47;
-        return getMethodsForAsr(isoFromBcp47(methodBcp), token);
-      })
+    getMethodsForAsr(isoFromBcp47(methodBcp47), token)
       .then((methods) => {
-        if (cancelled || !methods) return;
-        setAsrMethods(methods);
-        setLoadStatus('ready');
+        if (!cancelled) setMethodList({ forBcp47: methodBcp47, methods });
       })
-      .catch(fail);
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        logError(Severity.error, errorReporter, toError(err));
+        setMethodList({ forBcp47: methodBcp47, failed: true });
+      });
     return () => {
       cancelled = true;
     };
-  }, [vernacularBcp47, sisterBcp47, token, errorReporter]);
+  }, [methodBcp47, sisterAnswer, token, errorReporter]);
+
+  // A list loaded for another language (before a change) doesn't apply.
+  const currentList =
+    sisterAnswer !== undefined && methodList?.forBcp47 === methodBcp47
+      ? methodList
+      : undefined;
+  const asrMethods = currentList?.methods ?? [];
+  let loadStatus: 'loading' | 'ready' | 'failed' = 'loading';
+  if (sisterCheckFailed || currentList?.failed) loadStatus = 'failed';
+  else if (currentList?.methods) loadStatus = 'ready';
 
   const phonetic = asr.target === AsrTarget.phonetic;
 
@@ -137,6 +144,15 @@ export const AsrSettings = ({
   const choosePrimary = !isLangSet(vernacularBcp47);
   const showLanguagePicker = needsSister || choosePrimary;
 
+  const chosenMethod = explicitAsrMethod(asr.asrMethod);
+  // What the method choice really is: a method the service no longer lists,
+  // or now lists first, shows as Default. It is only dropped from the saved
+  // settings when the user changes something here, never by rendering.
+  const effectiveMethod =
+    loadStatus === 'ready'
+      ? listedAsrMethod(chosenMethod, asrMethods)
+      : chosenMethod;
+
   const handleTargetChange = (_e: unknown, value: string) => {
     const nextPhonetic = value === AsrTarget.phonetic;
     setAsr((prev) =>
@@ -146,13 +162,18 @@ export const AsrSettings = ({
             target: value as AsrTarget,
             // Transliterate only applies to script transcription.
             selectRoman: nextPhonetic ? false : prev.selectRoman,
+            asrMethod: effectiveMethod,
           }
         : prev
     );
   };
 
   const handleRomanChange = (_e: unknown, checked: boolean) => {
-    setAsr((prev) => (prev ? { ...prev, selectRoman: checked } : prev));
+    setAsr((prev) =>
+      prev
+        ? { ...prev, selectRoman: checked, asrMethod: effectiveMethod }
+        : prev
+    );
   };
 
   const handleMethodChange = (_e: unknown, value: string) => {
@@ -166,34 +187,8 @@ export const AsrSettings = ({
     );
   };
 
-  const chosenMethod = explicitAsrMethod(asr.asrMethod);
   const listedOptions = specificAsrMethods(asrMethods);
-  const methodIsListed = Boolean(
-    listedOptions &&
-    chosenMethod &&
-    (chosenMethod === listedOptions.preferred ||
-      listedOptions.others.includes(chosenMethod))
-  );
-  // Only a listed method other than the service's first choice is a choice.
-  // A withdrawn method, or the current first choice (shown as Default), is
-  // dropped so Default is what gets saved and sent, and the request follows
-  // the service if its first choice changes.
-  useEffect(() => {
-    if (loadStatus !== 'ready' || !chosenMethod) return;
-    // An empty list means no ASR language is picked yet, not a withdrawn method.
-    if (asrMethods.length === 0) return;
-    const [preferred] = asrMethods;
-    if (asrMethods.includes(chosenMethod) && chosenMethod !== preferred) return;
-    setAsr((prev) =>
-      prev && explicitAsrMethod(prev.asrMethod) === chosenMethod
-        ? { ...prev, asrMethod: undefined }
-        : prev
-    );
-  }, [loadStatus, chosenMethod, asrMethods, setAsr]);
-  const selectedMethod =
-    methodIsListed && chosenMethod !== listedOptions?.preferred
-      ? chosenMethod
-      : asrMethodDefaultValue;
+  const selectedMethod = effectiveMethod ?? asrMethodDefaultValue;
 
   return (
     <Stack spacing={1} sx={{ mt: 1 }}>

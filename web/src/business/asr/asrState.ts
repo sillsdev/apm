@@ -1,4 +1,5 @@
 import { ILanguage } from '../../control/Language';
+import { initLang } from '../../control/initLang';
 import { explicitAsrMethod } from './asrMethod';
 import { AsrTarget } from './AsrTarget';
 
@@ -62,4 +63,19 @@ export function asrStatesEqual(
     Boolean(a.selectRoman) === Boolean(b.selectRoman) &&
     (a.language?.bcp47 ?? 'und') === (b.language?.bcp47 ?? 'und')
   );
+}
+
+/**
+ * When the primary language needs a sister, it is not itself an ASR language:
+ * an ASR language equal to it is saved and run as none ('und'), never as the
+ * primary.
+ */
+export function withoutPrimaryAsAsrLanguage(
+  asr: IAsrState,
+  primaryBcp47: string,
+  needsSister: boolean | undefined
+): IAsrState {
+  if (needsSister && asr.language?.bcp47 == primaryBcp47)
+    return { ...asr, language: initLang, asrIso: 'und' };
+  return asr;
 }

@@ -8,18 +8,15 @@ jest.mock('../utils/axios', () => ({
   axiosGet: jest.fn(async () => ['whisper']),
 }));
 
-jest.mock('../context/TokenProvider', () => ({
-  TokenContext: {},
-}));
-
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import {
+  boldClauseAsrSettingsSource,
   buildBoldClauseTranscriptionAsrState,
   boldClauseTranscriptionStepLanguage,
   findUpstreamRecordingWorkflowStep,
   getUpstreamRecordingStepSettings,
-} from './getLwcTranslationAsrSettings';
+} from './boldClauseAsrSettings';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { OrgWorkflowStepD } from '../model';
 import { formatStepLanguageField } from './transcribeStepAsrSettings';
@@ -102,15 +99,15 @@ describe('getUpstreamRecordingStepSettings', () => {
 
 describe('buildBoldClauseTranscriptionAsrState', () => {
   it('builds ASR state from the upstream LWC Translation step language', async () => {
-    const asr = await buildBoldClauseTranscriptionAsrState(
-      [lwcTranslationStep()],
+    const asr = await buildBoldClauseTranscriptionAsrState({
+      orgSteps: [lwcTranslationStep()],
       slugFromId,
-      ToolSlug.PhraseBackTranslate,
-      ArtifactTypeSlug.PhraseBackTranslation,
-      () => undefined,
-      'org1',
-      asrDefault
-    );
+      upstreamTool: ToolSlug.PhraseBackTranslate,
+      recordingArtifactSlug: ArtifactTypeSlug.PhraseBackTranslation,
+      getOrgDefault: () => undefined,
+      orgId: 'org1',
+      asrDefault,
+    });
     expect(asr.language.bcp47).toBe('en');
     expect(asr.asrIso).toBe('eng');
   });
@@ -124,17 +121,16 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
         bcp47: 'en',
       }),
     };
-    const asr = await buildBoldClauseTranscriptionAsrState(
-      [],
+    const asr = await buildBoldClauseTranscriptionAsrState({
+      orgSteps: [],
       slugFromId,
-      ToolSlug.PhraseBackTranslate,
-      ArtifactTypeSlug.PhraseBackTranslation,
+      upstreamTool: ToolSlug.PhraseBackTranslate,
+      recordingArtifactSlug: ArtifactTypeSlug.PhraseBackTranslation,
       getOrgDefault,
-      'org1',
+      orgId: 'org1',
       asrDefault,
-      undefined,
-      currentSettings
-    );
+      currentStepSettings: currentSettings,
+    });
     expect(asr.language.bcp47).toBe('en');
     expect(asr.asrIso).toBe('eng');
   });
@@ -148,31 +144,30 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
         bcp47: 'fr',
       }),
     };
-    const asr = await buildBoldClauseTranscriptionAsrState(
-      [lwcTranslationStep()],
+    const asr = await buildBoldClauseTranscriptionAsrState({
+      orgSteps: [lwcTranslationStep()],
       slugFromId,
-      ToolSlug.PhraseBackTranslate,
-      ArtifactTypeSlug.PhraseBackTranslation,
+      upstreamTool: ToolSlug.PhraseBackTranslate,
+      recordingArtifactSlug: ArtifactTypeSlug.PhraseBackTranslation,
       getOrgDefault,
-      'org1',
+      orgId: 'org1',
       asrDefault,
-      undefined,
-      currentSettings
-    );
+      currentStepSettings: currentSettings,
+    });
     expect(asr.language.bcp47).toBe('fr');
     expect(asr.asrIso).toBe('fra');
   });
 
   it('does not fall back to English for LWC when no step names a language', async () => {
-    const asr = await buildBoldClauseTranscriptionAsrState(
-      [],
+    const asr = await buildBoldClauseTranscriptionAsrState({
+      orgSteps: [],
       slugFromId,
-      ToolSlug.PhraseBackTranslate,
-      ArtifactTypeSlug.PhraseBackTranslation,
-      () => undefined,
-      'org1',
-      asrDefault
-    );
+      upstreamTool: ToolSlug.PhraseBackTranslate,
+      recordingArtifactSlug: ArtifactTypeSlug.PhraseBackTranslation,
+      getOrgDefault: () => undefined,
+      orgId: 'org1',
+      asrDefault,
+    });
     expect(asr.asrIso).toBe('und');
     expect(asr.language.bcp47).toBe('und');
   });
@@ -182,15 +177,15 @@ describe('buildBoldClauseTranscriptionAsrState', () => {
       label === 'langProps'
         ? { bcp47: 'fr', languageName: 'French', font: '', rtl: false }
         : undefined;
-    const asr = await buildBoldClauseTranscriptionAsrState(
-      [],
+    const asr = await buildBoldClauseTranscriptionAsrState({
+      orgSteps: [],
       slugFromId,
-      ToolSlug.CarefulSpeech,
-      ArtifactTypeSlug.CarefulSpeech,
+      upstreamTool: ToolSlug.CarefulSpeech,
+      recordingArtifactSlug: ArtifactTypeSlug.CarefulSpeech,
       getOrgDefault,
-      'org1',
-      asrDefault
-    );
+      orgId: 'org1',
+      asrDefault,
+    });
     expect(asr.asrIso).toBe('fra');
   });
 });
@@ -261,5 +256,45 @@ describe('boldClauseTranscriptionStepLanguage', () => {
         orgId: 'org1',
       })
     ).toBeUndefined();
+  });
+});
+
+describe('boldClauseAsrSettingsSource', () => {
+  const noDefaults = () => undefined;
+
+  it('reads the current step when it names this recording and a language', () => {
+    expect(
+      boldClauseAsrSettingsSource(
+        slugFromId,
+        ArtifactTypeSlug.PhraseBackTranslation,
+        noDefaults,
+        'org-1',
+        JSON.stringify({
+          artifactTypeId: 'pbt-type-id',
+          language: 'Kannada|kn',
+        })
+      )
+    ).toBe('current');
+  });
+
+  it('reads the upstream recording step when the current step names no language', () => {
+    expect(
+      boldClauseAsrSettingsSource(
+        slugFromId,
+        ArtifactTypeSlug.PhraseBackTranslation,
+        noDefaults,
+        'org-1',
+        JSON.stringify({ artifactTypeId: 'pbt-type-id' })
+      )
+    ).toBe('upstream');
+    expect(
+      boldClauseAsrSettingsSource(
+        slugFromId,
+        ArtifactTypeSlug.PhraseBackTranslation,
+        noDefaults,
+        'org-1',
+        '{}'
+      )
+    ).toBe('upstream');
   });
 });

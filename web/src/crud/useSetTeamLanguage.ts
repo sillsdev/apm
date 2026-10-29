@@ -1,4 +1,5 @@
 import type { ILanguage } from '../control/Language';
+import { initLang } from '../control/initLang';
 import { useGlobal } from '../context/useGlobal';
 import type { ProjectD } from '../model';
 import { teamLanguageInUse } from './teamLanguageInUse';
@@ -8,14 +9,6 @@ import {
   orgDefaultLangProps,
   useOrgDefaults,
 } from './useOrgDefaults';
-
-const unsetLanguage = (): ILanguage => ({
-  bcp47: 'und',
-  languageName: '',
-  font: '',
-  rtl: false,
-  spellCheck: false,
-});
 
 /**
  * The one way to change a team's default language. The team ASR language
@@ -37,7 +30,7 @@ export function useSetTeamLanguage() {
       orgDefaultAsr,
       {
         ...teamAsr,
-        language: unsetLanguage(),
+        language: initLang,
         asrIso: 'und',
         asrMethod: undefined,
         selectRoman: false,

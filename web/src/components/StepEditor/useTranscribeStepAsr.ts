@@ -1,7 +1,8 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useRef } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import type { ILanguage } from '../../control/Language';
+import { initLang } from '../../control/initLang';
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { JSONParse } from '../../utils/jsonParse';
@@ -12,7 +13,6 @@ import { explicitAsrMethod } from '../../business/asr/asrMethod';
 import {
   isValidAsrLanguage,
   isoFromBcp47,
-  needsSisterLanguage,
 } from '../../business/asr/asrLanguages';
 import { AsrTarget } from '../../business/asr/AsrTarget';
 import type { ITranscriberStrings } from '../../model';
@@ -28,14 +28,7 @@ import {
 } from '../../crud/transcribeStepAsrSettings';
 import type { IAsrState } from '../../business/asr/asrState';
 import { useSnackBar } from '../../hoc/useSnackBar';
-
-const emptyLanguage = (): ILanguage => ({
-  bcp47: 'und',
-  languageName: '',
-  font: '',
-  rtl: false,
-  spellCheck: false,
-});
+import { useNeedsSisterLanguage } from '../../business/asr/useNeedsSisterLanguage';
 
 type SetAsr = (
   action: IAsrState | undefined | ((prev: IAsrState) => IAsrState | undefined)
@@ -82,27 +75,11 @@ export function useTranscribeStepAsr({
       stepAsrFromSettings({}))
     : stepAsrFromSettings(settings);
 
-  const [showSisterLanguage, setShowSisterLanguage] = useState(false);
-  useEffect(() => {
-    if (offlineOnly) return;
-    let cancelled = false;
-    needsSisterLanguage(primaryBcp47, token)
-      .then((needed) => {
-        if (!cancelled) setShowSisterLanguage(needed);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        logError(Severity.error, errorReporter, toError(err));
-        showMessage(tt.asrRequestFailed);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // showMessage is a new function every render. Listing it re-ran this check
-    // on every render, and while aero failed each error re-rendered and asked
-    // again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offlineOnly, primaryBcp47, token, errorReporter, tt.asrRequestFailed]);
+  const { needsSister } = useNeedsSisterLanguage(primaryBcp47, {
+    enabled: !offlineOnly,
+    onFailed: () => showMessage(tt.asrRequestFailed),
+  });
+  const showSisterLanguage = needsSister === true;
 
   /**
    * Only a sister is saved as the team's ASR language. With none, transcription
@@ -113,7 +90,7 @@ export function useTranscribeStepAsr({
   const teamAsrLanguage = (chosen: ILanguage | undefined): ILanguage =>
     chosen && isLangSet(chosen.bcp47) && chosen.bcp47 !== primaryBcp47
       ? chosen
-      : emptyLanguage();
+      : initLang;
 
   const save = (next: IAsrState) => {
     const phonetic = next.target === AsrTarget.phonetic;
@@ -153,7 +130,7 @@ export function useTranscribeStepAsr({
           return;
         }
         showMessage(tt.invalidSisterLang);
-        save({ ...reset, language: emptyLanguage(), asrIso: 'und' });
+        save({ ...reset, language: initLang, asrIso: 'und' });
       })
       .catch((err: unknown) => {
         if (requestId !== sisterChangeRequest.current) return;

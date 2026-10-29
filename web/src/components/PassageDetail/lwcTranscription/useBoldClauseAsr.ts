@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { IAsrState } from '../../../business/asr/asrState';
-import { useBoldClauseTranscriptionAsrSettings } from '../../../crud/getLwcTranslationAsrSettings';
+import { useBoldClauseTranscriptionAsrSettings } from '../../../crud/useBoldClauseTranscriptionAsrSettings';
 import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import { isLangSet } from '../../../utils/langTag';
@@ -47,6 +47,7 @@ export function useBoldClauseAsr({
     needsSisterLanguage: resolvedNeedsSister,
     asrLoadFailed,
     stepLanguageBcp47,
+    asrSettingsStepId,
   } = useBoldClauseTranscriptionAsrSettings(
     transcriptionConfig.upstreamTool,
     transcriptionConfig.defaultArtifactSlug,
@@ -81,9 +82,13 @@ export function useBoldClauseAsr({
   const stepAsr = useMemo(
     () =>
       stepLanguageBcp47
-        ? { primaryBcp47: stepLanguageBcp47, asr: asrSettings }
+        ? {
+            primaryBcp47: stepLanguageBcp47,
+            asr: asrSettings,
+            stepId: asrSettingsStepId,
+          }
         : undefined,
-    [stepLanguageBcp47, asrSettings]
+    [stepLanguageBcp47, asrSettings, asrSettingsStepId]
   );
 
   const asrTip = useMemo(() => {

@@ -29,7 +29,13 @@ export interface UseTranscribeAsrProps {
   hasActiveTask?: boolean;
 }
 
-/** Loaded team/step ASR settings. One owner for desktop and mobile transcribe. */
+export type AsrSettingsStatus = 'loading' | 'ready' | 'failed';
+
+/**
+ * Loaded team/step ASR settings, and whether they are still loading, loaded
+ * or failed to load. After a failure the last loaded settings (if any) stay.
+ * One owner for desktop and mobile transcribe.
+ */
 export function useAsrSettings(
   team: OrganizationD | undefined,
   showMessage: (msg: string) => void
@@ -38,19 +44,28 @@ export function useAsrSettings(
   const asrDefaults = useAsrDefaultsVersion(team?.id);
   const [errorReporter] = useGlobal('errorReporter');
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
-  const [asrSettings, setAsrSettings] = useState<IAsrState>();
+  const [result, setResult] = useState<{
+    status: AsrSettingsStatus;
+    asrSettings?: IAsrState;
+  }>({ status: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
     getAsrSettings()
       .then((next) => {
         if (cancelled) return;
-        setAsrSettings((prev) => (asrStatesEqual(prev, next) ? prev : next));
+        setResult((prev) => ({
+          status: 'ready',
+          asrSettings: asrStatesEqual(prev.asrSettings, next)
+            ? prev.asrSettings
+            : next,
+        }));
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         logError(Severity.error, errorReporter, toError(err));
         showMessage(t.asrRequestFailed);
+        setResult((prev) => ({ ...prev, status: 'failed' }));
       });
     return () => {
       cancelled = true;
@@ -61,7 +76,7 @@ export function useAsrSettings(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getAsrSettings, asrDefaults, errorReporter, t.asrRequestFailed]);
 
-  return asrSettings;
+  return result;
 }
 
 export function useTranscribeAsr({
@@ -75,7 +90,7 @@ export function useTranscribeAsr({
 }: UseTranscribeAsrProps) {
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
-  const asrSettings = useAsrSettings(team, showMessage);
+  const { asrSettings, status: asrStatus } = useAsrSettings(team, showMessage);
 
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
@@ -165,6 +180,7 @@ export function useTranscribeAsr({
 
   return {
     asrSettings,
+    asrStatus,
     asrTip,
     asrProgressVisible,
     setAsrProgressVisible,

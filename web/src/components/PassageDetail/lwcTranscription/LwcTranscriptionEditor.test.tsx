@@ -66,7 +66,7 @@ const mockUseBoldClauseTranscriptionAsrSettings = jest.fn(
   })
 );
 
-jest.mock('../../../crud/getLwcTranslationAsrSettings', () => ({
+jest.mock('../../../crud/useBoldClauseTranscriptionAsrSettings', () => ({
   useBoldClauseTranscriptionAsrSettings: () =>
     mockUseBoldClauseTranscriptionAsrSettings(),
 }));

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 
 const teamAsr = {
   target: 'alphabet',
@@ -26,14 +26,24 @@ const mockSaveStepSisterRecommendations = jest.fn();
 let mockCanSetTeamDefault = true;
 let mockCanSetOrgDefault = true;
 let mockNeedsSister = false;
+// The method saved with the settings the dialog opens on.
+let mockSavedMethod: string | undefined;
+// The transcription type saved with those settings, when not the fixture's.
+let mockSavedTarget: string | undefined;
+// The service's method list for the ASR language, or a failed lookup.
+let mockMethodsLookup: () => Promise<string[]>;
 
 jest.mock('../../crud/useGetAsrSettings', () => ({
   useGetAsrSettings: () => ({
-    getAsrSettings: async () => teamAsr,
+    getAsrSettings: async () => ({
+      ...teamAsr,
+      asrMethod: mockSavedMethod,
+      ...(mockSavedTarget ? { target: mockSavedTarget } : {}),
+    }),
     getVernacularLanguage: () => ({ bcp47: 'en' }),
     getCachedSisterRecommendations: () => undefined,
-    getCachedStepSisterRecommendations: () =>
-      mockGetCachedStepSisterRecommendations(),
+    getCachedStepSisterRecommendations: (stepId?: string) =>
+      mockGetCachedStepSisterRecommendations(stepId),
     saveSisterRecommendations: jest.fn(),
     saveStepSisterRecommendations: mockSaveStepSisterRecommendations,
     canSetTeamAsrDefault: () => mockCanSetTeamDefault,
@@ -45,6 +55,7 @@ jest.mock('../../crud/useGetAsrSettings', () => ({
 }));
 
 jest.mock('./asrLanguages', () => ({
+  getMethodsForAsr: () => mockMethodsLookup(),
   isoFromBcp47: () => 'eng',
   needsSisterLanguage: async () => mockNeedsSister,
 }));
@@ -129,6 +140,9 @@ jest.mock('../../hoc/SnackBar', () => ({
 }));
 
 import SelectAsrLanguage from './SelectAsrLanguage';
+
+// Run and the team save tidy the method first (a cached lookup), then act.
+const settle = () => act(async () => {});
 import { TokenContext } from '../../context/TokenProvider';
 
 // The dialog only reads state.accessToken from the context.
@@ -148,6 +162,9 @@ describe('SelectAsrLanguage', () => {
     mockCanSetTeamDefault = true;
     mockCanSetOrgDefault = true;
     mockNeedsSister = false;
+    mockSavedMethod = undefined;
+    mockSavedTarget = undefined;
+    mockMethodsLookup = async () => ['whisper', 'mms'];
   });
 
   it('lets an admin save the dialog settings as the team default without closing', async () => {
@@ -158,6 +175,7 @@ describe('SelectAsrLanguage', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Save as team default' })
     );
+    await settle();
 
     expect(mockSaveTeamAsrSettings).toHaveBeenCalledWith(
       expect.objectContaining({ asrIso: 'eng' })
@@ -172,6 +190,7 @@ describe('SelectAsrLanguage', () => {
     await screen.findByTestId('asr-settings');
 
     fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await settle();
 
     expect(onClose).toHaveBeenCalledWith(
       false,
@@ -184,17 +203,86 @@ describe('SelectAsrLanguage', () => {
     );
   });
 
+  it('never saves the primary as the team ASR language when it needs a sister', async () => {
+    // The team ASR names the vernacular itself, which needs a sister; phonetic
+    // needs no language, so Save stays enabled.
+    mockNeedsSister = true;
+    mockSavedTarget = 'Phonetic';
+    render(<SelectAsrLanguage onClose={jest.fn()} />);
+    await screen.findByTestId('asr-settings');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save as team default' })
+    );
+    await settle();
+
+    expect(mockSaveTeamAsrSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ asrIso: 'und' })
+    );
+  });
+
+  it('drops a method the service no longer lists when the user runs', async () => {
+    mockSavedMethod = 'w2v-bert';
+    const onClose = jest.fn();
+    render(<SelectAsrLanguage onClose={onClose} />);
+    await screen.findByTestId('asr-settings');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await settle();
+
+    expect(onClose).toHaveBeenCalledWith(
+      false,
+      expect.objectContaining({ asrMethod: undefined })
+    );
+  });
+
+  it('keeps the method when the method lookup fails', async () => {
+    // A network error says nothing about the method; saving without it would
+    // erase the team's choice.
+    mockSavedMethod = 'mms';
+    mockMethodsLookup = async () => {
+      throw new Error('aero down');
+    };
+    render(<SelectAsrLanguage onClose={jest.fn()} />);
+    await screen.findByTestId('asr-settings');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save as team default' })
+    );
+    await settle();
+
+    expect(mockSaveTeamAsrSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ asrMethod: 'mms' })
+    );
+  });
+
+  it('keeps a method the service still lists when the user runs', async () => {
+    mockSavedMethod = 'mms';
+    const onClose = jest.fn();
+    render(<SelectAsrLanguage onClose={onClose} />);
+    await screen.findByTestId('asr-settings');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await settle();
+
+    expect(onClose).toHaveBeenCalledWith(
+      false,
+      expect.objectContaining({ asrMethod: 'mms' })
+    );
+  });
+
   it('does not save step-language ASR to the project on Run', async () => {
     const onClose = jest.fn();
     render(
       <SelectAsrLanguage
         onClose={onClose}
-        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr, stepId: 'recording-step' }}
       />
     );
     await screen.findByTestId('asr-settings');
 
     fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await settle();
 
     expect(onClose).toHaveBeenCalled();
     expect(mockSaveProjectAsrSettings).not.toHaveBeenCalled();
@@ -215,7 +303,7 @@ describe('SelectAsrLanguage', () => {
     render(
       <SelectAsrLanguage
         onClose={onClose}
-        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr, stepId: 'recording-step' }}
       />
     );
     await screen.findByTestId('asr-settings');
@@ -223,9 +311,12 @@ describe('SelectAsrLanguage', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Save as team default' })
     );
+    await settle();
 
+    // Saved to the step the settings are read from, not the current step.
     expect(mockSaveStepAsrSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ asrIso: 'eng' })
+      expect.objectContaining({ asrIso: 'eng' }),
+      'recording-step'
     );
     expect(mockSaveTeamAsrSettings).not.toHaveBeenCalled();
     expect(mockShowMessage).toHaveBeenCalledWith('Saved as the team default.');
@@ -239,11 +330,14 @@ describe('SelectAsrLanguage', () => {
     render(
       <SelectAsrLanguage
         onClose={jest.fn()}
-        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr, stepId: 'recording-step' }}
       />
     );
     await screen.findByTestId('asr-settings');
 
+    expect(mockGetCachedStepSisterRecommendations).toHaveBeenCalledWith(
+      'recording-step'
+    );
     expect(mockSeedSuggestions).toHaveBeenCalledWith(cached);
     expect(mockFetchRecommendations).not.toHaveBeenCalled();
   });
@@ -253,15 +347,38 @@ describe('SelectAsrLanguage', () => {
     render(
       <SelectAsrLanguage
         onClose={jest.fn()}
-        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr, stepId: 'recording-step' }}
       />
     );
     await screen.findByTestId('asr-settings');
 
     expect(mockFetchRecommendations).toHaveBeenCalledWith(
       'eng',
-      mockSaveStepSisterRecommendations
+      expect.any(Function)
     );
+    const found = [{ languageName: 'English', iso: 'eng', methods: ['mms'] }];
+    const save = mockFetchRecommendations.mock.calls[0][1] as (
+      s: typeof found
+    ) => void;
+    save(found);
+    expect(mockSaveStepSisterRecommendations).toHaveBeenCalledWith(
+      'recording-step',
+      found
+    );
+  });
+
+  it('hides the step save when no step to save to was found', async () => {
+    render(
+      <SelectAsrLanguage
+        onClose={jest.fn()}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+      />
+    );
+    await screen.findByTestId('asr-settings');
+
+    expect(
+      screen.queryByRole('button', { name: 'Save as team default' })
+    ).not.toBeInTheDocument();
   });
 
   it('hides step-language save from non-admins', async () => {
@@ -269,7 +386,7 @@ describe('SelectAsrLanguage', () => {
     render(
       <SelectAsrLanguage
         onClose={jest.fn()}
-        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr }}
+        stepAsr={{ primaryBcp47: 'kn', asr: teamAsr, stepId: 'recording-step' }}
       />
     );
     await screen.findByTestId('asr-settings');

@@ -12,7 +12,11 @@ import {
   resolveAsrBcp47,
   specificAsrMethods,
 } from './asrLanguages';
-import { asrRequestMethod, explicitAsrMethod } from './asrMethod';
+import {
+  asrRequestMethod,
+  explicitAsrMethod,
+  listedAsrMethod,
+} from './asrMethod';
 
 const mockAxiosGet = axiosGet as jest.Mock;
 
@@ -103,6 +107,13 @@ describe('specificAsrMethods', () => {
     expect(asrRequestMethod('mms', false)).toBe('mms');
     expect(asrRequestMethod('default', false)).toBeUndefined();
   });
+
+  it('leaves off a method the cached list no longer offers', () => {
+    expect(asrRequestMethod('mms', false, ['whisper', 'w2v-bert'])).toBe(
+      undefined
+    );
+    expect(asrRequestMethod('mms', false, ['whisper', 'mms'])).toBe('mms');
+  });
 });
 
 describe('loadAsrLanguages', () => {
@@ -149,5 +160,21 @@ describe('loadAsrLanguages', () => {
     await loadAsrLanguages('token');
     expect(asrLanguageFilter('en')).toBe(true);
     expect(asrLanguageFilter('fr')).toBe(false);
+  });
+});
+
+describe('listedAsrMethod', () => {
+  it('keeps a listed method other than the first', () => {
+    expect(listedAsrMethod('mms', ['whisper', 'mms'])).toBe('mms');
+  });
+
+  it('drops a method that is no longer listed, or now listed first', () => {
+    expect(listedAsrMethod('w2v-bert', ['whisper', 'mms'])).toBeUndefined();
+    expect(listedAsrMethod('whisper', ['whisper', 'mms'])).toBeUndefined();
+  });
+
+  it('has no method for a language with no methods, and leaves no choice alone', () => {
+    expect(listedAsrMethod('mms', [])).toBeUndefined();
+    expect(listedAsrMethod(undefined, ['whisper'])).toBeUndefined();
   });
 });

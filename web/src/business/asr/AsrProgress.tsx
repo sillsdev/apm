@@ -54,6 +54,7 @@ import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { asrMethodDefaultValue, asrRequestMethod } from './asrMethod';
+import { cachedAsrMethods } from './asrLanguages';
 import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
 import {
   AiEstimateKey,
@@ -330,7 +331,11 @@ export default function AsrProgress({
     const asr = asrState ?? (await getAsrSettings());
     const iso = asr?.asrIso ?? 'eng';
     const romanize = asr?.selectRoman ?? false;
-    const method = asrRequestMethod(asr?.asrMethod, phonetic);
+    const method = asrRequestMethod(
+      asr?.asrMethod,
+      phonetic,
+      cachedAsrMethods(iso)
+    );
     const phoneticParam = phonetic ? '?phonetic=true' : '';
     setRun({ startedAt: Date.now(), key: timingKey(method) });
     try {

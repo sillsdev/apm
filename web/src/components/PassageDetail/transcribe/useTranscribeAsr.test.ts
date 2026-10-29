@@ -74,6 +74,45 @@ describe('useTranscribeAsr', () => {
     );
   });
 
+  const renderAsr = () =>
+    renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
+      })
+    );
+
+  it('says the settings are loading, then ready', async () => {
+    let finish: (v: unknown) => void = () => undefined;
+    getAsrSettings.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const { result } = renderAsr();
+    expect(result.current.asrStatus).toBe('loading');
+    expect(result.current.asrSettings).toBeUndefined();
+
+    await act(async () => finish({ asrIso: 'eng', language: { bcp47: 'en' } }));
+
+    expect(result.current.asrStatus).toBe('ready');
+    expect(result.current.asrSettings).toEqual(
+      expect.objectContaining({ asrIso: 'eng' })
+    );
+  });
+
+  it('tells a failed load apart from loading', async () => {
+    getAsrSettings.mockRejectedValue(new Error('languages failed'));
+    const { result } = renderAsr();
+    await waitFor(() => expect(result.current.asrStatus).toBe('failed'));
+    expect(result.current.asrSettings).toBeUndefined();
+  });
+
   it('runs transcription when the team default is usable', async () => {
     getAsrSettings.mockResolvedValue({
       target: 'alphabet',

@@ -16,9 +16,11 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { AsrSettings } from './AsrSettings';
-import { IAsrState } from './asrState';
-import { explicitAsrMethod } from './asrMethod';
-import { isoFromBcp47, needsSisterLanguage } from './asrLanguages';
+import { IAsrState, withoutPrimaryAsAsrLanguage } from './asrState';
+import { initLang } from '../../control/initLang';
+import { explicitAsrMethod, listedAsrMethod } from './asrMethod';
+import { getMethodsForAsr, isoFromBcp47 } from './asrLanguages';
+import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
 import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { logError, Severity } from '../../utils';
@@ -51,7 +53,12 @@ interface ISelectAsrLanguage {
    * the sister language against the step language. Saving writes that step, not
    * the org default.
    */
-  stepAsr?: { primaryBcp47: string; asr: IAsrState };
+  stepAsr?: {
+    primaryBcp47: string;
+    asr: IAsrState;
+    /** The step these settings are read from, and so saved to. */
+    stepId?: string;
+  };
 }
 
 /** Progress while the dialog loads, or why it can't. */
@@ -64,14 +71,6 @@ function SeedingStatus({ message }: Readonly<{ message?: string }>) {
   );
 }
 
-const emptyAsrLanguage = {
-  bcp47: 'und',
-  languageName: '',
-  font: 'charissil',
-  rtl: false,
-  spellCheck: false,
-};
-
 export default function SelectAsrLanguage({
   team,
   onClose,
@@ -80,7 +79,6 @@ export default function SelectAsrLanguage({
   const [asrState, setAsrState] = React.useState<IAsrState>();
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [errorReporter] = useGlobal('errorReporter');
-  const [vernacularBcp47, setVernacularBcp47] = React.useState('und');
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const {
@@ -100,8 +98,49 @@ export default function SelectAsrLanguage({
     useRecommendAsrLanguage();
   const checkOnline = useCheckOnline(t.run);
   const { showMessage } = useSnackBar();
-  const showTeamDefault = stepAsr ? canSetOrgDefault : canSetTeamAsrDefault();
+  // A step-language choice saves to the step it is read from; with none found
+  // there is nowhere to save it.
+  const showTeamDefault = stepAsr
+    ? canSetOrgDefault && Boolean(stepAsr.stepId)
+    : canSetTeamAsrDefault();
   const token = React.useContext(TokenContext)?.state?.accessToken ?? null;
+
+  // The language being transcribed: the step's own, or the project's (else the
+  // team's) vernacular.
+  const primaryBcp47 = stepAsr
+    ? stepAsr.primaryBcp47
+    : (getVernacularLanguage()?.bcp47 ?? 'und');
+  const { needsSister, failed: sisterCheckFailed } = useNeedsSisterLanguage(
+    primaryBcp47,
+    { onFailed: () => setLoadFailed(true) }
+  );
+  // Seed once the service has answered; a failed check still seeds, so the
+  // user can pick a language.
+  const sisterKnown = needsSister !== undefined || sisterCheckFailed;
+
+  /**
+   * The dialog's settings as they are run or saved: never the primary as the
+   * ASR language when a sister is needed (see withoutPrimaryAsAsrLanguage),
+   * and without a method the service no longer offers as a choice (see
+   * listedAsrMethod). Applied when the user runs or saves.
+   */
+  const tidyForSave = async (dialogAsr: IAsrState): Promise<IAsrState> => {
+    const asr = withoutPrimaryAsAsrLanguage(
+      dialogAsr,
+      primaryBcp47,
+      needsSister
+    );
+    const method = explicitAsrMethod(asr.asrMethod);
+    if (!method) return asr;
+    // The list is cached from the dialog's own load. A failed lookup says
+    // nothing about the method, so keep it: dropping it here would save the
+    // team, step or project without its method over a network error.
+    const methods = await getMethodsForAsr(asr.asrIso, token).catch(
+      () => undefined
+    );
+    if (!methods) return asr;
+    return { ...asr, asrMethod: listedAsrMethod(method, methods) };
+  };
 
   const handleRun = () => {
     checkOnline((online) => {
@@ -109,19 +148,29 @@ export default function SelectAsrLanguage({
         showMessage(ts.mustBeOnline);
         return;
       }
-      // A project whose language differs from the team's keeps this choice
-      // for its next run (a no-op otherwise). Step-language ASR is not the
-      // project's vernacular, so it is not saved here.
-      if (asrState && !stepAsr) saveProjectAsrSettings(asrState);
-      onClose(false, asrState);
+      if (!asrState) {
+        onClose(false, asrState);
+        return;
+      }
+      // tidyForSave catches its own lookup failure, so this can't reject.
+      void tidyForSave(asrState).then((asr) => {
+        // A project whose language differs from the team's keeps this choice
+        // for its next run (a no-op otherwise). Step-language ASR is not the
+        // project's vernacular, so it is not saved here.
+        if (!stepAsr) saveProjectAsrSettings(asr);
+        onClose(false, asr);
+      });
     });
   };
 
   const handleSaveTeamDefault = () => {
     if (!asrState) return;
-    if (stepAsr) saveStepAsrSettings(asrState);
-    else saveTeamAsrSettings(asrState);
-    showMessage(t.asrTeamDefaultSaved);
+    // tidyForSave catches its own lookup failure, so this can't reject.
+    void tidyForSave(asrState).then((asr) => {
+      if (stepAsr) saveStepAsrSettings(asr, stepAsr.stepId);
+      else saveTeamAsrSettings(asr);
+      showMessage(t.asrTeamDefaultSaved);
+    });
   };
 
   const settingsIncomplete =
@@ -137,15 +186,15 @@ export default function SelectAsrLanguage({
   const loadSisterSuggestions = (bcp47: string) => {
     if (stepAsr) {
       // This step's language is not the vernacular, so its recommendations
-      // live on the step itself.
-      const cached = getCachedStepSisterRecommendations();
+      // live on the step its settings are read from.
+      const { stepId } = stepAsr;
+      const cached = getCachedStepSisterRecommendations(stepId);
       if (cached) {
         seedSuggestions(cached);
         return;
       }
-      void fetchRecommendations(
-        isoFromBcp47(bcp47),
-        saveStepSisterRecommendations
+      void fetchRecommendations(isoFromBcp47(bcp47), (found) =>
+        saveStepSisterRecommendations(stepId, found)
       );
       return;
     }
@@ -165,40 +214,35 @@ export default function SelectAsrLanguage({
   // Only an offline session has no token; ASR needs the service, so it can't load.
   const hasToken = token !== null;
 
+  // Set once the dialog holds its seeded settings; an edit is never reseeded.
+  const seeded = React.useRef(false);
+
   const seedDialog = async (isCancelled: () => boolean) => {
     const asr = stepAsr ? stepAsr.asr : await getAsrSettings();
     if (isCancelled()) return;
-    const bcp47 = stepAsr
-      ? stepAsr.primaryBcp47
-      : (getVernacularLanguage()?.bcp47 ?? 'und');
-    // Still seed the dialog when the check fails, so the user can pick a language.
-    let needsSister = false;
-    try {
-      needsSister = await needsSisterLanguage(bcp47, token);
-    } catch (err: unknown) {
-      if (!isCancelled()) reportLoadFailure(err);
-    }
-    if (isCancelled()) return;
-    // A step without a sister resolves its ASR language to the primary itself,
-    // which can't be transcribed; start the sister picker empty instead.
-    const seedIsPrimary =
-      needsSister && stepAsr && asr?.language?.bcp47 === bcp47;
-    setAsrState({
-      target: asr?.target ?? AsrTarget.alphabet,
-      language: seedIsPrimary
-        ? emptyAsrLanguage
-        : (asr?.language ?? emptyAsrLanguage),
-      asrIso: seedIsPrimary ? 'und' : (asr?.asrIso ?? 'eng'),
-      asrMethod: explicitAsrMethod(asr?.asrMethod),
-      dialect: asr?.dialect,
-      selectRoman: asr?.selectRoman ?? false,
-    } as IAsrState);
-    setVernacularBcp47(bcp47);
-    if (needsSister) loadSisterSuggestions(bcp47);
+    // Settings can name the primary itself as the ASR language (e.g. a step
+    // without a sister, or older team data), which can't be transcribed when a
+    // sister is needed; start the sister picker empty instead.
+    setAsrState(
+      withoutPrimaryAsAsrLanguage(
+        {
+          target: asr?.target ?? AsrTarget.alphabet,
+          language: asr?.language ?? initLang,
+          asrIso: asr?.asrIso ?? 'eng',
+          asrMethod: explicitAsrMethod(asr?.asrMethod),
+          dialect: asr?.dialect,
+          selectRoman: asr?.selectRoman ?? false,
+        } as IAsrState,
+        primaryBcp47,
+        needsSister
+      )
+    );
+    seeded.current = true;
+    if (needsSister) loadSisterSuggestions(primaryBcp47);
   };
 
   React.useEffect(() => {
-    if (!hasToken) return;
+    if (!hasToken || !sisterKnown || seeded.current) return;
     let cancelled = false;
     seedDialog(() => cancelled).catch((err: unknown) => {
       if (!cancelled) reportLoadFailure(err);
@@ -206,10 +250,11 @@ export default function SelectAsrLanguage({
     return () => {
       cancelled = true;
     };
-    // Mount once. Later token refreshes or settings-loader identity changes
-    // must not reload the dialog over an edit already in progress.
+    // Seed once, when the sister check has answered. Later token refreshes or
+    // settings-loader identity changes must not reload the dialog over an
+    // edit already in progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasToken, sisterKnown]);
 
   const seeding = !asrState && !loadFailed;
 
@@ -227,7 +272,7 @@ export default function SelectAsrLanguage({
         <AsrSettings
           asr={asrState}
           setAsr={setAsrState}
-          vernacularBcp47={vernacularBcp47}
+          vernacularBcp47={primaryBcp47}
           suggestions={suggestions}
           loading={loading}
           error={error}

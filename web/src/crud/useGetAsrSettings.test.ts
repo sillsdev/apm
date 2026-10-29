@@ -210,40 +210,40 @@ describe('buildWorkflowAsrStateFromSettings', () => {
   });
 
   it('uses step language for PBT when artifactTypeId is a remote id', async () => {
-    const state = await buildWorkflowAsrStateFromSettings(
-      {
+    const state = await buildWorkflowAsrStateFromSettings({
+      settings: {
         artifactTypeId: '99',
         language: 'English|en',
       },
       slugFromId,
       getOrgDefault,
-      'org-1',
-      asrDefault
-    );
+      orgId: 'org-1',
+      asrDefault,
+    });
     expect(state.asrIso).toBe('eng');
     expect(state.asrIso).not.toBe('und');
   });
 
   it('uses sister language when primary is not ASR-supported', async () => {
-    const state = await buildWorkflowAsrStateFromSettings(
-      {
+    const state = await buildWorkflowAsrStateFromSettings({
+      settings: {
         artifactTypeId: '99',
         language: 'Klingon|tlh',
         sisterlanguage: 'English|en',
       },
       slugFromId,
       getOrgDefault,
-      'org-1',
-      asrDefault
-    );
+      orgId: 'org-1',
+      asrDefault,
+    });
     expect(state.asrIso).toBe('eng');
     expect(state.language.languageName).toBe('English');
     expect(state.language.bcp47).toBe('en');
   });
 
   it('propagates the persisted selectRoman (transliterate) flag', async () => {
-    const state = await buildWorkflowAsrStateFromSettings(
-      {
+    const state = await buildWorkflowAsrStateFromSettings({
+      settings: {
         artifactTypeId: '99',
         language: 'Klingon|tlh',
         sisterlanguage: 'English|en',
@@ -251,9 +251,9 @@ describe('buildWorkflowAsrStateFromSettings', () => {
       },
       slugFromId,
       getOrgDefault,
-      'org-1',
-      asrDefault
-    );
+      orgId: 'org-1',
+      asrDefault,
+    });
     expect(state.selectRoman).toBe(true);
   });
 });
@@ -294,13 +294,13 @@ describe('buildWorkflowAsrStateFromSettings Q&A and Retell', () => {
       }
       return undefined;
     };
-    const state = await buildWorkflowAsrStateFromSettings(
-      { artifactTypeId: 'qa' },
+    const state = await buildWorkflowAsrStateFromSettings({
+      settings: { artifactTypeId: 'qa' },
       slugFromId,
       getOrgDefault,
-      'org-1',
-      asrDefault
-    );
+      orgId: 'org-1',
+      asrDefault,
+    });
     expect(state.target).toBe(AsrTarget.phonetic);
     expect(state.asrIso).toBe('eng');
     expect(state.language.bcp47).toBe('en');

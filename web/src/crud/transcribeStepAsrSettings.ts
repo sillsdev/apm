@@ -1,6 +1,7 @@
 import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
+import { initLang } from '../control/initLang';
 import { explicitAsrMethod } from '../business/asr/asrMethod';
 import {
   isoFromBcp47,
@@ -275,14 +276,6 @@ function stepSelectRoman(settings: TranscribeStepSettings): boolean {
   return settings?.selectRoman === true || settings?.selectRoman === 'true';
 }
 
-const unsetLanguage = (): ILanguage => ({
-  bcp47: 'und',
-  languageName: '',
-  font: '',
-  rtl: false,
-  spellCheck: false,
-});
-
 /**
  * ASR stored on a step: its phonetic choice, sister language (the ASR
  * language when it isn't the step's own), method, and transliterate.
@@ -294,7 +287,7 @@ export function stepAsrFromSettings(
   const target = asrTargetFromSettings(settings);
   return {
     target,
-    language: { ...unsetLanguage(), ...sister },
+    language: { ...initLang, ...sister },
     asrIso: isLangSet(sister.bcp47) ? isoFromBcp47(sister.bcp47) : 'und',
     asrMethod: explicitAsrMethod(settings?.asrMethod),
     dialect: undefined,
@@ -384,15 +377,25 @@ export async function buildVernacularAsrState(
   };
 }
 
-export async function buildWorkflowAsrStateFromSettings(
-  settings: TranscribeStepSettings,
-  slugFromId: SlugFromIdFn,
-  getOrgDefault: GetOrgDefaultFn,
-  orgId: string | undefined,
-  asrDefault: IAsrState,
-  projectLang?: ILanguage,
-  token?: string | null
-): Promise<IAsrState> {
+export interface WorkflowAsrStateOptions {
+  settings: TranscribeStepSettings;
+  slugFromId: SlugFromIdFn;
+  getOrgDefault: GetOrgDefaultFn;
+  orgId: string | undefined;
+  asrDefault: IAsrState;
+  projectLang?: ILanguage;
+  token?: string | null;
+}
+
+export async function buildWorkflowAsrStateFromSettings({
+  settings,
+  slugFromId,
+  getOrgDefault,
+  orgId,
+  asrDefault,
+  projectLang,
+  token,
+}: WorkflowAsrStateOptions): Promise<IAsrState> {
   if (!settings?.artifactTypeId) return asrDefault;
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
   if (artifactUsesOrgVernacularLanguage(slug)) {

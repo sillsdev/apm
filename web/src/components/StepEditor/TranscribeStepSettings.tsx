@@ -7,6 +7,7 @@ import {
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
+import { initLang } from '../../control/initLang';
 import { useGlobal } from '../../context/useGlobal';
 import { JSONParse, isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
@@ -49,15 +50,8 @@ interface LangState {
   spellCheck: boolean;
   changed: boolean;
 }
-const emptyLanguage = (): ILanguage => ({
-  bcp47: 'und',
-  languageName: '',
-  font: '',
-  rtl: false,
-  spellCheck: false,
-});
-const initLang = {
-  ...emptyLanguage(),
+const initLangState = {
+  ...initLang,
   artId: '',
   changed: false,
 };
@@ -85,7 +79,7 @@ export const TranscribeStepSettings = ({
     ArtifactTypeSlug.Retell,
   ];
   const [initialValue, setInitialValue] = useState<string | null>(null);
-  const [lgState, setLgState] = useState<LangState>({ ...initLang });
+  const [lgState, setLgState] = useState<LangState>({ ...initLangState });
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const { slugFromId } = useArtifactType();
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
@@ -103,7 +97,7 @@ export const TranscribeStepSettings = ({
   }, []);
 
   const [vernacularLanguage, setVernacularLanguage] =
-    useState<ILanguage>(emptyLanguage);
+    useState<ILanguage>(initLang);
   const vernacularPickerInit = useRef(true);
   const { getOrgDefault } = useOrgDefaults();
   const setTeamLanguage = useSetTeamLanguage();
@@ -119,10 +113,10 @@ export const TranscribeStepSettings = ({
   const toolSettingsRef = useRef(toolSettings);
   toolSettingsRef.current = toolSettings;
   const readVernacularFromOrg = useCallback(() => {
-    if (!org) return emptyLanguage();
+    if (!org) return initLang;
     return (
       (getOrgDefault(orgDefaultLangProps, org) as ILanguage | undefined) ??
-      emptyLanguage()
+      initLang
     );
   }, [getOrgDefault, org]);
 

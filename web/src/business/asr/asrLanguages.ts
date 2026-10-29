@@ -29,6 +29,14 @@ const asrMethodsInflight = new Map<string, Promise<string[]>>();
 let asrLanguageCodes: Set<string> | undefined;
 let asrLanguagesRequest: Promise<Set<string>> | undefined;
 
+/**
+ * The methods already loaded for this iso this session, without asking the
+ * service; undefined when none are cached yet.
+ */
+export function cachedAsrMethods(iso: string): string[] | undefined {
+  return asrMethodsByIso.get(iso);
+}
+
 /** Test hook. Production calls fill the session caches. */
 export function clearAsrLanguageValidityCache(): void {
   asrMethodsByIso.clear();

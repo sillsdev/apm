@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useOrgDefaults } from '../../../../crud/useOrgDefaults';
 import type { IRegionParams } from '../../../../crud/useWavesurferRegions';
 import { NamedRegions } from '../../../../utils/namedSegments';
@@ -16,15 +16,28 @@ const defaultSegParams: IRegionParams = {
  */
 export function useTeamSegParams() {
   const { getOrgDefault } = useOrgDefaults();
-  const [segParams, setSegParams] = useState<IRegionParams>(defaultSegParams);
   // The team settings as a value: getOrgDefault is recreated every render and
-  // parses a fresh object, so neither can key the effect.
+  // parses a fresh object, so neither can be compared from render to render.
   const teamSegParams = JSON.stringify(
     getOrgDefault(NamedRegions.Transcription) ?? null
   );
-  useEffect(() => {
-    const params = JSON.parse(teamSegParams) as IRegionParams | null;
-    if (params) setSegParams(params);
-  }, [teamSegParams]);
+  const teamParams = useMemo(
+    () => JSON.parse(teamSegParams) as IRegionParams | null,
+    [teamSegParams]
+  );
+  // A local edit remembers the team settings it was made against, and only
+  // applies while those are still the team settings.
+  const [localEdit, setLocalEdit] = useState<{
+    forTeam: string;
+    params: IRegionParams;
+  }>();
+  const segParams =
+    localEdit && localEdit.forTeam === teamSegParams
+      ? localEdit.params
+      : (teamParams ?? defaultSegParams);
+  const setSegParams = useCallback(
+    (params: IRegionParams) => setLocalEdit({ forTeam: teamSegParams, params }),
+    [teamSegParams]
+  );
   return [segParams, setSegParams] as const;
 }

@@ -1,5 +1,10 @@
 import { AsrTarget } from './AsrTarget';
-import { IAsrState, asrStatesEqual, normalizeAsrState } from './asrState';
+import {
+  IAsrState,
+  asrStatesEqual,
+  normalizeAsrState,
+  withoutPrimaryAsAsrLanguage,
+} from './asrState';
 
 const baseState = (): IAsrState => ({
   target: AsrTarget.alphabet,
@@ -73,5 +78,27 @@ describe('normalizeAsrState', () => {
     expect(
       normalizeAsrState({ asrIso: 'eng', asrMethod: 'mms' })?.asrMethod
     ).toBe('mms');
+  });
+});
+
+describe('withoutPrimaryAsAsrLanguage', () => {
+  it('replaces the primary with no ASR language when a sister is needed', () => {
+    const asr = withoutPrimaryAsAsrLanguage(baseState(), 'en', true);
+    expect(asr.language.bcp47).toBe('und');
+    expect(asr.asrIso).toBe('und');
+  });
+
+  it('keeps a chosen sister', () => {
+    const asr = withoutPrimaryAsAsrLanguage(baseState(), 'kn', true);
+    expect(asr.language.bcp47).toBe('en');
+  });
+
+  it('keeps the primary when it needs no sister, or the answer is unknown', () => {
+    expect(withoutPrimaryAsAsrLanguage(baseState(), 'en', false).asrIso).toBe(
+      'eng'
+    );
+    expect(
+      withoutPrimaryAsAsrLanguage(baseState(), 'en', undefined).asrIso
+    ).toBe('eng');
   });
 });

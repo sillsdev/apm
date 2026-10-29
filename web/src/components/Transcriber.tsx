@@ -70,7 +70,7 @@ import {
   resolvedProjectType,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
-import { useAsrSettings } from './PassageDetail/transcribe/useTranscribeAsr';
+import { useTranscribeAsr } from './PassageDetail/transcribe/useTranscribeAsr';
 import { parseStepLanguageField } from '../crud/transcribeStepAsrSettings';
 import {
   insertAtCursor,
@@ -122,13 +122,10 @@ import { BigDialogBp } from '../hoc/BigDialogBp';
 import AsrButton from '../control/ConfButton';
 import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
-import { AsrTarget } from '../business/asr/AsrTarget';
-import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
+import { asrStatesEqual } from '../business/asr/asrState';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
-import { useCheckOnline } from '../utils/useCheckOnline';
 import { useMobile } from '../utils/useMobile';
-import { useLocLangName } from '../utils/useLocLangName';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -340,22 +337,13 @@ export function Transcriber(props: Readonly<IProps>) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const asrSettings = useAsrSettings(team, showMessage);
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
     shallowEqual
   );
-  const [getName] = useLocLangName();
-  const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { isMobile } = useMobile();
   const [features, setFeatures] = useState<IFeatures>();
-  const [asrProgressVisible, setAsrProgressVisible] = useState(false);
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
-  const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
-    undefined
-  );
   const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -1240,43 +1228,42 @@ export function Transcriber(props: Readonly<IProps>) {
     }
   };
 
-  const handleAutoTranscribe = (trans: string) => {
-    // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
-    // longer digit run from matching at a suffix and leaving a stray digit.
-    const cleanTrans = trans
-      .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
-      .trim();
-    const curTrans: string = transcriptionRef.current?.firstChild?.value ?? '';
-    if (curTrans.includes(cleanTrans)) return;
-    const m = /\\v (\d+)\s?/.exec(cleanTrans);
-    const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
-    const space = /\s$/.test(curTrans) ? '' : ' ';
-    addText(space + cleanTrans.substring(index), true);
-    toolChanged(toolId, true);
-  };
-
   const hasAiTasks = useMemo(() => {
     const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
     return hasTranscriptionTask(mediaRec?.attributes?.segments);
   }, [playerMediafile, mediarecs]);
 
+  // The same ASR flow as mobile transcribe; ASR text goes at the end and
+  // marks the tool changed.
+  const {
+    asrSettings,
+    asrTip,
+    asrProgressVisible,
+    setAsrProgressVisible,
+    asrLangVisible,
+    setAsrLangVisible,
+    asrOverride,
+    phonetic,
+    handleTranscribe,
+    handleAsrLanguageClose,
+    handleAutoTranscribe,
+  } = useTranscribeAsr({
+    team,
+    sharedStr,
+    tPlayer,
+    showMessage,
+    onTextAdd: (text) => {
+      addText(text, true);
+      toolChanged(toolId, true);
+    },
+    getCurrentText: () => transcriptionRef.current?.firstChild?.value ?? '',
+    hasActiveTask: hasAiTasks,
+  });
+
   const hasTranscription = useMemo(
     () => textValue !== '' && verseLabels.length <= contentVerses.length,
     [textValue, verseLabels.length, contentVerses.length]
   );
-  const asrTip = useMemo(() => {
-    return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
-      '{0}',
-      asrSettings?.language?.languageName?.trim()
-        ? `\u2039 ${
-            getName(asrSettings?.language.bcp47) ||
-            asrSettings?.language?.languageName
-          } \u203A`
-        : ''
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asrSettings]);
-
   const onPullTasks = (remoteId: string) => {
     pullTableList(
       'mediafile',
@@ -1288,42 +1275,6 @@ export function Transcriber(props: Readonly<IProps>) {
     ).then(() => {
       if (forceRefresh) forceRefresh();
     });
-  };
-
-  const startAsr = (asrOverrideState?: IAsrState) => {
-    const asr = asrOverrideState ?? asrSettings;
-    setAsrOverride(asrOverrideState);
-    setPhonetic(asr?.target === AsrTarget.phonetic);
-    setAsrProgressVisible(true);
-  };
-
-  const openAsrLanguageSettings = () => {
-    setAsrLangVisible(true);
-  };
-
-  const handleTranscribe = () => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(sharedStr.mustBeOnline);
-        return;
-      }
-      if (hasAiTasks) {
-        startAsr(asrSettings);
-        return;
-      }
-      if (asrSettings && isLangSet(asrSettings.asrIso)) {
-        startAsr(asrSettings);
-        return;
-      }
-      openAsrLanguageSettings();
-    });
-  };
-
-  const handleAsrLanguageClose = (cancel: boolean, asrState?: IAsrState) => {
-    setAsrLangVisible(false);
-    if (cancel) return;
-    const asr = asrState ?? asrSettings;
-    if (asr && isLangSet(asr.asrIso)) startAsr(asr);
   };
 
   const handleAsrProgressVisible = (v: boolean) => {
@@ -1453,7 +1404,7 @@ export function Transcriber(props: Readonly<IProps>) {
                             <AsrButton
                               id="asrButton"
                               onClick={handleTranscribe}
-                              onSettings={openAsrLanguageSettings}
+                              onSettings={() => setAsrLangVisible(true)}
                               settingsLabel={tPlayer.recognizeSpeechSettings}
                               disabled={role !== 'transcriber'}
                             >

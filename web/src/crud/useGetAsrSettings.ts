@@ -175,9 +175,9 @@ export function useGetAsrSettings(team?: OrganizationD) {
     });
   };
 
-  const currentStepTool = () => {
-    const step = currentstep
-      ? (findRecord(memory, 'orgworkflowstep', currentstep) as
+  const stepTool = (stepId: string | undefined) => {
+    const step = stepId
+      ? (findRecord(memory, 'orgworkflowstep', stepId) as
           OrgWorkflowStepD | undefined)
       : undefined;
     const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
@@ -187,10 +187,14 @@ export function useGetAsrSettings(team?: OrganizationD) {
     return { step, json, settings: parseStepSettings(json?.settings) };
   };
 
-  /** Sister recommendations cached on a step that uses its own language. */
-  const getCachedStepSisterRecommendations = ():
-    IAsrLanguageSuggestion[] | undefined => {
-    const { settings } = currentStepTool();
+  /**
+   * Sister recommendations cached on a step that uses its own language: the
+   * step its ASR settings are read from, which may not be the current step.
+   */
+  const getCachedStepSisterRecommendations = (
+    stepId: string | undefined
+  ): IAsrLanguageSuggestion[] | undefined => {
+    const { settings } = stepTool(stepId);
     const stored = readSisterRecommendations(
       settings,
       stepSisterRecommendationKey(settings)
@@ -200,9 +204,10 @@ export function useGetAsrSettings(team?: OrganizationD) {
   };
 
   const saveStepSisterRecommendations = (
+    stepId: string | undefined,
     suggestions: IAsrLanguageSuggestion[]
   ) => {
-    const { step, json, settings } = currentStepTool();
+    const { step, json, settings } = stepTool(stepId);
     if (!step) return;
     const key = stepSisterRecommendationKey(settings);
     if (!key) return;
@@ -278,15 +283,15 @@ export function useGetAsrSettings(team?: OrganizationD) {
         token
       );
     }
-    return buildWorkflowAsrStateFromSettings(
+    return buildWorkflowAsrStateFromSettings({
       settings,
       slugFromId,
       getOrgDefault,
       orgId,
-      defaultAsrState,
+      asrDefault: defaultAsrState,
       projectLang,
-      token
-    );
+      token,
+    });
     // slugFromId, getOrgDefault, getProjectDefault, usesProjectAsr and
     // savedProjectAsrApplies are recreated every render. Including them makes
     // getAsrSettings change every render and the load effect restarts. Team and
@@ -373,30 +378,21 @@ export function useGetAsrSettings(team?: OrganizationD) {
       token
     );
   };
-  const saveTranscribeStepSettings = (settings: string) => {
-    const step = orgSteps.find((s) => s.id === currentstep);
+  /**
+   * ASR for a step that does not use the vernacular, saved on the step its
+   * settings are read from (e.g. the upstream recording step for LWC).
+   */
+  const saveStepAsrSettings = (
+    asrState: IAsrState,
+    stepId: string | undefined
+  ) => {
+    const { step, json, settings } = stepTool(stepId);
     if (!step) return;
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    json.settings = settings;
+    json.settings = JSON.stringify(
+      stepSettingsFromAsrState(settings, asrState)
+    );
     step.attributes.tool = JSON.stringify(json);
     void memory.update((t) => UpdateRecord(t, step, user));
-  };
-
-  /** Step that does not use the vernacular: keep this off the org default. */
-  const saveStepAsrSettings = (asrState: IAsrState) => {
-    const step = orgSteps.find((s) => s.id === currentstep);
-    if (!step) return;
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    const settings = parseStepSettings(json?.settings);
-    saveTranscribeStepSettings(
-      JSON.stringify(stepSettingsFromAsrState(settings, asrState))
-    );
   };
 
   return {
