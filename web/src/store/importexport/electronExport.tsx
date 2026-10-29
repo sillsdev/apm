@@ -392,7 +392,7 @@ export async function electronExport(
     }
 
     await AddSourceEntry(imported.toISO() ?? '');
-    await AddVersionEntry((backup?.schema.version || 11).toString());
+    await AddVersionEntry((backup?.schema.version || 12).toString());
     if (!needsRemoteIds) await AddOfflineEntry();
     let numRecs = 0;
     let numFiltered = 0;

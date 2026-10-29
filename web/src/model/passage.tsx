@@ -22,6 +22,7 @@ export interface Passage extends BaseModel {
     endChapter?: number; //calculated
     startVerse?: number; //calculated
     endVerse?: number; //calculated
+    unversionedRenderingUrl?: string | null;
   };
   relationships?: {
     section: RecordRelationship;

@@ -337,6 +337,7 @@ const schemaDefinition: RecordSchemaSettings = {
         startVerse: { type: 'number' },
         endChapter: { type: 'number' },
         endVerse: { type: 'number' },
+        unversionedRenderingUrl: { type: 'string' },
       },
       relationships: {
         mediafiles: { kind: 'hasMany', type: 'mediafile', inverse: 'passage' },
@@ -420,6 +421,7 @@ const schemaDefinition: RecordSchemaSettings = {
         sourceMediaId: { type: 'number' },
         publishedAs: { type: 'string' },
         publishTo: { type: 'string' },
+        note: { type: 'string' },
       },
       relationships: {
         artifactType: { kind: 'hasOne', type: 'artifacttype' },
@@ -431,6 +433,7 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
         recordedbyUser: { kind: 'hasOne', type: 'user' },
         sourceMedia: { kind: 'hasOne', type: 'mediafile' },
+        renderSourceMedia: { kind: 'hasOne', type: 'mediafile' },
       },
     },
     user: {
@@ -1055,6 +1058,29 @@ if (requestedSchema > 10 && schemaDefinition.models) {
     },
   };
   schemaDefinition.version = 11;
+}
+if (requestedSchema > 11 && schemaDefinition.models) {
+  schemaDefinition.models.mediareplacement = {
+    keys: { remoteId: {} },
+    attributes: {
+      selectionStart: { type: 'number' },
+      selectionEnd: { type: 'number' },
+      dateCreated: { type: 'string' }, // datetime
+      dateUpdated: { type: 'string' }, // datetime
+      lastModifiedBy: { type: 'number' }, //bkwd compat only
+    },
+    relationships: {
+      plan: {
+        kind: 'hasOne',
+        type: 'plan',
+        inverse: 'mediareplacements',
+      },
+      replacementMediafile: { kind: 'hasOne', type: 'mediafile' },
+      outputMediafile: { kind: 'hasOne', type: 'mediafile' },
+      lastModifiedByUser: { kind: 'hasOne', type: 'user' },
+    },
+  };
+  schemaDefinition.version = 12;
 }
 
 export const schema = new RecordSchema(schemaDefinition);

@@ -107,6 +107,17 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
             })
           ) as BaseModel[]
         ).filter((x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships));
+
+      const mediareplacementRows = () =>
+        (
+          memory?.cache.query((q) =>
+            q.findRecords('mediareplacement').filter({
+              relation: 'plan',
+              record: { type: 'plan', id: plan.id },
+            })
+          ) as BaseModel[]
+        ).filter((x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships));
+
       const discussionRows = () => {
         const mediafiles = mediafileRows().map((m) => m.id);
         return (
@@ -249,6 +260,8 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           return filterByOrg(table);
         case 'mediafile':
           return mediafileRows();
+        case 'mediareplacement':
+          return mediareplacementRows();
         case 'organization':
           return [findRecord(memory, 'organization', org)];
 

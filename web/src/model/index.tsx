@@ -7,6 +7,7 @@ export * from './integration';
 export * from './invitation';
 export * from './mediaDescription';
 export * from './mediafile';
+export * from './mediareplacement';
 export * from './offlineProject';
 export * from './project';
 export * from './projectType';

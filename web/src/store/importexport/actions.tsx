@@ -15,6 +15,7 @@ import {
   OfflineProject,
   VProject,
   Discussion,
+  MediaReplacement,
   OrgWorkflowStep,
   IApiError,
   MediaFileD,
@@ -1360,6 +1361,13 @@ export const importProjectToElectron =
       )
         .filter((psc) => passageids.includes(related(psc, 'passage')))
         .map((p) => p.id);
+      const mediareplacementids = (
+        memory.cache.query((q) =>
+          q.findRecords('mediareplacement')
+        ) as (MediaReplacement & InitializedRecord)[]
+      )
+        .filter((m) => planids.includes(related(m, 'plan')))
+        .map((m) => m.id);
       const mediaids = (
         memory.cache.query((q) => q.findRecords('mediafile')) as (MediaFile &
           InitializedRecord)[]
@@ -1398,6 +1406,11 @@ export const importProjectToElectron =
       discussionids.forEach((id) =>
         delOpArray.push(
           tb.removeRecord({ type: 'discussion', id: id }).toOperation()
+        )
+      );
+      mediareplacementids.forEach((id) =>
+        delOpArray.push(
+          tb.removeRecord({ type: 'mediareplacement', id: id }).toOperation()
         )
       );
       mediaids.forEach((id) =>
