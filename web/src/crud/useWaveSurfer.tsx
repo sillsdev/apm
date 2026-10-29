@@ -24,7 +24,7 @@ import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions, useMobile } from '../utils';
 import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
-import { pasteSpan, sliceAudioBuffer } from './audioClipboard';
+import { pastedSelection, pasteSpan, sliceAudioBuffer } from './audioClipboard';
 
 const noop = () => {};
 
@@ -295,6 +295,7 @@ export function useWaveSurfer(
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
+    wsSelectSpan,
     prepareForDestroy,
   } = useWaveSurferRegions(
     singleRegionOnly,
@@ -785,13 +786,25 @@ export function useWaveSurfer(
     return blobRef.current;
   };
 
-  const wsRegionBlob = async () => {
-    if (!wavesurfer) return;
-    if (!currentRegion()) return wsBlob();
+  // The slice wsRegionBlob sends, or undefined when it sends the whole blob.
+  const regionSlice = () => {
+    if (!currentRegion() || !blobAudioRef.current) return undefined;
     const start = trimTo(currentRegion()?.start ?? 0, 3);
     const end = trimTo(currentRegion()?.end ?? 0, 3);
-    const len = end - start;
-    if (!len) return wsBlob();
+    return end - start ? { start, end } : undefined;
+  };
+
+  /** Seconds of audio wsRegionBlob will return. */
+  const wsRegionDuration = () => {
+    const slice = regionSlice();
+    return slice ? slice.end - slice.start : wsDuration();
+  };
+
+  const wsRegionBlob = async () => {
+    if (!wavesurfer) return;
+    const slice = regionSlice();
+    if (!slice) return wsBlob();
+    const { start, end } = slice;
 
     const originalBuffer = blobAudioRef.current;
     if (!originalBuffer) return wsBlob();
@@ -984,6 +997,9 @@ export function useWaveSurfer(
     } else {
       await insertAudioData(clip, span.start, span.end);
     }
+    const selection = pastedSelection(span, clip.length, clip.sampleRate);
+    if (selection && singleRegionOnly)
+      wsSelectSpan(selection.start, selection.end);
     return true;
   };
 
@@ -1262,6 +1278,7 @@ export function useWaveSurfer(
     wsLoad,
     wsBlob,
     wsRegionBlob,
+    wsRegionDuration,
     wsClear,
     wsIsPlaying,
     wsTogglePlay,

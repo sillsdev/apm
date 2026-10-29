@@ -1,4 +1,3 @@
-/* eslint-disable no-template-curly-in-string */
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import {
   IMainStrings,
@@ -26,6 +25,7 @@ import {
   Switch,
   Stack,
 } from '@mui/material';
+import logError, { Severity } from '../utils/logErrorService';
 import Confirm from '../components/AlertDialog';
 import Typography, { TypographyProps } from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
@@ -38,14 +38,12 @@ import { uiLang, uiLangDev } from '../utils/uiLang';
 import { useMyNavigate } from '../utils/useMyNavigate';
 import { useWaitForRemoteQueue } from '../utils/useWaitForRemoteQueue';
 import { waitForIt } from '../utils/waitForIt';
-import { mainSelector } from '../selector';
-import { shallowEqual, useSelector } from 'react-redux';
+import { mainSelector, profileSelector } from '../selector';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import ParatextLinkedButton from '../components/ParatextLinkedButton';
-import { profileSelector } from '../selector';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { RecordTransformResult, InitializedRecord } from '@orbit/records';
-import { useDispatch } from 'react-redux';
 import { useGlobal } from '../context/useGlobal';
 import { setLanguage as setLanguageAction } from '../store/localization/actions';
 import { related } from '../crud/related';
@@ -53,6 +51,7 @@ import { RemoveUserFromOrg } from '../crud/user';
 import { useAddToOrgAndGroup } from '../crud/useAddToOrgAndGroup';
 import { useRole } from '../crud/useRole';
 import { useTeamDelete } from '../crud/useTeamDelete';
+import { useOfflnProjDelete } from '../crud/useOfflnProjDelete';
 import { useUser } from '../crud/useUser';
 import { DateTime } from 'luxon';
 import {
@@ -248,7 +247,7 @@ export interface ProfileDialogProps {
   onCancel?: () => void;
   finishAdd?: () => void;
 }
-export function ProfileDialog(props: ProfileDialogProps) {
+export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
   const {
     mode,
     open,
@@ -259,6 +258,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
     onCancel,
     finishAdd,
   } = props;
+  const [errorReporter] = useGlobal('errorReporter');
   const users = useOrbitData<UserD[]>('user');
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const tp: IProfileStrings = useSelector(profileSelector, shallowEqual);
@@ -317,6 +317,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
   const { showMessage } = useSnackBar();
   const addToOrgAndGroup = useAddToOrgAndGroup();
   const teamDelete = useTeamDelete();
+  const offlineProjectDelete = useOfflnProjDelete();
   const toolId = 'profile';
   const saving = useRef(false);
   const [confirmCancel, setConfirmCancel] = useState<string>();
@@ -482,6 +483,13 @@ export function ProfileDialog(props: ProfileDialogProps) {
               onSaveCompleted();
             }
           }
+        })
+        .catch((error) => {
+          logError(
+            Severity.error,
+            errorReporter,
+            'Error saving user profile: ' + error.message
+          );
         });
       const mbrRec = getMbrRoleRec(
         'organization',
@@ -491,9 +499,17 @@ export function ProfileDialog(props: ProfileDialogProps) {
       if (mbrRec) {
         const curRoleId = related(mbrRec, 'role');
         if (curRoleId !== role) {
-          memory.update((t) =>
-            UpdateRelatedRecord(t, mbrRec, 'role', 'role', role, user)
-          );
+          memory
+            .update((t) =>
+              UpdateRelatedRecord(t, mbrRec, 'role', 'role', role, user)
+            )
+            .catch((error) => {
+              logError(
+                Severity.error,
+                errorReporter,
+                'Error saving user role: ' + error.message
+              );
+            });
         }
       }
       if (!editId) setLanguage(locale);
@@ -644,7 +660,14 @@ export function ProfileDialog(props: ProfileDialogProps) {
     const deleteRec = getUserRec(deleteItem);
     try {
       await waitForRemoteQueue('wait for any changes to finish');
-      await RemoveUserFromOrg(memory, deleteRec, undefined, user, teamDelete);
+      await RemoveUserFromOrg(
+        memory,
+        deleteRec,
+        undefined,
+        user,
+        teamDelete,
+        offlineProjectDelete
+      );
       await memory.update((tb) =>
         tb.removeRecord({ type: 'user', id: deleteItem })
       );
@@ -694,7 +717,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
       },
     } as User;
     if (!editId || !/Add/i.test(editId)) {
-      const current = users.filter((u) => u.id === (editId ? editId : user));
+      const current = users.filter((u) => u.id === (editId || user));
       if (current.length === 1) {
         userRec = current[0];
         setCurrentUser(userRec as UserD);
@@ -792,6 +815,15 @@ export function ProfileDialog(props: ProfileDialogProps) {
     setReadOnly(false);
   };
 
+  let profileTitle = t.myAccount;
+  if (editId && /Add/i.test(editId)) profileTitle = tp.addMember;
+  else if (userNotComplete()) profileTitle = tp.completeProfile;
+  else if (editId) profileTitle = tp.editMember;
+
+  let primaryLabel = tp.save;
+  if (userNotComplete()) primaryLabel = tp.next;
+  if (editId && /Add/i.test(editId)) primaryLabel = tp.add;
+
   return (
     <Dialog
       id="profile"
@@ -815,13 +847,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
             : undefined
         }
       >
-        {editId && /Add/i.test(editId)
-          ? tp.addMember
-          : userNotComplete()
-            ? tp.completeProfile
-            : editId
-              ? tp.editMember
-              : t.myAccount}
+        {profileTitle}
       </StyledDialogTitle>
       <DialogContent id="profileContent" sx={profileContentProps}>
         <Box id="profilePanel" sx={profilePanelProps}>
@@ -928,14 +954,16 @@ export function ProfileDialog(props: ProfileDialogProps) {
                         value={syncFreq}
                         onChange={handleSyncFreqChange}
                         type="number"
-                        inputProps={{
-                          min: 1,
-                          max: 720,
-                        }}
-                        InputProps={{
-                          endAdornment: 'min',
-                          sx: {
-                            color: 'primary.contrastText',
+                        slotProps={{
+                          htmlInput: {
+                            min: 1,
+                            max: 720,
+                          },
+                          input: {
+                            endAdornment: 'min',
+                            sx: {
+                              color: 'primary.contrastText',
+                            },
                           },
                         }}
                         size="small"
@@ -963,9 +991,11 @@ export function ProfileDialog(props: ProfileDialogProps) {
                 margin="normal"
                 variant="standard"
                 size="small"
-                InputProps={{
-                  readOnly: true,
-                  disableUnderline: true,
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    disableUnderline: true,
+                  },
                 }}
               />
               <TextField
@@ -976,9 +1006,11 @@ export function ProfileDialog(props: ProfileDialogProps) {
                 margin="normal"
                 variant="standard"
                 size="small"
-                InputProps={{
-                  readOnly: true,
-                  disableUnderline: true,
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                    disableUnderline: true,
+                  },
                 }}
               />
               <TextField
@@ -1143,9 +1175,11 @@ export function ProfileDialog(props: ProfileDialogProps) {
                         size="small"
                         fullWidth
                         onChange={handleLocaleChange}
-                        SelectProps={{
-                          MenuProps: {
-                            sx: menuProps,
+                        slotProps={{
+                          select: {
+                            MenuProps: {
+                              sx: menuProps,
+                            },
                           },
                         }}
                         required
@@ -1172,9 +1206,11 @@ export function ProfileDialog(props: ProfileDialogProps) {
                         size="small"
                         fullWidth
                         onChange={handleTimezoneChange}
-                        SelectProps={{
-                          MenuProps: {
-                            sx: menuProps,
+                        slotProps={{
+                          select: {
+                            MenuProps: {
+                              sx: menuProps,
+                            },
                           },
                         }}
                         required={true}
@@ -1272,13 +1308,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
               }}
             >
               <AltActionBar
-                primaryLabel={
-                  editId && /Add/i.test(editId)
-                    ? tp.add
-                    : userNotComplete()
-                      ? tp.next
-                      : tp.save
-                }
+                primaryLabel={primaryLabel}
                 primaryOnClick={
                   currentUser === undefined ? handleAdd : handleSave
                 }

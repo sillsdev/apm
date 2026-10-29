@@ -13,18 +13,19 @@ if exist "..\wt\%1" (
   git worktree add "..\wt\%1" -b %1
   if errorlevel 1 exit /b 1
 )
-cd "..\wt\%1"
+cd /d "..\wt\%1"
 call npm install
 if errorlevel 1 exit /b 1
-cd src
+cd web
 call npm install
 if errorlevel 1 exit /b 1
-cd ..\..
+cd ..
 call npm run stamp
 if errorlevel 1 exit /b 1
 if not exist env-config mkdir env-config
+REM * does not match leading-dot names. .* copies .env.* and .auth0-variables.*.json.
 xcopy /Y /Q "%REPO%\env-config\*" "env-config\" >nul
-xcopy /Y /H /Q "%REPO%\env-config\.env*" "env-config\" >nul
+xcopy /Y /H /Q "%REPO%\env-config\.*" "env-config\" >nul
 call npm run devs
 if errorlevel 1 exit /b 1
 if exist "%REPO%\localization\bin" (

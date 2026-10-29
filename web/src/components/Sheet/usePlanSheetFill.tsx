@@ -7,6 +7,7 @@ import {
   OptionType,
 } from '../../model';
 import { ICell, ICellChange } from './PlanSheet';
+import { NoteTitleField } from './NoteTitleField';
 import { planSheetSelector, viewModeSelector } from '../../selector';
 import {
   related,
@@ -480,20 +481,20 @@ export const usePlanSheetFill = ({
     const handleMediaIdChange = (mediaId: string) => {
       titleMediaChanged(rowIndex, mediaId);
     };
-    const noteTitle = (e: string) => {
-      return (
-        <>
-          {'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
-          {NoteIcon}
-          {'\u00A0'}
-          {e}
-        </>
-      );
-    };
 
     return (
       <>
-        {isNote && noteTitle(e as string)}
+        {isNote && (
+          <>
+            {NoteIcon}
+            {'\u00A0'}
+            <NoteTitleField
+              value={e as string}
+              readonly={readonly}
+              onChange={handleTextChange}
+            />
+          </>
+        )}
         {!isNote && (
           <TitleEdit
             title={e as string}

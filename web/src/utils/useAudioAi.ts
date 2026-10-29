@@ -14,6 +14,11 @@ import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
 import { MediaFileAttributes } from '../model/mediafile';
 import { runWithUploadRetries } from '../store/upload/uploadRetry';
+import {
+  AudioAiError,
+  AudioAiErrorCode,
+  AudioAiTimeoutError,
+} from './audioAiError';
 
 interface fileTask {
   taskId: string;
@@ -29,7 +34,7 @@ interface fileTask {
 const timerDelay = 10000; //10 seconds
 /** S3 URL returned but body still empty — stop after this many poll ticks. */
 const MAX_EMPTY_S3_RESULT_POLLS = 3;
-const S3_POLL_MAX_WAIT_MS = 10 * 60 * 1000;
+export const S3_POLL_MAX_WAIT_MS = 10 * 60 * 1000;
 
 export enum AudioAiFunc {
   noiseRemoval = 'noiseremoval',
@@ -54,7 +59,7 @@ export const useAudioAi = (): AudioAIResult => {
   const taskTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const getGlobal = useGetGlobal();
-  const cancelled = new Error('canceled');
+  const cancelled = new AudioAiError(AudioAiErrorCode.canceled);
 
   const cleanupTimer = (): void => {
     if (returnAsS3List.current.length === 0 && taskTimer.current) {
@@ -92,7 +97,7 @@ export const useAudioAi = (): AudioAIResult => {
       task.pollStartedAt &&
       new Date().getTime() - task.pollStartedAt > S3_POLL_MAX_WAIT_MS
     ) {
-      throw new Error('AI result timed out');
+      throw new AudioAiTimeoutError();
     }
     task.polling = true;
     let result: unknown;
@@ -173,7 +178,14 @@ export const useAudioAi = (): AudioAIResult => {
     targetVoice: string | undefined,
     cb: (file: File | Error) => void
   ): Promise<void> => {
-    if (getGlobal('offline') || !token) return;
+    if (getGlobal('offline') || !getGlobal('connected') || !token) {
+      cb(
+        new AudioAiError(
+          token ? AudioAiErrorCode.offline : AudioAiErrorCode.noToken
+        )
+      );
+      return;
+    }
     const result = await axiosGet(
       `S3Files/put/AI/${file.name}/wav`,
       undefined,
@@ -232,7 +244,10 @@ export const useAudioAi = (): AudioAIResult => {
     targetVoice,
     cb,
   }: IRequestAudio): Promise<void> => {
-    if (getGlobal('offline')) return;
+    if (getGlobal('offline') || !getGlobal('connected')) {
+      cb(new AudioAiError(AudioAiErrorCode.offline));
+      return;
+    }
     const useS3 = true; // file.size > 6000000 || Boolean(targetVoice);  V2 doesn't work with data in request
     // larger sizes give Network Error
     if (useS3)

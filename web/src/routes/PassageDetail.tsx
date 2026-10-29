@@ -86,7 +86,6 @@ const MobileStep = () => {
   const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
   const { paneWidth } = usePaneWidth();
-  const [isDeveloper] = useGlobal('developer');
 
   const artifactSlug = useMemo(() => {
     const parsed =
@@ -119,7 +118,7 @@ const MobileStep = () => {
   ) : tool === ToolSlug.Resource ? (
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
-    <PassageDetailMarkVerses width={Math.max(0, paneWidth - 40)} />
+    <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />
   ) : tool === ToolSlug.CarefulSpeech ? (
     // Keyed for the same reason as the transcription steps below: a team can
     // configure several guided-record steps in a row, and they all render the
@@ -157,7 +156,7 @@ const MobileStep = () => {
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (
     <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Transcribe && isDeveloper ? (
+  ) : tool === ToolSlug.Transcribe ? (
     <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <DesktopOnlyStep />

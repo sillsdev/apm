@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ITranscribeRejectStrings,
   ActivityStates,
@@ -28,10 +28,39 @@ interface IProps {
   cancelMethod?: () => void;
 }
 
+function defaultRejectNext(mediaIn: MediaFile): ActivityStates {
+  return mediaIn?.attributes?.transcriptionstate === ActivityStates.Transcribing
+    ? ActivityStates.NeedsNewRecording
+    : ActivityStates.NeedsNewTranscription;
+}
+
+// Includes visibility so each open remounts. Comment and the default reason
+// reset here only; cancel closes the dialog and does not clear them too.
+function rejectDialogKey(mediaIn: MediaFile, visible: boolean): string {
+  return `${mediaIn?.id ?? ''}:${mediaIn?.attributes?.transcriptionstate ?? ''}:${
+    visible ? 'open' : 'closed'
+  }`;
+}
+
 function TranscribeReject(props: IProps) {
+  const { visible, mediaIn, editMethod, cancelMethod } = props;
+  return (
+    <TranscribeRejectDialog
+      key={rejectDialogKey(mediaIn, visible)}
+      visible={visible}
+      mediaIn={mediaIn}
+      editMethod={editMethod}
+      cancelMethod={cancelMethod}
+    />
+  );
+}
+
+function TranscribeRejectDialog(props: IProps) {
   const { visible, editMethod, cancelMethod, mediaIn } = props;
   const [open, setOpen] = useState(visible);
-  const [next, setNext] = useState<ActivityStates>();
+  const [next, setNext] = useState<ActivityStates>(() =>
+    defaultRejectNext(mediaIn)
+  );
   const [comment, setComment] = useState('');
   const [inProcess, setInProcess] = useState(false);
   const tr: ITranscribeRejectStrings = useSelector(
@@ -70,20 +99,6 @@ function TranscribeReject(props: IProps) {
     }
     setOpen(false);
   };
-
-  useEffect(() => {
-    setNext(
-      mediaIn?.attributes?.transcriptionstate === ActivityStates.Transcribing
-        ? ActivityStates.NeedsNewRecording
-        : ActivityStates.NeedsNewTranscription
-    );
-    setComment('');
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [mediaIn]);
-
-  useEffect(() => {
-    setOpen(visible);
-  }, [visible]);
 
   return (
     <div>
@@ -149,7 +164,6 @@ function TranscribeReject(props: IProps) {
             variant="contained"
             color="primary"
             disabled={
-              next === undefined ||
               next === mediaIn?.attributes?.transcriptionstate ||
               comment === '' ||
               inProcess

@@ -1,4 +1,4 @@
-import { pasteSpan, sliceAudioBuffer } from './audioClipboard';
+import { pastedSelection, pasteSpan, sliceAudioBuffer } from './audioClipboard';
 
 function fakeBuffer(channels: number[][], sampleRate = 10): AudioBuffer {
   const data = channels.map((channel) => Float32Array.from(channel));
@@ -98,5 +98,32 @@ describe('pasteSpan', () => {
       start: 0,
       end: undefined,
     });
+  });
+});
+
+describe('pastedSelection', () => {
+  it('covers the clip that replaced a region, not the old region length', () => {
+    expect(pastedSelection({ start: 1, end: 2.5 }, 30, 10)).toEqual({
+      start: 1,
+      end: 4,
+    });
+  });
+
+  it('covers an insert at the playhead', () => {
+    expect(pastedSelection({ start: 1.5, end: 1.5 }, 5, 10)).toEqual({
+      start: 1.5,
+      end: 2,
+    });
+  });
+
+  it('covers the whole waveform when the clip is the only audio', () => {
+    expect(pastedSelection({ start: 0, end: undefined }, 40, 10)).toEqual({
+      start: 0,
+      end: 4,
+    });
+  });
+
+  it('returns nothing for an empty clip', () => {
+    expect(pastedSelection({ start: 1, end: 2 }, 0, 10)).toBeUndefined();
   });
 });

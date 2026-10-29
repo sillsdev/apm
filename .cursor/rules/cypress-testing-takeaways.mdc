@@ -1,141 +1,57 @@
 ---
-description: Cypress component and e2e test takeaways for this repo
+description: Run Cypress from web/. Worktree installs, Cypress cache, and spec commands for this repo.
 alwaysApply: true
 ---
 
-# Cypress Testing Takeaways
+# Cypress
 
-## Config and setup
+Component and e2e tests use `web/cypress/config/local.config.ts` (`cy:open-*` / `cy:run-*` in `web/package.json`). `local.config.ts` merges `baseConfig` with e2e (`baseUrl`, Auth0 `env`) and component (`specPattern`, Vite). Keep both sections.
 
-Both **component** and **e2e** tests use `web/cypress/config/local.config.ts`
-(`cy:open-*` / `cy:run-*` in `web/package.json`).
+`cy:run-ct` already passes `--browser chrome`. Pass only `--spec`.
 
-- **`base.config.ts`** — retries, viewport, `e2e.setupNodeEvents`.
-- **`local.config.ts`** — merges `baseConfig` with **e2e** (`baseUrl`, Auth0 `env`) and
-  **component** (`specPattern`, `@cypress/vite-dev-server` + test Vite overrides).
-  Keep both sections; do not drop `component` when changing e2e env.
+Component mount patterns (providers, Orbit memory, mobile workflow): `.cursor/rules/cypress-component-patterns.mdc`.
 
-Before testing locally, run `npm run devs` from `web`. That copies
-`env-config` templates (including `VITE_AUTH_CACHE=localstorage` and
-`VITE_TEST_EMAIL1` / `VITE_TEST_PW1`) into `web/.env.*`. Cypress reads
-those files plus `web/src/auth/auth0-variables.json` for `cy.loginByAuth0()`.
+## Worktree
 
-## Running tests
+Worktrees under `C:\Users\gtrih\git\wt` omit gitignored installs. The main checkout is `C:\Users\gtrih\git\apm-vite`.
 
-From `web` (required — not the repo root):
+When `web/node_modules` is missing and `web/package.json` matches that checkout:
 
 ```powershell
-# Component tests (Cypress starts its own Vite dev server)
-npm run cy:run-ct
-npm run cy:open-ct
-npm run cy:run-ct -- --spec=**/PlanTabSelect.cy.tsx --browser chrome
-# PowerShell also accepts an unquoted glob without '=':
-# npm run cy:run-ct -- --spec **/PlanTabSelect.cy.tsx
-
-# Multiple specs: quote the whole --spec value and comma-separate globs.
-# Do NOT append a second --browser (the cy:run-ct script already sets it);
-# a duplicate flag can abort the run before any test executes.
-npm run cy:run-ct -- --spec "**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx"
-
-# E2e (start the app first: npm start in another terminal)
-npm run cy:run-local
-npm run cy:open-local
+cmd /c mklink /J "<worktree>\web\node_modules" "C:\Users\gtrih\git\apm-vite\web\node_modules"
 ```
 
-### Cursor agents: Cypress binary / cache (do not reinstall)
+Copy these from the main checkout when the worktree lacks them:
 
-Agents often fail with:
+- `web/src/auth/auth0-variables.json`
+- `web/.env.local`
+- `web/.env.development.local`
 
-```text
-No version of Cypress is installed in: ...\cursor-sandbox-cache\...\cypress\...\Cypress
-Please reinstall Cypress by running: cypress install
+`npm run devs` copies `env-config/.auth0-variables.*.json` and `env-config/.env.*.local`. Those templates are gitignored and live in the main checkout, so run `devs` there or copy its outputs.
+
+When `web/src/buildDate.json` is missing, from the repo root:
+
+```powershell
+node env-config/writeDate.cjs
 ```
 
-That is **not** a missing install. Cursor's shell can set `CYPRESS_CACHE_FOLDER` (and
-sometimes `npm_config_devdir`) to an **empty sandbox temp cache**, so Cypress looks
-there instead of the real user cache (`%LOCALAPPDATA%\Cypress\Cache` on Windows).
+## Run
 
-**Do not** run `cypress install` / reinstall to “fix” this. Clear the sandbox override
-and run from `web`:
+From `web`:
 
 ```powershell
 Remove-Item Env:CYPRESS_CACHE_FOLDER -ErrorAction SilentlyContinue
 Remove-Item Env:npm_config_devdir -ErrorAction SilentlyContinue
-# Optional: pin the real cache explicitly
 $env:CYPRESS_CACHE_FOLDER = "$env:LOCALAPPDATA\Cypress\Cache"
-Set-Location <repo>\src
-npm run cy:run-ct -- --spec **/YourSpec.cy.tsx
+npm run cy:run-ct -- --spec=**/YourSpec.cy.tsx
 ```
 
-If the user's own terminal already runs CT successfully, prefer that same cwd and
-command shape; the agent failure is almost always the redirected cache, not the
-project setup. Confirm with `$env:CYPRESS_CACHE_FOLDER` — if it contains
-`cursor-sandbox-cache`, clear it.
+Quote a comma-separated list for several specs: `npm run cy:run-ct -- --spec "**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx"`.
 
-Docker CT uses the same config file. E2e needs the app at `http://localhost:3000`
-and a reachable dev API (`VITE_HOST`).
+`npm run cy:open-ct` opens the component runner. E2e (`npm run cy:run-local`, `npm run cy:open-local`) needs the app at `http://localhost:3000` and a reachable `VITE_HOST`. `cy.loginByAuth0()` visits `/access/online-cloud` and caches the session when `VITE_AUTH_CACHE=localstorage`.
 
-To narrow the Docker run to specific specs, set `CYPRESS_SPEC` (comma-separated
-globs); unset runs the full `specPattern`. The `cypress` service command appends
-`--spec` only when the var is non-empty:
+A `CYPRESS_CACHE_FOLDER` value containing `cursor-sandbox-cache` means the shell is pointed at an empty cache. Clear it and set the user cache as above. Leave `cypress install` unused.
 
-```powershell
-# PowerShell
-$env:CYPRESS_SPEC="**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx"; npm run cy:docker
-$env:CYPRESS_SPEC=$null   # clear to run everything again
-```
+Docker uses the same config. Set `CYPRESS_SPEC` to a comma-separated glob list, then `npm run cy:docker`. Clear `CYPRESS_SPEC` to run the full `specPattern`.
 
-```bash
-# bash/zsh
-CYPRESS_SPEC="**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx" npm run cy:docker
-```
-
-`cy.loginByAuth0()` visits `/access/online-cloud`, completes Auth0 via `cy.origin()`,
-and caches the session when `VITE_AUTH_CACHE=localstorage`.
-
-## Component test patterns
-
-- Avoid stubbing ESM imports in Cypress CT; prefer data-driven setup via providers.
-- Build the full provider stack: `GlobalProvider`, Redux store, `OrbitContext`,
-  and any feature contexts (e.g. `PassageDetailContext`, `UnsavedContext`).
-- `useOrbitData` reads records via `memory.cache.query((q) => q.findRecords(type))`
-  (and subscribes to `cache.liveQuery` only for change notifications). Mock
-  memory must therefore serve data from **`cache.query`**, not just
-  `liveQuery.query()`. Route both through one shared `findRecords` so a mock
-  can't pass via the live-query path while `cache.query` returns `[]`.
-- For permission logic (`useStepPermissions`), drive outcomes with real mock records and relationships.
-- Localization selectors need `LocalizedStrings` in the correct `strings` slice keys.
-- Use stable DOM selectors (ids/data-cy) for assertions.
-- When testing navigation that uses `usePassageNavigate`, include a `MemoryRouter`
-  - `Routes` and stub `UnsavedContext.checkSavedFn` to run immediately.
-- `PlanTabSelect` (and parents like `PlanBar`) consume `UnsavedContext`; wrap CT with
-  `UnsavedContext.Provider` and set `checkSavedFn` to invoke the callback immediately.
-- `nextPasId`/`prevPasId` depend on `section.relationships.passages` and
-  `memory` records; empty relationships mean no neighbors.
-- `WorkflowStepsMobile` renders SVG stages (no visible text nodes). Assert on
-  structure (`svg`, `svg g`) or wrapper labels, not `cy.contains` on step names.
-- `WorkflowStepsMobile` depends on `workflow`/`currentstep` from context; keep
-  defaults intact when overriding to avoid empty steps.
-- For `WorkflowStepsMobile`, set viewport and dispatch a `resize` after mount so
-  the width-driven step list is computed.
-- When testing busy/recording state, assert via `setCurrentStep` calls and snack
-  messages rather than DOM class changes.
-- Pagination needs enough steps and a small viewport to expose `prev`/`next`.
-
-## Vite / flaky full CT runs
-
-A cold `npm run cy:run-ct` over all specs may fail a few files with
-`Failed to fetch dynamically imported module` when Vite re-optimizes dependencies
-mid-run. Re-run the failing spec(s); they typically pass once deps are cached.
-
-## Example: Minimal Strings Slice
-
-```ts
-const mockStringsReducer = () => ({
-  loaded: true,
-  lang: 'en',
-  passageDetailStepComplete: new LocalizedStrings({
-    en: { title: 'Complete' },
-  }),
-});
-```
+A cold `npm run cy:run-ct` over all specs can fail with `Failed to fetch dynamically imported module` while Vite re-optimizes. Re-run the failing spec once deps are cached.

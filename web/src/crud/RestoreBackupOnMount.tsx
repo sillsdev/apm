@@ -11,9 +11,11 @@ export function RestoreBackupOnMount() {
   useEffect(() => {
     if (!isElectron || !coordinator) return;
     let cancelled = false;
-    restoreBackup(coordinator).then((projects) => {
-      if (!cancelled && projects.length > 0) setProjectsLoaded(projects);
-    });
+    restoreBackup(coordinator)
+      .then((projects) => {
+        if (!cancelled && projects.length > 0) setProjectsLoaded(projects);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };

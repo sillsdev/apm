@@ -73,3 +73,20 @@ export function pasteSpan(
     end: endSample / buffer.sampleRate,
   };
 }
+
+/** Time range the pasted clip occupies. Empty clips select nothing. */
+export function pastedSelection(
+  span: PasteSpan,
+  clipFrames: number,
+  sampleRate: number
+): { start: number; end: number } | undefined {
+  if (!(clipFrames > 0) || !(sampleRate > 0)) return undefined;
+  const startFrame =
+    span.end === undefined
+      ? 0
+      : Math.max(0, Math.floor(span.start * sampleRate));
+  return {
+    start: startFrame / sampleRate,
+    end: (startFrame + clipFrames) / sampleRate,
+  };
+}

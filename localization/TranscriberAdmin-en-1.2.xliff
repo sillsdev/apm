@@ -5680,6 +5680,13 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaTab.fileTooBig">
+            <source>File {0} is too large {1}. File Limit is {2}MB</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaTab.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mediaTab.filter">
             <source>Filter</source>
             <target/>
@@ -5897,13 +5904,6 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mediaTab.toobig">
-            <source>File {0} is too large {1}. File Limit is {2}MB</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mediaTab.unsupported">
             <source>File {0} is an unsupported file type.</source>
             <target/>
@@ -6049,6 +6049,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaUpload.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaUpload.fileTooBig">
+            <source>File is too large: {0}. File Limit is {1}MB</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaUploadContent.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.githubSupport">
@@ -6210,13 +6217,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaUpload.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="mediaUpload.toobig">
-            <source>Too large: {0}. File Limit is {1}MB</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.upload">
@@ -6998,6 +6998,13 @@
                <context context-type="sourcefile">passageRecord.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageRecord.compressErrorTooBig">
+            <source>Compression failed but the file is too big to save uncompressed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageRecord.defaultFilename">
             <source>MyRecording</source>
             <target/>
@@ -7048,17 +7055,24 @@
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.toobig">
-            <source>File is too large. File Limit is {1}MB</source>
+            <source>File is too large ({0}MB). File Limit is {1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageRecord.tooBigAfterCompression">
+            <source>Our estimate was incorrect. The file is too large after compression ({0}MB). File Limit is {1}MB</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.toobigwarn">
-            <source>File is near size limit {1}MB</source>
+            <source>File is near size limit {0}/{1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.uncompressed">
@@ -8204,7 +8218,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="projectDownload.downloadDescription">
-            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the {4} &amp; PASSAGES tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
+            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the Project Overview tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
@@ -12315,11 +12329,32 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiTakingLonger">
+            <source>Taking longer than usual: {0} elapsed</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AiTimeProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiTimeRemaining">
+            <source>About {0} remaining</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AiTimeProgress.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.beginVoiceConvert">
             <source>Beginning voice conversion...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.changeFailed">
+            <source>Could not update the recording: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.convertVoice">
@@ -12362,6 +12397,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.cutFailed">
+            <source>Cut failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.cutRegion">
@@ -12448,6 +12490,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.pasteFailed">
+            <source>Paste failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.pasteRegion">
             <source>Paste [{0}]</source>
             <target/>
@@ -12502,6 +12551,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.recordStartFailed">
+            <source>Recording could not start: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.reduceNoise">
@@ -12614,6 +12670,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.undoFailed">
+            <source>Undo failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.undoTip">

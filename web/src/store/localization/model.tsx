@@ -954,6 +954,7 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "duration": string;
     "fileAttached": string;
     "fileName": string;
+    "fileTooBig": string;
     "filter": string;
     "graphicRightsAdd": string;
     "graphicRightsTitle": string;
@@ -985,7 +986,6 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "savingComplete": string;
     "selectFiles": string;
     "size": string;
-    "toobig": string;
     "unsupported": string;
     "uploadComplete": string;
     "user": string;
@@ -1013,6 +1013,7 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "dragDropMultiple": string;
     "dragDropSingle": string;
     "faithbridgeTitle": string;
+    "fileTooBig": string;
     "githubSupport": string;
     "graphicTask": string;
     "graphicTitle": string;
@@ -1036,7 +1037,6 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "resourceTitle": string;
     "task": string;
     "title": string;
-    "toobig": string;
     "upload": string;
 };
 
@@ -1166,6 +1166,7 @@ export interface IPassageRecordStrings extends Localize.LocalizedStringsMethods 
     "compressed": string;
     "compressing": string;
     "compressError": string;
+    "compressErrorTooBig": string;
     "defaultFilename": string;
     "fileName": string;
     "loading": string;
@@ -1174,6 +1175,7 @@ export interface IPassageRecordStrings extends Localize.LocalizedStringsMethods 
     "saving": string;
     "title": string;
     "toobig": string;
+    "tooBigAfterCompression": string;
     "toobigwarn": string;
     "uncompressed": string;
 };
@@ -2063,13 +2065,17 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
 export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods {
     "aiFailed": string;
     "aiInProgress": string;
+    "aiTakingLonger": string;
+    "aiTimeRemaining": string;
     "beginVoiceConvert": string;
+    "changeFailed": string;
     "convertVoice": string;
     "clearRecording": string;
     "clearRecordingTip": string;
     "convertVoiceAi": string;
     "clear": string;
     "copyRegion": string;
+    "cutFailed": string;
     "cutRegion": string;
     "fasterTip": string;
     "loopoff": string;
@@ -2082,6 +2088,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "normalize": string;
     "normalizeFail": string;
     "normalizeInProgress": string;
+    "pasteFailed": string;
     "pasteRegion": string;
     "pauseTip": string;
     "playTip": string;
@@ -2090,6 +2097,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "recognizeSpeech": string;
     "recognizeSpeechSettings": string;
     "record": string;
+    "recordStartFailed": string;
     "reduceNoise": string;
     "reduceNoiseAi": string;
     "reset": string;
@@ -2106,6 +2114,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "stopTip": string;
     "timerTip": string;
     "tooQuiet": string;
+    "undoFailed": string;
     "undoTip": string;
     "voiceconversionFailed": string;
 };

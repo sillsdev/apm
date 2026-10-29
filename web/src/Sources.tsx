@@ -40,7 +40,12 @@ import {
   datachangesQueryError,
   updateError,
 } from './utils/orbitStrategyErrors';
-import { removeOrbitRemote } from './utils/removeOrbitRemote';
+import {
+  BootstrapCancelled,
+  bootstrapMayContinue,
+  detachOrbitRemote,
+  withCoordinatorLock,
+} from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';
 import { AlertSeverity } from './hoc/SnackBar';
@@ -132,7 +137,7 @@ const sourcesImpl = async (
 
   const bucket = new IndexedDBBucket({
     namespace:
-      'transcriber-' + (tokData.sub || '').replace(/\|/g, '-') + '-bucket',
+      'transcriber-' + (tokData.sub || '').replaceAll('|', '-') + '-bucket',
   }) as Bucket;
 
   //set up strategies
@@ -155,136 +160,162 @@ const sourcesImpl = async (
   let datachangeremote: JSONAPISource = {} as JSONAPISource;
 
   const offline = !tokenState.accessToken;
+  // A fresh coordinator has no remote yet. Until this login installs one,
+  // cancel only when logout has cleared the session. After that, also require
+  // the remote sync strategies — the local `remote` object can still answer
+  // queries after logout detaches it.
+  let remoteInstalled = false;
+  const ensureOnline = () => {
+    if (offline) return;
+    if (
+      !bootstrapMayContinue(
+        coordinator,
+        localStorage.getItem(LocalKey.loggedIn) === 'true',
+        remoteInstalled
+      )
+    ) {
+      throw new BootstrapCancelled();
+    }
+  };
 
   if (!offline) {
     resetUnauthorizedRetry();
     // RestoreBackupOnMount may still be pulling IndexedDB. Finish that before
     // deactivate() closes the backup DB ("IndexedDB database is not yet open").
+    // Logout waits for this same restore before its own deactivate. A failed
+    // restore rejects instead of looking like an empty backup.
     if (isElectron) {
       await restoreBackup(coordinator);
     }
-    if (coordinator.sourceNames.includes('remote')) {
-      await removeOrbitRemote(coordinator, false);
-    }
-    if (coordinator.activated) {
-      await coordinator.deactivate();
-    }
-    remote = new JSONAPISource({
-      schema: memory?.schema,
-      keyMap: memory?.keyMap,
-      ...(isElectron ? { bucket } : {}),
-      name: 'remote',
-      namespace: 'api',
-      host: API_CONFIG.host,
-      serializerSettingsFor: serializersSettings(),
-      defaultFetchSettings: {
-        headers: {
-          Authorization: 'Bearer ' + (tokenState.accessToken || ''),
-          'X-FP': fingerprint,
-        },
-        timeout: 100000,
-      },
-      defaultTransformOptions: {
-        useRemoteId: true,
-      },
-    });
-    try {
-      await remote.activated;
-    } catch (ex) {
-      if (isUnauthorized(ex)) {
-        await skipRemoteQueue(remote);
+    ensureOnline();
+    // Lock only while the coordinator is torn down and the remote sources are
+    // swapped. Remote queries and ITF export stay outside so logout can proceed.
+    await withCoordinatorLock(async () => {
+      if (coordinator.sourceNames.includes('remote')) {
+        await detachOrbitRemote(coordinator, false);
       }
-    }
-    if (!coordinator.sourceNames.includes('remote')) {
-      coordinator.addSource(remote);
-    }
+      if (coordinator.activated) {
+        await coordinator.deactivate();
+      }
+      remote = new JSONAPISource({
+        schema: memory?.schema,
+        keyMap: memory?.keyMap,
+        ...(isElectron ? { bucket } : {}),
+        name: 'remote',
+        namespace: 'api',
+        host: API_CONFIG.host,
+        serializerSettingsFor: serializersSettings(),
+        defaultFetchSettings: {
+          headers: {
+            Authorization: 'Bearer ' + (tokenState.accessToken || ''),
+            'X-FP': fingerprint,
+          },
+          timeout: 100000,
+        },
+        defaultTransformOptions: {
+          useRemoteId: true,
+        },
+      });
+      try {
+        await remote.activated;
+      } catch (ex) {
+        if (isUnauthorized(ex)) {
+          await skipRemoteQueue(remote);
+        }
+      }
+      if (!coordinator.sourceNames.includes('remote')) {
+        coordinator.addSource(remote);
+      }
 
-    // Trap error querying data (token expired or offline)
-    if (!coordinator.strategyNames.includes('remote-query-fail'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'remote-query-fail',
+      // Trap error querying data (token expired or offline)
+      if (!coordinator.strategyNames.includes('remote-query-fail'))
+        coordinator.addStrategy(
+          new RequestStrategy({
+            name: 'remote-query-fail',
 
-          source: 'remote',
-          on: 'queryFail',
-          action: queryError({
-            tokenCtx,
-            orbitError,
-            coordinator,
-            fingerprint,
-            setOrbitRetries,
-          }) as unknown as StategyError,
-          blocking: true,
-        })
-      );
-    if (!coordinator.strategyNames.includes('remote-update-fail'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'remote-update-fail',
+            source: 'remote',
+            on: 'queryFail',
+            action: queryError({
+              tokenCtx,
+              orbitError,
+              coordinator,
+              fingerprint,
+              setOrbitRetries,
+            }) as unknown as StategyError,
+            blocking: true,
+          })
+        );
+      if (!coordinator.strategyNames.includes('remote-update-fail'))
+        coordinator.addStrategy(
+          new RequestStrategy({
+            name: 'remote-update-fail',
 
-          source: 'remote',
-          on: 'updateFail',
-          action: updateError({
-            tokenCtx,
-            orbitError,
-            setOrbitRetries,
-            showMessage,
-            memory,
-            coordinator,
-            fingerprint,
-            errorReporter,
-            getStrings,
-          }) as unknown as StategyError,
-          blocking: true,
-        })
-      );
-    addRemoteLinkStrategies(coordinator);
+            source: 'remote',
+            on: 'updateFail',
+            action: updateError({
+              tokenCtx,
+              orbitError,
+              setOrbitRetries,
+              showMessage,
+              memory,
+              coordinator,
+              fingerprint,
+              errorReporter,
+              getStrings,
+            }) as unknown as StategyError,
+            blocking: true,
+          })
+        );
+      addRemoteLinkStrategies(coordinator);
 
-    datachangeremote = coordinator.sourceNames.includes('datachanges')
-      ? (coordinator?.getSource('datachanges') as JSONAPISource)
-      : new JSONAPISource({
-          schema: memory?.schema,
-          keyMap: memory?.keyMap,
-          bucket: new IndexedDBBucket({
-            namespace:
-              'datachanges-' +
-              (tokData.sub || '').replace(/\|/g, '-') +
-              '-bucket',
-          }),
-          name: 'datachanges',
-          namespace: 'api',
-          host: API_CONFIG.host,
-          serializerSettingsFor: serializersSettings(),
-          defaultFetchSettings: {
-            headers: {
-              Authorization: 'Bearer ' + (tokenState.accessToken || ''),
-              'X-FP': fingerprint,
+      datachangeremote = coordinator.sourceNames.includes('datachanges')
+        ? (coordinator?.getSource('datachanges') as JSONAPISource)
+        : new JSONAPISource({
+            schema: memory?.schema,
+            keyMap: memory?.keyMap,
+            bucket: new IndexedDBBucket({
+              namespace:
+                'datachanges-' +
+                (tokData.sub || '').replaceAll('|', '-') +
+                '-bucket',
+            }),
+            name: 'datachanges',
+            namespace: 'api',
+            host: API_CONFIG.host,
+            serializerSettingsFor: serializersSettings(),
+            defaultFetchSettings: {
+              headers: {
+                Authorization: 'Bearer ' + (tokenState.accessToken || ''),
+                'X-FP': fingerprint,
+              },
+              timeout: 100000,
             },
-            timeout: 100000,
-          },
-          defaultTransformOptions: {
-            useRemoteId: true,
-          },
-        });
-    if (!coordinator.sourceNames.includes('datachanges')) {
-      coordinator.addSource(datachangeremote);
-    }
-    if (!coordinator.strategyNames.includes('datachanges-query-fail'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'datachanges-query-fail',
-          source: 'datachanges',
-          on: 'queryFail',
-          action: datachangesQueryError({
-            tokenCtx,
-            orbitError,
-            coordinator,
-            fingerprint,
-            setOrbitRetries,
-          }) as unknown as StategyError,
-          blocking: true,
-        })
-      );
+            defaultTransformOptions: {
+              useRemoteId: true,
+            },
+          });
+      if (!coordinator.sourceNames.includes('datachanges')) {
+        coordinator.addSource(datachangeremote);
+      }
+      if (!coordinator.strategyNames.includes('datachanges-query-fail'))
+        coordinator.addStrategy(
+          new RequestStrategy({
+            name: 'datachanges-query-fail',
+            source: 'datachanges',
+            on: 'queryFail',
+            action: datachangesQueryError({
+              tokenCtx,
+              orbitError,
+              coordinator,
+              fingerprint,
+              setOrbitRetries,
+            }) as unknown as StategyError,
+            blocking: true,
+          })
+        );
+    });
+    remoteInstalled = true;
+    ensureOnline();
   } //!offline
   let goRemote =
     !offline &&
@@ -308,11 +339,15 @@ const sourcesImpl = async (
     }
   }
 
-  if (!coordinator.activated)
-    await coordinator.activate({ logLevel: LogLevel.Warnings });
-  if (typeof backup?.cache?.openDB === 'function') {
-    await backup.cache.openDB();
-  }
+  ensureOnline();
+  await withCoordinatorLock(async () => {
+    if (!coordinator.activated)
+      await coordinator.activate({ logLevel: LogLevel.Warnings });
+    if (typeof backup?.cache?.openDB === 'function') {
+      await backup.cache.openDB();
+    }
+  });
+  ensureOnline();
 
   console.log('Coordinator will log warnings');
 
@@ -369,6 +404,7 @@ const sourcesImpl = async (
       }
     }
   }
+  ensureOnline();
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */
   if (!offline) {
     console.log(`Activating remote for user: ${tokData.sub}`);
@@ -380,6 +416,7 @@ const sourcesImpl = async (
     )) as UserD[];
     console.log(`has user rec: ${tokData.sub}`);
     if (!Array.isArray(uRecs)) uRecs = [uRecs];
+    ensureOnline();
     const user = uRecs[0] as UserD;
     localStorage.setItem(LocalKey.userId, user.id);
     localStorage.setItem(LocalKey.onlineUserId, user.id);
@@ -392,15 +429,12 @@ const sourcesImpl = async (
       );
       await orbitReset(remote, setOrbitRetries);
     }
-    if (
-      new Date().getTime() - new Date(user.attributes.dateUpdated).getTime() <=
-      60000
-    ) {
+    if (Date.now() - new Date(user.attributes.dateUpdated).getTime() <= 60000) {
       console.log(`Forcing data changes`);
       await forceDataChanges();
       console.log(`Forcing complete`);
     }
-    logLoginAnalytics(tokenState.accessToken, errorReporter);
+    await logLoginAnalytics(tokenState.accessToken, errorReporter);
   }
   const user = localStorage.getItem(LocalKey.userId) as string;
   setUser(user);
@@ -418,6 +452,17 @@ const sourcesImpl = async (
     const token = tokenState.accessToken || null;
     console.log(`Updating consultant workflow step`);
     await updateConsultantWorkflowStep(token, memory, user);
+  }
+  if (
+    !offline &&
+    !bootstrapMayContinue(
+      coordinator,
+      localStorage.getItem(LocalKey.loggedIn) === 'true',
+      remoteInstalled
+    )
+  ) {
+    setUser('');
+    throw new BootstrapCancelled();
   }
   return { syncBuffer, syncFile, goRemote };
 };

@@ -1,5 +1,6 @@
 import { memory, backup, schema } from '../schema';
 import { logError, Severity, infoMsg, waitForIt, LocalKey } from '../utils';
+import { trackBackupRestore } from '../utils/removeOrbitRemote';
 import { RecordQueryBuilder, UninitializedRecord } from '@orbit/records';
 import { related } from '../crud';
 import { OfflineProject } from '../model';
@@ -13,9 +14,9 @@ let restorePromise: Promise<string[]> | null = null;
 export async function restoreBackup(
   coordinator?: Coordinator
 ): Promise<string[]> {
-  if (!restorePromise) {
-    restorePromise = restoreBackupOnce(coordinator);
-  }
+  // Pass a thunk so a pending teardown can refuse the query before it starts.
+  // A refusal is not cached: restorePromise stays null and a later login can retry.
+  restorePromise ??= trackBackupRestore(() => restoreBackupOnce(coordinator));
   return restorePromise;
 }
 
@@ -68,6 +69,6 @@ async function restoreBackupOnce(coordinator?: Coordinator): Promise<string[]> {
       bugsnagClient,
       infoMsg(err as Error, 'IndexedDB Pull error')
     );
+    throw err;
   }
-  return [];
 }

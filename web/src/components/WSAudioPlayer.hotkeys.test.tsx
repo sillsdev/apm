@@ -8,7 +8,14 @@ import {
   expect,
 } from '@jest/globals';
 import '@testing-library/jest-dom/jest-globals';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 
 const RECORD_KEY = 'F9,CTRL+9';
 
@@ -16,6 +23,15 @@ let capturedOnWSReady:
   ((duration: number, loadingAnother: boolean) => void) | undefined;
 let capturedOnWSRegion:
   ((count: number, newRegion: boolean) => void) | undefined;
+let capturedOnPlayStatus: ((playing: boolean) => void) | undefined;
+let capturedOnWSCanUndo: ((canUndo: boolean) => void) | undefined;
+let capturedOnCurrentRegion:
+  | ((
+      region: { start: number; end: number } | undefined,
+      index?: number
+    ) => void)
+  | undefined;
+let capturedOnCanPaste: ((canPaste: boolean) => void) | undefined;
 
 const waveSurferMock = {
   wsLoad: jest.fn(),
@@ -24,6 +40,7 @@ const waveSurferMock = {
   wsPlayRegion: jest.fn(),
   wsBlob: jest.fn(async () => undefined),
   wsRegionBlob: jest.fn(),
+  wsRegionDuration: jest.fn(() => 0),
   wsPause: jest.fn(),
   wsDuration: jest.fn(() => 0),
   wsPosition: jest.fn(() => 0),
@@ -75,7 +92,14 @@ jest.mock('../context/HotKeyContext', () => {
   };
 });
 
+type UseWaveSurfer = typeof import('../crud/useWaveSurfer').useWaveSurfer;
 import WSAudioPlayer from './WSAudioPlayer';
+import {
+  AudioAiError,
+  AudioAiErrorCode,
+  AudioAiTimeoutError,
+} from '../utils/audioAiError';
+import { readAiSamples } from '../control/estimateAiTime';
 
 const { subscribe: mockSubscribe, unsubscribe: mockUnsubscribe } = (
   jest.requireMock('../context/HotKeyContext') as {
@@ -86,19 +110,45 @@ const { subscribe: mockSubscribe, unsubscribe: mockUnsubscribe } = (
   }
 ).hotkeyTestMocks;
 
+const mockUseWaveSurfer: UseWaveSurfer = (
+  _allowSegment,
+  _container,
+  onReady,
+  _onLoadError,
+  _onProgress,
+  onRegion,
+  onCanUndo,
+  onPlayStatus,
+  _onInteraction,
+  _onZoom,
+  _onMarkerClick,
+  _height,
+  _singleRegionOnly,
+  _currentSegmentIndex,
+  onCurrentRegion,
+  _onStartRegion,
+  _onRegionPlayEnd,
+  _verses,
+  _hasSegmentUndo,
+  _applyRegionColor,
+  _lockSegmentSelection,
+  _disableDragSelection,
+  _onSegmentClick,
+  _isSegmentRecorded,
+  onCanPaste
+) => {
+  capturedOnWSReady = onReady;
+  capturedOnWSRegion = onRegion;
+  capturedOnWSCanUndo = onCanUndo;
+  capturedOnPlayStatus = onPlayStatus;
+  capturedOnCurrentRegion = onCurrentRegion;
+  capturedOnCanPaste = onCanPaste;
+  return waveSurferMock as unknown as ReturnType<UseWaveSurfer>;
+};
+
 jest.mock('../crud/useWaveSurfer', () => ({
-  useWaveSurfer: (
-    _allowSegment: unknown,
-    _container: unknown,
-    onReady: (duration: number, loadingAnother: boolean) => void,
-    _onLoadError: unknown,
-    _onProgress: unknown,
-    onRegion: (count: number, newRegion: boolean) => void
-  ) => {
-    capturedOnWSReady = onReady;
-    capturedOnWSRegion = onRegion;
-    return waveSurferMock;
-  },
+  useWaveSurfer: (...args: Parameters<UseWaveSurfer>) =>
+    mockUseWaveSurfer(...args),
 }));
 
 let capturedOnRecordError:
@@ -129,6 +179,8 @@ jest.mock('react-redux', () => ({
     save: 'Save',
     clearRecording: 'Clear',
     aiInProgress: 'AI in progress',
+    aiTimeRemaining: 'About {0} remaining',
+    aiTakingLonger: 'Taking longer than usual: {0} elapsed',
     loading: 'Loading',
     playTip: 'Play {0}',
     pauseTip: 'Pause {0}',
@@ -138,12 +190,18 @@ jest.mock('react-redux', () => ({
     copyRegion: 'Copy [{0}]',
     cutRegion: 'Cut [{0}]',
     pasteRegion: 'Paste [{0}]',
+    changeFailed: 'Could not update the recording: {0}',
+    cutFailed: 'Cut failed: {0}',
+    pasteFailed: 'Paste failed: {0}',
+    undoFailed: 'Undo failed: {0}',
+    recordStartFailed: 'Recording could not start: {0}',
     reduceNoise: 'Reduce noise',
     downloadMedia: 'Download',
     microphoneDisconnected:
       'The microphone was disconnected. Select another microphone to record.',
     microphoneDisconnectedFallback:
       'The preferred microphone was disconnected. Default microphone selected.',
+    mustBeOnline: 'You must be online to use this feature',
     getString: (key: string) => key,
   }),
   shallowEqual: jest.fn(),
@@ -155,8 +213,10 @@ jest.mock('../selector', () => ({
   sharedSelector: jest.fn(),
 }));
 
+const mockSetGlobal = jest.fn();
+const mockGlobals: Record<string, unknown> = {};
 jest.mock('../context/useGlobal', () => ({
-  useGlobal: () => [undefined, jest.fn()],
+  useGlobal: (key: string) => [mockGlobals[key], mockSetGlobal],
 }));
 
 const mockShowMessage = jest.fn();
@@ -175,27 +235,45 @@ jest.mock('../hoc/SnackBar', () => ({
   }),
 }));
 
+const mockGetOrgDefault = jest.fn();
 jest.mock('../crud/useOrgDefaults', () => ({
   useOrgDefaults: () => ({
-    getOrgDefault: jest.fn(),
+    getOrgDefault: (key: unknown) => mockGetOrgDefault(key),
   }),
   orgDefaultFeatures: {},
   orgDefaultVoices: {},
 }));
 
+const mockRequestAudioAi =
+  jest.fn<(request: { cb: (file: File | Error) => void }) => Promise<void>>();
 jest.mock('../utils/useAudioAi', () => ({
-  useAudioAi: () => ({ requestAudioAi: jest.fn() }),
+  S3_POLL_MAX_WAIT_MS: 600000,
+  AudioAiFunc: {
+    noiseRemoval: 'noiseremoval',
+    voiceConversion: 'voiceconversion',
+  },
+  useAudioAi: () => ({
+    requestAudioAi: (request: { cb: (file: File | Error) => void }) =>
+      mockRequestAudioAi(request),
+  }),
 }));
 
+const mockLogError = jest.fn();
+const mockCheckOnline = jest.fn<(cb: (online: boolean) => void) => void>();
 jest.mock('../utils', () => ({
   dataPath: jest.fn(),
   PathType: { MEDIA: 'media' },
   Severity: { error: 'error' },
-  useCheckOnline: () => jest.fn(),
+  useCheckOnline: () => (cb: (online: boolean) => void) => mockCheckOnline(cb),
   LocalKey: { microphoneId: 'microphoneId' },
   localUserKey: (key: string) => key,
   useMobile: () => ({ isMobile: false, isMobileWidth: false }),
-  logError: jest.fn(),
+  logError: (...args: unknown[]) => mockLogError(...args),
+  aeroTaskErrorParts: (_detail: string, summary: string) => ({
+    summary,
+    details: '',
+  }),
+  axiosErrorMessage: (error: { message?: string }) => error.message ?? '',
 }));
 
 jest.mock('../control', () => ({
@@ -221,6 +299,11 @@ jest.mock('../control', () => ({
     <>{children}</>
   ),
   RecordButton: () => null,
+}));
+
+jest.mock('../control/NoChickenIcon', () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock('../crud/useVoiceUrl', () => ({
@@ -293,9 +376,30 @@ describe('WSAudioPlayer record hotkeys', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     capturedOnWSReady = undefined;
+    capturedOnWSRegion = undefined;
+    capturedOnPlayStatus = undefined;
+    capturedOnWSCanUndo = undefined;
+    capturedOnCurrentRegion = undefined;
+    capturedOnCanPaste = undefined;
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementation(async () => true);
+    (waveSurferMock.wsHasClipboard as jest.Mock).mockImplementation(
+      () => false
+    );
+    (waveSurferMock.wsCopyRegion as jest.Mock).mockImplementation(() => true);
+    (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
+      async () => undefined
+    );
+    mockGlobals.organization = undefined;
+    mockCheckOnline.mockReset();
+    mockRequestAudioAi.mockReset();
+    mockRequestAudioAi.mockImplementation(() => Promise.resolve());
+    mockGetOrgDefault.mockReset();
   });
 
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    (waveSurferMock.wsDuration as jest.Mock).mockReturnValue(0);
+  });
 
   it('re-subscribes F9 when loading finishes so the handler is not stale', () => {
     const { rerender } = render(
@@ -345,19 +449,391 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(latestHotkey('CTRL+V')()).toBe(false);
     expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
 
-    (waveSurferMock.wsHasClipboard as jest.Mock).mockReturnValue(true);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCanPaste?.(true);
+    });
     expect(latestHotkey('CTRL+C')()).toBe(true);
     expect(waveSurferMock.wsCopyRegion).toHaveBeenCalled();
     expect(latestHotkey('CTRL+V')()).toBe(true);
     expect(waveSurferMock.wsPaste).toHaveBeenCalled();
 
-    expect(latestHotkey('CTRL+X')()).toBe(false);
-    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
-    act(() => {
-      capturedOnWSRegion?.(1, true);
-    });
     expect(latestHotkey('CTRL+X')()).toBe(true);
     expect(waveSurferMock.wsRegionDelete).toHaveBeenCalled();
+  });
+
+  it('disables copy and cut when no region is selected', () => {
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Copy [CTRL+C]' })
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+
+    act(() => {
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+    expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeEnabled();
+    expect(latestHotkey('CTRL+C')()).toBe(true);
+    expect(latestHotkey('CTRL+X')()).toBe(true);
+
+    act(() => {
+      capturedOnCurrentRegion?.(undefined);
+    });
+    expect(
+      screen.getByRole('button', { name: 'Copy [CTRL+C]' })
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+  });
+
+  it('disables copy, cut, and paste until the player is ready', () => {
+    const blob = new Blob([new Uint8Array([1])], { type: 'audio/wav' });
+    render(<WSAudioPlayer {...defaultProps} loading={false} blob={blob} />);
+    act(() => {
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+      capturedOnCanPaste?.(true);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Copy [CTRL+C]' })
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Paste [CTRL+V]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+  });
+
+  it('does not cut while a replacement blob is still loading', async () => {
+    let releaseLoad: () => void = () => undefined;
+    (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseLoad = resolve;
+        })
+    );
+    const first = new Blob([new Uint8Array([1])], { type: 'audio/wav' });
+    const { rerender } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={first} />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    const second = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
+    rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={second} />);
+    // The outgoing region can still be reported while the new blob decodes.
+    act(() => {
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Copy [CTRL+C]' })
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).not.toHaveBeenCalled();
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+
+    await act(async () => {
+      releaseLoad();
+    });
+  });
+
+  it('drops the previous selection once the replacement audio is ready', async () => {
+    let releaseLoad: () => void = () => undefined;
+    (waveSurferMock.wsLoad as jest.Mock).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseLoad = resolve;
+        })
+    );
+    const first = new Blob([new Uint8Array([1])], { type: 'audio/wav' });
+    const { rerender } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={first} />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    const second = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
+    rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={second} />);
+    await act(async () => {
+      releaseLoad();
+    });
+    act(() => {
+      capturedOnWSReady?.(8, false);
+    });
+
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+  });
+
+  it('does not cut while audio is playing', () => {
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+      capturedOnPlayStatus?.(true);
+    });
+
+    expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+  });
+
+  it('does not cut while save is in progress', () => {
+    render(<WSAudioPlayer {...defaultProps} mediaSaveInProgress />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+  });
+
+  it('does not cut while the player is busy', () => {
+    render(<WSAudioPlayer {...defaultProps} busy />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    expect(screen.getByRole('button', { name: 'Cut [CTRL+X]' })).toBeDisabled();
+    expect(latestHotkey('CTRL+X')()).toBe(false);
+    expect(waveSurferMock.wsRegionDelete).not.toHaveBeenCalled();
+  });
+
+  it('does not paste while audio is playing', () => {
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCanPaste?.(true);
+      capturedOnPlayStatus?.(true);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Paste [CTRL+V]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+  });
+
+  it('does not paste while save is in progress', () => {
+    render(<WSAudioPlayer {...defaultProps} mediaSaveInProgress />);
+
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCanPaste?.(true);
+    });
+
+    expect(
+      screen.getByRole('button', { name: 'Paste [CTRL+V]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+V')()).toBe(false);
+    expect(waveSurferMock.wsPaste).not.toHaveBeenCalled();
+  });
+
+  it('does not copy while a paste is in progress', async () => {
+    let resolvePaste: (value: boolean) => void = () => undefined;
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolvePaste = resolve;
+        })
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+      capturedOnCanPaste?.(true);
+    });
+
+    expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Paste [CTRL+V]' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Copy [CTRL+C]' })
+    ).toBeDisabled();
+    expect(latestHotkey('CTRL+C')()).toBe(false);
+    expect(waveSurferMock.wsCopyRegion).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolvePaste(true);
+    });
+    expect(screen.getByRole('button', { name: 'Copy [CTRL+C]' })).toBeEnabled();
+  });
+
+  it('does not paste twice from a double click', async () => {
+    let resolvePaste: (value: boolean) => void = () => undefined;
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolvePaste = resolve;
+        })
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCanPaste?.(true);
+    });
+
+    const paste = screen.getByRole('button', { name: 'Paste [CTRL+V]' });
+    fireEvent.click(paste);
+    fireEvent.click(paste);
+    expect(waveSurferMock.wsPaste).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolvePaste(true);
+    });
+    fireEvent.click(paste);
+    expect(waveSurferMock.wsPaste).toHaveBeenCalledTimes(2);
+  });
+
+  function expectReported(message: string) {
+    expect(mockLogError).toHaveBeenCalledWith(
+      'error',
+      undefined,
+      expect.objectContaining({ message: 'boom' })
+    );
+    expect(mockShowMessage).toHaveBeenCalledWith(message, 'error');
+  }
+
+  it('reports a cut failure', async () => {
+    (waveSurferMock.wsRegionDelete as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+
+    await act(async () => {
+      latestHotkey('CTRL+X')();
+    });
+
+    expectReported('Cut failed: boom');
+  });
+
+  it('reports a paste failure', async () => {
+    (waveSurferMock.wsPaste as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnCanPaste?.(true);
+    });
+
+    await act(async () => {
+      latestHotkey('CTRL+V')();
+    });
+
+    expectReported('Paste failed: boom');
+  });
+
+  it('reports an undo failure', async () => {
+    (waveSurferMock.wsUndo as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSCanUndo?.(true);
+    });
+
+    await act(async () => {
+      fireEvent.click(document.getElementById('wsUndo') as HTMLElement);
+    });
+
+    expectReported('Undo failed: boom');
+  });
+
+  it('reports a recording start failure', async () => {
+    mockStartRecording.mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    render(<WSAudioPlayer {...defaultProps} />);
+    act(() => {
+      capturedOnWSReady?.(10, false);
+    });
+
+    await act(async () => {
+      latestHotkey(RECORD_KEY)();
+    });
+
+    expectReported('Recording could not start: boom');
+  });
+
+  it('reports a failed edit and leaves Save disabled', async () => {
+    let blobReady = true;
+    const setBlobReady = (ready: boolean) => {
+      blobReady = ready;
+    };
+    const onBlobReady = jest.fn();
+    (waveSurferMock.wsBlob as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('boom'))
+    );
+    (waveSurferMock.wsDuration as jest.Mock).mockReturnValue(10);
+    const props = {
+      ...defaultProps,
+      setBlobReady,
+      onBlobReady,
+      handleSave: () => undefined,
+      showWaveformSave: true,
+    };
+    const view = render(
+      <WSAudioPlayer {...props} isSaveDisabled={!blobReady} />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+      capturedOnWSRegion?.(1, true);
+      capturedOnCurrentRegion?.({ start: 0, end: 1 }, 0);
+    });
+    view.rerender(<WSAudioPlayer {...props} isSaveDisabled={!blobReady} />);
+    expect(document.getElementById('rec-save')).toBeEnabled();
+
+    await act(async () => {
+      latestHotkey('CTRL+X')();
+    });
+    view.rerender(<WSAudioPlayer {...props} isSaveDisabled={!blobReady} />);
+
+    expect(onBlobReady).not.toHaveBeenCalled();
+    expect(document.getElementById('rec-save')).toBeDisabled();
+    expectReported('Could not update the recording: boom');
   });
 
   it('does not copy or paste while a text field is focused', () => {
@@ -417,6 +893,186 @@ describe('WSAudioPlayer record hotkeys', () => {
     rerender(<WSAudioPlayer {...defaultProps} loading={false} blob={blob} />);
 
     expect(queryByText('Loading')).toBeNull();
+  });
+
+  async function startNoiseRemoval(
+    setBusy: (busy: boolean) => void,
+    recordingSeconds = 10
+  ) {
+    mockGlobals.organization = 'org';
+    mockGetOrgDefault.mockReturnValue({ noNoise: true });
+    mockCheckOnline.mockImplementation((cb: (online: boolean) => void) => {
+      cb(true);
+    });
+    (waveSurferMock.wsRegionBlob as jest.Mock).mockImplementation(
+      async () => new Blob([new Uint8Array([1])], { type: 'audio/wav' })
+    );
+    render(
+      <WSAudioPlayer
+        {...defaultProps}
+        allowNoNoise
+        reload={jest.fn()}
+        setBusy={setBusy}
+      />
+    );
+    act(() => {
+      capturedOnWSReady?.(recordingSeconds, false);
+    });
+    fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
+    fireEvent.click(document.getElementById('noiseRemoval') as HTMLElement);
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  it('keeps AI busy until the region replace finishes', async () => {
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    let resolveReplace: (blob: Blob) => void = () => undefined;
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(
+      () =>
+        new Promise<Blob>((resolve) => {
+          resolveReplace = resolve;
+        })
+    );
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    act(() => {
+      aiCallback?.(new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    await act(async () => {
+      resolveReplace(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
+    });
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  it('estimates AI time from the selected region, not the whole recording', async () => {
+    (waveSurferMock.wsRegionDuration as jest.Mock).mockReturnValue(10);
+    await startNoiseRemoval(jest.fn(), 120);
+    expect(document.getElementById('ai-time-estimate')).toHaveTextContent(
+      'About 0:16 remaining'
+    );
+  });
+
+  it('remembers how long a finished AI request took', async () => {
+    localStorage.clear();
+    (waveSurferMock.wsRegionDuration as jest.Mock).mockReturnValue(10);
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
+      Promise.resolve(new Blob([new Uint8Array([2])], { type: 'audio/wav' }))
+    );
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    await act(async () => {
+      aiCallback?.(new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+    expect(readAiSamples('noiseremoval')).toEqual([
+      expect.objectContaining({ durationSec: 10 }),
+    ]);
+  });
+
+  it('remembers a timed-out AI request so later estimates allow for it', async () => {
+    localStorage.clear();
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    act(() => {
+      aiCallback?.(new AudioAiTimeoutError());
+    });
+    expect(readAiSamples('noiseremoval')).toHaveLength(1);
+  });
+
+  it('does not remember a canceled AI request', async () => {
+    localStorage.clear();
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    act(() => {
+      aiCallback?.(new AudioAiError(AudioAiErrorCode.canceled));
+    });
+    expect(readAiSamples('noiseremoval')).toHaveLength(0);
+  });
+
+  it('clears AI busy once when the AI result is an error', async () => {
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    const setBusy = jest.fn();
+    await startNoiseRemoval(setBusy);
+    const falseCalls = () =>
+      setBusy.mock.calls.filter((call) => call[0] === false).length;
+    const before = falseCalls();
+
+    act(() => {
+      aiCallback?.(new Error('failed'));
+    });
+
+    expect(falseCalls() - before).toBe(1);
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  async function deliverAiError(error: Error) {
+    let aiCallback: ((file: File | Error) => void) | undefined;
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallback = request.cb;
+        return Promise.resolve();
+      }
+    );
+    await startNoiseRemoval(jest.fn());
+    mockShowMessage.mockClear();
+    act(() => {
+      aiCallback?.(error);
+    });
+  }
+
+  it('shows the online message when AI is skipped offline', async () => {
+    await deliverAiError(new AudioAiError(AudioAiErrorCode.offline));
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      'You must be online to use this feature',
+      'error'
+    );
+  });
+
+  it('shows the online message when AI is skipped with no token', async () => {
+    await deliverAiError(new AudioAiError(AudioAiErrorCode.noToken));
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      'You must be online to use this feature',
+      'error'
+    );
+  });
+
+  it('does not toast when AI is canceled', async () => {
+    await deliverAiError(new AudioAiError(AudioAiErrorCode.canceled));
+    expect(mockShowMessage).not.toHaveBeenCalled();
+    expect(screen.queryByText('AI in progress')).toBeNull();
   });
 });
 

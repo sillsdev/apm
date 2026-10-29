@@ -51,6 +51,7 @@ jest.mock('wavesurfer.js/dist/plugins/regions', () => {
         remove: jest.fn(),
       };
       this.regionList.push(r);
+      this.emit('region-created', r);
       return r;
     }
     enableDragSelection = jest.fn();
@@ -94,6 +95,8 @@ interface IHarnessOpts {
   recordedIndices?: number[];
   /** Provide a color function so applyRegionColors runs. */
   withColors?: boolean;
+  /** When true, Add Boundary runs on the playing path. */
+  playing?: boolean;
 }
 
 const renderRegions = ({
@@ -101,6 +104,7 @@ const renderRegions = ({
   progressAt = 0,
   recordedIndices = [],
   withColors = false,
+  playing = false,
 }: IHarnessOpts) => {
   const plugin = newPlugin();
   // three contiguous segments, linked the way setPrevNext links them
@@ -128,6 +132,7 @@ const renderRegions = ({
   const goto = jest.fn();
   const onRegion = jest.fn();
   const setPlaying = jest.fn();
+  const progressRef = { current: progressAt };
 
   // Props threaded through renderHook so a rerender models the real reactivity:
   // a fresh isSegmentRecorded identity (when recordings change) and a new lock
@@ -143,8 +148,8 @@ const renderRegions = ({
         () => DURATION,
         () => false,
         goto,
-        () => progressAt,
-        () => false,
+        () => progressRef.current,
+        () => playing,
         setPlaying,
         onCurrentRegion,
         undefined, // onStartRegion
@@ -188,6 +193,7 @@ const renderRegions = ({
     onRegionClicked,
     goto,
     setPlaying,
+    progressRef,
     update,
   };
 };
@@ -576,5 +582,89 @@ describe('useWaveSurferRegions — the +/- controls on a recorded segment (TT-76
 
     expect(ret).toBeUndefined();
     expect(segs[2].remove).not.toHaveBeenCalled();
+  });
+});
+
+describe('useWaveSurferRegions — paste selection', () => {
+  it('selects the span that was just pasted', async () => {
+    const plugin = newPlugin();
+    const ws: any = {
+      getActivePlugins: () => [plugin],
+      on: jest.fn(),
+      un: jest.fn(),
+      play: jest.fn(),
+      getCurrentTime: () => 0,
+    };
+    const onCurrentRegion = jest.fn();
+    const onRegion = jest.fn();
+    const { result } = renderHook(() =>
+      useWaveSurferRegions(
+        true,
+        0,
+        ws,
+        { current: undefined },
+        onRegion,
+        () => 10,
+        () => false,
+        jest.fn(),
+        () => 0,
+        () => false,
+        jest.fn(),
+        onCurrentRegion
+      )
+    );
+    act(() => {
+      result.current.setupRegions(ws);
+    });
+
+    await act(async () => {
+      result.current.wsSelectSpan(1.5, 3);
+    });
+
+    expect(result.current.currentRegion()).toEqual(
+      expect.objectContaining({ start: 1.5, end: 3, drag: true })
+    );
+    expect(onCurrentRegion).toHaveBeenCalledTimes(1);
+    expect(onCurrentRegion).toHaveBeenCalledWith({ start: 1.5, end: 3 }, 0);
+    expect(onRegion).toHaveBeenCalledTimes(1);
+    expect(onRegion).toHaveBeenCalledWith(1, true);
+  });
+});
+
+describe('useWaveSurferRegions — Add Boundary while playing (TT-7134)', () => {
+  it('keeps playback going on the second Add Boundary', () => {
+    jest.useFakeTimers();
+    const { result, plugin, goto, setPlaying, segs, progressRef } =
+      renderRegions({
+        lockSegmentSelection: false,
+        progressAt: 12,
+        playing: true,
+      });
+
+    act(() => {
+      result.current.wsPlayRegion({ start: 10, end: 20 });
+    });
+    setPlaying.mockClear();
+    goto.mockClear();
+
+    act(() => {
+      result.current.wsAddRegion();
+    });
+    // Autosave recreates the cut with a new id before the original region-out.
+    act(() => {
+      plugin.emit('region-out', makeRegion('copy-of-cut', 10, 12));
+    });
+
+    progressRef.current = 16;
+    act(() => {
+      result.current.wsAddRegion();
+    });
+    act(() => {
+      plugin.emit('region-out', segs[1]);
+    });
+
+    expect(setPlaying).not.toHaveBeenCalledWith(false);
+    expect(goto).not.toHaveBeenCalled();
+    jest.useRealTimers();
   });
 });

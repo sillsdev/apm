@@ -1,6 +1,7 @@
 ---
-description: Jest testing takeaways for this repo
-alwaysApply: true
+description: Jest specs in web/. Use when writing or fixing Jest tests, jest.mock, renderHook, useGlobal, useOrbitData, useSelector, or RTL table and dialog queries.
+globs: web/**/*.test.ts,web/**/*.test.tsx
+alwaysApply: false
 ---
 
 # Jest Testing Takeaways

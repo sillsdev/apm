@@ -87,8 +87,8 @@ jest.mock('../../context/usePassageDetailContext', () => () => ctx);
 
 jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => ({
   useGuidedPhraseSegments: () => ({
-    phraseSegString: '[]',
-    setPhraseSegString: jest.fn(),
+    phraseSegs: { mediaId: '', segments: '[]' },
+    setPhraseSegsForCurrentMedia: jest.fn(),
     bootstrapped: true,
     ensureSegments: jest.fn().mockResolvedValue(true),
     resetForScope: jest.fn(),

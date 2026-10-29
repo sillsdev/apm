@@ -1,172 +1,24 @@
 ---
-description: TDD red/green workflow takeaways from recording bug work (TT-7276 / TT-7384)
+description: Red-green tests. Use a discriminating assertion and prove the same test fails on baseline production.
 alwaysApply: true
 ---
 
-# TDD Takeaways
+# TDD
 
-Lessons from designing failing tests first, fixing production, and proving red/green
-(MediaRecord recording — TT-7276 / TT-7384).
+A **discriminating assertion** fails on unfixed code and passes once the bug is fixed. Assert the user-visible result, scoped so a nearby control with the same label cannot satisfy it. When fixed and unfixed code fail the same way, debug the harness.
 
-## Write tests that fail for the real bug, not a proxy
+Recording clock, chunks, and waveform duration: `.cursor/rules/recording-ct-takeaways.mdc`.
+Compare-step player refs: `.cursor/rules/compare-player-takeaways.mdc`.
 
-- **False green:** asserting only `#rec-save` visible / `setCanSave(true)` passed on
-  unfixed code because Save enabled with ~1s of decodable preview audio while the
-  timer showed the full take under `cy.clock()`.
-- **Discriminating assertion:** after pause, require **waveform-backed duration**
-  (`#wsAudioDuration`) to match ticks recorded, not just the recording timer.
-  Parse `m:ss` and assert `>= minSeconds` (e.g. 3 ticks → `>= 2`, 95 ticks → `>= 90`).
-- If both fixed and unfixed code fail the same way, the test is broken — debug the
-  harness before blaming production.
+## Prove red
 
-## Repro the production path in CT
+1. Write the failing test. Run it. Expect red.
+2. Apply the production fix. Run the same test. Expect green.
+3. Prove red on baseline production, then restore the fix.
+   - Uncommitted fix: copy each production file aside (for example `%TEMP%`), run `git checkout HEAD -- <those files>`, re-run the test, then copy the fix back.
+   - Committed fix: run `git checkout HEAD~1 -- <production files>`, re-run the test, then `git checkout HEAD -- <production files>`.
+   - Leave the stash stack alone. It is shared across worktrees.
 
-- Use **real components** (`MediaRecord` → `WSAudioPlayer` → `useWaveSurfer`); do not
-  stub the player for integration regressions.
-- Patch **browser APIs on `window`** (`getUserMedia`, optional `MediaRecorder`,
-  `AudioWorklet`) via `cypress/support/recordingMocks.ts` — avoid ESM module stubs.
-- Force the **MediaRecorder fallback** (`forceMediaRecorderFallback: true`) when the
-  bug lives in `AudioMediaRecorder`, not AudioWorklet.
-- `MockMediaRecorder`: emit **one-second WAV fragments** per timeslice so concatenated
-  chunks reproduce the decode/merge failure. Use `Date.now()` for elapsed slices
-  (advances with `cy.tick`, unlike `performance.now()` under `cy.clock()`).
-- Mock `stop()` must **flush pending chunks before** setting `state = 'inactive'`
-  (`emitPreviewChunk` checks `state === 'recording'`).
+When the user asks for commits, commit the test and the production fix separately.
 
-## `cy.clock()` + async recording
-
-- `beforeEach(() => cy.clock())` for deterministic preview ticks.
-- After click Record, `cy.tick(100)` to flush async `recorder.start()`.
-- On pause, `cy.tick(200)` for `AudioMediaRecorder.stop()`'s 100ms chunk wait.
-- `assertSaveReady()` may `cy.tick(500)` to flush post-stop UI updates.
-
-## Slice tests smallest → full scenario
-
-1. Tracer: short record → pause → Save + duration.
-2. Long record (~95 ticks) — TT-7384.
-3. Duration advances during record — TT-7276.
-4. Overdub second take — TT-7276 scenario 2.
-
-Commit **tests-only** first when possible; production fix in a separate commit.
-
-## Prove red/green before calling it done
-
-From `web`:
-
-```powershell
-# Green — tests + production fix
-npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx --browser chrome
-
-# Red — same tests, baseline production (from repo root)
-git checkout <base> -- web/src/crud/AudioMediaRecorder.ts `
-  web/src/components/WSAudioPlayer.tsx `
-  web/src/crud/useWaveSurfer.tsx
-cd web
-npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx --browser chrome
-git checkout -- web/src/crud/AudioMediaRecorder.ts `
-  web/src/components/WSAudioPlayer.tsx `
-  web/src/crud/useWaveSurfer.tsx
-```
-
-Expect **fail without fix** (duration stuck at `0:01`) and **pass with fix**.
-
-## Production patterns the tests caught
-
-- **Decode trap:** `decodeAudioData` on concatenated WAV fragments can **succeed** but
-  return only the first RIFF (~1s). Skip accumulated decode when chunks are multiple
-  `audio/wav`; merge per-chunk instead.
-- **Async stop:** `await handleChanged()` in `onRecordStop`, not `void handleChanged()`.
-- **Load races:** bump a load generation on `wsStopRecord` so in-flight preview loads
-  cannot overwrite the final stop take in `useWaveSurfer`.
-- **Unit backstop:** `AudioMediaRecorder.test.ts` for preview/stop blob shape; CT for
-  the full UI path.
-
-## When tests pass without the fix
-
-Check in order:
-
-1. Assertion too weak (Save vs waveform duration).
-2. Mock does not reproduce production chunk shape (native vs mock `MediaRecorder`).
-3. Harness bug (mock `stop()` order, frozen timers, missing `cy.tick` after async stop).
-4. Production accidentally fixed by test-only changes — revert production files and re-run red.
-
-## Example: TT-7005 — Compare step, second resource never plays
-
-Bug: on the Compare step, picking a second resource does not play it and the
-player blinks repeatedly. **First attempt (PR #606) treated the symptom** — it
-added a `disabled` prop to `SelectMyResource` and blocked switching while
-`itemPlaying`. QA reopened: the same failure appears as soon as the first
-resource finishes and the dropdown unlocks. That attempt is a cautionary tale:
-*blocking the interaction that exposes a defect is not a fix, and the "red"
-test it produced (a mocked child receiving `disabled: true`) locked in the
-wrong behaviour.*
-
-**Real root cause — refs that outlive the media they describe.**
-`LimitedMediaPlayer.resetPlay()` cleared `durationRef` but left `valueTracker`
-and `stop` holding the *previous* resource's values. `timeUpdate`'s end
-heuristic is guarded by `valueTracker.current !== 0` ("not the first load"), so
-once anything had played, that guard was permanently satisfied:
-
-- `TeamCheckReference` renders `LimitedMediaPlayer` **unconditionally**, so the
-  instance and its refs survive every resource change. `PassageDetailArtifacts`
-  renders it as `{playItem !== '' && <LimitedMediaPlayer …>}`, which destroys
-  the refs each time — that is why only Compare showed the bug.
-- On a new blob, `WSAudioPlayer` calls `setDuration(0); setProgress(0)` before
-  the file is decoded, and `setProgress` forwards to `onProgress`. With
-  `durationRef === 0` and a stale `valueTracker`, `timeUpdate(0)` read as
-  end-of-media and fired `onEnded` **on load**.
-- `onEnded` → `handleEnded` cleared `playItem` and bumped a `resetCount` whose
-  effect re-selected the stored resource 500 ms later, re-arming
-  `PassageDetailContext`'s 2-second auto-play timer → reload → spurious
-  `ended()` → infinite remount loop, i.e. the "blinking".
-
-**Green:** clear every end-detection ref when the **source changes** —
-`resetMediaTiming()` (`stop`, `durationRef`) wrapping `resetPlay()`
-(`valueTracker`, position, slider), mirroring the sibling that already gets this
-right, `MediaPlayer.resetWaveSurferTiming`. Require `durationRef.current > 0`
-before the duration-based end test, drop the `resetCount` clear/restore cycle
-from `handleEnded`, and remove the #606 `disabled={itemPlaying}` so switching
-mid-playback works as the ticket originally asked. (`ended()` keeps calling only
-`resetPlay()` — see "One reset helper, two lifecycles" below.)
-
-**Lessons worth keeping:**
-
-- **Look for the sibling that works.** `MediaPlayer` had the identical heuristic
-  *and* a correct `resetWaveSurferTiming`. Diffing the two found the bug faster
-  than reading either alone.
-- **One reset helper, two lifecycles.** The first cut cleared `valueTracker`,
-  `stop` and `durationRef` together in `resetPlay()` — but `resetPlay()` runs
-  both on a source change *and* from `ended()`. Wiping the media-scoped timing
-  at the end of a playthrough left a replay of the same loaded resource with no
-  end boundary at all (the player never reloads, so it never reports
-  `onDuration` again), so `onEnded` stopped firing and the caller's
-  `itemPlaying` stuck on. Split it: `resetPlay()` rewinds one playthrough
-  (position, slider value, `valueTracker`), `resetMediaTiming()` additionally
-  clears `stop`/`durationRef` and runs only from the `[srcMediaId]` effect.
-  Caught by Copilot on PR #619 — when a helper is called from two lifecycles,
-  ask what each caller must *keep*, not only what it must clear. Regression
-  test: play to the end, then replay with **no** second `onDuration` and assert
-  `onEnded` fires again.
-- **Mounted-forever components make refs global state.** When a component is
-  kept alive across "documents", every `useRef` needs an explicit reset path.
-- **Drive the real callback sequence.** `LimitedMediaPlayer.test.tsx` already
-  mocks `HiddenPlayer` to capture `onProgress`/`onDuration`/`setPlaying`, so the
-  red test replays production's exact order: play to end → switch `srcMediaId` →
-  `onDuration(0)`, `onProgress(0)`. Pair `expect(onEnded).not.toHaveBeenCalled()`
-  with a follow-up "still ends at its own end" assertion so the fix cannot be a
-  blanket disabling of end detection.
-- **jsdom `localStorage` is a Proxy.** `global.localStorage.getItem = jest.fn()`
-  silently stores an *item* named `getItem` instead of replacing the method —
-  the component still reads real storage. Seed with
-  `localStorage.setItem(...)` and `localStorage.clear()` in `beforeEach`.
-- **Prove red with a file-scoped checkout, and commit the fix before you do it.**
-  `git checkout HEAD~1 -- <production files>` discards *uncommitted* production
-  edits. (Never `git stash` here — the stash stack is shared across worktrees.)
-- Gotcha retained from #606: React 19 function components receive `undefined`,
-  not `{}`, as the second call argument. `expect.anything()` rejects `undefined`
-  too, so index into `mock.calls[0][0]` directly.
-- **Files:** [LimitedMediaPlayer.tsx](../../web/src/components/LimitedMediaPlayer.tsx),
-  [LimitedMediaPlayer.test.tsx](../../web/src/components/LimitedMediaPlayer.test.tsx),
-  [TeamCheckReference.tsx](../../web/src/components/PassageDetail/TeamCheckReference.tsx),
-  [TeamCheckReference.test.tsx](../../web/src/components/PassageDetail/TeamCheckReference.test.tsx),
-  [MediaPlayer.tsx](../../web/src/components/MediaPlayer.tsx) (the correct precedent).
+Run Cypress from `web` as in `.cursor/rules/cypress-testing-takeaways.mdc`. Jest specs follow `.cursor/rules/jest-testing-takeaways.mdc`.

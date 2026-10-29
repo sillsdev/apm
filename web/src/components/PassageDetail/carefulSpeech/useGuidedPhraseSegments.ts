@@ -18,6 +18,7 @@ import {
 } from './carefulSpeechBoundary';
 import { MediaFileD } from '../../../model';
 import { useProjectSegmentSave } from '../Internalization/useProjectSegmentSave';
+import { SuggestedSegments } from '../../../business/player/usePlayerLogic';
 
 export interface GuidedPhraseSegmentsOptions {
   /** Named-region bucket key (may be `BT:en`, not only NamedRegions enum). */
@@ -47,7 +48,20 @@ export function useGuidedPhraseSegments(
     shouldReseedFromVerses = false,
   } = options;
   const projectSegmentSave = useProjectSegmentSave();
-  const [phraseSegString, setPhraseSegString] = useState('{}');
+  const [phraseSegs, setPhraseSegs] = useState<SuggestedSegments>({
+    mediaId: '',
+    segments: '{}',
+  });
+  const phraseSegString = phraseSegs.segments;
+  // Tag each segmentation with the media showing when it was set, so the
+  // player never paints it onto a different recording (TT-7661).
+  const mediaIdRef = useRef(mediafile?.id ?? '');
+  mediaIdRef.current = mediafile?.id ?? '';
+  const setPhraseSegsForCurrentMedia = useCallback(
+    (segments: string) =>
+      setPhraseSegs({ mediaId: mediaIdRef.current, segments }),
+    []
+  );
   const [bootstrapped, setBootstrapped] = useState(false);
   const bootstrapInProgress = useRef(false);
   const scopeRef = useRef<string | undefined>(undefined);
@@ -85,8 +99,14 @@ export function useGuidedPhraseSegments(
     if (!persistSegments && singleSegmentMode) return;
     const allSegs = mediafile.attributes?.segments ?? '[]';
     const regionJson = readRegionJson(allSegs);
-    if (hasPhraseRegions(regionJson)) setPhraseSegString(regionJson);
-  }, [mediafile, persistSegments, singleSegmentMode, readRegionJson]);
+    if (hasPhraseRegions(regionJson)) setPhraseSegsForCurrentMedia(regionJson);
+  }, [
+    setPhraseSegsForCurrentMedia,
+    mediafile,
+    persistSegments,
+    singleSegmentMode,
+    readRegionJson,
+  ]);
 
   /**
    * Re-read boundaries for the scope now showing, unless it is the one already
@@ -105,10 +125,10 @@ export function useGuidedPhraseSegments(
       scopeRef.current = scope;
       bootstrapInProgress.current = false;
       setBootstrapped(false);
-      setPhraseSegString('{}');
+      setPhraseSegsForCurrentMedia('{}');
       if (mediafileId) hydrateFromMediafile();
     },
-    [hydrateFromMediafile, namedRegion]
+    [setPhraseSegsForCurrentMedia, hydrateFromMediafile, namedRegion]
   );
 
   const loadRegionsOnPlayer = useCallback(
@@ -160,7 +180,7 @@ export function useGuidedPhraseSegments(
         const single = createSingleSegmentJson();
         if (!single) return false;
         loadRegionsOnPlayer(single);
-        setPhraseSegString(single);
+        setPhraseSegsForCurrentMedia(single);
         setBootstrapped(true);
         ctrl.applyRegionColors?.();
         return true;
@@ -205,7 +225,7 @@ export function useGuidedPhraseSegments(
 
       if (!hasPhraseRegions(regionJson)) return false;
 
-      setPhraseSegString(regionJson);
+      setPhraseSegsForCurrentMedia(regionJson);
       setBootstrapped(true);
       ctrl.applyRegionColors?.();
       return true;
@@ -213,6 +233,7 @@ export function useGuidedPhraseSegments(
       bootstrapInProgress.current = false;
     }
   }, [
+    setPhraseSegsForCurrentMedia,
     controlsRef,
     mediafile,
     bootstrapped,
@@ -244,12 +265,13 @@ export function useGuidedPhraseSegments(
         return false;
       }
       await persistSegmentBucket(namedRegion, regionJson);
-      setPhraseSegString(regionJson);
+      setPhraseSegsForCurrentMedia(regionJson);
       loadRegionsOnPlayer(regionJson);
       setBootstrapped(true);
       return regionJson;
     },
     [
+      setPhraseSegsForCurrentMedia,
       controlsRef,
       mediafile,
       namedRegion,
@@ -264,14 +286,14 @@ export function useGuidedPhraseSegments(
       const single = createSingleSegmentJson();
       if (!single || !mediafile) return Promise.resolve(false);
       if (!persistSegments) {
-        setPhraseSegString(single);
+        setPhraseSegsForCurrentMedia(single);
         loadRegionsOnPlayer(single);
         setBootstrapped(true);
         return Promise.resolve(single);
       }
       return persistSegmentBucket(namedRegion, single).then((saved) => {
         if (!saved) return false;
-        setPhraseSegString(single);
+        setPhraseSegsForCurrentMedia(single);
         loadRegionsOnPlayer(single);
         setBootstrapped(true);
         return single;
@@ -279,6 +301,7 @@ export function useGuidedPhraseSegments(
     }
     return resegmentWithParams(boldDefaultSegParams as IRegionParams);
   }, [
+    setPhraseSegsForCurrentMedia,
     singleSegmentMode,
     createSingleSegmentJson,
     mediafile,
@@ -290,8 +313,8 @@ export function useGuidedPhraseSegments(
   ]);
 
   return {
-    phraseSegString,
-    setPhraseSegString,
+    phraseSegs,
+    setPhraseSegsForCurrentMedia,
     bootstrapped,
     ensureSegments,
     resetForScope,
@@ -300,14 +323,4 @@ export function useGuidedPhraseSegments(
     persistPhraseSegments: (regionJson: string) =>
       persistSegmentBucket(namedRegion, regionJson),
   };
-}
-
-/** BOLD Careful Speech — clause regions on vernacular. */
-export function useCarefulSpeechSegments(
-  mediafile: MediaFileD | undefined,
-  controlsRef: React.RefObject<WSAudioPlayerControls | null>
-) {
-  return useGuidedPhraseSegments(mediafile, controlsRef, {
-    namedRegion: NamedRegions.Clause,
-  });
 }
