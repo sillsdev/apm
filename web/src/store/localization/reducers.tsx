@@ -80,6 +80,7 @@ const initialState = {
 			"linked": "Linked",
 			"projectresource": "General Resource",
 			"qanda": "Community Test Question and Answer",
+			"replacement": "Replacement",
 			"resource": "Resource",
 			"retell": "Community Test Retell",
 			"sharedresource": "Shared Resource",

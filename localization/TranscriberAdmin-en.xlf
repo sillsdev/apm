@@ -340,6 +340,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="artifactType.replacement">
+         <segment>
+            <source>Replacement</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="artifactType.resource">
          <segment>
             <source>Resource</source>
