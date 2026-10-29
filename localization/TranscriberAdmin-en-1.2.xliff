@@ -6034,28 +6034,28 @@
             <source>Cancel</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.dragDropMultiple">
             <source>Drag and drop files here, or click here to browse for the files.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.dragDropSingle">
             <source>Drag and drop a file here, or click here to browse for the file.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.faithbridgeTitle">
             <source>{0} Resource</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.fileTooBig">
@@ -6069,168 +6069,168 @@
             <source>Github markdown syntax supported</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.graphicTask">
       		<source>Drag and drop a file here, or click here to browse for the file. Formats accepted are .png, .jpg (or .jpeg) and .webp.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.graphicTitle">
       		<source>Upload Graphic</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.intellectualPropertyAudioTask">
       		<source>Upload a speaker rights release for {0} in audio format. Formats accepted are .mp3, .m4a, .wav or .ogg.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.intellectualPropertyTask">
       		<source>Upload a speaker rights release for {0} in audio or visual format. Audio formats accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or .jpg.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.intellectualPropertyTitle">
       		<source>Upload Speaker Rights Release</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.invalidFile">
             <source>Not valid for this operation: {0} </source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.ITFtask">
             <source>Upload an Incremental Transcriber File (itf file) exported from the Desktop app.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.ITFtitle">
             <source>Upload Change Data from Desktop app.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.launchLink">
             <source>Show Link Content</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.linkTask">
             <source>Enter a URI link for a resource.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.linkTitle">
             <source>Link Resource</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.markdownTask">
             <source>Enter text to be used as a resource. (Mark down formatting is allowed.)</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.markdownTitle">
             <source>Enter Text</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.pdfResourceTitle">
             <source>Upload PDF Resource</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.preview">
             <source>Preview</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.projectResourceTask">
       		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
          <trans-unit id="mediaUpload.PTFtask">
             <source>Upload a Portable Transcriber File (PTF).</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.PTFtitle">
             <source>Upload complete Audio Project Data from PTF</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.resourceTask">
       		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.resourceTitle">
       		<source>Upload Resources</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
          <trans-unit id="mediaUpload.task">
             <source>You can upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.title">
             <source>Upload Audio</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.upload">
             <source>Upload</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mobile.desktopOnlyStep">
@@ -8942,14 +8942,14 @@
             <source>Artifact Type</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="selectRecording.artifactType">
             <source>Type</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="selectRecording.created">
