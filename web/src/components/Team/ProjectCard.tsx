@@ -67,9 +67,11 @@ import {
 import {
   projDefBook,
   projDefSectionMap,
+  projDefReferenceTexts,
   projDefStory,
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
+import { parseReferenceTexts } from '../../business/referenceText/referenceText';
 import BigDialog from '../../hoc/BigDialog';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -300,6 +302,7 @@ export const ProjectCard = (props: IProps) => {
       organizedBy,
       book,
       story,
+      referenceTexts,
       sheetGroup,
       sheetUser,
       publishGroup,
@@ -315,6 +318,11 @@ export const ProjectCard = (props: IProps) => {
       project?.attributes?.defaultParams
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
+    defaultParams = setParam(
+      projDefReferenceTexts,
+      referenceTexts.length > 0 ? referenceTexts : undefined,
+      defaultParams
+    );
     projectUpdate({
       ...project,
       attributes: {
@@ -423,6 +431,9 @@ export const ProjectCard = (props: IProps) => {
           projDefBook,
           project as any as ProjectD
         ) as string) || '',
+      referenceTexts: parseReferenceTexts(
+        getProjectDefault(projDefReferenceTexts, project as any as ProjectD)
+      ),
       story: isStory,
       bcp47: attr.language,
       languageName: attr.languageName || '',

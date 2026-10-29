@@ -1,0 +1,85 @@
+{
+  "translation": {
+    "id": "BSB"
+  },
+  "book": {
+    "id": "PSA"
+  },
+  "numberOfVerses": 8,
+  "chapter": {
+    "number": 3,
+    "content": [
+      {
+        "type": "heading",
+        "text": "Deliver Me, O LORD!"
+      },
+      {
+        "type": "hebrew_subtitle",
+        "text": "A Psalm of David, when he fled from his son Absalom.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 1,
+        "text": "O LORD, how my foes have increased!\nHow many rise up against me!",
+        "footnotes": [],
+        "poem": [
+          {
+            "start": 0,
+            "end": 35,
+            "level": 1
+          },
+          {
+            "start": 36,
+            "end": 64,
+            "level": 2
+          }
+        ]
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "text": "Many say of me,\n“God will not deliver him.”Selah",
+        "footnotes": [
+          {
+            "noteId": 5,
+            "offset": 48,
+            "text": "Selah or Interlude is probably a musical or literary term; here and throughout the Psalms.",
+            "caller": "+"
+          }
+        ],
+        "poem": [
+          {
+            "start": 0,
+            "end": 15,
+            "level": 1
+          },
+          {
+            "start": 16,
+            "end": 43,
+            "level": 2
+          }
+        ]
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "text": "But You, O LORD, are a shield around me,\nmy glory, and the One who lifts my head.",
+        "footnotes": [],
+        "poem": [
+          {
+            "start": 0,
+            "end": 40,
+            "level": 1
+          },
+          {
+            "start": 41,
+            "end": 81,
+            "level": 2
+          }
+        ]
+      }
+    ],
+    "footnotes": []
+  }
+}

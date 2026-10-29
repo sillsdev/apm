@@ -245,6 +245,7 @@ jest.mock('../../Uploader', () => ({
 }));
 
 jest.mock('./SortableHeader', () => () => null);
+jest.mock('./ReferenceTextRows', () => ({ ReferenceTextRows: () => null }));
 jest.mock('.', () => ({
   AIGenerated: 'ai-generated',
   SortableItem: () => null,

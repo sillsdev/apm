@@ -7,6 +7,7 @@
     "clean": "rimraf dist dist-electron release web/dist web/coverage",
     "stamp": "node env-config/writeDate.cjs",
     "logoassets": "node env-config/genLogoAssets.cjs",
+    "helloao": "node env-config/genHelloAoCatalog.cjs",
     "format": "prettier --config .prettierrc.yaml --write .",
     "format:check": "prettier --config .prettierrc.yaml --check .",
     "lint": "eslint --cache .",

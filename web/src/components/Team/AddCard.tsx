@@ -10,8 +10,12 @@ import { ILanguage } from '../../control';
 import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
 import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
-import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
 import { useSetTeamLanguageForNewProject } from '../../crud/useSetTeamLanguage';
+import {
+  projDefBook,
+  projDefReferenceTexts,
+  projDefStory,
+} from '../../crud/useProjectDefaults';
 import { useHome, useJsonParams } from '../../utils';
 import StickyRedirect from '../StickyRedirect';
 import { ProjectDialog } from './ProjectDialog';
@@ -140,6 +144,7 @@ export const AddCard = (props: IProps) => {
       organizedBy,
       book,
       story,
+      referenceTexts,
       sheetUser,
       sheetGroup,
       publishUser,
@@ -151,6 +156,11 @@ export const AddCard = (props: IProps) => {
       '{}'
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
+    defaultParams = setParam(
+      projDefReferenceTexts,
+      referenceTexts.length > 0 ? referenceTexts : undefined,
+      defaultParams
+    );
     setLanguage({ bcp47, languageName, font, rtl, spellCheck });
     projectCreate(
       {

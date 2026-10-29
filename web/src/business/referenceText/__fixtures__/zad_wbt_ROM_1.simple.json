@@ -1,0 +1,45 @@
+{
+  "translation": {
+    "id": "zad_wbt"
+  },
+  "book": {
+    "id": "ROM"
+  },
+  "numberOfVerses": 31,
+  "chapter": {
+    "number": 1,
+    "content": [
+      {
+        "type": "verse",
+        "number": 1,
+        "text": "Nad' Pablo, nak' wen llin c̱he Cristo Jesúza'. Chioza' gox wṉabe' nad' gak' postl c̱he', na' bene' lall' na' wi'a dill' wen dill' kob c̱he'na'",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "text": "c̱heyi daa bc̱hebe' gone', na' dii beṉ'ka' wdix̱jee daa golle' ḻegake' kani'yi bzejgake'n ḻee Cho'a Xtilleena'.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "text": "Na' cho'en dill' c̱he Xiiṉe' Jesucrístona', beena' nak X̱ancho, daa goke' beṉec̱h, na' goke' xiiṉ dia c̱he dii rey Davina'. Na' Espíritu Sántona' bli'e nan nake' Xiiṉ Chioza', beena' nak beṉ' yeḻ' wak choo yeḻ' wak xen daa bibane' ladj beṉ' wetka'.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 5,
+        "text": "Na' daa nonḻilall'nto' Jesucrístona', Chioza' ba goklene' neto', na' nzoe' neto' naknto' postl c̱he Jesucrístona', na' bene' lall' na'nto' lljtix̱je'nto' xtilleena' kwenc̱he doxen yell-lioni soa beṉ' gonḻilall'gake'ne' na' wzenaggake' c̱he', na' sho'e balaaṉ.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 6,
+        "text": "Na' lenle ba gox wṉab Chioza' kwenc̱he gakle lall' na' Jesucrístona'.",
+        "footnotes": []
+      }
+    ],
+    "footnotes": []
+  }
+}

@@ -24,7 +24,11 @@ export const ViewButton = (props: IProps) => {
   return (
     <LightTooltip title={t.view}>
       <span>
-        <IconButton id="res-view" onClick={handleView(props)}>
+        <IconButton
+          id="res-view"
+          aria-label={t.view}
+          onClick={handleView(props)}
+        >
           <ShowIcon fontSize="small" />
         </IconButton>
       </span>

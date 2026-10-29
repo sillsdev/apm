@@ -15,7 +15,11 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { Button, rowSx, spreadSx } from '../control';
 import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
-import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
+import {
+  projDefBook,
+  projDefReferenceTexts,
+  projDefStory,
+} from '../crud/useProjectDefaults';
 import BigDialog from '../hoc/BigDialog';
 import { LocalKey, localUserKey, useJsonParams } from '../utils';
 import { useIsPapLike } from '../utils/useIsPapLike';
@@ -126,6 +130,7 @@ export const ProjectsScreenInner = () => {
       organizedBy,
       book,
       story,
+      referenceTexts,
       sheetUser,
       sheetGroup,
       publishUser,
@@ -137,6 +142,11 @@ export const ProjectsScreenInner = () => {
       '{}'
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
+    defaultParams = setParam(
+      projDefReferenceTexts,
+      referenceTexts.length > 0 ? referenceTexts : undefined,
+      defaultParams
+    );
     const vproj: VProject = {
       attributes: {
         name,

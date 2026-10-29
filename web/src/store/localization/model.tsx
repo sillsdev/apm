@@ -932,6 +932,7 @@ export interface IMediaActionsStrings extends Localize.LocalizedStringsMethods {
     "edit": string;
     "pause": string;
     "play": string;
+    "stop": string;
     "view": string;
 };
 
@@ -1124,6 +1125,14 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "projectResourceConfigure": string;
     "recordResource": string;
     "reference": string;
+    "referenceTextBookMissing": string;
+    "referenceTextEmpty": string;
+    "referenceTextFetchFailed": string;
+    "referenceTextLoading": string;
+    "referenceTextNoRange": string;
+    "referenceTextNoVoice": string;
+    "referenceTextRetry": string;
+    "referenceTextSpeakFailed": string;
     "research": string;
     "resource": string;
     "resources": string;
@@ -1911,7 +1920,10 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "advanced": string;
     "backtranslation": string;
     "basic": string;
+    "bibleListError": string;
+    "book": string;
     "cancel": string;
+    "chooseBookFirst": string;
     "configure": string;
     "cannotChangeLayout": string;
     "correctformat": string;
@@ -1928,6 +1940,8 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "howToPublic": string;
     "language": string;
     "layout": string;
+    "licenseNotStated": string;
+    "loadingBibles": string;
     "movement": string;
     "movements": string;
     "nameInUse": string;
@@ -1940,10 +1954,14 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "permissionEditSheet": string;
     "permissionPublish": string;
     "preview": string;
+    "primaryReferenceText": string;
     "projectName": string;
+    "publicDomain": string;
+    "referenceTextRemoved": string;
     "renderRecommended": string;
     "save": string;
     "scenes": string;
+    "secondaryReferenceText": string;
     "sections": string;
     "sets": string;
     "sharedResources": string;
@@ -1953,6 +1971,7 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "testing": string;
     "training": string;
     "type": string;
+    "usedInTeam": string;
 };
 
 export interface IWelcomeStrings extends Localize.LocalizedStringsMethods {
