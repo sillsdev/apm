@@ -8,7 +8,8 @@ import {
   MediaFileAttributes,
   MediaFileD,
 } from '../model';
-import MediaUpload, { FaithbridgeType } from './MediaUpload';
+import MediaUploadDialog from './MediaUploadDialog';
+import { FaithbridgeType } from '../utils/contentType';
 import { typeLimit } from '../utils/typeLimit';
 import {
   findRecord,
@@ -596,7 +597,7 @@ export const Uploader = (props: IProps) => {
         />
       )}
       {!audioUploadOrRecord && !hasImport && (
-        <MediaUpload
+        <MediaUploadDialog
           visible={isOpen}
           onVisible={onOpen}
           bp={uploadDialogBp}

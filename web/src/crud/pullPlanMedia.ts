@@ -9,12 +9,13 @@ export const pullPlanMedia = async (
   memory: Memory,
   remote: JSONAPISource
 ) => {
-  const getPlanId = () =>
+  // `plan` is the local Orbit plan id; the media filter needs the remote id.
+  const getRemotePlanId = () =>
     remoteIdNum('plan', plan, memory?.keyMap as RecordKeyMap) || plan;
 
-  const planId = getPlanId();
-  if (planId !== undefined) {
-    const filter = [{ attribute: 'plan-id', value: planId }];
+  const remotePlanId = getRemotePlanId();
+  if (remotePlanId !== undefined) {
+    const filter = [{ attribute: 'plan-id', value: remotePlanId }];
     await pullRemoteToMemory({ table: 'mediafile', memory, remote, filter });
   }
 };

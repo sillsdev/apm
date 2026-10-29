@@ -22,7 +22,11 @@ import {
   oversizedFileList,
 } from '../utils/filterFilesBySizeLimit';
 import { typeLimit } from '../utils/typeLimit';
-import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
+import {
+  FaithbridgeType,
+  MarkDownType,
+  UriLinkType,
+} from '../utils/contentType';
 import { UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
 import { Button } from '../control/Button';
@@ -171,7 +175,7 @@ interface IProps {
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
-  saveText?: string | undefined;
+  saveButtonText?: string | undefined;
   validationMessage?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
@@ -214,7 +218,7 @@ function MediaUploadContent(props: IProps) {
     onValue,
     onNonAudio,
     audioOnly,
-    saveText,
+    saveButtonText,
     validationMessage,
     controlsRef,
     onSaveDisabled,
@@ -495,7 +499,7 @@ function MediaUploadContent(props: IProps) {
             disabled={saveDisabled}
             sx={{ minWidth: '96px' }}
           >
-            {saveText || t.upload}
+            {saveButtonText || t.upload}
           </Button>
         </DialogActions>
       )}

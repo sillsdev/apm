@@ -369,7 +369,7 @@ function PassageRecordDlg(props: IProps) {
           hideCancel
           onVisible={onVisible}
           uploadType={uploadType}
-          saveText={saveText}
+          saveButtonText={saveText}
           multiple={multiple}
           uploadMethod={uploadMethod}
           cancelMethod={onCancel}

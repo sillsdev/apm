@@ -1,6 +1,6 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { restoreScroll } from '../utils';
-import MediaUpload from './MediaUpload';
+import MediaUploadDialog from './MediaUploadDialog';
 import { UploadType } from './UploadType';
 import { sharedSelector } from '../selector';
 import { ISharedStrings } from '../model';
@@ -60,7 +60,7 @@ export function GraphicUploader(props: IProps) {
   };
 
   return isOpen ? (
-    <MediaUpload
+    <MediaUploadDialog
       visible={isOpen}
       onVisible={onOpen}
       uploadType={uploadType || UploadType.Media}

@@ -72,7 +72,7 @@ import {
 } from '../crud/useProjectDefaults';
 import { ISTFilterState } from './Sheet/filterMenu';
 import stringReplace from 'react-string-replace';
-import { MarkDownType, UriLinkType } from './MediaUpload';
+import { MarkDownType, UriLinkType } from '../utils/contentType';
 import { RecordKeyMap } from '@orbit/records';
 
 interface PlanProject {

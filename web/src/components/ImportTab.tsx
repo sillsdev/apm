@@ -45,7 +45,7 @@ import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { shallowEqual } from 'react-redux';
 import * as actions from '../store';
-import MediaUpload from './MediaUpload';
+import MediaUploadDialog from './MediaUploadDialog';
 import { UploadType } from './UploadType';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { useElectronImport } from '../routes/ElectronImport';
@@ -1209,7 +1209,7 @@ export function ImportTab(props: IProps) {
           )}
 
           {uploadVisible && selectedImportType !== UploadType.Burrito && (
-            <MediaUpload
+            <MediaUploadDialog
               visible={uploadVisible}
               onVisible={setUploadVisible}
               uploadType={selectedImportType}

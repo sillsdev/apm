@@ -1,13 +1,14 @@
 import { UploadType } from '../../UploadType';
 import {
+  FaithbridgeType,
+  MarkDownType,
+  UriLinkType,
+} from '../../../utils/contentType';
+import {
   canSaveResourceEdit,
   descriptionRequiredForResource,
   resourceArtifactName,
 } from './resourceArtifactName';
-
-const UriLinkType = 'text/uri-list';
-const MarkDownType = 'text/markdown';
-const FaithbridgeType = 'audio/mpeg/s3link';
 
 describe('descriptionRequiredForResource', () => {
   it('requires description for Link and Faithbridge upload types', () => {

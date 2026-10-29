@@ -8,11 +8,6 @@ import { useMobile } from '../utils';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
-export const UriLinkType = 'text/uri-list';
-export const MarkDownType = 'text/markdown';
-export const Mp3Type = 'audio/mpeg';
-export const FaithbridgeType = 'audio/mpeg/s3link';
-
 interface IProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
@@ -44,7 +39,7 @@ interface IProps {
   keepFilesAfterSubmit?: boolean | undefined;
 }
 
-function MediaUpload(props: IProps) {
+function MediaUploadDialog(props: IProps) {
   const {
     visible,
     onVisible,
@@ -128,4 +123,4 @@ function MediaUpload(props: IProps) {
   );
 }
 
-export default MediaUpload;
+export default MediaUploadDialog;
