@@ -111,7 +111,10 @@ jest.mock('../../context/useGlobal', () => ({
 }));
 
 jest.mock('../../../api-variable', () => ({ isElectron: false }));
-jest.mock('../../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
+jest.mock('../../auth/bugsnagClient', () => ({
+  __esModule: true,
+  default: {},
+}));
 
 // The utils barrel loads modules that need app config; only these two are used.
 jest.mock('../../utils', () => ({
@@ -130,6 +133,7 @@ describe('TranscribeStepSettings', () => {
         org="org-1"
         isOpen
         toolSettings='{"artifactTypeId":""}'
+        stepSeq={1}
         onChange={jest.fn()}
       />
     );
