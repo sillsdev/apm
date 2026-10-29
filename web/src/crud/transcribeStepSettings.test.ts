@@ -139,14 +139,13 @@ describe('settings problem logging', () => {
     ]);
   });
 
-  test('logs where unreadable settings are, not their content, before a save replaces them', () => {
-    reportReplacedStepSettings('{secret unreadable', '42', 3);
-    reportReplacedStepSettings('{offline unreadable', undefined, 1);
-    reportReplacedStepSettings('{"rtl":true}', '42', 4);
-    reportReplacedStepSettings('', '42', 5);
+  test('logs the full unreadable settings before a save replaces them', () => {
+    const original = `{${'y'.repeat(300)}`;
+    reportReplacedStepSettings(original);
+    reportReplacedStepSettings('{"rtl":true}');
+    reportReplacedStepSettings('');
     expect(loggedMessages()).toEqual([
-      'Replacing unreadable transcribe step settings: organization 42, step sequence 3',
-      'Replacing unreadable transcribe step settings: organization not synced, step sequence 1',
+      `Replacing unreadable transcribe step settings: ${original}`,
     ]);
   });
 });
