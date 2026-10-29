@@ -15,7 +15,6 @@ import {
   OfflineProject,
   VProject,
   Discussion,
-  MediaReplacement,
   OrgWorkflowStep,
   IApiError,
   MediaFileD,
@@ -63,6 +62,7 @@ import Coordinator from '@orbit/coordinator';
 import { axiosPost } from '../../utils/axios';
 import { updateBackTranslationType } from '../../crud/updateBackTranslationType';
 import { updateConsultantWorkflowStep } from '../../crud/updateConsultantWorkflowStep';
+import { mediaReplacementsForPlans } from '../../crud/mediaReplacementsForPlans';
 import {
   InitializedRecord,
   RecordKeyMap,
@@ -1361,13 +1361,10 @@ export const importProjectToElectron =
       )
         .filter((psc) => passageids.includes(related(psc, 'passage')))
         .map((p) => p.id);
-      const mediareplacementids = (
-        memory.cache.query((q) =>
-          q.findRecords('mediareplacement')
-        ) as (MediaReplacement & InitializedRecord)[]
-      )
-        .filter((m) => planids.includes(related(m, 'plan')))
-        .map((m) => m.id);
+      const mediareplacementids = mediaReplacementsForPlans(
+        memory,
+        planids
+      ).map((m) => m.id);
       const mediaids = (
         memory.cache.query((q) => q.findRecords('mediafile')) as (MediaFile &
           InitializedRecord)[]

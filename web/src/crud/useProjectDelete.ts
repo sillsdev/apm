@@ -3,7 +3,6 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import {
   PlanD,
   MediaFileD,
-  MediaReplacementD,
   DiscussionD,
   CommentD,
   SectionD,
@@ -12,6 +11,7 @@ import {
   SectionResourceD,
 } from '../model';
 import { useOfflnProjDelete } from './useOfflnProjDelete';
+import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
 import { related } from '.';
 
 export const useProjectDelete = () => {
@@ -46,14 +46,9 @@ export const useProjectDelete = () => {
             })
           ) as MediaFileD[]
         ).map((m) => m.id);
-        const mediareplacements = (
-          memory?.cache.query((q) =>
-            q.findRecords('mediareplacement').filter({
-              relation: 'plan',
-              record: { type: 'plan', id: planid },
-            })
-          ) as MediaReplacementD[]
-        ).map((m) => m.id);
+        const mediareplacements = mediaReplacementsForPlans(memory, [
+          planid,
+        ]).map((m) => m.id);
         const discussions = (
           memory?.cache.query((q) =>
             q.findRecords('discussion')

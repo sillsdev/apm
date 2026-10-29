@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { findRecord, related, staticFiles, updateableFiles } from '.';
+import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
 import Memory from '@orbit/memory';
 import { DateTime } from 'luxon';
 import { BaseModel } from '../model/baseModel';
@@ -109,14 +110,9 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         ).filter((x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships));
 
       const mediareplacementRows = () =>
-        (
-          memory?.cache.query((q) =>
-            q.findRecords('mediareplacement').filter({
-              relation: 'plan',
-              record: { type: 'plan', id: plan.id },
-            })
-          ) as BaseModel[]
-        ).filter((x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships));
+        mediaReplacementsForPlans(memory, [plan.id]).filter(
+          (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
+        );
 
       const discussionRows = () => {
         const mediafiles = mediafileRows().map((m) => m.id);

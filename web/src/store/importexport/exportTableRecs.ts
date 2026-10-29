@@ -25,6 +25,7 @@ import {
   BibleD,
 } from '../../model';
 import { BaseModel, BaseModelD } from '../../model/baseModel';
+import { mediaReplacementsForPlans } from '../../crud/mediaReplacementsForPlans';
 
 export interface ExportCollectorOptions {
   artifactType?: string | null;
@@ -494,26 +495,22 @@ export function createExportCollector(
 
   const supportingPlans = (project: ProjectD) => {
     const ownIds = new Set(Plans(project).map((p) => p.id));
-    const planIds = new Set([
-      ...new Set(
-        AllMediafiles(project)
-          .map((m) => related(m, 'plan'))
-          .filter((id) => id && !ownIds.has(id))
-      ),
-    ]);
+    const planIds = new Set(
+      AllMediafiles(project)
+        .map((m) => related(m, 'plan'))
+        .filter((id) => id && !ownIds.has(id))
+    );
     return (memory.cache.query((q) => q.findRecords('plan')) as PlanD[]).filter(
       (p) => planIds.has(p.id)
     );
   };
 
   const supportingProjects = (project: ProjectD) => {
-    const projids = new Set([
-      ...new Set(
-        supportingPlans(project)
-          .map((p) => related(p, 'project'))
-          .filter((id) => id && id !== project.id)
-      ),
-    ]);
+    const projids = new Set(
+      supportingPlans(project)
+        .map((p) => related(p, 'project'))
+        .filter((id) => id && id !== project.id)
+    );
     return (
       memory.cache.query((q) => q.findRecords('project')) as ProjectD[]
     ).filter((s) => projids.has(s.id));
@@ -653,15 +650,11 @@ export function createExportCollector(
           return Passages(project).concat(sharedNotePassages(project));
         return defaultQuery(info.table);
 
-      case 'mediareplacement': {
-        if (!project) return defaultQuery(info.table);
-        const planIds = new Set(Plans(project).map((pl) => pl.id));
-        return (
-          memory.cache.query((q) =>
-            q.findRecords('mediareplacement')
-          ) as BaseModelD[]
-        ).filter((r) => planIds.has(related(r, 'plan')));
-      }
+      case 'mediareplacement':
+        return mediaReplacementsForPlans(
+          memory,
+          project ? Plans(project).map((pl) => pl.id) : undefined
+        );
 
       case 'mediafile':
         if (options?.artifactType !== undefined && options.projRec) {
