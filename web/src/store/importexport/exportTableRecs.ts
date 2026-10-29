@@ -165,10 +165,12 @@ export function createExportCollector(
     const sourcePassageLocalIds = new Set(
       resourcemediafiles.map((r) => related(r, 'resourcePassage'))
     );
-    const sourcePassageRemoteIds = resourcemediafiles
-      .map((r) => r.attributes?.resourcePassageId)
-      .filter((id): id is number => typeof id === 'number' && id > 0)
-      .map(String);
+    const sourcePassageRemoteIds = new Set(
+      resourcemediafiles
+        .map((r) => r.attributes?.resourcePassageId)
+        .filter((id): id is number => typeof id === 'number' && id > 0)
+        .map(String)
+    );
     const sourcemediafiles = mediafiles.filter((m) => {
       if (!m.attributes?.readyToShare) return false;
       const psg = related(m, 'passage');
@@ -197,9 +199,9 @@ export function createExportCollector(
     );
   };
 
-  const sharedNotePassages = (project: ProjectD): Set<PassageD> => {
+  const sharedNotePassages = (project: ProjectD): PassageD[] => {
     const ids = sharedNotePassageIds(project);
-    return new Set(
+    return (
       memory.cache.query((q) => q.findRecords('passage')) as PassageD[]
     ).filter((p) => ids.has(p.id));
   };
