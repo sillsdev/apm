@@ -176,7 +176,7 @@ export function AudioTab() {
     } else {
       const passId = data[mRow].passId;
       if (passId && passId !== '') {
-        detachPassage(passId, data[mRow].sectionId, plan, mediaId, false);
+        void detachPassage(passId, data[mRow].sectionId, plan, mediaId, false);
       } else {
         showMessage(t.noPassageAttached.replace('{0}', data[mRow].fileName));
       }
@@ -188,7 +188,7 @@ export function AudioTab() {
       showMessage(t.fileAttached);
       return;
     }
-    handleSave({ ...attachMap, [data[mRow].id]: pRow });
+    void handleSave({ ...attachMap, [data[mRow].id]: pRow });
     setMCheck(-1);
     setPCheck(-1);
   };
@@ -314,7 +314,7 @@ export function AudioTab() {
         if (found) {
           setAttachMap(newMap);
           showMessage(t.matchAdded.replace('{0}', found.toString()));
-          handleSave(newMap);
+          void handleSave(newMap);
           return;
         }
       }
