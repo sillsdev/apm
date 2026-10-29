@@ -3,7 +3,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useContext,
   ChangeEvent,
   ReactNode,
 } from 'react';
@@ -46,7 +45,6 @@ import {
   transcriptionTabSelector,
 } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { UnsavedContext } from '../../../context/UnsavedContext';
 import { useProjectResourceSave } from './useProjectResourceSave';
 import { useProjectSegmentSave } from './useProjectSegmentSave';
 import { useFullReference, IInfo } from './useFullReference';
@@ -55,11 +53,6 @@ import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
-
-// Save participant for the configure step: the Unsaved context requests a save
-// against this id, which runs writeResources. (The wizard's close-guard is a
-// separate, save-less tool; see AddResourceWizard.)
-const wizardSaveToolId = 'AddResourceWizard-Save';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -253,17 +246,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   // Match useFullReference's book-data resolution so the display label uses the
   // same source as the (unchanged) stored reference.
   const labelBookData = props.bookData ?? reduxBookData;
-  const {
-    toolChanged,
-    toolsChanged,
-    isChanged,
-    saveRequested,
-    startSave,
-    saveCompleted,
-    clearRequested,
-    clearCompleted,
-  } = useContext(UnsavedContext).state;
-  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
   const projectResourceSave = useProjectResourceSave();
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
@@ -332,14 +315,14 @@ export const ProjectResourceConfigure = (props: IProps) => {
       });
       infoRef.current = newInfo;
       setData(newData);
-      if (segmentsRef.current) handleSegment(segmentsRef.current, true);
+      if (segmentsRef.current) handleSegment(segmentsRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   const writeResources = async () => {
-    if (!savingRef.current) {
-      savingRef.current = true;
+    if (!saving) {
+      setSaving(true);
       if (media) {
         const t = new RecordTransformBuilder();
         let ix = 0;
@@ -390,15 +373,11 @@ export const ProjectResourceConfigure = (props: IProps) => {
             segmentsRef.current
           ),
         })
-          .then(() => {
-            saveCompleted(wizardSaveToolId);
-          })
           .catch((err) => {
-            //so we don't come here...we go to continue/logout
-            saveCompleted(wizardSaveToolId, err.message);
+            showMessage(err.message);
           })
           .finally(() => {
-            savingRef.current = false;
+            setSaving(false);
             setComplete(0);
             onOpen && onOpen(false);
           });
@@ -407,26 +386,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   const handleCreate = () => {
-    if (!saveRequested(wizardSaveToolId)) {
-      startSave(wizardSaveToolId);
-    }
+    void writeResources();
   };
-
-  useEffect(() => {
-    if (saveRequested(wizardSaveToolId) && !savingRef.current) writeResources();
-    else if (clearRequested(wizardSaveToolId)) clearCompleted(wizardSaveToolId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged]);
-
-  // Real edits mark the tool dirty (see the Title and segment handlers) so
-  // a browser/app close mid-edit fires the beforeunload "unsaved changes" warning
-  // (AppHead reads the global `changed` flag). The dialog's own close is
-  // confirm-gated by the parent; clear the flag on unmount so a normal
-  // discard/save close doesn't leak it into the rest of the app.
-  useEffect(() => {
-    return () => toolChanged(wizardSaveToolId, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleCopy = () => {
     const config: string[] = [];
@@ -559,12 +520,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
-    // Editing a Title marks the wizard dirty so a browser/app close warns
-    // (same tracking the segment handler uses).
-    if (!isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
   };
 
-  const handleSegment = (segments: string, init: boolean) => {
+  const handleSegment = (segments: string) => {
     if (dataRef.current.length === 0) return;
     const regions = parseRegions(segments).regions.sort(
       (i, j) => i.start - j.start
@@ -636,7 +594,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     if (change) {
       setData(newData);
       setPastedSegments('');
-      if (!init && !isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
     }
   };
 
@@ -659,9 +616,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
 
   const handleSuffix = (e: ChangeEvent<HTMLInputElement>) => {
     setSuffix(e.target.value);
-    // The suffix feeds the saved topic, so editing it marks the wizard dirty too
-    // (so a browser/app close mid-edit warns).
-    if (!isChanged(wizardSaveToolId)) toolChanged(wizardSaveToolId);
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
@@ -768,11 +722,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
           {onBack && (
-            <Button
-              id="res-configure-back"
-              disabled={savingRef.current}
-              onClick={onBack}
-            >
+            <Button id="res-configure-back" disabled={saving} onClick={onBack}>
               {t.back}
             </Button>
           )}
@@ -780,7 +730,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
             <Button
               id="res-create"
               color="primary"
-              disabled={numResourcesToCreate === 0 || savingRef.current}
+              disabled={numResourcesToCreate === 0 || saving}
               onClick={handleCreate}
             >
               {t.createXResources.replace(

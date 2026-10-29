@@ -253,7 +253,17 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
-  cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
+  /**
+   * Called once per file. On failure, errorMessage carries the raw error code
+   * (unsupported type, too big, local write, or network) for the caller to
+   * surface.
+   */
+  cb?: (
+    n: number,
+    success: boolean,
+    data?: MediaFileAttributes,
+    errorMessage?: string
+  ) => void;
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -267,12 +277,7 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
-  /**
-   * Reports a per-file upload error (unsupported type, too big, or network) with
-   * the same raw code that used to go to state.upload.errmsg, so the caller can
-   * surface it directly instead of watching redux.
-   */
-  onUploadError?: (message: string) => void;
+  // TODO cleanup: see if we can consolidate the props above, especially the error handling and end behavior ones
 }
 export const nextUpload =
   ({
@@ -288,19 +293,23 @@ export const nextUpload =
     pendingUploadIdToClearOnSuccess,
     pendingRestore,
     getImportExportBusy,
-    onUploadError,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
+    // We don't put general resources into the retry queue. They are a multi-step job the user must do in one go
+    const queueForRetry =
+      uploadType !== UploadType.ProjectResource ||
+      Boolean(pendingUploadIdToClearOnSuccess);
     // TT-7365: a retried Save (e.g. re-clicked after an offline failure) may
     // not carry pendingUploadIdToClearOnSuccess (that's only wired from the
     // Pending Media Uploads dialog's Retry button). Reuse any pending row
     // already staged for this section/artifact/file so repeated Save clicks
     // update one row instead of appending a new one each time
     // writeFileLocal stages the same recording under a new versioned path.
-    let pendingIdToClear =
-      pendingUploadIdToClearOnSuccess ??
-      findPendingUploadIdForIdentity(record as PendingUploadMediaRecord);
+    let pendingIdToClear = queueForRetry
+      ? (pendingUploadIdToClearOnSuccess ??
+        findPendingUploadIdForIdentity(record as PendingUploadMediaRecord))
+      : undefined;
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -310,8 +319,7 @@ export const nextUpload =
         },
         type: UPLOAD_ITEM_FAILED,
       });
-      onUploadError?.(message);
-      if (cb) cb(n, false);
+      if (cb) cb(n, false, undefined, message);
     };
     const { name, size, type } = files[n] as File;
     const isDownloadable = !isNotDownloadable(type);
@@ -376,14 +384,6 @@ export const nextUpload =
             originalFile: pendingRec.originalFile,
           });
         } else {
-          /* TODO
-          On onUploadError placement — you're right, a parallel callback on nextUpload is awkward. Better: fold the message into the existing cb (add a 4th arg, cb(n, success, data?, errorMessage?)). The hook's cb handler already runs on every failure — it would just also showUploadError(message) when one is present. That removes the separate onUploadError prop entirely and keeps one failure channel instead of two parallel ones.
-
-Why not move the unsupported/too-big detection into the hook (so it never reaches nextUpload)? Because nextUpload must keep validating anyway — it's also entered from the pending-retry path (actions.pendingRetry), so pulling validation out would let unvalidated retries through. And the network message (upload X: (statusNum) statusText) only nextUpload can build. So validation stays in nextUpload; just deliver its message back through cb rather than a second callback.
-
-So: cb gains an optional error-message arg, onUploadError goes away, sendError/completeCB pass the message to cb instead. One channel, no new prop.
-*/
-
           // statusNum is undefined when the request never reached the server,
           // so don't render a literal "(undefined)" at the user (TT-7583).
           const message = `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`;
@@ -391,8 +391,7 @@ So: cb gains an optional error-message arg, onUploadError goes away, sendError/c
             payload: { current: n, error: message },
             type: UPLOAD_ITEM_FAILED,
           });
-          onUploadError?.(message);
-          if (cb) cb(n, false, data);
+          if (cb) cb(n, false, data, message);
         }
       })();
     };
@@ -513,7 +512,7 @@ So: cb gains an optional error-message arg, onUploadError goes away, sendError/c
         }
       }
 
-      if (localAbsolutePath) {
+      if (localAbsolutePath && queueForRetry) {
         const queuePatch = {
           localAbsolutePath,
           fileSize: size,
@@ -548,27 +547,29 @@ So: cb gains an optional error-message arg, onUploadError goes away, sendError/c
           );
           if (!cloudRowDeleted) failedRemoteMediaId = remoteId;
         }
-        const pathForQueue =
-          localAbsolutePath ||
-          ((files[n] as File & { path?: string }).path ?? '');
-        const queuePatch = {
-          localAbsolutePath: pathForQueue,
-          fileSize: size,
-          uploadType,
-          record: snapshotForPending(),
-          ...(pendingRestore ? { restore: pendingRestore } : {}),
-        };
-        const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
-            appendPendingMediaUpload(queuePatch))
-          : appendPendingMediaUpload(queuePatch);
-        onTerminalFailure?.({
-          localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
-          originalFileName: name,
-          pendingRecord,
-          cloudRowDeleted,
-          failedRemoteMediaId,
-        });
+        if (queueForRetry) {
+          const pathForQueue =
+            localAbsolutePath ||
+            ((files[n] as File & { path?: string }).path ?? '');
+          const queuePatch = {
+            localAbsolutePath: pathForQueue,
+            fileSize: size,
+            uploadType,
+            record: snapshotForPending(),
+            ...(pendingRestore ? { restore: pendingRestore } : {}),
+          };
+          const pendingRecord = pendingIdToClear
+            ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+              appendPendingMediaUpload(queuePatch))
+            : appendPendingMediaUpload(queuePatch);
+          onTerminalFailure?.({
+            localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
+            originalFileName: name,
+            pendingRecord,
+            cloudRowDeleted,
+            failedRemoteMediaId,
+          });
+        }
         completeCB(false, undefined, statusNum, statusText);
       };
 

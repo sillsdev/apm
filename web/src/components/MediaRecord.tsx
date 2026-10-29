@@ -62,6 +62,8 @@ interface IProps {
    * Domain restore metadata for pending-upload Retry (TT-7363).
    */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
+  /** What the take is uploaded as (size limit, pending-queue rules). Defaults to Media. */
+  uploadType?: UploadType | undefined;
   /**
    * Commit deferred metadata before the recorded upload is staged so
    * `pendingRestore` can include newly created category ids.
@@ -88,6 +90,9 @@ interface IProps {
    */
   // TODO cleanup: combine a bunch of these props that describe what stage the recording is in
   // into one lifecycle prop that sets the current stage as e.g. Recording, Saving, Loading, Unsaved, etc. Maybe even HasValidTake or HasInvalidTake?
+  // Also, in particular, make the situation around recording and the recorder more readable.
+  // At the very least, allowRecord should be renamed to indicate that it controls the total
+  // presence or absence of the recorder, unlike recordBlocked.
   setHasTake?: ((hasTake: boolean) => void) | undefined;
   /**
    * Called when a save attempt is rejected — the upload failed or finished
@@ -170,6 +175,7 @@ function MediaRecord(props: IProps) {
     afterUploadCb,
     finish,
     pendingRestore,
+    uploadType = UploadType.Media,
     beforeUpload,
     setCanSave,
     setHasTake,
@@ -313,7 +319,7 @@ function MediaRecord(props: IProps) {
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
   );
-  const sizeLimit = typeLimit(UploadType.Media);
+  const sizeLimit = typeLimit(uploadType);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const mimes = useMemo(
@@ -430,6 +436,15 @@ function MediaRecord(props: IProps) {
   // optional, migrate one chain + its tests + its manual flow at a time, comments
   // first as the canary since their link behavior may change). MediaRecord's own
   // `myAfterUploadCb` stays either way — it's internal per-take state, not host work.
+  // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
+  // as claude thinks, but don't have time to look into it now)
+  // MediaRecord runs its own upload pipeline, separate from its
+  // host's (e.g. PassageRecordPanel already holds the upload tab's `uploadMethod`).
+  // That's why pendingRestore/beforeUpload/finish/afterUploadCb/uploadType are all
+  // threaded through here just to feed this copy, and why the record and upload
+  // tabs drifted (this hardcoded Media until the general-resource Retry fix).
+  // Consider taking the host's upload function instead, keeping only the per-take
+  // bookkeeping (myAfterUploadCb) local, and dropping those pass-through props.
   const uploadMedia = useMediaUpload({
     fields: {
       artifactId,
@@ -441,6 +456,7 @@ function MediaRecord(props: IProps) {
       topic,
       languagebcp47,
     },
+    uploadType,
     pendingRestore,
     afterUploadCb: myAfterUploadCb,
     // `finish` fires after the pull (resolvable ids); `afterUploadCb` per item

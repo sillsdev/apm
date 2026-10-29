@@ -265,7 +265,11 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                 onSaving={() => setBusy(true)}
                 onReady={() => setBusy(false)}
                 defaultFilename={defaultFilename}
-                allowRecord={hasRights && active}
+                allowRecord={hasRights}
+                // Hidden (wizard on a later step) is a passing condition, so
+                // block rather than drop allowRecord: dropping it releases the
+                // mic and the first Record click after Back would find no stream.
+                recordBlocked={!active}
                 allowWave={allowWave}
                 setCanSave={setCanSave}
                 setHasTake={setHasTake}
@@ -280,6 +284,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
                   if (isRecording) onStartRecording?.();
                 }}
                 pendingRestore={pendingRestore}
+                uploadType={uploadType}
                 beforeUpload={beforeUpload}
               />
             </Box>

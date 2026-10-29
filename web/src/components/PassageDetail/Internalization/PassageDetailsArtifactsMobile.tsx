@@ -487,14 +487,14 @@ export function PassageDetailArtifactsMobile() {
     }
   };
 
-  // Research (FindTabs) produced markdown or a Faithbridge link; seed the wizard
-  // upload step with it.
-  const handleMarkdownValue = (
+  // Research dialog → FaithBridge tab returned an answer (markdown, or an audio
+  // link + transcript); seed the wizard upload step with it.
+  const handleFaithbridgeResult = (
     query: string,
     audioUrl: string,
     transcript: string
   ) => {
-    launchWizard({ kind: 'markdown', query, audioUrl, transcript });
+    launchWizard({ kind: 'faithbridge', query, audioUrl, transcript });
   };
 
   const { sectDesc, passDesc } = useResourceScopeLabels();
@@ -742,7 +742,7 @@ export function PassageDetailArtifactsMobile() {
         <FindTabs
           onClose={() => handleFindVisible(false)}
           canAdd={hasPermission}
-          onMarkdown={handleMarkdownValue}
+          onMarkdown={handleFaithbridgeResult}
         />
       </BigDialog>
       <BigDialog

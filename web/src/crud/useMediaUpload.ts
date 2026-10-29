@@ -308,7 +308,8 @@ export const useMediaUpload = ({
         offline: getGlobal('offline'),
         errorReporter: reporter,
         uploadType: effectiveType,
-        cb: (idx, upOk, data) => {
+        cb: (idx, upOk, data, errorMessage) => {
+          if (errorMessage) showUploadError(errorMessage);
           void (async () => {
             try {
               const id = await itemComplete(idx, upOk, data, files);
@@ -347,7 +348,6 @@ export const useMediaUpload = ({
             AlertSeverity.Warning
           );
         },
-        onUploadError: showUploadError,
       });
     });
 
