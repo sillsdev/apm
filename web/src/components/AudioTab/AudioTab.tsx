@@ -38,6 +38,8 @@ import { IPassageData, getPassages } from './getPassages';
 import { IMatchData, makeMatchMap } from './makeRefMap';
 import PassageChooser from './PassageChooser';
 import Template from './Template';
+import { infoMsg, logError, Severity } from '../../utils';
+import { toError } from '../../utils/toError';
 
 export function AudioTab() {
   const passages = useOrbitData<PassageD[]>('passage');
@@ -57,6 +59,7 @@ export function AudioTab() {
   const { toolChanged, saveCompleted } = useContext(UnsavedContext).state;
   const [urlOpen, setUrlOpen] = useGlobal('autoOpenAddMedia'); //verified this is not used in a function 2/18/25
   const { showMessage } = useSnackBar();
+  const [errorReporter] = useGlobal('errorReporter');
   const [data, setData] = useState(Array<IRow>());
   const [pdata, setPData] = useState(Array<IPRow>());
   const { sectionArr, shared, publishingOn, canEditAudio, canPublish } =
@@ -176,7 +179,15 @@ export function AudioTab() {
     } else {
       const passId = data[mRow].passId;
       if (passId && passId !== '') {
-        void detachPassage(passId, data[mRow].sectionId, plan, mediaId, false);
+        detachPassage(passId, data[mRow].sectionId, plan, mediaId, false).catch(
+          (err: unknown) => {
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(toError(err), 'detach passage failed')
+            );
+          }
+        );
       } else {
         showMessage(t.noPassageAttached.replace('{0}', data[mRow].fileName));
       }
@@ -188,7 +199,15 @@ export function AudioTab() {
       showMessage(t.fileAttached);
       return;
     }
-    void handleSave({ ...attachMap, [data[mRow].id]: pRow });
+    handleSave({ ...attachMap, [data[mRow].id]: pRow }).catch(
+      (err: unknown) => {
+        logError(
+          Severity.error,
+          errorReporter,
+          infoMsg(toError(err), 'attach passage failed')
+        );
+      }
+    );
     setMCheck(-1);
     setPCheck(-1);
   };
@@ -314,7 +333,13 @@ export function AudioTab() {
         if (found) {
           setAttachMap(newMap);
           showMessage(t.matchAdded.replace('{0}', found.toString()));
-          void handleSave(newMap);
+          handleSave(newMap).catch((err: unknown) => {
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(toError(err), 'auto-match attach failed')
+            );
+          });
           return;
         }
       }
