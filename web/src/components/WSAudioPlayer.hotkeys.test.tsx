@@ -867,6 +867,21 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+V');
   });
 
+  it('subscribes no hotkeys when hotkeys is false', () => {
+    render(<WSAudioPlayer {...defaultProps} hotkeys={false} />);
+
+    expect(mockSubscribe).not.toHaveBeenCalled();
+  });
+
+  it('unsubscribes all hotkeys when hotkeys turns false', () => {
+    const { rerender } = render(<WSAudioPlayer {...defaultProps} />);
+    rerender(<WSAudioPlayer {...defaultProps} hotkeys={false} />);
+
+    expect(mockUnsubscribe).toHaveBeenCalledWith(RECORD_KEY);
+    expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+C');
+    expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+V');
+  });
+
   it('shows loading overlay when mediaId is set and loading', () => {
     const { getByText, container } = render(
       <WSAudioPlayer {...defaultProps} loading={true} />
