@@ -1,4 +1,12 @@
+import { useContext } from 'react';
 import type { ILanguage } from '../control/Language';
+import { TokenContext } from '../context/TokenProvider';
+import { AsrTarget } from '../business/asr/AsrTarget';
+import {
+  isoFromBcp47,
+  needsSisterLanguage,
+} from '../business/asr/asrLanguages';
+import { isLangSet } from '../utils/langTag';
 import { initLang } from '../control/initLang';
 import { useGlobal } from '../context/useGlobal';
 import type { ProjectD } from '../model';
@@ -13,11 +21,44 @@ import {
 /**
  * The one way to change a team's default language. The team ASR language
  * (or sister), method and transliterate were chosen for the old language, so
- * a real change clears them; the transcription type is kept. With no ASR
- * language saved, transcription resolves the new team language again.
+ * a real change clears them at once; the transcription type is kept. Then,
+ * when the service can transcribe the new language, it becomes the team's ASR
+ * language. When it needs a sister (or the check can't run), the ASR language
+ * stays 'und' until one is picked.
  */
 export function useSetTeamLanguage() {
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
+
+  /** Save `language` as the team's ASR language if the service supports it. */
+  const adoptIfSupported = (language: ILanguage, orgId?: string) => {
+    if (!isLangSet(language?.bcp47) || !token) return;
+    needsSisterLanguage(language.bcp47, token)
+      .then((needed) => {
+        if (needed) return;
+        // Only while nothing has changed since: the same team language, and
+        // no ASR language saved meanwhile (e.g. by Save as team default).
+        const teamLang = getOrgDefault(orgDefaultLangProps, orgId) as
+          ILanguage | undefined;
+        if (teamLang?.bcp47 !== language.bcp47) return;
+        const now = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
+        if (now && isLangSet(now.asrIso)) return;
+        setOrgDefault(
+          orgDefaultAsr,
+          {
+            target: now?.target ?? AsrTarget.alphabet,
+            dialect: now?.dialect,
+            selectRoman: false,
+            asrMethod: undefined,
+            language,
+            asrIso: isoFromBcp47(language.bcp47),
+          },
+          orgId
+        );
+      })
+      // A failed check leaves 'und'; transcription resolves the team language.
+      .catch(() => undefined);
+  };
 
   return (language: ILanguage, orgId?: string) => {
     const current = getOrgDefault(orgDefaultLangProps, orgId) as
@@ -25,18 +66,20 @@ export function useSetTeamLanguage() {
     setOrgDefault(orgDefaultLangProps, language, orgId);
     if ((current?.bcp47 ?? 'und') === (language?.bcp47 ?? 'und')) return;
     const teamAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
-    if (!teamAsr) return;
-    setOrgDefault(
-      orgDefaultAsr,
-      {
-        ...teamAsr,
-        language: initLang,
-        asrIso: 'und',
-        asrMethod: undefined,
-        selectRoman: false,
-      },
-      orgId
-    );
+    if (teamAsr) {
+      setOrgDefault(
+        orgDefaultAsr,
+        {
+          ...teamAsr,
+          language: initLang,
+          asrIso: 'und',
+          asrMethod: undefined,
+          selectRoman: false,
+        },
+        orgId
+      );
+    }
+    adoptIfSupported(language, orgId);
   };
 }
 

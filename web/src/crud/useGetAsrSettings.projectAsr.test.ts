@@ -171,6 +171,14 @@ describe('useGetAsrSettings project ASR', () => {
     expect(mockSetProjectDefault).not.toHaveBeenCalled();
   });
 
+  it('makes the project language and run settings the team default when the team has no language', () => {
+    mockOrgLanguage = 'und';
+    const { result } = renderHook(() => useGetAsrSettings());
+    result.current.saveProjectAsrSettings(frenchAsr);
+    expect(mockTeamWrites).toEqual(['team language', 'asr']);
+    expect(mockSetProjectDefault).not.toHaveBeenCalledWith('asr', frenchAsr);
+  });
+
   it('runs with the project settings when the project language differs', async () => {
     mockProjectAsr = frenchAsr;
     const { result } = renderHook(() => useGetAsrSettings());
@@ -274,5 +282,24 @@ describe('useGetAsrSettings project ASR', () => {
     const { result } = renderHook(() => useGetAsrSettings());
     result.current.saveTeamAsrSettings(frenchAsr);
     expect(mockTeamWrites).toEqual(['team language', 'asr']);
+  });
+
+  it('resolves the team language when the team ASR has none and no step names one', async () => {
+    // After the team language changes the team ASR keeps only its transcription
+    // type. With no Transcribe step to go on (here: no tool), the team
+    // language must still be used, or Run stays disabled.
+    mockProjectLanguage = 'en';
+    mockOrgLanguage = 'en';
+    mockOrgAsr = {
+      ...frenchAsr,
+      language: { ...frenchAsr.language, bcp47: 'und', languageName: '' },
+      asrIso: 'und',
+      asrMethod: undefined,
+    };
+    mockStepTool = JSON.stringify({ settings: '{}' });
+    const { result } = renderHook(() => useGetAsrSettings());
+    const asr = await result.current.getAsrSettings();
+    expect(asr?.language?.bcp47).toBe('en');
+    expect(asr?.asrIso).not.toBe('und');
   });
 });

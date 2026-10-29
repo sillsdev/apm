@@ -1834,7 +1834,6 @@ const initialState = {
 			"saveTip": "Save changes and comment",
 			"saving": "Saving...",
 			"scriptTranscription": "Script",
-			"invalidSisterLang": "This language is not supported for speech recognition. Choose another sister language.",
 			"sisterLang": "Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.",
 			"submit": "Submit",
 			"submitReviewTip": "Submit as complete",

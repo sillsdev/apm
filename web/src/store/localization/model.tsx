@@ -1741,7 +1741,6 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "saveTip": string;
     "saving": string;
     "scriptTranscription": string;
-    "invalidSisterLang": string;
     "sisterLang": string;
     "submit": string;
     "submitReviewTip": string;

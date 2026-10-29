@@ -337,10 +337,11 @@ export default function AsrProgress({
       cachedAsrMethods(iso)
     );
     const phoneticParam = phonetic ? '?phonetic=true' : '';
+    const methodPath = method ? `/${method}` : '';
     setRun({ startedAt: Date.now(), key: timingKey(method) });
     try {
       const response = (await axiosPost(
-        `mediafiles/${remId}/transcription/${iso}/${romanize}${method ? `/${method}` : ''}${phoneticParam}`,
+        `mediafiles/${remId}/transcription/${iso}/${romanize}${methodPath}${phoneticParam}`,
         undefined,
         token
       )) as { data: { data: MediaFileD } };

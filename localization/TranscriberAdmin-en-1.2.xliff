@@ -10353,13 +10353,6 @@
                <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriber.invalidSisterLang">
-            <source>This language is not supported for speech recognition. Choose another sister language.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcriber.sisterLang">
             <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
             <target/>

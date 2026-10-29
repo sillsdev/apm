@@ -268,12 +268,16 @@ export function useGetAsrSettings(team?: OrganizationD) {
       orgId
     );
     const artifactTypeId = settings?.artifactTypeId ?? '';
-    // The team ASR describes the team's language, never a project that differs.
-    if (!hasStepLang && !projectOwnsAsr) {
-      const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
-      if (orgAsr) return orgAsr;
-    }
-    if (!artifactTypeId) {
+    // No step language to go on (no current step, another tool, or a step
+    // whose own language isn't set): use the team ASR, resolved like the
+    // vernacular so one without a language (e.g. after the team language
+    // changed) gets the team language rather than none. The team ASR
+    // describes the team's language, never a project that differs.
+    const usesTeamAsr =
+      !hasStepLang &&
+      !projectOwnsAsr &&
+      Boolean(normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId)));
+    if (usesTeamAsr || !artifactTypeId) {
       return buildVernacularAsrState(
         settings,
         getOrgDefault,

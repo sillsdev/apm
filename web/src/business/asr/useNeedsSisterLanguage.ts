@@ -3,7 +3,7 @@ import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { logError, Severity } from '../../utils/logErrorService';
 import { toError } from '../../utils/toError';
-import { needsSisterLanguage } from './asrLanguages';
+import { cachedNeedsSisterLanguage, needsSisterLanguage } from './asrLanguages';
 
 interface Options {
   /** False skips the check (e.g. a Work Alone Offline session). */
@@ -14,6 +14,7 @@ interface Options {
 
 /**
  * Whether the speech service needs a sister language to transcribe `bcp47`.
+ * A language already checked this session answers at once; otherwise
  * `needsSister` is undefined until the service answers, and stays so without
  * a token (offline). An answer for a language that has since changed is
  * ignored.
@@ -33,8 +34,11 @@ export function useNeedsSisterLanguage(
   const onFailedRef = useRef(onFailed);
   onFailedRef.current = onFailed;
 
+  const cached =
+    enabled && token ? cachedNeedsSisterLanguage(bcp47) : undefined;
+
   useEffect(() => {
-    if (!enabled || !token) return;
+    if (!enabled || !token || cached !== undefined) return;
     let cancelled = false;
     needsSisterLanguage(bcp47, token)
       .then((needed) => {
@@ -49,11 +53,11 @@ export function useNeedsSisterLanguage(
     return () => {
       cancelled = true;
     };
-  }, [bcp47, enabled, token, errorReporter]);
+  }, [bcp47, enabled, token, cached, errorReporter]);
 
   const current = result?.forBcp47 === bcp47 ? result : undefined;
   return {
-    needsSister: current?.needsSister,
-    failed: current?.failed === true,
+    needsSister: cached ?? current?.needsSister,
+    failed: cached === undefined && current?.failed === true,
   };
 }

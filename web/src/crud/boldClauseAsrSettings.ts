@@ -16,7 +16,9 @@ import {
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
 
-function parseStepSettings(settingsJson: string | object | undefined) {
+type StepSettingsJson = string | object | undefined;
+
+function parseStepSettings(settingsJson: StepSettingsJson) {
   if (!settingsJson) return {} as TranscribeStepSettings;
   if (typeof settingsJson === 'object') {
     return settingsJson as TranscribeStepSettings;
@@ -78,9 +80,7 @@ export function boldClauseAsrSettingsSource(
   orgId: string | undefined,
   currentStepSettings?: unknown
 ): 'current' | 'upstream' {
-  const current = parseStepSettings(
-    currentStepSettings as string | object | undefined
-  );
+  const current = parseStepSettings(currentStepSettings as StepSettingsJson);
   const currentNamesLanguage =
     Boolean(current?.artifactTypeId) &&
     artifactTypeSlugFromSettings(current, slugFromId) ===
@@ -136,7 +136,7 @@ export function resolveBoldClauseTranscriptionStepSettings({
     currentStepSettings
   );
   return source === 'current'
-    ? parseStepSettings(currentStepSettings as string | object | undefined)
+    ? parseStepSettings(currentStepSettings as StepSettingsJson)
     : upstream;
 }
 

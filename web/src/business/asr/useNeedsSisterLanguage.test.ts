@@ -3,10 +3,13 @@ import { renderHook, waitFor } from '@testing-library/react';
 
 // Answers keyed by language; a function gives control of when it settles.
 let mockAnswers: Record<string, () => Promise<boolean>> = {};
+// Answers already known this session, keyed by language.
+let mockCached: Record<string, boolean> = {};
 const mockLogError = jest.fn();
 
 jest.mock('./asrLanguages', () => ({
   needsSisterLanguage: (bcp47: string) => mockAnswers[bcp47](),
+  cachedNeedsSisterLanguage: (bcp47: string) => mockCached[bcp47],
 }));
 
 jest.mock('../../context/TokenProvider', () => {
@@ -30,6 +33,7 @@ import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
 describe('useNeedsSisterLanguage', () => {
   beforeEach(() => {
     mockLogError.mockReset();
+    mockCached = {};
     mockAnswers = {
       tlh: async () => true,
       en: async () => false,
@@ -71,6 +75,15 @@ describe('useNeedsSisterLanguage', () => {
     expect(result.current.needsSister).toBeUndefined();
     expect(mockLogError).toHaveBeenCalledTimes(1);
     expect(onFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers at once, without asking, for a language already checked', () => {
+    const answer = jest.fn(async () => false);
+    mockAnswers.tlh = answer;
+    mockCached.tlh = true;
+    const { result } = renderHook(() => useNeedsSisterLanguage('tlh'));
+    expect(result.current.needsSister).toBe(true);
+    expect(answer).not.toHaveBeenCalled();
   });
 
   it('skips the check when disabled', () => {

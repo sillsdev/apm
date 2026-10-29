@@ -5,6 +5,7 @@ jest.mock('../../utils/axios', () => ({
 import { axiosGet } from '../../utils/axios';
 import {
   asrLanguageFilter,
+  cachedNeedsSisterLanguage,
   clearAsrLanguageValidityCache,
   getMethodsForAsr,
   isValidAsrLanguage,
@@ -50,6 +51,34 @@ describe('isValidAsrLanguage', () => {
     await expect(isValidAsrLanguage('eng', null)).resolves.toBe(true);
     await expect(isValidAsrLanguage('eng', '')).resolves.toBe(true);
     expect(mockAxiosGet).not.toHaveBeenCalled();
+  });
+});
+
+describe('cachedNeedsSisterLanguage', () => {
+  beforeEach(() => {
+    mockAxiosGet.mockReset();
+    clearAsrLanguageValidityCache();
+  });
+
+  it('is unknown before the language has been checked', () => {
+    expect(cachedNeedsSisterLanguage('en')).toBeUndefined();
+    expect(mockAxiosGet).not.toHaveBeenCalled();
+  });
+
+  it('gives the answer once the language has been checked', async () => {
+    mockAxiosGet.mockResolvedValue(['whisper']);
+    await isValidAsrLanguage('eng', 'token');
+    expect(cachedNeedsSisterLanguage('en')).toBe(false);
+  });
+
+  it('needs a sister for a language the service has no methods for', async () => {
+    mockAxiosGet.mockRejectedValue({ response: { status: 404 } });
+    await isValidAsrLanguage('eng', 'token');
+    expect(cachedNeedsSisterLanguage('en')).toBe(true);
+  });
+
+  it('never needs a sister for an unset language', () => {
+    expect(cachedNeedsSisterLanguage('und')).toBe(false);
   });
 });
 

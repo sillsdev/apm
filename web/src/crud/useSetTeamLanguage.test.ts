@@ -1,5 +1,5 @@
 import { jest, describe, expect, it, beforeEach } from '@jest/globals';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 
 // Team defaults, by label, as the org record would hold them.
 let mockDefaults: Record<string, unknown> = {};
@@ -16,6 +16,20 @@ jest.mock('./useOrgDefaults', () => ({
       setOrgDefault(label, value),
   }),
 }));
+
+// Whether the service needs a sister for each language.
+let mockNeedsSister: Record<string, boolean> = {};
+jest.mock('../business/asr/asrLanguages', () => ({
+  needsSisterLanguage: async (bcp47: string) => mockNeedsSister[bcp47] ?? false,
+  isoFromBcp47: (bcp47: string) => `${bcp47}-iso`,
+}));
+
+jest.mock('../context/TokenProvider', () => {
+  const React = jest.requireActual('react') as typeof import('react');
+  return {
+    TokenContext: React.createContext({ state: { accessToken: 'tok' } }),
+  };
+});
 
 // Projects in local memory, for the new-project rule.
 let mockProjects: unknown[] = [];
@@ -52,6 +66,34 @@ describe('useSetTeamLanguage', () => {
       langProps: lang('xx', 'Old'),
       asr: spanishSisterAsr,
     };
+    mockNeedsSister = {};
+  });
+
+  it('then saves the new team language as the ASR language when it is supported', async () => {
+    const { result } = renderHook(() => useSetTeamLanguage());
+    result.current(lang('en', 'English'), 'org-1');
+
+    await waitFor(() =>
+      expect(mockDefaults.asr).toEqual(
+        expect.objectContaining({
+          language: lang('en', 'English'),
+          asrIso: 'en-iso',
+          target: 'Phonetic',
+        })
+      )
+    );
+  });
+
+  it('leaves no ASR language when the new team language needs a sister', async () => {
+    mockNeedsSister = { tlh: true };
+    const { result } = renderHook(() => useSetTeamLanguage());
+    result.current(lang('tlh', 'Klingon'), 'org-1');
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockDefaults.asr).toEqual(
+      expect.objectContaining({ asrIso: 'und' })
+    );
   });
 
   it('clears the ASR language, method and transliterate chosen for the old language', () => {
@@ -78,13 +120,18 @@ describe('useSetTeamLanguage', () => {
     expect(setOrgDefault).toHaveBeenCalledTimes(1);
   });
 
-  it('only sets the language when the team has no ASR saved', () => {
+  it('saves a supported language as the ASR language when the team had none saved', async () => {
     delete mockDefaults.asr;
     const { result } = renderHook(() => useSetTeamLanguage());
     result.current(lang('en', 'English'), 'org-1');
 
+    // Nothing to clear first; the language follows once the service answers.
     expect(mockDefaults.asr).toBeUndefined();
-    expect(setOrgDefault).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(mockDefaults.asr).toEqual(
+        expect.objectContaining({ asrIso: 'en-iso', target: 'Alphabet' })
+      )
+    );
   });
 });
 

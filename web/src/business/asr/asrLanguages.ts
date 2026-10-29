@@ -160,6 +160,20 @@ export async function needsSisterLanguage(
   return !(await isValidAsrLanguage(iso, token));
 }
 
+/**
+ * needsSisterLanguage's answer when it is already known this session, without
+ * asking the service; undefined when this language hasn't been checked yet.
+ */
+export function cachedNeedsSisterLanguage(
+  primaryBcp47: string
+): boolean | undefined {
+  if (!isLangSet(primaryBcp47)) return false;
+  const iso = isoFromBcp47(primaryBcp47);
+  if (!isLangSet(iso)) return false;
+  const methods = asrMethodsByIso.get(iso);
+  return methods ? methods.length === 0 : undefined;
+}
+
 /** Use sister BCP when the primary language is not available for ASR. */
 export async function resolveAsrBcp47(
   primaryBcp: string,

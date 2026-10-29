@@ -58,6 +58,7 @@ jest.mock('./asrLanguages', () => ({
   getMethodsForAsr: () => mockMethodsLookup(),
   isoFromBcp47: () => 'eng',
   needsSisterLanguage: async () => mockNeedsSister,
+  cachedNeedsSisterLanguage: () => undefined,
 }));
 
 jest.mock('./AsrSettings', () => ({
