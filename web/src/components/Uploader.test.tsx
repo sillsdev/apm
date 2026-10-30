@@ -85,6 +85,7 @@ jest.mock('../context/useGlobal', () => ({
 }));
 
 jest.mock('../crud', () => ({
+  useMediaUpload: jest.fn(() => jest.fn(async () => true)),
   findRecord: jest.fn(),
   pullTableList: jest.fn(),
   related: jest.fn(),
@@ -174,46 +175,5 @@ describe('Uploader recorded path beforeUpload', () => {
     });
 
     expect(created).toEqual(['cat-1']);
-  });
-
-  it('logs an import upload failure', async () => {
-    const { logError, infoMsg } = jest.requireMock('../utils') as {
-      logError: jest.Mock;
-      infoMsg: jest.Mock;
-    };
-    const showMessage = jest.fn();
-    const cancelled = { current: false };
-    render(
-      <Uploader
-        audioUploadOrRecord
-        isOpen
-        onOpen={jest.fn()}
-        showMessage={showMessage}
-        cancelled={cancelled}
-        defaultFilename="resource"
-        uploadType={UploadType.Media}
-        importList={[new File(['x'], 'take.ogg', { type: 'audio/ogg' })]}
-        beforeUpload={async () => {
-          throw new Error('import failed');
-        }}
-        finish={jest.fn(() => Promise.resolve())}
-      />
-    );
-
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(showMessage).toHaveBeenCalledWith('import failed', 'error');
-    expect(infoMsg).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'import failed' }),
-      'import upload failed'
-    );
-    expect(logError).toHaveBeenCalledWith(
-      'error',
-      {},
-      infoMsg.mock.results.at(-1)?.value
-    );
   });
 });

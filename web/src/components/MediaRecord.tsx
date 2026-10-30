@@ -49,9 +49,19 @@ export interface IProps {
   keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   /**
+   * Optional batch callback, forwarded to this recorder's own useMediaUpload.
+   * It fires once, AFTER the uploaded take has been pulled into Orbit, so its
+   * ids resolve via the keyMap — unlike `afterUploadCb`, which reports per item
+   * before that pull. Hosts whose follow-up work mutates the new mediafile (set
+   * a topic, create a sectionresource) must use this, not `afterUploadCb`.
+   */
+  finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;
+  /**
    * Domain restore metadata for pending-upload Retry (TT-7363).
    */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
+  /** What the take is uploaded as (size limit, pending-queue rules). Defaults to Media. */
+  uploadType?: UploadType | undefined;
   /**
    * Commit deferred metadata before the recorded upload is staged so
    * `pendingRestore` can include newly created category ids.
@@ -154,7 +164,9 @@ function MediaRecord(props: IProps) {
     topic,
     languagebcp47,
     afterUploadCb,
+    finish,
     pendingRestore,
+    uploadType = UploadType.Media,
     beforeUpload,
     onStageFile,
     setCanSave,
@@ -290,7 +302,7 @@ function MediaRecord(props: IProps) {
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
   );
-  const sizeLimit = typeLimit(UploadType.Media);
+  const sizeLimit = typeLimit(uploadType);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const mimes = useMemo(
@@ -426,6 +438,33 @@ function MediaRecord(props: IProps) {
     clearCompleted(toolId);
   };
 
+  // MediaRecord owns its own useMediaUpload instance (in useRecordSave; a
+  // recorded take uploads there, not through the parent's instance). That is
+  // why two callback shapes exist: the record path reports per-item via
+  // `afterUploadCb(mediaId)`, while the parent's batch/upload path reports via
+  // `finish(ids)`. Hosts that mix both (ProvideRights, PassageDetailItem) write
+  // a thin adapter between the two — see useMediaUpload's IMediaUploadProps.
+  //
+  // TODO cleanup: retire the host-facing `afterUploadCb` in favor of `finish`.
+  // `afterUploadCb` fires per item BEFORE run() pulls the new mediafile, so every
+  // host that mutates/links it (comments, rights, sectionresource, keyterm,
+  // title) must work around the unresolved id (remoteIdGuid-or-fallback, or
+  // useTitleSave's waitForIt); `finish` runs post-pull with resolvable ids and
+  // would delete those workarounds. Do it either centrally (fire the host cb
+  // from a post-pull finish wrapper here — ~1 file, but shifts ALL record flows
+  // at once and needs a full manual sweep) or per-host (make afterUploadCb
+  // optional, migrate one chain + its tests + its manual flow at a time, comments
+  // first as the canary since their link behavior may change). MediaRecord's own
+  // `onUploaded` stays either way — it's internal per-take state, not host work.
+  // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
+  // as claude thinks, but don't have time to look into it now)
+  // MediaRecord runs its own upload pipeline, separate from its
+  // host's (e.g. PassageRecordDlg already holds the upload tab's `uploadMethod`).
+  // That's why pendingRestore/beforeUpload/finish/afterUploadCb/uploadType are all
+  // threaded through here just to feed this copy, and why the record and upload
+  // tabs drifted (this hardcoded Media until the general-resource Retry fix).
+  // Consider taking the host's upload function instead, keeping only the per-take
+  // bookkeeping (onUploaded) local, and dropping those pass-through props.
   const onUploaded = async (
     mediaId: string,
     submittedBlob: Blob | undefined
@@ -484,15 +523,21 @@ function MediaRecord(props: IProps) {
     onStageFile,
     onUploaded,
     upload: {
-      artifactId,
-      passageId,
-      sourceMediaId,
-      sourceSegments,
-      performedBy,
-      planId,
-      topic,
-      languagebcp47,
+      fields: {
+        artifactId,
+        passageId,
+        sourceMediaId,
+        sourceSegments,
+        performedBy,
+        localPlanId: planId,
+        topic,
+        languagebcp47,
+      },
+      uploadType,
       pendingRestore,
+      // `finish` fires after the pull (resolvable ids); `afterUploadCb` per item
+      // before it. Hosts needing to mutate the new mediafile pass `finish`.
+      finish,
       beforeUpload,
     },
     saveRequested,
