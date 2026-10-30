@@ -223,6 +223,8 @@ interface IProps {
    * region nav, and record) — e.g. used by a second, non-owning player (e.g. an off-screen
    * step in the add-resource wizard) yielding all keys to the visible/owning one.
    * Default true. All of a player's hotkeys enable/disable together.
+   * TODO in TT-7748: make this hotkeys prop a union or object or list specifying
+   * *which* hotkeys this player should claim
    */
   hotkeys?: boolean;
   /** Careful Speech / guided flows: emphasize the main play control until used. */

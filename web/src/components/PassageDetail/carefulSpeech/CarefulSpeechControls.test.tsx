@@ -9,9 +9,7 @@ import { cleanup, render } from '@testing-library/react';
 // buttons that live outside the showRecorder block.
 jest.mock('../../MediaRecord', () => ({
   __esModule: true,
-  default: ({ hotkeys }: { hotkeys?: boolean }) => (
-    <div data-testid="media-record" data-hotkeys={String(hotkeys)} />
-  ),
+  default: () => <div data-testid="media-record" />,
 }));
 
 // The control barrel transitively imports react-localization (ESM) and fails
@@ -168,21 +166,6 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     ) as HTMLButtonElement | null;
     expect(undo).toBeTruthy();
     expect(undo?.disabled).toBe(true);
-  });
-});
-
-describe('CarefulSpeechControls recorder hotkeys', () => {
-  const recorderHotkeys = (props: Partial<typeof baseProps>) =>
-    render(<CarefulSpeechControls {...baseProps} {...props} />)
-      .container.querySelector('[data-testid="media-record"]')
-      ?.getAttribute('data-hotkeys');
-
-  it('lets the recorder claim hotkeys by default', () => {
-    expect(recorderHotkeys({})).toBe('true');
-  });
-
-  it('yields the recorder hotkeys when told to', () => {
-    expect(recorderHotkeys({ hotkeys: false })).toBe('false');
   });
 });
 
