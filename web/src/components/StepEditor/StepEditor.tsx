@@ -35,6 +35,7 @@ import {
   parseStepLanguageField,
   withPropagatedVernacularSisterSettings,
 } from '../../crud/transcribeStepAsrSettings';
+import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -159,11 +160,9 @@ export const StepEditor = ({ process, org }: IProps) => {
     if (mangleTranscribe) {
       const hasTranscribe =
         name === st.transcribe &&
-        rows.some((r, i) => {
-          const settings = r.settings ? JSON.parse(r.settings) : undefined;
-          if (!settings) return r.tool === ToolSlug.Transcribe && i !== index;
-          return false;
-        });
+        rows.some(
+          (r, i) => !r.settings && r.tool === ToolSlug.Transcribe && i !== index
+        );
       name = hasTranscribe ? st.review : name;
     }
     const baseName = name;
@@ -204,15 +203,16 @@ export const StepEditor = ({ process, org }: IProps) => {
     if (!open) setToolSettingsRow(-1);
     if (toolRef.current !== undefined) {
       focusIndex.current = toolRef.current;
-      const settings = (rows[toolRef.current as number] as IStepRow).settings
-        ? JSON.parse((rows[toolRef.current as number] as IStepRow).settings)
-        : {};
-      const artId =
-        remoteIdGuid(
-          'artifacttype',
-          settings?.artifactTypeId,
-          memory?.keyMap as RecordKeyMap
-        ) ?? settings?.artifactTypeId;
+      const settings = parseTranscribeStepSettings(
+        (rows[toolRef.current as number] as IStepRow).settings
+      );
+      const artId = settings.artifactTypeId
+        ? (remoteIdGuid(
+            'artifacttype',
+            settings.artifactTypeId,
+            memory?.keyMap as RecordKeyMap
+          ) ?? settings.artifactTypeId)
+        : null;
       const artSlug = slugFromId(artId);
       const artShortName = artId
         ? ` ${
@@ -221,7 +221,7 @@ export const StepEditor = ({ process, org }: IProps) => {
               : localizedArtifactTypeFromId(artId)
           }`
         : '';
-      const lang = settings?.language
+      const lang = settings.language
         ? ` ${parseStepLanguageField(settings.language).languageName}`
         : '';
       let name =
@@ -501,28 +501,22 @@ export const StepEditor = ({ process, org }: IProps) => {
   }, [sortKey]);
 
   const prettySettings = (tool: string, settings: string) => {
-    const json = settings ? JSON.parse(settings) : undefined;
     switch (tool as ToolSlug) {
       case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
       case ToolSlug.PhraseBackTranslate:
-        if (json)
-          return se.settingsFor
-            .replace('{0}', st.getString(tool as keyof typeof se))
-            .replace(
-              '{1}',
-              localizedArtifactTypeFromId(
-                remoteIdGuid(
-                  'artifacttype',
-                  json.artifactTypeId,
-                  memory?.keyMap as RecordKeyMap
-                ) ?? json.artifactTypeId
-              )
-            );
+        // localizedArtifactTypeFromId resolves remote ids, and reads a missing
+        // id as vernacular.
         return se.settingsFor
           .replace('{0}', st.getString(tool as keyof typeof se))
-          .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
+          .replace(
+            '{1}',
+            localizedArtifactTypeFromId(
+              parseTranscribeStepSettings(settings).artifactTypeId ??
+                VernacularTag
+            )
+          );
       default:
         return '';
     }
