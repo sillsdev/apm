@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
+import DiscussionDrawer from '../../components/Discussions/DiscussionDrawer';
 import PassageDetailLayout from './PassageDetailLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
 import PassageDetailMobileFooter from './mobile/PassageDetailMobileFooter';
@@ -55,7 +55,7 @@ export default function PassageDetailMobileDetail({ recordContent }: Props) {
   }, [passageId, tool]);
 
   const showLoading = isWaitingForAudio && !graceExpired;
-  // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
+  // Desktop omits DiscussionDrawer for Internalize (Resource); match that on mobile (TT-7281).
   const doesStepSupportDiscussions = tool !== ToolSlug.Resource;
   const { userIsAdmin } = useRole();
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
@@ -130,7 +130,7 @@ export default function PassageDetailMobileDetail({ recordContent }: Props) {
                 drops PassageDetailRecord/MediaRecord state and clears an
                 in-progress recording. */}
           <Box sx={{ minWidth: 0, width: '100%' }}>{recordContent}</Box>
-          {doesStepSupportDiscussions && <DiscussionPanel />}
+          {doesStepSupportDiscussions && <DiscussionDrawer />}
         </Stack>
       ) : showLoading ? (
         <Backdrop

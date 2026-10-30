@@ -47,7 +47,7 @@ jest.mock('./PassageDetailLayout', () => ({
 jest.mock('./mobile/MobileWorkflowSteps', () => () => null);
 jest.mock('./mobile/PassageDetailMobileFooter', () => () => null);
 
-jest.mock('../Discussions/DiscussionPanel', () => ({
+jest.mock('../Discussions/DiscussionDrawer', () => ({
   __esModule: true,
   default: () => <div data-cy="discussion-panel">Discussion</div>,
 }));

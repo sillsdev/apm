@@ -42,7 +42,7 @@ import { RecordKeyMap } from '@orbit/records';
 import PassageDetailParatextIntegration from './PassageDetailParatextIntegration';
 import { PassageDetailDiscuss } from './PassageDetailDiscuss';
 import { addPt } from '../../utils/addPt';
-import DiscussionPanel from '../Discussions/DiscussionPanel';
+import DiscussionDrawer from '../Discussions/DiscussionDrawer';
 import { usePaneWidth } from '../usePaneWidth';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
 
@@ -331,7 +331,7 @@ const PassageDetailGrids = () => {
                 <ConsultantCheck width={playerPaneWidth} />
               )}
             </Stack>
-            <DiscussionPanel />
+            <DiscussionDrawer />
           </Stack>
         </Paper>
       )}

@@ -5,7 +5,7 @@
  */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
-import DiscussionPanel from './DiscussionPanel';
+import DiscussionDrawer from './DiscussionDrawer';
 
 let mockDirty = false;
 let latestPlayerProps: Record<string, unknown> = {};
@@ -76,11 +76,11 @@ const renderPanel = (discussOpen: boolean) =>
         } as never
       }
     >
-      <DiscussionPanel />
+      <DiscussionDrawer />
     </PassageDetailContext.Provider>
   );
 
-describe('DiscussionPanel drawer', () => {
+describe('DiscussionDrawer', () => {
   beforeEach(() => {
     mockDirty = false;
     latestPlayerProps = {};

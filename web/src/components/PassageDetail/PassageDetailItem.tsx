@@ -50,7 +50,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
 import { btDefaultSegParams } from './btDefaultSegParams';
-import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
+import DiscussionDrawer from '../../components/Discussions/DiscussionDrawer';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { SuggestedSegments } from '../../business/player/usePlayerLogic';
 
@@ -581,7 +581,7 @@ export function PassageDetailItem(props: IProps) {
                   </Box>
                 </Box>
               </Box>
-              <DiscussionPanel />
+              <DiscussionDrawer />
             </Stack>
           ) : (
             <Paper sx={paperProps}>

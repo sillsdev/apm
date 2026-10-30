@@ -47,7 +47,7 @@ export default function PassageDetailLayout({
         >
           <Box
             sx={{
-              pb: '70px' /* Discussion fab clearance (see DiscussionPanel.tsx) */,
+              pb: '70px' /* Discussion fab clearance (see DiscussionDrawer.tsx) */,
             }}
           >
             {children}

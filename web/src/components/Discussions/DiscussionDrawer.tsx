@@ -25,7 +25,7 @@ import { discussionListSelector } from '../../selector';
 
 const MAX_DRAWER_WIDTH_RATIO = 0.95;
 
-export default function DiscussionPanel() {
+export default function DiscussionDrawer() {
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
