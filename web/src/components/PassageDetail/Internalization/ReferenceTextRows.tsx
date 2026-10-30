@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Box, List, ListItem } from '@mui/material';
 import {
-  ReferenceTextRole,
+  ReferenceTextRank,
   useProjectReferenceTexts,
   useReferenceTextPassage,
 } from '../../../business/referenceText/useReferenceTextPassage';
-import { byRole } from '../../../business/referenceText/referenceText';
+import { byRank } from '../../../business/referenceText/referenceText';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { ReferenceTextCard } from './mobile components/ReferenceTextCard';
 import {
@@ -28,7 +28,7 @@ interface IProps {
 }
 
 interface Viewing {
-  role: ReferenceTextRole;
+  rank: ReferenceTextRank;
   notice?: ReferenceTextNotice;
 }
 
@@ -46,11 +46,11 @@ export function ReferenceTextRows({
   const referenceTexts = useProjectReferenceTexts();
   const primary = useReferenceTextPassage(
     passage,
-    byRole('primary', referenceTexts)
+    byRank('primary', referenceTexts)
   );
   const secondary = useReferenceTextPassage(
     passage,
-    byRole('secondary', referenceTexts)
+    byRank('secondary', referenceTexts)
   );
   const speech = useReferenceTextSpeech();
   const [viewing, setViewing] = useState<Viewing>();
@@ -61,25 +61,25 @@ export function ReferenceTextRows({
       ['secondary', secondary],
     ] as const
   ).filter(
-    (entry): entry is [ReferenceTextRole, ShownReferenceTextPassage] =>
+    (entry): entry is [ReferenceTextRank, ShownReferenceTextPassage] =>
       entry[1].status !== 'none'
   );
   const passages = [primary, secondary];
-  const viewed = byRole(viewing?.role ?? 'primary', passages);
+  const viewed = byRank(viewing?.rank ?? 'primary', passages);
 
-  const handlePlay = async (role: ReferenceTextRole) => {
-    const value = byRole(role, passages);
+  const handlePlay = async (rank: ReferenceTextRank) => {
+    const value = byRank(rank, passages);
     if (value.status !== 'ready') return;
-    const outcome = await speech.toggle(role, value.referenceText, value.text);
-    if (outcome === 'noVoice') setViewing({ role, notice: 'noVoice' });
-    else if (outcome === 'error') setViewing({ role, notice: 'speakFailed' });
+    const outcome = await speech.toggle(rank, value.referenceText, value.text);
+    if (outcome === 'noVoice') setViewing({ rank, notice: 'noVoice' });
+    else if (outcome === 'error') setViewing({ rank, notice: 'speakFailed' });
   };
-  const handleView = (role: ReferenceTextRole) => setViewing({ role });
-  const itemProps = (role: ReferenceTextRole) => ({
-    speaking: speech.speaking === role,
-    progress: speech.speaking === role ? speech.progress : 0,
+  const handleView = (rank: ReferenceTextRank) => setViewing({ rank });
+  const itemProps = (rank: ReferenceTextRank) => ({
+    speaking: speech.speaking === rank,
+    progress: speech.speaking === rank ? speech.progress : 0,
     // speech.toggle never rejects
-    onPlay: (r: ReferenceTextRole) => void handlePlay(r),
+    onPlay: (r: ReferenceTextRank) => void handlePlay(r),
     onView: handleView,
   });
 
@@ -89,14 +89,14 @@ export function ReferenceTextRows({
     <>
       {variant === 'table' ? (
         <List sx={{ px: 1, pb: 0 }}>
-          {shown.map(([role, value]) => (
-            <ListItem key={role}>
+          {shown.map(([rank, value]) => (
+            <ListItem key={rank}>
               <ReferenceTextTableRow
-                role={role}
+                rank={rank}
                 passage={value}
                 passageId={passage.id}
                 showDragHandle={showDragHandle}
-                {...itemProps(role)}
+                {...itemProps(rank)}
               />
             </ListItem>
           ))}
@@ -111,12 +111,12 @@ export function ReferenceTextRows({
             pl: showDragHandle ? MOBILE_DRAG_GUTTER : 0,
           }}
         >
-          {shown.map(([role, value]) => (
+          {shown.map(([rank, value]) => (
             <ReferenceTextCard
-              key={role}
-              role={role}
+              key={rank}
+              rank={rank}
               passage={value}
-              {...itemProps(role)}
+              {...itemProps(rank)}
               expandedId={expandedId}
               setExpandedId={setExpandedId ?? (() => undefined)}
             />
@@ -125,7 +125,7 @@ export function ReferenceTextRows({
       )}
       {viewing && viewed.status === 'ready' && (
         <ReferenceTextDialog
-          role={viewing.role}
+          rank={viewing.rank}
           referenceText={viewed.referenceText}
           text={viewed.text}
           passage={passage}

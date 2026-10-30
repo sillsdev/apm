@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 
 const mockPassages: Record<string, unknown> = {};
-// Each role's Reference Text is a stand-in whose id is the role
+// Each rank's Reference Text is a stand-in whose id is the rank
 jest.mock('../../../business/referenceText/useReferenceTextPassage', () => ({
   useProjectReferenceTexts: () => [{ id: 'primary' }, { id: 'secondary' }],
   useReferenceTextPassage: (_p: unknown, referenceText: { id: string }) =>
@@ -143,7 +143,7 @@ describe('ReferenceTextRows', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('lists Primary then Secondary with role and language', () => {
+  it('lists Primary then Secondary with rank and language', () => {
     mockPassages.primary = ready(bible());
     mockPassages.secondary = ready(arabic);
     const { container } = render(<ReferenceTextRows variant="table" />);

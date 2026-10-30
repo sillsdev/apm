@@ -1,6 +1,6 @@
 import {
   ReferenceTextPassage,
-  ReferenceTextRole,
+  ReferenceTextRank,
 } from '../../../business/referenceText/useReferenceTextPassage';
 
 /** A Reference Text the project has, in any state but `none`. */
@@ -11,12 +11,12 @@ export type ShownReferenceTextPassage = Exclude<
 
 /** Props shared by the desktop row and the mobile card. */
 export interface ReferenceTextItemProps {
-  role: ReferenceTextRole;
+  rank: ReferenceTextRank;
   passage: ShownReferenceTextPassage;
   /** Whether this Reference Text is being spoken. */
   speaking: boolean;
   /** Percent spoken, 0–100. */
   progress: number;
-  onPlay: (role: ReferenceTextRole) => void;
-  onView: (role: ReferenceTextRole) => void;
+  onPlay: (rank: ReferenceTextRank) => void;
+  onView: (rank: ReferenceTextRank) => void;
 }

@@ -5,7 +5,7 @@ import {
   Speaking,
   speakReferenceText,
 } from '../../../business/referenceText/speakReferenceText';
-import { ReferenceTextRole } from '../../../business/referenceText/useReferenceTextPassage';
+import { ReferenceTextRank } from '../../../business/referenceText/useReferenceTextPassage';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 
 /**
@@ -24,7 +24,7 @@ export const useReferenceTextSpeech = () => {
     setCommentPlaying,
     handleOldVernacularPlayEnd,
   } = usePassageDetailContext();
-  const [speaking, setSpeaking] = useState<ReferenceTextRole>();
+  const [speaking, setSpeaking] = useState<ReferenceTextRank>();
   const [progress, setProgress] = useState(0);
   const current = useRef<Speaking>(undefined);
   const otherPlaying =
@@ -36,13 +36,13 @@ export const useReferenceTextSpeech = () => {
 
   useEffect(() => () => current.current?.stop(), []);
 
-  /** Starts speaking the role, or stops it when it is already speaking. */
+  /** Starts speaking the rank, or stops it when it is already speaking. */
   const toggle = async (
-    role: ReferenceTextRole,
+    rank: ReferenceTextRank,
     referenceText: ReferenceText,
     text: string
   ): Promise<SpeakOutcome | undefined> => {
-    if (speaking === role) {
+    if (speaking === rank) {
       current.current?.stop();
       return undefined;
     }
@@ -52,7 +52,7 @@ export const useReferenceTextSpeech = () => {
     if (oldVernacularPlaying) handleOldVernacularPlayEnd();
     const started = speakReferenceText(referenceText, text, setProgress);
     current.current = started;
-    setSpeaking(role);
+    setSpeaking(rank);
     setProgress(0);
     const outcome = await started.done;
     if (current.current === started) {

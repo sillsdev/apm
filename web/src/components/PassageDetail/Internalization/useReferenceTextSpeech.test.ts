@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 
 describe('useReferenceTextSpeech', () => {
-  it('speaks a role, shows its progress, and resolves how it ended', async () => {
+  it('speaks a rank, shows its progress, and resolves how it ended', async () => {
     const { result } = renderHook(() => useReferenceTextSpeech());
     let outcome: Promise<SpeakOutcome | undefined>;
     act(() => {
@@ -83,7 +83,7 @@ describe('useReferenceTextSpeech', () => {
     expect(mockCtx.handleOldVernacularPlayEnd).toHaveBeenCalled();
   });
 
-  it('stops when the speaking role is toggled again', async () => {
+  it('stops when the speaking rank is toggled again', async () => {
     const { result } = renderHook(() => useReferenceTextSpeech());
     act(() => {
       void result.current.toggle('primary', bsb, 'text');

@@ -42,17 +42,17 @@ export type ReferenceText = Pick<
 
 export type Testament = 'OT' | 'NT';
 
-export type ReferenceTextRole = 'primary' | 'secondary';
+export type ReferenceTextRank = 'primary' | 'secondary';
 
 // defaultParams.referenceTexts is ordered Primary then Secondary (ADR 0014)
-const roleIndex: Record<ReferenceTextRole, number> = {
+const rankIndex: Record<ReferenceTextRank, number> = {
   primary: 0,
   secondary: 1,
 };
 
-/** The role's entry in a Primary-then-Secondary list. */
-export const byRole = <T>(role: ReferenceTextRole, values: readonly T[]): T =>
-  values[roleIndex[role]];
+/** The rank's entry in a Primary-then-Secondary list. */
+export const byRank = <T>(rank: ReferenceTextRank, values: readonly T[]): T =>
+  values[rankIndex[rank]];
 
 export const PUBLIC_DOMAIN = 'Public Domain';
 

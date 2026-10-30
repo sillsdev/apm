@@ -7,7 +7,7 @@ import {
   licenseText,
   ReferenceText,
 } from '../../../business/referenceText/referenceText';
-import { ReferenceTextRole } from '../../../business/referenceText/useReferenceTextPassage';
+import { ReferenceTextRank } from '../../../business/referenceText/useReferenceTextPassage';
 import {
   IPassageDetailArtifactsStrings,
   ISharedStrings,
@@ -26,7 +26,7 @@ import { useReferenceTextLabels } from './useReferenceTextLabels';
 export type ReferenceTextNotice = 'noVoice' | 'speakFailed';
 
 interface IProps {
-  role: ReferenceTextRole;
+  rank: ReferenceTextRank;
   referenceText: ReferenceText;
   text: string;
   passage: PassageD;
@@ -37,7 +37,7 @@ interface IProps {
 
 /** A Reference Text's passage to read, with its license for attribution. */
 export function ReferenceTextDialog({
-  role,
+  rank,
   referenceText,
   text,
   passage,
@@ -51,7 +51,7 @@ export function ReferenceTextDialog({
     passageDetailArtifactsSelector,
     shallowEqual
   );
-  const labels = useReferenceTextLabels(referenceText, role);
+  const labels = useReferenceTextLabels(referenceText, rank);
   const { passageRef } = usePassageRef();
   const license = licenseText(referenceText.license, t);
 

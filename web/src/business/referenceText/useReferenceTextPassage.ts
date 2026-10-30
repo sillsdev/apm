@@ -111,4 +111,4 @@ export const useReferenceTextPassage = (
   return { status: 'ready', referenceText: fetched, text: result.text };
 };
 
-export { type ReferenceTextRole } from './referenceText';
+export { type ReferenceTextRank } from './referenceText';

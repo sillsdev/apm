@@ -12,7 +12,7 @@ interface IProps extends ReferenceTextItemProps {
 
 /** A Reference Text in the desktop Internalize table: no drag, done or edit. */
 export function ReferenceTextTableRow({
-  role,
+  rank,
   passage,
   speaking,
   progress,
@@ -22,11 +22,11 @@ export function ReferenceTextTableRow({
   showDragHandle,
 }: Readonly<IProps>) {
   const { referenceText } = passage;
-  const labels = useReferenceTextLabels(referenceText, role);
+  const labels = useReferenceTextLabels(referenceText, rank);
   const ready = passage.status === 'ready';
 
   return (
-    <Box data-cy={`reference-text-${role}`}>
+    <Box data-cy={`reference-text-${rank}`}>
       <TableRow
         showDragHandle={showDragHandle}
         fixed
@@ -34,7 +34,7 @@ export function ReferenceTextTableRow({
           passageId,
           playItem: ready && (
             <ReferenceTextActions
-              role={role}
+              rank={rank}
               speaking={speaking}
               progress={progress}
               onPlay={onPlay}
@@ -49,7 +49,7 @@ export function ReferenceTextTableRow({
             </>
           ),
           version: null,
-          artifactType: labels.role,
+          artifactType: labels.rank,
           artifactCategory: labels.language,
           done: null,
           editAction: null,

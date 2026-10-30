@@ -5,12 +5,12 @@ import { ReferenceTextItemProps } from './referenceTextItem';
 
 type IProps = Pick<
   ReferenceTextItemProps,
-  'role' | 'speaking' | 'progress' | 'onPlay' | 'onView'
+  'rank' | 'speaking' | 'progress' | 'onPlay' | 'onView'
 > & { sx?: SxProps };
 
 /** The Play and View buttons of a Reference Text, in the desktop row and the mobile card. */
 export function ReferenceTextActions({
-  role,
+  rank,
   speaking,
   progress,
   onPlay,
@@ -22,9 +22,9 @@ export function ReferenceTextActions({
       <ReferenceTextPlayButton
         speaking={speaking}
         progress={progress}
-        onClick={() => onPlay(role)}
+        onClick={() => onPlay(rank)}
       />
-      <ViewButton id={role} cb={() => onView(role)} />
+      <ViewButton id={rank} cb={() => onView(rank)} />
     </Stack>
   );
 }

@@ -15,7 +15,7 @@ interface IProps extends ReferenceTextItemProps {
 // has no done checkbox (nowhere to keep a per-user "listened" state, ADR 0014)
 // and no edit or delete, and every user sees it.
 export function ReferenceTextCard({
-  role,
+  rank,
   passage,
   speaking,
   progress,
@@ -26,12 +26,12 @@ export function ReferenceTextCard({
   sx,
 }: Readonly<IProps>) {
   const { referenceText } = passage;
-  const labels = useReferenceTextLabels(referenceText, role);
+  const labels = useReferenceTextLabels(referenceText, rank);
 
   return (
     <Card
       elevation={0}
-      data-cy={`reference-text-${role}`}
+      data-cy={`reference-text-${rank}`}
       sx={{
         width: '100%',
         boxSizing: 'border-box',
@@ -49,7 +49,7 @@ export function ReferenceTextCard({
     >
       <Box dir={referenceText.textDirection} sx={{ minWidth: 0 }}>
         <WrapTitle
-          id={`reference-text-${role}`}
+          id={`reference-text-${rank}`}
           expandedId={expandedId}
           setExpandedId={setExpandedId}
           typographyProps={{ variant: 'h6', sx: { lineHeight: 1.25 } }}
@@ -58,12 +58,12 @@ export function ReferenceTextCard({
         </WrapTitle>
       </Box>
       <Typography variant="body1" sx={{ lineHeight: 1.25 }}>
-        {labels.role} · {labels.language}
+        {labels.rank} · {labels.language}
       </Typography>
       <ReferenceTextStatus passage={passage} />
       {passage.status === 'ready' && (
         <ReferenceTextActions
-          role={role}
+          rank={rank}
           speaking={speaking}
           progress={progress}
           onPlay={onPlay}
