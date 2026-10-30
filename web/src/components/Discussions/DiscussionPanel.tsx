@@ -1,7 +1,7 @@
 import {
+  useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -13,7 +13,8 @@ import {
   GroupMembership,
   IDiscussionListStrings,
 } from '../../model';
-import { Badge, Box, Fab, Grid } from '@mui/material';
+import { Badge, Box, Drawer, Fab } from '@mui/material';
+import PassageDetailPlayer from '../PassageDetail/PassageDetailPlayer';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import DiscussionList from './DiscussionList';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -21,14 +22,10 @@ import { LightTooltip } from '../../control/LightTooltip';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
-import { useMobile } from '../../utils/useMobile';
-import {
-  documentHasVerticalScrollbar,
-  measureScrollbarWidth,
-} from '../../utils/getScrollbarWidth';
+
+const MAX_DRAWER_WIDTH_RATIO = 0.95;
 
 export default function DiscussionPanel() {
-  const { isMobileWidth } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -37,6 +34,7 @@ export default function DiscussionPanel() {
     passage,
     currentstep,
     setDiscussOpen,
+    setPlaying,
   } = ctx.state;
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -48,32 +46,38 @@ export default function DiscussionPanel() {
   const [windowWidth, setWindowWidth] = useState(
     typeof window === 'undefined' ? discussionSize.width : window.innerWidth
   );
-  const [scrollbarWidth, setScrollbarWidth] = useState(0);
-  const cachedScrollbarWidthRef = useRef(0);
-  useLayoutEffect(() => {
-    if (typeof document !== 'undefined') {
-      cachedScrollbarWidthRef.current = measureScrollbarWidth();
-    }
+  // The drawer's player keeps its own play state so it doesn't also start the
+  // step's player underneath, which reads the shared context `playing`.
+  const [miniPlaying, setMiniPlaying] = useState(false);
+  // Unsaved edits in the list; a backdrop click or Escape must not discard them.
+  const dirtyRef = useRef(false);
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    dirtyRef.current = dirty;
   }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const updateLayout = () => {
-      setWindowWidth(window.innerWidth);
-      setScrollbarWidth(
-        documentHasVerticalScrollbar() ? cachedScrollbarWidthRef.current : 0
-      );
-    };
-    updateLayout();
-    window.addEventListener('resize', updateLayout);
-    return () => window.removeEventListener('resize', updateLayout);
+    const updateWidth = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // Use viewport width (not mobile-view toggle) so desktop Mobile view side-by-side
-  // keeps a fixed discussion column instead of width 100% over the waveform (TT-7373).
-  const panelWidth = isMobileWidth
-    ? Math.min(discussionSize.width, windowWidth)
-    : Math.min(discussionSize.width, Math.max(0, windowWidth - scrollbarWidth));
+  const openDrawer = () => {
+    // The step's player is covered by the backdrop; stop it so only the
+    // drawer's player is heard.
+    setPlaying(false);
+    setDiscussOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setMiniPlaying(false);
+    setDiscussOpen(false);
+  };
+
+  const panelWidth = Math.min(
+    discussionSize.width,
+    Math.floor(windowWidth * MAX_DRAWER_WIDTH_RATIO)
+  );
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,
@@ -96,7 +100,7 @@ export default function DiscussionPanel() {
           backgroundColor: 'background.paper',
           color: 'custom.black',
         }}
-        onClick={() => setDiscussOpen(true)}
+        onClick={openDrawer}
       >
         <Badge
           badgeContent={discussionCount}
@@ -120,42 +124,56 @@ export default function DiscussionPanel() {
   );
 
   return (
-    Boolean(mediafileId) &&
-    (discussOpen ? (
-      <Grid
-        size={{ xs: 12 }}
-        container
-        sx={{
-          // Narrow viewport: fill parent. Wide (incl. mobile-view toggle): fixed panelWidth.
-          width: isMobileWidth ? '100%' : panelWidth,
-          maxWidth: '100%',
-          minWidth: 0,
-          boxSizing: 'border-box',
-          justifyContent: 'center',
-          ...(isMobileWidth
-            ? {}
-            : {
-                marginRight: `${scrollbarWidth}px`,
-              }),
-        }}
-      >
-        <Grid container direction="column" sx={{ minWidth: 0, width: '100%' }}>
-          <DiscussionList onClose={() => setDiscussOpen(false)} />
-        </Grid>
-      </Grid>
-    ) : (
-      <Box
-        data-cy="discussion-fab"
-        sx={{
-          position: 'absolute',
-          right: 0,
-          bottom: 0,
-          p: 1.5,
-          zIndex: (theme) => theme.zIndex.fab,
-        }}
-      >
-        {discussionFab}
-      </Box>
-    ))
+    Boolean(mediafileId) && (
+      <>
+        {!discussOpen && (
+          <Box
+            data-cy="discussion-fab"
+            sx={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              p: 1.5,
+              zIndex: (theme) => theme.zIndex.fab,
+            }}
+          >
+            {discussionFab}
+          </Box>
+        )}
+        <Drawer
+          anchor="right"
+          open={discussOpen}
+          onClose={() => {
+            if (!dirtyRef.current) closeDrawer();
+          }}
+          slotProps={{
+            paper: {
+              sx: { width: panelWidth, overflow: 'hidden' },
+            },
+          }}
+        >
+          {discussOpen && (
+            <DiscussionList
+              onClose={closeDrawer}
+              onDirtyChange={handleDirtyChange}
+              player={
+                <Box data-cy="discussion-mini-player" sx={{ px: 1, pb: 1 }}>
+                  <PassageDetailPlayer
+                    width={panelWidth - 16}
+                    playing={miniPlaying}
+                    setPlayingOverride={setMiniPlaying}
+                    // The step's player keeps the hotkeys: the hotkey registry
+                    // holds one handler per key, so claiming them here would
+                    // drop the step player's when the drawer closes.
+                    hotkeys={false}
+                    showTranscriptionButton={false}
+                  />
+                </Box>
+              }
+            />
+          )}
+        </Drawer>
+      </>
+    )
   );
 }

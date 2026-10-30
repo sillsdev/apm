@@ -24,18 +24,12 @@ import { ISharedStrings } from '@model/index';
 import { sharedSelector } from '../../selector';
 
 interface Props {
-  showSideBySide: boolean;
-  flushDiscussionLeft?: boolean;
   recordContent: React.ReactNode;
 }
 
 const noAudioGraceMs = 5000;
 
-export default function PassageDetailMobileDetail({
-  showSideBySide: areDiscussionsSideBySide,
-  flushDiscussionLeft,
-  recordContent,
-}: Props) {
+export default function PassageDetailMobileDetail({ recordContent }: Props) {
   const {
     currentstep,
     section,
@@ -63,12 +57,6 @@ export default function PassageDetailMobileDetail({
   const showLoading = isWaitingForAudio && !graceExpired;
   // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
   const doesStepSupportDiscussions = tool !== ToolSlug.Resource;
-  const contentSx = useMemo(
-    () => ({
-      ...(flushDiscussionLeft ? { pl: 0 } : {}),
-    }),
-    [flushDiscussionLeft]
-  );
   const { userIsAdmin } = useRole();
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
   const showPromptAdmin =
@@ -125,66 +113,25 @@ export default function PassageDetailMobileDetail({
         backgroundColor: 'background.default',
         px: 1.5,
         pb: 1.5,
-        ...contentSx,
       }}
     >
       {!isWaitingForAudio ? (
-        <>
-          {areDiscussionsSideBySide && doesStepSupportDiscussions ? (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 5,
-                pt: 1.5,
-                width: '100%',
-                minWidth: 0,
-                overflow: 'clip',
-              }}
-              data-cy="discussion-side-by-side"
-            >
-              <Box sx={{ flex: 1, minWidth: 0, overflow: 'clip' }}>
-                {recordContent}
-              </Box>
-              <Box
-                sx={{
-                  flexShrink: 0,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                }}
-                data-cy="discussion-side-column"
-              >
-                <DiscussionPanel />
-              </Box>
-            </Box>
-          ) : (
-            <Stack
-              spacing={1}
-              sx={{
-                pt: 1.5,
-                width: '100%',
-                maxWidth: '100%',
-                minWidth: 0,
-                overflowX: 'clip',
-              }}
-            >
-              <Box
-                sx={
-                  flushDiscussionLeft
-                    ? { display: 'none' }
-                    : { minWidth: 0, width: '100%' }
-                }
-              >
-                {recordContent}
-              </Box>
-              {doesStepSupportDiscussions && (
-                <Box sx={{ width: '100%', minWidth: 0 }}>
-                  <DiscussionPanel />
-                </Box>
-              )}
-            </Stack>
-          )}
-        </>
+        <Stack
+          spacing={1}
+          sx={{
+            pt: 1.5,
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            overflowX: 'clip',
+          }}
+        >
+          {/* Stays mounted while the discussion drawer is open; unmounting
+                drops PassageDetailRecord/MediaRecord state and clears an
+                in-progress recording. */}
+          <Box sx={{ minWidth: 0, width: '100%' }}>{recordContent}</Box>
+          {doesStepSupportDiscussions && <DiscussionPanel />}
+        </Stack>
       ) : showLoading ? (
         <Backdrop
           open

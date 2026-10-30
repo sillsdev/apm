@@ -48,7 +48,7 @@ export interface IPlayerState {
   pdBusy: boolean;
   setPDBusy: (busy: boolean) => void;
   audioBlob?: Blob;
-  setupLocate: (callback?: (segments: string) => void) => void;
+  setupLocate: (callback: (segments: string) => void) => () => void;
   playing: boolean;
   setPlaying: (playing: boolean) => void;
   currentstep?: string;
@@ -139,6 +139,8 @@ export interface DetailPlayerProps {
   layoutMode?: 'default' | 'transport';
   /** Stick the player to the top of the scrolling content area. */
   docked?: boolean;
+  /** Claim the shared player hotkeys. Default true; see WSAudioPlayer. */
+  hotkeys?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -189,6 +191,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     hideZoom,
     layoutMode,
     docked,
+    hotkeys,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -421,9 +424,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   useEffect(() => {
-    setupLocate(setPlayerSegments);
+    const releaseLocate = setupLocate(setPlayerSegments);
     return () => {
-      setupLocate();
+      releaseLocate();
       pendingLocateSegmentsRef.current = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -491,6 +494,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         allowSegmentNav={allowSegmentNav}
         allowAutoSegment={allowAutoSegment}
         layoutMode={layoutMode}
+        hotkeys={hotkeys}
         hideSegmentControls={hideSegmentControls}
         hideZoom={hideZoom}
         defaultRegionParams={defaultSegParams}
