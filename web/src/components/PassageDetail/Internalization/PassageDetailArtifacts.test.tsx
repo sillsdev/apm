@@ -262,12 +262,6 @@ jest.mock('../../../control/MarkDownView', () => ({
   MarkDownView: () => null,
 }));
 
-jest.mock('../../MediaUpload', () => ({
-  __esModule: true,
-  UriLinkType: 'text/uri-list',
-  MarkDownType: 'text/markdown',
-  FaithbridgeType: 'audio/mpeg/s3link',
-}));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
 jest.mock('./SelectSections', () => () => null);

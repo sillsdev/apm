@@ -1,6 +1,13 @@
 import path from 'path-browserify';
 import { MediaFile } from '../model';
 
+// Content-type literals, kept in this import-light leaf so hooks, dialogs and
+// the Internalization components can share them without a heavy import graph.
+export const UriLinkType = 'text/uri-list';
+export const MarkDownType = 'text/markdown';
+export const Mp3Type = 'audio/mpeg';
+export const FaithbridgeType = 'audio/mpeg/s3link';
+
 const extToContentType = (extension: string): string => {
   if (extension.startsWith('.')) extension = extension.substring(1);
   switch (extension) {

@@ -16,10 +16,9 @@ jest.mock('./PassageRecordDlg', () => ({
   },
 }));
 
-jest.mock('./MediaUpload', () => ({
+jest.mock('./MediaUploadDialog', () => ({
   __esModule: true,
   default: () => null,
-  FaithbridgeType: 'audio/mpeg/s3link',
 }));
 
 jest.mock('../store', () => ({

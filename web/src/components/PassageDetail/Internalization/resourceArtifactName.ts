@@ -1,10 +1,10 @@
 import { UploadType } from '../../UploadType';
 import { removeExtension } from '../../../utils/removeExtension';
-
-// Keep content-type literals local so unit tests avoid MediaUpload's heavy import graph.
-const UriLinkType = 'text/uri-list';
-const MarkDownType = 'text/markdown';
-const FaithbridgeType = 'audio/mpeg/s3link';
+import {
+  FaithbridgeType,
+  MarkDownType,
+  UriLinkType,
+} from '../../../utils/contentType';
 
 function isHttpUrl(value?: string): boolean {
   return /^https?:\/\//i.test((value ?? '').trim());

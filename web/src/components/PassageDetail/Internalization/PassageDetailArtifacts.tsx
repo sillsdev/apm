@@ -46,7 +46,7 @@ import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
-import { MarkDownType, UriLinkType } from '../../MediaUpload';
+import { MarkDownType, UriLinkType } from '../../../utils/contentType';
 import LimitedMediaPlayer from '../../LimitedMediaPlayer';
 import {
   canSaveResourceEdit,
@@ -1344,7 +1344,7 @@ export function PassageDetailArtifacts() {
             catRequired={false}
             resourceKind={resourceKind}
             onPassResChange={handlePassRes}
-            allowProject={allowProject}
+            allowGeneralResourceOption={allowProject}
             sectDesc={sectDesc}
             passDesc={passDesc}
           />
@@ -1490,7 +1490,7 @@ export function PassageDetailArtifacts() {
           catRequired={false}
           resourceKind={resourceKind}
           onPassResChange={handlePassRes}
-          allowProject={false}
+          allowGeneralResourceOption={false}
           onTextChange={handleTextChange}
           sectDesc={sectDesc}
           passDesc={passDesc}
