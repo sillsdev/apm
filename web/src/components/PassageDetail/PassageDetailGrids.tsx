@@ -86,6 +86,8 @@ const clippedPaperTools = [
   ToolSlug.ConsultantCheck,
 ] as string[];
 
+const STEP_PAPER_MARGIN = 32;
+
 const PassageDetailGrids = () => {
   const [plan] = useGlobal('plan'); //will be constant here
 
@@ -162,21 +164,7 @@ const PassageDetailGrids = () => {
     tool && Object.prototype.hasOwnProperty.call(t, tool)
       ? addPt(t.getString(tool))
       : tool;
-  // The step content sits in a Paper of `calc(100% - 32px)`; a player sized to
-  // the full pane would spill past that Paper (the outer Box clips it, cutting
-  // off the waveform's right edge and the controls below). Match the `- 40`
-  // used by the other step players so the player stays inside the Paper.
-  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 40;
-  // Width for a step's audio player so it fits the pane without clipping the
-  // right-edge controls: pane minus padding and (when shown) the scrollbar.
-  // Pass this to every step player so a new consumer can't forget the fit math.
-  const playerPaneWidth = Math.max(
-    0,
-    width - MAGIC_NUMBER_THAT_MAKES_IT_FIT - scrollbarWidth
-  );
-  // Same fit math for steps that render their own full-width control instead of
-  // a player, so they can't overflow the Paper either.
-  const fittedPaneWidth = Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT);
+  const stepWidth = Math.max(0, width - STEP_PAPER_MARGIN - scrollbarWidth);
   const showsStepPaper = paperTools.includes(tool ?? '');
   const clipsStepContent = clippedPaperTools.includes(tool ?? '');
   const showsStepPlayer =
@@ -258,7 +246,7 @@ const PassageDetailGrids = () => {
       )}
       {tool === ToolSlug.Prompt && (
         <Box sx={{ minWidth: 0, px: 2 }}>
-          <PassageDetailPrompt width={fittedPaneWidth} />
+          <PassageDetailPrompt width={stepWidth} />
         </Box>
       )}
       {tool === ToolSlug.Paratext && (
@@ -270,7 +258,11 @@ const PassageDetailGrids = () => {
       {showsStepPaper && (
         <Paper
           key={currentstep}
-          sx={{ p: 0, mx: 'auto', width: `calc(100% - 32px)` }}
+          sx={{
+            p: 0,
+            mx: 'auto',
+            width: `calc(100% - ${STEP_PAPER_MARGIN}px)`,
+          }}
         >
           <Stack direction="row" spacing={1}>
             <Stack
@@ -284,7 +276,7 @@ const PassageDetailGrids = () => {
               <PassageDetailChooser width={width} />
               {showsStepPlayer && (
                 <PassageDetailPlayer
-                  width={fittedPaneWidth}
+                  width={stepWidth}
                   allowZoomAndSpeed={true}
                 />
               )}
@@ -301,28 +293,28 @@ const PassageDetailGrids = () => {
                 <PassageDetailMarkVerses width={width} />
               )}
               {tool === ToolSlug.CarefulSpeech && (
-                <PassageDetailCarefulSpeech width={playerPaneWidth} />
+                <PassageDetailCarefulSpeech width={stepWidth} />
               )}
               {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
                 <PassageDetailLwcTranslation width={width} />
               )}
               {tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow && (
-                <PassageDetailPhraseBackTranslate width={playerPaneWidth} />
+                <PassageDetailPhraseBackTranslate width={stepWidth} />
               )}
               {boldClauseTranscription && (
                 <PassageDetailLwcTranscription width={width} />
               )}
               {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
                 <PassageDetailTranscribe
-                  width={playerPaneWidth}
+                  width={stepWidth}
                   artifactTypeId={artifactId}
                 />
               )}
               {tool === ToolSlug.Record && (
-                <PassageDetailRecord width={fittedPaneWidth} />
+                <PassageDetailRecord width={stepWidth} />
               )}
               {tool === ToolSlug.ConsultantCheck && (
-                <ConsultantCheck width={playerPaneWidth} />
+                <ConsultantCheck width={stepWidth} />
               )}
             </Stack>
             <DiscussionDrawer />
