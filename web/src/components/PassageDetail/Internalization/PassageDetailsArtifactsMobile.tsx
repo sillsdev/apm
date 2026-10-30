@@ -104,6 +104,7 @@ import {
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
+import { ReferenceTextRows } from './ReferenceTextRows';
 import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
@@ -1219,6 +1220,12 @@ export function PassageDetailArtifactsMobile() {
         )}
       </Stack>
       <Box sx={{ width: '100%' }}>
+        <ReferenceTextRows
+          variant="card"
+          showDragHandle={modifiable}
+          expandedId={expandedArtifactNameId}
+          setExpandedId={setExpandedArtifactNameId}
+        />
         <VertListDnd
           key={`sort-${sortKey}`}
           onDrop={onSortEnd}

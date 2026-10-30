@@ -111,6 +111,7 @@ import {
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
+import { ReferenceTextRows } from './ReferenceTextRows';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
@@ -1275,6 +1276,7 @@ export function PassageDetailArtifacts() {
         </Grid>
       </Stack>
       <SortableHeader showDragHandle={modifiable} />
+      <ReferenceTextRows variant="table" showDragHandle={modifiable} />
       <VertListDnd
         key={`sort-${sortKey}`}
         onDrop={onSortEnd}

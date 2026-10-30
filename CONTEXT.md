@@ -408,6 +408,14 @@ _Avoid_: Artifact; treating transcription as its own recording; mixing French an
 Source material an admin prepares for the team before oral translation work — reference audio, text, links, and similar inputs. Not an output of the transcription process.
 _Avoid_: Artifact (when meaning outputs); General Resource / Shared Resource (qualifiers for scope, not separate concepts in conversation)
 
+**Reference Text**:
+A published Bible text (from the HelloAO Free Use Bible API, bible.helloao.org) chosen at project level for a **Scripture Project** as its **Primary** or **Secondary** Reference Text. Its **rank** — Primary or Secondary — is the order it is listed and offered in, not a preference. Always in a language other than the project's — the team listens to it, then records the passage in their own language. Offered only when it has the **Project Book**, grouped by language named in the UI language where possible. Stored as a snapshot in the project's `defaultParams`, not as resource records; the Internalize step shows it first, as text-to-speech audio of the passage's verse range (see ADR 0014).
+_Avoid_: Resource (Reference Texts are not `sharedresource`/`sectionresource` rows); pinning or defaulting it to the project language; Bible Brain resource; role for its rank (role means admin/member)
+
+**Voice**:
+A text-to-speech voice available on this device for a language, used to **speak** a **Reference Text** passage. Which voices exist differs per device and per backend, so a Voice is never shared with the team or saved with the project; when none matches the Bible's language, the user is told at playback and shown the text instead. Speaking a passage never creates a mediafile, and stopping it means starting over, not resuming.
+_Avoid_: TTS engine; narrator; Reference Text audio or recording (nothing is recorded); pausing speech
+
 **Community Testing**:
 A workflow step that collects structured **feedback** (questions and responses) on the current oral translation. Results may inform a new vernacular version.
 _Avoid_: Peer Review; Discussion (unstructured comments)
@@ -461,6 +469,10 @@ _Avoid_: Saying "PBT version 3" when you mean vernacular version 3's PBT; treati
 **Scripture Project**:
 A project whose content is organized around Bible books and verse references.
 _Avoid_: General project; calling it "Bible project" unless that is established user language
+
+**Project Book**:
+The one canonical Bible book a **Scripture Project** covers, stored in `defaultParams.book` as an Akuo publishing slot (`A01`–`A39` OT, `B01`–`B27` NT, from `akuosort.json`) — not a USFM code. Drives project sort, publishing book rows, burrito export, and which **Reference Texts** are offered. The plan sheet re-derives it from the first passage's book. General projects hold a 3-digit general code, or a sort key placing them after a scripture book (e.g. `A0104`), in the same field. Passages keep their own USFM `book`.
+_Avoid_: Treating it as a USFM code; Book (alone, where **Movement** is meant)
 
 **General Project**:
 A project for non-Scripture oral content (stories, training materials, etc.) without canon book structure.

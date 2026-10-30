@@ -1,0 +1,81 @@
+{
+  "translation": {
+    "id": "BSB"
+  },
+  "book": {
+    "id": "JHN"
+  },
+  "numberOfVerses": 36,
+  "chapter": {
+    "number": 3,
+    "content": [
+      {
+        "type": "heading",
+        "text": "Jesus and Nicodemus"
+      },
+      {
+        "type": "verse",
+        "number": 1,
+        "text": "Now there was a man of the Pharisees named Nicodemus, a leader of the Jews.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "text": "He came to Jesus at night and said, “Rabbi, we know that You are a teacher who has come from God. For no one could perform the signs You are doing if God were not with him.”",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "text": "Jesus replied, “Truly, truly, I tell you, no one can see the kingdom of God unless he is born again. ”",
+        "footnotes": [
+          {
+            "noteId": 13,
+            "offset": 100,
+            "text": "Or born from above; also in verse 7.",
+            "caller": "+"
+          }
+        ]
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "text": "“How can a man be born when he is old?” Nicodemus asked. “Can he enter his mother’s womb a second time to be born?”",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 5,
+        "text": "Jesus answered, “Truly, truly, I tell you, no one can enter the kingdom of God unless he is born of water and the Spirit.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 34,
+        "text": "For the One whom God has sent speaks the words of God, for God gives the Spirit without limit.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 35,
+        "text": "The Father loves the Son and has placed all things in His hands.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 36,
+        "text": "Whoever believes in the Son has eternal life. Whoever rejects the Son will not see life. Instead, the wrath of God remains on him.”",
+        "footnotes": [
+          {
+            "noteId": 21,
+            "offset": 131,
+            "text": "Some translators close this quotation after verse 30.",
+            "caller": "+"
+          }
+        ]
+      }
+    ],
+    "footnotes": []
+  }
+}

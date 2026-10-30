@@ -1,0 +1,50 @@
+{
+  "translation": {
+    "id": "BSB"
+  },
+  "book": {
+    "id": "ACT"
+  },
+  "numberOfVerses": 39,
+  "chapter": {
+    "number": 8,
+    "content": [
+      {
+        "type": "heading",
+        "text": "Saul Persecutes the Church"
+      },
+      {
+        "type": "verse",
+        "number": 35,
+        "text": "Then Philip began with this very Scripture and told him the good news about Jesus.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 36,
+        "text": "As they traveled along the road and came to some water, the eunuch said, “Look, here is water! What is there to prevent me from being baptized?”",
+        "footnotes": [
+          {
+            "noteId": 57,
+            "offset": 144,
+            "text": "TR includes 37 And Philip said, “If you believe with all your heart, you may be baptized.” The eunuch replied, “I believe that Jesus Christ is the Son of God.”",
+            "caller": "+"
+          }
+        ]
+      },
+      {
+        "type": "verse",
+        "number": 38,
+        "text": "And he gave orders to stop the chariot. Then both Philip and the eunuch went down into the water, and Philip baptized him.",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 39,
+        "text": "When they came up out of the water, the Spirit of the Lord carried Philip away, and the eunuch saw him no more, but went on his way rejoicing.",
+        "footnotes": []
+      }
+    ],
+    "footnotes": []
+  }
+}

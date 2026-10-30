@@ -1,0 +1,44 @@
+{
+  "translation": {
+    "id": "BSB"
+  },
+  "book": {
+    "id": "JHN"
+  },
+  "numberOfVerses": 54,
+  "chapter": {
+    "number": 4,
+    "content": [
+      {
+        "type": "heading",
+        "text": "Jesus and the Samaritan Woman"
+      },
+      {
+        "type": "verse",
+        "number": 1,
+        "text": "When Jesus realized that the Pharisees were aware He was gaining and baptizing more disciples than John",
+        "footnotes": [
+          {
+            "noteId": 22,
+            "offset": 52,
+            "text": "Literally When therefore Jesus knew that the Pharisees had heard that Jesus; NE, WH, BYZ, and TR When therefore the Lord knew that the Pharisees had heard that Jesus",
+            "caller": "+"
+          }
+        ]
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "text": "(although it was not Jesus who baptized, but His disciples),",
+        "footnotes": []
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "text": "He left Judea and returned to Galilee.",
+        "footnotes": []
+      }
+    ],
+    "footnotes": []
+  }
+}

@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useState } from 'react';
 import { Tooltip, Box, Stack } from '@mui/material';
 import { IRow } from '../../../context/PassageDetailContext';
 import { DragHandle } from '.';
@@ -7,13 +7,28 @@ import { useOrganizedBy } from '../../../crud';
 import { useSelector, shallowEqual } from 'react-redux';
 import { resourceSelector } from '../../../selector';
 
+/** What each column shows; an IRow fits, and so do built-in rows with no mediafile. */
+export type TableRowValue = Pick<IRow, 'passageId'> &
+  Record<
+    | 'playItem'
+    | 'artifactName'
+    | 'version'
+    | 'artifactType'
+    | 'artifactCategory'
+    | 'done'
+    | 'editAction',
+    ReactNode
+  >;
+
 interface IProps {
-  value: IRow;
+  value: TableRowValue;
   header?: boolean;
   showDragHandle?: boolean;
+  /** Keeps the drag handle's space but hides it, for rows outside the sortable list. */
+  fixed?: boolean;
 }
 
-export const TableRow = ({ value, header, showDragHandle }: IProps) => {
+export const TableRow = ({ value, header, showDragHandle, fixed }: IProps) => {
   const [headBold, setHeadBold] = useState<CSSProperties>({});
   const [headHide, setHeadHide] = useState<CSSProperties>({});
   const { getOrganizedBy } = useOrganizedBy();
@@ -29,7 +44,7 @@ export const TableRow = ({ value, header, showDragHandle }: IProps) => {
   return (
     <Stack direction="row" sx={{ alignItems: 'center' }}>
       {showDragHandle && (
-        <span style={headHide}>
+        <span style={fixed ? { visibility: 'hidden' } : headHide}>
           <DragHandle />
           {'\u00A0'}
         </span>
