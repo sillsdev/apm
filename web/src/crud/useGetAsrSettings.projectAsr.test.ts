@@ -171,12 +171,13 @@ describe('useGetAsrSettings project ASR', () => {
     expect(mockSetProjectDefault).not.toHaveBeenCalled();
   });
 
-  it('makes the project language and run settings the team default when the team has no language', () => {
+  it('leaves a team with no language alone on Run, saving to the project', () => {
+    // Only Save as team default sets the team language and ASR.
     mockOrgLanguage = 'und';
     const { result } = renderHook(() => useGetAsrSettings());
     result.current.saveProjectAsrSettings(frenchAsr);
-    expect(mockTeamWrites).toEqual(['team language', 'asr']);
-    expect(mockSetProjectDefault).not.toHaveBeenCalledWith('asr', frenchAsr);
+    expect(mockTeamWrites).toEqual([]);
+    expect(mockSetProjectDefault).toHaveBeenCalledWith('asr', frenchAsr);
   });
 
   it('runs with the project settings when the project language differs', async () => {
