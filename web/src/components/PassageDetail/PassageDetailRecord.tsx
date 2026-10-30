@@ -366,7 +366,7 @@ export function PassageDetailRecord(props: IProps) {
     !isLinkedNote(passage, sharedResource);
 
   return (
-    <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
+    <Stack sx={{ width: props.width, maxWidth: '100%', minWidth: 0 }}>
       <Box sx={{ py: 1 }}>
         <Stack
           direction="row"
