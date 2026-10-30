@@ -48,7 +48,7 @@ export interface IPlayerState {
   pdBusy: boolean;
   setPDBusy: (busy: boolean) => void;
   audioBlob?: Blob;
-  setupLocate: (callback?: (segments: string) => void) => void;
+  setupLocate: (callback: (segments: string) => void) => () => void;
   playing: boolean;
   setPlaying: (playing: boolean) => void;
   currentstep?: string;
@@ -421,9 +421,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   useEffect(() => {
-    setupLocate(setPlayerSegments);
+    const releaseLocate = setupLocate(setPlayerSegments);
     return () => {
-      setupLocate();
+      releaseLocate();
       pendingLocateSegmentsRef.current = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

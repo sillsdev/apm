@@ -72,7 +72,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
     [mediaId, rowData]
   );
   const forceRefresh = () => {};
-  const setupLocate = () => {};
+  const setupLocate = () => () => {};
   const setCurrentSegment = (_region: IRegion | undefined, index: number) => {
     setCurrentSegmentIndex(index);
   };

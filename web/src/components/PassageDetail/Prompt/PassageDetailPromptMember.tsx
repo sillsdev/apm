@@ -129,7 +129,7 @@ export default function PassageDetailPromptMember(props: IProps) {
               blobState.blobStat === BlobStatus.FETCHED
                 ? blobState.blob
                 : undefined,
-            setupLocate: () => {},
+            setupLocate: () => () => {},
             playing,
             setPlaying,
             currentstep,
