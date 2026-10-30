@@ -41,6 +41,8 @@ interface IProps {
   wsRemoveSplitRegion: () => IRegionChange | undefined;
   wsAddRegion: () => IRegionChange | undefined;
   setBusy?: (value: boolean) => void;
+  /** When false, claim no keyboard shortcuts (see WSAudioPlayer's hotkeys). */
+  hotkeys?: boolean;
 }
 
 function WSAudioPlayerSegment(props: IProps) {
@@ -60,6 +62,7 @@ function WSAudioPlayerSegment(props: IProps) {
     wsRemoveSplitRegion,
     wsAddRegion,
     setBusy,
+    hotkeys = true,
   } = props;
   const t: IWsAudioPlayerSegmentStrings = useSelector(
     audioPlayerSegmentSelector
@@ -79,6 +82,7 @@ function WSAudioPlayerSegment(props: IProps) {
   const readyRef = useRef(ready);
 
   useEffect(() => {
+    if (!hotkeys) return;
     const keys = [
       { key: ADDREMSEG_KEY, cb: handleSplit },
       { key: DELREG_KEY, cb: handleRemoveNextSplit },
@@ -89,7 +93,7 @@ function WSAudioPlayerSegment(props: IProps) {
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hotkeys]);
 
   useEffect(() => {
     readyRef.current = ready;

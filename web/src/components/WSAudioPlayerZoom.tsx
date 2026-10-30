@@ -17,12 +17,14 @@ interface IProps {
   fillPx: number;
   curPx: number;
   onZoom: (val: number) => void;
+  /** When false, claim no keyboard shortcuts (see WSAudioPlayer's hotkeys). */
+  hotkeys?: boolean;
 }
 export const maxZoom = 300;
 
 function WSAudioPlayerZoom(props: IProps) {
   const [isDeveloper] = useGlobal('developer');
-  const { ready, onZoom, fillPx, curPx } = props;
+  const { ready, onZoom, fillPx, curPx, hotkeys = true } = props;
   const { subscribe, unsubscribe, localizeHotKey } =
     useContext(HotKeyContext).state;
   const [zoomMin, setZoomMin] = useState(fillPx);
@@ -89,6 +91,7 @@ function WSAudioPlayerZoom(props: IProps) {
   };
 
   useEffect(() => {
+    if (!hotkeys) return;
     const keys = [
       { key: ZOOMIN_KEY, cb: handleZoomIn },
       { key: ZOOMOUT_KEY, cb: handleZoomOut },
@@ -98,7 +101,7 @@ function WSAudioPlayerZoom(props: IProps) {
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hotkeys]);
   return (
     <GrowingDiv>
       <ToolbarGrid container>

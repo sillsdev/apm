@@ -1121,18 +1121,6 @@ function WSAudioPlayer(props: IProps) {
         'devicechange',
         handleDeviceChange
       );
-      [
-        PLAY_PAUSE_KEY,
-        ALT_PLAY_PAUSE_KEY,
-        HOME_KEY,
-        END_KEY,
-        BACK_KEY,
-        AHEAD_KEY,
-        TIMER_KEY,
-        RECORD_KEY,
-        LEFT_KEY,
-        RIGHT_KEY,
-      ].forEach((key) => unsubscribe(key));
       if (recTimerRef.current) {
         clearInterval(recTimerRef.current);
         recTimerRef.current = undefined;
@@ -2371,6 +2359,7 @@ function WSAudioPlayer(props: IProps) {
       wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
       wsRemoveSplitRegion={handleRemoveSplitRegion}
       wsAddRegion={handleAddRegion}
+      hotkeys={hotkeys}
       disableSplit={playheadNearBoundary || addBlockedByRecording}
       removeEnabled={playheadNearInternalJoin && !removeBlockedByRecording}
       setBusy={setBusy}
@@ -2705,6 +2694,7 @@ function WSAudioPlayer(props: IProps) {
       playbackRate={playbackRate}
       setPlaybackRate={setPlaybackRate}
       recording={recording}
+      hotkeys={hotkeys}
     />
   );
 
@@ -2714,6 +2704,7 @@ function WSAudioPlayer(props: IProps) {
       fillPx={recording ? 100 : wsFillPx()}
       curPx={pxPerSec}
       onZoom={wsZoom}
+      hotkeys={hotkeys}
     />
   );
   const confirmNode = confirmAction !== '' && (

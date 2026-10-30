@@ -94,6 +94,10 @@ jest.mock('../context/HotKeyContext', () => {
 
 type UseWaveSurfer = typeof import('../crud/useWaveSurfer').useWaveSurfer;
 import WSAudioPlayer from './WSAudioPlayer';
+import WSAudioPlayerRate from './WSAudioPlayerRate';
+import WSAudioPlayerSegment from './WSAudioPlayerSegment';
+import WSAudioPlayerZoom from './WSAudioPlayerZoom';
+import { NamedRegions } from '../utils/namedSegments';
 import {
   AudioAiError,
   AudioAiErrorCode,
@@ -337,18 +341,18 @@ jest.mock('../hoc/BigDialogBp', () => ({
 
 jest.mock('./WSAudioPlayerZoom', () => ({
   __esModule: true,
-  default: () => null,
+  default: jest.fn(() => null),
   maxZoom: 500,
 }));
 
 jest.mock('./WSAudioPlayerRate', () => ({
   __esModule: true,
-  default: () => null,
+  default: jest.fn(() => null),
 }));
 
 jest.mock('./WSAudioPlayerSegment', () => ({
   __esModule: true,
-  default: () => null,
+  default: jest.fn(() => null),
 }));
 
 jest.mock('./AlertDialog', () => ({
@@ -880,6 +884,63 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(mockUnsubscribe).toHaveBeenCalledWith(RECORD_KEY);
     expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+C');
     expect(mockUnsubscribe).toHaveBeenCalledWith('CTRL+V');
+  });
+
+  it('does not unsubscribe active keys when a passive player unmounts', async () => {
+    // The unmount cleanup lives in the device-listener effect, which bails
+    // out unless navigator.mediaDevices exists (it doesn't in jsdom).
+    const previousMediaDevices = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        enumerateDevices: jest
+          .fn<() => Promise<MediaDeviceInfo[]>>()
+          .mockResolvedValue([]),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        getSupportedConstraints: () => ({}),
+      },
+    });
+    try {
+      let unmount: () => void = () => undefined;
+      await act(async () => {
+        ({ unmount } = render(
+          <WSAudioPlayer {...defaultProps} hotkeys={false} />
+        ));
+      });
+      unmount();
+
+      expect(mockUnsubscribe).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: previousMediaDevices,
+      });
+    }
+  });
+
+  it('forwards hotkeys to the speed, zoom, and segment controls', () => {
+    render(
+      <WSAudioPlayer
+        {...defaultProps}
+        hotkeys={false}
+        allowSpeed
+        allowZoom
+        allowSegment={NamedRegions.ProjectResource}
+      />
+    );
+
+    for (const child of [
+      WSAudioPlayerRate,
+      WSAudioPlayerZoom,
+      WSAudioPlayerSegment,
+    ]) {
+      const calls = (child as unknown as jest.Mock).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls[calls.length - 1][0]).toEqual(
+        expect.objectContaining({ hotkeys: false })
+      );
+    }
   });
 
   it('shows loading overlay when mediaId is set and loading', () => {
