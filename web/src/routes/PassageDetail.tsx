@@ -163,28 +163,11 @@ const MobileStep = () => {
   );
 };
 
-const MobileDetail = () => {
-  const { isMobileWidth } = useMobile();
-  const { discussOpen } = useContext(PassageDetailContext)?.state ?? {
-    discussOpen: false,
-  };
-
-  const showSideBySide = useMemo(() => !isMobileWidth, [isMobileWidth]);
-  const flushDiscussionLeft = useMemo(
-    () => discussOpen && !showSideBySide,
-    [discussOpen, showSideBySide]
-  );
-
-  return (
-    <PassageDetailMobileDetail
-      showSideBySide={showSideBySide}
-      flushDiscussionLeft={flushDiscussionLeft}
-      // Always mount MobileStep on narrow mobile while discussion is open; unmounting
-      // drops PassageDetailRecord/MediaRecord state and clears an in-progress recording.
-      recordContent={<MobileStep />}
-    />
-  );
-};
+const MobileDetail = () => (
+  // MobileStep stays mounted behind the discussion drawer; unmounting drops
+  // PassageDetailRecord/MediaRecord state and clears an in-progress recording.
+  <PassageDetailMobileDetail recordContent={<MobileStep />} />
+);
 
 export const PassageDetail = () => {
   const { prjId } = useParams();
