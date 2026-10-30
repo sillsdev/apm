@@ -1,10 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { PassageDetailContext } from '../context/PassageDetailContext';
 import { debounce } from '@mui/material';
-import {
-  documentHasVerticalScrollbar,
-  measureScrollbarWidth,
-} from '../utils/getScrollbarWidth';
+import { measureScrollbarWidth } from '../utils/getScrollbarWidth';
 
 export const usePaneWidth = () => {
   const { discussionSize, setDiscussionSize } =
@@ -31,12 +28,12 @@ export const usePaneWidth = () => {
         height: newDiscHeight,
       });
 
+    // PassageDetailLayout reserves the scrollbar gutter whether or not its
+    // content scrolls (the document itself never does), so always subtract it.
     if (!cachedScrollbarWidthRef.current) {
       cachedScrollbarWidthRef.current = measureScrollbarWidth();
     }
-    setScrollbarWidth(
-      documentHasVerticalScrollbar() ? cachedScrollbarWidthRef.current : 0
-    );
+    setScrollbarWidth(cachedScrollbarWidthRef.current);
   };
 
   useEffect(() => {
