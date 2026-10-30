@@ -68,6 +68,30 @@ const records: RecordsByKey = {
   },
 };
 
+// The team ranked a French voice and limits Reference Texts to its languages (ADR 0015).
+const teamFilteredToFrench = {
+  [`organization:${TEAM_ID}`]: {
+    id: TEAM_ID,
+    type: 'organization',
+    attributes: {
+      name: 'Team',
+      defaultParams: JSON.stringify({
+        ttsVoices: {
+          fr: [
+            {
+              name: 'Amelie',
+              voiceURI: 'Amelie',
+              lang: 'fr-FR',
+              localService: true,
+            },
+          ],
+        },
+        ttsFilterRefText: true,
+      }),
+    },
+  },
+};
+
 const booksState = {
   loaded: true,
   suggestions: [
@@ -106,8 +130,11 @@ function Harness(props: { initial?: Partial<IProjectDialog> }) {
   );
 }
 
-const mountScripture = (initial?: Partial<IProjectDialog>) => {
-  const memory = createMockMemory(records);
+const mountScripture = (
+  initial?: Partial<IProjectDialog>,
+  extraRecords: RecordsByKey = {}
+) => {
+  const memory = createMockMemory({ ...records, ...extraRecords });
   const teamState = {
     personalProjects: [],
     teamProjects: () => [
@@ -239,5 +266,28 @@ describe('ProjectScripture', () => {
     cy.get('[data-cy="saved-book"]').should('have.text', 'A01');
     cy.get('[data-cy="saved-texts"]').should('have.text', WHOLE);
     cy.contains(`${NT_ONLY} was removed because it does not include Genesis.`);
+  });
+
+  it('offers only languages with a ranked voice when the team filters', () => {
+    mountScripture(
+      { book: 'B03', referenceTexts: [usedText] },
+      teamFilteredToFrench
+    );
+    cy.contains('Showing only languages your team has ranked voices for.');
+    // The chosen English Primary stays, though English is filtered out
+    cy.get('#primary-reference-text').should('have.value', USED);
+    cy.get('#secondary-reference-text').should('not.be.disabled').type(NT_ONLY);
+    cy.contains('[role="option"]', NT_ONLY).should('not.exist');
+    cy.get('#secondary-reference-text').clear().type('Louis Segond');
+    cy.contains('[role="option"]', 'Louis Segond 1910').should('exist');
+  });
+
+  it('offers every language when the team does not filter', () => {
+    mountScripture({ book: 'B03' });
+    cy.contains(
+      'Showing only languages your team has ranked voices for.'
+    ).should('not.exist');
+    cy.get('#primary-reference-text').should('not.be.disabled').type(NT_ONLY);
+    cy.contains('[role="option"]', NT_ONLY).should('exist');
   });
 });

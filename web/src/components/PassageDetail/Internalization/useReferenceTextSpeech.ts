@@ -7,6 +7,11 @@ import {
 } from '../../../business/referenceText/speakReferenceText';
 import { ReferenceTextRank } from '../../../business/referenceText/useReferenceTextPassage';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import {
+  orgDefaultTtsVoices,
+  useOrgDefaults,
+} from '../../../crud/useOrgDefaults';
+import { parseVoiceRanking } from '../../../business/referenceText/voiceRanking';
 
 /**
  * Speaks one Reference Text at a time, sharing the passage's playback: speaking
@@ -24,6 +29,7 @@ export const useReferenceTextSpeech = () => {
     setCommentPlaying,
     handleOldVernacularPlayEnd,
   } = usePassageDetailContext();
+  const { getOrgDefault } = useOrgDefaults();
   const [speaking, setSpeaking] = useState<ReferenceTextRank>();
   const [progress, setProgress] = useState(0);
   const current = useRef<Speaking>(undefined);
@@ -50,7 +56,12 @@ export const useReferenceTextSpeech = () => {
     setPlaying(false);
     setCommentPlaying(false);
     if (oldVernacularPlaying) handleOldVernacularPlayEnd();
-    const started = speakReferenceText(referenceText, text, setProgress);
+    const started = speakReferenceText(
+      referenceText,
+      text,
+      setProgress,
+      parseVoiceRanking(getOrgDefault(orgDefaultTtsVoices))
+    );
     current.current = started;
     setSpeaking(rank);
     setProgress(0);

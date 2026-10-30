@@ -6794,6 +6794,13 @@
                <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextRetry">
             <source>Try again</source>
             <target/>
@@ -10801,6 +10808,160 @@
                <context context-type="sourcefile">treeChart.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="ttsVoices.add">
+            <source>Add to ranking</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.explain">
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.filterReferenceTexts">
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.linuxNote">
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.loading">
+            <source>Loading voices&#8230;</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.local">
+            <source>Local</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.macNote">
+            <source>You can also add Mac voices for other languages under System Settings &#8594; Accessibility &#8594; Spoken Content &#8594; System voice &#8594; Manage Voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.moveDown">
+            <source>Move down</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.moveUp">
+            <source>Move up</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.noMatch">
+            <source>No languages match.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.noVoices">
+            <source>This device has no text-to-speech voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.notOnDevice">
+            <source>Not on this device</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.online">
+            <source>Online</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.rankedCount">
+            <source>{0} ranked</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceLanguageGroup.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.read">
+            <source>Read</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.remove">
+            <source>Remove from ranking</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.sampleDefault">
+            <source>This is how this voice will sound.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.sampleText">
+            <source>Sample text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.search">
+            <source>Search languages</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.showOnline">
+            <source>Show online voices</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.title">
+            <source>Reference Text Voices</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.windowsNote">
+            <source>You can also add Windows voices for other languages under Settings &#8594; Time &amp; language &#8594; Speech &#8594; Add voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="uploadProgress.cancel">
             <source>Cancel</source>
             <target/>
@@ -11445,6 +11606,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.filteredToVoices">
+            <source>Showing only languages your team has ranked voices for.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.generalBook">

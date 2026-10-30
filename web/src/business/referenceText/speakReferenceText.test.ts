@@ -1,4 +1,4 @@
-import { speakReferenceText } from './speakReferenceText';
+import { speakReferenceText, speakText } from './speakReferenceText';
 import { ReferenceText } from './referenceText';
 
 class FakeUtterance {
@@ -51,6 +51,17 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 // Two sentences longer than one chunk together, so two utterances
 const text = `${'a'.repeat(150)}. ${'b'.repeat(150)}.`;
 
+const google = {
+  ...david,
+  name: 'Google US English',
+  voiceURI: 'Google US English',
+  localService: false,
+  default: false,
+} as SpeechSynthesisVoice;
+
+const setOnline = (onLine: boolean) =>
+  jest.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(onLine);
+
 beforeEach(() => {
   spoken = [];
   voices = [david];
@@ -60,6 +71,8 @@ beforeEach(() => {
     SpeechSynthesisUtterance: FakeUtterance,
   });
 });
+
+afterEach(() => jest.restoreAllMocks());
 
 describe('speakReferenceText', () => {
   it('reports noVoice when no voice speaks the language', async () => {
@@ -71,6 +84,23 @@ describe('speakReferenceText', () => {
   it('reports noVoice when the device has no speech at all', async () => {
     Object.assign(globalThis, { speechSynthesis: undefined });
     await expect(speakReferenceText(bsb, text).done).resolves.toBe('noVoice');
+  });
+
+  it('reports noVoiceOffline when offline and only network voices speak it', async () => {
+    voices = [google];
+    setOnline(false);
+    await expect(speakReferenceText(bsb, text).done).resolves.toBe(
+      'noVoiceOffline'
+    );
+    expect(spoken).toHaveLength(0);
+  });
+
+  it('speaks with a network voice when online and it is the only one', async () => {
+    voices = [google];
+    setOnline(true);
+    speakReferenceText(bsb, 'Short.');
+    await settle();
+    expect(spoken[0].voice).toBe(google);
   });
 
   it('speaks each chunk in turn with the chosen voice', async () => {
@@ -136,5 +166,36 @@ describe('speakReferenceText', () => {
     await settle();
     spoken[spoken.length - 1].onend?.();
     await expect(second.done).resolves.toBe('ended');
+  });
+
+  it("speaks with the team's ranked voice when the device has it", async () => {
+    const zira = { ...david, name: 'Zira', voiceURI: 'Zira', default: false };
+    voices = [david, zira];
+    speakReferenceText(bsb, 'Short.', undefined, {
+      en: [
+        { name: 'Mark', voiceURI: 'Mark', lang: 'en-US', localService: true },
+        { name: 'Zira', voiceURI: 'Zira', lang: 'en-US', localService: true },
+      ],
+    });
+    await settle();
+    expect(spoken[0].voice).toBe(zira);
+  });
+});
+
+describe('speakText', () => {
+  it('speaks with the chosen voice and stops a passage already speaking', async () => {
+    const passage = speakReferenceText(bsb, text);
+    await settle();
+    const sample = speakText({
+      text: 'Sample.',
+      lang: 'en-US',
+      chooseVoice: () => david,
+    });
+    await expect(passage.done).resolves.toBe('stopped');
+    await settle();
+    const last = spoken[spoken.length - 1];
+    expect(last.text).toBe('Sample.');
+    last.onend?.();
+    await expect(sample.done).resolves.toBe('ended');
   });
 });

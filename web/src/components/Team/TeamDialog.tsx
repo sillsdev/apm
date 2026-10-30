@@ -26,6 +26,7 @@ import DeleteExpansion from '../DeleteExpansion';
 import { TeamContext } from '../../context/TeamContext';
 import {
   defaultWorkflow,
+  findRecord,
   orgDefaultFeatures,
   orgDefaultLangProps,
   orgDefaultPermissions,
@@ -182,10 +183,19 @@ export function TeamDialog(props: IProps) {
           mode === DialogMode.edit && values?.team
             ? values.team
             : ({ attributes: {} } as OrganizationD);
+        // Dialogs opened from TeamSettings (voice conversion, Reference Text
+        // voices) save org defaults straight to memory, so start from the
+        // record there rather than the copy this dialog opened with.
+        const latest = current.id
+          ? (findRecord(memory, 'organization', current.id) as
+              OrganizationD | undefined)
+          : undefined;
         let df = setParam(
           orgDefaultWorkflowProgression,
           workflowProgression,
-          current.attributes?.defaultParams ?? defaultParams
+          latest?.attributes?.defaultParams ??
+            current.attributes?.defaultParams ??
+            defaultParams
         );
         df = setParam(orgDefaultFeatures, features, df);
         df = setParam(orgDefaultPermissions, permissions, df);

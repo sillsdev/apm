@@ -3,6 +3,7 @@ import {
   DialogMode,
   ICardsStrings,
   ISharedStrings,
+  ITtsVoicesStrings,
   Organization,
 } from '../../model';
 import {
@@ -20,25 +21,34 @@ import {
   IconButton,
   Typography,
   Badge,
+  Button,
+  Tooltip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Options } from '../../control';
 import { TeamContext } from '../../context/TeamContext';
 import SettingsIcon from '@mui/icons-material/Settings';
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import SelectSponsor from '../../business/voice/SelectSponsor';
 import { shallowEqual, useSelector } from 'react-redux';
-import { cardsSelector, sharedSelector } from '../../selector';
+import {
+  cardsSelector,
+  sharedSelector,
+  ttsVoicesSelector,
+} from '../../selector';
 import { useGlobal } from '../../context/useGlobal';
 import {
   orgDefaultPermissions,
   orgDefaultWorkflowProgression,
+  useRole,
   WorkflowProgression,
 } from '../../crud';
 import { isElectron } from '../../../api-variable';
 
 import { FeatureSlug } from './FeatureSlug';
+import ReferenceTextVoicesDialog from './ReferenceTextVoices/ReferenceTextVoicesDialog';
 
 const Details = styled(AccordionDetails)<AccordionDetailsProps>(
   ({ theme }) => ({
@@ -75,11 +85,23 @@ export function TeamSettings(props: IProps) {
   const ctx = React.useContext(TeamContext);
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
+  const [ttsVoicesVisible, setTtsVoicesVisible] = useState(false);
   const [, setOrg] = useGlobal('organization');
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const [offlineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
+  const { userIsOrgAdmin } = useRole();
   const { personalTeam } = ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tv: ITtsVoicesStrings = useSelector(ttsVoicesSelector, shallowEqual);
+  // Admins of this team, not the selected one that canSetOrgDefault checks.
+  const showTtsVoices =
+    mode !== DialogMode.add &&
+    !!team?.id &&
+    team.id !== personalTeam &&
+    userIsOrgAdmin(team.id);
+  // Same online rule as canSetOrgDefault.
+  const canSetTtsVoices = offlineOnly || !offline;
   const workflowOptions = [
     t.workflowProgressionPassage,
     t.workflowProgressionStep,
@@ -162,6 +184,24 @@ export function TeamSettings(props: IProps) {
               options={workflowOptions}
               onChange={setProgression}
             />
+            {showTtsVoices && (
+              <Box>
+                <Tooltip title={canSetTtsVoices ? '' : ts.mustBeOnline}>
+                  {/* span keeps the tooltip on a disabled button */}
+                  <span>
+                    <Button
+                      id="ttsVoices"
+                      variant="outlined"
+                      startIcon={<RecordVoiceOverIcon />}
+                      disabled={!canSetTtsVoices}
+                      onClick={() => setTtsVoicesVisible(true)}
+                    >
+                      {tv.title}
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
+            )}
 
             <FormControl
               component="fieldset"
@@ -258,6 +298,12 @@ export function TeamSettings(props: IProps) {
           onOpen={() => setVoiceVisible(false)}
         />
       </BigDialog>
+      {ttsVoicesVisible && team?.id && (
+        <ReferenceTextVoicesDialog
+          team={team.id}
+          onClose={() => setTtsVoicesVisible(false)}
+        />
+      )}
     </Box>
   );
 }
