@@ -15,12 +15,3 @@ export function measureScrollbarWidth(): number {
     outer.parentNode?.removeChild(outer);
   }
 }
-
-/** True when the document has a vertical scrollbar. */
-export function documentHasVerticalScrollbar(): boolean {
-  if (typeof document === 'undefined') return false;
-  return (
-    document.documentElement.scrollHeight >
-    document.documentElement.clientHeight
-  );
-}

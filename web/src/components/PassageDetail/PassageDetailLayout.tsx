@@ -40,6 +40,9 @@ export default function PassageDetailLayout({
             minHeight: 0,
             overflowX: 'hidden',
             overflowY: 'auto',
+            // Always reserve the scrollbar's space so step widths can subtract
+            // a known amount (see usePaneWidth's scrollbarWidth).
+            scrollbarGutter: 'stable',
             display: 'flex',
             flexDirection: 'column',
             ...contentSx,
