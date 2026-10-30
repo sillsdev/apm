@@ -20,7 +20,7 @@ export const useBibleCatalog = () => {
     let cancelled = false;
     const load = async () => {
       try {
-        const json = await import('../../assets/helloao_bibles.json');
+        const json = await import('../../assets/reference_text_bibles.json');
         cached = parseCatalog(json.default ?? json);
         if (!cancelled) setState({ status: 'ready', bibles: cached });
       } catch (err) {

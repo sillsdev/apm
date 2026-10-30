@@ -1,6 +1,7 @@
 /**
- * Regenerate web/src/assets/helloao_bibles.json, the Reference Text catalog
- * (see CONTEXT.md "Reference Text" and docs/adr/0014).
+ * Regenerate web/src/assets/reference_text_bibles.json, the Reference Text
+ * catalog, from HelloAO; every entry has type `helloao` (see CONTEXT.md
+ * "Reference Text" and docs/adr/0014).
  *
  *   node env-config/genHelloAoCatalog.cjs
  *
@@ -15,7 +16,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const OUTPUT = path.join(root, 'web/src/assets/helloao_bibles.json');
+const OUTPUT = path.join(root, 'web/src/assets/reference_text_bibles.json');
 const API = 'https://bible.helloao.org';
 const CONCURRENCY = 8;
 const RETRIES = 3;
@@ -93,6 +94,7 @@ const main = async () => {
     }
     return {
       id: x.id,
+      type: 'helloao',
       name: x.name,
       englishName: x.englishName,
       shortName: x.shortName,

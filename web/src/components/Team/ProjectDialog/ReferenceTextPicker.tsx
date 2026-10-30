@@ -46,7 +46,11 @@ const filterOptions = createFilterOptions<Option>({
 });
 
 // A saved snapshot whose entry left the catalog still has to be an option.
-const fromSnapshot = (r: ReferenceText): CatalogBible => ({ ...r });
+// Snapshots keep no type; every one saved so far is from HelloAO.
+const fromSnapshot = (r: ReferenceText): CatalogBible => ({
+  type: 'helloao',
+  ...r,
+});
 
 export function ReferenceTextPicker(props: Readonly<ReferenceTextPickerProps>) {
   const {

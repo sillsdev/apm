@@ -17,6 +17,7 @@ import {
 
 const bible = (id: string, books: string): CatalogBible => ({
   id,
+  type: 'helloao',
   name: id,
   englishName: id,
   shortName: id.toUpperCase(),

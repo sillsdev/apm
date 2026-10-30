@@ -13,7 +13,7 @@ import { ProjectScripture } from './ProjectScripture';
 
 const TEAM_ID = 'team-1';
 
-// Real catalog entries (web/src/assets/helloao_bibles.json)
+// Real catalog entries (web/src/assets/reference_text_bibles.json)
 const NT_ONLY = 'English Majority Text Version';
 const WHOLE = 'Free Bible Version';
 const OT_ONLY = 'JPS TaNaKH 1917';

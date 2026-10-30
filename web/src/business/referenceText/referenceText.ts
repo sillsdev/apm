@@ -3,10 +3,12 @@ import akuoSort from '../../assets/akuosort.json';
 import { langName, UiLoc } from '../../utils/langName';
 import { IVProjectStrings } from '../../model';
 
-/** One entry of the bundled HelloAO catalog (`helloao_bibles.json`). */
+/** One entry of the bundled Reference Text catalog (`reference_text_bibles.json`). */
 export interface CatalogBible {
   /** HelloAO translation id, e.g. `BSB` or `eng_kjv`. */
   id: string;
+  /** Where the Bible's text comes from. */
+  type: 'helloao';
   /** Title in the Bible's own language. */
   name: string;
   englishName: string;
