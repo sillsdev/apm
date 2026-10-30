@@ -283,7 +283,7 @@ export function PassageDetailRecord(props: IProps) {
     recordPreloadInitiatedRef.current = null;
     setResetMedia(true);
   }, [isBoldWorkflow, setStepComplete, currentstep, mediafileId, memory]);
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (mediaRemoteIds?: string[]) => {
     const id =
       mediaRemoteIds && mediaRemoteIds.length > 0
         ? remoteIdGuid(
@@ -315,6 +315,15 @@ export function PassageDetailRecord(props: IProps) {
     } else cb();
   };
 
+  // TODO cleanup: the importList upload flow doesn't involve showing the Upload dialog,
+  // so it would make sense for us to remove the importList from the Uploader component and
+  // use useMediaUpload directly for such flows instead. Or possibly get rid of importList
+  // altogether and do `await run(stagedFiles)` instead. And then here we need to look into
+  // whether to a) switch PassageDetailRecord entirely off of Uploader b) have it use both
+  // Uploader and useMediaUpload separately c) leave Uploader as is or give it useImperativeHandle
+  // or something like that.
+  // Compare with what ResourceUploadStep.tsx and see if we should make the consistent.
+  // Claude says: "the current effect catches rejections (logs them and shows the error). If you move to await run(...), keep that catch at the call site so a total-failure rejection doesn't escape."
   const handleAudacityImport = (i: number, list: File[]) => {
     saveIfChanged(() => {
       void confirmIfPending().then((ok) => {

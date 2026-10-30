@@ -854,7 +854,7 @@ export function PassageDetailArtifactsMobile() {
     forceRefresh(newRows);
   };
 
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (mediaRemoteIds?: string[]) => {
     let cnt = rowData.length;
     const projRes = new Array<MediaFileD>();
     if (mediaRemoteIds && mediaRemoteIds.length > 0) {

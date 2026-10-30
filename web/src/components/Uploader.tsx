@@ -1,43 +1,12 @@
-import React, { useRef, useContext, useEffect, useState } from 'react';
-import { useGetGlobal, useGlobal } from '../context/useGlobal';
-import * as actions from '../store';
-import {
-  IState,
-  IMediaTabStrings,
-  ISharedStrings,
-  MediaFileAttributes,
-  MediaFileD,
-} from '../model';
+import React, { useMemo } from 'react';
 import MediaUploadDialog from './MediaUploadDialog';
-import { FaithbridgeType } from '../utils/contentType';
-import { typeLimit } from '../utils/typeLimit';
-import {
-  findRecord,
-  pullTableList,
-  related,
-  remoteIdNum,
-  useArtifactType,
-  useOfflnMediafileCreate,
-  VernacularTag,
-} from '../crud';
-import { TokenContext } from '../context/TokenProvider';
-import Memory from '@orbit/memory';
-import JSONAPISource from '@orbit/jsonapi';
 import PassageRecordDlg from './PassageRecordDlg';
+import { useMediaUpload, VernacularTag, findRecord, related } from '../crud';
+import { useGlobal } from '../context/useGlobal';
 import { infoMsg, logError, restoreScroll, Severity } from '../utils';
 import { toError } from '../utils/toError';
-import { shallowEqual, useSelector } from 'react-redux';
-import { NextUploadProps } from '../store';
-import { useDispatch } from 'react-redux';
-import { mediaTabSelector, sharedSelector } from '../selector';
-import { passageDefaultSuffix } from '../utils/passageDefaultFilename';
-import { IndexedDBSource } from '@orbit/indexeddb';
-import path from 'path-browserify';
-import { RecordKeyMap } from '@orbit/records';
+import { splitFaithbridgeValue } from '../utils/contentType';
 import { AlertSeverity } from '../hoc/SnackBar';
-import { getContentType } from '../utils/contentType';
-import { OrbitNetworkErrorRetries } from '../../api-variable';
-import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -46,25 +15,24 @@ interface IProps {
   noBusy?: boolean | undefined;
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
   skipImportExportWait?: boolean | undefined;
-  /** Show the combined Add Audio Resource dialog with Upload and Record modes. */
+  mediaId?: string | undefined;
   audioUploadOrRecord?: boolean | undefined;
   defaultFilename?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
-  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
-  finish?:
-    ((planId: string, mediaRemoteIds?: string[]) => Promise<void>) | undefined; // logic when upload complete
+  showMessage?:
+    | ((msg: string | React.JSX.Element, alert?: AlertSeverity) => void)
+    | undefined;
+  finish?: ((mediaRemoteIds?: string[]) => Promise<void>) | undefined; // logic when upload complete
   metaData?: React.JSX.Element | undefined; // component embeded in dialog
   // Awaited once when the upload starts, before any media is created. Lets the
   // embedded metaData commit deferred edits (e.g. create a new artifact
   // category) so `finish` sees the resolved ids.
   beforeUpload?: (() => Promise<void>) | undefined;
   ready?: (() => boolean) | undefined; // if false control is disabled
-  // createProject?: (name: string) => Promise<string>;
   cancelled: React.RefObject<boolean>;
   cancelReset?: (() => void) | undefined; // reset the cancelled state
   multiple?: boolean | undefined;
-  mediaId?: string | undefined;
   importList?: File[] | undefined;
   onFiles?: ((files: File[]) => void) | undefined;
   artifactState?: { id?: string | null } | undefined;
@@ -102,6 +70,10 @@ interface IProps {
   initialFiles?: File[] | undefined;
 }
 
+/**
+ * The upload dialog (or, with `audioUploadOrRecord`, the record/upload dialog)
+ * driven by the shared useMediaUpload pipeline.
+ */
 export const Uploader = (props: IProps) => {
   const {
     noBusy,
@@ -141,343 +113,80 @@ export const Uploader = (props: IProps) => {
     initialFiles,
   } = props;
   const { metaData, ready, beforeUpload } = props;
-  const [isDeveloper] = useGlobal('developer');
-  const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const uploadError = useSelector((state: IState) => state.upload.errmsg);
-  const dispatch = useDispatch();
-  const uploadFiles = (files: File[]) =>
-    dispatch(actions.uploadFiles(files) as any);
-  const nextUpload = (props: NextUploadProps) =>
-    dispatch(actions.nextUpload(props) as any);
-  const uploadComplete = () => dispatch(actions.uploadComplete() as any);
-  const [coordinator] = useGlobal('coordinator');
-  const memory = coordinator?.getSource('memory') as Memory;
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const backup = coordinator?.getSource('backup') as IndexedDBSource;
+  const [memory] = useGlobal('memory');
+  const [plan] = useGlobal('plan');
   const [errorReporter] = useGlobal('errorReporter');
-  const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
-  const [, setBusy] = useGlobal('importexportBusy');
-  const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
-  const [user] = useGlobal('user');
-  const planIdRef = useRef<string>(plan);
-  const successCount = useRef<number>(0);
-  const fileList = useRef<File[] | undefined>(undefined);
-  const ctx = useContext(TokenContext).state;
-  const mediaIdRef = useRef<string[]>([]);
-  const artifactTypeRef = useRef<string>('');
-  const { createMedia } = useOfflnMediafileCreate();
-  const [, setComplete] = useGlobal('progress');
-  const [errMsgs] = useState<string[]>([]);
-  const { localizedArtifactTypeFromId } = useArtifactType();
-  const getGlobal = useGetGlobal();
-  /** True if import/export was busy when the current batch started (before we set busy). */
-  const importWasBusyRef = useRef(false);
+
+  const resolvedLocalPlanId = useMemo(() => {
+    if (passageId) {
+      const psg = findRecord(memory, 'passage', passageId);
+      const section =
+        psg && findRecord(memory, 'section', related(psg, 'section'));
+      return (section && (related(section, 'plan') as string)) || undefined;
+    }
+    return planId || plan;
+  }, [passageId, planId, plan, memory]);
 
   const handleSpeakerChange = (speaker: string) => {
     onSpeakerChange && onSpeakerChange(speaker);
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      mediaIdRef.current = [];
-      successCount.current = 0;
-      clearErrors();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  // A Faithbridge/Aquifer link arrives as one `url||transcript` value: the URL
+  // is the file content, the transcript a mediafile field.
+  const faithbridge =
+    uploadType === UploadType.FaithbridgeLink && inValue
+      ? splitFaithbridgeValue(inValue)
+      : undefined;
+  const effectiveInValue = faithbridge ? faithbridge.url : inValue;
 
-  const afterUploadCb = async (mediaId: string | undefined) => {
-    if (mediaId) {
-      successCount.current = 1;
-      mediaIdRef.current = [mediaId];
-    } else successCount.current = 0;
-    //force finishMessage to show a message
-    fileList.current = [new File([], 'test.txt')];
-    // finishMessage only schedules snackbars. Upload bookkeeping is already done.
-    void finishMessage();
-  };
-  const clearErrors = () => {
-    let err = errMsgs.pop();
-    while (err) err = errMsgs.pop();
-  };
+  // The whole upload pipeline (record build, per-file send, progress, finish,
+  // unsupported/toobig messages, and the importList trigger) lives in the hook.
+  const uploadMedia = useMediaUpload({
+    fields: {
+      artifactId: artifactState?.id ?? VernacularTag,
+      passageId,
+      localPlanId: resolvedLocalPlanId,
+      sourceMediaId,
+      sourceSegments,
+      performedBy,
+      topic,
+      eafUrl,
+      transcription: faithbridge?.transcription,
+    },
+    uploadType,
+    pendingRestore,
+    finish,
+    cancelled,
+    noBusy,
+    skipImportExportWait,
+    beforeUpload,
+    // Passage files always version
+    // TODO cleanup: I don't love that versionFilenames (adding the passage suffix)
+    // defaults to false in useMediaUpload and true here. I'm worried this makes
+    // it more confusing for future consumers to set correctly.
+    versionFilenames: true,
+    importList,
+  });
 
-  const finishMessage = async () => {
-    console.log('finishMessage', successCount.current);
-    //wait for any error messages to show up
-    setTimeout(() => {
-      errMsgs.forEach((err, ix) => {
-        setTimeout(() => showMessage(err, AlertSeverity.Error), ix ? 2000 : 0);
-      });
-      //empty it instead of redefining it, which doesn't work between calls;
-      clearErrors();
-      //wait to show the final message if there are errors
-
-      setTimeout(() => {
-        if (fileList.current) {
-          showMessage(
-            t.uploadComplete
-              .replace('{0}', successCount.current.toString())
-              .replace('{1}', fileList.current.length.toString())
-          );
-        }
-      }, errMsgs.length * 2000);
-      uploadComplete();
-      setComplete(0);
-      setBusy(false);
-      cancelled.current = successCount.current <= 0;
-      if (finish) {
-        finish(planIdRef.current, mediaIdRef.current).catch((err: unknown) => {
-          logError(
-            Severity.error,
-            errorReporter,
-            infoMsg(toError(err), 'upload finish failed')
-          );
-        });
-      }
-    }, 1000);
-  };
-
-  const getArtifactTypeId = () =>
-    artifactState?.id
-      ? remoteIdNum(
-          'artifacttype',
-          artifactState.id,
-          memory?.keyMap as RecordKeyMap
-        ) || artifactState.id
-      : artifactState?.id || '';
-  const getPassageId = () =>
-    remoteIdNum('passage', passageId || '', memory?.keyMap as RecordKeyMap) ||
-    passageId;
-  const getSourceMediaId = () =>
-    remoteIdNum(
-      'mediafile',
-      sourceMediaId || '',
-      memory?.keyMap as RecordKeyMap
-    ) || sourceMediaId;
-  const getUserId = () =>
-    remoteIdNum('user', user || '', memory?.keyMap as RecordKeyMap) || user;
-
-  const getLatestVersion = () => {
-    let num = 1;
-    const psgId = passageId || '';
-    if (psgId && !artifactState?.id) {
-      const mediaFiles = (
-        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
-      )
-        .filter(
-          (m) =>
-            related(m, 'passage') === psgId &&
-            related(m, 'artifactType') === null
-        )
-        .filter((m) => m?.attributes?.versionNumber !== undefined)
-        .sort(
-          (i, j) => j.attributes.versionNumber - i.attributes.versionNumber
-        );
-      if (mediaFiles.length > 0) {
-        //vernacular
-        num = (mediaFiles[0] as MediaFileD).attributes.versionNumber + 1;
-      }
-    }
-    return num;
-  };
-  const itemComplete = async (n: number, success: boolean, data?: any) => {
-    if (success) successCount.current += 1;
-    else setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
-    const uploadList = fileList.current;
-    if (!uploadList) return; // This should never happen
-    if (data?.stringId) mediaIdRef.current.push(data?.stringId);
-    else if (success && data) {
-      // offlineOnly
-      const psgId = passageId || '';
-      const num = getLatestVersion();
-      const newMediaRec = await createMedia(
-        data,
-        num,
-        (uploadList[n] as File).size,
-        psgId,
-        artifactState?.id || artifactTypeRef.current,
-        sourceMediaId || '',
-        user
-      );
-      mediaIdRef.current.push(newMediaRec.id);
-    }
-
-    setComplete(Math.min((n * 100) / uploadList.length, 100));
-    const next = n + 1;
-    if (next < uploadList.length && !cancelled.current) {
-      doUpload(next);
-    } else if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
-      // Upload already succeeded. A failed refresh must still close the dialog.
-      void pullTableList(
-        'mediafile',
-        mediaIdRef.current,
-        memory,
-        remote,
-        backup,
-        errorReporter
-      )
-        .catch(() => undefined)
-        .then(() => {
-          // finishMessage only schedules snackbars. Upload bookkeeping is already done.
-          void finishMessage();
-          onOpen(false); //do this just for uploader
-        });
-    } else {
-      // finishMessage only schedules snackbars. Upload bookkeeping is already done.
-      void finishMessage();
-      onOpen(false); //do this just for uploader
-    }
-  };
-
-  const getPlanId = () =>
-    remoteIdNum('plan', planIdRef.current, memory?.keyMap as RecordKeyMap) ||
-    planIdRef.current;
-
-  const doUpload = (currentlyLoading: number) => {
-    const uploadList = fileList.current;
-    if (!uploadList) return; // This should never happen
-    let transcription = '';
-    let file = (uploadList[currentlyLoading] as File).name;
-    if ((uploadList[currentlyLoading] as File).type === FaithbridgeType) {
-      const parts = (uploadList[currentlyLoading] as File).name.split('||');
-      file = parts[0] as string;
-      transcription = parts[1] as string;
-    }
-    const mediafile = {
-      planId: getPlanId() as string,
-      versionNumber: 1,
-      originalFile: file,
-      contentType: getContentType(
-        uploadList[currentlyLoading]?.type,
-        (uploadList[currentlyLoading] as File).name
-      ),
-      artifactTypeId: getArtifactTypeId() as string,
-      passageId: getPassageId() as string,
-      userId: getUserId() as string,
-      recordedbyUserId: getUserId() as string,
-      sourceMediaId: getSourceMediaId() as string,
-      sourceSegments: sourceSegments ?? '{}',
-      performedBy: performedBy ?? null,
-      topic: topic ?? '',
-      eafUrl:
-        eafUrl ??
-        (!artifactState?.id
-          ? ts.mediaAttached
-          : localizedArtifactTypeFromId(artifactState?.id)), //put psc message here
-      transcription,
-    } as MediaFileAttributes & {
-      planId: string;
-      artifactTypeId: string;
-      passageId: string;
-      userId: string;
-      recordedbyUserId: string;
-      sourceMediaId: string;
-    };
-    const isFirstFile = currentlyLoading === 0;
-    nextUpload({
-      record: mediafile,
-      files: uploadList,
-      n: currentlyLoading,
-      token: ctx.accessToken || '',
-      offline: getGlobal('offline'),
-      errorReporter,
-      uploadType: uploadType ?? UploadType.Media,
-      cb: itemComplete,
-      pendingRestore:
-        typeof pendingRestore === 'function'
-          ? pendingRestore()
-          : pendingRestore,
-      // First file waits only for import/export that was already in progress at batch
-      // start; later files skip the wait while importexportBusy stays true until
-      // finishMessage (set in uploadMedia).
-      getImportExportBusy:
-        !skipImportExportWait && isFirstFile && importWasBusyRef.current
-          ? () => Boolean(getGlobal('importexportBusy'))
-          : undefined,
-      onTerminalFailure: (info) => {
-        showMessage(
-          formatUploadTerminalFailureMessage(t, info),
-          AlertSeverity.Warning
-        );
-      },
-    });
-  };
-  const preUpload = (files: File[]) => {
-    //   let name =
-    //     uploadType === UploadType.IntellectualProperty
-    //       ? 'Project'
-    //       : files[0]?.name.split('.')[0];
-    //    if (createProject) planIdRef.current = await createProject(name);
-    const suffix = passageDefaultSuffix(
-      planIdRef.current,
-      memory,
-      getGlobal('offline')
-    );
-
-    while (
-      files.findIndex(
-        (f) => !path.basename(f.name, path.extname(f.name)).endsWith(suffix)
-      ) > -1
-    ) {
-      const ix = files.findIndex(
-        (f) => !path.basename(f.name, path.extname(f.name)).endsWith(suffix)
-      );
-      const cFile = files[ix] as File;
-      files.splice(
-        ix,
-        1,
-        new File(
-          [cFile],
-          path.basename(cFile.name, path.extname(cFile.name)) +
-            suffix +
-            path.extname(cFile.name),
-          { type: cFile?.type }
-        )
+  // The record tab uploads through MediaRecord's own pipeline, which already
+  // reports progress and completion; only the host's `finish` is left to run.
+  const recordAfterUploadCb = async (mediaId: string | undefined) => {
+    if (cancelled) cancelled.current = !mediaId;
+    if (!finish) return;
+    try {
+      await finish(mediaId ? [mediaId] : []);
+    } catch (err) {
+      logError(
+        Severity.error,
+        errorReporter,
+        infoMsg(toError(err), 'upload finish failed')
       );
     }
   };
 
-  const uploadMedia = async (files: File[]) => {
-    successCount.current = 0;
-    if (!files || files.length === 0) {
-      showMessage(t.selectFiles);
-      return;
-    }
-    // Commit any deferred metaData edits (e.g. create a newly typed artifact
-    // category) before media records are created so `finish` sees final ids.
-    if (beforeUpload) await beforeUpload();
-    if (
-      uploadType &&
-      ![
-        UploadType.Link,
-        UploadType.MarkDown,
-        UploadType.FaithbridgeLink,
-      ].includes(uploadType)
-    ) {
-      preUpload(files);
-      uploadFiles(files);
-    }
-    fileList.current = files;
-    mediaIdRef.current = new Array<string>();
-    artifactTypeRef.current = artifactState?.id || '';
-    importWasBusyRef.current = Boolean(getGlobal('importexportBusy'));
-    if (!noBusy) setBusy(true);
-    doUpload(0);
-  };
-
-  const uploadCancel = () => {
-    onOpen(false);
-    if (cancelled) cancelled.current = true;
-    cancelReset?.();
-    restoreScroll();
-  };
-
-  // When deferring, the dialog's Next hands the prepared file(s) up to be
-  // uploaded later (driven through `importList` once passages are chosen)
+  // Deferred general-resource flow: hand the prepared file(s) to the parent
   // rather than uploading now. `onStageFiles` is async (it awaits category
-  // creation), so await it and return false on failure — that keeps the dialog
-  // selection and re-enables it, instead of leaking an unhandled rejection.
+  // creation), so await it and report a failure instead of swallowing it.
   const stageFiles = async (files: File[]) => {
     try {
       await onStageFiles?.(files);
@@ -486,7 +195,7 @@ export const Uploader = (props: IProps) => {
       const error = toError(err);
       // Surface the failure (e.g. category creation) rather than silently
       // re-enabling the dialog with no feedback, and log it for diagnosis.
-      showMessage(error.message, AlertSeverity.Error);
+      showMessage?.(error.message, AlertSeverity.Error);
       logError(
         Severity.error,
         errorReporter,
@@ -498,61 +207,12 @@ export const Uploader = (props: IProps) => {
   const deferring = Boolean(deferUpload && onStageFiles);
   const effectiveUploadMethod = deferring ? stageFiles : uploadMedia;
 
-  useEffect(() => {
-    if (uploadError && uploadError !== '') {
-      let msg = uploadError;
-      if (uploadError.indexOf('unsupported') > 0)
-        msg = t.unsupported.replace(
-          '{0}',
-          uploadError.substring(0, uploadError.indexOf(':unsupported'))
-        );
-      else if (uploadError.indexOf('toobig') > 0) {
-        msg = t.fileTooBig
-          .replace(
-            '{0}',
-            uploadError.substring(0, uploadError.indexOf(':toobig'))
-          )
-          .replace(
-            '{1}',
-            uploadError.substring(
-              uploadError.indexOf('toobig:') + 'toobig:'.length
-            )
-          )
-          .replace('{2}', typeLimit(uploadType ?? UploadType.Media).toString());
-      }
-      errMsgs.push(msg);
-      setBusy(false);
-    }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [uploadError]);
-
-  useEffect(() => {
-    if (importList && importList.length > 0) {
-      uploadMedia(importList).catch((err: unknown) => {
-        const error = toError(err);
-        logError(
-          Severity.error,
-          errorReporter,
-          infoMsg(error, 'import upload failed')
-        );
-        showMessage(error.message, AlertSeverity.Error);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importList]);
-
-  useEffect(() => {
-    if (passageId) {
-      const psg = findRecord(memory, 'passage', passageId);
-      const section = findRecord(memory, 'section', related(psg, 'section'));
-      planIdRef.current = related(section, 'plan');
-    } else if (planId) {
-      planIdRef.current = planId;
-    } else if (plan !== '') planIdRef.current = plan;
-  }, [plan, planId, passageId, memory]);
-
-  if (audioUploadOrRecord && !defaultFilename && isDeveloper)
-    throw new Error('defaultFilename is required');
+  const uploadCancel = () => {
+    onOpen(false);
+    if (cancelled) cancelled.current = true;
+    cancelReset?.();
+    restoreScroll();
+  };
 
   const hasImport = Boolean(importList && importList.length > 0);
 
@@ -562,11 +222,11 @@ export const Uploader = (props: IProps) => {
         <PassageRecordDlg
           artifactId={artifactState?.id ?? VernacularTag}
           passageId={passageId}
-          planId={planIdRef.current}
+          planId={resolvedLocalPlanId}
           visible={isOpen}
           onVisible={onOpen}
           mediaId={mediaId ?? ''}
-          afterUploadCb={afterUploadCb}
+          afterUploadCb={recordAfterUploadCb}
           onCancel={uploadCancel}
           metaData={metaData}
           ready={ready}
@@ -588,7 +248,7 @@ export const Uploader = (props: IProps) => {
           onFiles={onFiles}
           initialFiles={initialFiles}
           keepFilesAfterSubmit={deferring}
-          inValue={inValue}
+          inValue={effectiveInValue}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           validationMessage={validationMessage}
@@ -615,7 +275,7 @@ export const Uploader = (props: IProps) => {
               ? handleSpeakerChange
               : undefined
           }
-          inValue={inValue}
+          inValue={effectiveInValue}
           team={team}
           onNonAudio={onNonAudio}
           audioOnly={audioOnly}

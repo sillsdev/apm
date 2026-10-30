@@ -12,6 +12,7 @@ jest.mock('react-redux', () => ({
 
 const mockShowMessage = jest.fn();
 jest.mock('../hoc/SnackBar', () => ({
+  AlertSeverity: { Error: 'error', Warning: 'warning' },
   useSnackBar: () => ({ showMessage: mockShowMessage }),
 }));
 
@@ -33,6 +34,12 @@ jest.mock('../selector', () => ({
   }) => state.mediaTab,
   sharedSelector: (state: { shared: { mediaAttached: string } }) =>
     state.shared,
+}));
+
+jest.mock('../utils', () => ({
+  infoMsg: jest.fn((err: Error, msg: string) => ({ err, msg })),
+  logError: jest.fn(),
+  Severity: { error: 'error' },
 }));
 
 jest.mock('../context/TokenProvider', () => ({
@@ -160,7 +167,7 @@ describe('useMediaUpload', () => {
   function renderUploadHook(props: {
     artifactId: string | null;
     passageId: string | undefined;
-    planId?: string;
+    localPlanId?: string;
     afterUploadCb: jest.Mock;
     beforeUpload?: () => Promise<void>;
     pendingRestore?: () => unknown;
@@ -169,12 +176,14 @@ describe('useMediaUpload', () => {
     const { useMediaUpload } = require('./useMediaUpload');
     return renderHook(() =>
       useMediaUpload({
-        artifactId: props.artifactId,
-        passageId: props.passageId,
-        planId: props.planId,
+        fields: {
+          artifactId: props.artifactId,
+          passageId: props.passageId,
+          localPlanId: props.localPlanId,
+        },
+        pendingRestore: props.pendingRestore,
         afterUploadCb: props.afterUploadCb,
         beforeUpload: props.beforeUpload,
-        pendingRestore: props.pendingRestore,
       })
     );
   }
@@ -443,10 +452,12 @@ describe('useMediaUpload', () => {
     const { result, rerender } = renderHook(
       (props: { performedBy?: string; topic?: string }) =>
         useMediaUpload({
-          artifactId: 'art-1',
-          passageId: 'psg-1',
-          performedBy: props.performedBy,
-          topic: props.topic,
+          fields: {
+            artifactId: 'art-1',
+            passageId: 'psg-1',
+            performedBy: props.performedBy,
+            topic: props.topic,
+          },
           afterUploadCb,
         }),
       { initialProps: { performedBy: '', topic: '' } }
@@ -522,5 +533,36 @@ describe('useMediaUpload', () => {
     await cb(0, false, undefined);
     await expect(uploadPromise).rejects.toThrow('Upload Failed!');
     expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
+  it('logs and reports an importList upload failure', async () => {
+    const { logError, infoMsg } = jest.requireMock('../utils') as {
+      logError: jest.Mock;
+      infoMsg: jest.Mock;
+    };
+    const { renderHook } = require('@testing-library/react');
+    const { useMediaUpload } = require('./useMediaUpload');
+    renderHook(() =>
+      useMediaUpload({
+        fields: { artifactId: null, passageId: undefined },
+        importList: [makeFile('take.ogg')],
+        beforeUpload: async () => {
+          throw new Error('import failed');
+        },
+      })
+    );
+
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+
+    expect(mockShowMessage).toHaveBeenCalledWith('import failed', 'error');
+    expect(infoMsg).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'import failed' }),
+      'import upload failed'
+    );
+    expect(logError).toHaveBeenCalledWith(
+      'error',
+      mockReporter,
+      infoMsg.mock.results.at(-1)?.value
+    );
   });
 });

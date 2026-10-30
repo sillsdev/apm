@@ -13,3 +13,14 @@ export enum UploadType {
   Burrito = 11,
   PdfResource = 12,
 }
+
+/**
+ * Upload types that are pure links/text, not an uploaded file: they skip the
+ * file drop target, UPLOAD_LIST, and versioning. Shared so the hook and the
+ * upload/resource UIs stay in agreement.
+ */
+export const NO_LIST_TYPES = [
+  UploadType.Link,
+  UploadType.MarkDown,
+  UploadType.FaithbridgeLink,
+];

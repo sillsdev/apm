@@ -198,11 +198,16 @@ const TitleTabs = (props: IProps) => {
   };
 
   const uploadMedia = useMediaUpload({
-    artifactId: passageId !== undefined ? VernacularTag : TitleId,
-    passageId,
-    planId: myPlanId,
-    afterUploadCb,
+    fields: {
+      artifactId: passageId !== undefined ? VernacularTag : TitleId,
+      passageId,
+      localPlanId: myPlanId,
+    },
     pendingRestore: titlePendingRestore,
+    afterUploadCb,
+    // Title uploads never touched importexportBusy before the shared hook.
+    noBusy: true,
+    skipImportExportWait: true,
   });
 
   return (

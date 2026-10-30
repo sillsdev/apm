@@ -269,7 +269,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     useState('1:1-25');
   const { curNoteRef } = useNotes();
   const { computeSectionRef, computeMovementRef } = useComputeRef();
-  const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const uploadItem = useRef<ISheet | undefined>(undefined);
@@ -626,7 +625,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
           )
         );
       }
-      setImportList(undefined);
       setUploadVisible(true);
     });
   };
@@ -1377,9 +1375,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     uploadItem.current = undefined;
     if (!cancelled.current) setUploadVisible(false);
     cancelled.current = false;
-    if (importList) {
-      setImportList(undefined);
-    }
   };
   const isReady = () => true;
 
@@ -1506,7 +1501,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
       <Uploader
         defaultFilename={defaultFilename}
         mediaId={uploadItem.current?.mediaId?.id || ''}
-        importList={importList as File[]}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}
