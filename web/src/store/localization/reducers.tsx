@@ -1190,6 +1190,7 @@ const initialState = {
 			"referenceTextLoading": "Loading passage…",
 			"referenceTextNoRange": "This passage has no verse range.",
 			"referenceTextNoVoice": "No voice for {0} on this device.",
+			"referenceTextNoVoiceOffline": "Voices for {0} on this device need the internet.",
 			"referenceTextRetry": "Try again",
 			"referenceTextSpeakFailed": "The passage could not be spoken.",
 			"research": "Research",

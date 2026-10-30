@@ -51,6 +51,17 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 // Two sentences longer than one chunk together, so two utterances
 const text = `${'a'.repeat(150)}. ${'b'.repeat(150)}.`;
 
+const google = {
+  ...david,
+  name: 'Google US English',
+  voiceURI: 'Google US English',
+  localService: false,
+  default: false,
+} as SpeechSynthesisVoice;
+
+const setOnline = (onLine: boolean) =>
+  jest.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(onLine);
+
 beforeEach(() => {
   spoken = [];
   voices = [david];
@@ -60,6 +71,8 @@ beforeEach(() => {
     SpeechSynthesisUtterance: FakeUtterance,
   });
 });
+
+afterEach(() => jest.restoreAllMocks());
 
 describe('speakReferenceText', () => {
   it('reports noVoice when no voice speaks the language', async () => {
@@ -71,6 +84,23 @@ describe('speakReferenceText', () => {
   it('reports noVoice when the device has no speech at all', async () => {
     Object.assign(globalThis, { speechSynthesis: undefined });
     await expect(speakReferenceText(bsb, text).done).resolves.toBe('noVoice');
+  });
+
+  it('reports noVoiceOffline when offline and only network voices speak it', async () => {
+    voices = [google];
+    setOnline(false);
+    await expect(speakReferenceText(bsb, text).done).resolves.toBe(
+      'noVoiceOffline'
+    );
+    expect(spoken).toHaveLength(0);
+  });
+
+  it('speaks with a network voice when online and it is the only one', async () => {
+    voices = [google];
+    setOnline(true);
+    speakReferenceText(bsb, 'Short.');
+    await settle();
+    expect(spoken[0].voice).toBe(google);
   });
 
   it('speaks each chunk in turn with the chosen voice', async () => {

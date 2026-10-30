@@ -5824,6 +5824,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+         <segment>
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.referenceTextRetry">
          <segment>
             <source>Try again</source>

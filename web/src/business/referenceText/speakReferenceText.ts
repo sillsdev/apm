@@ -1,10 +1,11 @@
 import { canonicalLanguage, ReferenceText } from './referenceText';
 import { speechChunks } from './speechChunks';
-import { deviceVoices, pickVoice } from './voices';
+import { deviceVoices, needsInternet, pickVoice } from './voices';
 import type { VoiceRanking } from './voiceRanking';
 
 /** How speaking a passage finished. */
-export type SpeakOutcome = 'ended' | 'stopped' | 'noVoice' | 'error';
+export type SpeakOutcome =
+  'ended' | 'stopped' | 'noVoice' | 'noVoiceOffline' | 'error';
 
 export interface Speaking {
   /** Settles once speaking is over; never rejects. */
@@ -24,6 +25,8 @@ export interface SpeakTextOptions {
   chooseVoice: (
     voices: SpeechSynthesisVoice[]
   ) => SpeechSynthesisVoice | undefined;
+  /** Why no voice was chosen; `noVoice` when not given. */
+  noVoice?: (voices: SpeechSynthesisVoice[]) => 'noVoice' | 'noVoiceOffline';
   /** Gets the percent of the text spoken so far. */
   onProgress?: (percent: number) => void;
 }
@@ -33,7 +36,7 @@ export interface SpeakTextOptions {
  * this one, so a voice sample and a passage never talk over each other.
  */
 export const speakText = (options: SpeakTextOptions): Speaking => {
-  const { text, lang, chooseVoice, onProgress } = options;
+  const { text, lang, chooseVoice, noVoice, onProgress } = options;
   current?.stop();
 
   let finish: (outcome: SpeakOutcome) => void = () => undefined;
@@ -58,7 +61,7 @@ export const speakText = (options: SpeakTextOptions): Speaking => {
   void deviceVoices().then((voices) => {
     if (finished) return;
     const voice = chooseVoice(voices);
-    if (!voice) return finish('noVoice');
+    if (!voice) return finish(noVoice?.(voices) ?? 'noVoice');
     const chunks = speechChunks(text, lang);
     let offset = 0;
     const report = (spoken: number) =>
@@ -89,6 +92,9 @@ export const speakText = (options: SpeakTextOptions): Speaking => {
   return speaking;
 };
 
+// Assume online where the browser cannot tell.
+const isOnline = () => globalThis.navigator?.onLine ?? true;
+
 /**
  * Speaks a Reference Text passage with a voice for the Bible's language,
  * the team's highest ranked one this device has when there is one.
@@ -102,6 +108,11 @@ export const speakReferenceText = (
   speakText({
     text,
     lang: canonicalLanguage(referenceText.language),
-    chooseVoice: (voices) => pickVoice(voices, referenceText.language, ranking),
+    chooseVoice: (voices) =>
+      pickVoice(voices, referenceText.language, ranking, isOnline()),
+    noVoice: (voices) =>
+      needsInternet(voices, referenceText.language, isOnline())
+        ? 'noVoiceOffline'
+        : 'noVoice',
     onProgress,
   });

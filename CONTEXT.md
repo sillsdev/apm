@@ -413,11 +413,11 @@ A published Bible text (from the HelloAO Free Use Bible API, bible.helloao.org) 
 _Avoid_: Resource (Reference Texts are not `sharedresource`/`sectionresource` rows); pinning or defaulting it to the project language; Bible Brain resource; role for its rank (role means admin/member)
 
 **Voice**:
-A text-to-speech voice available on this device for a language, used to **speak** a **Reference Text** passage. Which voices exist differs per device and per backend, so the team can only state a preference (**Voice Ranking**), never guarantee one; when this device has no voice for the Bible's language, the user is told at playback and shown the text instead. Speaking a passage never creates a mediafile, and stopping it means starting over, not resuming.
+A text-to-speech voice available on this device for a language, used to **speak** a **Reference Text** passage. Which voices exist differs per device and per backend, so the team can only state a preference (**Voice Ranking**), never guarantee one; when this device has no voice for the Bible's language, the user is told at playback and shown the text instead. Online voices need the internet, so they are skipped while the device is offline, and the notice then says so. Speaking a passage never creates a mediafile, and stopping it means starting over, not resuming.
 _Avoid_: TTS engine; narrator; Reference Text audio or recording (nothing is recorded); pausing speech; Voice for the voice-conversion (`voices` org default) feature
 
 **Voice Ranking**:
-A team admin's ordered choice of **Voices** for each language (primary subtag), kept in the team's org defaults (`ttsVoices`) as voice snapshots. Playback uses the first ranked Voice this device has for the **Reference Text**'s language, else the device's own best match, silently. Ranking is optional and partial: unranked languages and voices still work. The team may also limit the Reference Texts offered in Project Settings to ranked languages (`ttsFilterRefText`). See ADR 0015.
+A team admin's ordered choice of **Voices** for each language (primary subtag), kept in the team's org defaults (`ttsVoices`) as voice snapshots. Playback uses the first ranked Voice this device has for the **Reference Text**'s language. Otherwise it silently uses the device's first local Voice for that language, then an online one. Ranking is optional and partial: unranked languages and voices still work. The team may also limit the Reference Texts offered in Project Settings to ranked languages (`ttsFilterRefText`). See ADR 0015.
 _Avoid_: default voice (a device's default is something else); voice settings (sounds per-user); rank (that is Primary/Secondary for a Reference Text)
 
 **Community Testing**:

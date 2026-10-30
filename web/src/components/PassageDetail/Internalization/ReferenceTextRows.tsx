@@ -71,7 +71,8 @@ export function ReferenceTextRows({
     const value = byRank(rank, passages);
     if (value.status !== 'ready') return;
     const outcome = await speech.toggle(rank, value.referenceText, value.text);
-    if (outcome === 'noVoice') setViewing({ rank, notice: 'noVoice' });
+    if (outcome === 'noVoice' || outcome === 'noVoiceOffline')
+      setViewing({ rank, notice: outcome });
     else if (outcome === 'error') setViewing({ rank, notice: 'speakFailed' });
   };
   const handleView = (rank: ReferenceTextRank) => setViewing({ rank });

@@ -6794,6 +6794,13 @@
                <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextRetry">
             <source>Try again</source>
             <target/>
