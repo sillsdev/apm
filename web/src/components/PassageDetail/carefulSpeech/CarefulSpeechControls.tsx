@@ -78,6 +78,9 @@ interface Props {
   controlIdPrefix?: string;
   /** Linked notes: play existing takes, do not record or edit. */
   readOnly?: boolean;
+  /** Forwarded to MediaRecord: false yields this recorder's keyboard
+   *  shortcuts to the source player above it. Default true. */
+  hotkeys?: boolean;
 }
 
 export default function CarefulSpeechControls({
@@ -104,6 +107,7 @@ export default function CarefulSpeechControls({
   highlightSpeaker,
   allowRecord,
   recordBlocked,
+  hotkeys = true,
   savingRecording = false,
   onSaving,
   onSaveSettled,
@@ -289,6 +293,7 @@ export default function CarefulSpeechControls({
                 mediaId={recordingMediaId}
                 allowRecord={allowRecord}
                 recordBlocked={recordBlocked}
+                hotkeys={hotkeys}
                 allowWave={false}
                 disableDragSelection={true}
                 height={160}

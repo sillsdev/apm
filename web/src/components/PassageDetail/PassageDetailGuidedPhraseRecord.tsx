@@ -1981,6 +1981,12 @@ export function PassageDetailGuidedPhraseRecord({
           highlightSpeaker={highlightSpeaker}
           allowRecord={allowRecord && editStep}
           recordBlocked={recordBlocked && phase !== 'recording'}
+          // The source player above owns the shared transport keys. hotkeys is
+          // all-or-nothing, so this also drops the recorder's F9 and Ctrl+C/X/V,
+          // which the source player (allowRecord={false}) doesn't claim.
+          // TODO in TT-7748: make this hotkeys prop a union or object or list
+          // specifying *which* hotkeys this player should claim
+          hotkeys={!allowSourcePlayer}
           savingRecording={savingRecording}
           onSaving={() => {
             savingRecordingRef.current = true;
