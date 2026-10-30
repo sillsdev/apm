@@ -139,6 +139,8 @@ export interface DetailPlayerProps {
   layoutMode?: 'default' | 'transport';
   /** Stick the player to the top of the scrolling content area. */
   docked?: boolean;
+  /** Claim the shared player hotkeys. Default true; see WSAudioPlayer. */
+  hotkeys?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -189,6 +191,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     hideZoom,
     layoutMode,
     docked,
+    hotkeys,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -491,6 +494,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         allowSegmentNav={allowSegmentNav}
         allowAutoSegment={allowAutoSegment}
         layoutMode={layoutMode}
+        hotkeys={hotkeys}
         hideSegmentControls={hideSegmentControls}
         hideZoom={hideZoom}
         defaultRegionParams={defaultSegParams}
