@@ -17,6 +17,18 @@ jest.mock('../../../context/usePassageDetailContext', () => ({
   default: () => mockCtx,
 }));
 
+const mockRanking = {
+  en: [{ name: 'Zira', voiceURI: 'Zira', lang: 'en-US', localService: true }],
+};
+// The real module pulls in the store, whose localization package is ESM only.
+jest.mock('../../../crud/useOrgDefaults', () => ({
+  orgDefaultTtsVoices: 'ttsVoices',
+  useOrgDefaults: () => ({
+    getOrgDefault: (label: string) =>
+      label === 'ttsVoices' ? mockRanking : undefined,
+  }),
+}));
+
 let mockFinish: (outcome: SpeakOutcome) => void;
 let mockProgress: ((percent: number) => void) | undefined;
 const mockStop = jest.fn(() => mockFinish('stopped'));
@@ -57,7 +69,8 @@ describe('useReferenceTextSpeech', () => {
     expect(speakReferenceText).toHaveBeenCalledWith(
       bsb,
       'text',
-      expect.any(Function)
+      expect.any(Function),
+      mockRanking
     );
     expect(result.current.speaking).toBe('primary');
     act(() => mockProgress?.(40));

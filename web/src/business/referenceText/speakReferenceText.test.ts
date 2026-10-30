@@ -1,4 +1,4 @@
-import { speakReferenceText } from './speakReferenceText';
+import { speakReferenceText, speakText } from './speakReferenceText';
 import { ReferenceText } from './referenceText';
 
 class FakeUtterance {
@@ -136,5 +136,36 @@ describe('speakReferenceText', () => {
     await settle();
     spoken[spoken.length - 1].onend?.();
     await expect(second.done).resolves.toBe('ended');
+  });
+
+  it("speaks with the team's ranked voice when the device has it", async () => {
+    const zira = { ...david, name: 'Zira', voiceURI: 'Zira', default: false };
+    voices = [david, zira];
+    speakReferenceText(bsb, 'Short.', undefined, {
+      en: [
+        { name: 'Mark', voiceURI: 'Mark', lang: 'en-US', localService: true },
+        { name: 'Zira', voiceURI: 'Zira', lang: 'en-US', localService: true },
+      ],
+    });
+    await settle();
+    expect(spoken[0].voice).toBe(zira);
+  });
+});
+
+describe('speakText', () => {
+  it('speaks with the chosen voice and stops a passage already speaking', async () => {
+    const passage = speakReferenceText(bsb, text);
+    await settle();
+    const sample = speakText({
+      text: 'Sample.',
+      lang: 'en-US',
+      chooseVoice: () => david,
+    });
+    await expect(passage.done).resolves.toBe('stopped');
+    await settle();
+    const last = spoken[spoken.length - 1];
+    expect(last.text).toBe('Sample.');
+    last.onend?.();
+    await expect(sample.done).resolves.toBe('ended');
   });
 });

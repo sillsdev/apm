@@ -1916,6 +1916,32 @@ const initialState = {
 			"status": "Status of",
 		}
 	}),
+	"ttsVoices": new LocalizedStrings({
+		"en": {
+			"add": "Add to ranking",
+			"explain": "Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.",
+			"filterReferenceTexts": "In Project Settings, offer only Reference Texts in languages with a ranked voice",
+			"linuxNote": "Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.",
+			"loading": "Loading voices…",
+			"local": "Local",
+			"macNote": "You can also add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.",
+			"moveDown": "Move down",
+			"moveUp": "Move up",
+			"noMatch": "No languages match.",
+			"noVoices": "This device has no text-to-speech voices.",
+			"notOnDevice": "Not on this device",
+			"online": "Online",
+			"rankedCount": "{0} ranked",
+			"read": "Read",
+			"remove": "Remove from ranking",
+			"sampleDefault": "This is how this voice will sound.",
+			"sampleText": "Sample text",
+			"search": "Search languages",
+			"showOnline": "Show online voices",
+			"title": "Reference Text Voices",
+			"windowsNote": "You can also add Windows voices for other languages under Settings → Time & language → Speech → Add voices.",
+		}
+	}),
 	"uploadProgress": new LocalizedStrings({
 		"en": {
 			"cancel": "Cancel",
@@ -2034,6 +2060,7 @@ const initialState = {
 			"description": "Description",
 			"edit": "Edit",
 			"editorSettings": "Editor Settings",
+			"filteredToVoices": "Showing only languages your team has ranked voices for.",
 			"generalBook": "{0} Book Designation",
 			"generalStory": "Show as Stories (not Extras) in {0}",
 			"flat": "Flat",
@@ -2375,6 +2402,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"transcriptionShow" : new LocalizedStrings(action.payload.data.transcriptionShow),
 				"transcriptionTab" : new LocalizedStrings(action.payload.data.transcriptionTab),
 				"treeChart" : new LocalizedStrings(action.payload.data.treeChart),
+				"ttsVoices" : new LocalizedStrings(action.payload.data.ttsVoices),
 				"uploadProgress" : new LocalizedStrings(action.payload.data.uploadProgress),
 				"userListMode" : new LocalizedStrings(action.payload.data.userListMode),
 				"usertable" : new LocalizedStrings(action.payload.data.usertable),

@@ -189,10 +189,6 @@ export const parseCatalog = (json: unknown): CatalogBible[] => {
   return Array.isArray(bibles) ? bibles.filter(isCatalogBible) : [];
 };
 
-/** Ids of the Reference Texts saved on several projects, without repeats. */
-export const usedReferenceTextIds = (saved: unknown[]) =>
-  new Set(saved.flatMap((v) => parseReferenceTexts(v).map((r) => r.id)));
-
 /** Reference Texts read back from `defaultParams`, dropping malformed and open.bible-era entries. */
 export const parseReferenceTexts = (value: unknown): ReferenceText[] =>
   Array.isArray(value) ? value.filter(isCatalogBible) : [];

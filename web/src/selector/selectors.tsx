@@ -288,6 +288,9 @@ export const userTableSelector = (state: IState) =>
 export const treeChartSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'treeChart' });
 
+export const ttsVoicesSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'ttsVoices' });
+
 export const viewModeSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'viewMode' });
 

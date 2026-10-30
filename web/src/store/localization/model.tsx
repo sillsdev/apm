@@ -1819,6 +1819,31 @@ export interface ITreeChartStrings extends Localize.LocalizedStringsMethods {
     "status": string;
 };
 
+export interface ITtsVoicesStrings extends Localize.LocalizedStringsMethods {
+    "add": string;
+    "explain": string;
+    "filterReferenceTexts": string;
+    "linuxNote": string;
+    "loading": string;
+    "local": string;
+    "macNote": string;
+    "moveDown": string;
+    "moveUp": string;
+    "noMatch": string;
+    "noVoices": string;
+    "notOnDevice": string;
+    "online": string;
+    "rankedCount": string;
+    "read": string;
+    "remove": string;
+    "sampleDefault": string;
+    "sampleText": string;
+    "search": string;
+    "showOnline": string;
+    "title": string;
+    "windowsNote": string;
+};
+
 export interface IUploadProgressStrings extends Localize.LocalizedStringsMethods {
     "cancel": string;
     "canceling": string;
@@ -1930,6 +1955,7 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "description": string;
     "edit": string;
     "editorSettings": string;
+    "filteredToVoices": string;
     "generalBook": string;
     "generalStory": string;
     "flat": string;
@@ -2261,6 +2287,7 @@ export interface ILocalizedStrings {
 	transcriptionShow: ITranscriptionShowStrings;
 	transcriptionTab: ITranscriptionTabStrings;
 	treeChart: ITreeChartStrings;
+	ttsVoices: ITtsVoicesStrings;
 	uploadProgress: IUploadProgressStrings;
 	userListMode: IUserListModeStrings;
 	usertable: IUsertableStrings;

@@ -57,4 +57,52 @@ describe('pickVoice', () => {
     const fr = voice('fr_FR', 'Amelie');
     expect(pickVoice([fr], 'fra')).toBe(fr);
   });
+
+  it("prefers the team's first ranked voice the device has", () => {
+    const david = voice('en-US', 'David', { default: true });
+    const zira = voice('en-US', 'Zira');
+    const ranking = {
+      en: [
+        { name: 'Mark', voiceURI: 'Mark', lang: 'en-US', localService: true },
+        { name: 'Zira', voiceURI: 'Zira', lang: 'en-US', localService: true },
+      ],
+    };
+    expect(pickVoice([david, zira], 'eng', ranking)).toBe(zira);
+  });
+
+  it('matches a ranked voice by name when its voiceURI differs here', () => {
+    const zira = voice('en-US', 'Zira', { voiceURI: 'urn:zira-local' });
+    const ranking = {
+      en: [
+        { name: 'Zira', voiceURI: 'Zira', lang: 'en-US', localService: true },
+      ],
+    };
+    expect(
+      pickVoice(
+        [voice('en-US', 'David', { default: true }), zira],
+        'eng',
+        ranking
+      )
+    ).toBe(zira);
+  });
+
+  it('falls back when no ranked voice is on the device', () => {
+    const david = voice('en-US', 'David', { default: true });
+    const ranking = {
+      en: [
+        { name: 'Mark', voiceURI: 'Mark', lang: 'en-US', localService: true },
+      ],
+    };
+    expect(pickVoice([david], 'eng', ranking)).toBe(david);
+  });
+
+  it("ignores another language's ranking", () => {
+    const hazel = voice('en-GB', 'Hazel');
+    const ranking = {
+      fr: [
+        { name: 'Hazel', voiceURI: 'Hazel', lang: 'en-GB', localService: true },
+      ],
+    };
+    expect(pickVoice([hazel], 'fra', ranking)).toBeUndefined();
+  });
 });

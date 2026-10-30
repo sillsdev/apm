@@ -1,6 +1,7 @@
 import { canonicalLanguage, ReferenceText } from './referenceText';
 import { speechChunks } from './speechChunks';
 import { deviceVoices, pickVoice } from './voices';
+import type { VoiceRanking } from './voiceRanking';
 
 /** How speaking a passage finished. */
 export type SpeakOutcome = 'ended' | 'stopped' | 'noVoice' | 'error';
@@ -12,19 +13,27 @@ export interface Speaking {
   stop: () => void;
 }
 
-// Only one passage speaks at a time on the device.
+// Only one text speaks at a time on the device.
 let current: Speaking | undefined;
 
+export interface SpeakTextOptions {
+  text: string;
+  /** BCP 47 language of the text, for splitting it into sentences. */
+  lang: string;
+  /** The voice to speak with, from this device's voices; none means `noVoice`. */
+  chooseVoice: (
+    voices: SpeechSynthesisVoice[]
+  ) => SpeechSynthesisVoice | undefined;
+  /** Gets the percent of the text spoken so far. */
+  onProgress?: (percent: number) => void;
+}
+
 /**
- * Speaks a Reference Text passage with a voice for the Bible's language.
- * `onProgress` gets the percent of the text spoken so far. Starting another
- * passage stops this one.
+ * Speaks text with a voice from this device. Starting another text stops
+ * this one, so a voice sample and a passage never talk over each other.
  */
-export const speakReferenceText = (
-  referenceText: ReferenceText,
-  text: string,
-  onProgress?: (percent: number) => void
-): Speaking => {
+export const speakText = (options: SpeakTextOptions): Speaking => {
+  const { text, lang, chooseVoice, onProgress } = options;
   current?.stop();
 
   let finish: (outcome: SpeakOutcome) => void = () => undefined;
@@ -46,10 +55,9 @@ export const speakReferenceText = (
   const speaking: Speaking = { done, stop };
   current = speaking;
 
-  const lang = canonicalLanguage(referenceText.language);
   void deviceVoices().then((voices) => {
     if (finished) return;
-    const voice = pickVoice(voices, referenceText.language);
+    const voice = chooseVoice(voices);
     if (!voice) return finish('noVoice');
     const chunks = speechChunks(text, lang);
     let offset = 0;
@@ -80,3 +88,20 @@ export const speakReferenceText = (
 
   return speaking;
 };
+
+/**
+ * Speaks a Reference Text passage with a voice for the Bible's language,
+ * the team's highest ranked one this device has when there is one.
+ */
+export const speakReferenceText = (
+  referenceText: ReferenceText,
+  text: string,
+  onProgress?: (percent: number) => void,
+  ranking?: VoiceRanking
+): Speaking =>
+  speakText({
+    text,
+    lang: canonicalLanguage(referenceText.language),
+    chooseVoice: (voices) => pickVoice(voices, referenceText.language, ranking),
+    onProgress,
+  });

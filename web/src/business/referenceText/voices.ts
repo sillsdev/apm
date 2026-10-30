@@ -1,10 +1,11 @@
-import { canonicalLanguage } from './referenceText';
+import {
+  findDeviceVoice,
+  voiceLanguage,
+  type VoiceRanking,
+} from './voiceRanking';
 
 // Some browsers list voices only after `voiceschanged`; others never fire it.
 const VOICES_WAIT_MS = 2000;
-
-const primarySubtag = (tag: string) =>
-  canonicalLanguage(tag.replaceAll('_', '-')).split('-')[0].toLowerCase();
 
 /**
  * The text-to-speech voices on this device. Today that is the browser's
@@ -28,15 +29,22 @@ export const deviceVoices = (): Promise<SpeechSynthesisVoice[]> => {
 };
 
 /**
- * The voice to speak an ISO 639-3 language: one whose language matches,
- * preferring the default voice, then a local one over a network one.
+ * The voice to speak an ISO 639-3 language: the first voice in the team's
+ * Voice Ranking for the language that this device has; else one whose
+ * language matches, preferring the default voice, then a local one over a
+ * network one.
  */
 export const pickVoice = (
   voices: SpeechSynthesisVoice[],
-  iso639_3: string
+  iso639_3: string,
+  ranking: VoiceRanking = {}
 ): SpeechSynthesisVoice | undefined => {
-  const want = primarySubtag(iso639_3);
-  const matches = voices.filter((v) => primarySubtag(v.lang) === want);
+  const want = voiceLanguage(iso639_3);
+  const matches = voices.filter((v) => voiceLanguage(v.lang) === want);
+  for (const ranked of ranking[want] ?? []) {
+    const voice = findDeviceVoice(matches, ranked);
+    if (voice) return voice;
+  }
   return (
     matches.find((v) => v.default) ??
     matches.find((v) => v.localService) ??

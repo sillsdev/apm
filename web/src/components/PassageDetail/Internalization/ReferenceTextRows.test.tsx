@@ -17,6 +17,10 @@ jest.mock('../../../business/referenceText/useReferenceTextPassage', () => ({
 jest.mock('../../../business/referenceText/speakReferenceText', () => ({
   speakReferenceText: jest.fn(),
 }));
+jest.mock('../../../crud/useOrgDefaults', () => ({
+  orgDefaultTtsVoices: 'ttsVoices',
+  useOrgDefaults: () => ({ getOrgDefault: () => undefined }),
+}));
 jest.mock('../../../context/usePassageDetailContext', () => ({
   __esModule: true,
   default: () => ({
@@ -212,7 +216,8 @@ describe('ReferenceTextRows', () => {
     expect(mockSpeak).toHaveBeenCalledWith(
       bible(),
       'For God so loved',
-      expect.any(Function)
+      expect.any(Function),
+      {}
     );
     act(() => finishSpeaking('noVoice'));
     const dialog = await screen.findByRole('dialog', {
