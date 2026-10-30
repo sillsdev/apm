@@ -29,10 +29,12 @@ interface IProps {
   playbackRate: number;
   setPlaybackRate: (rate: number) => void;
   recording: boolean;
+  /** When false, claim no keyboard shortcuts (see WSAudioPlayer's hotkeys). */
+  hotkeys?: boolean;
 }
 
 function WSAudioPlayerRate(props: IProps) {
-  const { playbackRate, setPlaybackRate, recording } = props;
+  const { playbackRate, setPlaybackRate, recording, hotkeys = true } = props;
   const playbackRateRef = useRef(playbackRate);
   const { subscribe, unsubscribe, localizeHotKey } =
     useContext(HotKeyContext).state;
@@ -62,6 +64,7 @@ function WSAudioPlayerRate(props: IProps) {
     return true;
   };
   useEffect(() => {
+    if (!hotkeys) return;
     const keys = [
       { key: SLOWER_KEY, cb: handleSlower },
       { key: FASTER_KEY, cb: handleFaster },
@@ -72,7 +75,7 @@ function WSAudioPlayerRate(props: IProps) {
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hotkeys]);
   return (
     <>
       <Grid>

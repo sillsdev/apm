@@ -218,6 +218,15 @@ interface IProps {
   applyRegionColor?: ApplyRegionColor;
   hideToolbar?: boolean;
   hideControls?: boolean;
+  /**
+   * When false, this player registers none of its keyboard shortcuts (transport,
+   * region nav, and record) — e.g. used by a second, non-owning player (e.g. an off-screen
+   * step in the add-resource wizard) yielding all keys to the visible/owning one.
+   * Default true. All of a player's hotkeys enable/disable together.
+   * TODO in TT-7748: make this hotkeys prop a union or object or list specifying
+   * *which* hotkeys this player should claim
+   */
+  hotkeys?: boolean;
   /** Careful Speech / guided flows: emphasize the main play control until used. */
   highlightPlay?: boolean;
   /** Invoked before starting playback. Return false to skip default play handling. */
@@ -437,6 +446,7 @@ function WSAudioPlayer(props: IProps) {
     applyRegionColor,
     hideToolbar,
     hideControls,
+    hotkeys = true,
     highlightPlay,
     beforePlay,
     onAutoSegment,
@@ -1113,18 +1123,6 @@ function WSAudioPlayer(props: IProps) {
         'devicechange',
         handleDeviceChange
       );
-      [
-        PLAY_PAUSE_KEY,
-        ALT_PLAY_PAUSE_KEY,
-        HOME_KEY,
-        END_KEY,
-        BACK_KEY,
-        AHEAD_KEY,
-        TIMER_KEY,
-        RECORD_KEY,
-        LEFT_KEY,
-        RIGHT_KEY,
-      ].forEach((key) => unsubscribe(key));
       if (recTimerRef.current) {
         clearInterval(recTimerRef.current);
         recTimerRef.current = undefined;
@@ -1347,6 +1345,7 @@ function WSAudioPlayer(props: IProps) {
   }, [wsGoto, wsPause, setPlaying]);
 
   useEffect(() => {
+    if (!hotkeys) return;
     if (justPlayButton) {
       subscribe(ALT_PLAY_PAUSE_KEY, handlePlayPauseHotkey);
       return () => unsubscribe(ALT_PLAY_PAUSE_KEY);
@@ -1366,6 +1365,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(TIMER_KEY);
     };
   }, [
+    hotkeys,
     justPlayButton,
     handlePlayPauseHotkey,
     handleHomeHotkey,
@@ -1378,13 +1378,13 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (!allowRecord) return;
+    if (!hotkeys || !allowRecord) return;
     subscribe(RECORD_KEY, handleRecorder);
     return () => unsubscribe(RECORD_KEY);
-  }, [allowRecord, handleRecorder, subscribe, unsubscribe]);
+  }, [hotkeys, allowRecord, handleRecorder, subscribe, unsubscribe]);
 
   useEffect(() => {
-    if (!allowSegment) return;
+    if (!hotkeys || !allowSegment) return;
     subscribe(LEFT_KEY, handlePrevRegion);
     subscribe(RIGHT_KEY, handleNextRegion);
     return () => {
@@ -1392,6 +1392,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(RIGHT_KEY);
     };
   }, [
+    hotkeys,
     allowSegment,
     handlePrevRegion,
     handleNextRegion,
@@ -1760,7 +1761,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   useEffect(() => {
-    if (!allowRecord) return;
+    if (!hotkeys || !allowRecord) return;
     subscribe(COPY_KEY, handleCopyRegion);
     subscribe(CUT_KEY, handleCutRegion);
     subscribe(PASTE_KEY, handlePaste);
@@ -1770,6 +1771,7 @@ function WSAudioPlayer(props: IProps) {
       unsubscribe(PASTE_KEY);
     };
   }, [
+    hotkeys,
     allowRecord,
     handleCopyRegion,
     handleCutRegion,
@@ -2359,6 +2361,7 @@ function WSAudioPlayer(props: IProps) {
       wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
       wsRemoveSplitRegion={handleRemoveSplitRegion}
       wsAddRegion={handleAddRegion}
+      hotkeys={hotkeys}
       disableSplit={playheadNearBoundary || addBlockedByRecording}
       removeEnabled={playheadNearInternalJoin && !removeBlockedByRecording}
       setBusy={setBusy}
@@ -2693,6 +2696,7 @@ function WSAudioPlayer(props: IProps) {
       playbackRate={playbackRate}
       setPlaybackRate={setPlaybackRate}
       recording={recording}
+      hotkeys={hotkeys}
     />
   );
 
@@ -2702,6 +2706,7 @@ function WSAudioPlayer(props: IProps) {
       fillPx={recording ? 100 : wsFillPx()}
       curPx={pxPerSec}
       onZoom={wsZoom}
+      hotkeys={hotkeys}
     />
   );
   const confirmNode = confirmAction !== '' && (
