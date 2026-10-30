@@ -696,61 +696,6 @@ describe('MediaRecord save gating', () => {
     );
   });
 
-  it('keeps a successful stage when the recorder returns to idle', async () => {
-    let requested = false;
-    mockSaveRequested = () => requested;
-    mockSaveCompleted.mockImplementation(
-      (_toolId: unknown, message?: string) => {
-        if (!message) requested = false;
-      }
-    );
-    const onSaveRejected = jest.fn();
-    const onStageFile = jest.fn(async () => {
-      latestWsProps?.onBlobReady?.(undefined);
-    });
-    const { TestUnsavedProvider, unsavedTest } = jest.requireMock(
-      '../context/UnsavedContext'
-    ) as {
-      TestUnsavedProvider: React.ComponentType<{ children: React.ReactNode }>;
-      unsavedTest: { bump: () => void };
-    };
-    render(
-      <TestUnsavedProvider>
-        <MediaRecord
-          {...defaultProps}
-          onSaveRejected={onSaveRejected}
-          onStageFile={onStageFile}
-        />
-      </TestUnsavedProvider>
-    );
-
-    await waitFor(() => expect(latestWsProps).toBeDefined());
-    act(() => {
-      latestWsProps?.setBlobReady?.(true);
-      latestWsProps?.setChanged?.(true);
-      latestWsProps?.onDuration?.(12);
-      latestWsProps?.onBlobReady?.(
-        new Blob([new Uint8Array(1000)], { type: 'audio/wav' })
-      );
-    });
-    await waitFor(() =>
-      expect(document.getElementById('size')?.textContent).toBe('0.11MB')
-    );
-
-    onSaveRejected.mockClear();
-    mockSaveCompleted.mockClear();
-    requested = true;
-    act(() => unsavedTest.bump());
-
-    await waitFor(() => expect(onStageFile).toHaveBeenCalled());
-    expect(onSaveRejected).not.toHaveBeenCalled();
-    expect(mockSaveCompleted).toHaveBeenCalledWith('record-tool');
-    expect(mockSaveCompleted).not.toHaveBeenCalledWith(
-      'record-tool',
-      'Media error'
-    );
-  });
-
   it('does not upload wav when the size check fails after compression', async () => {
     mockSaveRequested = () => true;
     mockConvertToFormat = jest.fn(async () => undefined as unknown as Blob);

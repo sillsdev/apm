@@ -132,7 +132,6 @@ jest.mock('react-redux', () => ({
     pasteError: 'Paste Errors {0}, Updated {1}',
     pasteFormat: 'Paste Format',
     pasteNoChange: 'Paste No Change',
-    projectResourceConfigure: 'Project Resource Configure',
     reference: 'Reference',
     startStop: 'Start/Stop',
     suffix: 'Suffix',

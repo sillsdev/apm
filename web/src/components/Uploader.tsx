@@ -1,30 +1,18 @@
 import React, { useMemo } from 'react';
 import MediaUploadDialog from './MediaUploadDialog';
-import PassageRecordDlg from './PassageRecordDlg';
 import { useMediaUpload, VernacularTag, findRecord, related } from '../crud';
 import { useGlobal } from '../context/useGlobal';
-import { infoMsg, logError, restoreScroll, Severity } from '../utils';
-import { toError } from '../utils/toError';
+import { restoreScroll } from '../utils';
 import { splitFaithbridgeValue } from '../utils/contentType';
 import { AlertSeverity } from '../hoc/SnackBar';
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 
-// The record/upload dialog names recordings from defaultFilename, so a host
-// that turns on audioUploadOrRecord must supply one.
-type RecordModeProps =
-  | { audioUploadOrRecord: true; defaultFilename: string }
-  | {
-      audioUploadOrRecord?: false | undefined;
-      defaultFilename?: string | undefined;
-    };
-
-interface IBaseProps {
+interface IProps {
   noBusy?: boolean | undefined;
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
   skipImportExportWait?: boolean | undefined;
-  mediaId?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
   showMessage?:
@@ -54,7 +42,6 @@ interface IBaseProps {
   uploadType?: UploadType | undefined;
   inValue?: string | undefined; // used when adding Aquifer markdown
   team?: string | undefined; // used when adding a card to check speakers
-  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
   uploadDialogBp?: BigDialogBp;
   validationMessage?: string | undefined;
@@ -62,37 +49,18 @@ interface IBaseProps {
   hideUploadCancel?: boolean | undefined;
   /** Domain restore metadata for pending-upload Retry (TT-7363). */
   pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
-  /**
-   * When set, the Add Audio Resource dialog's Next stages the prepared file(s)
-   * via `onStageFiles` instead of uploading them. The general-resource flow
-   * uses this to defer the upload until the user picks passages/sections; the
-   * actual upload is then driven through `importList`.
-   */
-  deferUpload?: boolean | undefined;
-  /** `recorded` is true when the staged file is a take from the record tab. */
-  onStageFiles?:
-    ((files: File[], recorded?: boolean) => void | Promise<void>) | undefined;
-  /** Pre-select these files when the dialog opens (see MediaUploadContent) —
-   *  used to restore a staged file after the Add Resource wizard's Back. */
-  initialFiles?: File[] | undefined;
 }
 
-type IProps = IBaseProps & RecordModeProps;
-
 /**
- * The upload dialog (or, with `audioUploadOrRecord`, the record/upload dialog)
- * driven by the shared useMediaUpload pipeline.
+ * The standalone upload dialog: a MediaUploadDialog driven by the shared useMediaUpload
+ * pipeline.
  */
 export const Uploader = (props: IProps) => {
   const {
     noBusy,
     skipImportExportWait,
-    mediaId,
-    audioUploadOrRecord,
-    defaultFilename,
     isOpen,
     onOpen,
-    showMessage,
     cancelled,
     cancelReset,
     multiple,
@@ -110,21 +78,16 @@ export const Uploader = (props: IProps) => {
     uploadType,
     inValue,
     team,
-    onNonAudio,
     audioOnly,
     finish,
     uploadDialogBp,
     validationMessage,
     hideUploadCancel,
     pendingRestore,
-    deferUpload,
-    onStageFiles,
-    initialFiles,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan');
-  const [errorReporter] = useGlobal('errorReporter');
 
   const resolvedLocalPlanId = useMemo(() => {
     if (passageId) {
@@ -187,45 +150,6 @@ export const Uploader = (props: IProps) => {
     importList,
   });
 
-  // The record tab uploads through MediaRecord's own pipeline, which already
-  // reports progress and completion; only the host's `finish` is left to run.
-  const recordAfterUploadCb = async (mediaId: string | undefined) => {
-    if (cancelled) cancelled.current = !mediaId;
-    if (!finish) return;
-    try {
-      await finish(mediaId ? [mediaId] : []);
-    } catch (err) {
-      logError(
-        Severity.error,
-        errorReporter,
-        infoMsg(toError(err), 'upload finish failed')
-      );
-    }
-  };
-
-  // Deferred general-resource flow: hand the prepared file(s) to the parent
-  // rather than uploading now. `onStageFiles` is async (it awaits category
-  // creation), so await it and report a failure instead of swallowing it.
-  const stageFiles = async (files: File[]) => {
-    try {
-      await onStageFiles?.(files);
-      return true;
-    } catch (err) {
-      const error = toError(err);
-      // Surface the failure (e.g. category creation) rather than silently
-      // re-enabling the dialog with no feedback, and log it for diagnosis.
-      showMessage?.(error.message, AlertSeverity.Error);
-      logError(
-        Severity.error,
-        errorReporter,
-        infoMsg(error, 'resource staging failed')
-      );
-      return false;
-    }
-  };
-  const deferring = Boolean(deferUpload && onStageFiles);
-  const effectiveUploadMethod = deferring ? stageFiles : uploadMedia;
-
   const uploadCancel = () => {
     onOpen(false);
     if (cancelled) cancelled.current = true;
@@ -237,45 +161,7 @@ export const Uploader = (props: IProps) => {
 
   return (
     <Box sx={{ width: '100%' }}>
-      {audioUploadOrRecord && !hasImport && (
-        <PassageRecordDlg
-          artifactId={artifactState?.id ?? VernacularTag}
-          passageId={passageId}
-          planId={resolvedLocalPlanId}
-          visible={isOpen}
-          onVisible={onOpen}
-          mediaId={mediaId ?? ''}
-          afterUploadCb={recordAfterUploadCb}
-          onCancel={uploadCancel}
-          metaData={metaData}
-          ready={ready}
-          defaultFilename={defaultFilename}
-          allowWave={false}
-          speaker={performedBy}
-          onSpeaker={handleSpeakerChange}
-          team={team}
-          uploadType={uploadType || UploadType.Media}
-          uploadMethod={effectiveUploadMethod}
-          // Only the record tab calls onStageFile (the upload tab stages via
-          // uploadMethod), so anything staged here is a recorded take.
-          onStageFile={
-            deferring
-              ? (files) => onStageFiles?.(files, /* recorded */ true)
-              : undefined
-          }
-          multiple={multiple}
-          onFiles={onFiles}
-          initialFiles={initialFiles}
-          keepFilesAfterSubmit={deferring}
-          inValue={effectiveInValue}
-          onNonAudio={onNonAudio}
-          audioOnly={audioOnly}
-          validationMessage={validationMessage}
-          pendingRestore={pendingRestore}
-          beforeUpload={beforeUpload}
-        />
-      )}
-      {!audioUploadOrRecord && !hasImport && (
+      {!hasImport && (
         <MediaUploadDialog
           visible={isOpen}
           onVisible={onOpen}
@@ -296,11 +182,8 @@ export const Uploader = (props: IProps) => {
           }
           inValue={effectiveInValue}
           team={team}
-          onNonAudio={onNonAudio}
           audioOnly={audioOnly}
           onFiles={onFiles}
-          initialFiles={initialFiles}
-          keepFilesAfterSubmit={deferring}
           validationMessage={validationMessage}
         />
       )}
