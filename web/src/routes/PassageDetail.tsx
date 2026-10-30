@@ -85,7 +85,7 @@ const MobileStep = () => {
   const { tool, settings } = useStepTool(currentstep);
   const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
-  const { paneWidth } = usePaneWidth();
+  const { width } = usePaneWidth();
 
   const artifactSlug = useMemo(() => {
     const parsed =
@@ -114,23 +114,23 @@ const MobileStep = () => {
   );
 
   return tool === ToolSlug.Record ? (
-    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
+    <PassageDetailRecord width={Math.max(0, width - 40)} />
   ) : tool === ToolSlug.Resource ? (
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
-    <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />
+    <PassageDetailMarkVerses width={Math.max(0, width)} />
   ) : tool === ToolSlug.CarefulSpeech ? (
     // Keyed for the same reason as the transcription steps below: a team can
     // configure several guided-record steps in a row, and they all render the
     // one PassageDetailGuidedPhraseRecord component. (TT-7643)
     <PassageDetailCarefulSpeech
       key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
+      width={Math.max(0, width - 40)}
     />
   ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
     <PassageDetailLwcTranslation
       key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
+      width={Math.max(0, width - 40)}
     />
   ) : tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow ? (
     // A team can have one Phrase Back Translation step per language. Without a
@@ -139,7 +139,7 @@ const MobileStep = () => {
     // step, so the other language's audio plays there. (TT-7643)
     <PassageDetailPhraseBackTranslate
       key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
+      width={Math.max(0, width - 40)}
     />
   ) : boldClauseTranscription ? (
     // Key on currentstep so the shared transcription component remounts when
@@ -150,14 +150,14 @@ const MobileStep = () => {
     // transcriptions. (TT-7503)
     <PassageDetailLwcTranscription
       key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
+      width={Math.max(0, width - 40)}
     />
   ) : tool === ToolSlug.TeamCheck ? (
-    <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
+    <TeamCheckReferenceMobile width={Math.max(0, width - 40)} />
   ) : tool === ToolSlug.Prompt ? (
-    <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
+    <PassageDetailPrompt width={Math.max(0, width - 40)} />
   ) : tool === ToolSlug.Transcribe ? (
-    <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
+    <PassageDetailTranscribeMobile width={Math.max(0, width - 40)} />
   ) : (
     <DesktopOnlyStep />
   );

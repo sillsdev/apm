@@ -148,7 +148,7 @@ jest.mock('../components/PassageDetail/PassageDetailRecord', () => {
 const mockNull = () => null;
 jest.mock('../components/StickyRedirect', () => mockNull);
 jest.mock('../components/usePaneWidth', () => ({
-  usePaneWidth: () => ({ paneWidth: 320 }),
+  usePaneWidth: () => ({ width: 320 }),
 }));
 jest.mock('../components/PassageDetail/boldClauseTranscription', () => ({
   isBoldClauseTranscriptionStep: () => false,

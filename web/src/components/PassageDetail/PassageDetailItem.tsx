@@ -147,16 +147,12 @@ export function PassageDetailItem(props: IProps) {
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
   const toolId = 'RecordBackTranslationTool';
-  const [paneWidth, setPaneWidth] = useState(0);
+  const paneWidth = width - 16;
 
   const rowProp = useMemo(
     () => ({ display: 'flex', width: paneWidth - 40 }),
     [paneWidth]
   );
-
-  useEffect(() => {
-    setPaneWidth(width - 16);
-  }, [width]);
 
   const setUploadVisible = (value: boolean) => {
     if (value) {

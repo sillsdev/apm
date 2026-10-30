@@ -9,10 +9,8 @@ import {
 export const usePaneWidth = () => {
   const { discussionSize, setDiscussionSize } =
     useContext(PassageDetailContext).state;
-  const [paneWidth, setPaneWidth] = useState(0);
   const [width, setWidth] = useState(window.innerWidth);
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
-  const widthRef = useRef(window.innerWidth);
   const discussionSizeRef = useRef(discussionSize);
   const cachedScrollbarWidthRef = useRef(0);
 
@@ -55,9 +53,7 @@ export const usePaneWidth = () => {
 
   useEffect(() => {
     discussionSizeRef.current = discussionSize;
-    widthRef.current = width;
-    setPaneWidth(Math.max(0, widthRef.current));
-  }, [discussionSize, width]);
+  }, [discussionSize]);
 
-  return { paneWidth, width, scrollbarWidth };
+  return { width, scrollbarWidth };
 };

@@ -122,7 +122,7 @@ const PassageDetailGrids = () => {
     [settings]
   );
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
-  const { paneWidth, width, scrollbarWidth } = usePaneWidth();
+  const { width, scrollbarWidth } = usePaneWidth();
   const { isMobile } = useMobile();
 
   const artifactId = useMemo(() => {
@@ -172,14 +172,11 @@ const PassageDetailGrids = () => {
   // Pass this to every step player so a new consumer can't forget the fit math.
   const playerPaneWidth = Math.max(
     0,
-    paneWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT - scrollbarWidth
+    width - MAGIC_NUMBER_THAT_MAKES_IT_FIT - scrollbarWidth
   );
   // Same fit math for steps that render their own full-width control instead of
   // a player, so they can't overflow the Paper either.
-  const fittedPaneWidth = Math.max(
-    0,
-    paneWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
-  );
+  const fittedPaneWidth = Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT);
   const showsStepPaper = paperTools.includes(tool ?? '');
   const clipsStepContent = clippedPaperTools.includes(tool ?? '');
   const showsStepPlayer =
@@ -279,12 +276,12 @@ const PassageDetailGrids = () => {
             <Stack
               sx={{
                 width: '100%',
-                maxWidth: paneWidth,
+                maxWidth: width,
                 minWidth: 0,
                 ...(clipsStepContent ? { overflow: 'clip' } : {}),
               }}
             >
-              <PassageDetailChooser width={paneWidth} />
+              <PassageDetailChooser width={width} />
               {showsStepPlayer && (
                 <PassageDetailPlayer
                   width={fittedPaneWidth}
@@ -294,29 +291,26 @@ const PassageDetailGrids = () => {
               {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
               {tool === ToolSlug.KeyTerm && (
                 <Suspense fallback={<Busy />}>
-                  <KeyTerms width={paneWidth} />
+                  <KeyTerms width={width} />
                 </Suspense>
               )}
               {tool === ToolSlug.Discuss && (
-                <PassageDetailDiscuss
-                  width={paneWidth}
-                  currentStep={currentstep}
-                />
+                <PassageDetailDiscuss width={width} currentStep={currentstep} />
               )}
               {tool === ToolSlug.Verses && (
-                <PassageDetailMarkVerses width={paneWidth} />
+                <PassageDetailMarkVerses width={width} />
               )}
               {tool === ToolSlug.CarefulSpeech && (
                 <PassageDetailCarefulSpeech width={playerPaneWidth} />
               )}
               {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
-                <PassageDetailLwcTranslation width={paneWidth} />
+                <PassageDetailLwcTranslation width={width} />
               )}
               {tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow && (
                 <PassageDetailPhraseBackTranslate width={playerPaneWidth} />
               )}
               {boldClauseTranscription && (
-                <PassageDetailLwcTranscription width={paneWidth} />
+                <PassageDetailLwcTranscription width={width} />
               )}
               {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
                 <PassageDetailTranscribe

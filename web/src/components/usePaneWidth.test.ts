@@ -77,15 +77,6 @@ describe('usePaneWidth', () => {
     });
   });
 
-  it('sets paneWidth equal to width when discussion is closed', async () => {
-    const { result } = renderHook(() => usePaneWidth());
-
-    await waitFor(() => {
-      expect(result.current.paneWidth).toBe(1000);
-    });
-    expect(result.current.paneWidth).toBe(result.current.width);
-  });
-
   it('keeps the full width when the discussion drawer is open', async () => {
     const { result, rerender } = renderHook(() => usePaneWidth());
 
@@ -98,7 +89,7 @@ describe('usePaneWidth', () => {
     passageDetailCtx.state.discussionSize = { width: 400, height: 630 };
     rerender();
     await waitFor(() => {
-      expect(result.current.paneWidth).toBe(1000);
+      expect(result.current.width).toBe(1000);
     });
   });
 
