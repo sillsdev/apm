@@ -11,13 +11,20 @@ import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 
-interface IProps {
+// The record/upload dialog names recordings from defaultFilename, so a host
+// that turns on audioUploadOrRecord must supply one.
+type RecordModeProps =
+  | { audioUploadOrRecord: true; defaultFilename: string }
+  | {
+      audioUploadOrRecord?: false | undefined;
+      defaultFilename?: string | undefined;
+    };
+
+interface IBaseProps {
   noBusy?: boolean | undefined;
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
   skipImportExportWait?: boolean | undefined;
   mediaId?: string | undefined;
-  audioUploadOrRecord?: boolean | undefined;
-  defaultFilename?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
   showMessage?:
@@ -69,6 +76,8 @@ interface IProps {
    *  used to restore a staged file after the Add Resource wizard's Back. */
   initialFiles?: File[] | undefined;
 }
+
+type IProps = IBaseProps & RecordModeProps;
 
 /**
  * The upload dialog (or, with `audioUploadOrRecord`, the record/upload dialog)
@@ -240,7 +249,7 @@ export const Uploader = (props: IProps) => {
           onCancel={uploadCancel}
           metaData={metaData}
           ready={ready}
-          defaultFilename={defaultFilename ?? 'resource'}
+          defaultFilename={defaultFilename}
           allowWave={false}
           speaker={performedBy}
           onSpeaker={handleSpeakerChange}
