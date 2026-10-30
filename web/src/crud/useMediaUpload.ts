@@ -281,6 +281,11 @@ export const useMediaUpload = ({
     return '';
   };
 
+  // TODO cleanup: the snackbar holds one message at a time (showMessage
+  // replaces snackMessage), so back-to-back messages overwrite each other.
+  // Centralize spacing/queueing in useSnackBar? We should consider if MUI or a
+  // standard library has a component for this, and ask the UX designers
+  // what the UX should be.
   // Surface a per-file upload error (unsupported type / too big / network).
   const showUploadError = (raw: string) => {
     let msg = raw;
