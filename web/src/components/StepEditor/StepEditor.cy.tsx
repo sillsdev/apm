@@ -223,6 +223,25 @@ describe('StepEditor (Edit Workflow)', { tags: '@smoke' }, () => {
     cy.get('#wk-step-add').should('be.visible').and('not.be.disabled');
   });
 
+  it('loads when a step has unreadable settings', () => {
+    const memory = createWorkflowStepMemory(TEST_ORG_ID, [
+      {
+        id: 'wfs-1',
+        name: 'Broken Stage',
+        sequencenum: 0,
+        tool: JSON.stringify({ tool: 'transcribe', settings: '{not json' }),
+      },
+      { id: 'wfs-2', name: 'Beta Stage', sequencenum: 1 },
+    ]);
+    mountStepEditor(memory);
+    cy.get('.MuiDialogContent-root input#stepName')
+      .eq(0)
+      .should('have.value', 'Broken Stage');
+    cy.get('.MuiDialogContent-root input#stepName')
+      .eq(1)
+      .should('have.value', 'Beta Stage');
+  });
+
   it('top Add appends new steps', () => {
     const memory = createWorkflowStepMemory(TEST_ORG_ID, [
       { id: 'wfs-1', name: 'Only Stage', sequencenum: 0 },

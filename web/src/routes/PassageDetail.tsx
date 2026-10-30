@@ -17,6 +17,7 @@ import {
   useArtifactType,
   remoteIdGuid,
 } from '../crud';
+import { parseTranscribeStepSettings } from '../crud/transcribeStepSettings';
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
 import { useMobile } from '../utils/useMobile';
 import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
@@ -88,19 +89,7 @@ const MobileStep = () => {
   const { paneWidth } = usePaneWidth();
 
   const artifactSlug = useMemo(() => {
-    const parsed =
-      typeof settings === 'string'
-        ? (() => {
-            try {
-              return JSON.parse(settings || '{}') as {
-                artifactTypeId?: string;
-              };
-            } catch {
-              return {} as { artifactTypeId?: string };
-            }
-          })()
-        : ((settings as { artifactTypeId?: string }) ?? {});
-    const id = parsed?.artifactTypeId;
+    const id = parseTranscribeStepSettings(settings).artifactTypeId;
     if (!id) return null;
     const resolved =
       remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
