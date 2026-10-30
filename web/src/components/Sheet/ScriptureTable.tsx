@@ -1441,17 +1441,19 @@ export function ScriptureTable(props: Readonly<IProps>) {
           drawBottomBorder={true}
           contentSx={(theme) => ({ p: theme.layout.gap })}
         >
-          <PlanView
-            rowInfo={rowinfo}
-            publishingView={publishingOn && !hidePublishing}
-            handlePublish={(
-              i: number,
-              destinations: PublishDestinationEnum[]
-            ) => {
-              setSectionPublish(i, destinations);
-            }}
-            handleGraphic={canPublish && !offline ? handleGraphic : undefined}
-          />
+          <Box sx={(theme) => ({ p: theme.layout.p })}>
+            <PlanView
+              rowInfo={rowinfo}
+              publishingView={publishingOn && !hidePublishing}
+              handlePublish={(
+                i: number,
+                destinations: PublishDestinationEnum[]
+              ) => {
+                setSectionPublish(i, destinations);
+              }}
+              handleGraphic={canPublish && !offline ? handleGraphic : undefined}
+            />
+          </Box>
         </ContentLayout>
       ) : (
         <PlanSheet

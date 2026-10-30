@@ -19,7 +19,7 @@ import {
   initProjectState,
   IProjectDialog,
 } from './ProjectDialog/projectDialogTypes';
-import { useCardHeight } from './useCardSize';
+import { useCardHeight } from '../CardSize/useCardSize';
 
 interface IProps {
   team: TeamIdType;
