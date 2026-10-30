@@ -139,6 +139,16 @@ export const Uploader = (props: IProps) => {
       : undefined;
   const effectiveInValue = faithbridge ? faithbridge.url : inValue;
 
+  // Close the dialog once the batch is done (even if `finish` throws), as the
+  // pre-hook Uploader did; the dialog itself only clears its progress on failure.
+  const finishAndClose = async (mediaRemoteIds?: string[]) => {
+    try {
+      await finish?.(mediaRemoteIds);
+    } finally {
+      onOpen(false);
+    }
+  };
+
   // The whole upload pipeline (record build, per-file send, progress, finish,
   // unsupported/toobig messages, and the importList trigger) lives in the hook.
   const uploadMedia = useMediaUpload({
@@ -155,7 +165,7 @@ export const Uploader = (props: IProps) => {
     },
     uploadType,
     pendingRestore,
-    finish,
+    finish: finishAndClose,
     cancelled,
     noBusy,
     skipImportExportWait,

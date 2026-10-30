@@ -419,6 +419,9 @@ export const useMediaUpload = ({
         showMessage(error.message, AlertSeverity.Error);
       });
     }
+    // Only a new importList should start an upload. `run`, `reporter` and
+    // `showMessage` are left out: `run` is a new closure every render, so
+    // listing it would re-upload the same list on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importList]);
 
