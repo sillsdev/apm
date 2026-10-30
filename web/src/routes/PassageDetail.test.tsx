@@ -52,6 +52,10 @@ jest.mock('../../api-variable', () => ({
   },
 }));
 
+// The api-variable mock above has no API_CONFIG, which bugsnagClient reads at
+// import (reached through the step settings parser).
+jest.mock('../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
+
 jest.mock('../context/useGlobal', () => ({
   useGlobal: (key: string) => [mockGlobals[key], jest.fn()],
   useGetGlobal: () => (key: string) => mockGlobals[key],
