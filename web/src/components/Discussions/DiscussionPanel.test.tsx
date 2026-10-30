@@ -49,9 +49,6 @@ jest.mock('../../hoc/useOrbitData', () => ({ useOrbitData: () => [] }));
 jest.mock('../../crud/useDiscussionCount', () => ({
   useDiscussionCount: () => () => 2,
 }));
-jest.mock('../../utils/useMobile', () => ({
-  useMobile: () => ({ isMobileWidth: false }),
-}));
 jest.mock('react-redux', () => ({
   useSelector: () => ({ open: 'Open discussions' }),
   shallowEqual: jest.fn(),
@@ -127,5 +124,31 @@ describe('DiscussionPanel drawer', () => {
     renderPanel(true);
     fireEvent.click(screen.getByText('close'));
     expect(setDiscussOpen).toHaveBeenCalledWith(false);
+  });
+
+  describe('drawer width', () => {
+    const innerWidth = window.innerWidth;
+    afterEach(() => {
+      window.innerWidth = innerWidth;
+    });
+
+    const paperWidth = () =>
+      getComputedStyle(
+        document.querySelector('.MuiDrawer-paper') as HTMLElement
+      ).width;
+
+    it('uses the discussion width on a wide screen', () => {
+      window.innerWidth = 1440;
+      renderPanel(true);
+      expect(paperWidth()).toBe('450px');
+      expect(latestPlayerProps.width).toBe(450 - 16);
+    });
+
+    it('covers at most 95% of a phone-width screen', () => {
+      window.innerWidth = 390;
+      renderPanel(true);
+      expect(paperWidth()).toBe('370px');
+      expect(latestPlayerProps.width).toBe(370 - 16);
+    });
   });
 });

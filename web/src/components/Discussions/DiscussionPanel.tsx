@@ -22,10 +22,10 @@ import { LightTooltip } from '../../control/LightTooltip';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
-import { useMobile } from '../../utils/useMobile';
+
+const MAX_DRAWER_WIDTH_RATIO = 0.95;
 
 export default function DiscussionPanel() {
-  const { isMobileWidth } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -74,9 +74,10 @@ export default function DiscussionPanel() {
     setDiscussOpen(false);
   };
 
-  const panelWidth = isMobileWidth
-    ? windowWidth
-    : Math.min(discussionSize.width, windowWidth);
+  const panelWidth = Math.min(
+    discussionSize.width,
+    Math.floor(windowWidth * MAX_DRAWER_WIDTH_RATIO)
+  );
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,
@@ -147,7 +148,7 @@ export default function DiscussionPanel() {
           }}
           slotProps={{
             paper: {
-              sx: { width: panelWidth, maxWidth: '100%', overflow: 'hidden' },
+              sx: { width: panelWidth, overflow: 'hidden' },
             },
           }}
         >
