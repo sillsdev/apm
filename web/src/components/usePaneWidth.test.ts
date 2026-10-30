@@ -86,49 +86,19 @@ describe('usePaneWidth', () => {
     expect(result.current.paneWidth).toBe(result.current.width);
   });
 
-  it('subtracts discussion width when discussion is open', async () => {
+  it('keeps the full width when the discussion drawer is open', async () => {
     const { result, rerender } = renderHook(() => usePaneWidth());
 
     await waitFor(() => {
       expect(result.current.width).toBe(1000);
     });
 
+    // The drawer overlays the page, so opening it must not narrow the pane.
     passageDetailCtx.state.discussOpen = true;
-    rerender();
-
-    await waitFor(() => {
-      expect(result.current.paneWidth).toBe(700);
-    });
-  });
-
-  it('clamps paneWidth to 0 when discussion wider than window', async () => {
-    passageDetailCtx.state.discussionSize = { width: 1200, height: 630 };
-    passageDetailCtx.state.discussOpen = true;
-    const { result } = renderHook(() => usePaneWidth());
-
-    await waitFor(() => {
-      expect(result.current.paneWidth).toBe(0);
-    });
-  });
-
-  it('updates paneWidth when discussionSize.width changes', async () => {
-    const { result, rerender } = renderHook(() => usePaneWidth());
-
-    await waitFor(() => {
-      expect(result.current.width).toBe(1000);
-    });
-
-    passageDetailCtx.state.discussOpen = true;
-    passageDetailCtx.state.discussionSize = { width: 300, height: 630 };
-    rerender();
-    await waitFor(() => {
-      expect(result.current.paneWidth).toBe(700);
-    });
-
     passageDetailCtx.state.discussionSize = { width: 400, height: 630 };
     rerender();
     await waitFor(() => {
-      expect(result.current.paneWidth).toBe(600);
+      expect(result.current.paneWidth).toBe(1000);
     });
   });
 

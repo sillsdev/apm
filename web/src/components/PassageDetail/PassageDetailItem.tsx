@@ -108,7 +108,6 @@ export function PassageDetailItem(props: IProps) {
     passage,
     sharedResource,
     playerMediafile,
-    discussionSize,
     rowData,
     currentSegment,
     currentSegmentIndex,
@@ -123,7 +122,6 @@ export function PassageDetailItem(props: IProps) {
     setRecording,
     currentstep,
     section,
-    discussOpen,
   } = usePassageDetailContext();
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
@@ -157,10 +155,8 @@ export function PassageDetailItem(props: IProps) {
   );
 
   useEffect(() => {
-    let newPaneWidth = width - 16;
-    if (discussOpen) newPaneWidth -= discussionSize.width;
-    setPaneWidth(newPaneWidth);
-  }, [discussionSize, width, discussOpen]);
+    setPaneWidth(width - 16);
+  }, [width]);
 
   const setUploadVisible = (value: boolean) => {
     if (value) {

@@ -7,7 +7,7 @@ import {
 } from '../utils/getScrollbarWidth';
 
 export const usePaneWidth = () => {
-  const { discussionSize, discussOpen, setDiscussionSize } =
+  const { discussionSize, setDiscussionSize } =
     useContext(PassageDetailContext).state;
   const [paneWidth, setPaneWidth] = useState(0);
   const [width, setWidth] = useState(window.innerWidth);
@@ -56,14 +56,8 @@ export const usePaneWidth = () => {
   useEffect(() => {
     discussionSizeRef.current = discussionSize;
     widthRef.current = width;
-    let newPaneWidth = widthRef.current;
-    if (discussOpen) {
-      newPaneWidth -= discussionSize.width;
-      newPaneWidth -= scrollbarWidth;
-    }
-    newPaneWidth = Math.max(0, newPaneWidth);
-    setPaneWidth(newPaneWidth);
-  }, [discussionSize, width, discussOpen, scrollbarWidth]);
+    setPaneWidth(Math.max(0, widthRef.current));
+  }, [discussionSize, width]);
 
   return { paneWidth, width, scrollbarWidth };
 };

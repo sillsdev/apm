@@ -97,7 +97,6 @@ const PassageDetailGrids = () => {
     mediafileId,
     sectionArr,
     isBoldWorkflow,
-    discussOpen,
     section,
     passage,
     allBookData,
@@ -173,9 +172,7 @@ const PassageDetailGrids = () => {
   // Pass this to every step player so a new consumer can't forget the fit math.
   const playerPaneWidth = Math.max(
     0,
-    paneWidth -
-      MAGIC_NUMBER_THAT_MAKES_IT_FIT -
-      (discussOpen ? 0 : scrollbarWidth)
+    paneWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT - scrollbarWidth
   );
   // Same fit math for steps that render their own full-width control instead of
   // a player, so they can't overflow the Paper either.
