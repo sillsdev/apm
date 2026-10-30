@@ -395,7 +395,19 @@ export const useMediaUpload = ({
     setComplete(0);
     if (!noBusy) setBusy(false);
     if (cancelled) cancelled.current = ids.length <= 0;
-    if (finish) await finish(ids);
+    if (finish) {
+      try {
+        await finish(ids);
+      } catch (err) {
+        // The upload itself succeeded; log the follow-up failure rather than
+        // rejecting (callers like the upload dialog would swallow it).
+        logError(
+          Severity.error,
+          reporter,
+          infoMsg(toError(err), 'upload finish failed')
+        );
+      }
+    }
     if (ids.length === 0) throw new Error(t.uploadFailed);
     return true;
   };
