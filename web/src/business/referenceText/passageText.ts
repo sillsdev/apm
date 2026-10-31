@@ -4,6 +4,7 @@ import { PassageD } from '../../model';
 import {
   HelloAoSimpleChapterBody,
   HelloAoSimpleContent,
+  HelloAoSimpleVerse,
 } from '../../model/helloAoChapter';
 import { PassageTypeEnum } from '../../model/passageTypeEnum';
 import { hasBook, ReferenceText } from './referenceText';
@@ -85,22 +86,47 @@ const inRange = (chapter: number, verse: number, r: VerseRange) =>
     (chapter === r.startChapter && verse >= r.startVerse)) &&
   (chapter < r.endChapter || (chapter === r.endChapter && verse <= r.endVerse));
 
+const PARAGRAPH = '\n\n';
+
+// A paragraph starting inside a verse follows a newline already in its text
+const withParagraphs = (verse: HelloAoSimpleVerse) =>
+  (Array.isArray(verse.paragraphs) ? verse.paragraphs : [])
+    .map((p) => (isRecord(p) ? p.offset : undefined))
+    .filter(
+      (o): o is number =>
+        typeof o === 'number' && o > 0 && o < verse.text.length
+    )
+    .sort((a, b) => b - a)
+    .reduce(
+      (text, o) => text.slice(0, o) + PARAGRAPH + text.slice(o),
+      verse.text
+    )
+    .trim();
+
 const spokenText = (
   item: HelloAoSimpleContent,
   chapter: number,
   range: VerseRange
 ) => {
+  // content items are read defensively: text may be missing
   if (item.type === 'verse')
-    return inRange(chapter, item.number, range) ? item.text : undefined;
-  // A Psalm title comes before verse 1 and is read with it
+    return typeof item.text === 'string' && inRange(chapter, item.number, range)
+      ? withParagraphs(item)
+      : '';
+  // A Psalm title comes before verse 1 and is read with it, as its own paragraph
   if (item.type === 'hebrew_subtitle')
-    return inRange(chapter, 1, range) ? item.text : undefined;
-  return undefined;
+    return typeof item.text === 'string' && inRange(chapter, 1, range)
+      ? PARAGRAPH + item.text + PARAGRAPH
+      : PARAGRAPH;
+  // A heading is dropped, but its section starts a paragraph
+  if (item.type === 'line_break' || item.type === 'heading') return PARAGRAPH;
+  return '';
 };
 
 /**
- * Speakable text of the verses in range: headings and footnotes dropped,
- * omitted verses skipped, and whitespace collapsed to single spaces.
+ * Speakable text of the verses in range: headings and footnotes dropped and
+ * omitted verses skipped. Paragraphs are separated by a blank line and
+ * poetry lines by a newline; other whitespace is collapsed to single spaces.
  * HelloAO keys a bridged verse (e.g. 3-4) by its first number only.
  */
 export const passageText = (
@@ -108,14 +134,14 @@ export const passageText = (
   range: VerseRange
 ) =>
   chapters
-    .flatMap((c) =>
-      c.content.map((item) =>
-        isRecord(item) && typeof item.text === 'string'
-          ? spokenText(item, c.number, range)
-          : undefined
-      )
-    )
-    .filter((t): t is string => !!t)
+    .flatMap((c) => [
+      PARAGRAPH,
+      ...c.content.map((item) =>
+        isRecord(item) ? spokenText(item, c.number, range) : ''
+      ),
+    ])
     .join(' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n')
+    .replace(/\n{3,}/g, PARAGRAPH)
     .trim();

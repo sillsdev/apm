@@ -63,12 +63,31 @@ describe('passageText', () => {
     );
   });
 
-  it('joins a verse range with single spaces and drops headings', () => {
+  it('joins verses of one paragraph with a space and drops headings', () => {
     const text = passageText([chapter(jhn3)], range(3, 1, 3, 2));
     expect(text).toMatch(
       /^Now there was a man .* leader of the Jews\. He came to Jesus at night/
     );
     expect(text).not.toContain('Jesus and Nicodemus');
+  });
+
+  it('puts a blank line where a new paragraph starts', () => {
+    expect(passageText([chapter(jhn3)], range(3, 2, 3, 4))).toMatch(
+      /were not with him\.”\n\nJesus replied, .*born again\. ”\n\n“How can a man/
+    );
+  });
+
+  it('puts a blank line where a paragraph starts inside a verse', () => {
+    expect(passageText([chapter(jhn4)], range(4, 17, 4, 17))).toBe(
+      '“I have no husband,” the woman replied.\n\nJesus said to her, “You are correct to say that you have no husband.'
+    );
+  });
+
+  it('never starts or ends with a break', () => {
+    // a paragraph starts before 3:3 and after it
+    expect(passageText([chapter(jhn3)], range(3, 3, 3, 3))).toMatch(
+      /^Jesus replied, .*born again\. ”$/
+    );
   });
 
   it('leaves footnotes out of the text', () => {
@@ -83,21 +102,74 @@ describe('passageText', () => {
       range(3, 35, 4, 1)
     );
     expect(text).toMatch(/^The Father loves the Son/);
-    expect(text).toContain('wrath of God remains on him.');
+    expect(text).toContain('wrath of God remains on him.”\n\nWhen Jesus');
     expect(text).toMatch(/more disciples than John$/);
     expect(text).not.toContain('Samaritan');
   });
 
-  it('turns poetry line breaks into spaces', () => {
+  it('keeps poetry lines on their own lines', () => {
     expect(passageText([chapter(psa3)], range(3, 3, 3, 3))).toBe(
-      'But You, O LORD, are a shield around me, my glory, and the One who lifts my head.'
+      'But You, O LORD, are a shield around me,\nmy glory, and the One who lifts my head.'
     );
   });
 
-  it('includes a Psalm title when the range starts at verse 1', () => {
-    expect(passageText([chapter(psa3)], range(3, 1, 3, 1))).toBe(
-      'A Psalm of David, when he fled from his son Absalom. O LORD, how my foes have increased! How many rise up against me!'
+  it('puts a blank line between stanzas', () => {
+    expect(passageText([chapter(psa3)], range(3, 6, 3, 7))).toMatch(
+      /on every side\.\n\nArise, O LORD!\nSave me/
     );
+  });
+
+  it('gives a Psalm title its own paragraph when the range starts at verse 1', () => {
+    expect(passageText([chapter(psa3)], range(3, 1, 3, 1))).toBe(
+      'A Psalm of David, when he fled from his son Absalom.\n\nO LORD, how my foes have increased!\nHow many rise up against me!'
+    );
+  });
+
+  it('starts a paragraph at a heading, a Psalm title or a chapter even without a line break', () => {
+    const verse = (number: number, text: string) => ({
+      type: 'verse',
+      number,
+      text,
+      footnotes: [],
+    });
+    const ch1 = chapter({
+      chapter: {
+        number: 1,
+        content: [
+          verse(1, 'One.'),
+          { type: 'heading', text: 'Heading' },
+          verse(2, 'Two.'),
+        ],
+        footnotes: [],
+      },
+    });
+    const ch2 = chapter({
+      chapter: {
+        number: 2,
+        content: [
+          { type: 'hebrew_subtitle', text: 'Title.', footnotes: [] },
+          verse(1, 'Three.'),
+        ],
+        footnotes: [],
+      },
+    });
+    expect(passageText([ch1, ch2], range(1, 1, 2, 1))).toBe(
+      'One.\n\nTwo.\n\nTitle.\n\nThree.'
+    );
+  });
+
+  it('collapses spaces and trims each line', () => {
+    const ch = chapter({
+      chapter: {
+        number: 1,
+        content: [
+          { type: 'verse', number: 1, text: ' a \t b \n  c ', footnotes: [] },
+          { type: 'verse', number: 2, text: '\nd', footnotes: [] },
+        ],
+        footnotes: [],
+      },
+    });
+    expect(passageText([ch], range(1, 1, 1, 2))).toBe('a b\nc d');
   });
 
   it('leaves out a Psalm title when the range starts later', () => {
