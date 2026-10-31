@@ -14,6 +14,10 @@
         "text": "Jesus and Nicodemus"
       },
       {
+        "type": "line_break",
+        "paragraph": "m"
+      },
+      {
         "type": "verse",
         "number": 1,
         "text": "Now there was a man of the Pharisees named Nicodemus, a leader of the Jews.",
@@ -24,6 +28,10 @@
         "number": 2,
         "text": "He came to Jesus at night and said, “Rabbi, we know that You are a teacher who has come from God. For no one could perform the signs You are doing if God were not with him.”",
         "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
       },
       {
         "type": "verse",
@@ -39,10 +47,18 @@
         ]
       },
       {
+        "type": "line_break",
+        "paragraph": "m"
+      },
+      {
         "type": "verse",
         "number": 4,
         "text": "“How can a man be born when he is old?” Nicodemus asked. “Can he enter his mother’s womb a second time to be born?”",
         "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
       },
       {
         "type": "verse",
@@ -55,6 +71,10 @@
         "number": 34,
         "text": "For the One whom God has sent speaks the words of God, for God gives the Spirit without limit.",
         "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
       },
       {
         "type": "verse",
