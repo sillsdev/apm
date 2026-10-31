@@ -15,6 +15,9 @@ import { IRegion, ToolSlug, useStepTool } from '../../../crud';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
 import { IMarker } from '../../../crud/useWaveSurfer';
+import { ReferenceTextRank } from '../../../business/referenceText/referenceText';
+import { compareReferenceTextRank } from '../Internalization/compareReferenceTextId';
+import { CompareReferenceText } from '../Internalization/CompareReferenceText';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -78,6 +81,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
   };
 
   const [resource, setResource] = useState('');
+  const [referenceRank, setReferenceRank] = useState<ReferenceTextRank>();
   const { removeStoredKeys, saveKey, storeKey, SecSlug } = storedCompareKey(
     passage,
     section
@@ -94,6 +98,15 @@ export function TeamCheckReferenceMobile(props: IProps) {
   }, [topPlaying, playing]);
 
   const handleResource = (id: string) => {
+    // A Reference Text is spoken, not played: it gets no media player. TT-7819
+    const rank = compareReferenceTextRank(id);
+    setReferenceRank(rank);
+    if (rank) {
+      removeStoredKeys();
+      saveKey(id);
+      setMediaId(undefined);
+      return;
+    }
     const row = rowData.find((r) => r.id === id);
     if (row) {
       removeStoredKeys();
@@ -122,6 +135,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
   useEffect(() => {
     setPlayItem('');
+    setReferenceRank(undefined);
     const res = localStorage.getItem(storeKey());
     const secId = localStorage.getItem(storeKey(SecSlug));
     if (res && secId === section.id) {
@@ -174,6 +188,9 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
       <MobileGrid>
         <StyledGrid size={{ xs: 12 }}>
+          {referenceRank && (
+            <CompareReferenceText rank={referenceRank} mobile />
+          )}
           {tool !== ToolSlug.KeyTerm && mediaId && (
             <PassageDetailPlayer
               width={Math.round(Math.max(playerWidth, width))}

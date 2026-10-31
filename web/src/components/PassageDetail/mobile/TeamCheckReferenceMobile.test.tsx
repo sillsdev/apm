@@ -57,13 +57,83 @@ jest.mock('../../../utils/storedCompareKey', () => ({
   }),
 }));
 
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+// TT-7819: the Reference Text parts Compare reuses from Internalize
+const mockPassages: Record<string, unknown> = {};
+// Each rank's Reference Text is a stand-in whose id is the rank
+jest.mock('../../../business/referenceText/useReferenceTextPassage', () => ({
+  useProjectReferenceTexts: () => [{ id: 'primary' }, { id: 'secondary' }],
+  useReferenceTextPassage: (_p: unknown, referenceText: { id: string }) =>
+    mockPassages[referenceText.id] ?? { status: 'none' },
+}));
+jest.mock('../../../business/referenceText/speakReferenceText', () => ({
+  speakReferenceText: jest.fn(),
+}));
+jest.mock('../Internalization/usePassageRef', () => ({
+  usePassageRef: () => ({ passageRef: () => 'John 3:16' }),
+}));
+jest.mock('../../StepEditor', () => ({
+  LightTooltip: ({ children }: { children: React.ReactNode }) => children,
+}));
+jest.mock('../../../hoc/BigDialog', () => ({
+  __esModule: true,
+  default: ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) => (
+    <div role="dialog" aria-label={title}>
+      {children}
+    </div>
+  ),
+}));
+jest.mock('../../../selector', () => ({
+  vProjectSelector: () => ({
+    primaryReferenceText: 'Primary Reference Text',
+    secondaryReferenceText: 'Secondary Reference Text',
+    licenseNotStated: 'License not stated',
+  }),
+  passageDetailArtifactsSelector: () => ({
+    referenceTextLoading: 'Loading passage…',
+    referenceTextNoVoice: 'No voice for {0} on this device.',
+    referenceTextSpeakFailed: 'The passage could not be spoken.',
+  }),
+  sharedSelector: () => ({ close: 'Close' }),
+  mediaActionsSelector: () => ({ play: 'Play', stop: 'Stop', view: 'View' }),
+}));
+jest.mock('react-redux', () => ({
+  shallowEqual: jest.fn(),
+  useSelector: (sel: (s: unknown) => unknown) =>
+    sel({ strings: { lang: 'en' } }),
+}));
+
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSX (react-jsx) still expects React in scope for TS in this file
 import React from 'react';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { TeamCheckReferenceMobile } from './TeamCheckReferenceMobile';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import SelectMyResource from '../Internalization/SelectMyResource';
+import { speakReferenceText } from '../../../business/referenceText/speakReferenceText';
+
+const mockSpeak = speakReferenceText as jest.Mock;
+const bsb = {
+  id: 'BSB',
+  name: 'Berean Standard Bible',
+  englishName: 'Berean Standard Bible',
+  language: 'eng',
+  textDirection: 'ltr',
+  license: '',
+  books: 'JHN',
+};
 
 const PassageDetailPlayerMock =
   PassageDetailPlayer as unknown as jest.MockedFunction<
@@ -86,6 +156,10 @@ function buildState(overrides: Record<string, unknown> = {}) {
     setMediaSelected: jest.fn(),
     playing: false,
     setPlaying: jest.fn(),
+    // Speaking a Reference Text stops other passage playback
+    setItemPlaying: jest.fn(),
+    setCommentPlaying: jest.fn(),
+    handleOldVernacularPlayEnd: jest.fn(),
     section: { id: 'section-1' },
     passage: { id: 'passage-1' },
     currentstep: 'compare-step',
@@ -147,6 +221,11 @@ describe('TeamCheckReferenceMobile', () => {
     jest.clearAllMocks();
     PassageDetailPlayerMock.mockClear();
     localStorage.clear();
+    delete mockPassages.primary;
+    mockSpeak.mockReturnValue({
+      done: new Promise(() => undefined),
+      stop: jest.fn(),
+    });
     global.ResizeObserver = class {
       observe = jest.fn();
       unobserve = jest.fn();
@@ -284,5 +363,26 @@ describe('TeamCheckReferenceMobile', () => {
         false
       );
     });
+  });
+
+  // TT-7819: a Reference Text picked on mobile Compare is spoken, so it gets
+  // Play and View instead of a second media player.
+  it('TT-7819: speaks the Primary Reference Text picked as the resource', () => {
+    mockPassages.primary = {
+      status: 'ready',
+      referenceText: bsb,
+      text: 'For God so loved',
+    };
+    renderWithContext({ rowData: [resourceRow] });
+
+    selectResource('referenceText:primary');
+
+    expect(screen.getAllByTestId('passage-player')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(mockSpeak).toHaveBeenCalledWith(
+      bsb,
+      'For God so loved',
+      expect.any(Function)
+    );
   });
 });
