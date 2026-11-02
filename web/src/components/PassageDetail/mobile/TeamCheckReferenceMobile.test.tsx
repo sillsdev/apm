@@ -48,6 +48,10 @@ jest.mock('../Internalization/SelectMyResource', () => ({
   default: jest.fn(() => <div data-testid="select-resource" />),
 }));
 
+jest.mock('../../../crud/useOrgDefaults', () => ({
+  orgDefaultTtsVoices: 'ttsVoices',
+  useOrgDefaults: () => ({ getOrgDefault: () => undefined }),
+}));
 jest.mock('../../../utils/storedCompareKey', () => ({
   storedCompareKey: () => ({
     removeStoredKeys: jest.fn(),
@@ -382,7 +386,8 @@ describe('TeamCheckReferenceMobile', () => {
     expect(mockSpeak).toHaveBeenCalledWith(
       bsb,
       'For God so loved',
-      expect.any(Function)
+      expect.any(Function),
+      {}
     );
   });
 });

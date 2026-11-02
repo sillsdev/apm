@@ -21,6 +21,10 @@ jest.mock('../../../context/usePassageDetailContext', () => ({
     handleOldVernacularPlayEnd: jest.fn(),
   }),
 }));
+jest.mock('../../../crud/useOrgDefaults', () => ({
+  orgDefaultTtsVoices: 'ttsVoices',
+  useOrgDefaults: () => ({ getOrgDefault: () => undefined }),
+}));
 jest.mock('./ReferenceTextDialog', () => ({ ReferenceTextDialog: () => null }));
 jest.mock('../../StepEditor', () => ({
   LightTooltip: ({ children }: { children: ReactNode }) => children,
@@ -73,7 +77,8 @@ describe('CompareReferenceText', () => {
     expect(mockSpeak).toHaveBeenLastCalledWith(
       { id: 'WEB', language: 'eng' },
       'For God so loved the world',
-      expect.any(Function)
+      expect.any(Function),
+      {}
     );
     expect(await screen.findByLabelText('Stop')).toBeInTheDocument();
   });
