@@ -78,9 +78,10 @@ import bookSortJson from '../assets/akuosort.json';
 import { passageTypeFromRef } from '../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../model/passageType';
 import {
-  getKey,
+  ProjectSortItem,
   SortArr,
   SortMap,
+  sortProjects,
 } from '../components/Team/ProjectDialog/projectSortUtils';
 
 export type TeamIdType = OrganizationD | null;
@@ -447,25 +448,14 @@ const TeamProvider = (props: IProps) => {
     importProject,
   });
 
-  // cache plan sort values to avoid recalculating
-  const planSortMap = new Map<string, string>();
-  const noPlan = 'Zxx';
-
-  const planKey = (p: PlanD, map: SortMap): string => {
-    if (planSortMap.has(p.id)) return planSortMap.get(p.id) || noPlan;
-    const proj = findRecord(
+  const planSortItem = (p: PlanD): ProjectSortItem<PlanD> => {
+    const project = findRecord(
       memory,
       'project',
       related(p, 'project')
     ) as ProjectD;
-    const sortKeyInt = getKey(proj, map);
-    const sortKey = sortKeyInt !== undefined ? pad3(sortKeyInt) : undefined;
-    const key =
-      sortKey ?? (getProjectDefault(projDefBook, proj) as string | undefined);
-    if (key) planSortMap.set(p.id, key);
-
-    //I suggest prepending the sort order to the plan slug
-    return key ?? p?.attributes?.name ?? noPlan;
+    const book = getProjectDefault(projDefBook, project) as string | undefined;
+    return { item: p, project, book, name: p?.attributes?.name };
   };
 
   const getSortMap = (teamId?: string) => {
@@ -477,13 +467,8 @@ const TeamProvider = (props: IProps) => {
     return new Map<string, number>(sortArr);
   };
 
-  const planSort = (map: SortMap) => (i: PlanD, j: PlanD) => {
-    const iKey = planKey(i, map);
-    const jKey = planKey(j, map);
-    return iKey !== jKey
-      ? iKey.localeCompare(jKey)
-      : i?.attributes?.name?.trim().localeCompare(j?.attributes?.name?.trim());
-  };
+  const planSort = (planList: PlanD[], map: SortMap) =>
+    sortProjects(planList.map(planSortItem), map);
 
   const teamProjects = (teamId: string) => {
     const projIds = userProjects
@@ -495,10 +480,10 @@ const TeamProvider = (props: IProps) => {
       )
       .map((p) => p.id);
     const sortMap = getSortMap(teamId);
-    return plans
-      .filter((p) => projIds.includes(related(p, 'project')))
-      .sort(planSort(sortMap))
-      .map((p) => vProject(p));
+    return planSort(
+      plans.filter((p) => projIds.includes(related(p, 'project'))),
+      sortMap
+    ).map((p) => vProject(p));
   };
 
   const projectSections = (plan: Plan) => {
@@ -627,15 +612,15 @@ const TeamProvider = (props: IProps) => {
       )
       .map((p) => p.id);
     const sortMap = getSortMap();
-    const personalProjects = plans
-      .filter((p) => projIds.includes(related(p, 'project')))
-      .sort(planSort(sortMap))
-      .map((p) =>
-        vProject(
-          p,
-          userProjects.find((up) => up.id === related(p, 'project'))
-        )
-      );
+    const personalProjects = planSort(
+      plans.filter((p) => projIds.includes(related(p, 'project'))),
+      sortMap
+    ).map((p) =>
+      vProject(
+        p,
+        userProjects.find((up) => up.id === related(p, 'project'))
+      )
+    );
     setState((state) => ({ ...state, personalProjects }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProjects, organizations, plans, isOffline, state.personalTeam]);
