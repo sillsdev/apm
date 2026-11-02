@@ -24,15 +24,12 @@ const splitLong = (sentence: string, max: number) => {
   return parts;
 };
 
-/**
- * Text cut into utterances of at most `max` characters, at sentence breaks
- * where possible. Nothing is dropped, so chunk lengths add up to the text.
- */
-export const speechChunks = (text: string, lang: string, max = MAX_CHUNK) => {
-  if (!text.trim()) return [];
+const paragraphChunks = (paragraph: string, lang: string, max: number) => {
   const chunks: string[] = [];
   let current = '';
-  for (const part of sentences(text, lang).flatMap((s) => splitLong(s, max))) {
+  for (const part of sentences(paragraph, lang).flatMap((s) =>
+    splitLong(s, max)
+  )) {
     if (current && current.length + part.length > max) {
       chunks.push(current);
       current = '';
@@ -41,4 +38,17 @@ export const speechChunks = (text: string, lang: string, max = MAX_CHUNK) => {
   }
   if (current) chunks.push(current);
   return chunks;
+};
+
+/**
+ * Text cut into utterances of at most `max` characters, at sentence breaks
+ * where possible. A paragraph break (blank line) always ends an utterance,
+ * so the voice pauses there. Nothing is dropped, so chunk lengths add up to
+ * the text.
+ */
+export const speechChunks = (text: string, lang: string, max = MAX_CHUNK) => {
+  if (!text.trim()) return [];
+  return text
+    .split(/(?<=\n\n)/)
+    .flatMap((paragraph) => paragraphChunks(paragraph, lang, max));
 };

@@ -10,6 +10,10 @@
     "number": 1,
     "content": [
       {
+        "type": "line_break",
+        "paragraph": "p"
+      },
+      {
         "type": "verse",
         "number": 1,
         "text": "Nad' Pablo, nak' wen llin c̱he Cristo Jesúza'. Chioza' gox wṉabe' nad' gak' postl c̱he', na' bene' lall' na' wi'a dill' wen dill' kob c̱he'na'",
@@ -37,6 +41,16 @@
         "type": "verse",
         "number": 6,
         "text": "Na' lenle ba gox wṉab Chioza' kwenc̱he gakle lall' na' Jesucrístona'.",
+        "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "p"
+      },
+      {
+        "type": "verse",
+        "number": 7,
+        "text": "Chzej' yog'ḻoḻ-le, le' lle'le yell Rómana', le' ba gox wṉab Chioza' nakle lall' nee na' chakile' le'. X̱acho Chioza' na' X̱ancho Jesucrístona' gaklenshgagake' le' na' wzoagake' le' mbalaz.",
         "footnotes": []
       }
     ],

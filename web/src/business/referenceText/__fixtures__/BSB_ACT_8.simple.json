@@ -10,14 +10,18 @@
     "number": 8,
     "content": [
       {
-        "type": "heading",
-        "text": "Saul Persecutes the Church"
+        "type": "line_break",
+        "paragraph": "m"
       },
       {
         "type": "verse",
         "number": 35,
         "text": "Then Philip began with this very Scripture and told him the good news about Jesus.",
         "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
       },
       {
         "type": "verse",
@@ -37,6 +41,10 @@
         "number": 38,
         "text": "And he gave orders to stop the chariot. Then both Philip and the eunuch went down into the water, and Philip baptized him.",
         "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
       },
       {
         "type": "verse",

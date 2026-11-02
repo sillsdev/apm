@@ -14,6 +14,10 @@
         "text": "Jesus and the Samaritan Woman"
       },
       {
+        "type": "line_break",
+        "paragraph": "m"
+      },
+      {
         "type": "verse",
         "number": 1,
         "text": "When Jesus realized that the Pharisees were aware He was gaining and baptizing more disciples than John",
@@ -36,6 +40,38 @@
         "type": "verse",
         "number": 3,
         "text": "He left Judea and returned to Galilee.",
+        "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
+      },
+      {
+        "type": "verse",
+        "number": 16,
+        "text": "Jesus told her, “Go, call your husband and come back.”",
+        "footnotes": []
+      },
+      {
+        "type": "line_break",
+        "paragraph": "m"
+      },
+      {
+        "type": "verse",
+        "number": 17,
+        "text": "“I have no husband,” the woman replied.\nJesus said to her, “You are correct to say that you have no husband.",
+        "footnotes": [],
+        "paragraphs": [
+          {
+            "offset": 40,
+            "style": "m"
+          }
+        ]
+      },
+      {
+        "type": "verse",
+        "number": 18,
+        "text": "In fact, you have had five husbands, and the man you now have is not your husband. You have spoken truthfully.”",
         "footnotes": []
       }
     ],

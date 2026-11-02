@@ -28,8 +28,17 @@ describe('speechChunks', () => {
     ]);
   });
 
+  it('ends a chunk at each paragraph break', () => {
+    expect(speechChunks('One.\n\nTwo.\nThree.\n\nFour.', 'en')).toEqual([
+      'One.\n\n',
+      'Two.\nThree.\n\n',
+      'Four.',
+    ]);
+  });
+
   it('loses no characters, so offsets add up to the text', () => {
-    const text = 'In the beginning was the Word. And the Word was with God.';
+    const text =
+      'In the beginning was the Word.\n\nAnd the Word\nwas with God.';
     expect(speechChunks(text, 'en', 20).join('')).toBe(text);
   });
 
