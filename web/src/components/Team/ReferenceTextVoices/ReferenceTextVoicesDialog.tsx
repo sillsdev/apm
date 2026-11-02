@@ -46,9 +46,19 @@ import {
 } from './VoiceLanguageGroup';
 import { VoiceInstallNote } from './VoiceInstallNote';
 
+/** What the dialog edits: the team's Voice Ranking and Reference Text filter. */
+export interface TtsVoiceSettings {
+  ranking: VoiceRanking;
+  filter: boolean;
+}
+
 export interface ReferenceTextVoicesDialogProps {
-  /** Organization id whose defaults hold the Voice Ranking. */
-  team: string;
+  /** Organization id whose defaults hold the Voice Ranking; absent for a team not yet added. */
+  team?: string;
+  /** Settings to start from instead of the team's org defaults. */
+  value?: TtsVoiceSettings;
+  /** Receives the settings on Save instead of writing the team's org defaults. */
+  onSave?: (value: TtsVoiceSettings) => void;
   onClose: () => void;
 }
 
@@ -96,18 +106,22 @@ function VoiceGroupList(props: VoiceGroupListProps) {
 export function ReferenceTextVoicesDialog(
   props: ReferenceTextVoicesDialogProps
 ) {
-  const { team, onClose } = props;
+  const { team, value, onSave, onClose } = props;
   const t: ITtsVoicesStrings = useSelector(ttsVoicesSelector, shallowEqual);
   const tc: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const lang = useSelector((state: IState) => state.strings.lang);
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
   // Read once: the saved ranking orders the language groups while editing.
-  const [savedRanking] = useState(() =>
-    parseVoiceRanking(getOrgDefault(orgDefaultTtsVoices, team))
+  const [savedRanking] = useState(
+    () =>
+      value?.ranking ??
+      parseVoiceRanking(team && getOrgDefault(orgDefaultTtsVoices, team))
   );
   const [draftRanking, setDraftRanking] = useState<VoiceRanking>(savedRanking);
   const [draftFilter, setDraftFilter] = useState(
-    () => getOrgDefault(orgDefaultTtsFilterRefText, team) === true
+    () =>
+      value?.filter ??
+      (!!team && getOrgDefault(orgDefaultTtsFilterRefText, team) === true)
   );
   const [draftSample, setDraftSample] = useState<string>();
   const [search, setSearch] = useState('');
@@ -116,9 +130,10 @@ export function ReferenceTextVoicesDialog(
   const { reading, toggle } = useVoiceSample();
   const teamTexts = useTeamReferenceTexts(team);
 
+  // Without a team the hook reads personal projects, which a new team lacks.
   const usedLanguages = useMemo(
-    () => new Set(teamTexts.map((r) => voiceLanguage(r.language))),
-    [teamTexts]
+    () => new Set(team ? teamTexts.map((r) => voiceLanguage(r.language)) : []),
+    [team, teamTexts]
   );
   const groups = useMemo(() => {
     if (device.status !== 'ready') return [];
@@ -146,8 +161,12 @@ export function ReferenceTextVoicesDialog(
   const sample = draftSample ?? t.sampleDefault;
 
   const handleSave = () => {
-    setOrgDefault(orgDefaultTtsVoices, draftRanking, team);
-    setOrgDefault(orgDefaultTtsFilterRefText, draftFilter && hasRanking, team);
+    const filter = draftFilter && hasRanking;
+    if (onSave) onSave({ ranking: draftRanking, filter });
+    else if (team) {
+      setOrgDefault(orgDefaultTtsVoices, draftRanking, team);
+      setOrgDefault(orgDefaultTtsFilterRefText, filter, team);
+    }
     onClose();
   };
 

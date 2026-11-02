@@ -48,7 +48,9 @@ import {
 import { isElectron } from '../../../api-variable';
 
 import { FeatureSlug } from './FeatureSlug';
-import ReferenceTextVoicesDialog from './ReferenceTextVoices/ReferenceTextVoicesDialog';
+import ReferenceTextVoicesDialog, {
+  type TtsVoiceSettings,
+} from './ReferenceTextVoices/ReferenceTextVoicesDialog';
 
 const Details = styled(AccordionDetails)<AccordionDetailsProps>(
   ({ theme }) => ({
@@ -78,10 +80,13 @@ interface IProps {
   team?: Organization;
   values: IValues;
   setValue: (what: string, value: string, init?: boolean) => void;
+  /** Voice settings for a team not yet added; saved with the team. */
+  ttsVoices?: TtsVoiceSettings;
+  setTtsVoices?: (value: TtsVoiceSettings) => void;
 }
 
 export function TeamSettings(props: IProps) {
-  const { mode, team, values, setValue } = props;
+  const { mode, team, values, setValue, ttsVoices, setTtsVoices } = props;
   const ctx = React.useContext(TeamContext);
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -94,12 +99,12 @@ export function TeamSettings(props: IProps) {
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tv: ITtsVoicesStrings = useSelector(ttsVoicesSelector, shallowEqual);
+  const isAdd = mode === DialogMode.add;
   // Admins of this team, not the selected one that canSetOrgDefault checks.
-  const showTtsVoices =
-    mode !== DialogMode.add &&
-    !!team?.id &&
-    team.id !== personalTeam &&
-    userIsOrgAdmin(team.id);
+  // Whoever adds a team becomes its admin.
+  const showTtsVoices = isAdd
+    ? !!setTtsVoices
+    : !!team?.id && team.id !== personalTeam && userIsOrgAdmin(team.id);
   // Same online rule as canSetOrgDefault.
   const canSetTtsVoices = offlineOnly || !offline;
   const workflowOptions = [
@@ -298,7 +303,14 @@ export function TeamSettings(props: IProps) {
           onOpen={() => setVoiceVisible(false)}
         />
       </BigDialog>
-      {ttsVoicesVisible && team?.id && (
+      {ttsVoicesVisible && isAdd && (
+        <ReferenceTextVoicesDialog
+          value={ttsVoices}
+          onSave={setTtsVoices}
+          onClose={() => setTtsVoicesVisible(false)}
+        />
+      )}
+      {ttsVoicesVisible && !isAdd && team?.id && (
         <ReferenceTextVoicesDialog
           team={team.id}
           onClose={() => setTtsVoicesVisible(false)}

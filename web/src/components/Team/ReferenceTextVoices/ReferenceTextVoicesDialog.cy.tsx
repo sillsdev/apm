@@ -6,7 +6,10 @@ import { GlobalProvider } from '../../../context/GlobalContext';
 import { TeamContext } from '../../../context/TeamContext';
 import DataProvider from '../../../hoc/DataProvider';
 import localizationReducer from '../../../store/localization/reducers';
-import { ReferenceTextVoicesDialog } from './ReferenceTextVoicesDialog';
+import {
+  ReferenceTextVoicesDialog,
+  type ReferenceTextVoicesDialogProps,
+} from './ReferenceTextVoicesDialog';
 
 const TEAM_ID = 'team-1';
 
@@ -88,7 +91,10 @@ const teamRecord = (defaults: object) => ({
 const savedDefaults = (records: RecordsByKey) =>
   JSON.parse(records[`organization:${TEAM_ID}`].attributes.defaultParams);
 
-const mountDialog = (defaults: object = {}) => {
+const mountDialog = (
+  defaults: object = {},
+  props: Partial<ReferenceTextVoicesDialogProps> = { team: TEAM_ID }
+) => {
   const records: RecordsByKey = {
     [`organization:${TEAM_ID}`]: teamRecord(defaults),
   };
@@ -128,7 +134,7 @@ const mountDialog = (defaults: object = {}) => {
               } as any
             }
           >
-            <ReferenceTextVoicesDialog team={TEAM_ID} onClose={onClose} />
+            <ReferenceTextVoicesDialog {...props} onClose={onClose} />
           </TeamContext.Provider>
         </DataProvider>
       </GlobalProvider>
@@ -166,6 +172,24 @@ describe('ReferenceTextVoicesDialog', () => {
       ).to.deep.equal(['Microsoft David', 'Microsoft Zira']);
       expect(saved.ttsFilterRefText).to.equal(true);
     });
+  });
+
+  it('hands the settings to onSave for a team not yet added', () => {
+    const onSave = cy.stub().as('onSave');
+    const records = mountDialog(
+      {},
+      { value: { ranking: { en: [mark] }, filter: true }, onSave }
+    );
+    group('English')
+      .contains('li', 'Microsoft Mark')
+      .should('contain.text', 'Not on this device');
+    cy.get('#tts-filter-reference-texts').should('be.checked');
+    cy.get('#tts-save').click();
+    cy.get('@onSave').should('have.been.calledOnceWith', {
+      ranking: { en: [mark] },
+      filter: true,
+    });
+    cy.then(() => expect(savedDefaults(records).ttsVoices).to.equal(undefined));
   });
 
   it('saves nothing on Cancel', () => {
