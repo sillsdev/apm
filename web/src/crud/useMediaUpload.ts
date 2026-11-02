@@ -27,6 +27,7 @@ import { toError } from '../utils/toError';
 import path from 'path-browserify';
 import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
 import { findRecords } from './tryFindRecord';
+import { convertToFormat, DEFAULT_COMPRESSED_MIME } from './convertToWebM';
 
 /**
  * The values that become the uploaded mediafile (its attributes and
@@ -87,6 +88,11 @@ export interface IMediaUploadProps {
   /** Opt in to passage filename versioning (upload tab); recordings omit it. */
   versionFilenames?: boolean | undefined;
   importList?: File[] | undefined;
+  /**
+   * Target save file type. Omit for normal compression, supply 'audio/wav'
+   * to skip compression, or supply another type to convert to that before saving.
+   */
+  mimeType?: string;
 }
 
 /**
@@ -109,6 +115,7 @@ export const useMediaUpload = ({
   skipImportExportWait,
   versionFilenames,
   importList,
+  mimeType,
 }: IMediaUploadProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -280,6 +287,20 @@ export const useMediaUpload = ({
     return '';
   };
 
+  const compressFile = async (file: File): Promise<File> => {
+    const type = mimeType ?? DEFAULT_COMPRESSED_MIME;
+    if (file.type === type) return file;
+    try {
+      const blob = await convertToFormat(file, mimeType);
+      const ext = type.split(/[/;]/)[1];
+      const name = file.name.replace(/\.[^.]*$/, '') + `.${ext}`;
+      return new File([blob], name, { type });
+    } catch (err) {
+      logError(Severity.info, reporter, err as Error);
+      return file;
+    }
+  };
+
   // TODO cleanup: the snackbar holds one message at a time (showMessage
   // replaces snackMessage), so back-to-back messages overwrite each other.
   // Centralize spacing/queueing in useSnackBar? We should consider if MUI or a
@@ -386,7 +407,13 @@ export const useMediaUpload = ({
   const run = async (files: File[]): Promise<boolean> => {
     if (!files || files.length === 0) return false;
     if (beforeUpload) await beforeUpload();
-    const staged = applyVersionSuffix(files);
+
+    const filesToSave =
+      mimeType === 'audio/wav'
+        ? files
+        : await Promise.all(files.map(compressFile));
+
+    const staged = applyVersionSuffix(filesToSave);
     if (!NON_FILE_UPLOAD_TYPES.includes(effectiveType)) uploadFiles(staged);
     const startedBusy = Boolean(getGlobal('importexportBusy'));
     if (!noBusy) setBusy(true);

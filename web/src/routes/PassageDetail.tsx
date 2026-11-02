@@ -118,7 +118,7 @@ const MobileStep = () => {
   const width = Math.max(0, paneWidth - 40);
 
   if (tool === ToolSlug.Record) {
-    return <PassageDetailRecord width={width} />;
+    return <PassageDetailRecord />;
   }
   if (tool === ToolSlug.Resource) {
     return <PassageDetailsArtifactsMobile />;

@@ -25,7 +25,7 @@ interface ISelectVoice {
   noNewVoice?: boolean;
   onlySettings?: boolean;
   onOpen: () => void;
-  begin?: () => void;
+  begin?: (voice: string) => void;
   refresh?: () => void;
 }
 
@@ -104,7 +104,7 @@ export default function SelectVoice({
             <Button
               color="primary"
               disabled={!voice?.trim() || !rights}
-              onClick={begin}
+              onClick={() => begin?.(voice!)}
             >
               {t.convert}
             </Button>

@@ -345,9 +345,7 @@ const PassageDetailGrids = () => {
                   artifactTypeId={artifactId}
                 />
               )}
-              {tool === ToolSlug.Record && (
-                <PassageDetailRecord width={fittedPaneWidth} />
-              )}
+              {tool === ToolSlug.Record && <PassageDetailRecord />}
               {tool === ToolSlug.ConsultantCheck && (
                 <ConsultantCheck width={playerPaneWidth} />
               )}
