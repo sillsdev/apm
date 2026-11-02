@@ -9,12 +9,15 @@ const buttonSize = 32;
 
 interface IProps {
   mediaId: string;
+  /** Note titles hide the ring until playback starts. Cards keep it visible. */
+  ring?: 'always' | 'playing';
 }
 
-export function PassagePlayButton({ mediaId }: IProps) {
+export function PassagePlayButton({ mediaId, ring = 'always' }: IProps) {
   const { playing, loading, progress, toggle, audio } =
     usePassagePlayback(mediaId);
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
+  const showRing = ring === 'always' || playing || loading;
 
   return (
     <Box
@@ -26,25 +29,33 @@ export function PassagePlayButton({ mediaId }: IProps) {
         flexShrink: 0,
       }}
     >
-      <CircularProgress
-        variant="determinate"
-        value={100}
-        size={buttonSize}
-        thickness={3}
-        sx={{ position: 'absolute', color: 'grey.300' }}
-      />
-      <CircularProgress
-        variant={loading ? 'indeterminate' : 'determinate'}
-        value={progress}
-        size={buttonSize}
-        thickness={3}
-        sx={{ position: 'absolute', color: 'primary.main' }}
-      />
+      {showRing ? (
+        <>
+          <CircularProgress
+            variant="determinate"
+            value={100}
+            size={buttonSize}
+            thickness={3}
+            sx={{ position: 'absolute', color: 'grey.300' }}
+          />
+          <CircularProgress
+            variant={loading ? 'indeterminate' : 'determinate'}
+            value={progress}
+            size={buttonSize}
+            thickness={3}
+            sx={{ position: 'absolute', color: 'primary.main' }}
+          />
+        </>
+      ) : null}
       <IconButton
         data-testid="play-button"
         aria-label={t.playPause}
         title={t.playPause}
-        onClick={toggle}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.stopPropagation();
+          toggle();
+        }}
         sx={{ width: buttonSize, height: buttonSize, color: 'custom.black' }}
       >
         {playing ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}

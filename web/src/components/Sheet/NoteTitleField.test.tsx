@@ -7,6 +7,8 @@ const mockToggle = jest.fn();
 jest.mock('./usePassagePlayback', () => ({
   usePassagePlayback: jest.fn(() => ({
     playing: false,
+    loading: false,
+    progress: 0,
     toggle: mockToggle,
     audio: null,
   })),
@@ -16,7 +18,10 @@ import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useSelector } from 'react-redux';
 import { NoteTitleField } from './NoteTitleField';
+import { usePassagePlayback } from './usePassagePlayback';
 import { shouldOpenSheetContextMenu } from './sheetContextMenu';
+
+const mockPlayback = usePassagePlayback as jest.Mock;
 
 const mockUseSelector = useSelector as unknown as jest.Mock;
 
@@ -36,56 +41,42 @@ function TitleCell() {
   );
 }
 
-describe('note title dictionary', () => {
+describe('note title', () => {
   beforeEach(() => {
     mockUseSelector.mockReturnValue({
       title: 'Title',
       playPause: 'Play / Pause',
     });
+    mockPlayback.mockReturnValue({
+      playing: false,
+      loading: false,
+      progress: 0,
+      toggle: mockToggle,
+      audio: null,
+    });
   });
 
-  it('shows a spell-checked note title that is not an editable field', () => {
-    const { container } = render(<TitleCell />);
-    const title = screen.getByRole('textbox', { name: 'Title' });
-    expect(title).toHaveValue('Teest');
-    expect(title).toHaveAttribute('spellcheck', 'true');
-    // Spellcheck needs an editable element. The title itself is not one.
-    expect(title).not.toHaveAttribute('readonly');
-    expect(title).toHaveAttribute('aria-readonly', 'true');
-    expect(
-      container.querySelector('.MuiOutlinedInput-notchedOutline')
-    ).toBeNull();
-    fireEvent.change(title, { target: { value: 'Changed' } });
-    expect(title).toHaveValue('Teest');
+  it('shows the note title as text and opens the sheet menu', () => {
+    render(<TitleCell />);
+    const title = screen.getByText('Teest');
+    expect(screen.queryByRole('textbox')).toBeNull();
     fireEvent.contextMenu(title);
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
   it('keeps the note icon and title on one line', () => {
-    const style = document.createElement('style');
-    // Same rule react-datasheet applies to an input that is a direct child of a cell.
-    style.textContent =
-      '.cell > input { display: block; width: calc(100% - 6px); height: 11px; }';
-    document.head.appendChild(style);
-    const { container } = render(
-      <div className="cell" style={{ width: 280 }}>
-        <NoteTitleField value="Teest" />
-      </div>
-    );
-    const title = screen.getByRole('textbox', { name: 'Title' });
-    const icon = container.querySelector('[data-testid="note-icon"]');
-    expect(icon).not.toBeNull();
-    expect(title.parentElement).toBe(icon?.parentElement);
-    expect(
-      getComputedStyle(title.parentElement as HTMLElement).whiteSpace
-    ).toBe('nowrap');
-    expect(getComputedStyle(title).width).not.toContain('%');
-    style.remove();
+    render(<NoteTitleField value="Teest" />);
+    const title = screen.getByText('Teest');
+    const icon = screen.getByTestId('note-icon');
+    expect(title).toContainElement(icon);
+    expect(getComputedStyle(title).whiteSpace).toBe('nowrap');
   });
 
   it('plays a recorded title from a button before the note icon', () => {
     mockToggle.mockClear();
-    render(<NoteTitleField value="Teest" mediaId="title-media" />);
+    const { container } = render(
+      <NoteTitleField value="Teest" mediaId="title-media" />
+    );
     const play = screen.getByRole('button', { name: 'Play / Pause' });
     const icon = screen.getByTestId('note-icon');
     expect(play.compareDocumentPosition(icon)).toBe(
@@ -93,7 +84,25 @@ describe('note title dictionary', () => {
     );
     fireEvent.click(play);
     expect(mockToggle).toHaveBeenCalled();
-    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue('Teest');
+    expect(screen.getByText('Teest')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(container.querySelector('.MuiCircularProgress-root')).toBeNull();
+  });
+
+  it('shows a spinner while the title recording loads', () => {
+    mockPlayback.mockReturnValue({
+      playing: true,
+      loading: true,
+      progress: 0,
+      toggle: mockToggle,
+      audio: null,
+    });
+    const { container } = render(
+      <NoteTitleField value="Teest" mediaId="title-media" />
+    );
+    expect(
+      container.querySelector('.MuiCircularProgress-indeterminate')
+    ).not.toBeNull();
   });
 
   it('hides the play button when the title has no recording', () => {
