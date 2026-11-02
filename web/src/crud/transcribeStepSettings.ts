@@ -42,7 +42,7 @@ const fieldNormalizers: Partial<Record<string, Normalize>> = {
 // Settings are parsed in render memos and per-step loops, so report each
 // distinct problem once rather than on every call.
 const reported = new Set<string>();
-const report = (message: string) => {
+const logOncePerMessage = (message: string) => {
   if (reported.has(message)) return;
   reported.add(message);
   logError(Severity.error, bugsnagClient, message);
@@ -68,12 +68,16 @@ export function parseTranscribeStepSettings(
 ): TranscribeStepSettings {
   const parsed = parseJsonObject(settings);
   if (!parsed) {
-    report(`Unreadable transcribe step settings: ${preview(settings)}`);
+    logOncePerMessage(
+      `Unreadable transcribe step settings: ${preview(settings)}`
+    );
     return {};
   }
   return normalizeFields(parsed, fieldNormalizers, (key, value) => {
     if (value !== null) {
-      report(`Transcribe step setting ${key} has type ${typeName(value)}`);
+      logOncePerMessage(
+        `Transcribe step setting ${key} has type ${typeName(value)}`
+      );
     }
   });
 }
@@ -82,7 +86,7 @@ export function parseTranscribeStepSettings(
 export function parseStepTool(tool: unknown): Record<string, unknown> {
   const parsed = parseJsonObject(tool);
   if (!parsed) {
-    report(`Unreadable workflow step tool: ${preview(tool)}`);
+    logOncePerMessage(`Unreadable workflow step tool: ${preview(tool)}`);
     return {};
   }
   return parsed;
@@ -98,7 +102,7 @@ export function reportReplacedStepSettings(
   stepSeq: number
 ) {
   if (parseJsonObject(settings)) return;
-  report(
+  logOncePerMessage(
     `Replacing unreadable transcribe step settings: organization ${
       orgRemoteId ?? 'not synced'
     }, step sequence ${stepSeq}`

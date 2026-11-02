@@ -13,6 +13,7 @@ let mockClauseRegions = [{ start: 0, end: 5, label: '' }];
 let controlsProps: Record<string, unknown> | undefined;
 let referenceProps: Record<string, unknown> | undefined;
 const mockStartSave = jest.fn();
+let mockStepSettings = JSON.stringify({ artifactTypeId: 'pbt-id' });
 
 jest.mock('../../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
@@ -57,7 +58,8 @@ jest.mock('../../crud', () => ({
     getTypeId: (slug: string) =>
       slug === 'carefulspeech' ? 'cs-id' : 'pbt-id',
   }),
-  useStepTool: () => ({ settings: { artifactTypeId: 'pbt-id' } }),
+  // useStepTool returns the step settings as a JSON string.
+  useStepTool: () => ({ settings: mockStepSettings }),
 }));
 
 jest.mock('../../utils/useStepPermission', () => ({
@@ -163,8 +165,23 @@ describe('PassageDetailLwcTranslation', () => {
     mockCarefulSpeechComplete = new Set<number>();
     mockLwcComplete = new Set<number>();
     mockClauseRegions = [{ start: 0, end: 5, label: '' }];
+    mockStepSettings = JSON.stringify({ artifactTypeId: 'pbt-id' });
     controlsProps = undefined;
     referenceProps = undefined;
+  });
+
+  it("records with the step's artifact type", () => {
+    mockCarefulSpeechComplete = new Set([0]);
+    mockStepSettings = JSON.stringify({ artifactTypeId: 'retell-id' });
+    render(<PassageDetailLwcTranslation width={400} />);
+    expect(controlsProps?.artifactId).toBe('retell-id');
+  });
+
+  it('records as phrase back translation when the step has no artifact type', () => {
+    mockCarefulSpeechComplete = new Set([0]);
+    mockStepSettings = '';
+    render(<PassageDetailLwcTranslation width={400} />);
+    expect(controlsProps?.artifactId).toBe('pbt-id');
   });
 
   it('shows prerequisite when careful speech is incomplete', () => {

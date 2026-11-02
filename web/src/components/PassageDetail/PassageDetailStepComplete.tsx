@@ -12,6 +12,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
+import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
 import {
   ToolSlug,
   useStepTool,
@@ -125,19 +126,7 @@ export const PassageDetailStepComplete = () => {
   }, [pathname]);
 
   const artifactSlug = useMemo(() => {
-    const parsed =
-      typeof settings === 'string'
-        ? (() => {
-            try {
-              return JSON.parse(settings || '{}') as {
-                artifactTypeId?: string;
-              };
-            } catch {
-              return {} as { artifactTypeId?: string };
-            }
-          })()
-        : ((settings as { artifactTypeId?: string }) ?? {});
-    const id = parsed?.artifactTypeId;
+    const id = parseTranscribeStepSettings(settings).artifactTypeId;
     if (!id) return null;
     const resolved =
       remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;

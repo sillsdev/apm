@@ -29,7 +29,7 @@ jest.mock('../../crud', () => {
   );
   return {
     ToolSlug,
-    useStepTool: () => ({ tool: mockTool, settings: {} }),
+    useStepTool: () => ({ tool: mockTool, settings: '' }),
     useArtifactType: () => ({
       slugFromId: (id: string) => id,
     }),

@@ -17,6 +17,7 @@ import {
   useArtifactType,
   useStepTool,
 } from '../../crud';
+import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
   ILwcTranslationStrings,
@@ -134,7 +135,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   );
 
   const lwcArtifactTypeId = useMemo((): string => {
-    const id = (settings as { artifactTypeId?: string })?.artifactTypeId;
+    const id = parseTranscribeStepSettings(settings).artifactTypeId;
     if (id) {
       return (
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
