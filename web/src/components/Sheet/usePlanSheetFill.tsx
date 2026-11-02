@@ -45,7 +45,6 @@ import { positiveWholeOnly, stringAvatar } from '../../utils';
 import { TitleEdit } from './TitleEdit';
 import { getPubRefs } from './getPubRefs';
 import { PublishButton } from './PublishButton';
-import { NoteIcon } from '../../control/PlanIcons';
 import { OrganizationSchemeD } from '../../model/organizationScheme';
 import {
   isPublishingTitle,
@@ -485,15 +484,15 @@ export const usePlanSheetFill = ({
     return (
       <>
         {isNote && (
-          <>
-            {NoteIcon}
-            {'\u00A0'}
-            <NoteTitleField
-              value={e as string}
-              readonly={readonly}
-              onChange={handleTextChange}
-            />
-          </>
+          <NoteTitleField
+            value={e as string}
+            mediaId={
+              related(
+                (rowInfo[rowIndex] as ISheet).sharedResource,
+                'titleMediafile'
+              ) || undefined
+            }
+          />
         )}
         {!isNote && (
           <TitleEdit
