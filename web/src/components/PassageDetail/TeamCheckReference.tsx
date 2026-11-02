@@ -102,7 +102,7 @@ export function TeamCheckReference() {
       </Grid>
       <StyledGrid size={{ xs: 10 }}>
         {referenceRank ? (
-          <CompareReferenceText rank={referenceRank} />
+          <CompareReferenceText key={passage.id} rank={referenceRank} />
         ) : (
           <LimitedMediaPlayer
             srcMediaId={playItem}
