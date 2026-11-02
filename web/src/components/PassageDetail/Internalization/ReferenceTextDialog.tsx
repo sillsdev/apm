@@ -23,7 +23,7 @@ import { usePassageRef } from './usePassageRef';
 import { useReferenceTextLabels } from './useReferenceTextLabels';
 
 /** Why the text is shown instead of spoken, when Play opened it. */
-export type ReferenceTextNotice = 'noVoice' | 'speakFailed';
+export type ReferenceTextNotice = 'noVoice' | 'noVoiceOffline' | 'speakFailed';
 
 interface IProps {
   rank: ReferenceTextRank;
@@ -75,9 +75,12 @@ export function ReferenceTextDialog({
       <Stack spacing={2}>
         {notice && (
           <Alert severity="info">
-            {notice === 'noVoice'
-              ? ta.referenceTextNoVoice.replace('{0}', labels.language)
-              : ta.referenceTextSpeakFailed}
+            {notice === 'speakFailed'
+              ? ta.referenceTextSpeakFailed
+              : (notice === 'noVoice'
+                  ? ta.referenceTextNoVoice
+                  : ta.referenceTextNoVoiceOffline
+                ).replace('{0}', labels.language)}
           </Alert>
         )}
         <Typography

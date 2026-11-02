@@ -6,6 +6,7 @@ import {
   FormLabel,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { vProjectSelector } from '../../../selector';
@@ -20,6 +21,16 @@ import {
 } from '../../../business/referenceText/referenceText';
 import { useBibleCatalog } from '../../../business/referenceText/useBibleCatalog';
 import { useTeamReferenceTextIds } from '../../../business/referenceText/useTeamReferenceTextIds';
+import {
+  parseVoiceRanking,
+  rankedLanguages,
+  voiceLanguage,
+} from '../../../business/referenceText/voiceRanking';
+import {
+  orgDefaultTtsFilterRefText,
+  orgDefaultTtsVoices,
+  useOrgDefaults,
+} from '../../../crud/useOrgDefaults';
 import { ReferenceTextPicker } from './ReferenceTextPicker';
 import { IProjectDialogState } from './projectDialogTypes';
 
@@ -34,6 +45,7 @@ export function ProjectScripture(props: IProjectDialogState) {
   const bookMap = useSelector((s: IState) => s.books.map, shallowEqual);
   const catalog = useBibleCatalog();
   const usedIds = useTeamReferenceTextIds(team);
+  const { getOrgDefault } = useOrgDefaults();
   const [removedNames, setRemovedNames] = useState<string[]>([]);
 
   const usfm = projectBookToUsfm(state.book);
@@ -43,13 +55,28 @@ export function ProjectScripture(props: IProjectDialogState) {
     () => bookSuggestions.filter((o) => bookTestament(o.value)),
     [bookSuggestions]
   );
-  const bibles = useMemo(
-    () =>
-      catalog.status === 'ready' && usfm
-        ? biblesForBook(catalog.bibles, usfm)
-        : [],
-    [catalog, usfm]
+  // Languages the team ranked voices for, when it limits Reference Texts to them (ADR 0015).
+  const voiceLanguages = useMemo(
+    () => {
+      if (!team || getOrgDefault(orgDefaultTtsFilterRefText, team) !== true)
+        return undefined;
+      const languages = rankedLanguages(
+        parseVoiceRanking(getOrgDefault(orgDefaultTtsVoices, team))
+      );
+      return languages.size ? languages : undefined;
+    },
+    // getOrgDefault is recreated each render; the team's defaults only
+    // change in the team dialog, never while this one is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [team]
   );
+  const bibles = useMemo(() => {
+    if (catalog.status !== 'ready' || !usfm) return [];
+    const forBook = biblesForBook(catalog.bibles, usfm);
+    return voiceLanguages
+      ? forBook.filter((b) => voiceLanguages.has(voiceLanguage(b.language)))
+      : forBook;
+  }, [catalog, usfm, voiceLanguages]);
 
   const handleBook = (opt: OptionType) => {
     const slot = usfmToProjectBook(opt.value);
@@ -120,6 +147,11 @@ export function ProjectScripture(props: IProjectDialogState) {
           onChange={handleSecondary}
         />
       </Box>
+      {voiceLanguages && usfm && (
+        <Typography variant="caption" color="text.secondary">
+          {t.filteredToVoices}
+        </Typography>
+      )}
       {catalog.status === 'error' && (
         <Alert severity="error">{t.bibleListError}</Alert>
       )}

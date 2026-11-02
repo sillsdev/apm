@@ -685,6 +685,11 @@ export const ProjectCard = (props: IProps) => {
         isOpen={openProject}
         onOpen={handleOpen}
         onCommit={handleCommit}
+        team={
+          personalProjects.includes(project)
+            ? undefined
+            : (related(project, 'organization') as string)
+        }
       />
       <BigDialog
         title={tpb.integrationsTitle.replace('{0}', getPlanName(project.id))}

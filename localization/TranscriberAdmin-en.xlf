@@ -5824,6 +5824,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+         <segment>
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.referenceTextRetry">
          <segment>
             <source>Try again</source>
@@ -9256,6 +9262,138 @@
             <target/>
          </segment>
       </unit>
+      <unit id="ttsVoices.add">
+         <segment>
+            <source>Add to ranking</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.explain">
+         <segment>
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.filterReferenceTexts">
+         <segment>
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.linuxNote">
+         <segment>
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.loading">
+         <segment>
+            <source>Loading voices…</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.local">
+         <segment>
+            <source>Local</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.macNote">
+         <segment>
+            <source>You can also add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveDown">
+         <segment>
+            <source>Move down</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveUp">
+         <segment>
+            <source>Move up</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noMatch">
+         <segment>
+            <source>No languages match.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noVoices">
+         <segment>
+            <source>This device has no text-to-speech voices.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.notOnDevice">
+         <segment>
+            <source>Not on this device</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.online">
+         <segment>
+            <source>Online</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.rankedCount">
+         <segment>
+            <source>{0} ranked</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.read">
+         <segment>
+            <source>Read</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.remove">
+         <segment>
+            <source>Remove from ranking</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleDefault">
+         <segment>
+            <source>This is how this voice will sound.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleText">
+         <segment>
+            <source>Sample text</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.search">
+         <segment>
+            <source>Search languages</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.showOnline">
+         <segment>
+            <source>Show online voices</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.title">
+         <segment>
+            <source>Reference Text Voices</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.windowsNote">
+         <segment>
+            <source>You can also add Windows voices for other languages under Settings → Time &amp; language → Speech → Add voices.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="uploadProgress.cancel">
          <segment>
             <source>Cancel</source>
@@ -9805,6 +9943,12 @@
       <unit id="vProject.editorSettings">
          <segment>
             <source>Editor Settings</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.filteredToVoices">
+         <segment>
+            <source>Showing only languages your team has ranked voices for.</source>
             <target/>
          </segment>
       </unit>

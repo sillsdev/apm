@@ -17,6 +17,10 @@ jest.mock('../../../business/referenceText/useReferenceTextPassage', () => ({
 jest.mock('../../../business/referenceText/speakReferenceText', () => ({
   speakReferenceText: jest.fn(),
 }));
+jest.mock('../../../crud/useOrgDefaults', () => ({
+  orgDefaultTtsVoices: 'ttsVoices',
+  useOrgDefaults: () => ({ getOrgDefault: () => undefined }),
+}));
 jest.mock('../../../context/usePassageDetailContext', () => ({
   __esModule: true,
   default: () => ({
@@ -68,6 +72,8 @@ jest.mock('../../../selector', () => ({
     referenceTextLoading: 'Loading passage…',
     referenceTextNoRange: 'This passage has no verse range.',
     referenceTextNoVoice: 'No voice for {0} on this device.',
+    referenceTextNoVoiceOffline:
+      'Voices for {0} on this device need the internet.',
     referenceTextRetry: 'Try again',
     referenceTextSpeakFailed: 'The passage could not be spoken.',
   }),
@@ -212,7 +218,8 @@ describe('ReferenceTextRows', () => {
     expect(mockSpeak).toHaveBeenCalledWith(
       bible(),
       'For God so loved',
-      expect.any(Function)
+      expect.any(Function),
+      {}
     );
     act(() => finishSpeaking('noVoice'));
     const dialog = await screen.findByRole('dialog', {
@@ -221,6 +228,18 @@ describe('ReferenceTextRows', () => {
     expect(dialog).toHaveTextContent('No voice for English on this device.');
     expect(dialog).toHaveTextContent('For God so loved');
     expect(dialog).toHaveTextContent('License not stated');
+  });
+
+  it('shows the text with a notice when the only voices need the internet', async () => {
+    mockPassages.primary = ready(bible());
+    render(<ReferenceTextRows variant="table" />);
+    fireEvent.click(screen.getByLabelText('Play'));
+    act(() => finishSpeaking('noVoiceOffline'));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(
+      'Voices for English on this device need the internet.'
+    );
+    expect(dialog).toHaveTextContent('For God so loved');
   });
 
   it('shows the text with a notice when speaking fails', async () => {

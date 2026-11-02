@@ -26,9 +26,12 @@ import DeleteExpansion from '../DeleteExpansion';
 import { TeamContext } from '../../context/TeamContext';
 import {
   defaultWorkflow,
+  findRecord,
   orgDefaultFeatures,
   orgDefaultLangProps,
   orgDefaultPermissions,
+  orgDefaultTtsFilterRefText,
+  orgDefaultTtsVoices,
   orgDefaultWorkflowProgression,
   WorkflowProgression,
   pubDataCopyright,
@@ -45,6 +48,7 @@ import { useUserCanPublish, useJsonParams, waitForIt } from '../../utils';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
 import TeamSettings from './TeamSettings';
+import type { TtsVoiceSettings } from './ReferenceTextVoices/ReferenceTextVoicesDialog';
 import { Render } from '../../assets/brands';
 import { Button, GrowingSpacer } from '../../control';
 import StickyRedirect from '../StickyRedirect';
@@ -106,6 +110,8 @@ export function TeamDialog(props: IProps) {
   const [recording, setRecordingx] = useState(false);
   const [confirm, setConfirm] = React.useState(false);
   const [features, setFeatures] = useState<IFeatures>({});
+  // Add mode only: edit mode saves voices to the team's defaults directly.
+  const [ttsVoices, setTtsVoices] = useState<TtsVoiceSettings>();
   const { anySaving, toolsChanged, startSave, clearRequested } =
     useContext(UnsavedContext).state;
   const { getBible, getBibleOwner, getOrgBible } = useBible();
@@ -141,6 +147,7 @@ export function TeamDialog(props: IProps) {
     setWorkflowProgression(WorkflowProgression.Passage);
     setPermissions(false);
     setFeatures({});
+    setTtsVoices(undefined);
     onOpen && onOpen(false);
     Object.keys(toolsChanged).forEach((t) => clearRequested(t));
   };
@@ -182,13 +189,26 @@ export function TeamDialog(props: IProps) {
           mode === DialogMode.edit && values?.team
             ? values.team
             : ({ attributes: {} } as OrganizationD);
+        // Dialogs opened from TeamSettings (voice conversion, Reference Text
+        // voices) save org defaults straight to memory, so start from the
+        // record there rather than the copy this dialog opened with.
+        const latest = current.id
+          ? (findRecord(memory, 'organization', current.id) as
+              OrganizationD | undefined)
+          : undefined;
         let df = setParam(
           orgDefaultWorkflowProgression,
           workflowProgression,
-          current.attributes?.defaultParams ?? defaultParams
+          latest?.attributes?.defaultParams ??
+            current.attributes?.defaultParams ??
+            defaultParams
         );
         df = setParam(orgDefaultFeatures, features, df);
         df = setParam(orgDefaultPermissions, permissions, df);
+        if (ttsVoices) {
+          df = setParam(orgDefaultTtsVoices, ttsVoices.ranking, df);
+          df = setParam(orgDefaultTtsFilterRefText, ttsVoices.filter, df);
+        }
         const team = {
           ...current,
           attributes: {
@@ -299,6 +319,11 @@ export function TeamDialog(props: IProps) {
     if (!init) {
       setChanged(true);
     }
+  };
+
+  const handleTtsVoices = (value: TtsVoiceSettings) => {
+    setTtsVoices(value);
+    setChanged(true);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -457,6 +482,8 @@ export function TeamDialog(props: IProps) {
             team={values?.team}
             values={{ features, workflowProgression, permissions }}
             setValue={setValue}
+            ttsVoices={ttsVoices}
+            setTtsVoices={mode === DialogMode.add ? handleTtsVoices : undefined}
           />
           {mode !== DialogMode.add && canUserPublish && (
             <PublishExpansion

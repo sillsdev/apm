@@ -11,7 +11,6 @@ import {
   partitionByBook,
   projectBookToUsfm,
   toReferenceText,
-  usedReferenceTextIds,
   usfmToProjectBook,
 } from './referenceText';
 
@@ -181,17 +180,5 @@ describe('parseCatalog and parseReferenceTexts', () => {
       toReferenceText(nt),
     ]);
     expect(parseReferenceTexts('[]')).toEqual([]);
-  });
-});
-
-describe('usedReferenceTextIds', () => {
-  it('merges projects, skipping repeats and projects without texts', () => {
-    const a = toReferenceText(nt);
-    const b = toReferenceText(whole);
-    expect([...usedReferenceTextIds([[a, b], undefined, [a]])]).toEqual([
-      a.id,
-      b.id,
-    ]);
-    expect(usedReferenceTextIds([]).size).toBe(0);
   });
 });
