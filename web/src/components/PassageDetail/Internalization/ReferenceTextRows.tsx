@@ -1,20 +1,9 @@
-import { useState } from 'react';
 import { Box, List, ListItem } from '@mui/material';
-import {
-  ReferenceTextRank,
-  useProjectReferenceTexts,
-  useReferenceTextPassage,
-} from '../../../business/referenceText/useReferenceTextPassage';
-import { byRank } from '../../../business/referenceText/referenceText';
-import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { ReferenceTextCard } from './mobile components/ReferenceTextCard';
-import {
-  ReferenceTextDialog,
-  ReferenceTextNotice,
-} from './ReferenceTextDialog';
+import { ReferenceTextDialog } from './ReferenceTextDialog';
 import { ReferenceTextTableRow } from './ReferenceTextTableRow';
-import { ShownReferenceTextPassage } from './referenceTextItem';
-import { useReferenceTextSpeech } from './useReferenceTextSpeech';
+import { useReferenceTextPlayback } from './useReferenceTextPlayback';
+import { useShownReferenceTexts } from './useShownReferenceTexts';
 
 // Matches VertListDnd's leading drag gutter (40px plus its 0.5 gap), so cards line up
 const MOBILE_DRAG_GUTTER = '44px';
@@ -27,11 +16,6 @@ interface IProps {
   setExpandedId?: (id: string | null) => void;
 }
 
-interface Viewing {
-  rank: ReferenceTextRank;
-  notice?: ReferenceTextNotice;
-}
-
 /**
  * The project's Primary then Secondary Reference Text for the current passage,
  * shown above the Internalize list and outside rowData (ADR 0014).
@@ -42,47 +26,8 @@ export function ReferenceTextRows({
   expandedId,
   setExpandedId,
 }: Readonly<IProps>) {
-  const { passage } = usePassageDetailContext();
-  const referenceTexts = useProjectReferenceTexts();
-  const primary = useReferenceTextPassage(
-    passage,
-    byRank('primary', referenceTexts)
-  );
-  const secondary = useReferenceTextPassage(
-    passage,
-    byRank('secondary', referenceTexts)
-  );
-  const speech = useReferenceTextSpeech();
-  const [viewing, setViewing] = useState<Viewing>();
-
-  const shown = (
-    [
-      ['primary', primary],
-      ['secondary', secondary],
-    ] as const
-  ).filter(
-    (entry): entry is [ReferenceTextRank, ShownReferenceTextPassage] =>
-      entry[1].status !== 'none'
-  );
-  const passages = [primary, secondary];
-  const viewed = byRank(viewing?.rank ?? 'primary', passages);
-
-  const handlePlay = async (rank: ReferenceTextRank) => {
-    const value = byRank(rank, passages);
-    if (value.status !== 'ready') return;
-    const outcome = await speech.toggle(rank, value.referenceText, value.text);
-    if (outcome === 'noVoice' || outcome === 'noVoiceOffline')
-      setViewing({ rank, notice: outcome });
-    else if (outcome === 'error') setViewing({ rank, notice: 'speakFailed' });
-  };
-  const handleView = (rank: ReferenceTextRank) => setViewing({ rank });
-  const itemProps = (rank: ReferenceTextRank) => ({
-    speaking: speech.speaking === rank,
-    progress: speech.speaking === rank ? speech.progress : 0,
-    // speech.toggle never rejects
-    onPlay: (r: ReferenceTextRank) => void handlePlay(r),
-    onView: handleView,
-  });
+  const { passage, passages, shown } = useShownReferenceTexts();
+  const { itemProps, viewing, closeView } = useReferenceTextPlayback(passages);
 
   if (shown.length === 0) return null;
 
@@ -124,15 +69,12 @@ export function ReferenceTextRows({
           ))}
         </Box>
       )}
-      {viewing && viewed.status === 'ready' && (
+      {viewing && (
         <ReferenceTextDialog
-          rank={viewing.rank}
-          referenceText={viewed.referenceText}
-          text={viewed.text}
+          {...viewing}
           passage={passage}
           mobile={variant === 'card'}
-          notice={viewing.notice}
-          onClose={() => setViewing(undefined)}
+          onClose={closeView}
         />
       )}
     </>

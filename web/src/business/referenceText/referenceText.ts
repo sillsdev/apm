@@ -44,17 +44,14 @@ export type ReferenceText = Pick<
 
 export type Testament = 'OT' | 'NT';
 
-export type ReferenceTextRank = 'primary' | 'secondary';
-
 // defaultParams.referenceTexts is ordered Primary then Secondary (ADR 0014)
-const rankIndex: Record<ReferenceTextRank, number> = {
-  primary: 0,
-  secondary: 1,
-};
+export const referenceTextRanks = ['primary', 'secondary'] as const;
+
+export type ReferenceTextRank = (typeof referenceTextRanks)[number];
 
 /** The rank's entry in a Primary-then-Secondary list. */
 export const byRank = <T>(rank: ReferenceTextRank, values: readonly T[]): T =>
-  values[rankIndex[rank]];
+  values[referenceTextRanks.indexOf(rank)];
 
 export const PUBLIC_DOMAIN = 'Public Domain';
 

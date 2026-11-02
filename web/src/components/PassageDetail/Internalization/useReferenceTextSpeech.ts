@@ -74,5 +74,7 @@ export const useReferenceTextSpeech = () => {
     return outcome;
   };
 
-  return { speaking, progress, toggle };
+  const stop = () => current.current?.stop();
+
+  return { speaking, progress, toggle, stop };
 };
