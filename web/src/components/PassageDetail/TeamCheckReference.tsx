@@ -5,8 +5,7 @@ import { LimitedMediaPlayer } from '../LimitedMediaPlayer';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { getSegments, NamedRegions } from '../../utils';
 import { storedCompareKey } from '../../utils/storedCompareKey';
-import { ReferenceTextRank } from '../../business/referenceText/referenceText';
-import { compareReferenceTextRank } from './Internalization/compareReferenceTextId';
+import { useCompareReferenceText } from './Internalization/useCompareReferenceText';
 import { CompareReferenceText } from './Internalization/CompareReferenceText';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
@@ -37,22 +36,17 @@ export function TeamCheckReference() {
   const [mediaStart, setMediaStart] = useState<number | undefined>();
   const [mediaEnd, setMediaEnd] = useState<number | undefined>();
   const [resource, setResource] = useState('');
-  const [referenceRank, setReferenceRank] = useState<ReferenceTextRank>();
   const { removeStoredKeys, saveKey, storeKey, SecSlug } = storedCompareKey(
     passage,
     section
   );
+  const { referenceRank, selectReferenceText, clearReferenceText } =
+    useCompareReferenceText({ removeStoredKeys, saveKey }, () =>
+      setPlayItem('')
+    );
 
   const handleResource = (id: string) => {
-    // A Reference Text is spoken, not played: it is never the playItem. TT-7819
-    const rank = compareReferenceTextRank(id);
-    setReferenceRank(rank);
-    if (rank) {
-      removeStoredKeys();
-      saveKey(id);
-      setPlayItem('');
-      return;
-    }
+    if (selectReferenceText(id)) return;
     const row = rowData.find((r) => r.id === id);
     if (row) {
       removeStoredKeys();
@@ -87,7 +81,10 @@ export function TeamCheckReference() {
 
   useEffect(() => {
     setPlayItem('');
-    setReferenceRank(undefined);
+    // Reset here, not with a key: this effect must run anyway to clear the
+    // context's playItem and restore the saved choice, and a key would
+    // remount the player on every passage change. TT-7819
+    clearReferenceText();
     // We track the user's choices for each passage of the section
     const res = localStorage.getItem(storeKey());
     const secId = localStorage.getItem(storeKey(SecSlug));

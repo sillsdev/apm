@@ -15,8 +15,7 @@ import { IRegion, ToolSlug, useStepTool } from '../../../crud';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
 import { IMarker } from '../../../crud/useWaveSurfer';
-import { ReferenceTextRank } from '../../../business/referenceText/referenceText';
-import { compareReferenceTextRank } from '../Internalization/compareReferenceTextId';
+import { useCompareReferenceText } from '../Internalization/useCompareReferenceText';
 import { CompareReferenceText } from '../Internalization/CompareReferenceText';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
@@ -81,11 +80,14 @@ export function TeamCheckReferenceMobile(props: IProps) {
   };
 
   const [resource, setResource] = useState('');
-  const [referenceRank, setReferenceRank] = useState<ReferenceTextRank>();
   const { removeStoredKeys, saveKey, storeKey, SecSlug } = storedCompareKey(
     passage,
     section
   );
+  const { referenceRank, selectReferenceText, clearReferenceText } =
+    useCompareReferenceText({ removeStoredKeys, saveKey }, () =>
+      setMediaId(undefined)
+    );
 
   // Mutual exclusion with the top (vernacular) player.
   const setPlaying = (play: boolean) => {
@@ -98,15 +100,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
   }, [topPlaying, playing]);
 
   const handleResource = (id: string) => {
-    // A Reference Text is spoken, not played: it gets no media player. TT-7819
-    const rank = compareReferenceTextRank(id);
-    setReferenceRank(rank);
-    if (rank) {
-      removeStoredKeys();
-      saveKey(id);
-      setMediaId(undefined);
-      return;
-    }
+    if (selectReferenceText(id)) return;
     const row = rowData.find((r) => r.id === id);
     if (row) {
       removeStoredKeys();
@@ -135,7 +129,10 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
   useEffect(() => {
     setPlayItem('');
-    setReferenceRank(undefined);
+    // Reset here, not with a key: this effect must run anyway to clear the
+    // context's playItem and restore the saved choice, and a key would
+    // remount the player on every passage change. TT-7819
+    clearReferenceText();
     const res = localStorage.getItem(storeKey());
     const secId = localStorage.getItem(storeKey(SecSlug));
     if (res && secId === section.id) {

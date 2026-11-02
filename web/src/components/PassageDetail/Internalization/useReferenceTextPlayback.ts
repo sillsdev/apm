@@ -32,6 +32,12 @@ export const useReferenceTextPlayback = (
     else if (outcome === 'error') setViewing({ rank, notice: 'speakFailed' });
   };
   const handleView = (rank: ReferenceTextRank) => setViewing({ rank });
+  /** Moves speaking to the rank when another rank is speaking. */
+  const speakInstead = (rank: ReferenceTextRank) => {
+    if (!speech.speaking || speech.speaking === rank) return;
+    if (byRank(rank, passages).status === 'ready') void handlePlay(rank);
+    else speech.stop();
+  };
   const itemProps = (rank: ReferenceTextRank) => ({
     speaking: speech.speaking === rank,
     progress: speech.speaking === rank ? speech.progress : 0,
@@ -52,5 +58,6 @@ export const useReferenceTextPlayback = (
           }
         : undefined,
     closeView: () => setViewing(undefined),
+    speakInstead,
   };
 };

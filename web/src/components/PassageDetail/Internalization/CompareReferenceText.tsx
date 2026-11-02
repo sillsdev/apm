@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Stack } from '@mui/material';
 import {
   byRank,
@@ -20,8 +21,16 @@ interface IProps {
  */
 export function CompareReferenceText({ rank, mobile }: Readonly<IProps>) {
   const { passage, passages } = useShownReferenceTexts();
-  const { itemProps, viewing, closeView } = useReferenceTextPlayback(passages);
+  // speakInstead is a new function each render; only a rank change should move speaking
+  const { itemProps, viewing, closeView, speakInstead } =
+    useReferenceTextPlayback(passages);
   const value = byRank(rank, passages);
+
+  // Switching Primary and Secondary while one speaks speaks the other instead
+  useEffect(() => {
+    speakInstead(rank);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rank]);
 
   if (value.status === 'none') return null;
 
