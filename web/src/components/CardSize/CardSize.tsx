@@ -18,7 +18,7 @@ const CardSizeContext = createContext<ICardSizeContext>({
 });
 
 /**
- * Gives every project/add card the same height: the height of the tallest one.
+ * Gives every card in the subtree the same height: the height of the tallest one.
  * Cards report what their content needs and read back the maximum, so cards
  * in different panels stay in step instead of only matching the other cards
  * in their own grid row.
