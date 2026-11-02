@@ -8730,7 +8730,7 @@
       </unit>
       <unit id="transcriber.asrMethodDefault">
          <segment>
-            <source>Default ({0})</source>
+            <source>{0} (Default)</source>
             <target/>
          </segment>
       </unit>
