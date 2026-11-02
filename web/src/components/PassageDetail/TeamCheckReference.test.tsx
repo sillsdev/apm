@@ -24,6 +24,10 @@ jest.mock('../../utils', () => ({
   getSegments: jest.fn(() => '[]'),
 }));
 
+jest.mock('../../crud/useOrgDefaults', () => ({
+  orgDefaultTtsVoices: 'ttsVoices',
+  useOrgDefaults: () => ({ getOrgDefault: () => undefined }),
+}));
 jest.mock('../../utils/storedCompareKey', () => ({
   storedCompareKey: () => ({
     removeStoredKeys: jest.fn(),
@@ -244,7 +248,8 @@ describe('TeamCheckReference', () => {
     expect(mockSpeak).toHaveBeenCalledWith(
       bsb,
       'For God so loved',
-      expect.any(Function)
+      expect.any(Function),
+      {}
     );
   });
 
