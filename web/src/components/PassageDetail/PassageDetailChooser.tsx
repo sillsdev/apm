@@ -39,7 +39,6 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
     section,
     prjId,
     allBookData,
-    setCurrentStep,
     isNavigationBlocked,
   } = usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
@@ -47,13 +46,9 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
 
   const t = useSelector(
     passageChooserSelector,
@@ -138,6 +133,7 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
     <StyledBox
       sx={{
         ...sx,
+        px: 1,
         alignItems: 'center',
         gap: 0,
       }}

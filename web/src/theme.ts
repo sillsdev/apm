@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material';
-import { ResponsiveStyleValue } from '@mui/system';
+import { lighten, ResponsiveStyleValue } from '@mui/system';
 import { getDataGridLocale } from './utils/dataGridLocale';
 
 declare module '@mui/material/IconButton' {
@@ -19,7 +19,14 @@ declare module '@mui/material/Table' {
 }
 
 declare module '@mui/material/styles' {
+  interface PaletteColor {
+    extraLight: string;
+  }
+  interface SimplePaletteColorOptions {
+    extraLight?: string;
+  }
   interface Palette {
+    alert: PaletteColor;
     custom: {
       black: string;
       currentRegion: string;
@@ -30,6 +37,7 @@ declare module '@mui/material/styles' {
     };
   }
   interface PaletteOptions {
+    alert: SimplePaletteColorOptions;
     custom?: {
       black: string;
       currentRegion: string;
@@ -112,9 +120,13 @@ export const createAppTheme = (lang: string) =>
       palette: {
         primary: {
           main: colors.primary,
+          extraLight: lighten(colors.primary, 0.6),
         },
         secondary: {
           main: colors.secondary,
+        },
+        alert: {
+          main: '#D32F2F',
         },
         custom: {
           black: colors.darkBg,
