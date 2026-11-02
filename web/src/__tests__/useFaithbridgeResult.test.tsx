@@ -60,7 +60,7 @@ describe('useFaithbridgeResult', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://faithbridge.multilingualai.com/apmResult?chatSessionId=chat123&userId=user456&includeAudio=false',
+        'https://faithbridge.bible/apmResult?chatSessionId=chat123&userId=user456&includeAudio=false',
         {
           method: 'GET',
           headers: {
@@ -113,7 +113,7 @@ describe('useFaithbridgeResult', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://faithbridge.multilingualai.com/apmResult?chatSessionId=chat123&userId=user456&includeAudio=true',
+        'https://faithbridge.bible/apmResult?chatSessionId=chat123&userId=user456&includeAudio=true',
         {
           method: 'GET',
           headers: {
@@ -435,7 +435,7 @@ describe('useFaithbridgeResult', () => {
       });
 
       const expectedUrl =
-        'https://faithbridge.multilingualai.com/apmResult?chatSessionId=test-chat-id&userId=test-user-id&includeAudio=true';
+        'https://faithbridge.bible/apmResult?chatSessionId=test-chat-id&userId=test-user-id&includeAudio=true';
       expect(mockFetch).toHaveBeenCalledWith(
         expectedUrl,
         expect.objectContaining({
@@ -463,7 +463,7 @@ describe('useFaithbridgeResult', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://faithbridge.multilingualai.com/apmResult?chatSessionId=chat-id+with+spaces&userId=user%40email.com&includeAudio=false',
+        'https://faithbridge.bible/apmResult?chatSessionId=chat-id+with+spaces&userId=user%40email.com&includeAudio=false',
         expect.any(Object)
       );
     });
