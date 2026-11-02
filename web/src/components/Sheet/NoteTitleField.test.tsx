@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useSelector } from 'react-redux';
 import { NoteTitleField } from './NoteTitleField';
+import { PassagePlayButton } from './PassagePlayButton';
 import { usePassagePlayback } from './usePassagePlayback';
 import { shouldOpenSheetContextMenu } from './sheetContextMenu';
 
@@ -108,5 +109,50 @@ describe('note title', () => {
   it('hides the play button when the title has no recording', () => {
     render(<NoteTitleField value="Teest" />);
     expect(screen.queryByRole('button', { name: 'Play / Pause' })).toBeNull();
+  });
+
+  it('keeps Enter and Space on the play button from reaching the sheet', () => {
+    const onKeyDown = jest.fn();
+    render(
+      <div onKeyDown={onKeyDown}>
+        <NoteTitleField value="Teest" mediaId="title-media" />
+      </div>
+    );
+    const play = screen.getByRole('button', { name: 'Play / Pause' });
+    fireEvent.keyDown(play, { key: 'Enter' });
+    fireEvent.keyDown(play, { key: ' ' });
+    fireEvent.keyDown(play, { key: 'ArrowDown' });
+    fireEvent.keyDown(play, { key: 'a' });
+    expect(onKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('keeps a click on the note play button from reaching the sheet', () => {
+    const onMouseDown = jest.fn();
+    const onClick = jest.fn();
+    render(
+      <div onMouseDown={onMouseDown} onClick={onClick}>
+        <NoteTitleField value="Teest" mediaId="title-media" />
+      </div>
+    );
+    const play = screen.getByRole('button', { name: 'Play / Pause' });
+    fireEvent.mouseDown(play);
+    fireEvent.click(play);
+    expect(onMouseDown).not.toHaveBeenCalled();
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('lets a click on a card play button reach the card', () => {
+    const onMouseDown = jest.fn();
+    const onClick = jest.fn();
+    render(
+      <div onMouseDown={onMouseDown} onClick={onClick}>
+        <PassagePlayButton mediaId="card-media" />
+      </div>
+    );
+    const play = screen.getByRole('button', { name: 'Play / Pause' });
+    fireEvent.mouseDown(play);
+    fireEvent.click(play);
+    expect(onMouseDown).toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalled();
   });
 });

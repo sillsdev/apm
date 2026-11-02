@@ -14,7 +14,12 @@ export function NoteTitleField({
       }}
     >
       {mediaId ? (
-        <span style={{ display: 'inline-flex', marginInlineEnd: 8 }}>
+        <span
+          style={{ display: 'inline-flex', marginInlineEnd: 8 }}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
           <PassagePlayButton mediaId={mediaId} ring="playing" />
         </span>
       ) : null}

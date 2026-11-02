@@ -51,11 +51,7 @@ export function PassagePlayButton({ mediaId, ring = 'always' }: IProps) {
         data-testid="play-button"
         aria-label={t.playPause}
         title={t.playPause}
-        onMouseDown={(event) => event.stopPropagation()}
-        onClick={(event) => {
-          event.stopPropagation();
-          toggle();
-        }}
+        onClick={toggle}
         sx={{ width: buttonSize, height: buttonSize, color: 'custom.black' }}
       >
         {playing ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
