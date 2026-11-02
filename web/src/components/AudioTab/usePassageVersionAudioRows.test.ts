@@ -30,6 +30,11 @@ jest.mock('./getMedia', () => ({
   getMedia: jest.fn(),
 }));
 
+jest.mock('../../utils/logErrorService', () => ({
+  logError: jest.fn(),
+  Severity: { error: 'error' },
+}));
+
 import type { IState } from '../../model';
 import type { IBookNameData } from '../../model/bookName';
 import type { MediaFileD, Passage, Section } from '../../model';

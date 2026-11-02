@@ -39,6 +39,16 @@ jest.mock('../context/TokenProvider', () => ({
   TokenContext: React.createContext({ state: { accessToken: 'tok' } }),
 }));
 
+jest.mock('../utils/logErrorService', () => ({
+  logError: jest.fn(),
+  Severity: { info: 0, error: 1, retry: 2 },
+}));
+
+jest.mock('./convertToWebM', () => ({
+  DEFAULT_COMPRESSED_MIME: 'audio/ogg;codecs=opus',
+  convertToFormat: (blob: Blob) => Promise.resolve(blob),
+}));
+
 let mockMediaFiles: MediaFileD[] = [];
 const mockMemory = {
   cache: {

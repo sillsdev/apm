@@ -28,7 +28,6 @@ import { RecordKeyMap } from '@orbit/records';
 export const PassageDetailStepComplete = () => {
   const {
     currentstep,
-    setCurrentStep,
     stepComplete,
     setStepComplete,
     setStepCompleteTo,
@@ -55,13 +54,9 @@ export const PassageDetailStepComplete = () => {
     passageDetailStepCompleteSelector,
     shallowEqual
   );
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
   const { isChanged, startSave, waitForSave } =
     useContext(UnsavedContext).state;
   const { showMessage } = useSnackBar();

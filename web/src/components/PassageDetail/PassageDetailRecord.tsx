@@ -1,73 +1,56 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { Typography, Box, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
+import PauseIcon from '@mui/icons-material/Pause';
+import StopIcon from '@mui/icons-material/Stop';
+import { InsertDriveFileOutlined } from '@mui/icons-material';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from 'react';
-import {
-  findRecord,
-  IMediaState,
+  getVernacularMediaRec,
   MediaSt,
   related,
   remoteIdGuid,
-  remoteIdNum,
   useFetchMediaUrl,
-  useSharedResRead,
-  VernacularTag,
 } from '../../crud';
+import { isAutosaveMedia, isAutosavePending } from '../../crud/autosaveMedia';
+import { usePassageAudioSave } from './usePassageAudioSave';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
-import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { useStepTool } from '../../crud/useStepTool';
+import {
+  parseRecordCaptureAudioProcessing,
+  parseRecordSaveAsWav,
+} from '../../crud/useWavRecorder';
 import { useSnackBar } from '../../hoc/SnackBar';
-import MediaRecord from '../MediaRecord';
+import { AudioPlayer, AudioPlayerHandle } from '../AudioPlayer';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import Uploader from '../Uploader';
-import AudacityManager from '../Sheet/AudacityManager';
 import { Button } from '../../control';
 import BigDialog from '../../hoc/BigDialog';
-import BigDialogBp from '../../hoc/BigDialogBp';
 import VersionDlg from '../AudioTab/VersionDlg';
 import { usePassageVernacularVersionCount } from '../AudioTab/usePassageVersionAudioRows';
 import SpeakerName from '../SpeakerName';
 import { mediaTabSelector, sharedSelector } from '../../selector';
-import { useMobile } from '../../utils';
-import { useOrbitData } from '../../hoc/useOrbitData';
-import {
-  RecordIdentity,
-  RecordKeyMap,
-  RecordTransformBuilder,
-} from '@orbit/records';
+import { loadBlobAsync } from '../../utils';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
 import Confirm from '../AlertDialog';
-import { hasPendingUploadForPassage } from '../../store/upload/pendingMediaUploads';
 import {
-  IMediaTabStrings,
-  ISharedStrings,
-  IState,
-  MediaFileD,
-} from '../../model';
-
-interface IProps {
-  ready?: () => boolean;
-  width: number;
-}
+  clearPendingUploads,
+  hasPendingUploadForPassage,
+  pendingUploadIds,
+} from '../../store/upload/pendingMediaUploads';
+import { IMediaTabStrings, ISharedStrings } from '../../model';
 
 const SaveWait = 500;
 
-export function PassageDetailRecord(props: IProps) {
-  const { ready } = props;
-  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
+export function PassageDetailRecord() {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const mt: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const {
     startSave,
+    saveCompleted,
     toolChanged,
     toolsChanged,
     saveRequested,
@@ -76,134 +59,44 @@ export function PassageDetailRecord(props: IProps) {
     waitForSave,
   } = useContext(UnsavedContext).state;
   const [reporter] = useGlobal('errorReporter');
-  const [, setBigBusy] = useGlobal('importexportBusy');
   const [plan] = useGlobal('plan'); //will be constant here
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
-  const [statusText, setStatusText] = useState('');
-  const [canSave, setCanSave] = useState(false);
-  const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [memory] = useGlobal('memory');
+  const keyMap = memory?.keyMap as RecordKeyMap;
+  const [, setBigBusy] = useGlobal('importexportBusy');
   const {
     passage,
     sharedResource,
     mediafileId,
-    chooserSize,
     recording,
-    setRecording,
     currentstep,
     isBoldWorkflow,
     setStepComplete,
-    gotoNextStep,
+    stepComplete,
   } = usePassageDetailContext();
   const { showMessage } = useSnackBar();
   const toolId = 'RecordTool';
+
   const { settings: toolSettings } = useStepTool(currentstep);
-  const onSaving = () => {
-    setBigBusy(true);
-  };
-  const onReady = () => {
-    setBigBusy(false);
-  };
-  const [importList, setImportList] = useState<File[]>();
-  const cancelled = useRef(false);
-  const [uploadVisible, setUploadVisiblex] = useState(false);
-  const pendingConfirmRef = useRef<{
-    promise: Promise<boolean>;
-    resolve: (ok: boolean) => void;
-  } | null>(null);
-  const [pendingWarnOpen, setPendingWarnOpen] = useState(false);
-  const [audacityVisible, setAudacityVisible] = useState(false);
+  const { echoCancellation, noiseSuppression } =
+    parseRecordCaptureAudioProcessing(toolSettings);
+  const saveAsWav = parseRecordSaveAsWav(toolSettings);
+
+  const [uploadVisible, setUploadVisible] = useState(false);
   const [versionVisible, setVersionVisible] = useState(false);
-  const [preload, setPreload] = useState(0);
-  const [recorderState, setRecorderState] = useState<IMediaState>();
-  const [hasExistingVersion, setHasExistingVersion] = useState(false);
-  /** Prevents handleReload ↔ mediaState PENDING/FETCHED loops; reset when mediafileId changes. */
-  const recordPreloadInitiatedRef = useRef<string | null>(null);
-  const [resetMedia, setResetMedia] = useState(false);
+  const [pendingUploadWarning, setPendingUploadWarning] = useState<
+    'upload' | 'record'
+  >();
+  const playerRef = useRef<AudioPlayerHandle>(null);
+  const [selection, setSelection] = useState<{
+    start: number;
+    end: number;
+  } | null>(null);
+  // Audio of the passage's latest stored version (autosave or permanent).
+  const [savedBlob, setSavedBlob] = useState<Blob>();
+  // Audio in the player.
+  const [currentBlob, setCurrentBlob] = useState<Blob | null>();
   const [speaker, setSpeaker] = useState('');
-  const [hasRights, setHasRight] = useState(false);
-  const { canDoVernacular } = useStepPermissions();
-  const { isMobile: isMobileView } = useMobile();
-  const allBookData = useSelector((state: IState) => state.books.bookData);
-  const { getSharedResource } = useSharedResRead();
-
-  const defaultFilename = useMemo(() => {
-    const sr = getSharedResource(passage);
-    return passageDefaultFilename(
-      passage,
-      plan,
-      memory,
-      VernacularTag,
-      offline,
-      '',
-      toolSettings,
-      allBookData,
-      sr?.attributes.title
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getSharedResource, passage, plan, offline, toolSettings, allBookData]);
-
-  const setUploadVisible = (value: boolean) => {
-    if (value) {
-      cancelled.current = false;
-    }
-    setUploadVisiblex(value);
-  };
-
-  useEffect(() => {
-    toolChanged(toolId, canSave);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canSave]);
-
-  useEffect(() => {
-    if (saveRequested(toolId)) handleSave();
-    else if (clearRequested(toolId)) {
-      clearCompleted(toolId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged]);
-  useEffect(() => {
-    if (!mediafileId) {
-      fetchMediaUrl({ id: mediafileId });
-      setResetMedia(true);
-    } else if (mediafileId !== mediaState.id) {
-      fetchMediaUrl({ id: mediafileId });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafileId, passage]);
-
-  const performedByFromMedia = useMemo(() => {
-    const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
-      MediaFileD | undefined;
-    return mediaRec?.attributes?.performedBy;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memory, mediafileId, mediafiles]);
-
-  useEffect(() => {
-    if (performedByFromMedia) {
-      setSpeaker(performedByFromMedia);
-      setHasRight(true);
-    }
-  }, [mediafileId, performedByFromMedia]);
-
-  useEffect(() => {
-    recordPreloadInitiatedRef.current = null;
-  }, [mediafileId]);
-
-  useEffect(() => {
-    const hasExisting =
-      Boolean(mediafileId) &&
-      recorderState?.status === MediaSt.FETCHED &&
-      recorderState?.id === mediafileId;
-    const shouldAutoPreload =
-      hasExisting && recordPreloadInitiatedRef.current !== mediafileId;
-    if (shouldAutoPreload) {
-      recordPreloadInitiatedRef.current = mediafileId;
-      setStatusText(ts.loading);
-      handleReload();
-    }
-    setHasExistingVersion(hasExisting);
-  }, [mediafileId, recorderState, ts.loading]);
 
   const passageId = useMemo(
     () => related(sharedResource, 'passage') ?? passage.id,
@@ -211,162 +104,188 @@ export function PassageDetailRecord(props: IProps) {
   );
   const vernacularVersionCount = usePassageVernacularVersionCount(passageId);
 
-  const uploadShapedIds = useCallback(() => {
-    const keyMap = memory?.keyMap as RecordKeyMap;
-    const planRemote = remoteIdNum('plan', plan, keyMap) || plan;
-    const passageRemote =
-      remoteIdNum('passage', passageId, keyMap) || passageId;
-    return {
-      planId: String(planRemote),
-      passageId: String(passageRemote),
-    };
-  }, [memory, plan, passageId]);
-
-  const confirmIfPending = useCallback((): Promise<boolean> => {
-    const ids = uploadShapedIds();
-    if (
-      !hasPendingUploadForPassage({
-        ...ids,
-        artifactTypeId: null,
-      })
-    ) {
-      return Promise.resolve(true);
-    }
-    if (pendingConfirmRef.current) {
-      return pendingConfirmRef.current.promise;
-    }
-    let resolve!: (ok: boolean) => void;
-    const promise = new Promise<boolean>((res) => {
-      resolve = res;
-    });
-    pendingConfirmRef.current = { promise, resolve };
-    setPendingWarnOpen(true);
-    return promise;
-  }, [uploadShapedIds]);
-
-  const handlePendingWarnYes = () => {
-    pendingConfirmRef.current?.resolve(true);
-    pendingConfirmRef.current = null;
-    setPendingWarnOpen(false);
-  };
-  const handlePendingWarnNo = () => {
-    pendingConfirmRef.current?.resolve(false);
-    pendingConfirmRef.current = null;
-    setPendingWarnOpen(false);
-  };
-
-  const onBeforeStartRecord = useCallback(
-    () => confirmIfPending(),
-    [confirmIfPending]
+  const { canDoVernacular } = useStepPermissions();
+  const edited = !!currentBlob && currentBlob !== savedBlob;
+  const isLatestAutosave = isAutosaveMedia(
+    getVernacularMediaRec(passageId, memory)
   );
+  const canSave = edited || (!!currentBlob && isLatestAutosave);
+  const busy = saveRequested(toolId);
+  const canRecord =
+    canDoVernacular(related(passage, 'section')) &&
+    !isLinkedNote(passage, sharedResource);
 
-  const handleSave = () => {
-    startSave(toolId);
+  const { save } = usePassageAudioSave({
+    passageId,
+    currentBlob,
+    edited,
+    enabled: canRecord && !recording && !busy,
+    performedBy: speaker,
+    mimeType: saveAsWav ? 'audio/wav' : undefined,
+    onStored: (blob) =>
+      setSavedBlob((prev) => (prev === savedBlob ? blob : prev)),
+  });
+
+  useEffect(() => {
+    if (!busy) toolChanged(toolId, edited);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edited, busy]);
+
+  useEffect(() => {
+    if (!saveRequested(toolId)) {
+      if (clearRequested(toolId)) clearCompleted(toolId);
+      return;
+    }
+    void save().then(
+      () => saveCompleted(toolId),
+      () => saveCompleted(toolId, ts.NoSaveWoMedia)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsChanged]);
+
+  // `stale` drops audio that arrives after the user moved to another passage.
+  const showBlob = (url: string, stale = () => false) =>
+    loadBlobAsync(url)
+      .then((blob) => {
+        if (stale()) return;
+        if (!blob) throw new Error(ts.mediaError);
+        setSavedBlob(blob);
+        setCurrentBlob(blob);
+      })
+      .catch(() => {
+        if (stale()) return;
+        setBigBusy(false);
+        showMessage(ts.mediaError);
+      });
+
+  const loadLatest = () => {
+    const mediaFile = getVernacularMediaRec(passageId, memory);
+    if (mediaFile?.attributes?.performedBy)
+      setSpeaker(mediaFile.attributes.performedBy);
+    if (mediaFile) setBigBusy(true);
+    // fetchMediaUrl skips an id it already has.
+    if (mediaFile?.id === mediaState.id) void showBlob(mediaState.url);
+    else fetchMediaUrl({ id: mediaFile?.id ?? '' });
   };
-  const afterUploadCb = async (mediaId: string | undefined) => {
-    if (mediaId) {
-      setStatusText('');
-      if (isBoldWorkflow) {
-        await setStepComplete(currentstep, true);
-        gotoNextStep();
-      }
-    } else setStatusText(ts.NoSaveWoMedia);
+
+  useEffect(() => {
+    loadLatest();
+    return () => setBigBusy(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (mediaState.status === MediaSt.ERROR) {
+      setBigBusy(false);
+      showMessage(mediaState.error || ts.mediaError);
+      return;
+    }
+    if (mediaState.status !== MediaSt.FETCHED || !mediaState.url) return;
+
+    let stale = false;
+    void showBlob(mediaState.url, () => stale);
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaState]);
+
+  const markCompleteForBold = () => {
+    if (isBoldWorkflow && !stepComplete(currentstep))
+      void setStepComplete(currentstep, true);
   };
-  const handleRecordingCleared = useCallback(async () => {
-    if (!isBoldWorkflow) return;
-    await setStepComplete(currentstep, false);
-    if (mediafileId) {
-      await memory.update((tr: RecordTransformBuilder) =>
-        tr.removeRecord({ type: 'mediafile', id: mediafileId }).toOperation()
+
+  const hasPendingUpload = () =>
+    hasPendingUploadForPassage({
+      ...pendingUploadIds(keyMap, plan, passageId),
+      artifactTypeId: null,
+    });
+
+  const startRecording = async () => {
+    clearPendingUploads(keyMap, plan, passageId);
+    try {
+      await playerRef.current?.startRecording();
+    } catch {
+      showMessage(
+        'Could not access microphone. Please allow microphone access and try again.'
       );
     }
-    recordPreloadInitiatedRef.current = null;
-    setResetMedia(true);
-  }, [isBoldWorkflow, setStepComplete, currentstep, mediafileId, memory]);
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  };
+
+  const pendingUploadWarningClosed = (confirm: boolean) => () => {
+    if (confirm) {
+      if (pendingUploadWarning === 'upload') setUploadVisible(true);
+      else void startRecording();
+    }
+    setPendingUploadWarning(undefined);
+  };
+
+  const afterUpload = async (_: string, mediaRemoteIds?: string[]) => {
     const id =
       mediaRemoteIds && mediaRemoteIds.length > 0
-        ? remoteIdGuid(
-            'mediafile',
-            mediaRemoteIds[0],
-            memory?.keyMap as RecordKeyMap
-          ) || mediaRemoteIds[0]
+        ? remoteIdGuid('mediafile', mediaRemoteIds[0], keyMap) ||
+          mediaRemoteIds[0]
         : undefined;
-    if (cancelled.current && id) {
-      await memory.update((tr: RecordTransformBuilder) =>
-        tr.removeRecord({ type: 'mediafile', id }).toOperation()
-      );
-    } else {
-      await afterUploadCb(id);
+    if (id) {
+      clearPendingUploads(keyMap, plan, passageId);
+      loadLatest();
+      markCompleteForBold();
     }
-    if (id) handleReload();
-    cancelled.current = false;
-    if (importList) {
-      setImportList(undefined);
-      setUploadVisible(false);
-      setAudacityVisible(false);
-    }
+    playerRef.current?.setTime(0);
+  };
+
+  const handleVersionApplied = () => {
+    clearPendingUploads(keyMap, plan, passageId, isAutosavePending);
+    loadLatest();
   };
 
   const saveIfChanged = (cb: () => void) => {
     if (canSave) {
       startSave(toolId);
-      waitForSave(() => cb(), SaveWait);
+      waitForSave(cb, SaveWait).catch((err: Error) => showMessage(err.message));
     } else cb();
   };
 
-  const handleAudacityImport = (i: number, list: File[]) => {
-    saveIfChanged(() => {
-      void confirmIfPending().then((ok) => {
-        if (!ok) return;
-        setImportList(list);
-        setUploadVisible(true);
-      });
-    });
-  };
+  async function handleRecordToggle() {
+    if (busy || !speaker) return;
 
-  const handleAudacityClose = () => {
-    setAudacityVisible(false);
-  };
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
+    if (!recording) {
+      if (selection) {
+        showMessage(
+          'Recording is not supported while there is a selected time range.'
+        );
+        return;
+      }
+      if (hasPendingUpload()) setPendingUploadWarning('record');
+      else await startRecording();
+    } else {
+      playerRef.current?.stopRecording();
+    }
+  }
+
   const handleUpload = () => {
     saveIfChanged(() => {
-      void confirmIfPending().then((ok) => {
-        if (ok) setUploadVisible(true);
-      });
+      if (hasPendingUpload()) setPendingUploadWarning('upload');
+      else setUploadVisible(true);
     });
   };
-  // const handleAudacity = () => {
-  //   saveIfChanged(() => {
-  //     setAudacityVisible(true);
-  //   });
-  // };
-  const handleVersions = () => {
-    setVersionVisible(true);
-  };
-  const handleVerHistClose = () => {
-    setVersionVisible(false);
-  };
-  const handleNameChange = (name: string) => {
-    setSpeaker(name);
-  };
-  const handleRights = (hasRights: boolean) => setHasRight(hasRights);
-  const handleReload = () => {
-    setPreload((p) => p + 1);
-  };
-  const handleTrackRecorder = (state: IMediaState) => setRecorderState(state);
-  const handleRecording = (recording: boolean) => {
-    setRecording(recording);
-  };
 
-  const canVern =
-    canDoVernacular(related(passage, 'section')) &&
-    !isLinkedNote(passage, sharedResource);
+  const handleAudioChange = (audio: Blob | null) => {
+    setCurrentBlob(audio);
+    if (audio) markCompleteForBold();
+    else {
+      clearPendingUploads(keyMap, plan, passageId, isAutosavePending);
+      if (isBoldWorkflow) {
+        setStepComplete(currentstep, false);
+        memory.update((tr: RecordTransformBuilder) =>
+          tr.removeRecord({ type: 'mediafile', id: mediafileId }).toOperation()
+        );
+      }
+    }
+  };
 
   return (
-    <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
+    <Stack sx={{ px: 1, pb: 1 }}>
       <Box sx={{ py: 1 }}>
         <Stack
           direction="row"
@@ -377,23 +296,18 @@ export function PassageDetailRecord(props: IProps) {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <SpeakerName
               name={speaker}
-              onChange={handleNameChange}
-              onRights={handleRights}
-              disabled={!canVern}
+              onChange={setSpeaker}
+              disabled={!canRecord}
               aiip={false}
             />
           </Box>
-          {canVern && (
+          {canRecord && (
             <Button
               id="pdRecordLoadFile"
               title={ts.loadFromFile}
               sx={{ flexShrink: 0 }}
-              startIcon={
-                <FolderOpenOutlinedIcon
-                  sx={{ width: '14px', height: '14px' }}
-                />
-              }
-              disabled={canSave || recording}
+              startIcon={<FolderOpenOutlinedIcon />}
+              disabled={recording}
               onClick={handleUpload}
             >
               {ts.loadFromFile}
@@ -401,114 +315,142 @@ export function PassageDetailRecord(props: IProps) {
           )}
         </Stack>
       </Box>
-      <MediaRecord
-        toolId={toolId}
-        artifactId={VernacularTag}
-        passageId={passageId}
-        afterUploadCb={afterUploadCb}
-        performedBy={speaker}
-        mediaId={mediafileId}
-        onSaving={onSaving}
-        onReady={onReady}
-        onRecording={handleRecording}
-        onBeforeStartRecord={onBeforeStartRecord}
-        defaultFilename={defaultFilename}
-        allowRecord={hasRights && canVern}
-        allowZoom={true}
-        allowWave={true}
-        preload={preload}
-        trackState={handleTrackRecorder}
-        setCanSave={setCanSave}
-        setStatusText={setStatusText}
-        doReset={resetMedia}
-        setDoReset={setResetMedia}
-        height={300 - chooserSize}
-        width={props.width}
-        allowNoNoise={true}
-        allowDeltaVoice={true}
-        handleSave={handleSave}
-        forceMobileView={true}
-        isSaveDisabled={(ready && !ready()) || !hasRights || !canVern}
-        metaData={
-          <>
-            <Typography
-              variant="caption"
+      <AudioPlayer
+        ref={playerRef}
+        audioSource={currentBlob ?? undefined}
+        height={80}
+        label="record"
+        enableDragSelection
+        allowRecord
+        captureEchoCancellation={echoCancellation}
+        captureNoiseSuppression={noiseSuppression}
+        showCut={!isBoldWorkflow}
+        showTrash
+        onReady={() => setBigBusy(false)}
+        onAudioChange={handleAudioChange}
+        onSelectionChange={(sel) => setSelection(sel)}
+      />
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          py: 1,
+        }}
+      >
+        <Box>
+          {!isBoldWorkflow && vernacularVersionCount > 1 && (
+            <Button
+              id="pdRecordVersions"
+              title={ts.versionHistory}
+              startIcon={<InsertDriveFileOutlined />}
+              disabled={recording}
+              onClick={() => setVersionVisible(true)}
+            >
+              {ts.versionHistory}...
+            </Button>
+          )}
+        </Box>
+        {currentBlob && (
+          <Button
+            disabled={!canSave || recording}
+            onClick={() => startSave(toolId)}
+          >
+            {ts.save}
+          </Button>
+        )}
+      </Box>
+
+      {/* Record */}
+      {canRecord && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 40,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            py: 4,
+          }}
+        >
+          {!mediafileId || !recording ? (
+            <Box
+              role="button"
+              aria-label="record"
+              onClick={handleRecordToggle}
               sx={{
-                mr: 2,
-                alignSelf: 'center',
-                display: 'block',
-                gutterBottom: 'true',
+                width: 80,
+                height: 80,
+                boxSizing: 'border-box',
+                borderRadius: '50%',
+                border: recording ? 'none' : '25px solid',
+                borderColor: speaker ? 'alert.main' : '#d0d0d0',
+                bgcolor: recording ? 'alert.main' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: speaker && !busy ? 'pointer' : 'default',
+                opacity: speaker && !busy ? 1 : 0.6,
+                transition: 'all 0.2s ease',
+                '&:hover': speaker && !busy ? { opacity: 0.85 } : {},
               }}
             >
-              {statusText}
-            </Typography>
-            {!isMobileView && canSave && (
-              <Button
-                id="rec-save"
-                color="primary"
-                disabled={(ready && !ready()) || !hasRights || !canVern}
-                onClick={handleSave}
-              >
-                {ts.save}
-              </Button>
-            )}
-          </>
-        }
-        onVersions={
-          !isBoldWorkflow && hasExistingVersion && vernacularVersionCount > 1
-            ? handleVersions
-            : undefined
-        }
-        onRecordingCleared={isBoldWorkflow ? handleRecordingCleared : undefined}
-      />
+              {recording && <StopIcon sx={{ color: '#fff', fontSize: 36 }} />}
+            </Box>
+          ) : (
+            <Button
+              onClick={handleRecordToggle}
+              sx={{
+                width: 120,
+                height: 64,
+                fontSize: '1.1rem !important',
+                fontWeight: 600,
+                color: selection ? '#9e9e9e' : 'alert.main',
+                opacity: speaker && !busy ? 1 : 0.6,
+                cursor: speaker && !busy ? 'pointer' : 'default',
+
+                '&:hover':
+                  speaker && !busy && !selection ? {} : { bgcolor: '#fff' },
+              }}
+            >
+              <PauseIcon sx={{ fontSize: 32 }} />
+            </Button>
+          )}
+        </Box>
+      )}
 
       <Uploader
-        importList={importList}
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
+        onOpen={setUploadVisible}
         showMessage={showMessage}
         multiple={false}
         finish={afterUpload}
-        cancelled={cancelled}
+        cancelled={useRef(false)}
         passageId={passageId}
         performedBy={speaker}
-        onSpeakerChange={handleNameChange}
+        onSpeakerChange={setSpeaker}
         skipImportExportWait
       />
-      <AudacityManager
-        item={1}
-        open={audacityVisible}
-        onClose={handleAudacityClose}
-        passageId={
-          {
-            type: 'passage',
-            id: passageId,
-          } as RecordIdentity
-        }
-        mediaId={mediafileId}
-        onImport={handleAudacityImport}
-        speaker={speaker}
-        onSpeaker={handleNameChange}
-      />
+
       <BigDialog
         title={ts.versionHistory}
         isOpen={versionVisible}
-        onOpen={handleVerHistClose}
-        bp={isMobileView ? BigDialogBp.mobile : undefined}
+        onOpen={setVersionVisible}
       >
         <VersionDlg
           passId={passageId}
           canSetDestination={false}
           hasPublishing={false}
-          close={handleVerHistClose}
-          onVersionApplied={handleReload}
+          close={() => setVersionVisible(false)}
+          onVersionApplied={handleVersionApplied}
         />
       </BigDialog>
-      {pendingWarnOpen && (
+
+      {pendingUploadWarning && (
         <Confirm
           text={mt.pendingUploadExistsWarn}
-          yesResponse={handlePendingWarnYes}
-          noResponse={handlePendingWarnNo}
+          yesResponse={pendingUploadWarningClosed(true)}
+          noResponse={pendingUploadWarningClosed(false)}
         />
       )}
     </Stack>
