@@ -211,7 +211,7 @@ export const FaithbridgeIframe = ({
     }
   }, [offlineOnly, isOffline, audio]);
 
-  const iframeSrc = `https://faithbridge.multilingualai.com/apm?${
+  const iframeSrc = `https://faithbridge.bible/apm?${
     urlParams ? urlParams.toString() : ''
   }`;
 
