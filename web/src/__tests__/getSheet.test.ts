@@ -363,7 +363,6 @@ const secResult = {
   graphicRights: undefined,
   reference: '',
   titleMediaId: undefined,
-  transcriber: undefined,
   scheme: undefined,
 } as ISheet;
 
@@ -381,6 +380,7 @@ const pasResult = {
   publishStatus: '',
   sharedResource: undefined,
   discussionCount: 0,
+  stepDiscussionCount: 0,
 };
 
 const flatResult = {
@@ -394,16 +394,16 @@ const flatResult = {
   published: [] as PublishDestinationEnum[],
   mediaShared: IMediaShare.NotPublic,
   mediaId: undefined,
-  editor: undefined,
   graphicUri: undefined,
   graphicFullSizeUrl: undefined,
   graphicRights: undefined,
   reference: '',
   titleMediaId: undefined,
-  transcriber: undefined,
+  scheme: undefined,
   publishStatus: '',
   sharedResource: undefined,
   discussionCount: 0,
+  stepDiscussionCount: 0,
 };
 
 afterEach(cleanup);
