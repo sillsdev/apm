@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { Tab, Tabs } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IUserListModeStrings } from '../model';
 import { userListModeSelector } from '../selector';
-import { ActionToggle, SmallBar, UndButton } from './ActionToggle';
 import { ListMode } from './ListMode';
 
 interface IProps {
@@ -13,54 +12,37 @@ interface IProps {
 }
 
 export function UserListMode(props: IProps) {
-  const { onMode, loggedIn, allowOffline } = props;
-  const [listMode, setListMode] = useState<ListMode>(props.mode);
+  const { mode, onMode, loggedIn, allowOffline } = props;
   const t: IUserListModeStrings = useSelector(
     userListModeSelector,
     shallowEqual
   );
 
-  const handleMode = (mode: ListMode) => () => {
-    setListMode(mode);
-    onMode(mode);
-  };
+  if (!allowOffline && !loggedIn) return null;
 
   return (
-    <ActionToggle>
-      {(allowOffline || loggedIn) && (
-        <UndButton
-          id="switchUserMode"
-          active={listMode === ListMode.SwitchUser}
-          onClick={handleMode(ListMode.SwitchUser)}
-        >
-          {t.switchUser}
-        </UndButton>
-      )}
+    <Tabs
+      value={mode}
+      onChange={(_event, value: ListMode) => onMode(value)}
+      indicatorColor="primary"
+      textColor="primary"
+    >
+      <Tab
+        id="switchUserMode"
+        value={ListMode.SwitchUser}
+        label={t.switchUser}
+      />
       {allowOffline && (
-        <>
-          <SmallBar />
-          <UndButton
-            id="workOfflineMode"
-            active={listMode === ListMode.WorkOffline}
-            onClick={handleMode(ListMode.WorkOffline)}
-          >
-            {t.workOffline}
-          </UndButton>
-        </>
+        <Tab
+          id="workOfflineMode"
+          value={ListMode.WorkOffline}
+          label={t.workOffline}
+        />
       )}
       {loggedIn && (
-        <>
-          <SmallBar />
-          <UndButton
-            id="logOutMode"
-            active={listMode === ListMode.LogOut}
-            onClick={handleMode(ListMode.LogOut)}
-          >
-            {t.logOut}
-          </UndButton>
-        </>
+        <Tab id="logOutMode" value={ListMode.LogOut} label={t.logOut} />
       )}
-    </ActionToggle>
+    </Tabs>
   );
 }
 
