@@ -346,6 +346,7 @@ export function TeamDialog(props: IProps) {
       showMessage(t.boldProcessInfo, AlertSeverity.Info);
       setWorkflowProgression(WorkflowProgression.Step);
       setFeatures({ ...features, aiTranscribe: true });
+      setTtsVoices(undefined);
     }
   };
 
@@ -484,6 +485,9 @@ export function TeamDialog(props: IProps) {
             setValue={setValue}
             ttsVoices={ttsVoices}
             setTtsVoices={mode === DialogMode.add ? handleTtsVoices : undefined}
+            process={
+              mode === DialogMode.add ? process || defaultWorkflow : undefined
+            }
           />
           {mode !== DialogMode.add && canUserPublish && (
             <PublishExpansion
