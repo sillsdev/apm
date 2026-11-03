@@ -33,8 +33,11 @@
     "cy:docker:build": "docker-compose up --build --abort-on-container-exit --exit-code-from cypress",
     "cy:docker:down": "docker-compose down",
     "devs": "cd .. && node env-config/changeEnv.cjs dev && cd web",
+    "devsl": "cd .. && node env-config/changeEnvLocal.cjs dev && cd web",
     "qas": "cd .. && node env-config/changeEnv.cjs qa && cd web",
-    "prods": "cd .. && node env-config/changeEnv.cjs prod && cd web"
+    "qasl": "cd .. && node env-config/changeEnvLocal.cjs qa && cd web",
+    "prods": "cd .. && node env-config/changeEnv.cjs prod && cd web",
+    "prodsl": "cd .. && node env-config/changeEnvLocal.cjs prod && cd web"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.27.0",
