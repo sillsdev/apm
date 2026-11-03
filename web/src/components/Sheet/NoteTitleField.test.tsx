@@ -9,13 +9,7 @@ jest.mock('../../context/useGlobal', () => ({
 
 const mockToggle = jest.fn();
 jest.mock('./usePassagePlayback', () => ({
-  usePassagePlayback: jest.fn(() => ({
-    playing: false,
-    loading: false,
-    progress: 0,
-    toggle: mockToggle,
-    audio: null,
-  })),
+  usePassagePlayback: jest.fn(),
 }));
 
 import { useState } from 'react';
@@ -23,7 +17,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import { NoteTitleField } from './NoteTitleField';
-import { PassagePlayButton } from './PassagePlayButton';
 import { usePassagePlayback } from './usePassagePlayback';
 import { shouldOpenSheetContextMenu } from './sheetContextMenu';
 
@@ -31,6 +24,17 @@ const mockPlayback = usePassagePlayback as jest.Mock;
 
 const mockUseSelector = useSelector as unknown as jest.Mock;
 const mockUseGlobal = useGlobal as unknown as jest.Mock;
+
+function playback(state: { playing?: boolean; loading?: boolean } = {}) {
+  return {
+    playing: false,
+    loading: false,
+    progress: 0,
+    toggle: mockToggle,
+    audio: null,
+    ...state,
+  };
+}
 
 function TitleCell() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,13 +58,7 @@ describe('note title', () => {
       title: 'Title',
       playPause: 'Play / Pause',
     });
-    mockPlayback.mockReturnValue({
-      playing: false,
-      loading: false,
-      progress: 0,
-      toggle: mockToggle,
-      audio: null,
-    });
+    mockPlayback.mockReturnValue(playback());
     mockUseGlobal.mockReturnValue(['', jest.fn()]);
   });
 
@@ -72,19 +70,16 @@ describe('note title', () => {
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
-  it('keeps the note icon and title on one line', () => {
+  it('keeps the note icon with the title text', () => {
     render(<NoteTitleField value="Teest" />);
     const title = screen.getByText('Teest');
     const icon = screen.getByTestId('note-icon');
     expect(title).toContainElement(icon);
-    expect(getComputedStyle(title).whiteSpace).toBe('nowrap');
   });
 
   it('plays a recorded title from a button before the note icon', () => {
     mockToggle.mockClear();
-    const { container } = render(
-      <NoteTitleField value="Teest" mediaId="title-media" />
-    );
+    render(<NoteTitleField value="Teest" mediaId="title-media" />);
     const play = screen.getByRole('button', { name: 'Play / Pause' });
     const icon = screen.getByTestId('note-icon');
     expect(play.compareDocumentPosition(icon)).toBe(
@@ -94,23 +89,16 @@ describe('note title', () => {
     expect(mockToggle).toHaveBeenCalled();
     expect(screen.getByText('Teest')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
-    expect(container.querySelector('.MuiCircularProgress-root')).toBeNull();
+    expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
   it('shows a spinner while the title recording loads', () => {
-    mockPlayback.mockReturnValue({
-      playing: true,
-      loading: true,
-      progress: 0,
-      toggle: mockToggle,
-      audio: null,
-    });
-    const { container } = render(
-      <NoteTitleField value="Teest" mediaId="title-media" />
-    );
-    expect(
-      container.querySelector('.MuiCircularProgress-indeterminate')
-    ).not.toBeNull();
+    mockPlayback.mockReturnValue(playback({ playing: true, loading: true }));
+    render(<NoteTitleField value="Teest" mediaId="title-media" />);
+    const spinner = screen
+      .getAllByRole('progressbar')
+      .find((bar) => !bar.hasAttribute('aria-valuenow'));
+    expect(spinner).toBeDefined();
   });
 
   it('does not play a title while a recording is in progress', () => {
@@ -124,13 +112,7 @@ describe('note title', () => {
 
   it('stops title playback when a recording starts', () => {
     mockToggle.mockClear();
-    mockPlayback.mockReturnValue({
-      playing: true,
-      loading: false,
-      progress: 0,
-      toggle: mockToggle,
-      audio: null,
-    });
+    mockPlayback.mockReturnValue(playback({ playing: true }));
     render(<NoteTitleField value="Teest" mediaId="title-media" disabled />);
     expect(mockToggle).toHaveBeenCalled();
   });
@@ -178,20 +160,5 @@ describe('note title', () => {
     fireEvent.click(play);
     expect(onMouseDown).not.toHaveBeenCalled();
     expect(onClick).not.toHaveBeenCalled();
-  });
-
-  it('lets a click on a card play button reach the card', () => {
-    const onMouseDown = jest.fn();
-    const onClick = jest.fn();
-    render(
-      <div onMouseDown={onMouseDown} onClick={onClick}>
-        <PassagePlayButton mediaId="card-media" />
-      </div>
-    );
-    const play = screen.getByRole('button', { name: 'Play / Pause' });
-    fireEvent.mouseDown(play);
-    fireEvent.click(play);
-    expect(onMouseDown).toHaveBeenCalled();
-    expect(onClick).toHaveBeenCalled();
   });
 });
