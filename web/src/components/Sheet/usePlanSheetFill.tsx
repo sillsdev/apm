@@ -42,6 +42,9 @@ import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useShowIcon } from './useShowIcon';
 import { ExtraIcon } from '.';
 import { positiveWholeOnly, stringAvatar } from '../../utils';
+import { sheetCellKindReadOnly } from './sheetCellKindReadOnly';
+import { SectionTitleText, type ISectionTitleCell } from './SectionTitleText';
+import { sectionTitleKey } from './sectionTitleKey';
 import { TitleEdit } from './TitleEdit';
 import { getPubRefs } from './getPubRefs';
 import { PublishButton } from './PublishButton';
@@ -739,24 +742,40 @@ export const usePlanSheetFill = ({
           };
         }
       }
+      const plainSectionTitle = cellIndex === titleCol && section;
+      const readOnly =
+        !canEditSheet ||
+        (cellIndex === SectionSeqCol && (e as number) < 0) ||
+        cellIndex === passageSeqCol ||
+        sharedRes ||
+        sheetCellKindReadOnly(inlinePassages, passage, section, cellIndex);
       return {
         value: e,
-        readOnly:
-          !canEditSheet ||
-          (cellIndex === SectionSeqCol && (e as number) < 0) ||
-          cellIndex === passageSeqCol ||
-          sharedRes ||
-          (inlinePassages
-            ? false
-            : passage
-              ? cellIndex <= 1
-              : section
-                ? cellIndex > 1
-                : cellIndex <= 1),
+        readOnly,
         className:
           (cellIndex === SectionSeqCol || cellIndex === passageSeqCol
             ? 'num '
-            : '') + calcClassName,
+            : '') +
+          calcClassName +
+          (plainSectionTitle ? ' title-spell' : ''),
+        ...(plainSectionTitle
+          ? ({
+              key: sectionTitleKey(rowInfo[rowIndex] as ISheet, rowIndex),
+              valueViewer: SectionTitleText,
+              onTitleCommit:
+                readOnly || anyRecording
+                  ? undefined
+                  : (next: string) =>
+                      cellsChanged([
+                        {
+                          cell: null,
+                          row: rowIndex,
+                          col: cellIndex,
+                          value: next,
+                        },
+                      ]),
+            } satisfies Partial<ISectionTitleCell>)
+          : {}),
       };
     };
 
