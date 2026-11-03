@@ -11,7 +11,7 @@ import {
 const resource: BibleResource[] = [
   {
     name: FaithBridge,
-    href: 'https://faithbridge.bible/',
+    href: 'https://faithbridge.multilingualai.com/',
     ai: true,
   },
   {

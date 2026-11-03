@@ -278,7 +278,7 @@ describe('FaithbridgeIframe', () => {
       expect(iframe).toBeInTheDocument();
       expect(iframe).toHaveAttribute(
         'src',
-        'https://faithbridge.bible/apm?chatSessionId=mock-uuid-123&verseRef=MAT+1%3A1-5&userId=remote-user-123'
+        'https://faithbridge.multilingualai.com/apm?chatSessionId=mock-uuid-123&verseRef=MAT+1%3A1-5&userId=remote-user-123'
       );
       expect(iframe).toHaveAttribute(
         'style',

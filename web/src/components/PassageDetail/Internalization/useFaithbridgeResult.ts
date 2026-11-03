@@ -100,12 +100,15 @@ export const useFaithbridgeResult = (reset?: number) => {
 
         const response = await withNetworkRetry(
           () =>
-            fetch(`https://faithbridge.bible/apmResult?${params}`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }),
+            fetch(
+              `https://faithbridge.multilingualai.com/apmResult?${params}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              }
+            ),
           5,
           100
         );
