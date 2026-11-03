@@ -13,7 +13,7 @@ export const useWfLabel = () => {
   return (label: string) => {
     const camelLabel = toCamel(label);
     return Object.prototype.hasOwnProperty.call(t, camelLabel)
-      ? addPt(t.getString(camelLabel))
+      ? addPt(t.getString(camelLabel) ?? label)
       : label;
   };
 };
