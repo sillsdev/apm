@@ -4,7 +4,7 @@ import type {
   KeyboardEvent,
   SyntheticEvent,
 } from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type DataSheet from 'react-datasheet';
 import { useSelector, shallowEqual } from 'react-redux';
 import type { IScriptureTableStrings } from '@model/index';
@@ -67,19 +67,6 @@ const keepFromGrid = (event: SyntheticEvent) => {
   event.stopPropagation();
 };
 
-interface SectionEdit {
-  text: string;
-  save: (next: string) => void;
-}
-
-const saveEdit = (edit: SectionEdit | null, draft: string | null) => {
-  // Only an edit the user made is saved, so focusing a title that ends in a
-  // space and leaving it does not rewrite the title.
-  if (!edit || draft === null || draft === edit.text) return;
-  const next = draft.trim();
-  if (next !== edit.text) edit.save(next);
-};
-
 export function SectionTitleText({
   value,
   cell,
@@ -95,27 +82,15 @@ export function SectionTitleText({
   const text = value == null ? '' : String(value);
   const onTitleCommit = cell?.onTitleCommit;
   const areaRef = useRef<HTMLTextAreaElement>(null);
-  // Edits stay local while the title has focus and are saved on blur, so a
-  // save in progress cannot reset the text under the user's typing.
-  const [draft, setDraftx] = useState<string | null>(null);
-  const draftRef = useRef<string | null>(null);
-  const setDraft = (next: string | null) => {
-    setDraftx(next);
-    draftRef.current = next;
-  };
-  // The title and save callback of the section being edited, taken when
-  // editing starts, so the draft is saved to that section and no other.
-  const editRef = useRef<SectionEdit>(null);
-  const cancelRef = useRef(false);
+  // As in MediaTitle, every keystroke is saved through this render's callback,
+  // so it lands on the row the title is on now. While the title has focus it
+  // shows its own draft, so a save in progress cannot reset the text under
+  // the user's typing.
+  const [draft, setDraft] = useState<string | null>(null);
+  // Only a title the user typed in is trimmed on blur, so focusing a title
+  // that ends in a space and leaving it does not rewrite the title.
+  const editedRef = useRef(false);
   const shown = draft ?? text;
-
-  // The scroll window can unmount this title while it has focus, and no blur
-  // comes then. Save the draft so the edit is not lost.
-  useEffect(() => {
-    const edit = editRef;
-    const pending = draftRef;
-    return () => saveEdit(edit.current, pending.current);
-  }, []);
 
   useLayoutEffect(() => {
     const el = areaRef.current;
@@ -145,18 +120,23 @@ export function SectionTitleText({
 
   const handleFocus = () => {
     if (!onTitleCommit) return;
-    editRef.current = { text, save: onTitleCommit };
+    editedRef.current = false;
     setDraft(text);
   };
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    if (editRef.current) setDraft(event.currentTarget.value);
+    if (!onTitleCommit) return;
+    const next = event.currentTarget.value;
+    editedRef.current = true;
+    setDraft(next);
+    onTitleCommit(next);
   };
 
   const handleBlur = () => {
-    if (!cancelRef.current) saveEdit(editRef.current, draftRef.current);
-    cancelRef.current = false;
-    editRef.current = null;
+    const trimmed = draft?.trim();
+    if (editedRef.current && trimmed !== undefined && trimmed !== draft)
+      onTitleCommit?.(trimmed);
+    editedRef.current = false;
     setDraft(null);
   };
 
@@ -171,7 +151,6 @@ export function SectionTitleText({
       return;
     }
     if (gridKeys.has(event.key)) {
-      cancelRef.current = event.key === 'Escape';
       returnFocusToGrid(event.currentTarget);
       return;
     }

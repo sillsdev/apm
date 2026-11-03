@@ -19,7 +19,7 @@ const renderTitle = (onTitleCommit?: (next: string) => void) =>
   );
 
 describe('section title outside the title field', () => {
-  it('spellchecks the title and saves a correction on blur', () => {
+  it('spellchecks the title, saves each change, and trims on blur', () => {
     const onTitleCommit = jest.fn();
     renderTitle(onTitleCommit);
     const title = screen.getByRole('textbox', { name: 'Title' });
@@ -30,9 +30,21 @@ describe('section title outside the title field', () => {
     fireEvent.focus(title);
     fireEvent.change(title, { target: { value: 'Test ' } });
     expect(title).toHaveValue('Test ');
-    expect(onTitleCommit).not.toHaveBeenCalled();
+    expect(onTitleCommit).toHaveBeenLastCalledWith('Test ');
 
     fireEvent.blur(title);
+    expect(onTitleCommit).toHaveBeenLastCalledWith('Test');
+    expect(onTitleCommit).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not save again on blur when nothing needs trimming', () => {
+    const onTitleCommit = jest.fn();
+    renderTitle(onTitleCommit);
+    const title = screen.getByRole('textbox');
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: 'Test' } });
+    fireEvent.blur(title);
+    expect(onTitleCommit).toHaveBeenCalledTimes(1);
     expect(onTitleCommit).toHaveBeenCalledWith('Test');
   });
 
@@ -77,56 +89,42 @@ describe('section title outside the title field', () => {
     }
   );
 
-  it('drops the edit when Escape is pressed', () => {
-    const onTitleCommit = jest.fn();
-    renderTitle(onTitleCommit);
-    const title = screen.getByRole('textbox');
-    title.focus();
-    fireEvent.change(title, { target: { value: 'Test' } });
-    fireEvent.keyDown(title, { key: 'Escape' });
-    expect(onTitleCommit).not.toHaveBeenCalled();
-    expect(title).toHaveValue('Teest');
-  });
-
-  it('saves to the section being edited when the cell changes', () => {
+  it('saves each change through the callback of the current render', () => {
     const saveFirst = jest.fn();
     const saveSecond = jest.fn();
     const { rerender } = renderTitle(saveFirst);
     const title = screen.getByRole('textbox');
     fireEvent.focus(title);
-    fireEvent.change(title, { target: { value: 'Test' } });
+    fireEvent.change(title, { target: { value: 'Tes' } });
 
     rerender(
       <SectionTitleText
-        value="Other"
-        cell={{ value: 'Other', onTitleCommit: saveSecond }}
+        value="Teest"
+        cell={{ value: 'Teest', onTitleCommit: saveSecond }}
       />
     );
-    fireEvent.blur(title);
-    expect(saveFirst).toHaveBeenCalledWith('Test');
-    expect(saveSecond).not.toHaveBeenCalled();
+    fireEvent.change(title, { target: { value: 'Test' } });
+    expect(saveFirst).toHaveBeenCalledWith('Tes');
+    expect(saveSecond).toHaveBeenCalledWith('Test');
   });
 
-  it('saves the draft when it unmounts before blur', () => {
+  it('keeps the draft while a save in progress re-renders the title', () => {
     const onTitleCommit = jest.fn();
-    const { unmount } = renderTitle(onTitleCommit);
+    const { rerender } = renderTitle(onTitleCommit);
     const title = screen.getByRole('textbox');
     fireEvent.focus(title);
     fireEvent.change(title, { target: { value: 'Test' } });
-    unmount();
-    expect(onTitleCommit).toHaveBeenCalledTimes(1);
-    expect(onTitleCommit).toHaveBeenCalledWith('Test');
-  });
 
-  it('does not save after Escape when it unmounts', () => {
-    const onTitleCommit = jest.fn();
-    const { unmount } = renderTitle(onTitleCommit);
-    const title = screen.getByRole('textbox');
-    title.focus();
-    fireEvent.change(title, { target: { value: 'Test' } });
-    fireEvent.keyDown(title, { key: 'Escape' });
-    unmount();
-    expect(onTitleCommit).not.toHaveBeenCalled();
+    rerender(
+      <SectionTitleText value="Tes" cell={{ value: 'Tes', onTitleCommit }} />
+    );
+    expect(title).toHaveValue('Test');
+
+    fireEvent.blur(title);
+    rerender(
+      <SectionTitleText value="Test" cell={{ value: 'Test', onTitleCommit }} />
+    );
+    expect(title).toHaveValue('Test');
   });
 
   it('leaves Enter and Escape to the IME while composing', () => {
@@ -158,7 +156,7 @@ describe('section title outside the title field', () => {
     expect(title).toHaveFocus();
     expect(title).toHaveValue('Test');
     expect(onKeyDown).not.toHaveBeenCalled();
-    expect(onTitleCommit).not.toHaveBeenCalled();
+    expect(onTitleCommit).toHaveBeenCalledTimes(1);
   });
 
   it('is read-only when the cell cannot be edited', () => {
