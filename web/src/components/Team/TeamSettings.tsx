@@ -40,9 +40,11 @@ import {
 } from '../../selector';
 import { useGlobal } from '../../context/useGlobal';
 import {
+  isBoldTeamWorkflow,
   orgDefaultPermissions,
   orgDefaultWorkflowProgression,
   useRole,
+  useTeamWorkflowProcess,
   WorkflowProgression,
 } from '../../crud';
 import { isElectron } from '../../../api-variable';
@@ -83,10 +85,13 @@ interface IProps {
   /** Voice settings for a team not yet added; saved with the team. */
   ttsVoices?: TtsVoiceSettings;
   setTtsVoices?: (value: TtsVoiceSettings) => void;
+  /** Selected workflow process while adding a team (no org steps yet). */
+  process?: string;
 }
 
 export function TeamSettings(props: IProps) {
-  const { mode, team, values, setValue, ttsVoices, setTtsVoices } = props;
+  const { mode, team, values, setValue, ttsVoices, setTtsVoices, process } =
+    props;
   const ctx = React.useContext(TeamContext);
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -100,11 +105,18 @@ export function TeamSettings(props: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tv: ITtsVoicesStrings = useSelector(ttsVoicesSelector, shallowEqual);
   const isAdd = mode === DialogMode.add;
+  const teamWorkflow = useTeamWorkflowProcess(team?.id);
+  // Bold has no Internalize step, so Reference Text Voices do not apply.
+  const isBold = isAdd
+    ? isBoldTeamWorkflow(process)
+    : isBoldTeamWorkflow(teamWorkflow);
   // Admins of this team, not the selected one that canSetOrgDefault checks.
   // Whoever adds a team becomes its admin.
-  const showTtsVoices = isAdd
-    ? !!setTtsVoices
-    : !!team?.id && team.id !== personalTeam && userIsOrgAdmin(team.id);
+  const showTtsVoices =
+    !isBold &&
+    (isAdd
+      ? !!setTtsVoices
+      : !!team?.id && team.id !== personalTeam && userIsOrgAdmin(team.id));
   // Same online rule as canSetOrgDefault.
   const canSetTtsVoices = offlineOnly || !offline;
   const workflowOptions = [
