@@ -43,7 +43,8 @@ import { useShowIcon } from './useShowIcon';
 import { ExtraIcon } from '.';
 import { positiveWholeOnly, stringAvatar } from '../../utils';
 import { sheetCellKindReadOnly } from './sheetCellKindReadOnly';
-import { SectionTitleText } from './SectionTitleText';
+import { SectionTitleText, type ISectionTitleCell } from './SectionTitleText';
+import { sectionTitleKey } from './sectionTitleKey';
 import { TitleEdit } from './TitleEdit';
 import { getPubRefs } from './getPubRefs';
 import { PublishButton } from './PublishButton';
@@ -743,9 +744,10 @@ export const usePlanSheetFill = ({
           calcClassName +
           (plainSectionTitle ? ' title-spell' : ''),
         ...(plainSectionTitle
-          ? {
+          ? ({
+              key: sectionTitleKey(rowInfo[rowIndex] as ISheet, rowIndex),
               valueViewer: SectionTitleText,
-              onSpellReplace:
+              onTitleCommit:
                 readOnly || anyRecording
                   ? undefined
                   : (next: string) =>
@@ -757,7 +759,7 @@ export const usePlanSheetFill = ({
                           value: next,
                         },
                       ]),
-            }
+            } satisfies Partial<ISectionTitleCell>)
           : {}),
       };
     };

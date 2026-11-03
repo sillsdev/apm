@@ -219,9 +219,8 @@ export interface ICell {
   readOnly?: boolean;
   width?: number;
   className?: string;
+  key?: string;
   valueViewer?: DataSheet.ValueViewer<ICell>;
-  /** Saves an edit made in a section title's spellcheck viewer. */
-  onSpellReplace?: (next: string) => void;
 }
 
 export interface ICellChange {
