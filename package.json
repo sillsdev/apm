@@ -23,8 +23,11 @@
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
     "devs": "node env-config/changeEnv.cjs dev",
+    "devsl": "node env-config/changeEnvLocal.cjs dev",
     "qas": "node env-config/changeEnv.cjs qa",
+    "qasl": "node env-config/changeEnvLocal.cjs qa",
     "prods": "node env-config/changeEnv.cjs prod",
+    "prodsl": "node env-config/changeEnvLocal.cjs prod",
     "test:e2e": "playwright test"
   },
   "dependencies": {
