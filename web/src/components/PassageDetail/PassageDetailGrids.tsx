@@ -161,7 +161,7 @@ const PassageDetailGrids = () => {
   }, [plan]);
   const headerToolLabel =
     tool && Object.prototype.hasOwnProperty.call(t, tool)
-      ? addPt(t.getString(tool))
+      ? addPt(t.getString(tool) ?? tool)
       : tool;
   // The step content sits in a Paper of `calc(100% - 32px)`; a player sized to
   // the full pane would spill past that Paper (the outer Box clips it, cutting

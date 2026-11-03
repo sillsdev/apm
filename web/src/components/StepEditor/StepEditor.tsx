@@ -502,7 +502,7 @@ export const StepEditor = ({ process, org }: IProps) => {
       case ToolSlug.PhraseBackTranslate:
         if (json)
           return se.settingsFor
-            .replace('{0}', st.getString(tool as keyof typeof se))
+            .replace('{0}', st.getString(tool as keyof typeof se) ?? tool)
             .replace(
               '{1}',
               localizedArtifactTypeFromId(
@@ -514,7 +514,7 @@ export const StepEditor = ({ process, org }: IProps) => {
               )
             );
         return se.settingsFor
-          .replace('{0}', st.getString(tool as keyof typeof se))
+          .replace('{0}', st.getString(tool as keyof typeof se) ?? tool)
           .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
       default:
         return '';

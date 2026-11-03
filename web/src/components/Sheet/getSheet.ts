@@ -453,7 +453,7 @@ export const getSheet = ({
         if (stepRec) {
           const strTag = toCamel(stepRec.attributes.name);
           item.step = Object.hasOwn(wfStr, strTag)
-            ? addPt(wfStr.getString(strTag))
+            ? addPt(wfStr.getString(strTag) ?? stepRec.attributes.name)
             : stepRec.attributes.name;
           item.stepId = stepRec.id;
           const schemeStep = organizationSchemeSteps.find(

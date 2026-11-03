@@ -54,7 +54,7 @@ export const usePermissions = () => {
     }
     if (!p) return '';
     return Object.prototype.hasOwnProperty.call(t, p)
-      ? t.getString(p)
+      ? (t.getString(p) ?? p)
       : (Object.keys(PermissionName)
           .filter((pk) => (PermissionName as any)[pk] === p)
           .pop() ?? p);
