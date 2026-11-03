@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { TokenContext } from '../../context/TokenProvider';
 import { useGlobal } from '../../context/useGlobal';
 import { projDefReferenceTexts } from '../../crud/useProjectDefaults';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -26,6 +27,14 @@ export type ReferenceTextPassage =
       retry?: () => void;
     };
 
+/** 401 means the login needs renewing; 403 means renewing will not help. */
+const fetchError = (err: unknown): ReferenceTextError => {
+  const status = (err as { status?: number }).status;
+  if (status === 401) return 'unauthorized';
+  if (status === 403) return 'forbidden';
+  return 'fetchFailed';
+};
+
 type FetchResult = { key: string } & (
   { text: string } | { error: ReferenceTextError }
 );
@@ -50,6 +59,7 @@ export const useReferenceTextPassage = (
   referenceText: ReferenceText | undefined
 ): ReferenceTextPassage => {
   const [errorReporter] = useGlobal('errorReporter');
+  const token = useContext(TokenContext).state.accessToken as string;
   const plan = planPassage(passage, referenceText);
   const key =
     plan.status === 'fetch'
@@ -74,7 +84,8 @@ export const useReferenceTextPassage = (
         const chapters = await getChapters(
           plan.referenceText.id,
           plan.book,
-          chaptersInRange(plan.range)
+          chaptersInRange(plan.range),
+          token
         );
         if (!cancelled)
           setResult({
@@ -83,7 +94,7 @@ export const useReferenceTextPassage = (
           });
       } catch (err) {
         logError(Severity.error, errorReporter, err as Error);
-        if (!cancelled) setResult({ key: fetchKey, error: 'fetchFailed' });
+        if (!cancelled) setResult({ key: fetchKey, error: fetchError(err) });
       }
     };
     void load(); // load reports its own errors
@@ -91,9 +102,10 @@ export const useReferenceTextPassage = (
       cancelled = true;
     };
     // fetchKey names everything plan holds, plus the retry attempt; plan and
-    // errorReporter are new objects each render
+    // errorReporter are new objects each render. A new token (after Renew
+    // login) fetches again; chapters already loaded come from the cache.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchKey]);
+  }, [fetchKey, token]);
 
   if (plan.status !== 'fetch') return plan;
   const fetched = plan.referenceText;
@@ -104,7 +116,10 @@ export const useReferenceTextPassage = (
       status: 'error',
       referenceText: fetched,
       error: result.error,
-      retry: () => setAttempt((a) => a + 1),
+      retry:
+        result.error === 'fetchFailed'
+          ? () => setAttempt((a) => a + 1)
+          : undefined,
     };
   if (!result.text)
     return { status: 'error', referenceText: fetched, error: 'empty' };

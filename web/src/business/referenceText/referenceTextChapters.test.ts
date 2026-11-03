@@ -6,7 +6,10 @@ jest.mock('../../../api-variable', () => ({
   get isElectron() {
     return mockElectron.value;
   },
-  API_CONFIG: { offlineData: 'test-transcriber' },
+  API_CONFIG: {
+    offlineData: 'test-transcriber',
+    host: 'https://api.test',
+  },
 }));
 jest.mock('../../utils/logErrorService', () => ({
   logError: jest.fn(),
@@ -17,7 +20,6 @@ import {
   clearChapterCache,
   getChapter,
   getChapters,
-  HELLOAO_API,
 } from './referenceTextChapters';
 import { logError } from '../../utils/logErrorService';
 
@@ -47,53 +49,72 @@ beforeEach(() => {
 });
 
 describe('getChapter on web', () => {
-  it('fetches the simple chapter JSON for the translation, book and chapter', async () => {
+  it('fetches the chapter from our API for the translation, book and chapter', async () => {
     mockFetch.mockReturnValueOnce(ok(jhn3));
-    const body = await getChapter('BSB', 'JHN', 3);
+    const body = await getChapter('BSB', 'JHN', 3, 'tok');
     expect(body.number).toBe(3);
     expect(mockFetch).toHaveBeenCalledWith(
-      `${HELLOAO_API}/BSB/JHN/3.simple.json`
+      'https://api.test/api/hao/BSB/JHN/3',
+      { headers: { Authorization: 'Bearer tok' } }
     );
   });
 
   it('shares one request between callers', async () => {
     mockFetch.mockReturnValue(ok(jhn3));
     await Promise.all([
-      getChapter('BSB', 'JHN', 3),
-      getChapter('BSB', 'JHN', 3),
+      getChapter('BSB', 'JHN', 3, 'tok'),
+      getChapter('BSB', 'JHN', 3, 'tok'),
     ]);
-    await getChapter('BSB', 'JHN', 3);
+    await getChapter('BSB', 'JHN', 3, 'tok');
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts the HTTP status on a rejected chapter', async () => {
+    mockFetch.mockReturnValueOnce(
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: () => Promise.reject(new Error('no body')),
+      } as Response)
+    );
+    await expect(getChapter('BSB', 'JHN', 3, 'tok')).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it('rejects on an HTTP error and retries on the next request', async () => {
     mockFetch.mockReturnValueOnce(notFound()).mockReturnValueOnce(ok(jhn3));
-    await expect(getChapter('BSB', 'JHN', 3)).rejects.toThrow('404');
-    await expect(getChapter('BSB', 'JHN', 3)).resolves.toMatchObject({
+    await expect(getChapter('BSB', 'JHN', 3, 'tok')).rejects.toThrow('404');
+    await expect(getChapter('BSB', 'JHN', 3, 'tok')).resolves.toMatchObject({
       number: 3,
     });
   });
 
   it('rejects a response that is not a chapter', async () => {
     mockFetch.mockReturnValueOnce(ok({ error: 'nope' }));
-    await expect(getChapter('BSB', 'JHN', 3)).rejects.toThrow('not a chapter');
+    await expect(getChapter('BSB', 'JHN', 3, 'tok')).rejects.toThrow(
+      'not a chapter'
+    );
   });
 });
 
 describe('getChapters', () => {
   it('returns the chapters in order', async () => {
     mockFetch.mockImplementation((url: string) =>
-      ok(url.endsWith('/3.simple.json') ? jhn3 : jhn4)
+      ok(url.endsWith('/hao/BSB/JHN/3') ? jhn3 : jhn4)
     );
-    const bodies = await getChapters('BSB', 'JHN', [3, 4]);
+    const bodies = await getChapters('BSB', 'JHN', [3, 4], 'tok');
     expect(bodies.map((b) => b.number)).toEqual([3, 4]);
   });
 
   it('rejects when any chapter fails', async () => {
     mockFetch.mockImplementation((url: string) =>
-      url.endsWith('/3.simple.json') ? ok(jhn3) : notFound()
+      url.endsWith('/hao/BSB/JHN/3') ? ok(jhn3) : notFound()
     );
-    await expect(getChapters('BSB', 'JHN', [3, 4])).rejects.toThrow('404');
+    await expect(getChapters('BSB', 'JHN', [3, 4], 'tok')).rejects.toThrow(
+      '404'
+    );
   });
 });
 
@@ -122,7 +143,7 @@ describe('getChapter on desktop', () => {
 
   it('saves a fetched chapter in the offline data folder', async () => {
     mockFetch.mockReturnValueOnce(ok(jhn3));
-    await getChapter('BSB', 'JHN', 3);
+    await getChapter('BSB', 'JHN', 3, 'tok');
     expect(api.write).toHaveBeenCalledWith(
       localPath('BSB/JHN/3.simple.json'),
       JSON.stringify(jhn3)
@@ -131,19 +152,19 @@ describe('getChapter on desktop', () => {
 
   it('reads a saved chapter without fetching', async () => {
     mockFetch.mockReturnValueOnce(ok(jhn3));
-    await getChapter('BSB', 'JHN', 3);
+    await getChapter('BSB', 'JHN', 3, 'tok');
     clearChapterCache(); // as after a restart
-    const body = await getChapter('BSB', 'JHN', 3);
+    const body = await getChapter('BSB', 'JHN', 3, 'tok');
     expect(body.number).toBe(3);
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('fetches again when the saved file is damaged', async () => {
     mockFetch.mockReturnValue(ok(jhn3));
-    await getChapter('BSB', 'JHN', 3);
+    await getChapter('BSB', 'JHN', 3, 'tok');
     files.forEach((_, name) => files.set(name, '{not json'));
     clearChapterCache();
-    await expect(getChapter('BSB', 'JHN', 3)).resolves.toMatchObject({
+    await expect(getChapter('BSB', 'JHN', 3, 'tok')).resolves.toMatchObject({
       number: 3,
     });
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -154,7 +175,7 @@ describe('getChapter on desktop', () => {
     api.write.mockImplementationOnce(() =>
       Promise.reject(new Error('disk full'))
     );
-    await expect(getChapter('BSB', 'JHN', 3)).resolves.toMatchObject({
+    await expect(getChapter('BSB', 'JHN', 3, 'tok')).resolves.toMatchObject({
       number: 3,
     });
     expect(logError).toHaveBeenCalled();

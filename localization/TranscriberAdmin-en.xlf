@@ -1974,7 +1974,7 @@
       </unit>
       <unit id="phraseBackTranslationGuided.noStepLanguage">
          <segment>
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
             <target/>
          </segment>
       </unit>
@@ -5806,6 +5806,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.referenceTextForbidden">
+         <segment>
+            <source>You do not have access to this Reference Text.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.referenceTextLoading">
          <segment>
             <source>Loading passage…</source>
@@ -5830,6 +5836,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.referenceTextRenewLogin">
+         <segment>
+            <source>Renew login</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.referenceTextRetry">
          <segment>
             <source>Try again</source>
@@ -5839,6 +5851,12 @@
       <unit id="passageDetailArtifacts.referenceTextSpeakFailed">
          <segment>
             <source>The passage could not be spoken.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextUnauthorized">
+         <segment>
+            <source>Your login has expired. Renew it to load the passage.</source>
             <target/>
          </segment>
       </unit>
@@ -9300,7 +9318,7 @@
       </unit>
       <unit id="ttsVoices.macNote">
          <segment>
-            <source>You can also add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.</source>
+            <source>You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.</source>
             <target/>
          </segment>
       </unit>
@@ -9390,7 +9408,7 @@
       </unit>
       <unit id="ttsVoices.windowsNote">
          <segment>
-            <source>You can also add Windows voices for other languages under Settings → Time &amp; language → Speech → Add voices.</source>
+            <source>You can add Windows voices for other languages under Settings → Time &amp; language → Speech → Add voices.</source>
             <target/>
          </segment>
       </unit>

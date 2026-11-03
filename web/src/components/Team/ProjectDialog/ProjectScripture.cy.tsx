@@ -132,7 +132,8 @@ function Harness(props: { initial?: Partial<IProjectDialog> }) {
 
 const mountScripture = (
   initial?: Partial<IProjectDialog>,
-  extraRecords: RecordsByKey = {}
+  extraRecords: RecordsByKey = {},
+  offlineOnly = false
 ) => {
   const memory = createMockMemory({ ...records, ...extraRecords });
   const teamState = {
@@ -149,7 +150,7 @@ const mountScripture = (
             memory,
             errorReporter: bugsnagClient,
             organization: TEAM_ID,
-            offlineOnly: false,
+            offlineOnly,
             connected: true,
           } as any
         }
@@ -182,6 +183,14 @@ describe('ProjectScripture', () => {
     cy.get('#primary-reference-text').should('be.disabled');
     cy.get('#secondary-reference-text').should('be.disabled');
     cy.contains('Choose a book to see reference texts');
+  });
+
+  // TT-7829: Reference Texts are read through our API, which needs a login.
+  it('TT-7829: offers no Reference Texts for an offline-only project', () => {
+    mountScripture({ book: 'B03' }, {}, true);
+    cy.get('#project-book').should('exist');
+    cy.get('#primary-reference-text').should('not.exist');
+    cy.get('#secondary-reference-text').should('not.exist');
   });
 
   it('offers only canonical books and stores the publishing slot', () => {

@@ -15,7 +15,7 @@ import { PassageD, SectionD } from '../../model';
 import { ReferenceText } from '../../business/referenceText/referenceText';
 import {
   clearChapterCache,
-  HELLOAO_API,
+  helloAoChapterUrl,
 } from '../../business/referenceText/referenceTextChapters';
 import jhn3 from '../../business/referenceText/__fixtures__/BSB_JHN_3.simple.json';
 import { TeamCheckReference } from './TeamCheckReference';
@@ -84,6 +84,16 @@ const mockStore = createStore(
         en: { scripture: 'Scripture' },
       }),
       shared: new LocalizedStrings({ en: { close: 'Close' } }),
+      ttsVoices: new LocalizedStrings({
+        en: {
+          windowsNote:
+            'You can add Windows voices for other languages under Settings → Time & language → Speech → Add voices.',
+          macNote:
+            'You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.',
+          linuxNote:
+            'Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.',
+        },
+      }),
     }),
     books: () => ({ bookData: [] }),
   })
@@ -170,7 +180,7 @@ describe('TeamCheckReference', () => {
   // TT-7819: the project's Reference Text can be reviewed on Compare along
   // with the audio resources.
   it('TT-7819: picks the Primary Reference Text and shows it when no voice speaks it', () => {
-    cy.intercept('GET', `${HELLOAO_API}/BSB/JHN/3.simple.json`, {
+    cy.intercept('GET', helloAoChapterUrl('BSB', 'JHN', 3), {
       body: jhn3,
     });
     mount();

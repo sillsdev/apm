@@ -26,6 +26,11 @@ jest.mock('../../../crud/useOrgDefaults', () => ({
   useOrgDefaults: () => ({ getOrgDefault: () => undefined }),
 }));
 jest.mock('./ReferenceTextDialog', () => ({ ReferenceTextDialog: () => null }));
+// ReferenceTextStatus reads the login; the real provider loads auth0
+jest.mock('../../../context/TokenProvider', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return { TokenContext: React.createContext({ state: {} }) };
+});
 jest.mock('../../StepEditor', () => ({
   LightTooltip: ({ children }: { children: ReactNode }) => children,
 }));

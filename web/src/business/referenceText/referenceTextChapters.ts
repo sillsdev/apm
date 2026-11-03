@@ -1,12 +1,14 @@
 import path from 'path-browserify';
-import { isElectron } from '../../../api-variable';
+import { API_CONFIG, isElectron } from '../../../api-variable';
 import { MainAPI } from '../../model/main-api';
 import { HelloAoSimpleChapterBody } from '../../model/helloAoChapter';
 import { dataPath, PathType } from '../../utils/dataPath';
 import { logError, Severity } from '../../utils/logErrorService';
 import { parseChapter } from './passageText';
 
-export const HELLOAO_API = 'https://bible.helloao.org/api';
+/** Chapter on our API, e.g. `{host}/api/hao/eng_abt/LUK/1`. */
+export const helloAoChapterUrl = (id: string, book: string, chapter: number) =>
+  `${API_CONFIG.host}/api/hao/${id}/${book}/${chapter}`;
 
 // Read at call time so tests can stub window.api
 const ipc = () => window?.api as MainAPI;
@@ -48,24 +50,28 @@ const writeLocalChapter = async (localPath: string, json: unknown) => {
   }
 };
 
-const fetchChapter = async (file: string) => {
-  const response = await fetch(`${HELLOAO_API}/${file}`);
+/** `url` names the chapter in errors; a rejected request carries its HTTP `status`. */
+const fetchChapter = async (url: string, token: string) => {
+  const response = await fetch(url, {
+    headers: { Authorization: 'Bearer ' + token },
+  });
   if (!response.ok)
-    throw new Error(
-      `HelloAO ${file}: ${response.status} ${response.statusText}`
+    throw Object.assign(
+      new Error(`HelloAO ${url}: ${response.status} ${response.statusText}`),
+      { status: response.status }
     );
   const json: unknown = await response.json();
   const body = parseChapter(json);
-  if (!body) throw new Error(`HelloAO ${file}: not a chapter`);
+  if (!body) throw new Error(`HelloAO ${url}: not a chapter`);
   return { json, body };
 };
 
-const loadChapter = async (file: string) => {
-  if (!isElectron) return (await fetchChapter(file)).body;
+const loadChapter = async (file: string, url: string, token: string) => {
+  if (!isElectron) return (await fetchChapter(url, token)).body;
   const localPath = await localChapterPath(file);
   const local = await readLocalChapter(localPath);
   if (local) return local;
-  const { json, body } = await fetchChapter(file);
+  const { json, body } = await fetchChapter(url, token);
   await writeLocalChapter(localPath, json);
   return body;
 };
@@ -74,11 +80,17 @@ const loadChapter = async (file: string) => {
  * One chapter of a Reference Text from HelloAO, kept in memory and, on
  * desktop, in the offline data folder so it reads offline once fetched.
  */
-export const getChapter = (id: string, book: string, chapter: number) => {
+export const getChapter = (
+  id: string,
+  book: string,
+  chapter: number,
+  token: string
+) => {
   const file = chapterFile(id, book, chapter);
   const cached = chapterCache.get(file);
   if (cached) return cached;
-  const request = loadChapter(file).catch((err: unknown) => {
+  const url = helloAoChapterUrl(id, book, chapter);
+  const request = loadChapter(file, url, token).catch((err: unknown) => {
     chapterCache.delete(file); // let the next request retry
     throw err;
   });
@@ -87,5 +99,9 @@ export const getChapter = (id: string, book: string, chapter: number) => {
 };
 
 /** The chapters in order; rejects if any of them fails. */
-export const getChapters = (id: string, book: string, chapters: number[]) =>
-  Promise.all(chapters.map((c) => getChapter(id, book, c)));
+export const getChapters = (
+  id: string,
+  book: string,
+  chapters: number[],
+  token: string
+) => Promise.all(chapters.map((c) => getChapter(id, book, c, token)));

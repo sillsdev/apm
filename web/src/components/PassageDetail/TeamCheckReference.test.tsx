@@ -42,6 +42,11 @@ jest.mock('../../utils/storedCompareKey', () => ({
 // TT-7819: the Reference Text parts Compare reuses from Internalize
 const mockPassages: Record<string, unknown> = {};
 // Each rank's Reference Text is a stand-in whose id is the rank
+// ReferenceTextStatus reads the login; the real provider loads auth0
+jest.mock('../../context/TokenProvider', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return { TokenContext: React.createContext({ state: {} }) };
+});
 jest.mock('../../business/referenceText/useReferenceTextPassage', () => ({
   useProjectReferenceTexts: () => [{ id: 'primary' }, { id: 'secondary' }],
   useReferenceTextPassage: (_p: unknown, referenceText: { id: string }) =>
