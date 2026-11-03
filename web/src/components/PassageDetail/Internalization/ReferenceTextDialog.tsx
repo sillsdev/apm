@@ -11,12 +11,18 @@ import { ReferenceTextRank } from '../../../business/referenceText/useReferenceT
 import {
   IPassageDetailArtifactsStrings,
   ISharedStrings,
+  ITtsVoicesStrings,
   IVProjectStrings,
   PassageD,
 } from '../../../model';
 import {
+  currentSpeechPlatform,
+  speechInstallNote,
+} from '../../../business/referenceText/speechPlatform';
+import {
   passageDetailArtifactsSelector,
   sharedSelector,
+  ttsVoicesSelector,
   vProjectSelector,
 } from '../../../selector';
 import { usePassageRef } from './usePassageRef';
@@ -51,7 +57,10 @@ export function ReferenceTextDialog({
     passageDetailArtifactsSelector,
     shallowEqual
   );
+  const tv: ITtsVoicesStrings = useSelector(ttsVoicesSelector, shallowEqual);
   const labels = useReferenceTextLabels(referenceText, rank);
+  const installNote =
+    notice === 'noVoice' ? speechInstallNote(tv, currentSpeechPlatform()) : '';
   const { passageRef } = usePassageRef();
   const license = licenseText(referenceText.license, t);
 
@@ -81,6 +90,7 @@ export function ReferenceTextDialog({
                   ? ta.referenceTextNoVoice
                   : ta.referenceTextNoVoiceOffline
                 ).replace('{0}', labels.language)}
+            {installNote && ` ${installNote}`}
           </Alert>
         )}
         <Typography

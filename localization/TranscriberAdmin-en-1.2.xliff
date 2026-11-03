@@ -6773,6 +6773,13 @@
                <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextForbidden">
+            <source>You do not have access to this Reference Text.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextLoading">
             <source>Loading passage…</source>
             <target/>
@@ -6801,6 +6808,13 @@
                <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextRenewLogin">
+            <source>Renew login</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.referenceTextRetry">
             <source>Try again</source>
             <target/>
@@ -6813,6 +6827,13 @@
             <target/>
             <context-group context-type="sourcefile">
                <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextUnauthorized">
+            <source>Your login has expired. Renew it to load the passage.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageDetailArtifacts.research">
@@ -10851,7 +10872,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="ttsVoices.macNote">
-            <source>You can also add Mac voices for other languages under System Settings &#8594; Accessibility &#8594; Spoken Content &#8594; System voice &#8594; Manage Voices.</source>
+            <source>You can add Mac voices for other languages under System Settings &#8594; Accessibility &#8594; Spoken Content &#8594; System voice &#8594; Manage Voices.</source>
             <target/>
             <context-group context-type="sourcefile">
                <context context-type="sourcefile">VoiceInstallNote.tsx</context>
@@ -10956,7 +10977,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="ttsVoices.windowsNote">
-            <source>You can also add Windows voices for other languages under Settings &#8594; Time &amp; language &#8594; Speech &#8594; Add voices.</source>
+            <source>You can add Windows voices for other languages under Settings &#8594; Time &amp; language &#8594; Speech &#8594; Add voices.</source>
             <target/>
             <context-group context-type="sourcefile">
                <context context-type="sourcefile">VoiceInstallNote.tsx</context>

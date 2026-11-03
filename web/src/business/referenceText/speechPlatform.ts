@@ -1,3 +1,5 @@
+import { ITtsVoicesStrings } from '../../model';
+
 /** The operating system whose voice settings the voice dialog points to. */
 export type SpeechPlatform = 'windows' | 'mac' | 'linux' | 'other';
 
@@ -16,6 +18,22 @@ export const speechPlatform = (
   if (/^mac/i.test(platform)) return 'mac';
   if (/linux/i.test(platform)) return 'linux';
   return 'other';
+};
+
+type InstallNotes = Pick<
+  ITtsVoicesStrings,
+  'windowsNote' | 'macNote' | 'linuxNote'
+>;
+
+/** How this operating system adds voices, or '' when we have no steps. */
+export const speechInstallNote = (
+  notes: InstallNotes,
+  platform: SpeechPlatform
+): string => {
+  if (platform === 'windows') return notes.windowsNote;
+  if (platform === 'mac') return notes.macNote;
+  if (platform === 'linux') return notes.linuxNote;
+  return '';
 };
 
 /** This device's platform; `userAgentData` is not in TypeScript's DOM types yet. */

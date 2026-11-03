@@ -31,6 +31,7 @@ import {
   orgDefaultTtsVoices,
   useOrgDefaults,
 } from '../../../crud/useOrgDefaults';
+import { useGlobal } from '../../../context/useGlobal';
 import { ReferenceTextPicker } from './ReferenceTextPicker';
 import { IProjectDialogState } from './projectDialogTypes';
 
@@ -47,6 +48,8 @@ export function ProjectScripture(props: IProjectDialogState) {
   const usedIds = useTeamReferenceTextIds(team);
   const { getOrgDefault } = useOrgDefaults();
   const [removedNames, setRemovedNames] = useState<string[]>([]);
+  // TT-7829: Reference Texts are read through our API, which needs a login.
+  const [offlineOnly] = useGlobal('offlineOnly');
 
   const usfm = projectBookToUsfm(state.book);
   const [primary, secondary] = state.referenceTexts;
@@ -126,33 +129,37 @@ export function ProjectScripture(props: IProjectDialogState) {
           )}
           sx={{ flex: '0 1 200px' }}
         />
-        <ReferenceTextPicker
-          id="primary-reference-text"
-          label={t.primaryReferenceText}
-          bibles={bibles}
-          usedIds={usedIds}
-          value={primary}
-          disabled={!usfm || catalog.status !== 'ready'}
-          helperText={pickerHelp}
-          onChange={handlePrimary}
-        />
-        <ReferenceTextPicker
-          id="secondary-reference-text"
-          label={t.secondaryReferenceText}
-          bibles={bibles}
-          usedIds={usedIds}
-          value={secondary}
-          excludeId={primary?.id}
-          disabled={!primary || catalog.status !== 'ready'}
-          onChange={handleSecondary}
-        />
+        {!offlineOnly && (
+          <>
+            <ReferenceTextPicker
+              id="primary-reference-text"
+              label={t.primaryReferenceText}
+              bibles={bibles}
+              usedIds={usedIds}
+              value={primary}
+              disabled={!usfm || catalog.status !== 'ready'}
+              helperText={pickerHelp}
+              onChange={handlePrimary}
+            />
+            <ReferenceTextPicker
+              id="secondary-reference-text"
+              label={t.secondaryReferenceText}
+              bibles={bibles}
+              usedIds={usedIds}
+              value={secondary}
+              excludeId={primary?.id}
+              disabled={!primary || catalog.status !== 'ready'}
+              onChange={handleSecondary}
+            />
+          </>
+        )}
       </Box>
-      {voiceLanguages && usfm && (
+      {!offlineOnly && voiceLanguages && usfm && (
         <Typography variant="caption" color="text.secondary">
           {t.filteredToVoices}
         </Typography>
       )}
-      {catalog.status === 'error' && (
+      {!offlineOnly && catalog.status === 'error' && (
         <Alert severity="error">{t.bibleListError}</Alert>
       )}
       {removedNames.length > 0 && usfm && (

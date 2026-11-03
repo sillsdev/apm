@@ -111,11 +111,14 @@ export function TeamSettings(props: IProps) {
     ? isBoldTeamWorkflow(process)
     : isBoldTeamWorkflow(teamWorkflow);
   // Admins of this team, not the selected one that canSetOrgDefault checks.
-  // Whoever adds a team becomes its admin.
+  // TT-7829: none for offline-only; the Reference Texts they voice are read
+  // through our API, which needs a login.
   const showTtsVoices =
-    !isBold && (isAdd ? !!setTtsVoices : !!team?.id && userIsOrgAdmin(team.id));
+    !offlineOnly &&
+    !isBold &&
+    (isAdd ? !!setTtsVoices : !!team?.id && userIsOrgAdmin(team.id));
   // Same online rule as canSetOrgDefault.
-  const canSetTtsVoices = offlineOnly || !offline;
+  const canSetTtsVoices = !offline;
   const workflowOptions = [
     t.workflowProgressionPassage,
     t.workflowProgressionStep,

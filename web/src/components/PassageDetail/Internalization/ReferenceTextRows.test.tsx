@@ -69,13 +69,17 @@ jest.mock('../../../selector', () => ({
     referenceTextBookMissing: 'This Bible does not include this book.',
     referenceTextEmpty: 'This Bible has no text for these verses.',
     referenceTextFetchFailed: 'The passage could not be loaded.',
+    referenceTextForbidden: 'You do not have access to this Reference Text.',
     referenceTextLoading: 'Loading passage…',
     referenceTextNoRange: 'This passage has no verse range.',
     referenceTextNoVoice: 'No voice for {0} on this device.',
     referenceTextNoVoiceOffline:
       'Voices for {0} on this device need the internet.',
+    referenceTextRenewLogin: 'Renew login',
     referenceTextRetry: 'Try again',
     referenceTextSpeakFailed: 'The passage could not be spoken.',
+    referenceTextUnauthorized:
+      'Your login has expired. Renew it to load the passage.',
   }),
   resourceSelector: () => ({ passageResource: 'Passage' }),
   sharedSelector: () => ({ close: 'Close' }),
@@ -84,6 +88,14 @@ jest.mock('../../../selector', () => ({
     pause: 'Pause',
     stop: 'Stop',
     view: 'View',
+  }),
+  ttsVoicesSelector: () => ({
+    windowsNote:
+      'You can add Windows voices for other languages under Settings → Time & language → Speech → Add voices.',
+    macNote:
+      'You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.',
+    linuxNote:
+      'Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.',
   }),
 }));
 jest.mock('react-redux', () => ({
@@ -96,6 +108,15 @@ jest.mock('.', () => ({ DragHandle: () => <span /> }));
 jest.mock('../../../crud', () => ({
   useOrganizedBy: () => ({ getOrganizedBy: () => 'Section' }),
 }));
+const mockResetExpiresAt = jest.fn();
+jest.mock('../../../context/TokenProvider', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return {
+    TokenContext: React.createContext({
+      state: { resetExpiresAt: () => mockResetExpiresAt() },
+    }),
+  };
+});
 
 import { ReferenceTextRows } from './ReferenceTextRows';
 import {
@@ -128,6 +149,18 @@ const ready = (referenceText: ReferenceText, text = 'For God so loved') => ({
   referenceText,
   text,
 });
+
+/** `speechPlatform` reads `navigator.platform` when `userAgentData` is absent. */
+const setSpeechPlatform = (platform: string) => {
+  const nav = globalThis.navigator as Navigator & {
+    userAgentData?: { platform?: string };
+  };
+  delete nav.userAgentData;
+  Object.defineProperty(nav, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+};
 
 const mockSpeak = speakReferenceText as jest.Mock;
 let finishSpeaking: (outcome: SpeakOutcome) => void;
@@ -188,6 +221,7 @@ describe('ReferenceTextRows', () => {
     ['bookNotInText', 'This Bible does not include this book.'],
     ['noRange', 'This passage has no verse range.'],
     ['empty', 'This Bible has no text for these verses.'],
+    ['forbidden', 'You do not have access to this Reference Text.'],
   ])('explains %s without a retry', (error, message) => {
     mockPassages.primary = { status: 'error', referenceText: bible(), error };
     render(<ReferenceTextRows variant="table" />);
@@ -211,7 +245,25 @@ describe('ReferenceTextRows', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
+  it('offers to renew the login instead of retrying when the API rejects it', () => {
+    mockPassages.primary = {
+      status: 'error',
+      referenceText: bible(),
+      error: 'unauthorized',
+    };
+    render(<ReferenceTextRows variant="table" />);
+    expect(
+      screen.getByText('Your login has expired. Renew it to load the passage.')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    const renew = screen.getByRole('button', { name: 'Renew login' });
+    expect(renew).toHaveStyle({ whiteSpace: 'nowrap' });
+    fireEvent.click(renew);
+    expect(mockResetExpiresAt).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the text with a notice when play finds no voice', async () => {
+    setSpeechPlatform('Win32');
     mockPassages.primary = ready(bible());
     render(<ReferenceTextRows variant="table" />);
     fireEvent.click(screen.getByLabelText('Play'));
@@ -226,11 +278,29 @@ describe('ReferenceTextRows', () => {
       name: 'Berean Standard Bible — John 3:16',
     });
     expect(dialog).toHaveTextContent('No voice for English on this device.');
+    expect(dialog).toHaveTextContent(
+      'Settings → Time & language → Speech → Add voices.'
+    );
+    expect(dialog).not.toHaveTextContent('Spoken Content');
     expect(dialog).toHaveTextContent('For God so loved');
     expect(dialog).toHaveTextContent('License not stated');
   });
 
+  it('tells a Mac how to add a voice when this device has none', async () => {
+    setSpeechPlatform('MacIntel');
+    mockPassages.primary = ready(bible());
+    render(<ReferenceTextRows variant="table" />);
+    fireEvent.click(screen.getByLabelText('Play'));
+    act(() => finishSpeaking('noVoice'));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(
+      'System Settings → Accessibility → Spoken Content → System voice → Manage Voices.'
+    );
+    expect(dialog).not.toHaveTextContent('Add voices.');
+  });
+
   it('shows the text with a notice when the only voices need the internet', async () => {
+    setSpeechPlatform('Win32');
     mockPassages.primary = ready(bible());
     render(<ReferenceTextRows variant="table" />);
     fireEvent.click(screen.getByLabelText('Play'));
@@ -239,6 +309,7 @@ describe('ReferenceTextRows', () => {
     expect(dialog).toHaveTextContent(
       'Voices for English on this device need the internet.'
     );
+    expect(dialog).not.toHaveTextContent('Add voices.');
     expect(dialog).toHaveTextContent('For God so loved');
   });
 

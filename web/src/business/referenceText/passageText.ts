@@ -17,7 +17,12 @@ export interface VerseRange {
 }
 
 export type ReferenceTextError =
-  'bookNotInText' | 'noRange' | 'fetchFailed' | 'empty';
+  | 'bookNotInText'
+  | 'noRange'
+  | 'fetchFailed'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'empty';
 
 export type PassagePlan =
   | { status: 'none' }

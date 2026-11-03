@@ -1,3 +1,4 @@
+import { createElement, ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import jhn3 from './__fixtures__/BSB_JHN_3.simple.json';
 
@@ -18,6 +19,12 @@ jest.mock('../../utils/logErrorService', () => ({
 jest.mock('./referenceTextChapters', () => ({
   getChapters: jest.fn(),
 }));
+jest.mock('../../context/TokenProvider', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return {
+    TokenContext: React.createContext({ state: { accessToken: 'tok' } }),
+  };
+});
 
 import {
   useProjectReferenceTexts,
@@ -28,6 +35,7 @@ import { parseChapter } from './passageText';
 import { ReferenceText } from './referenceText';
 import { PassageD } from '../../model';
 import { logError } from '../../utils/logErrorService';
+import { TokenContext } from '../../context/TokenProvider';
 
 const text = (id: string, books: string): ReferenceText => ({
   id,
@@ -94,7 +102,7 @@ describe('useReferenceTextPassage', () => {
       referenceText: primary,
       text: 'Now there was a man of the Pharisees named Nicodemus, a leader of the Jews.',
     });
-    expect(mockGetChapters).toHaveBeenCalledWith('BSB', 'JHN', [3]);
+    expect(mockGetChapters).toHaveBeenCalledWith('BSB', 'JHN', [3], 'tok');
   });
 
   it('reads the Secondary Reference Text', async () => {
@@ -103,7 +111,7 @@ describe('useReferenceTextPassage', () => {
       useReferenceTextPassage(passage('3:1'), secondary)
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    expect(mockGetChapters).toHaveBeenCalledWith('eng_t4t', 'JHN', [3]);
+    expect(mockGetChapters).toHaveBeenCalledWith('eng_t4t', 'JHN', [3], 'tok');
   });
 
   it('is none without a Reference Text', () => {
@@ -112,6 +120,56 @@ describe('useReferenceTextPassage', () => {
     );
     expect(result.current).toEqual({ status: 'none' });
     expect(mockGetChapters).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [401, 'unauthorized'],
+    [403, 'forbidden'],
+  ])(
+    'reports a %s from the API as %s, without a retry',
+    async (status, error) => {
+      mockGetChapters.mockRejectedValue(
+        Object.assign(new Error('denied'), { status })
+      );
+      const { result } = renderHook(() =>
+        useReferenceTextPassage(passage('3:1'), primary)
+      );
+      await waitFor(() =>
+        expect(result.current).toEqual({
+          status: 'error',
+          referenceText: primary,
+          error,
+          retry: undefined,
+        })
+      );
+    }
+  );
+
+  it('fetches again when a renewed login brings a new token', async () => {
+    mockGetChapters
+      .mockRejectedValueOnce(
+        Object.assign(new Error('denied'), { status: 401 })
+      )
+      .mockResolvedValue([parseChapter(jhn3)]);
+    let token = 'old';
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      // Only accessToken is read; the cast skips the rest of the context
+      createElement(
+        TokenContext.Provider,
+        { value: { state: { accessToken: token } } as never },
+        children
+      );
+    const { result, rerender } = renderHook(
+      () => useReferenceTextPassage(passage('3:1'), primary),
+      { wrapper }
+    );
+    await waitFor(() =>
+      expect(result.current).toMatchObject({ error: 'unauthorized' })
+    );
+    token = 'new';
+    rerender();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(mockGetChapters).toHaveBeenLastCalledWith('BSB', 'JHN', [3], 'new');
   });
 
   it('reports fetchFailed and logs the error', async () => {

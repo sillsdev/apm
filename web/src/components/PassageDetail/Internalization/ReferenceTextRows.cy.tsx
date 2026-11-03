@@ -15,7 +15,7 @@ import { PassageD } from '../../../model';
 import { ReferenceText } from '../../../business/referenceText/referenceText';
 import {
   clearChapterCache,
-  HELLOAO_API,
+  helloAoChapterUrl,
 } from '../../../business/referenceText/referenceTextChapters';
 import jhn3 from '../../../business/referenceText/__fixtures__/BSB_JHN_3.simple.json';
 import { ReferenceTextRows } from './ReferenceTextRows';
@@ -92,6 +92,16 @@ const mockStore = createStore(
         en: { play: 'Play', pause: 'Pause', stop: 'Stop', view: 'View' },
       }),
       shared: new LocalizedStrings({ en: { close: 'Close' } }),
+      ttsVoices: new LocalizedStrings({
+        en: {
+          windowsNote:
+            'You can add Windows voices for other languages under Settings → Time & language → Speech → Add voices.',
+          macNote:
+            'You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.',
+          linuxNote:
+            'Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.',
+        },
+      }),
     }),
     books: () => ({ bookData: [] }),
   })
@@ -160,7 +170,7 @@ const mount = (variant: 'table' | 'card', texts: ReferenceText[]) => {
 };
 
 const serveJohn3 = () =>
-  cy.intercept('GET', `${HELLOAO_API}/BSB/JHN/3.simple.json`, {
+  cy.intercept('GET', helloAoChapterUrl('BSB', 'JHN', 3), {
     body: jhn3,
   });
 
@@ -195,7 +205,7 @@ describe('ReferenceTextRows', () => {
   });
 
   it('retries a passage that could not be loaded', () => {
-    cy.intercept('GET', `${HELLOAO_API}/BSB/JHN/3.simple.json`, {
+    cy.intercept('GET', helloAoChapterUrl('BSB', 'JHN', 3), {
       statusCode: 503,
     }).as('failed');
     mount('table', [bsb]);
@@ -214,7 +224,7 @@ describe('ReferenceTextRows', () => {
 
   it('shows cards with the license link on mobile', () => {
     cy.viewport(390, 844);
-    cy.intercept('GET', `${HELLOAO_API}/arb_vdv/JHN/3.simple.json`, {
+    cy.intercept('GET', helloAoChapterUrl('arb_vdv', 'JHN', 3), {
       body: { ...jhn3, translation: { id: 'arb_vdv' } },
     });
     mount('card', [arabic]);

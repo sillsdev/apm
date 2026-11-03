@@ -1128,12 +1128,15 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "referenceTextBookMissing": string;
     "referenceTextEmpty": string;
     "referenceTextFetchFailed": string;
+    "referenceTextForbidden": string;
     "referenceTextLoading": string;
     "referenceTextNoRange": string;
     "referenceTextNoVoice": string;
     "referenceTextNoVoiceOffline": string;
+    "referenceTextRenewLogin": string;
     "referenceTextRetry": string;
     "referenceTextSpeakFailed": string;
+    "referenceTextUnauthorized": string;
     "research": string;
     "resource": string;
     "resources": string;
