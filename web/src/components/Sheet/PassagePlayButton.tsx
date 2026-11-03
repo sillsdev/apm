@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Box, CircularProgress, IconButton } from '@mui/material';
 import { Pause, PlayArrow } from '@mui/icons-material';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -11,11 +12,23 @@ interface IProps {
   mediaId: string;
   /** Note titles hide the ring until playback starts. Cards keep it visible. */
   ring?: 'always' | 'playing';
+  /** Sheet recording is open: do not play into the microphone. */
+  disabled?: boolean;
 }
 
-export function PassagePlayButton({ mediaId, ring = 'always' }: IProps) {
+export function PassagePlayButton({
+  mediaId,
+  ring = 'always',
+  disabled = false,
+}: IProps) {
   const { playing, loading, progress, toggle, audio } =
     usePassagePlayback(mediaId);
+
+  useEffect(() => {
+    if (disabled && playing) toggle();
+    // toggle is a new function every render; playing is the signal to pause
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled, playing]);
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const showRing = ring === 'always' || playing || loading;
 
@@ -51,7 +64,8 @@ export function PassagePlayButton({ mediaId, ring = 'always' }: IProps) {
         data-testid="play-button"
         aria-label={t.playPause}
         title={t.playPause}
-        onClick={toggle}
+        disabled={disabled}
+        onClick={disabled ? undefined : toggle}
         sx={{ width: buttonSize, height: buttonSize, color: 'custom.black' }}
       >
         {playing ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}

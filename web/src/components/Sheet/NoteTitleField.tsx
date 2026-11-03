@@ -1,10 +1,14 @@
 import { NoteIcon } from '../../control/PlanIcons';
+import { useGlobal } from '../../context/useGlobal';
 import { PassagePlayButton } from './PassagePlayButton';
 
 export function NoteTitleField({
   value,
   mediaId,
-}: Readonly<{ value: string; mediaId?: string }>) {
+  disabled = false,
+}: Readonly<{ value: string; mediaId?: string; disabled?: boolean }>) {
+  const [playingMediaId] = useGlobal('playingMediaId');
+  const playDisabled = disabled || Boolean(playingMediaId);
   return (
     <span
       style={{
@@ -20,7 +24,11 @@ export function NoteTitleField({
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}
         >
-          <PassagePlayButton mediaId={mediaId} ring="playing" />
+          <PassagePlayButton
+            mediaId={mediaId}
+            ring="playing"
+            disabled={playDisabled}
+          />
         </span>
       ) : null}
       {NoteIcon}

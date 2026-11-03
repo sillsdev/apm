@@ -465,7 +465,8 @@ export const usePlanSheetFill = ({
     rowIndex: number,
     cellIndex: number,
     readonly: boolean,
-    isNote: boolean = false
+    isNote: boolean = false,
+    recording = false
   ) => {
     const handleTextChange = (value: string) => {
       const change: ICellChange = {
@@ -492,6 +493,7 @@ export const usePlanSheetFill = ({
                 'titleMediafile'
               ) || undefined
             }
+            disabled={recording}
           />
         )}
         {!isNote && (
@@ -681,7 +683,8 @@ export const usePlanSheetFill = ({
             rowIndex,
             cellIndex,
             !canEditTitle,
-            true
+            true,
+            anyRecording
           ),
           forceComponent: true,
           readOnly: true,

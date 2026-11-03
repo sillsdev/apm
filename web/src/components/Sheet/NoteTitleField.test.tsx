@@ -3,6 +3,10 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 
+jest.mock('../../context/useGlobal', () => ({
+  useGlobal: jest.fn(() => ['', jest.fn()]),
+}));
+
 const mockToggle = jest.fn();
 jest.mock('./usePassagePlayback', () => ({
   usePassagePlayback: jest.fn(() => ({
@@ -17,6 +21,7 @@ jest.mock('./usePassagePlayback', () => ({
 import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useSelector } from 'react-redux';
+import { useGlobal } from '../../context/useGlobal';
 import { NoteTitleField } from './NoteTitleField';
 import { PassagePlayButton } from './PassagePlayButton';
 import { usePassagePlayback } from './usePassagePlayback';
@@ -25,6 +30,7 @@ import { shouldOpenSheetContextMenu } from './sheetContextMenu';
 const mockPlayback = usePassagePlayback as jest.Mock;
 
 const mockUseSelector = useSelector as unknown as jest.Mock;
+const mockUseGlobal = useGlobal as unknown as jest.Mock;
 
 function TitleCell() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -55,6 +61,7 @@ describe('note title', () => {
       toggle: mockToggle,
       audio: null,
     });
+    mockUseGlobal.mockReturnValue(['', jest.fn()]);
   });
 
   it('shows the note title as text and opens the sheet menu', () => {
@@ -104,6 +111,38 @@ describe('note title', () => {
     expect(
       container.querySelector('.MuiCircularProgress-indeterminate')
     ).not.toBeNull();
+  });
+
+  it('does not play a title while a recording is in progress', () => {
+    mockToggle.mockClear();
+    render(<NoteTitleField value="Teest" mediaId="title-media" disabled />);
+    const play = screen.getByRole('button', { name: 'Play / Pause' });
+    expect(play).toBeDisabled();
+    fireEvent.click(play);
+    expect(mockToggle).not.toHaveBeenCalled();
+  });
+
+  it('stops title playback when a recording starts', () => {
+    mockToggle.mockClear();
+    mockPlayback.mockReturnValue({
+      playing: true,
+      loading: false,
+      progress: 0,
+      toggle: mockToggle,
+      audio: null,
+    });
+    render(<NoteTitleField value="Teest" mediaId="title-media" disabled />);
+    expect(mockToggle).toHaveBeenCalled();
+  });
+
+  it('does not play a title while other sheet audio is playing', () => {
+    mockToggle.mockClear();
+    mockUseGlobal.mockReturnValue(['other-media', jest.fn()]);
+    render(<NoteTitleField value="Teest" mediaId="title-media" />);
+    const play = screen.getByRole('button', { name: 'Play / Pause' });
+    expect(play).toBeDisabled();
+    fireEvent.click(play);
+    expect(mockToggle).not.toHaveBeenCalled();
   });
 
   it('hides the play button when the title has no recording', () => {
