@@ -83,10 +83,17 @@ export function SectionTitleText({
   const onTitleCommit = cell?.onTitleCommit;
   const areaRef = useRef<HTMLTextAreaElement>(null);
   // As in MediaTitle, every keystroke is saved through this render's callback,
-  // so it lands on the row the title is on now. While the title has focus it
-  // shows its own draft, so a save in progress cannot reset the text under
-  // the user's typing.
+  // so it lands on the row the title is on now. The title shows its own draft
+  // while it has focus, and after blur until the sheet's title matches it:
+  // updateData holds edits back while a save runs, and showing the old title
+  // meanwhile would let the next edit start from it.
   const [draft, setDraft] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
+  const [prevText, setPrevText] = useState(text);
+  if (text !== prevText) {
+    setPrevText(text);
+    if (!focused && text === draft) setDraft(null);
+  }
   // Only a title the user typed in is trimmed on blur, so focusing a title
   // that ends in a space and leaving it does not rewrite the title.
   const editedRef = useRef(false);
@@ -121,7 +128,8 @@ export function SectionTitleText({
   const handleFocus = () => {
     if (!onTitleCommit) return;
     editedRef.current = false;
-    setDraft(text);
+    setFocused(true);
+    setDraft(shown);
   };
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -133,11 +141,12 @@ export function SectionTitleText({
   };
 
   const handleBlur = () => {
-    const trimmed = draft?.trim();
-    if (editedRef.current && trimmed !== undefined && trimmed !== draft)
-      onTitleCommit?.(trimmed);
+    setFocused(false);
+    if (draft === null) return;
+    const next = editedRef.current ? draft.trim() : draft;
+    if (next !== draft) onTitleCommit?.(next);
     editedRef.current = false;
-    setDraft(null);
+    setDraft(next === text ? null : next);
   };
 
   // Other keys belong to this title. If they reach the grid, it starts its own

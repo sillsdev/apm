@@ -127,6 +127,45 @@ describe('section title outside the title field', () => {
     expect(title).toHaveValue('Test');
   });
 
+  it('keeps showing an edit held behind a save until the sheet catches up', () => {
+    const onTitleCommit = jest.fn();
+    const { rerender } = renderTitle(onTitleCommit);
+    const title = screen.getByRole('textbox');
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: 'Test' } });
+    fireEvent.blur(title);
+    // The save has not applied the edit yet, so the sheet still has the old title.
+    expect(title).toHaveValue('Test');
+
+    // Typing again starts from the held edit, not the old title.
+    fireEvent.focus(title);
+    expect(title).toHaveValue('Test');
+    fireEvent.change(title, { target: { value: 'Tests' } });
+    fireEvent.blur(title);
+    expect(onTitleCommit).toHaveBeenLastCalledWith('Tests');
+
+    rerender(
+      <SectionTitleText value="Test" cell={{ value: 'Test', onTitleCommit }} />
+    );
+    expect(title).toHaveValue('Tests');
+    rerender(
+      <SectionTitleText
+        value="Tests"
+        cell={{ value: 'Tests', onTitleCommit }}
+      />
+    );
+    expect(title).toHaveValue('Tests');
+
+    // Once caught up, later changes to the sheet's title show through.
+    rerender(
+      <SectionTitleText
+        value="Other"
+        cell={{ value: 'Other', onTitleCommit }}
+      />
+    );
+    expect(title).toHaveValue('Other');
+  });
+
   it('leaves Enter and Escape to the IME while composing', () => {
     const onTitleCommit = jest.fn();
     const onKeyDown = jest.fn();
