@@ -45,7 +45,6 @@ import { positiveWholeOnly, stringAvatar } from '../../utils';
 import { TitleEdit } from './TitleEdit';
 import { getPubRefs } from './getPubRefs';
 import { PublishButton } from './PublishButton';
-import { NoteIcon } from '../../control/PlanIcons';
 import { OrganizationSchemeD } from '../../model/organizationScheme';
 import {
   isPublishingTitle,
@@ -461,13 +460,21 @@ export const usePlanSheetFill = ({
       className: calcClassName,
     }) as ICell;
 
-  const TitleValue = (
-    e: string | number,
-    rowIndex: number,
-    cellIndex: number,
-    readonly: boolean,
-    isNote: boolean = false
-  ) => {
+  const TitleValue = ({
+    title,
+    rowIndex,
+    cellIndex,
+    readonly,
+    isNote = false,
+    recording = false,
+  }: {
+    title: string;
+    rowIndex: number;
+    cellIndex: number;
+    readonly: boolean;
+    isNote?: boolean;
+    recording?: boolean;
+  }) => {
     const handleTextChange = (value: string) => {
       const change: ICellChange = {
         cell: null,
@@ -485,19 +492,20 @@ export const usePlanSheetFill = ({
     return (
       <>
         {isNote && (
-          <>
-            {NoteIcon}
-            {'\u00A0'}
-            <NoteTitleField
-              value={e as string}
-              readonly={readonly}
-              onChange={handleTextChange}
-            />
-          </>
+          <NoteTitleField
+            value={title}
+            mediaId={
+              related(
+                (rowInfo[rowIndex] as ISheet).sharedResource,
+                'titleMediafile'
+              ) || undefined
+            }
+            disabled={recording}
+          />
         )}
         {!isNote && (
           <TitleEdit
-            title={e as string}
+            title={title}
             mediaId={
               rowInfo[rowIndex]?.titleMediaId?.id ||
               rowInfo[rowIndex]?.mediaId?.id ||
@@ -636,7 +644,12 @@ export const usePlanSheetFill = ({
       ) {
         return {
           value: e,
-          component: TitleValue(e, rowIndex, cellIndex, !canEditTitle),
+          component: TitleValue({
+            title: e as string,
+            rowIndex,
+            cellIndex,
+            readonly: !canEditTitle,
+          }),
           forceComponent: true,
           readOnly: true,
           className: calcClassName,
@@ -650,12 +663,12 @@ export const usePlanSheetFill = ({
         if (cellIndex === titleCol) {
           return {
             value: '',
-            component: TitleValue(
-              (rowData[rowIndex] as IRow)[descCol] as string,
+            component: TitleValue({
+              title: (rowData[rowIndex] as IRow)[descCol] as string,
               rowIndex,
-              descCol,
-              !canEditTitle
-            ),
+              cellIndex: descCol,
+              readonly: !canEditTitle,
+            }),
             forceComponent: true,
             readOnly: true,
             className: calcClassName,
@@ -676,14 +689,16 @@ export const usePlanSheetFill = ({
       ) {
         return {
           value: e,
-          component: TitleValue(
-            (rowInfo[rowIndex] as ISheet).sharedResource?.attributes.title ||
+          component: TitleValue({
+            title:
+              (rowInfo[rowIndex] as ISheet).sharedResource?.attributes.title ||
               '',
             rowIndex,
             cellIndex,
-            !canEditTitle,
-            true
-          ),
+            readonly: !canEditTitle,
+            isNote: true,
+            recording: anyRecording,
+          }),
           forceComponent: true,
           readOnly: true,
           className: calcClassName,
