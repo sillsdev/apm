@@ -1811,7 +1811,7 @@ const initialState = {
 			"aiWillContinue": "The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.",
 			"asrChooseLanguage": "Choose the language of this recording for automatic transcription.",
 			"asrMethod": "Method",
-			"asrMethodDefault": "Default ({0})",
+			"asrMethodDefault": "{0} (Default)",
 			"asrMethodHint": "Choose a specific method only if the default method is not working well.",
 			"asrRequestFailed": "Speech recognition settings could not be loaded.",
 			"asrSaveFailed": "Speech recognition settings could not be saved.",

@@ -2300,7 +2300,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="phraseBackTranslationGuided.noStepLanguage">
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
@@ -10193,7 +10193,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrMethodDefault">
-            <source>Default ({0})</source>
+            <source>{0} (Default)</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">AsrSettings.tsx</context>
