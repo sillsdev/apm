@@ -113,10 +113,7 @@ export function TeamSettings(props: IProps) {
   // Admins of this team, not the selected one that canSetOrgDefault checks.
   // Whoever adds a team becomes its admin.
   const showTtsVoices =
-    !isBold &&
-    (isAdd
-      ? !!setTtsVoices
-      : !!team?.id && team.id !== personalTeam && userIsOrgAdmin(team.id));
+    !isBold && (isAdd ? !!setTtsVoices : !!team?.id && userIsOrgAdmin(team.id));
   // Same online rule as canSetOrgDefault.
   const canSetTtsVoices = offlineOnly || !offline;
   const workflowOptions = [
