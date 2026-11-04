@@ -410,7 +410,6 @@ export interface MountPbtOptions {
   fileurlDelayMs?: number;
   /** Reject the mediafile POST with this status (upload-failure paths). */
   failPostWithStatus?: number;
-  width?: number;
   /** Speaker pre-filled in localStorage (blank = the highlight-speaker path). */
   speaker?: string;
   /**
@@ -847,7 +846,7 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
         { state: ctxState as any, setState: () => {} } as any
       }
     >
-      <PassageDetailPhraseBackTranslate width={options.width ?? 600} />
+      <PassageDetailPhraseBackTranslate />
     </PassageDetailContext.Provider>
   );
 }

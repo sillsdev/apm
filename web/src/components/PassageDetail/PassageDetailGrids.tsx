@@ -276,18 +276,14 @@ const PassageDetailGrids = () => {
             {tool === ToolSlug.Verses && (
               <PassageDetailMarkVerses width={width} />
             )}
-            {tool === ToolSlug.CarefulSpeech && (
-              <PassageDetailCarefulSpeech width={width} />
-            )}
+            {tool === ToolSlug.CarefulSpeech && <PassageDetailCarefulSpeech />}
             {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
-              <PassageDetailLwcTranslation width={width} />
+              <PassageDetailLwcTranslation />
             )}
             {tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow && (
-              <PassageDetailPhraseBackTranslate width={width} />
+              <PassageDetailPhraseBackTranslate />
             )}
-            {boldClauseTranscription && (
-              <PassageDetailLwcTranscription width={width} />
-            )}
+            {boldClauseTranscription && <PassageDetailLwcTranscription />}
             {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
               <PassageDetailTranscribe artifactTypeId={artifactId} />
             )}

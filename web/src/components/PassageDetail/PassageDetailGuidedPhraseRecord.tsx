@@ -93,7 +93,6 @@ import Confirm from '../AlertDialog';
 import { Button } from '../../control/Button';
 
 interface IProps {
-  width: number;
   config: GuidedPhraseRecordConfig;
   controlStrings: IGuidedPhraseRecordControlStrings;
   /** Shown when config.requireBoldWorkflow and the team is not BOLD. */
@@ -122,7 +121,6 @@ function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
 }
 
 export function PassageDetailGuidedPhraseRecord({
-  width,
   config,
   controlStrings,
   workflowGateMessage,
@@ -1900,7 +1898,6 @@ export function PassageDetailGuidedPhraseRecord({
       {allowSourcePlayer && (
         <PassageDetailPlayer
           key={`${config.containerId}-player-${mediafileId}`}
-          width={width}
           allowSegment={config.namedRegion}
           hideSegmentControls={!config.showPlayerSegmentControls}
           hideSegmentReset={
@@ -1947,7 +1944,6 @@ export function PassageDetailGuidedPhraseRecord({
       )}
       {bootstrapped && (
         <CarefulSpeechControls
-          width={width}
           phase={phase}
           recordingPassStarted={recordingPassStarted}
           currentRegion={currentRegion}
