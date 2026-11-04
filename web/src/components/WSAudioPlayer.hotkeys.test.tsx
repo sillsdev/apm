@@ -201,6 +201,9 @@ jest.mock('react-redux', () => ({
     recordStartFailed: 'Recording could not start: {0}',
     reduceNoise: 'Reduce noise',
     downloadMedia: 'Download',
+    moreOptions: 'More options',
+    selectMicrophoneMenu: 'Select Microphone',
+    noAudio: 'No audio devices',
     microphoneDisconnected:
       'The microphone was disconnected. Select another microphone to record.',
     microphoneDisconnectedFallback:
@@ -1221,6 +1224,67 @@ describe('WSAudioPlayer microphone disconnect fallback', () => {
       expect(localStorage.getItem('microphoneId')).toBe('laptop')
     );
     expect(mockShowMessage).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('WSAudioPlayer microphone list labels', () => {
+  const unlabeledMic = {
+    kind: 'audioinput' as const,
+    deviceId: 'mic-1',
+    label: '',
+  };
+  const labeledMic = {
+    kind: 'audioinput' as const,
+    deviceId: 'mic-1',
+    label: 'Logi USB Headset',
+  };
+  let enumerateDevices: jest.Mock;
+  let previousMediaDevices: MediaDevices | undefined;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.removeItem('microphoneId');
+    enumerateDevices = jest
+      .fn<() => Promise<MediaDeviceInfo[]>>()
+      .mockResolvedValueOnce([unlabeledMic] as MediaDeviceInfo[])
+      .mockResolvedValue([labeledMic] as MediaDeviceInfo[]);
+    previousMediaDevices = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        enumerateDevices,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        getSupportedConstraints: () => ({}),
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.removeItem('microphoneId');
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: previousMediaDevices,
+    });
+  });
+
+  it('shows real microphone names when Select Microphone opens after labels become available', async () => {
+    await act(async () => {
+      render(<WSAudioPlayer {...defaultProps} />);
+    });
+
+    await waitFor(() => expect(enumerateDevices).toHaveBeenCalled());
+
+    fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
+    fireEvent.click(document.getElementById('wsAudioMic') as HTMLElement);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', { name: 'Logi USB Headset' })
+      ).toBeInTheDocument()
+    );
+    expect(screen.queryByRole('menuitem', { name: 'Input 1' })).toBeNull();
   });
 });
 
