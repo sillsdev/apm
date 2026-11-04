@@ -443,7 +443,7 @@ describe('PassageDetailTranscribeMobile', () => {
         loading: false,
         pdBusy: false,
         setPDBusy: cy.stub(),
-        setupLocate: cy.stub(),
+        setupLocate: cy.stub().returns(() => {}),
         setCurrentSegment: cy.stub(),
         setPlayerSegments: cy.stub(),
         getCurrentSegment: () => undefined,

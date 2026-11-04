@@ -801,6 +801,9 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
       getCurrentSegment,
       setupLocate: (cb?: (segments: string) => void) => {
         segmentsCb.current = cb;
+        return () => {
+          if (segmentsCb.current === cb) segmentsCb.current = undefined;
+        };
       },
       setPlayerSegments: (segs: string) => segmentsCb.current?.(segs),
       discussionMarkers: [],

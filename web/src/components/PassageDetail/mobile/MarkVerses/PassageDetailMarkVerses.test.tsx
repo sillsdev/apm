@@ -179,7 +179,7 @@ jest.mock('../../../../context/usePassageDetailContext', () => () => ({
   setCurrentSegment: mockSetCurrentSegment,
   setCurrentStep: mockSetCurrentStep,
   orgWorkflowSteps: [mockOrgWorkflowStep],
-  setupLocate: jest.fn(),
+  setupLocate: jest.fn(() => () => {}),
   rowData: mockRowData,
   section: '',
   gotoNextStep: jest.fn(),
