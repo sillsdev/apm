@@ -127,7 +127,8 @@ export const useMediaUpload = ({
   const itemComplete = async (
     n: number,
     success: boolean,
-    data?: any
+    data: any,
+    silent: boolean
   ): Promise<void> => {
     if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
@@ -153,11 +154,12 @@ export const useMediaUpload = ({
       dispatch(actions.uploadComplete() as any);
       const total = fileList.current?.length ?? 1;
       const ok = mediaIdRef.current ? 1 : 0;
-      showMessage(
-        t.uploadComplete
-          .replace('{0}', String(ok))
-          .replace('{1}', String(total))
-      );
+      if (!silent)
+        showMessage(
+          t.uploadComplete
+            .replace('{0}', String(ok))
+            .replace('{1}', String(total))
+        );
       try {
         await afterUploadCb(mediaIdRef.current);
       } catch {
@@ -195,7 +197,7 @@ export const useMediaUpload = ({
     }
   };
 
-  return (files: File[]): Promise<boolean> => {
+  return (files: File[], silent = false): Promise<boolean> => {
     if (!files.length) return Promise.resolve(false);
     return new Promise((resolve, reject) => {
       void (async () => {
@@ -279,7 +281,7 @@ export const useMediaUpload = ({
             errorReporter: reporter,
             uploadType: UploadType.Media,
             cb: (n, success, data) => {
-              void itemComplete(n, success, data)
+              void itemComplete(n, success, data, silent)
                 .then(() => {
                   if (success) resolve(true);
                   else reject(new Error(t.uploadFailed));
@@ -292,10 +294,11 @@ export const useMediaUpload = ({
                 ? pendingRestore()
                 : pendingRestore,
             onTerminalFailure: (info) => {
-              showMessage(
-                formatUploadTerminalFailureMessage(t, info),
-                AlertSeverity.Warning
-              );
+              if (!silent)
+                showMessage(
+                  formatUploadTerminalFailureMessage(t, info),
+                  AlertSeverity.Warning
+                );
             },
           });
         } catch (err) {
