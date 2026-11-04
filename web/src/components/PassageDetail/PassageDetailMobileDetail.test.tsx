@@ -2,14 +2,12 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 
-const discussionSize = { width: 450, height: 900 };
 const mockSetDiscussOpen = jest.fn();
 const mockUseStepTool = jest.fn();
 
 jest.mock('../../context/usePassageDetailContext', () => () => ({
   currentstep: 'step-1',
   section: { id: 's1', type: 'section' },
-  discussionSize,
   promptDockedRecordButton: null,
   promptDockedRecordFooterVersion: 0,
   setDiscussOpen: mockSetDiscussOpen,

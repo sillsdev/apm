@@ -21,9 +21,7 @@ import {
 } from '../../../../model';
 import { RoleNames } from '../../../../model/roleNames';
 import { memory } from '../../../../schema';
-import PassageDetailMarkVerses, {
-  MarkVersesProps,
-} from './PassageDetailMarkVerses';
+import PassageDetailMarkVerses from './PassageDetailMarkVerses';
 import { DetailPlayerProps } from '../../PassageDetailPlayer';
 import { type ApplyRegionColor } from '../../../../crud/useWavesurferRegions';
 import {
@@ -373,11 +371,11 @@ const mockGlobalState = {
   (key: string) => mockGlobalState[key as keyof typeof mockGlobalState]
 );
 
-const runTest = (props: MarkVersesProps) =>
+const runTest = () =>
   render(
     <UnsavedProvider>
       <HotKeyProvider>
-        <PassageDetailMarkVerses {...props} />
+        <PassageDetailMarkVerses />
       </HotKeyProvider>
     </UnsavedProvider>
   );
@@ -505,7 +503,7 @@ test('auto-numbers the last verse row with the passage end subpart (6:1-3a)', as
     endVerse: 3,
   } as any;
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitFor(() => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('6:1');
@@ -529,7 +527,7 @@ test('covers the last verse subparts as a range when the passage ends mid-verse 
     endVerse: 4,
   } as any;
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitFor(() => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent(
@@ -603,7 +601,7 @@ test('does not keep the previous passage verse markings after navigation', async
 
   mockDetailState.mediafileId = 'mv-p1-media';
   mockDetailState.passage = passageOne;
-  const { rerender } = runTest({ width: 375 });
+  const { rerender } = runTest();
 
   await waitFor(() => {
     expect(verseReference(1)).toHaveTextContent('2:8');
@@ -613,7 +611,7 @@ test('does not keep the previous passage verse markings after navigation', async
   const tree = (
     <UnsavedProvider>
       <HotKeyProvider>
-        <PassageDetailMarkVerses width={375} />
+        <PassageDetailMarkVerses />
       </HotKeyProvider>
     </UnsavedProvider>
   );
@@ -645,7 +643,7 @@ test('does not keep the previous passage verse markings after navigation', async
 });
 
 test('updates timestamp rows when the player emits verse markers', async () => {
-  runTest({ width: 375 });
+  runTest();
 
   await waitFor(() => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
@@ -716,7 +714,7 @@ const emitSegments = async (bounds: [number, number][]) => {
  * WaveSurfer.
  */
 test('the segment ending with the audio is completed once every verse is marked', async () => {
-  runTest({ width: 375 });
+  runTest();
   await waitForPassageRowsReady();
 
   // Passage is 1:1-4, so four rows. Three segments leave 1:4 unmarked: the
@@ -767,7 +765,7 @@ test('the segment ending with the audio is completed once every verse is marked'
 test('highlights the matching waveform region when a row is edited', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitFor(() => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
@@ -800,7 +798,7 @@ test('highlights the matching waveform region when a row is edited', async () =>
 });
 
 test('verse references are read-only in the table', async () => {
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
   expect(verseReference(1).tagName).toBe('P');
@@ -824,7 +822,7 @@ test('verse references are read-only in the table', async () => {
 test('seeks the waveform when a timestamp row is clicked', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitFor(() => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
@@ -849,7 +847,7 @@ test('seeks the waveform when a timestamp row is clicked', async () => {
 test('seeks the waveform when the reference cell is clicked', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitFor(() => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
@@ -874,7 +872,7 @@ test('seeks the waveform when the reference cell is clicked', async () => {
 test('opens and cancels the split verse dialog', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -925,7 +923,7 @@ test('opens and cancels the split verse dialog', async () => {
 test('disables Save on Edit Reference until the reference changes', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -956,7 +954,7 @@ test('disables Save on Edit Reference until the reference changes', async () => 
 test('keeps Save disabled when Split Verse is toggled without suffix change', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -991,7 +989,7 @@ test('keeps Save disabled when Split Verse is toggled without suffix change', as
 test('saves a split verse range and shifts following references up', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1027,7 +1025,7 @@ test('saves a split verse range and shifts following references up', async () =>
 test('opens split verse unchecked for a numeric range like 1:1-4', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1058,7 +1056,7 @@ test('opens split verse unchecked for a numeric range like 1:1-4', async () => {
 test('adds rows when narrowing a wide reference on a single segment', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1094,7 +1092,7 @@ test('adds rows when narrowing a wide reference on a single segment', async () =
 test('adds rows when the first row range is narrowed after spanning the passage', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1133,7 +1131,7 @@ test('adds rows when the first row range is narrowed after spanning the passage'
 test('saving an ending verse without split creates a range and shifts following rows', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1161,7 +1159,7 @@ test('saving an ending verse without split creates a range and shifts following 
 test('split uses the selected left and right verses rather than the dialog row', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1195,7 +1193,7 @@ test('split uses the selected left and right verses rather than the dialog row',
 test('shows undo after dialog save and restores the previous table', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 
@@ -1242,7 +1240,7 @@ test('shows undo after dialog save and restores the previous table', async () =>
 test('reset clears markers and restores the original reference table', async () => {
   const user = userEvent.setup();
 
-  runTest({ width: 375 });
+  runTest();
 
   await waitForPassageRowsReady();
 

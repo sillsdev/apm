@@ -147,9 +147,6 @@ jest.mock('../components/PassageDetail/PassageDetailRecord', () => {
 // Not exercised by these tests; stubbed so their dependency trees stay out.
 const mockNull = () => null;
 jest.mock('../components/StickyRedirect', () => mockNull);
-jest.mock('../components/usePaneWidth', () => ({
-  usePaneWidth: () => ({ width: 320 }),
-}));
 jest.mock('../components/PassageDetail/boldClauseTranscription', () => ({
   isBoldClauseTranscriptionStep: () => false,
 }));

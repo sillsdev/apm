@@ -23,7 +23,6 @@ import { addPt } from '../../utils/addPt';
 import Busy from '../Busy';
 import TranscriptionTab from '../TranscriptionTab';
 import DiscussionDrawer from '../Discussions/DiscussionDrawer';
-import { usePaneWidth } from '../usePaneWidth';
 import PassageDetailLayout from './PassageDetailLayout';
 import { WorkflowSteps } from './WorkflowSteps';
 import PassageDetailStepComplete from './PassageDetailStepComplete';
@@ -117,7 +116,6 @@ const PassageDetailGrids = () => {
     [settings]
   );
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
-  const { width } = usePaneWidth();
   const { isMobile } = useMobile();
 
   const artifactId = useMemo(() => {
@@ -241,7 +239,7 @@ const PassageDetailGrids = () => {
       )}
       {tool === ToolSlug.Prompt && (
         <Box sx={{ minWidth: 0 }}>
-          <PassageDetailPrompt width={width} />
+          <PassageDetailPrompt />
         </Box>
       )}
       {tool === ToolSlug.Paratext && (
@@ -273,9 +271,7 @@ const PassageDetailGrids = () => {
             {tool === ToolSlug.Discuss && (
               <PassageDetailDiscuss currentStep={currentstep} />
             )}
-            {tool === ToolSlug.Verses && (
-              <PassageDetailMarkVerses width={width} />
-            )}
+            {tool === ToolSlug.Verses && <PassageDetailMarkVerses />}
             {tool === ToolSlug.CarefulSpeech && <PassageDetailCarefulSpeech />}
             {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
               <PassageDetailLwcTranslation />

@@ -479,7 +479,7 @@ describe('PassageDetailTranscribeMobile', () => {
                       {useRealUnsaved && (
                         <NavigationTrigger onNavigate={onNavigate} />
                       )}
-                      <PassageDetailTranscribeMobile width={360} />
+                      <PassageDetailTranscribeMobile />
                     </>
                   }
                 />

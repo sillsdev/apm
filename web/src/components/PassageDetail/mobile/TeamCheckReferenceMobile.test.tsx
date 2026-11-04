@@ -99,7 +99,7 @@ function renderWithContext(stateOverrides?: Record<string, unknown>) {
     <PassageDetailContext.Provider
       value={{ state: state as never, setState: jest.fn() }}
     >
-      <TeamCheckReferenceMobile width={400} />
+      <TeamCheckReferenceMobile />
     </PassageDetailContext.Provider>
   );
 }
@@ -248,7 +248,7 @@ describe('TeamCheckReferenceMobile', () => {
       <PassageDetailContext.Provider
         value={{ state: idleTopState as never, setState: jest.fn() }}
       >
-        <TeamCheckReferenceMobile width={400} />
+        <TeamCheckReferenceMobile />
       </PassageDetailContext.Provider>
     );
 
@@ -275,7 +275,7 @@ describe('TeamCheckReferenceMobile', () => {
       <PassageDetailContext.Provider
         value={{ state: topPlayingState as never, setState: jest.fn() }}
       >
-        <TeamCheckReferenceMobile width={400} />
+        <TeamCheckReferenceMobile />
       </PassageDetailContext.Provider>
     );
 

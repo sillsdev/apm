@@ -94,10 +94,6 @@ import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
 import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
 import { IRegionParams } from '../../../../crud/useWavesurferRegions';
 
-interface IProps {
-  width: number;
-}
-
 interface IStep {
   id: string;
   sequencenum: number;
@@ -105,7 +101,7 @@ interface IStep {
   settings: string;
 }
 
-export function PassageDetailTranscribeMobileContent({ width }: IProps) {
+export function PassageDetailTranscribeMobileContent() {
   const {
     mediafileId,
     section,
@@ -750,7 +746,6 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     <Box
       sx={{
         width: '100%',
-        maxWidth: width,
         minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
@@ -758,7 +753,6 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
       }}
     >
       <PassageDetailPlayer
-        width={width}
         layoutMode="transport"
         allowSegment={
           !isReadOnly && hasPermission ? NamedRegions.Transcription : undefined
@@ -982,7 +976,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   );
 }
 
-export default function PassageDetailTranscribeMobile(props: IProps) {
+export default function PassageDetailTranscribeMobile() {
   const { currentstep, orgWorkflowSteps, section, passage, sharedResource } =
     usePassageDetailContext();
   const { canDoSectionStep } = useStepPermissions();
@@ -1090,7 +1084,7 @@ export default function PassageDetailTranscribeMobile(props: IProps) {
       curRole={curRole as string}
       stepLanguageBcp47={stepLanguageBcp47}
     >
-      <PassageDetailTranscribeMobileContent {...props} />
+      <PassageDetailTranscribeMobileContent />
     </TranscriberProvider>
   );
 }

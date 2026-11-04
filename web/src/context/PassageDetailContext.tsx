@@ -188,8 +188,6 @@ const initState = {
   stepComplete: (_stepId: string) => {
     return false;
   },
-  discussionSize: { width: 450, height: 900 },
-  setDiscussionSize: (_size: { width: number; height: number }) => {},
   chooserSize: 48,
   setChooserSize: (_size: number) => {},
   defaultFilename: '',
@@ -467,15 +465,6 @@ const PassageDetailProvider = (props: IProps) => {
         finishStepConfirm(target);
       }
     );
-  };
-
-  const setDiscussionSize = (discussionSize: {
-    width: number;
-    height: number;
-  }) => {
-    setState((state: ICtxState) => {
-      return { ...state, discussionSize };
-    });
   };
 
   const setChooserSize = (chooserSize: number) => {
@@ -1300,7 +1289,6 @@ const PassageDetailProvider = (props: IProps) => {
           setSelected,
           setCurrentStep,
           setFirstStepIndex,
-          setDiscussionSize,
           setChooserSize,
           setPlaying,
           setItemPlaying,

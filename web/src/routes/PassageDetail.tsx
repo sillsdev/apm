@@ -25,7 +25,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { mobileSelector, sharedSelector } from '../selector';
 import { Paper, Typography } from '@mui/material';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
-import { usePaneWidth } from '../components/usePaneWidth';
 import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
@@ -85,8 +84,6 @@ const MobileStep = () => {
   const { tool, settings } = useStepTool(currentstep);
   const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
-  const { width, scrollbarWidth } = usePaneWidth();
-  const stepWidth = Math.max(0, width - scrollbarWidth);
 
   const artifactSlug = useMemo(() => {
     const parsed =
@@ -119,7 +116,7 @@ const MobileStep = () => {
   ) : tool === ToolSlug.Resource ? (
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
-    <PassageDetailMarkVerses width={stepWidth} />
+    <PassageDetailMarkVerses />
   ) : tool === ToolSlug.CarefulSpeech ? (
     // Keyed for the same reason as the transcription steps below: a team can
     // configure several guided-record steps in a row, and they all render the
@@ -142,11 +139,11 @@ const MobileStep = () => {
     // transcriptions. (TT-7503)
     <PassageDetailLwcTranscription key={currentstep} />
   ) : tool === ToolSlug.TeamCheck ? (
-    <TeamCheckReferenceMobile width={stepWidth} />
+    <TeamCheckReferenceMobile />
   ) : tool === ToolSlug.Prompt ? (
-    <PassageDetailPrompt width={stepWidth} />
+    <PassageDetailPrompt />
   ) : tool === ToolSlug.Transcribe ? (
-    <PassageDetailTranscribeMobile width={stepWidth} />
+    <PassageDetailTranscribeMobile />
   ) : (
     <DesktopOnlyStep />
   );

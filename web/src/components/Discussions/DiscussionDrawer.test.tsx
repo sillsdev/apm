@@ -64,7 +64,6 @@ const renderPanel = (discussOpen: boolean) =>
       value={
         {
           state: {
-            discussionSize: { width: 450, height: 700 },
             mediafileId: 'm1',
             discussOpen,
             passage: { id: 'p1' },
