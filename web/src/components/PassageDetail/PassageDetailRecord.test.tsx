@@ -37,7 +37,6 @@ const passageDetailCtx = {
   passage: { id: 'p1', type: 'passage' },
   sharedResource: undefined as unknown,
   mediafileId: 'mf1',
-  chooserSize: 0,
   recording: false,
   setRecording: jest.fn(),
   currentstep: 'step-record',

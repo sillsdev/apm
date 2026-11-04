@@ -86,7 +86,6 @@ export function PassageDetailRecord(props: IProps) {
     passage,
     sharedResource,
     mediafileId,
-    chooserSize,
     recording,
     setRecording,
     currentstep,
@@ -421,7 +420,7 @@ export function PassageDetailRecord(props: IProps) {
         setStatusText={setStatusText}
         doReset={resetMedia}
         setDoReset={setResetMedia}
-        height={300 - chooserSize}
+        height={252}
         allowNoNoise={true}
         allowDeltaVoice={true}
         handleSave={handleSave}

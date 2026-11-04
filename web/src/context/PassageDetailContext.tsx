@@ -188,8 +188,6 @@ const initState = {
   stepComplete: (_stepId: string) => {
     return false;
   },
-  chooserSize: 48,
-  setChooserSize: (_size: number) => {},
   defaultFilename: '',
   uploadItem: '',
   currentSegment: '',
@@ -465,12 +463,6 @@ const PassageDetailProvider = (props: IProps) => {
         finishStepConfirm(target);
       }
     );
-  };
-
-  const setChooserSize = (chooserSize: number) => {
-    setState((state: ICtxState) => {
-      return { ...state, chooserSize };
-    });
   };
 
   const setDiscussOpen = useCallback((discussOpen: boolean) => {
@@ -1289,7 +1281,6 @@ const PassageDetailProvider = (props: IProps) => {
           setSelected,
           setCurrentStep,
           setFirstStepIndex,
-          setChooserSize,
           setPlaying,
           setItemPlaying,
           setPlayItem,

@@ -39,8 +39,6 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
     section,
     prjId,
     allBookData,
-    chooserSize,
-    setChooserSize,
     setCurrentStep,
     isNavigationBlocked,
   } = usePassageDetailContext();
@@ -122,8 +120,6 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
         }
       });
     if (newCount !== passageCount) setPassageCount(newCount);
-    const newSize = newCount > 1 ? 48 : 0;
-    if (chooserSize !== newSize) setChooserSize(newSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, allBookData]);
 
