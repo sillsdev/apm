@@ -24,7 +24,7 @@ export const useNewTeamId = () => {
       'have user for personal team',
       () => Boolean(getGlobal('user')),
       () => false,
-      100
+      1000
     );
     const user = getGlobal('user');
     const orgs = (await memory.query((q) =>
