@@ -116,7 +116,14 @@ const KeyTerms = () => {
   }, [passage?.id ?? 0]);
 
   return (
-    <>
+    <Box
+      sx={{
+        flex: '1 1 0',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <KeyTermsSort initSort={sortBy} onChange={handleSortBy} />
         <KeyTermExclude
@@ -131,7 +138,7 @@ const KeyTerms = () => {
         />
         <KeyTermSetting curCode={language} onChange={handleLang} />
       </Box>
-      <StyledBox>
+      <StyledBox sx={{ flex: '1 1 0', minHeight: 0 }}>
         <KeyTermTable
           rows={verseTerms(
             book,
@@ -176,7 +183,7 @@ const KeyTerms = () => {
           getLabel={catLabel}
         />
       </BigDialog>
-    </>
+    </Box>
   );
 };
 

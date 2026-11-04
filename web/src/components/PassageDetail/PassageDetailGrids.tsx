@@ -158,7 +158,9 @@ const PassageDetailGrids = () => {
   const showsStepColumn = stepColumnTools.includes(tool ?? '');
   const clipsStepContent = clippedStepTools.includes(tool ?? '');
   // Transcribe stretches to the pane so its task list and text box can fill it.
-  const fillsPane = tool === ToolSlug.Transcribe && !boldClauseTranscription;
+  const fillsPane =
+    (tool === ToolSlug.Transcribe && !boldClauseTranscription) ||
+    tool === ToolSlug.KeyTerm;
   const showsStepPlayer =
     tool === ToolSlug.Discuss ||
     tool === ToolSlug.TeamCheck ||
