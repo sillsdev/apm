@@ -7,11 +7,10 @@ import { discussSelector } from '../../selector';
 import { MarkDownView } from '../../control/MarkDownView';
 
 interface IProps {
-  width: number;
   currentStep?: string;
 }
 
-export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
+export const PassageDetailDiscuss = ({ currentStep }: IProps) => {
   const [value, setValue] = useState<string>('');
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const t = useSelector(discussSelector, shallowEqual) as IDiscussStrings;
@@ -26,7 +25,7 @@ export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
   }, [orgSteps]);
 
   return (
-    <Box sx={{ maxWidth: width, whiteSpace: 'normal', overflow: 'auto' }}>
+    <Box sx={{ maxWidth: '100%', whiteSpace: 'normal', overflow: 'auto' }}>
       <MarkDownView value={value || t.howToChange} />
     </Box>
   );

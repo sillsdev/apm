@@ -235,7 +235,7 @@ const PassageDetailGrids = () => {
     >
       {tool === ToolSlug.Resource && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', minWidth: 0 }}>
-          <PassageDetailChooser width={width} />
+          <PassageDetailChooser />
           <PassageDetailArtifacts />
         </Box>
       )}
@@ -246,7 +246,7 @@ const PassageDetailGrids = () => {
       )}
       {tool === ToolSlug.Paratext && (
         <Stack sx={{ minWidth: 0 }}>
-          <PassageDetailChooser width={width} />
+          <PassageDetailChooser />
           <PassageDetailParatextIntegration />
         </Stack>
       )}
@@ -260,18 +260,18 @@ const PassageDetailGrids = () => {
               ...(fillsPane ? { flex: '1 1 0', minHeight: 0 } : {}),
             }}
           >
-            <PassageDetailChooser width={width} />
+            <PassageDetailChooser />
             {showsStepPlayer && (
-              <PassageDetailPlayer width={width} allowZoomAndSpeed={true} />
+              <PassageDetailPlayer allowZoomAndSpeed={true} />
             )}
             {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
             {tool === ToolSlug.KeyTerm && (
               <Suspense fallback={<Busy />}>
-                <KeyTerms width={width} />
+                <KeyTerms />
               </Suspense>
             )}
             {tool === ToolSlug.Discuss && (
-              <PassageDetailDiscuss width={width} currentStep={currentstep} />
+              <PassageDetailDiscuss currentStep={currentstep} />
             )}
             {tool === ToolSlug.Verses && (
               <PassageDetailMarkVerses width={width} />
@@ -291,10 +291,8 @@ const PassageDetailGrids = () => {
             {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
               <PassageDetailTranscribe artifactTypeId={artifactId} />
             )}
-            {tool === ToolSlug.Record && <PassageDetailRecord width={width} />}
-            {tool === ToolSlug.ConsultantCheck && (
-              <ConsultantCheck width={width} />
-            )}
+            {tool === ToolSlug.Record && <PassageDetailRecord />}
+            {tool === ToolSlug.ConsultantCheck && <ConsultantCheck />}
           </Stack>
           <DiscussionDrawer />
         </>
@@ -303,7 +301,6 @@ const PassageDetailGrids = () => {
         tool === ToolSlug.WholeBackTranslate) && (
         <Box key={currentstep} sx={{ minWidth: 0 }}>
           <PassageDetailItem
-            width={width}
             slugs={
               tool === ToolSlug.Community
                 ? communitySlugs
@@ -316,7 +313,7 @@ const PassageDetailGrids = () => {
       )}
       {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
         <Box sx={{ minWidth: 0 }}>
-          <PassageDetailChooser width={width} />
+          <PassageDetailChooser />
           {tool === ToolSlug.Export && (
             <TranscriptionTab
               projectPlans={plans}

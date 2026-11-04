@@ -63,7 +63,13 @@ const PlayerRow = styled('div')(() => ({
   display: 'flex',
 }));
 
-const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
+const paperProps = {
+  p: 2,
+  m: 'auto',
+  width: '100%',
+  boxSizing: 'border-box',
+} as SxProps;
+const rowProp = { display: 'flex', width: '100%', minWidth: 0 } as SxProps;
 const buttonProp = { mx: 1 } as SxProps;
 const ctlProps = { m: 1, pb: 2 } as SxProps;
 const statusProps = {
@@ -75,14 +81,13 @@ const statusProps = {
 
 interface IProps {
   ready?: () => boolean;
-  width: number;
   slugs: ArtifactTypeSlug[];
   segments: NamedRegions | undefined;
   showTopic: boolean;
 }
 
 export function PassageDetailItem(props: IProps) {
-  const { width, slugs, segments, showTopic } = props;
+  const { slugs, segments, showTopic } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const oneTryOnly = slugs.includes(ArtifactTypeSlug.WholeBackTranslation);
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
@@ -147,12 +152,6 @@ export function PassageDetailItem(props: IProps) {
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
   const toolId = 'RecordBackTranslationTool';
-  const paneWidth = width - 16;
-
-  const rowProp = useMemo(
-    () => ({ display: 'flex', width: paneWidth - 40 }),
-    [paneWidth]
-  );
 
   const setUploadVisible = (value: boolean) => {
     if (value) {
@@ -378,10 +377,9 @@ export function PassageDetailItem(props: IProps) {
         <div>
           {currentVersion !== 0 ? (
             <Stack direction="row" spacing={1}>
-              <Box>
-                <PassageDetailChooser width={paneWidth} />
+              <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                <PassageDetailChooser />
                 <PassageDetailPlayer
-                  width={paneWidth - 40}
                   allowSegment={segments}
                   allowSegmentNav={segments !== undefined}
                   allowAutoSegment={segments !== undefined}
@@ -417,7 +415,6 @@ export function PassageDetailItem(props: IProps) {
                       currentVersion={currentVersion}
                       rowData={rowData}
                       segments={segString}
-                      width={paneWidth}
                     />
                   </Box>
                   {canRecord && (
@@ -506,7 +503,6 @@ export function PassageDetailItem(props: IProps) {
                     doReset={resetMedia}
                     setDoReset={setResetMedia}
                     height={200}
-                    width={paneWidth - 40}
                     onRecording={onRecordingOrPlaying}
                     onPlayStatus={onRecordingOrPlaying}
                     oneTryOnly={oneTryOnly}

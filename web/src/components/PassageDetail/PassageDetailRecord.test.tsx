@@ -233,7 +233,7 @@ import {
 } from '../../store/upload/pendingMediaUploads';
 import { PassageDetailRecord } from './PassageDetailRecord';
 
-const renderRecord = () => render(<PassageDetailRecord width={400} />);
+const renderRecord = () => render(<PassageDetailRecord />);
 
 const seedPendingForCurrentPassage = () => {
   appendPendingMediaUpload({

@@ -29,11 +29,10 @@ interface Mark {
 }
 
 interface IProps {
-  width: number;
   sx?: SxProps;
 }
 
-export const PassageDetailChooser = ({ width, sx }: IProps) => {
+export const PassageDetailChooser = ({ sx }: IProps) => {
   const [memory] = useGlobal('memory');
   const {
     passage,
@@ -139,10 +138,8 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
     passageNavigate(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-  const SCROLL_BUTTONS_WIDTH = 48;
   return passageCount > 1 ? (
     <StyledBox
-      width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
       sx={{
         ...sx,
         alignItems: 'center',

@@ -25,11 +25,7 @@ import { Box } from '@mui/material';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { StyledBox } from '../../../control/StyledBox';
 
-interface IProps {
-  width: number;
-}
-
-const KeyTerms = ({ width }: IProps) => {
+const KeyTerms = () => {
   const keyTermTargets = useOrbitData<OrgKeytermTarget[]>('orgkeytermtarget');
   const [org] = useGlobal('organization');
   const [memory] = useGlobal('memory');
@@ -135,7 +131,7 @@ const KeyTerms = ({ width }: IProps) => {
         />
         <KeyTermSetting curCode={language} onChange={handleLang} />
       </Box>
-      <StyledBox width={width}>
+      <StyledBox>
         <KeyTermTable
           rows={verseTerms(
             book,

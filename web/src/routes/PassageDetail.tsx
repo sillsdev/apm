@@ -115,7 +115,7 @@ const MobileStep = () => {
   );
 
   return tool === ToolSlug.Record ? (
-    <PassageDetailRecord width={stepWidth} />
+    <PassageDetailRecord />
   ) : tool === ToolSlug.Resource ? (
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
