@@ -11,7 +11,6 @@ import {
   Box,
   SxProps,
   styled,
-  Stack,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -376,8 +375,8 @@ export function PassageDetailItem(props: IProps) {
       <Paper sx={paperProps}>
         <div>
           {currentVersion !== 0 ? (
-            <Stack direction="row" spacing={1}>
-              <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+            <>
+              <Box sx={{ minWidth: 0 }}>
                 <PassageDetailChooser />
                 <PassageDetailPlayer
                   allowSegment={segments}
@@ -574,7 +573,7 @@ export function PassageDetailItem(props: IProps) {
                 </Box>
               </Box>
               <DiscussionDrawer />
-            </Stack>
+            </>
           ) : (
             <Paper sx={paperProps}>
               <Typography variant="h2" align="center">
