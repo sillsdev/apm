@@ -12,6 +12,7 @@ jest.mock('react-redux', () => ({
 
 const mockShowMessage = jest.fn();
 jest.mock('../hoc/SnackBar', () => ({
+  AlertSeverity: jest.requireActual('../hoc/useSnackBar').AlertSeverity,
   useSnackBar: () => ({ showMessage: mockShowMessage }),
 }));
 
