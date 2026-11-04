@@ -127,28 +127,20 @@ describe('DiscussionDrawer', () => {
   });
 
   describe('drawer width', () => {
-    const innerWidth = window.innerWidth;
-    afterEach(() => {
-      window.innerWidth = innerWidth;
-    });
-
-    const paperWidth = () =>
+    const paperStyle = () =>
       getComputedStyle(
         document.querySelector('.MuiDrawer-paper') as HTMLElement
-      ).width;
+      );
 
-    it('uses the discussion width on a wide screen', () => {
-      window.innerWidth = 1440;
+    it('is a fixed-width panel capped to the viewport by CSS', () => {
       renderPanel(true);
-      expect(paperWidth()).toBe('450px');
-      expect(latestPlayerProps.width).toBe(450 - 16);
+      expect(paperStyle().width).toBe('450px');
+      expect(paperStyle().maxWidth).toBe('95vw');
     });
 
-    it('covers at most 95% of a phone-width screen', () => {
-      window.innerWidth = 390;
+    it('lets the mini player fill the panel instead of passing a width', () => {
       renderPanel(true);
-      expect(paperWidth()).toBe('370px');
-      expect(latestPlayerProps.width).toBe(370 - 16);
+      expect(latestPlayerProps.width).toBeUndefined();
     });
   });
 });
