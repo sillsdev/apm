@@ -136,10 +136,13 @@ export function PassageDetailRecord() {
       if (clearRequested(toolId)) clearCompleted(toolId);
       return;
     }
-    void save().then(
-      () => saveCompleted(toolId),
-      () => saveCompleted(toolId, ts.NoSaveWoMedia)
-    );
+    setBigBusy(true);
+    void save()
+      .then(
+        () => saveCompleted(toolId),
+        () => saveCompleted(toolId, ts.NoSaveWoMedia)
+      )
+      .finally(() => setBigBusy(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
