@@ -113,8 +113,11 @@ describe('getMethodsForAsr', () => {
 });
 
 describe('specificAsrMethods', () => {
-  it('hides the choice when fewer than two methods are available', () => {
-    expect(specificAsrMethods(['mms'])).toBeUndefined();
+  it('lists a single method and hides the choice when none are available', () => {
+    expect(specificAsrMethods(['mms'])).toEqual({
+      preferred: 'mms',
+      others: [],
+    });
     expect(specificAsrMethods([])).toBeUndefined();
   });
 
