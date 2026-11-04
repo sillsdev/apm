@@ -69,10 +69,10 @@ export const usePassageAudioSave = ({
   const autosaveProps = { memory, passageId, planId: plan, offline, reporter };
 
   const upload = useMediaUpload({
-    artifactId: VernacularTag,
-    passageId,
-    performedBy,
+    fields: { artifactId: VernacularTag, passageId, performedBy },
     mimeType,
+    noBusy: true,
+    skipImportExportWait: true,
     afterUploadCb: async (mediaId) => {
       if (!mediaId || !currentBlob) return;
       onStored(currentBlob);

@@ -97,7 +97,10 @@ jest.mock('react-redux', () => ({
   useSelector: () => ({ reduceNoiseAi: 'Reduce', convertVoiceAi: 'Convert' }),
   shallowEqual: jest.fn(),
 }));
-jest.mock('../selector', () => ({ wsAudioPlayerSelector: jest.fn() }));
+jest.mock('../selector', () => ({
+  wsAudioPlayerSelector: jest.fn(),
+  audioDownloadSelector: jest.fn(),
+}));
 jest.mock('./MicrophoneDialog', () => ({ MicrophoneDialog: () => null }));
 jest.mock('./ConvertVoiceDialog', () => ({ ConvertVoiceDialog: () => null }));
 jest.mock('./AiProcessing', () => ({ AiProcessing: () => null }));
@@ -338,6 +341,36 @@ describe('AudioPlayer', () => {
       expect(onAudioChange).toHaveBeenLastCalledWith(null);
       expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument();
       expect(button('passage play')).toBeDisabled();
+    });
+  });
+
+  describe('download', () => {
+    it('downloads the current audio from the menu', async () => {
+      const audio = new Blob(['audio'], { type: 'audio/webm;codecs=opus' });
+      const downloads: string[] = [];
+      // jsdom does not implement navigation.
+      const click = jest
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(function (this: HTMLAnchorElement) {
+          downloads.push(this.download);
+        });
+      renderLoaded({ audioSource: audio });
+
+      await userEvent.click(button('passage audio menu'));
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: 'passage download audio' })
+      );
+
+      expect(URL.createObjectURL).toHaveBeenLastCalledWith(audio);
+      expect(downloads).toEqual(['audio.webm']);
+      click.mockRestore();
+    });
+
+    it('hides the menu when download is the only item and is turned off', () => {
+      renderLoaded({ showDownload: false });
+      expect(
+        screen.queryByRole('button', { name: 'passage audio menu' })
+      ).not.toBeInTheDocument();
     });
   });
 });

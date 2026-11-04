@@ -31,7 +31,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VoiceOverOffOutlinedIcon from '@mui/icons-material/VoiceOverOffOutlined';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/Mic';
+import DownloadIcon from '@mui/icons-material/GetAppOutlined';
 import { formatTime } from '../utils/formatTime';
+import { extensionFromAudioContentType } from '../utils/mimeTypes';
 import { localUserKey, LocalKey } from '../utils/localUserKey';
 import {
   spliceAudio,
@@ -54,8 +56,8 @@ import NoChickenIcon from '../control/NoChickenIcon';
 import VoiceConversionLogo from '../control/VoiceConversionLogo';
 import { useAudioConversion } from '../utils/useAudioConversion';
 import { shallowEqual, useSelector } from 'react-redux';
-import { IWsAudioPlayerStrings } from '../model';
-import { wsAudioPlayerSelector } from '../selector';
+import { IAudioDownloadStrings, IWsAudioPlayerStrings } from '../model';
+import { audioDownloadSelector, wsAudioPlayerSelector } from '../selector';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -133,6 +135,8 @@ export interface AudioPlayerProps {
   showSilence?: boolean;
   /** Show an undo icon in the controls row (default: true) */
   showUndo?: boolean;
+  /** Show a download option in the menu (default: true) */
+  showDownload?: boolean;
 
   /** Create an unclearable selection region on the waveform */
   stickySelection?: { start: number; end: number };
@@ -231,6 +235,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       showTrash = false,
       showSilence = false,
       showUndo = true,
+      showDownload = true,
       stickySelection,
       shouldStopAfterStickySelection = true,
       onRecordingComplete,
@@ -354,6 +359,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     } = useAudioConversion();
     const t: IWsAudioPlayerStrings = useSelector(
       wsAudioPlayerSelector,
+      shallowEqual
+    );
+    const ta: IAudioDownloadStrings = useSelector(
+      audioDownloadSelector,
       shallowEqual
     );
     const [microphoneId, setMicrophoneId] = useState(
@@ -830,6 +839,16 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       setDuration(0);
       setSelection(null);
     };
+    const handleDownloadClick = () => {
+      if (!internalAudio) return;
+      const ext = extensionFromAudioContentType(internalAudio.type);
+      const url = URL.createObjectURL(internalAudio);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = ext ? `audio.${ext}` : 'audio';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    };
     const handleInsertSilenceClick = async () => {
       if (!internalAudio) return;
       pushUndo();
@@ -872,7 +891,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     };
     const isMenuOpen = Boolean(menuAnchorEl);
     const hasMenu =
-      React.Children.count(menuItemsProp) > 0 || showTrash || allowRecord;
+      React.Children.count(menuItemsProp) > 0 ||
+      showTrash ||
+      allowRecord ||
+      showDownload;
 
     const timeDisplay = formatTimeDisplay
       ? formatTimeDisplay(currentTime, duration)
@@ -1021,6 +1043,21 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                     />
                   </ListItemIcon>
                   <ListItemText>{t.convertVoiceAi}...</ListItemText>
+                </MenuItem>
+              )}
+              {showDownload && (
+                <MenuItem
+                  aria-label={`${label} download audio`}
+                  disabled={!internalAudio}
+                  onClick={() => {
+                    handleMenuClose();
+                    handleDownloadClick();
+                  }}
+                >
+                  <ListItemIcon>
+                    <DownloadIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>{ta.downloadMedia}</ListItemText>
                 </MenuItem>
               )}
               {showTrash && (
