@@ -22,7 +22,7 @@ let capturedPlayerProps: {
 } | null = null;
 
 let capturedUploaderProps: {
-  finish?: (planId: string, mediaRemoteIds?: string[]) => Promise<void>;
+  finish?: (mediaRemoteIds?: string[]) => Promise<void>;
 } | null = null;
 
 const linkedSharedResource = {
@@ -89,7 +89,7 @@ jest.mock(
   () =>
     function MockUploader(props: {
       isOpen?: boolean;
-      finish?: (planId: string, mediaRemoteIds?: string[]) => Promise<void>;
+      finish?: (mediaRemoteIds?: string[]) => Promise<void>;
     }) {
       capturedUploaderProps = props;
       return props.isOpen ? <div data-testid="uploader-open" /> : null;
@@ -344,7 +344,7 @@ describe('PassageDetailRecord BOLD step completion', () => {
     renderRecord();
 
     await act(async () => {
-      await capturedUploaderProps!.finish!('plan1', ['new-media-id']);
+      await capturedUploaderProps!.finish!(['new-media-id']);
     });
 
     expect(mockSetStepComplete).toHaveBeenCalledWith('step-record', true);
@@ -355,7 +355,7 @@ describe('PassageDetailRecord BOLD step completion', () => {
     renderRecord();
 
     await act(async () => {
-      await capturedUploaderProps!.finish!('plan1', []);
+      await capturedUploaderProps!.finish!([]);
     });
 
     expect(mockSetStepComplete).not.toHaveBeenCalled();
