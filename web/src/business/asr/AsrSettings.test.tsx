@@ -110,6 +110,15 @@ describe('AsrSettings method list', () => {
     getMethodsForAsr.mockReset();
   });
 
+  it('shows the method list when the service offers only one method', async () => {
+    getMethodsForAsr.mockResolvedValue(['whisper']);
+    render(<Harness method={undefined} />);
+
+    expect(
+      await screen.findByRole('radio', { name: 'Whisper (Default)' })
+    ).toBeChecked();
+  });
+
   it('shows Default for a method the service no longer lists, without saving it', async () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'w2v-bert']);
     render(<Harness method="mms" />);
