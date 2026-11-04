@@ -25,8 +25,8 @@ jest.mock('../../crud', () => ({
   useSharedResRead: () => ({ getSharedResource: jest.fn() }),
   // An upload reports to the callback of the render that started it, so a save
   // running across an edit must still report the audio it stored.
-  useMediaUpload: (props: IUploadProps) => (files: File[]) =>
-    mockUpload(files, props),
+  useMediaUpload: (props: IUploadProps) => (files: File[], silent?: boolean) =>
+    mockUpload(files, props, silent),
 }));
 
 jest.mock('../../crud/autosaveMedia', () => ({
@@ -153,6 +153,14 @@ describe('usePassageAudioSave', () => {
       expect(uploadedNames()).toEqual(['base_autosave.wav']);
     });
 
+    it('uploads silently', async () => {
+      setup();
+
+      await elapse(AutosaveIntervalMs);
+
+      expect(mockUpload.mock.calls[0]?.[2]).toBe(true);
+    });
+
     it('restarts the wait when the audio changes again', async () => {
       const { update } = setup();
 
@@ -270,6 +278,7 @@ describe('usePassageAudioSave', () => {
       });
 
       expect(uploadedNames()).toEqual(['base.wav']);
+      expect(mockUpload.mock.calls[0]?.[2]).toBe(false);
       expect(onStored).toHaveBeenCalledWith(wavBlob);
       expect(removeAllAutosaves).toHaveBeenCalledWith(autosaveProps);
     });
