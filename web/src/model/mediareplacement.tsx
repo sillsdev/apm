@@ -8,9 +8,10 @@ export interface MediaReplacement extends BaseModel {
     dateCreated: string;
     dateUpdated: string;
     lastModifiedBy: number;
+    offlineId: string;
   };
   relationships?: {
-    plan: RecordRelationship;
+    passage: RecordRelationship;
     replacementMediafile: RecordRelationship;
     outputMediafile: RecordRelationship;
     lastModifiedByUser: RecordRelationship;

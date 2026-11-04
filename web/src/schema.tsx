@@ -1070,11 +1070,7 @@ if (requestedSchema > 11 && schemaDefinition.models) {
       lastModifiedBy: { type: 'number' }, //bkwd compat only
     },
     relationships: {
-      plan: {
-        kind: 'hasOne',
-        type: 'plan',
-        inverse: 'mediareplacements',
-      },
+      passage: { kind: 'hasOne', type: 'passage' },
       replacementMediafile: { kind: 'hasOne', type: 'mediafile' },
       outputMediafile: { kind: 'hasOne', type: 'mediafile' },
       lastModifiedByUser: { kind: 'hasOne', type: 'user' },
