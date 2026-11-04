@@ -83,7 +83,8 @@ export const usePassageAudioSave = ({
   const saveAs = async (blob: Blob, suffix = '') => {
     const ext = extensionFromAudioContentType(blob.type);
     const name = `${fileBase}${suffix}.${ext}`;
-    await upload([new File([blob], name, { type: blob.type })]);
+    const silent = suffix === AutosaveSuffix;
+    await upload([new File([blob], name, { type: blob.type })], silent);
     return blob;
   };
 
