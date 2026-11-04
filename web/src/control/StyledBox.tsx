@@ -9,8 +9,8 @@ export const StyledBox = styled(Box, {
   padding: `${theme.spacing(2)}px ${theme.spacing(6)}px`,
   display: 'flex',
   flexDirection: 'row',
-  width: `${width}px`,
-  maxWidth: `${width}px`,
+  width: width === undefined ? '100%' : `${width}px`,
+  maxWidth: width === undefined ? '100%' : `${width}px`,
   minWidth: 0,
   overflow: 'hidden',
 }));

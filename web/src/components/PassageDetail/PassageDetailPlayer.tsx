@@ -106,7 +106,8 @@ export interface DetailPlayerProps {
   allowZoom?: boolean;
   allowSpeed?: boolean;
   position?: number;
-  width: number;
+  /** Fixed pixel width. Omit to fill the parent. */
+  width?: number;
   parentToolId?: string;
   role?: string;
   metaData?: React.ReactNode;
@@ -459,7 +460,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     <Box
       id="detailplayer"
       sx={{
-        width: width,
+        width: width ?? '100%',
         maxWidth: '100%',
         minWidth: 0,
         boxSizing: 'border-box',
