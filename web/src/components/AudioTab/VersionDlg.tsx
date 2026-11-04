@@ -7,6 +7,7 @@ import {
   useRef,
 } from 'react';
 import { useGlobal } from '../../context/useGlobal';
+import { findRecord, getVernacularMediaRec } from '../../crud';
 import { MediaFileD, ISharedStrings } from '../../model';
 import AudioTable from './AudioTable';
 import { ActionRow } from '../StepEditor';
@@ -26,7 +27,7 @@ interface IProps {
   hasPublishing: boolean;
   /** Close parent dialog (e.g. BigDialog X or after action). */
   close?: () => void;
-  /** After the chosen file is promoted to latest version (orbit updated). */
+  /** Fired after the current version changes. */
   onVersionApplied?: () => void;
 }
 export const VersionDlg = (props: IProps) => {
@@ -65,7 +66,7 @@ export const VersionDlg = (props: IProps) => {
     if (prev !== null && prev > 0 && data.length === 0) {
       close?.();
     }
-  }, [data.length, close, passId]);
+  }, [data.length, close, onVersionApplied, passId]);
 
   useLayoutEffect(() => {
     if (!latestRowId) {
@@ -97,11 +98,24 @@ export const VersionDlg = (props: IProps) => {
     [data, versions, mediaFiles, memory, user, handleRefresh, onVersionApplied]
   );
 
+  const refreshRows = () => {
+    handleRefresh();
+    const activeVersionStillExists = findRecord(
+      memory,
+      'mediafile',
+      latestRowId
+    );
+    if (activeVersionStillExists) return;
+
+    setSelectedId(getVernacularMediaRec(passId, memory)?.id ?? '');
+    onVersionApplied?.();
+  };
+
   return (
     <>
       <AudioTable
         data={data}
-        setRefresh={handleRefresh}
+        setRefresh={refreshRows}
         playItem={playItem}
         setPlayItem={setPlayItem}
         selectedId={selectedId}
