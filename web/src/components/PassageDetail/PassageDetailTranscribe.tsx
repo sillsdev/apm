@@ -13,7 +13,7 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import TaskList, { TaskTableWidth } from '../TaskList';
+import TaskList from '../TaskList';
 import { ToolSlug, useStepTool } from '../../crud';
 import { JSONParse } from '../../utils';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
@@ -43,17 +43,17 @@ import { hasIncompletePhraseSegmentRecordings } from './phraseSegmentRecordingCo
 import StepMessage from './boldClause/StepMessage';
 
 const TranscriberContainer = styled(Box)<BoxProps>(() => ({
-  zIndex: 1,
-  position: 'absolute',
-  left: `${TaskTableWidth + 4}px`,
+  flex: '1 1 0',
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
 }));
 
 interface IProps {
-  width: number;
   artifactTypeId: string | null;
 }
 
-export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
+export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
   useRenderProfiler('PassageDetailTranscribe');
   const {
     mediafileId,
@@ -306,7 +306,6 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowData, artifactTypeId, mediafileId, stepLanguageBcp47]);
-  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
 
   if (missingPhraseSegmentRecordings) {
     return <StepMessage message={t.missingSegmentRecordings} />;
@@ -321,26 +320,32 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
       <Grid
         container
         direction="column"
-        sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}
+        sx={{
+          flex: '1 1 0',
+          minHeight: 0,
+          flexWrap: 'nowrap',
+          width: '100%',
+          minWidth: 0,
+        }}
       >
         {artifactTypeId && (
           <Box
             sx={{
               display: 'flex',
               flexDirection: 'row',
+              flex: '1 1 0',
+              minHeight: 0,
               width: '100%',
-              maxWidth: '100%',
               minWidth: 0,
             }}
           >
-            <Box>
+            <Box
+              sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column' }}
+            >
               <TaskList />
             </Box>
             <TranscriberContainer>
               <Transcriber
-                defaultWidth={
-                  width - TaskTableWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
-                }
                 stepSettings={stepSettings}
                 hasPermission={hasPermission}
                 onReject={handleReject}
@@ -353,14 +358,16 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
         {artifactTypeId == null && (
           <Box
             sx={{
+              flex: '1 1 0',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
               width: '100%',
-              maxWidth: width,
               minWidth: 0,
               overflow: 'hidden',
             }}
           >
             <Transcriber
-              defaultWidth={Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT)}
               stepSettings={stepSettings ?? undefined}
               hasChecking={hasChecking}
               setComplete={handleComplete}

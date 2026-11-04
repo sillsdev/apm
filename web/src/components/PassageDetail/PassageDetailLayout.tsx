@@ -9,6 +9,9 @@ interface PassageDetailLayoutProps {
   contentSx?: SxProps;
   footerSx?: SxProps;
   footerAboveSx?: SxProps;
+  /** Size the content to the pane instead of its own height, so a step can
+   * stretch to fill it and scroll its own parts. */
+  fill?: boolean;
 }
 
 export default function PassageDetailLayout({
@@ -20,6 +23,7 @@ export default function PassageDetailLayout({
   contentSx,
   footerSx,
   footerAboveSx,
+  fill = false,
 }: PassageDetailLayoutProps) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -51,6 +55,12 @@ export default function PassageDetailLayout({
           <Box
             sx={{
               pb: '70px' /* Discussion fab clearance (see DiscussionDrawer.tsx) */,
+              ...(fill && {
+                flex: '1 1 0',
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+              }),
             }}
           >
             {children}

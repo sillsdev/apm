@@ -159,6 +159,8 @@ const PassageDetailGrids = () => {
       : tool;
   const showsStepColumn = stepColumnTools.includes(tool ?? '');
   const clipsStepContent = clippedStepTools.includes(tool ?? '');
+  // Transcribe stretches to the pane so its task list and text box can fill it.
+  const fillsPane = tool === ToolSlug.Transcribe && !boldClauseTranscription;
   const showsStepPlayer =
     tool === ToolSlug.Discuss ||
     tool === ToolSlug.TeamCheck ||
@@ -229,6 +231,7 @@ const PassageDetailGrids = () => {
           : undefined
       }
       contentSx={{ maxWidth: '100%', px: 1.5 }}
+      fill={fillsPane}
     >
       {tool === ToolSlug.Resource && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', minWidth: 0 }}>
@@ -254,6 +257,7 @@ const PassageDetailGrids = () => {
             sx={{
               minWidth: 0,
               ...(clipsStepContent ? { overflow: 'clip' } : {}),
+              ...(fillsPane ? { flex: '1 1 0', minHeight: 0 } : {}),
             }}
           >
             <PassageDetailChooser width={width} />
@@ -285,10 +289,7 @@ const PassageDetailGrids = () => {
               <PassageDetailLwcTranscription width={width} />
             )}
             {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
-              <PassageDetailTranscribe
-                width={width}
-                artifactTypeId={artifactId}
-              />
+              <PassageDetailTranscribe artifactTypeId={artifactId} />
             )}
             {tool === ToolSlug.Record && <PassageDetailRecord width={width} />}
             {tool === ToolSlug.ConsultantCheck && (
