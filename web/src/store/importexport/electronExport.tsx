@@ -363,6 +363,7 @@ export async function electronExport(
               recs,
               checkRename &&
                 recs.length > 0 &&
+                // GetTableRecs is BaseModelD. This case is the mediafile table.
                 related(recs[0] as MediaFileD, 'artifactType') === VernacularTag
             );
         }

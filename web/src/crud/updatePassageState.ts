@@ -14,7 +14,6 @@ import {
   UpdateLastModifiedBy,
 } from '../model/baseModel';
 import {
-  InitializedRecord,
   RecordIdentity,
   RecordOperation,
   RecordTransformBuilder,
@@ -37,15 +36,7 @@ export const AddPassageStateChangeToOps = (
     },
   } as PassageStateChange;
   ops.push(...AddRecord(t, psc, userId, memory));
-  ops.push(
-    ...ReplaceRelatedRecord(
-      t,
-      psc as InitializedRecord,
-      'passage',
-      'passage',
-      passage
-    )
-  );
+  ops.push(...ReplaceRelatedRecord(t, psc, 'passage', 'passage', passage));
 };
 
 export const AddFlatPassage = (

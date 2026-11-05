@@ -9,7 +9,6 @@ import {
 } from '../utils';
 import JSONAPISource from '@orbit/jsonapi';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
-import { InitializedRecord } from '@orbit/records';
 import { recToMemory } from './syncToMemory';
 
 export const useVProjectCreate = () => {
@@ -80,7 +79,7 @@ export const useVProjectCreate = () => {
       // We use the plan type and not the project type
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
+        project,
         'projecttype',
         'projecttype',
         getTypeId(
@@ -88,51 +87,27 @@ export const useVProjectCreate = () => {
           'project'
         )
       ),
+      ...ReplaceRelatedRecord(t, project, 'group', 'group', getGroupId(teamId)),
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
-        'group',
-        'group',
-        getGroupId(teamId)
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
+        project,
         'organization',
         'organization',
         teamId
       ),
+      ...ReplaceRelatedRecord(t, project, 'owner', 'user', user),
+      ...ReplaceRelatedRecord(t, project, 'editsheetuser', 'user', sheetUser),
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
-        'owner',
-        'user',
-        user
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
-        'editsheetuser',
-        'user',
-        sheetUser
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
+        project,
         'editsheetgroup',
         'group',
         sheetGroup
       ),
+      ...ReplaceRelatedRecord(t, project, 'publishuser', 'user', publishUser),
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
-        'publishuser',
-        'user',
-        publishUser
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
+        project,
         'publishgroup',
         'group',
         publishGroup
@@ -166,18 +141,12 @@ export const useVProjectCreate = () => {
       ...AddRecord(t, plan, user, memory),
       ...ReplaceRelatedRecord(
         t,
-        plan as InitializedRecord,
+        plan,
         'plantype',
         'plantype',
         getTypeId(type, 'plan')
       ),
-      ...ReplaceRelatedRecord(
-        t,
-        plan as InitializedRecord,
-        'project',
-        'project',
-        project.id
-      ),
+      ...ReplaceRelatedRecord(t, plan, 'project', 'project', project.id),
     ]);
     //fetch the slug from the server
     if (!offlineOnly) {

@@ -25,6 +25,7 @@ import {
   OrganizationD,
   OrganizationMembershipD,
   OrgKeytermD,
+  OrgKeytermReferenceD,
   OrgKeytermTargetD,
   OrgWorkflowStep,
   OrgWorkflowStepD,
@@ -52,22 +53,12 @@ export interface ExportCollectorOptions {
   organizationId?: string;
 }
 
-type ExportRow = {
-  id: string;
-  keys?: { remoteId?: string };
-  attributes?: object;
-  relationships?: object;
-};
+type ExportRow = Pick<
+  BaseModelD,
+  'id' | 'keys' | 'attributes' | 'relationships'
+>;
 
-type OrgKeytermReferenceD = ExportRow & {
-  relationships?: {
-    orgkeyterm: RecordRelationship;
-    project: RecordRelationship;
-    section: RecordRelationship;
-    lastModifiedByUser: RecordRelationship;
-  };
-};
-
+// related() is any. A to-one organization link is the id; null is no org.
 const organizationOf = (r: {
   relationships?: { organization: RecordRelationship };
 }) => related(r, 'organization') as string;
@@ -139,6 +130,7 @@ export function createExportCollector(
     ids?: Set<string>,
     remoteIds?: boolean
   ) => {
+    // Orbit's query result does not overlap a generic T.
     const recs = (
       memory.cache.query((q) => q.findRecords(table)) as unknown as T[]
     ).filter(
@@ -331,25 +323,25 @@ export function createExportCollector(
     project: ProjectD | undefined,
     remoteIds: boolean,
     {
-      rel = 'organization',
       relId = (r: T) => organizationOf(r),
       mediaId,
     }: {
-      rel?: string;
       relId?: (r: T) => string;
       mediaId?: (r: T) => string;
     } = {}
   ) => {
     const scopeId =
-      rel === 'project'
-        ? project?.id
-        : (options?.organizationId ??
-          (project ? related(project, 'organization') : undefined));
+      options?.organizationId ??
+      (project ? related(project, 'organization') : undefined);
+    // Orbit's query result does not overlap a generic T.
     let recs = (
       memory.cache.query((q) => q.findRecords(table)) as unknown as T[]
     ).filter((r) => {
       const id = relId(r);
-      return Boolean(id) && Boolean(remoteId(rel, id, km)) === needsRemoteIds;
+      return (
+        Boolean(id) &&
+        Boolean(remoteId('organization', id, km)) === needsRemoteIds
+      );
     });
     if (scopeId) recs = recs.filter((rec) => relId(rec) === scopeId);
     if (remoteIds) {
@@ -363,6 +355,29 @@ export function createExportCollector(
     }
     return recs;
   };
+
+  const intellectualProperties = (
+    project: ProjectD | undefined,
+    remoteIds: boolean
+  ) =>
+    orgTable<IntellectualPropertyD>(
+      'intellectualproperty',
+      project,
+      remoteIds,
+      {
+        mediaId: (i) => related(i, 'releaseMediafile'),
+      }
+    );
+
+  const releaseMediafileIds = (
+    project: ProjectD | undefined,
+    remoteIds: boolean
+  ) =>
+    new Set(
+      intellectualProperties(project, remoteIds).map((i) =>
+        related(i, 'releaseMediafile')
+      )
+    );
 
   const Bibles = (project?: ProjectD) => {
     const recs = memory.cache.query((q) => q.findRecords('bible')) as BibleD[];
@@ -497,14 +512,7 @@ export function createExportCollector(
       q.findRecords('mediafile')
     ) as MediaFileD[];
     const planmedia = PlanMedia(project);
-    const ip = new Set(
-      orgTable<IntellectualPropertyD>(
-        'intellectualproperty',
-        project,
-        needsRemoteIds,
-        { mediaId: (i) => related(i, 'releaseMediafile') }
-      ).map((i) => related(i, 'releaseMediafile'))
-    );
+    const ip = releaseMediafileIds(project, needsRemoteIds);
     const ipmedia = mediafiles.filter((m) => ip.has(m.id));
     const catTitleIds = new Set(
       ArtifactCategories(project, needsRemoteIds).map(
@@ -575,13 +583,12 @@ export function createExportCollector(
     ).filter((s) => projids.has(s.id));
   };
 
-  const FromPassages = (
-    table: string,
+  const PassageStateChanges = (
     project: ProjectD | undefined,
     remoteIds: boolean
   ) => {
     let recs = memory.cache.query((q) =>
-      q.findRecords(table)
+      q.findRecords('passagestatechange')
     ) as PassageStateChangeD[];
     if (project) {
       const passages = new Set(Passages(project).map((p) => p.id));
@@ -589,19 +596,8 @@ export function createExportCollector(
     }
     if (remoteIds) {
       recs.forEach((r) => {
-        if (!remoteId(table, r.id, km) && r.attributes)
+        if (!remoteId('passagestatechange', r.id, km) && r.attributes)
           r.attributes.offlineId = r.id;
-        if (
-          table === 'mediafile' &&
-          !remoteId(
-            'mediafile',
-            related(r as unknown as MediaFileD, 'sourceMedia'),
-            km
-          )
-        ) {
-          (r as unknown as MediaFileD).attributes.sourceMediaOfflineId =
-            related(r as unknown as MediaFileD, 'sourceMedia');
-        }
       });
     }
     return recs;
@@ -731,14 +727,7 @@ export function createExportCollector(
         }
         if (project) return AllMediafiles(project);
         if (options?.organizationId) {
-          const ipIds = new Set(
-            orgTable<IntellectualPropertyD>(
-              'intellectualproperty',
-              undefined,
-              remoteIds,
-              { mediaId: (i) => related(i, 'releaseMediafile') }
-            ).map((i) => related(i, 'releaseMediafile'))
-          );
+          const ipIds = releaseMediafileIds(undefined, remoteIds);
           const mediafiles = (defaultQuery('mediafile') as MediaFileD[]).filter(
             (m) => ipIds.has(m.id)
           );
@@ -747,7 +736,7 @@ export function createExportCollector(
         return FromMedia(defaultQuery(info.table) as MediaFileD[], remoteIds);
 
       case 'passagestatechange':
-        return FromPassages(info.table, project, remoteIds);
+        return PassageStateChanges(project, remoteIds);
 
       case 'discussion':
         return Discussions(project, remoteIds);
@@ -766,12 +755,7 @@ export function createExportCollector(
         return defaultQuery(info.table);
 
       case 'intellectualproperty':
-        return orgTable<IntellectualPropertyD>(
-          'intellectualproperty',
-          project,
-          remoteIds,
-          { mediaId: (i) => related(i, 'releaseMediafile') }
-        );
+        return intellectualProperties(project, remoteIds);
 
       case 'orgkeyterm':
         return orgTable<OrgKeytermD>('orgkeyterm', project, remoteIds);
@@ -793,7 +777,7 @@ export function createExportCollector(
             )
           ),
           remoteIds
-        ) as unknown as BaseModelD[];
+        );
       case 'sectionresourceuser':
         return SectionResourceUsers(project, remoteIds);
       case 'organizationscheme':

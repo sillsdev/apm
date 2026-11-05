@@ -1,7 +1,19 @@
-export type RelKey<T> = [NonNullable<T>] extends [{ relationships?: infer R }]
-  ? keyof NonNullable<R> & string
-  : never;
+type IsAny<T> = 0 extends 1 & T ? true : false;
 
+type RelationshipKeys<R> = string extends keyof R ? never : keyof R & string;
+
+// A missing record has no relationship names. `any` and an open string map
+// (findRecord or the cache before a model cast) have none either.
+export type RelKey<T> = [IsAny<T>] extends [true]
+  ? never
+  : [NonNullable<T>] extends [never]
+    ? never
+    : 'relationships' extends keyof NonNullable<T>
+      ? RelationshipKeys<NonNullable<NonNullable<T>['relationships']>>
+      : never;
+
+// Result stays any: callers use an id, an array, or null. A generic
+// relationship map has no index signature, so the read is untyped.
 export const related = <
   T extends { relationships?: object } | null | undefined,
 >(

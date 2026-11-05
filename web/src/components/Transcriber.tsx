@@ -940,7 +940,7 @@ export function Transcriber(props: Readonly<IProps>) {
     [errorReporter, hasChecking, noParatext, state, setComplete]
   );
 
-  const stateRole: { [key: string]: string } = {
+  const stateRole: Record<string, 'transcriber' | 'editor'> = {
     transcribing: 'transcriber',
     reviewing: 'editor',
     transcribeReady: 'transcriber',

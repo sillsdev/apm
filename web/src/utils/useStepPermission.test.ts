@@ -1,3 +1,4 @@
+import { schemaMock } from '../test-helpers/schemaMock';
 import { renderHook } from '@testing-library/react';
 import { useStepPermissions } from './useStepPermission';
 import * as FindRecord from '../crud/tryFindRecord';
@@ -27,12 +28,7 @@ const mockMemory = {
   update: jest.fn(),
 };
 
-jest.mock('../schema', () => ({
-  get memory() {
-    return mockMemory;
-  },
-  requestedSchema: 100,
-}));
+jest.mock('../schema', () => schemaMock(() => mockMemory));
 
 jest.mock('../components/Peers/usePeerGroups', () => ({
   usePeerGroups: () => ({

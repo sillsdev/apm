@@ -19,6 +19,7 @@ export interface Plan extends BaseModel {
     plantype: RecordRelationship;
     sections: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
+    owner: RecordRelationship;
   };
 }
 

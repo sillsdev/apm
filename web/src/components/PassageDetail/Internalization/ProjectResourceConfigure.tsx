@@ -304,22 +304,22 @@ export const ProjectResourceConfigure = (props: IProps) => {
     if (items?.length > 0) {
       const newData: ICell[][] = emptyTable();
       const newInfo = items.map((v) => {
-        const rec = findRecord(memory, v.type, v.id);
-        if (!rec) return {} as IInfo;
         if (v?.type === 'passage') {
+          const passage = findRecord(memory, 'passage', v.id);
+          if (!passage) return {} as IInfo;
           const section = findRecord(
             memory,
             'section',
-            related(rec, 'section')
+            related(passage, 'section')
           ) as Section;
           if (!section) return {} as IInfo;
           const secNum = section?.attributes?.sequencenum || 0;
-          return { secNum, section, passage: rec } as IInfo;
-        } else {
-          const section = rec as Section;
-          const secNum = section?.attributes?.sequencenum || 0;
-          return { secNum, section } as IInfo;
+          return { secNum, section, passage } as IInfo;
         }
+        const section = findRecord(memory, 'section', v.id);
+        if (!section) return {} as IInfo;
+        const secNum = section?.attributes?.sequencenum || 0;
+        return { secNum, section } as IInfo;
       });
       newInfo.forEach((v) => {
         // `value` keeps the original reference (feeds the saved topic, copy, and

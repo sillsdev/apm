@@ -5,7 +5,6 @@ export * from './stepSpellCheck';
 export * from './getMediaInPlans';
 export * from './getOrgs';
 export * from './groupmembership';
-export * from './hasAnyRelated';
 export * from './loadData';
 export * from './logLoginAnalytics';
 export * from './media';

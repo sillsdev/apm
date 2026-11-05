@@ -1,3 +1,4 @@
+import { schemaMock } from '../test-helpers/schemaMock';
 import React, { PropsWithChildren } from 'react';
 import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -56,12 +57,7 @@ const mockMemory = {
   },
 };
 
-jest.mock('../schema', () => ({
-  get memory() {
-    return mockMemory;
-  },
-  requestedSchema: 100,
-}));
+jest.mock('../schema', () => schemaMock(() => mockMemory));
 
 let mockUser: string | null = 'user-123';
 let mockHasPermission = true;

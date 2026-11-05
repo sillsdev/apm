@@ -1,12 +1,15 @@
 import Axios, { HttpStatusCode } from 'axios';
 import path from 'path-browserify';
 import {
-  Comment,
+  CommentD,
   Project,
+  ProjectD,
   Plan,
-  Section,
-  MediaFile,
+  PlanD,
+  SectionD,
+  MediaFileD,
   Passage,
+  PassageD,
   PassageStateChangeD,
   GroupMembership,
   GroupMembershipD,
@@ -14,10 +17,9 @@ import {
   ProjectIntegrationD,
   OfflineProject,
   VProject,
-  Discussion,
+  DiscussionD,
   OrgWorkflowStep,
   IApiError,
-  MediaFileD,
 } from '../../model';
 import { API_CONFIG } from '../../../api-variable';
 import {
@@ -1307,8 +1309,7 @@ export const importProjectToElectron =
       //if this is the only project using this group, then delete the group memberships
       //if not, we'd best leave them alone just in case
       const projectsWithGroup = (
-        memory.cache.query((q) => q.findRecords('project')) as (Project &
-          InitializedRecord)[]
+        memory.cache.query((q) => q.findRecords('project')) as ProjectD[]
       ).filter((p) => related(p, 'group') === group.id);
       const gmids: string[] = [];
       const userids: string[] = [];
@@ -1337,20 +1338,17 @@ export const importProjectToElectron =
         .filter((pl) => related(pl, 'project') === rec?.id)
         .map((pi) => pi.id);
       const planids = (
-        memory.cache.query((q) => q.findRecords('plan')) as (Plan &
-          InitializedRecord)[]
+        memory.cache.query((q) => q.findRecords('plan')) as PlanD[]
       )
         .filter((pl) => related(pl, 'project') === rec?.id)
         .map((pl) => pl.id);
       const sectionids = (
-        memory.cache.query((q) => q.findRecords('section')) as (Section &
-          InitializedRecord)[]
+        memory.cache.query((q) => q.findRecords('section')) as SectionD[]
       )
         .filter((s) => planids.includes(related(s, 'plan')))
         .map((s) => s.id);
       const passageids = (
-        memory.cache.query((q) => q.findRecords('passage')) as (Passage &
-          InitializedRecord)[]
+        memory.cache.query((q) => q.findRecords('passage')) as PassageD[]
       )
         .filter((p) => sectionids.includes(related(p, 'section')))
         .map((p) => p.id);
@@ -1365,26 +1363,26 @@ export const importProjectToElectron =
         memory,
         planids
       ).map((m) => m.id);
+      // Orbit's query result does not overlap a model type.
       const mediaids = (
-        memory.cache.query((q) => q.findRecords('mediafile')) as (MediaFile &
-          InitializedRecord)[]
+        memory.cache.query((q) =>
+          q.findRecords('mediafile')
+        ) as unknown as MediaFileD[]
       )
         .filter(
           (m) =>
             planids.includes(related(m, 'plan')) &&
-            related(m, 'artifacttype') !==
+            related(m, 'artifactType') !==
               getTypeId(ArtifactTypeSlug.IntellectualProperty)
         )
         .map((m) => m.id);
       const discussionids = (
-        memory.cache.query((q) => q.findRecords('discussion')) as (Discussion &
-          InitializedRecord)[]
+        memory.cache.query((q) => q.findRecords('discussion')) as DiscussionD[]
       )
         .filter((d) => mediaids.includes(related(d, 'mediafile')))
         .map((d) => d.id);
       const commentids = (
-        memory.cache.query((q) => q.findRecords('comment')) as (Comment &
-          InitializedRecord)[]
+        memory.cache.query((q) => q.findRecords('comment')) as CommentD[]
       )
         .filter((c) => discussionids.includes(related(c, 'discussion')))
         .map((c) => c.id);

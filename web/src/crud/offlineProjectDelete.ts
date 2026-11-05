@@ -27,13 +27,17 @@ export const offlineProjectIdsForDeleted = (
 
   if (type === 'project') return [localId];
   if (type === 'organization') return idsFor('organization', localId);
-  if (type !== 'organizationmembership' && type !== 'groupmembership')
-    return [];
-
-  const membership = findRecord(memory, type, localId);
-  if (!membership || related(membership, 'user') !== currentUser) return [];
-  const rel = type === 'organizationmembership' ? 'organization' : 'group';
-  return idsFor(rel, related(membership, rel));
+  if (type === 'organizationmembership') {
+    const membership = findRecord(memory, 'organizationmembership', localId);
+    if (!membership || related(membership, 'user') !== currentUser) return [];
+    return idsFor('organization', related(membership, 'organization'));
+  }
+  if (type === 'groupmembership') {
+    const membership = findRecord(memory, 'groupmembership', localId);
+    if (!membership || related(membership, 'user') !== currentUser) return [];
+    return idsFor('group', related(membership, 'group'));
+  }
+  return [];
 };
 
 export const offlineProjectsFor = (

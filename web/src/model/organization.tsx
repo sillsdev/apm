@@ -17,7 +17,6 @@ export interface Organization extends BaseModel {
     defaultParams: string;
   };
   relationships?: {
-    bible: RecordRelationship;
     owner: RecordRelationship;
     groups: RecordRelationship;
     cluster: RecordRelationship;

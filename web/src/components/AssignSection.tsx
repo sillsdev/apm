@@ -134,7 +134,7 @@ function AssignSection(props: IProps) {
     ops: RecordOperation[];
     schemeRec: OrganizationSchemeD;
     step: string;
-    relateType: string;
+    relateType: 'user' | 'group';
     actorId: string;
     value: string;
   }

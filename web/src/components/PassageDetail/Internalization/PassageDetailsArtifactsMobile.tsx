@@ -1051,6 +1051,8 @@ export function PassageDetailArtifactsMobile() {
           : (memory.cache.query((q) =>
               q.findRecord({
                 type: 'section',
+                // type is string, so the section check does not narrow.
+                // This arm is a cached passage, which is initialized.
                 id: related(rec as PassageD, 'section'),
               })
             ) as Section);

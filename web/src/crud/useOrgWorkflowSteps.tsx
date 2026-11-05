@@ -16,11 +16,7 @@ import { toCamel, useWaitForRemoteQueue, waitForIt } from '../utils';
 import JSONAPISource from '@orbit/jsonapi';
 import { shallowEqual, useSelector } from 'react-redux';
 import { workflowStepsSelector } from '../selector';
-import {
-  InitializedRecord,
-  RecordOperation,
-  RecordTransformBuilder,
-} from '@orbit/records';
+import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { addPt } from '../utils/addPt';
 import { useNewTime } from '../utils/useNewTime';
 
@@ -78,13 +74,7 @@ export const useOrgWorkflowSteps = () => {
     } as OrgWorkflowStep;
     ops.push(...AddRecord(tb, wfs, user, memory, newTime()));
     ops.push(
-      ...ReplaceRelatedRecord(
-        tb,
-        wfs as InitializedRecord,
-        'organization',
-        'organization',
-        org
-      )
+      ...ReplaceRelatedRecord(tb, wfs, 'organization', 'organization', org)
     );
   };
   const QueryOrgWorkflowSteps = async (process: string, org: string) => {

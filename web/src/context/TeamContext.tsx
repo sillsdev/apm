@@ -223,6 +223,8 @@ const TeamProvider = (props: IProps) => {
   const { getOrgDefault } = useOrgDefaults();
   const setProjectParams = (plan: PlanD | VProjectD) => {
     const projectId = related(plan, 'project');
+    // type is string on both members, so === 'plan' does not narrow.
+    // The other arm is already a VProjectD.
     const vproj: VProjectD =
       plan?.type === 'plan' ? vProject(plan) : (plan as VProjectD);
     const orgId = related(vproj, 'organization');

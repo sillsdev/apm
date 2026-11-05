@@ -194,7 +194,8 @@ export async function insertData(
           oparray.push(
             ...ReplaceRelatedRecord(
               tb,
-              rec,
+              // The name comes from the imported file, so pass an identity.
+              { type: rec.type, id: rec.id },
               rel,
               (item.relationships[rel].data as RecordIdentity)?.type,
               (item.relationships[rel].data as RecordIdentity).id

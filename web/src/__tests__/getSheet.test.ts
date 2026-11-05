@@ -56,6 +56,15 @@ const s1 = {
   },
 } as SectionD;
 
+const passageLinks = (sectionId: string) => ({
+  section: { data: { type: 'section', id: sectionId } },
+  users: { data: [{ type: 'user', id: 'u1' }] },
+  media: {},
+  sharedResource: { data: null },
+  passagetype: { data: null },
+  lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+});
+
 const pa1 = {
   type: 'passage',
   id: 'pa1',
@@ -73,12 +82,7 @@ const pa1 = {
     stepComplete: '',
   },
   relationships: {
-    section: { data: { type: 'section', id: 's1' } },
-    users: { data: [{ type: 'user', id: 'u1' }] },
-    media: {},
-    sharedResource: { data: null },
-    passagetype: { data: null },
-    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    ...passageLinks('s1'),
   },
 } as PassageD;
 
@@ -99,12 +103,7 @@ const pa2 = {
     stepComplete: '',
   },
   relationships: {
-    section: { data: { type: 'section', id: 's1' } },
-    users: { data: [{ type: 'user', id: 'u1' }] },
-    media: {},
-    sharedResource: { data: null },
-    passagetype: { data: null },
-    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    ...passageLinks('s1'),
   },
 } as PassageD;
 
@@ -125,12 +124,7 @@ const pa3 = {
     stepComplete: '',
   },
   relationships: {
-    section: { data: { type: 'section', id: 's1' } },
-    users: { data: [{ type: 'user', id: 'u1' }] },
-    media: {},
-    sharedResource: { data: null },
-    passagetype: { data: null },
-    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    ...passageLinks('s1'),
   },
 } as PassageD;
 
@@ -170,12 +164,7 @@ const pa4 = {
     stepComplete: '',
   },
   relationships: {
-    section: { data: { type: 'section', id: 's2' } },
-    users: { data: [{ type: 'user', id: 'u1' }] },
-    media: {},
-    sharedResource: { data: null },
-    passagetype: { data: null },
-    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    ...passageLinks('s2'),
   },
 } as PassageD;
 
@@ -215,12 +204,7 @@ const pa11 = {
     stepComplete: '',
   },
   relationships: {
-    section: { data: { type: 'section', id: 's3' } },
-    users: { data: [{ type: 'user', id: 'u1' }] },
-    media: {},
-    sharedResource: { data: null },
-    passagetype: { data: null },
-    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    ...passageLinks('s3'),
   },
 } as PassageD;
 

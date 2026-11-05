@@ -1,6 +1,7 @@
 // See: https://www.w3schools.com/TAGS/ref_av_dom.asp
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
+import { schemaMock } from '../test-helpers/schemaMock';
 import { cleanup, render, waitFor } from '@testing-library/react';
 // import { act } from 'react-dom/test-utils';
 import ProfileDialog, { ProfileDialogProps } from './ProfileDialog';
@@ -23,12 +24,7 @@ const mockSchemaMemory = {
   update: jest.fn(),
 };
 
-jest.mock('../schema', () => ({
-  get memory() {
-    return mockSchemaMemory;
-  },
-  requestedSchema: 100,
-}));
+jest.mock('../schema', () => schemaMock(() => mockSchemaMemory));
 
 jest.mock('../utils/logErrorService', () => jest.fn());
 jest.mock('../utils/useWaitForRemoteQueue', () => ({

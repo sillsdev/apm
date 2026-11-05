@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+import { schemaMock } from '../test-helpers/schemaMock';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ProjectResourceConfigure from '../components/PassageDetail/Internalization/ProjectResourceConfigure';
@@ -16,12 +17,7 @@ const mockMemory = {
   update: jest.fn(),
 };
 
-jest.mock('../schema', () => ({
-  get memory() {
-    return mockMemory;
-  },
-  requestedSchema: 100,
-}));
+jest.mock('../schema', () => schemaMock(() => mockMemory));
 
 // Mock GlobalContext to avoid context errors
 jest.mock('../context/useGlobal', () => ({

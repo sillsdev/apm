@@ -83,9 +83,15 @@ export const UpdateAttribute = (
     ...UpdateLastModifiedBy(t, rec, user),
   ];
 };
-type RelName<T> = [RelKey<T>] extends [never] ? string : RelKey<T>;
+// A bare identity has no relationship list, so the name stays a string.
+// any and an open map do have one, and it names nothing.
+type RelName<T> = [RelKey<T>] extends [never]
+  ? 'relationships' extends keyof NonNullable<T>
+    ? never
+    : string
+  : RelKey<T>;
 
-export const ReplaceRelatedRecord = <T extends RecordIdentity>(
+export const ReplaceRelatedRecord = <T extends { type: string; id?: string }>(
   t: RecordTransformBuilder,
   rec: T,
   relationship: RelName<T>,
@@ -94,12 +100,14 @@ export const ReplaceRelatedRecord = <T extends RecordIdentity>(
 ): RecordOperation[] => {
   // Kind comes from the schema. A passed identity has no relationships, so it
   // cannot say whether the cached record already has this link.
-  const kind = schema.getRelationship(rec.type, relationship).kind;
+  // A new row's id is optional until AddRecord normalizes it.
+  const row = rec as RecordIdentity;
+  const kind = schema.getRelationship(row.type, relationship).kind;
   if (kind === 'hasMany') {
     if (!newId) return [];
     return [
       t
-        .addToRelatedRecords(rec, relationship, {
+        .addToRelatedRecords(row, relationship, {
           type: relatedType,
           id: newId,
         })
@@ -109,7 +117,7 @@ export const ReplaceRelatedRecord = <T extends RecordIdentity>(
   return [
     t
       .replaceRelatedRecord(
-        rec,
+        row,
         relationship,
         newId ? { type: relatedType, id: newId } : null
       )
@@ -117,14 +125,14 @@ export const ReplaceRelatedRecord = <T extends RecordIdentity>(
   ];
 };
 
-export const UpdateRelatedRecord = (
+export const UpdateRelatedRecord = <T extends RecordIdentity>(
   t: RecordTransformBuilder,
-  rec: BaseModel & InitializedRecord,
-  relationship: string,
+  rec: T,
+  relationship: RelName<T>,
   relatedType: string,
   newId: string | undefined,
   user: string
-): any => {
+): RecordOperation[] => {
   return [
     ...UpdateLastModifiedBy(t, rec, user),
     ...ReplaceRelatedRecord(t, rec, relationship, relatedType, newId),

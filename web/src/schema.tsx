@@ -702,7 +702,6 @@ if (requestedSchema > 3 && schemaDefinition.models) {
     relationships: {
       discussion: { kind: 'hasOne', type: 'discussion' },
       mediafile: { kind: 'hasOne', type: 'mediafile' },
-      user: { kind: 'hasOne', type: 'user' },
       lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       creatorUser: { kind: 'hasOne', type: 'user' },
     },

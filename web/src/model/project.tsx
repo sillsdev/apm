@@ -26,8 +26,6 @@ export interface Project extends BaseModel {
     owner: RecordRelationship;
     organization: RecordRelationship;
     group: RecordRelationship;
-    projectintegrations: RecordRelationship;
-    users: RecordRelationship;
     plans: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
     editsheetuser: RecordRelationship;
