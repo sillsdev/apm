@@ -131,9 +131,13 @@ const defaultSchemeSteps = [
   {
     id: SchemeStepId,
     type: 'organizationschemestep',
-    attributes: {},
+    attributes: {
+      dateCreated: '2021-09-14',
+      dateUpdated: '2021-09-15',
+      lastModifiedBy: 1,
+    },
     relationships: {
-      organizationScheme: {
+      organizationscheme: {
         data: {
           id: SchemeId,
           type: 'organizationscheme',
@@ -158,7 +162,7 @@ const defaultSchemeSteps = [
         },
       },
     },
-  } as unknown as OrganizationSchemeStep,
+  } as OrganizationSchemeStep,
 ];
 
 describe('useStepPermissions', () => {
@@ -264,7 +268,20 @@ describe('useStepPermissions', () => {
     mockUserIsAdmin = false;
     mockGetOrgDefault.mockReturnValue(true);
     mockSteps = defaultSteps;
-    mockSchemeSteps = defaultSchemeSteps;
+    mockSchemeSteps = [
+      {
+        ...defaultSchemeSteps[0],
+        relationships: {
+          ...defaultSchemeSteps[0].relationships,
+          orgWorkflowStep: {
+            data: {
+              id: 'other-step',
+              type: 'orgworkflowstep',
+            },
+          },
+        },
+      } as OrganizationSchemeStep,
+    ];
     const { result } = renderHook(() => useStepPermissions());
     expect(result.current.canDoSectionStep(StepId, defaultSection)).toBe(true);
   });
@@ -310,7 +327,7 @@ describe('useStepPermissions', () => {
       } as OrganizationSchemeStep,
     ];
     const { result } = renderHook(() => useStepPermissions());
-    expect(result.current.canDoSectionStep(StepId, defaultSection)).toBe(true);
+    expect(result.current.canDoSectionStep(StepId, defaultSection)).toBe(false);
   });
 
   test('canDoSectionStep returns true if assigned to a group containing the current user', () => {
@@ -323,6 +340,7 @@ describe('useStepPermissions', () => {
         ...defaultSchemeSteps[0],
         relationships: {
           ...defaultSchemeSteps[0].relationships,
+          user: { data: null },
           group: {
             data: {
               id: GroupId,
@@ -346,6 +364,7 @@ describe('useStepPermissions', () => {
         ...defaultSchemeSteps[0],
         relationships: {
           ...defaultSchemeSteps[0].relationships,
+          user: { data: null },
           group: {
             data: {
               id: 'other-group-id', // different group
@@ -356,6 +375,6 @@ describe('useStepPermissions', () => {
       } as OrganizationSchemeStep,
     ];
     const { result } = renderHook(() => useStepPermissions());
-    expect(result.current.canDoSectionStep(StepId, defaultSection)).toBe(true);
+    expect(result.current.canDoSectionStep(StepId, defaultSection)).toBe(false);
   });
 });
