@@ -58,7 +58,8 @@ export const speakText = (options: SpeakTextOptions): Speaking => {
   const speaking: Speaking = { done, stop };
   current = speaking;
 
-  void deviceVoices().then((voices) => {
+  // deviceVoices never rejects; it resolves an empty list when speech is missing.
+  void deviceVoices(lang).then((voices) => {
     if (finished) return;
     const voice = chooseVoice(voices);
     if (!voice) return finish(noVoice?.(voices) ?? 'noVoice');
