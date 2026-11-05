@@ -3,6 +3,8 @@ import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
 import type { CommentD } from '../../model/comment';
+import type { IntellectualPropertyD } from '../../model/intellectualProperty';
+import type { SectionD } from '../../model/section';
 import { restoreAfterPendingUpload } from './restoreAfterPendingUpload';
 import type { PendingUploadRestore } from './pendingMediaUploads';
 
@@ -126,12 +128,10 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       user,
     });
 
+    // Orbit's query result does not overlap IntellectualPropertyD.
     const ips = memory.cache.query((q) =>
       q.findRecords('intellectualproperty')
-    ) as unknown as Array<{
-      attributes: { rightsHolder: string };
-      relationships?: Record<string, { data: { id: string } | null }>;
-    }>;
+    ) as unknown as IntellectualPropertyD[];
     expect(ips).toHaveLength(1);
     expect(ips[0].attributes.rightsHolder).toBe('Speaker info test');
     expect(related(ips[0], 'releaseMediafile')).toBe('media-1');
@@ -223,10 +223,11 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       user,
     });
 
+    // getRecordSync is untyped. This row is the section.
     const section = memory.cache.getRecordSync({
       type: 'section',
       id: 'sec-1',
-    });
+    }) as SectionD;
     expect(related(section, 'titleMediafile')).toBe('media-1');
   });
 });

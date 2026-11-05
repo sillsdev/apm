@@ -1,6 +1,5 @@
 import type Memory from '@orbit/memory';
 import type { ProjectD } from '../../model';
-import { related } from '../../crud/related';
 
 jest.mock('../../serializers/getSerializer', () => ({
   getSerializer: () => ({
@@ -82,7 +81,11 @@ function memoryStub(store: Record<string, unknown[]>): Memory {
                     string,
                     { data?: { id?: string } | null }
                   >;
-                }) => related(r, spec.relation) === spec.record.id
+                }) => {
+                  // The filter name is runtime data, so this reads the link itself.
+                  const data = r.relationships?.[spec.relation]?.data;
+                  return !Array.isArray(data) && data?.id === spec.record.id;
+                }
               );
             };
             return recs;

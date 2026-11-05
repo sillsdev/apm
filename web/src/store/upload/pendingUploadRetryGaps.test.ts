@@ -502,10 +502,11 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
+      // getRecordSync is untyped. This row is the lwc mediafile.
       const media = memory.cache.getRecordSync({
         type: 'mediafile',
         id: 'lwc-media-1',
-      });
+      }) as MediaFileD;
       expect(related(media, 'sourceMedia')).toBe('vern-1');
     });
 
@@ -522,10 +523,11 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
+      // getRecordSync is untyped. This row is the lwc mediafile.
       const media = memory.cache.getRecordSync({
         type: 'mediafile',
         id: 'lwc-media-1',
-      });
+      }) as MediaFileD;
       const row = makeLwcRow({
         id: 'lwc-row',
         sourceMediaId: related(media, 'sourceMedia') ?? undefined,
