@@ -1,36 +1,66 @@
 import type Memory from '@orbit/memory';
 import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
 
-const replacement = (id: string, planId?: string) => ({
+const rec = (
+  type: string,
+  id: string,
+  rels?: Record<string, { data: { type: string; id: string } }>
+) => ({
   id,
-  type: 'mediareplacement' as const,
-  relationships: planId ? { plan: { data: { type: 'plan', id: planId } } } : {},
+  type,
+  relationships: rels ?? {},
 });
 
-const memoryWith = (rows: ReturnType<typeof replacement>[]) =>
-  ({
+const link = (type: string, id: string) => ({ data: { type, id } });
+
+const memoryWith = (byType: Record<string, ReturnType<typeof rec>[]>) => {
+  const queried: string[] = [];
+  const memory = {
     cache: {
-      query: (cb: (q: { findRecords: () => unknown }) => unknown) =>
-        cb({ findRecords: () => rows }),
+      query: (cb: (q: { findRecords: (type: string) => unknown }) => unknown) =>
+        cb({
+          findRecords: (type: string) => {
+            queried.push(type);
+            return byType[type] ?? [];
+          },
+        }),
     },
-  }) as unknown as Memory;
+  } as unknown as Memory;
+  return { memory, queried };
+};
 
 describe('mediaReplacementsForPlans', () => {
-  const rows = [
-    replacement('mine', 'plan-1'),
-    replacement('other', 'plan-2'),
-    replacement('unplanned'),
-  ];
+  const rows = {
+    mediareplacement: [
+      rec('mediareplacement', 'mine', { passage: link('passage', 'p1') }),
+      rec('mediareplacement', 'other', { passage: link('passage', 'p2') }),
+      rec('mediareplacement', 'unlinked'),
+    ],
+    passage: [
+      rec('passage', 'p1', { section: link('section', 's1') }),
+      rec('passage', 'p2', { section: link('section', 's2') }),
+    ],
+    section: [
+      rec('section', 's1', { plan: link('plan', 'plan-1') }),
+      rec('section', 's2', { plan: link('plan', 'plan-2') }),
+    ],
+  };
 
-  it('keeps replacements whose plan is in the list', () => {
+  it('keeps replacements reached from the plans through sections and passages', () => {
+    const { memory, queried } = memoryWith(rows);
     expect(
-      mediaReplacementsForPlans(memoryWith(rows), ['plan-1']).map((r) => r.id)
+      mediaReplacementsForPlans(memory, ['plan-1']).map((r) => r.id)
     ).toEqual(['mine']);
+    expect(queried).toEqual(['section', 'passage', 'mediareplacement']);
   });
 
   it('returns every replacement when no plans are given', () => {
-    expect(
-      mediaReplacementsForPlans(memoryWith(rows)).map((r) => r.id)
-    ).toEqual(['mine', 'other', 'unplanned']);
+    const { memory, queried } = memoryWith(rows);
+    expect(mediaReplacementsForPlans(memory).map((r) => r.id)).toEqual([
+      'mine',
+      'other',
+      'unlinked',
+    ]);
+    expect(queried).toEqual(['mediareplacement']);
   });
 });
