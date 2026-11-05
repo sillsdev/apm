@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface ProjectIntegration extends BaseModel {
   attributes: {
@@ -15,6 +15,6 @@ export interface ProjectIntegration extends BaseModel {
   };
 }
 
-export type ProjectIntegrationD = ProjectIntegration & InitializedRecord;
+export type ProjectIntegrationD = Loaded<ProjectIntegration>;
 
 export default ProjectIntegration;

@@ -109,7 +109,7 @@ export const UpdateMediaStateOps = (
       t.replaceAttribute(mediaRecId, 'transcriptionstate', state).toOperation()
     );
   const mediaRec = findRecord(memory, 'mediafile', mediafile) as MediaFileD;
-  const isVernacular = !related(mediaRec, 'artifacttype');
+  const isVernacular = !related(mediaRec, 'artifactType');
   ops.push(...UpdateLastModifiedBy(t, mediaRecId, userId));
   AddPassageStateChangeToOps(
     t,

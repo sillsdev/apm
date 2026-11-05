@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface ArtifactType extends BaseModel {
   attributes: {
@@ -14,6 +14,6 @@ export interface ArtifactType extends BaseModel {
   };
 }
 
-export type ArtifactTypeD = ArtifactType & InitializedRecord;
+export type ArtifactTypeD = Loaded<ArtifactType>;
 
 export default ArtifactType;

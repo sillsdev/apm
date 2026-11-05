@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface GroupMembership extends BaseModel {
   attributes: {
@@ -17,6 +17,6 @@ export interface GroupMembership extends BaseModel {
   };
 }
 
-export type GroupMembershipD = GroupMembership & InitializedRecord;
+export type GroupMembershipD = Loaded<GroupMembership>;
 
 export default GroupMembership;

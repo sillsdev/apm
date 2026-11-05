@@ -1,8 +1,5 @@
-import {
-  InitializedRecord,
-  RecordRelationship,
-  UninitializedRecord,
-} from '@orbit/records';
+import { Loaded } from './baseModel';
+import { RecordRelationship, UninitializedRecord } from '@orbit/records';
 
 export interface ProjectType extends UninitializedRecord {
   attributes: {
@@ -14,6 +11,6 @@ export interface ProjectType extends UninitializedRecord {
   };
 }
 
-export type ProjectTypeD = ProjectType & InitializedRecord;
+export type ProjectTypeD = Loaded<ProjectType>;
 
 export default ProjectType;

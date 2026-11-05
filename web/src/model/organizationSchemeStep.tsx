@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface OrganizationSchemeStep extends BaseModel {
   attributes: {
@@ -8,7 +8,7 @@ export interface OrganizationSchemeStep extends BaseModel {
     lastModifiedBy: number;
   };
   relationships?: {
-    organizationScheme: RecordRelationship;
+    organizationscheme: RecordRelationship;
     orgWorkflowStep: RecordRelationship;
     user: RecordRelationship;
     group: RecordRelationship;
@@ -16,7 +16,6 @@ export interface OrganizationSchemeStep extends BaseModel {
   };
 }
 
-export type OrganizationSchemeStepD = OrganizationSchemeStep &
-  InitializedRecord;
+export type OrganizationSchemeStepD = Loaded<OrganizationSchemeStep>;
 
 export default OrganizationSchemeStep;

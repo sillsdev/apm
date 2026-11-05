@@ -1,8 +1,5 @@
-import {
-  InitializedRecord,
-  RecordRelationship,
-  UninitializedRecord,
-} from '@orbit/records';
+import { Loaded } from './baseModel';
+import { RecordRelationship, UninitializedRecord } from '@orbit/records';
 // role names moved to ./roleNames
 export interface Role extends UninitializedRecord {
   attributes: {
@@ -15,6 +12,6 @@ export interface Role extends UninitializedRecord {
   };
 }
 
-export type RoleD = Role & InitializedRecord;
+export type RoleD = Loaded<Role>;
 
 export default Role;

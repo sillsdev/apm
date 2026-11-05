@@ -9,7 +9,8 @@ import {
 } from '@orbit/records';
 import { Dict } from '@orbit/utils';
 import Memory from '@orbit/memory';
-import { related } from '../crud/related';
+import { schema } from '../schema';
+import type { RelKey } from '../crud/related';
 import { currentDateTime } from '../utils/currentDateTime';
 
 export interface BaseModel extends UninitializedRecord {
@@ -23,7 +24,10 @@ export interface BaseModel extends UninitializedRecord {
   };
 }
 
-export type BaseModelD = BaseModel & InitializedRecord;
+/** Initialized record whose relationships stay the model's own list, not Orbit's string dictionary. */
+export type Loaded<T> = Omit<InitializedRecord, 'relationships'> & T;
+
+export type BaseModelD = Loaded<BaseModel>;
 
 export const UpdateRecord = (
   t: RecordTransformBuilder,
@@ -79,29 +83,20 @@ export const UpdateAttribute = (
     ...UpdateLastModifiedBy(t, rec, user),
   ];
 };
-export const ReplaceRelatedRecord = (
+type RelName<T> = [RelKey<T>] extends [never] ? string : RelKey<T>;
+
+export const ReplaceRelatedRecord = <T extends RecordIdentity>(
   t: RecordTransformBuilder,
-  rec: (BaseModel & InitializedRecord) | RecordIdentity,
-  relationship: string,
+  rec: T,
+  relationship: RelName<T>,
   relatedType: string,
   newId: string | undefined | null
 ): RecordOperation[] => {
-  if (related(rec, relationship) !== undefined)
-    return [
-      t
-        .replaceRelatedRecord(
-          rec,
-          relationship,
-          newId
-            ? {
-                type: relatedType,
-                id: newId,
-              }
-            : null
-        )
-        .toOperation(),
-    ];
-  else if (newId)
+  // Kind comes from the schema. A passed identity has no relationships, so it
+  // cannot say whether the cached record already has this link.
+  const kind = schema.getRelationship(rec.type, relationship).kind;
+  if (kind === 'hasMany') {
+    if (!newId) return [];
     return [
       t
         .addToRelatedRecords(rec, relationship, {
@@ -110,7 +105,16 @@ export const ReplaceRelatedRecord = (
         })
         .toOperation(),
     ];
-  return [];
+  }
+  return [
+    t
+      .replaceRelatedRecord(
+        rec,
+        relationship,
+        newId ? { type: relatedType, id: newId } : null
+      )
+      .toOperation(),
+  ];
 };
 
 export const UpdateRelatedRecord = (

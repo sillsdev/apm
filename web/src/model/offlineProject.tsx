@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface OfflineProject extends BaseModel {
   attributes: {
@@ -19,6 +19,6 @@ export interface OfflineProject extends BaseModel {
   };
 }
 
-export type OfflineProjectD = OfflineProject & InitializedRecord;
+export type OfflineProjectD = Loaded<OfflineProject>;
 
 export default OfflineProject;

@@ -11,6 +11,7 @@ import {
   Resource,
   SheetLevel,
   ISharedStrings,
+  PassageD,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
@@ -49,7 +50,11 @@ import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
-import { MarkDownType, UriLinkType } from '../../../utils/contentType';
+import {
+  MarkDownType,
+  UriLinkType,
+  mediaContentType,
+} from '../../../utils/contentType';
 import {
   canSaveResourceEdit,
   descriptionRequiredForResource,
@@ -94,7 +99,6 @@ import {
 } from './projectResourceAssignments';
 import GeneralResourceDeleteDialog from './GeneralResourceDeleteDialog';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
-import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
 import {
@@ -1045,7 +1049,10 @@ export function PassageDetailArtifactsMobile() {
         rec?.type === 'section'
           ? (rec as Section)
           : (memory.cache.query((q) =>
-              q.findRecord({ type: 'section', id: related(rec, 'section') })
+              q.findRecord({
+                type: 'section',
+                id: related(rec as PassageD, 'section'),
+              })
             ) as Section);
       const secNum = secRec?.attributes.sequencenum || 0;
       const topicIn =

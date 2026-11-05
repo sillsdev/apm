@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface SharedResourceReference extends BaseModel {
   attributes: {
@@ -17,7 +17,6 @@ export interface SharedResourceReference extends BaseModel {
   };
 }
 
-export type SharedResourceReferenceD = SharedResourceReference &
-  InitializedRecord;
+export type SharedResourceReferenceD = Loaded<SharedResourceReference>;
 
 export default SharedResourceReference;

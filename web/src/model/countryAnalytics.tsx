@@ -1,4 +1,5 @@
-import { InitializedRecord, UninitializedRecord } from '@orbit/records';
+import { Loaded } from './baseModel';
+import { UninitializedRecord } from '@orbit/records';
 
 export interface CountryAnalytics extends UninitializedRecord {
   attributes: {
@@ -8,6 +9,6 @@ export interface CountryAnalytics extends UninitializedRecord {
   };
 }
 
-export type CountryAnalyticsD = CountryAnalytics & InitializedRecord;
+export type CountryAnalyticsD = Loaded<CountryAnalytics>;
 
 export default CountryAnalytics;

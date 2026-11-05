@@ -6,7 +6,23 @@ import { DateTime } from 'luxon';
 import { BaseModel } from '../model/baseModel';
 import { JSONAPISource } from '@orbit/jsonapi';
 import { logError, Severity } from '../utils';
-import { VwChecksum, PlanD, ProjectD } from '../model';
+import {
+  ArtifactCategoryD,
+  CommentD,
+  DiscussionD,
+  GroupMembershipD,
+  OrganizationMembershipD,
+  PassageD,
+  PassageStateChangeD,
+  PlanD,
+  ProjectD,
+  SectionResourceD,
+  SectionResourceUserD,
+  SharedResourceD,
+  SharedResourceReferenceD,
+  VwChecksum,
+} from '../model';
+import { OrganizationSchemeStepD } from '../model/organizationSchemeStep';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { API_CONFIG } from '../../api-variable';
@@ -117,7 +133,9 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       const discussionRows = () => {
         const mediafiles = mediafileRows().map((m) => m.id);
         return (
-          memory?.cache.query((q) => q.findRecords('discussion')) as BaseModel[]
+          memory?.cache.query((q) =>
+            q.findRecords('discussion')
+          ) as DiscussionD[]
         ).filter(
           (d) =>
             Boolean(d.relationships) &&
@@ -148,7 +166,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       const passageRows = () => {
         const sections = sectionRows().map((s) => s.id);
         return (
-          memory?.cache.query((q) => q.findRecords('passage')) as BaseModel[]
+          memory?.cache.query((q) => q.findRecords('passage')) as PassageD[]
         ).filter(
           (p) =>
             sections.find((id) => id === related(p, 'section')) !== undefined
@@ -160,7 +178,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         return (
           memory?.cache.query((q) =>
             q.findRecords('sectionresource')
-          ) as BaseModel[]
+          ) as SectionResourceD[]
         ).filter(
           (sr) =>
             sections.find((id) => id === related(sr, 'section')) !== undefined
@@ -171,27 +189,27 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         return (
           memory?.cache.query((q) =>
             q.findRecords('sharedresource')
-          ) as BaseModel[]
+          ) as SharedResourceD[]
         ).filter(
           (sr) => psgs.find((id) => id === related(sr, 'passage')) !== undefined
         );
       };
 
-      const filterByOrg = (table: string) =>
+      const filterByOrg = <T = BaseModel>(table: string) =>
         memory?.cache.query((q) =>
           q.findRecords(table).filter({
             relation: 'organization',
             record: { type: 'organization', id: org },
           })
-        ) as BaseModel[];
+        ) as T[];
       const organizationmembershipRows = () =>
-        filterByOrg('organizationmembership');
+        filterByOrg<OrganizationMembershipD>('organizationmembership');
       const orgSchemeStepRows = () => {
         const schemes = filterByOrg('organizationscheme');
         return (
           memory?.cache.query((q) =>
             q.findRecords('organizationschemestep')
-          ) as BaseModel[]
+          ) as OrganizationSchemeStepD[]
         ).filter(
           (ss) =>
             schemes.find((id) => id === related(ss, 'organizationscheme')) !==
@@ -217,7 +235,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           const acs = (
             memory?.cache.query((q) =>
               q.findRecords('artifactcategory')
-            ) as BaseModel[]
+            ) as ArtifactCategoryD[]
           ).filter(
             (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
           );
@@ -229,7 +247,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         case 'comment':
           const discussions = discussionRows().map((d) => d.id);
           return (
-            memory?.cache.query((q) => q.findRecords('comment')) as BaseModel[]
+            memory?.cache.query((q) => q.findRecords('comment')) as CommentD[]
           ).filter(
             (c) =>
               discussions.find((id) => id === related(c, 'discussion')) !==
@@ -244,7 +262,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           return (
             memory?.cache.query((q) =>
               q.findRecords('groupmembership')
-            ) as BaseModel[]
+            ) as GroupMembershipD[]
           ).filter(
             (gm) =>
               groups.find((id) => id === related(gm, 'group')) !== undefined
@@ -279,7 +297,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           return (
             memory?.cache.query((q) =>
               q.findRecords('passagestatechange')
-            ) as BaseModel[]
+            ) as PassageStateChangeD[]
           ).filter(
             (psc) =>
               passages.find((id) => id === related(psc, 'passage')) !==
@@ -305,7 +323,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           return (
             memory?.cache.query((q) =>
               q.findRecords('sectionresourceuser')
-            ) as BaseModel[]
+            ) as SectionResourceUserD[]
           ).filter(
             (sru) =>
               resources.find((id) => id === related(sru, 'sectionresource')) !==
@@ -318,7 +336,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           return (
             memory?.cache.query((q) =>
               q.findRecords('sharedresourcereference')
-            ) as BaseModel[]
+            ) as SharedResourceReferenceD[]
           ).filter(
             (srr) =>
               sharedresources.find(

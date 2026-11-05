@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 import { DigestPreference } from './digestPreference';
 export interface User extends BaseModel {
   attributes: {
@@ -36,7 +36,7 @@ export interface User extends BaseModel {
   };
 }
 
-export type UserD = User & InitializedRecord;
+export type UserD = Loaded<User>;
 
 export interface CurrentUser extends User {
   attributes: {

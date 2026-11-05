@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface ITag {
   [tag: string]: boolean;
@@ -46,9 +46,13 @@ export interface VProject extends BaseModel {
     projectintegrations: RecordRelationship;
     users: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
+    editsheetuser: RecordRelationship;
+    editsheetgroup: RecordRelationship;
+    publishuser: RecordRelationship;
+    publishgroup: RecordRelationship;
   };
 }
 
-export type VProjectD = VProject & InitializedRecord;
+export type VProjectD = Loaded<VProject>;
 
 export default VProject;

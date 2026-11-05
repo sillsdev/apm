@@ -1,9 +1,18 @@
-export const related = (rec: any, key: string) =>
-  rec && rec.relationships && key in rec.relationships
-    ? rec.relationships[key].data && !Array.isArray(rec.relationships[key].data)
-      ? rec.relationships[key].data.id
-      : rec.relationships[key].data === undefined
-        ? null
-        : rec.relationships[key].data
-    : null;
+export type RelKey<T> = [NonNullable<T>] extends [{ relationships?: infer R }]
+  ? keyof NonNullable<R> & string
+  : never;
+
+export const related = <
+  T extends { relationships?: object } | null | undefined,
+>(
+  rec: T,
+  key: RelKey<T>
+): any => {
+  const record = rec as any;
+  if (!record?.relationships || !(key in record.relationships)) return null;
+  const data = record.relationships[key].data;
+  if (data && !Array.isArray(data)) return data.id;
+  if (data === undefined) return null;
+  return data;
+};
 export default related;

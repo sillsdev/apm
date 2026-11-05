@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Project extends BaseModel {
   attributes: {
@@ -30,13 +30,13 @@ export interface Project extends BaseModel {
     users: RecordRelationship;
     plans: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
-    editsheetUser: RecordRelationship;
-    editsheetGroup: RecordRelationship;
-    publishUser: RecordRelationship;
-    publishGroup: RecordRelationship;
+    editsheetuser: RecordRelationship;
+    editsheetgroup: RecordRelationship;
+    publishuser: RecordRelationship;
+    publishgroup: RecordRelationship;
   };
 }
 
-export type ProjectD = Project & InitializedRecord;
+export type ProjectD = Loaded<Project>;
 
 export default Project;

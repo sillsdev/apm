@@ -129,7 +129,7 @@ const initState = {
   ) => {},
   importOpen: false,
   setImportOpen: (val: boolean) => {},
-  importProject: undefined as any,
+  importProject: undefined as VProject | undefined,
   doImport: (p: VProject | undefined = undefined) => {},
   resetProjectPermissions: async (team: string) => {},
   generalBook: (team?: string) => '000',
@@ -223,7 +223,8 @@ const TeamProvider = (props: IProps) => {
   const { getOrgDefault } = useOrgDefaults();
   const setProjectParams = (plan: PlanD | VProjectD) => {
     const projectId = related(plan, 'project');
-    const vproj = plan?.type === 'plan' ? vProject(plan) : plan;
+    const vproj: VProjectD =
+      plan?.type === 'plan' ? vProject(plan) : (plan as VProjectD);
     const orgId = related(vproj, 'organization');
     setOrganization(orgId);
     localStorage.setItem(localUserKey(LocalKey.team), orgId);
@@ -659,7 +660,7 @@ const TeamProvider = (props: IProps) => {
       'editsheetgroup',
       'publishuser',
       'publishgroup',
-    ];
+    ] as const;
     const tb = new RecordTransformBuilder();
     const ops = [] as RecordOperation[];
     projects.forEach((p) => {

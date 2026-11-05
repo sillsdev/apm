@@ -1,8 +1,5 @@
-import {
-  UninitializedRecord,
-  RecordRelationship,
-  InitializedRecord,
-} from '@orbit/records';
+import { Loaded } from './baseModel';
+import { UninitializedRecord, RecordRelationship } from '@orbit/records';
 
 export interface Integration extends UninitializedRecord {
   attributes: {
@@ -14,6 +11,6 @@ export interface Integration extends UninitializedRecord {
   };
 }
 
-export type IntegrationD = Integration & InitializedRecord;
+export type IntegrationD = Loaded<Integration>;
 
 export default Integration;

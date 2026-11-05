@@ -363,7 +363,7 @@ export async function electronExport(
               recs,
               checkRename &&
                 recs.length > 0 &&
-                related(recs[0], 'artifactType') === VernacularTag
+                related(recs[0] as MediaFileD, 'artifactType') === VernacularTag
             );
         }
       }

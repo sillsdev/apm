@@ -1,6 +1,6 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
+import { RecordRelationship } from '@orbit/records';
 import { ActivityStates } from '.';
-import { BaseModel } from './baseModel';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface PassageStateChange extends BaseModel {
   attributes: {
@@ -17,6 +17,6 @@ export interface PassageStateChange extends BaseModel {
   };
 }
 
-export type PassageStateChangeD = PassageStateChange & InitializedRecord;
+export type PassageStateChangeD = Loaded<PassageStateChange>;
 
 export default PassageStateChange;

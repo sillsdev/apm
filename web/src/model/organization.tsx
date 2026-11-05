@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Organization extends BaseModel {
   attributes: {
@@ -25,6 +25,6 @@ export interface Organization extends BaseModel {
   };
 }
 
-export type OrganizationD = Organization & InitializedRecord;
+export type OrganizationD = Loaded<Organization>;
 
 export default Organization;
