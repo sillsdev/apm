@@ -4,8 +4,14 @@ import {
   type VoiceRanking,
 } from './voiceRanking';
 
-// Some browsers list voices only after `voiceschanged`; others never fire it.
+// Some browsers list voices only after `voiceschanged`. Windows can list
+// Microsoft voices first with an empty `lang`, then fill the tags in on a
+// later event. Others never fire it, so a list that already has a language
+// is used immediately and the wait is capped.
 const VOICES_WAIT_MS = 2000;
+
+const hasLanguage = (voices: SpeechSynthesisVoice[]) =>
+  voices.some((v) => v.lang);
 
 /**
  * The text-to-speech voices on this device. Today that is the browser's
@@ -16,15 +22,20 @@ export const deviceVoices = (): Promise<SpeechSynthesisVoice[]> => {
   const synth = globalThis.speechSynthesis;
   if (!synth) return Promise.resolve([]);
   const listed = synth.getVoices();
-  if (listed.length) return Promise.resolve(listed);
+  if (hasLanguage(listed)) return Promise.resolve(listed);
   return new Promise((resolve) => {
-    const done = () => {
+    let timer: ReturnType<typeof setTimeout>;
+    const finish = (voices: SpeechSynthesisVoice[]) => {
       clearTimeout(timer);
-      synth.removeEventListener('voiceschanged', done);
-      resolve(synth.getVoices());
+      synth.removeEventListener('voiceschanged', onChange);
+      resolve(voices);
     };
-    const timer = setTimeout(done, VOICES_WAIT_MS);
-    synth.addEventListener('voiceschanged', done);
+    const onChange = () => {
+      const voices = synth.getVoices();
+      if (hasLanguage(voices)) finish(voices);
+    };
+    timer = setTimeout(() => finish(synth.getVoices()), VOICES_WAIT_MS);
+    synth.addEventListener('voiceschanged', onChange);
   });
 };
 

@@ -66,6 +66,8 @@ beforeEach(() => {
   spoken = [];
   voices = [david];
   synth.cancel.mockClear();
+  synth.addEventListener.mockReset();
+  synth.removeEventListener.mockReset();
   Object.assign(globalThis, {
     speechSynthesis: synth,
     SpeechSynthesisUtterance: FakeUtterance,
@@ -179,6 +181,47 @@ describe('speakReferenceText', () => {
     });
     await settle();
     expect(spoken[0].voice).toBe(zira);
+  });
+
+  it('speaks English when Windows lists Microsoft voices before their languages', async () => {
+    const blankDavid = {
+      ...david,
+      name: 'Microsoft David',
+      voiceURI: 'Microsoft David',
+      lang: '',
+    };
+    const blankFrench = {
+      ...david,
+      name: 'Microsoft Caroline',
+      voiceURI: 'Microsoft Caroline',
+      lang: '',
+      default: false,
+    };
+    voices = [blankDavid, blankFrench];
+    const listeners = new Set<() => void>();
+    synth.addEventListener.mockImplementation(
+      (event: string, cb: () => void) => {
+        if (event === 'voiceschanged') listeners.add(cb);
+      }
+    );
+    synth.removeEventListener.mockImplementation(
+      (event: string, cb: () => void) => {
+        if (event === 'voiceschanged') listeners.delete(cb);
+      }
+    );
+
+    const speaking = speakReferenceText(bsb, 'In the beginning.');
+    listeners.forEach((cb) => cb());
+    voices = [
+      { ...blankDavid, lang: 'en-US' },
+      { ...blankFrench, lang: 'fr-CA' },
+    ];
+    listeners.forEach((cb) => cb());
+    await settle();
+    expect(spoken[0]?.voice?.lang).toBe('en-US');
+    expect(spoken[0]?.voice?.name).toBe('Microsoft David');
+    spoken[0].onend?.();
+    await expect(speaking.done).resolves.toBe('ended');
   });
 });
 
