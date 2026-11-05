@@ -76,7 +76,13 @@ function memoryStub(store: Record<string, unknown[]>): Memory {
                 return origFilter(f as (r: { id: string }) => boolean);
               const spec = f as { relation: string; record: { id: string } };
               return origFilter(
-                (r) => related(r, spec.relation) === spec.record.id
+                (r: {
+                  id: string;
+                  relationships?: Record<
+                    string,
+                    { data?: { id?: string } | null }
+                  >;
+                }) => related(r, spec.relation) === spec.record.id
               );
             };
             return recs;

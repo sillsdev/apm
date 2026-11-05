@@ -11,6 +11,9 @@ import {
 } from '../../components/PassageDetail/carefulSpeech/carefulSpeechCompletion';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { IRow } from '../../context/PassageDetailContext';
+import type { MediaFileD } from '../../model/mediafile';
+import type { OrgKeytermTargetD } from '../../model/orgKeytermTarget';
+import type { SectionResourceD } from '../../model/sectionResource';
 
 const clauseRegion: IRegion = { start: 0, end: 10, label: '' };
 
@@ -254,9 +257,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
       const sectionResources = memory.cache.query((q) =>
         q.findRecords('sectionresource')
-      ) as unknown as Array<{
-        attributes?: { description?: string };
-      }>;
+      ) as unknown as SectionResourceD[];
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'mediafile')).toBe(
@@ -287,7 +288,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
       const sectionResources = memory.cache.query((q) =>
         q.findRecords('sectionresource')
-      ) as unknown as Array<Record<string, unknown>>;
+      ) as unknown as SectionResourceD[];
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'passage')).toBe('pas-1');
     });
@@ -346,10 +347,9 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       });
 
       const sectionResources = (
-        memory.cache.query((q) => q.findRecords('sectionresource')) as Array<{
-          id: string;
-          attributes?: { sequenceNum?: number; description?: string };
-        }>
+        memory.cache.query((q) =>
+          q.findRecords('sectionresource')
+        ) as unknown as SectionResourceD[]
       ).filter((r) => related(r, 'section') === 'sec-1');
 
       expect(sectionResources).toHaveLength(2);
@@ -407,14 +407,14 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
       const media = memory.cache.query((q) =>
         q.findRecord({ type: 'mediafile', id: 'resource-media-1' })
-      ) as { attributes?: { topic?: string } };
+      ) as MediaFileD;
       expect(media.attributes?.topic).toBe('Intro');
       expect(related(media, 'artifactCategory')).toBe('cat-1');
       expect(related(media, 'passage')).toBe('pas-1');
 
       const sectionResources = memory.cache.query((q) =>
         q.findRecords('sectionresource')
-      ) as unknown as Array<Record<string, unknown>>;
+      ) as unknown as SectionResourceD[];
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'mediafile')).toBe(
         'resource-media-1'
@@ -474,7 +474,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       const media = memory.cache.getRecordSync({
         type: 'mediafile',
         id: 'proj-media-1',
-      }) as { attributes?: { topic?: string } };
+      }) as MediaFileD;
       expect(media.attributes?.topic).toBe('General resource take');
       expect(related(media, 'artifactCategory')).toBe('cat-1');
 
@@ -569,9 +569,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
       const targets = memory.cache.query((q) =>
         q.findRecords('orgkeytermtarget')
-      ) as unknown as Array<{
-        attributes?: { term?: string; termIndex?: number; target?: string };
-      }>;
+      ) as unknown as OrgKeytermTargetD[];
       expect(targets).toHaveLength(1);
       expect(targets[0].attributes?.term).toBe('grace');
       expect(targets[0].attributes?.termIndex).toBe(0);
@@ -605,10 +603,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
       const sectionResources = memory.cache.query((q) =>
         q.findRecords('sectionresource')
-      ) as unknown as Array<{
-        id: string;
-        attributes?: { sequenceNum?: number; description?: string };
-      }>;
+      ) as unknown as SectionResourceD[];
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'mediafile')).toBe('prompt-media-1');

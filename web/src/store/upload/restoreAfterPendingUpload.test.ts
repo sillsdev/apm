@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from '@jest/globals';
 import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
+import type { CommentD } from '../../model/comment';
 import { restoreAfterPendingUpload } from './restoreAfterPendingUpload';
 import type { PendingUploadRestore } from './pendingMediaUploads';
 
@@ -159,9 +160,7 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
 
     const comments = memory.cache.query((q) =>
       q.findRecords('comment')
-    ) as unknown as Array<{
-      attributes: { commentText: string; visible: string };
-    }>;
+    ) as unknown as CommentD[];
     expect(comments).toHaveLength(1);
     expect(comments[0].attributes.commentText).toBe('audio comment note');
     expect(comments[0].attributes.visible).toBe(restore.visible);
@@ -205,7 +204,7 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
     const comment = memory.cache.getRecordSync({
       type: 'comment',
       id: 'cmt-1',
-    }) as unknown as { attributes: { commentText: string; visible: string } };
+    }) as unknown as CommentD;
     expect(comment.attributes.commentText).toBe('updated text');
     expect(comment.attributes.visible).toBe(restore.visible);
     expect(related(comment, 'mediafile')).toBe('media-1');

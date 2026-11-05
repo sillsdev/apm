@@ -76,6 +76,8 @@ const pa1 = {
     section: { data: { type: 'section', id: 's1' } },
     users: { data: [{ type: 'user', id: 'u1' }] },
     media: {},
+    sharedResource: { data: null },
+    passagetype: { data: null },
     lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
   },
 } as PassageD;
@@ -100,6 +102,8 @@ const pa2 = {
     section: { data: { type: 'section', id: 's1' } },
     users: { data: [{ type: 'user', id: 'u1' }] },
     media: {},
+    sharedResource: { data: null },
+    passagetype: { data: null },
     lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
   },
 } as PassageD;
@@ -124,6 +128,8 @@ const pa3 = {
     section: { data: { type: 'section', id: 's1' } },
     users: { data: [{ type: 'user', id: 'u1' }] },
     media: {},
+    sharedResource: { data: null },
+    passagetype: { data: null },
     lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
   },
 } as PassageD;
@@ -167,6 +173,8 @@ const pa4 = {
     section: { data: { type: 'section', id: 's2' } },
     users: { data: [{ type: 'user', id: 'u1' }] },
     media: {},
+    sharedResource: { data: null },
+    passagetype: { data: null },
     lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
   },
 } as PassageD;
@@ -210,6 +218,8 @@ const pa11 = {
     section: { data: { type: 'section', id: 's3' } },
     users: { data: [{ type: 'user', id: 'u1' }] },
     media: {},
+    sharedResource: { data: null },
+    passagetype: { data: null },
     lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
   },
 } as PassageD;

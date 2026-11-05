@@ -17,7 +17,9 @@ const mockMemory = {
 };
 
 jest.mock('../schema', () => ({
-  memory: mockMemory,
+  get memory() {
+    return mockMemory;
+  },
   requestedSchema: 100,
 }));
 
