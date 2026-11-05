@@ -699,9 +699,43 @@ function WSAudioPlayer(props: IProps) {
     }
   }, [selectedMicrophoneId]);
 
-  const handleMicMenuOpen = (event: MouseEvent<HTMLElement>) => {
-    if (audioInputDevices.length === 0) return;
-    setMicMenuAnchorEl(event.currentTarget);
+  const updateAudioInputDevices = useCallback(
+    async (opts?: {
+      cancelled?: () => boolean;
+    }): Promise<MediaDeviceInfo[]> => {
+      if (!navigator?.mediaDevices?.enumerateDevices) return [];
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (opts?.cancelled?.()) return [];
+        const inputs = devices.filter((device) => device.kind === 'audioinput');
+        setAudioInputDevices(inputs);
+        if (recordingRef.current) return inputs;
+        const current = selectedMicrophoneIdRef.current;
+        const fallbackId = fallbackInputDeviceId(inputs, current);
+        if (fallbackId !== undefined) {
+          warnMicrophoneDisconnected(fallbackId);
+        } else if (!current && inputs[0]?.deviceId) {
+          setSelectedMicrophoneId(inputs[0].deviceId);
+        }
+        return inputs;
+      } catch {
+        if (opts?.cancelled?.()) return [];
+        setAudioInputDevices([]);
+        setSelectedMicrophoneId('');
+        return [];
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-stable; refs hold latest selection/recording
+    []
+  );
+
+  const handleMicMenuOpen = async (event: MouseEvent<HTMLElement>) => {
+    const anchor = event.currentTarget;
+    // Re-enumerate on open so labels appear after getUserMedia grants permission
+    // (Chrome often returns empty labels on the first mount-time enumerate).
+    const inputs = await updateAudioInputDevices();
+    if (inputs.length === 0) return;
+    setMicMenuAnchorEl(anchor);
   };
 
   const handleMicMenuClose = () => {
@@ -1083,33 +1117,12 @@ function WSAudioPlayer(props: IProps) {
     if (!navigator?.mediaDevices?.enumerateDevices) return;
 
     let active = true;
+    const cancelled = () => !active;
 
-    const updateDevices = async () => {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        if (!active) return;
-        const inputs = devices.filter((device) => device.kind === 'audioinput');
-        setAudioInputDevices(inputs);
-        if (recordingRef.current) return;
-        const current = selectedMicrophoneIdRef.current;
-        const fallbackId = fallbackInputDeviceId(inputs, current);
-        if (fallbackId !== undefined) {
-          warnMicrophoneDisconnected(fallbackId);
-        } else if (!current && inputs[0]?.deviceId) {
-          setSelectedMicrophoneId(inputs[0].deviceId);
-        }
-      } catch {
-        if (active) {
-          setAudioInputDevices([]);
-          setSelectedMicrophoneId('');
-        }
-      }
-    };
-
-    void updateDevices();
+    void updateAudioInputDevices({ cancelled });
 
     const handleDeviceChange = () => {
-      void updateDevices();
+      void updateAudioInputDevices({ cancelled });
     };
 
     navigator.mediaDevices.addEventListener?.(
@@ -1128,9 +1141,7 @@ function WSAudioPlayer(props: IProps) {
         recTimerRef.current = undefined;
       }
     };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [updateAudioInputDevices]);
 
   useEffect(() => {
     if (org) {
