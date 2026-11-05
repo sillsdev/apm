@@ -126,32 +126,35 @@ export function DataChanges(props: PropsWithChildren) {
       authenticated()
     ) {
       doingChanges.current = true; //attempt to prevent double calls
-      const check = firstRun;
-      setFirstRun(false);
-      await doDataChanges(
-        ctx?.accessToken || '',
-        coordinator,
-        fingerprint,
-        getGlobal('projectsLoaded'),
-        getOfflineProject,
-        errorReporter,
-        user,
-        setLanguage,
-        setDataChangeCount,
-        isElectron ? fetchUrl : undefined,
-        undefined,
-        setOrbitRetries
-      );
-      if (check) {
-        //make sure we have a bible media project and plan downloaded
-        await getBibleMediaPlan();
-        const bibleMediaProject = await getBibleMediaProject();
-        if (bibleMediaProject) await doSanityCheck(bibleMediaProject.id);
-        for (let ix = 0; ix < getGlobal('projectsLoaded').length; ix++)
-          await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
+      try {
+        const check = firstRun;
+        setFirstRun(false);
+        await doDataChanges(
+          ctx?.accessToken || '',
+          coordinator,
+          fingerprint,
+          getGlobal('projectsLoaded'),
+          getOfflineProject,
+          errorReporter,
+          user,
+          setLanguage,
+          setDataChangeCount,
+          isElectron ? fetchUrl : undefined,
+          undefined,
+          setOrbitRetries
+        );
+        if (check) {
+          //make sure we have a bible media project and plan downloaded
+          await getBibleMediaPlan();
+          const bibleMediaProject = await getBibleMediaProject();
+          if (bibleMediaProject) await doSanityCheck(bibleMediaProject.id);
+          for (let ix = 0; ix < getGlobal('projectsLoaded').length; ix++)
+            await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
+        }
+        perfRecordMs('DataChanges.updateData', performance.now() - t0);
+      } finally {
+        doingChanges.current = false; //attempt to prevent double calls
       }
-      doingChanges.current = false; //attempt to prevent double calls
-      perfRecordMs('DataChanges.updateData', performance.now() - t0);
     }
   };
 

@@ -1,388 +1,184 @@
 import { useContext } from 'react';
-import { findRecord, related, staticFiles, updateableFiles } from '.';
-import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
+import { findRecord, staticFiles, updateableFiles } from '.';
 import Memory from '@orbit/memory';
+import Coordinator from '@orbit/coordinator';
 import { DateTime } from 'luxon';
-import { BaseModel } from '../model/baseModel';
 import { JSONAPISource } from '@orbit/jsonapi';
 import { logError, Severity } from '../utils';
-import { PlanD, ProjectD, VwChecksum } from '../model';
+import { VwChecksum, PlanD } from '../model';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
+import type { GlobalState } from '../context/GlobalContext';
 import { API_CONFIG } from '../../api-variable';
 import {
   processDataChanges,
   DATA_CHANGES_NETWORK_ABORT,
 } from '../hoc/processDataChanges';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
-import type { RecordByType } from '../model/recordByType';
-import { findRecords } from './tryFindRecord';
+import {
+  checksumOf,
+  dedupedChecksumRows,
+  LARGE_TABLE_ROW_COUNT,
+  pullSinceMillis,
+  rowsForSanityTable,
+} from './sanityCheck';
+
+type ErrorReporter = GlobalState['errorReporter'];
+
+/** Stop paging when the server repeats the same cursor this many times. */
+const SAME_PAGE_RETRIES = 2;
+
+function reportedError(err: unknown): Error {
+  return err instanceof Error ? err : new Error(String(err));
+}
+
+const pullTableSince = async (props: {
+  token: string;
+  coordinator: Coordinator;
+  remoteProjectId: string;
+  table: string;
+  since: string;
+  errorReporter: ErrorReporter;
+  setLanguage: typeof actions.setLanguage;
+}) => {
+  const api =
+    API_CONFIG.host +
+    `/api/datachanges/project/${props.remoteProjectId}/${props.table}/`;
+  let start = 1;
+  let retriesLeft = SAME_PAGE_RETRIES;
+  let startNext = 0;
+  while (startNext >= 0 && retriesLeft > 0) {
+    startNext = await processDataChanges({
+      token: props.token,
+      api: `${api}${startNext}/since/${props.since}`,
+      params: undefined,
+      started: start,
+      coordinator: props.coordinator,
+      // Not the signed-in user: a repair pull must not reload that user's orgs.
+      user: '',
+      errorReporter: props.errorReporter,
+      setLanguage: props.setLanguage,
+      // A repair pull is not a sync tick the user is watching.
+      setDataChangeCount: () => undefined,
+      fetchUrl: undefined,
+    });
+    if (startNext === DATA_CHANGES_NETWORK_ABORT) break;
+    if (startNext === start) retriesLeft -= 1;
+    else start = startNext;
+  }
+};
 
 export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const [coordinator] = useGlobal('coordinator');
-  const memory = coordinator?.getSource('memory') as Memory;
-  const remote = coordinator?.getSource('datachanges') as JSONAPISource;
+  // getSource is untyped; the coordinator registers these sources by name.
+  const memory = coordinator?.getSource('memory') as Memory | undefined;
+  const remote = coordinator?.getSource('datachanges') as
+    JSONAPISource | undefined;
   const token = useContext(TokenContext)?.state?.accessToken || '';
   const [errorReporter] = useGlobal('errorReporter');
   const getGlobal = useGetGlobal();
 
-  const stringToDateNum = (val: string) =>
-    val ? DateTime.fromISO(val.endsWith('Z') ? val : val + 'Z').toMillis() : 0;
-
   return async (projectId: string) => {
-    const doForceTableChanges = async (props: {
-      project: string;
-      table: string;
-      dtSince: string;
-      errorReporter: any;
-      cb?: () => void;
-    }) => {
-      const { project, table, dtSince, errorReporter, cb } = props;
-      //project/{project}/{table}/{start}/since/{since}
-      const api =
-        API_CONFIG.host + `/api/datachanges/project/${project}/${table}/`;
-      let start = 1;
-      let tries = 2;
-      let startNext = 0;
-      while (startNext >= 0 && tries > 0) {
-        startNext = await processDataChanges({
-          token,
-          api: `${api}${startNext}/since/${dtSince}`,
-          params: undefined,
-          started: start,
-          coordinator,
-          user: '',
-          errorReporter,
-          setLanguage,
-          setDataChangeCount: () => {},
-          fetchUrl: undefined,
-          cb,
-        });
-        if (startNext === DATA_CHANGES_NETWORK_ABORT) break;
-        if (startNext === start) tries--;
-        else start = startNext;
-      }
-    };
-    const getChecksum = (
-      rows: { id: string; num: number }[],
-      name: string,
-      beforeThis?: number
-    ) => {
-      let sum = 0;
-      const sorted = beforeThis ? rows.sort((i, j) => i.num - j.num) : rows;
-      sorted.forEach((mf) => {
-        if (mf) {
-          if (beforeThis && mf.num > beforeThis) return sum;
+    // `offline` is an Electron local-mode session. `connected` is false when
+    // an online session has lost its network. Either way there is no server pull.
+    if (!token || getGlobal('offline') || !getGlobal('connected')) return;
+    if (!memory || !remote || !coordinator) return;
 
-          sum += mf.num % 100000000;
-        }
-      });
-      return sum;
-    };
-
-    const compareChecksum = async (remoteRows: VwChecksum[], name: string) => {
-      const rows = removeDups(getTableRows(name) as BaseModel[]);
-      const cs = getChecksum(rows, name);
-      const remoteCs =
-        remoteRows.filter((t) => t.attributes.name === name)[0]?.attributes
-          .checksum ?? 0;
-      if (cs !== remoteCs) {
-        console.log(remoteProjectId, name, cs, remoteCs);
-        console.log(
-          rows
-            .sort((i, j) => parseInt(i.id) - parseInt(j.id))
-            .map((r) => r.id)
-            .join(',')
-        );
-        await refreshTable(name, rows.length, remoteCs);
-      }
-    };
-
-    const getTableRows = (table: string) => {
-      const org = related(project, 'organization');
-
-      const mediafileRows = () =>
-        (
-          memory?.cache.query((q) =>
-            q.findRecords('mediafile').filter({
-              relation: 'plan',
-              record: { type: 'plan', id: plan.id },
-            })
-          ) as BaseModel[]
-        ).filter((x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships));
-
-      const mediareplacementRows = () =>
-        mediaReplacementsForPlans(memory, [plan.id]).filter(
-          (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
-        );
-
-      const discussionRows = () => {
-        const mediafiles = mediafileRows().map((m) => m.id);
-        return findRecords(memory, 'discussion').filter(
-          (d) =>
-            Boolean(d.relationships) &&
-            mediafiles.find((id) => id === related(d, 'mediafile')) !==
-              undefined
-        );
-      };
-      const groupRows = () =>
-        (
-          memory?.cache.query((q) =>
-            q.findRecords('group').filter({
-              relation: 'owner',
-              record: { type: 'organization', id: org },
-            })
-          ) as BaseModel[]
-        ).filter((x) => Boolean(x?.keys?.remoteId));
-
-      const sectionRows = () =>
-        (
-          memory?.cache.query((q) =>
-            q.findRecords('section').filter({
-              relation: 'plan',
-              record: { type: 'plan', id: plan.id },
-            })
-          ) as BaseModel[]
-        ).filter((x) => Boolean(x?.keys?.remoteId));
-
-      const passageRows = () => {
-        const sections = sectionRows().map((s) => s.id);
-        return findRecords(memory, 'passage').filter(
-          (p) =>
-            sections.find((id) => id === related(p, 'section')) !== undefined
-        );
-      };
-
-      const sectionResourceRows = () => {
-        const sections = sectionRows().map((s) => s.id);
-        return findRecords(memory, 'sectionresource').filter(
-          (sr) =>
-            sections.find((id) => id === related(sr, 'section')) !== undefined
-        );
-      };
-      const sharedResourceRows = () => {
-        const psgs = passageRows().map((p) => p.id);
-        return findRecords(memory, 'sharedresource').filter(
-          (sr) => psgs.find((id) => id === related(sr, 'passage')) !== undefined
-        );
-      };
-
-      const filterByOrg = <Table extends keyof RecordByType>(table: Table) =>
-        // The relation filter stays on the query. The table selects the model.
-        (memory?.cache.query((q) =>
-          q.findRecords(table).filter({
-            relation: 'organization',
-            record: { type: 'organization', id: org },
-          })
-        ) ?? []) as RecordByType[Table][];
-      const organizationmembershipRows = () =>
-        filterByOrg('organizationmembership');
-      const orgSchemeStepRows = () => {
-        const schemes = filterByOrg('organizationscheme');
-        return findRecords(memory, 'organizationschemestep').filter(
-          (ss) =>
-            schemes.find((id) => id === related(ss, 'organizationscheme')) !==
-            undefined
-        );
-      };
-      switch (table) {
-        case 'activitystate':
-        case 'artifacttype':
-        case 'bible':
-        case 'integration':
-        case 'passagetype':
-        case 'plantype':
-        case 'projecttype':
-        case 'role':
-        case 'workflowstep':
-          return (findRecords(memory, table) as BaseModel[]).filter(
-            (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
-          );
-        case 'artifactcategory':
-          const acs = findRecords(memory, 'artifactcategory').filter(
-            (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
-          );
-          return acs.filter(
-            (ac) =>
-              related(ac, 'organization') === org ||
-              related(ac, 'organization') === null
-          );
-        case 'comment':
-          const discussions = discussionRows().map((d) => d.id);
-          return findRecords(memory, 'comment').filter(
-            (c) =>
-              discussions.find((id) => id === related(c, 'discussion')) !==
-              undefined
-          );
-        case 'discussion':
-          return discussionRows();
-        case 'graphic':
-          return filterByOrg('graphic');
-        case 'groupmembership':
-          const groups = groupRows().map((g) => g.id);
-          return findRecords(memory, 'groupmembership').filter(
-            (gm) =>
-              groups.find((id) => id === related(gm, 'group')) !== undefined
-          );
-        case 'group':
-          return groupRows();
-        case 'intellectualproperty':
-        case 'invitation':
-          return filterByOrg(table);
-        case 'mediafile':
-          return mediafileRows();
-        case 'mediareplacement':
-          return mediareplacementRows();
-        case 'organization':
-          return [findRecord(memory, 'organization', org)];
-
-        case 'organizationbible':
-        case 'organizationmembership':
-        case 'organizationscheme':
-        case 'orgkeyterm':
-        case 'orgkeytermreference':
-        case 'orgkeytermtarget':
-        case 'orgworkflowstep':
-          return filterByOrg(table);
-
-        case 'organizationschemestep':
-          return orgSchemeStepRows();
-        case 'passage':
-          return passageRows();
-        case 'passagestatechange':
-          const passages = passageRows().map((p) => p.id);
-          return findRecords(memory, 'passagestatechange').filter(
-            (psc) =>
-              passages.find((id) => id === related(psc, 'passage')) !==
-              undefined
-          );
-        case 'plan':
-          return [plan];
-        case 'project':
-          return [project];
-        case 'projectintegration':
-          return memory?.cache.query((q) =>
-            q.findRecords('projectintegration').filter({
-              relation: 'project',
-              record: { type: 'project', id: project.id },
-            })
-          ) as BaseModel[];
-        case 'section':
-          return sectionRows();
-        case 'sectionresource':
-          return sectionResourceRows();
-        case 'sectionresourceuser':
-          const resources = sectionResourceRows().map((sr) => sr.id);
-          return findRecords(memory, 'sectionresourceuser').filter(
-            (sru) =>
-              resources.find((id) => id === related(sru, 'sectionresource')) !==
-              undefined
-          );
-        case 'sharedresource':
-          return sharedResourceRows();
-        case 'sharedresourcereference':
-          const sharedresources = sharedResourceRows().map((sr) => sr.id);
-          return findRecords(memory, 'sharedresourcereference').filter(
-            (srr) =>
-              sharedresources.find(
-                (id) => id === related(srr, 'sharedResource')
-              ) !== undefined
-          );
-        case 'user':
-          const uids = organizationmembershipRows().map(
-            (om) => related(om, 'user') as string
-          );
-          return findRecords(memory, 'user').filter(
-            (u) => uids.find((id) => id === u.id) !== undefined
-          );
-
-        default:
-          console.log('ADD THIS NEW TABLE', table);
-          return [];
-      }
-    };
-    const removeDups = (rows: BaseModel[]) => {
-      rows = rows.filter((r) => Boolean(r?.relationships));
-      const uniqueids = new Set(rows.map((mf) => mf.keys?.remoteId || '0'));
-      const unique = new Array<{ id: string; num: number }>();
-      uniqueids.forEach((id) =>
-        unique.push({
-          id,
-          num:
-            stringToDateNum(
-              rows.find((r) => r.keys?.remoteId === id)?.attributes
-                .dateUpdated ?? ''
-            ) ?? 0,
-        })
-      );
-      //if (unique.length < rows.length) console.log('DUPLICATES', rows);
-      return unique;
-    };
-    const refreshTable = async (
-      table: string,
-      numrows: number,
-      remoteCS: number
-    ) => {
-      const tryagain = async () => {
-        const rows = removeDups(getTableRows(table) as BaseModel[]);
-        const cs = getChecksum(rows, table);
-        if (cs !== remoteCS) {
-          //get the whole thing
-          await refreshTable(table, 0, remoteCS);
-        }
-      };
-
-      const now = DateTime.now().toMillis();
-      let since = now - 1000 * 60 * 60 * 24 * 365 * 4; //365*4 days
-      if (numrows > 500) {
-        //try to avoid bringing down the whole table
-        since = now - 1000 * 60 * 60 * 24 * 14; //14 days
-      }
-      const dtSince = DateTime.fromMillis(since).toISO() || '';
-      try {
-        await doForceTableChanges({
-          project: remoteProjectId,
-          table,
-          dtSince,
-          errorReporter,
-        });
-        if (numrows > 500) await tryagain(); //second time we call in with 0
-      } catch (err: any) {
-        logError(Severity.error, errorReporter, err.message);
-      }
-    };
-
-    const project = findRecord(memory, 'project', projectId) as ProjectD;
-    let plan: PlanD;
+    const project = findRecord(memory, 'project', projectId);
     const remoteProjectId = project?.keys?.remoteId ?? '';
-    if (token && !getGlobal('offline') && project?.keys?.remoteId) {
-      const tables = staticFiles
-        .concat(updateableFiles)
-        .sort((i, j) => (i.sort <= j.sort ? -1 : 1))
-        .map((f) => f.table);
-      const plans = memory?.cache.query((q) =>
+    if (!project || !remoteProjectId) return;
+
+    // Relation filter stays on the query. The table selects the model.
+    const plans =
+      (memory.cache.query((q) =>
         q.findRecords('plan').filter({
           relation: 'project',
           record: { type: 'project', id: projectId },
         })
-      ) as PlanD[];
-      plan = plans[0];
+      ) as PlanD[] | undefined) ?? [];
+    const plan = plans[0];
+    // Plan-scoped tables (mediafile, section, passage) have no owner without one.
+    if (!plan) return;
 
-      await remote.activated;
-      let checksums: VwChecksum[];
-      try {
-        checksums = (await remote.query((q) =>
-          q
-            .findRecords('vwchecksum')
-            .filter({ attribute: 'project-id', value: project.keys?.remoteId })
-        )) as VwChecksum[];
-      } catch {
-        return;
-      }
-      //we have to do these one by one because if mediafiles isn't right, discussions won't be right etc.
-      for (let ix = 0; ix < tables.length; ix++) {
-        await compareChecksum(checksums, tables[ix]);
-      }
+    const tables = [...staticFiles, ...updateableFiles]
+      .sort((a, b) => (a.sort <= b.sort ? -1 : 1))
+      .map((file) => file.table);
+
+    const tableRows = (table: string) =>
+      rowsForSanityTable({
+        memory,
+        project,
+        plan,
+        table,
+        onUnknownTable: (unknown) => {
+          const message = `sanity check has no row filter for ${unknown}`;
+          // A missing filter is a programming error. Developers should see it
+          // immediately; everyone else reports it and continues the check.
+          if (getGlobal('developer')) throw new Error(message);
+          logError(Severity.error, errorReporter, message);
+        },
+      });
+
+    await remote.activated;
+    let checksums: VwChecksum[];
+    try {
+      // query() is untyped; this filter reads vwchecksum rows for the project.
+      checksums = (await remote.query((q) =>
+        q
+          .findRecords('vwchecksum')
+          .filter({ attribute: 'project-id', value: project.keys?.remoteId })
+      )) as VwChecksum[];
+    } catch (err: unknown) {
+      // Skip this pass. The next sync interval can try again.
+      logError(Severity.error, errorReporter, reportedError(err));
+      return;
     }
+
+    const refreshTable = async (
+      table: string,
+      rowCount: number,
+      remoteChecksum: number
+    ) => {
+      const pull = async (count: number) => {
+        const since =
+          DateTime.fromMillis(
+            pullSinceMillis(count, DateTime.now().toMillis())
+          ).toISO() || '';
+        await pullTableSince({
+          token,
+          coordinator,
+          remoteProjectId,
+          table,
+          since,
+          errorReporter,
+          setLanguage,
+        });
+      };
+      try {
+        await pull(rowCount);
+        if (rowCount <= LARGE_TABLE_ROW_COUNT) return;
+        const after = dedupedChecksumRows(tableRows(table));
+        if (checksumOf(after) === remoteChecksum) return;
+        // Two weeks was not enough to match; pull the four-year window.
+        await pull(0);
+      } catch (err: unknown) {
+        logError(Severity.error, errorReporter, reportedError(err));
+      }
+    };
+
+    const refreshIfStale = (table: string) => {
+      const rows = dedupedChecksumRows(tableRows(table));
+      const local = checksumOf(rows);
+      const remoteChecksum =
+        checksums.find((row) => row.attributes.name === table)?.attributes
+          .checksum ?? 0;
+      if (local === remoteChecksum) return Promise.resolve();
+      return refreshTable(table, rows.length, remoteChecksum);
+    };
+    // Parents before children: a stale mediafile list makes discussion wrong.
+    await tables.reduce(
+      (pending, table) => pending.then(() => refreshIfStale(table)),
+      Promise.resolve()
+    );
   };
 };
