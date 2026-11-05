@@ -21,6 +21,8 @@ import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
+import { logError, Severity } from '../utils/logErrorService';
+import { convertToFormat, DEFAULT_COMPRESSED_MIME } from './convertToWebM';
 
 interface IProps {
   artifactId: string | null;
@@ -47,7 +49,13 @@ interface IProps {
    * (TT-7363 Copilot r3919030521).
    */
   beforeUpload?: () => Promise<void>;
+  /**
+   * Target save file type. Omit for normal compression, supply 'audio/wav'
+   * to skip compression, or supply another type to convert to that before saving.
+   */
+  mimeType?: string;
 }
+
 export const useMediaUpload = ({
   artifactId,
   passageId,
@@ -61,6 +69,7 @@ export const useMediaUpload = ({
   pendingUploadIdToClearOnSuccess,
   pendingRestore,
   beforeUpload,
+  mimeType,
 }: IProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -118,7 +127,8 @@ export const useMediaUpload = ({
   const itemComplete = async (
     n: number,
     success: boolean,
-    data?: any
+    data: any,
+    silent: boolean
   ): Promise<void> => {
     if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
@@ -144,11 +154,12 @@ export const useMediaUpload = ({
       dispatch(actions.uploadComplete() as any);
       const total = fileList.current?.length ?? 1;
       const ok = mediaIdRef.current ? 1 : 0;
-      showMessage(
-        t.uploadComplete
-          .replace('{0}', String(ok))
-          .replace('{1}', String(total))
-      );
+      if (!silent)
+        showMessage(
+          t.uploadComplete
+            .replace('{0}', String(ok))
+            .replace('{1}', String(total))
+        );
       try {
         await afterUploadCb(mediaIdRef.current);
       } catch {
@@ -172,12 +183,30 @@ export const useMediaUpload = ({
     await finishUpload();
   };
 
-  return (files: File[]): Promise<boolean> => {
+  const compressFile = async (file: File): Promise<File> => {
+    const type = mimeType ?? DEFAULT_COMPRESSED_MIME;
+    if (file.type === type) return file;
+    try {
+      const blob = await convertToFormat(file, mimeType);
+      const ext = type.split(/[/;]/)[1];
+      const name = file.name.replace(/\.[^.]*$/, '') + `.${ext}`;
+      return new File([blob], name, { type });
+    } catch (err) {
+      logError(Severity.info, reporter, err as Error);
+      return file;
+    }
+  };
+
+  return (files: File[], silent = false): Promise<boolean> => {
     if (!files.length) return Promise.resolve(false);
     return new Promise((resolve, reject) => {
       void (async () => {
         try {
           if (beforeUpload) await beforeUpload();
+          const filesToSave =
+            mimeType === 'audio/wav'
+              ? files
+              : await Promise.all(files.map(compressFile));
           const getPlanId = () =>
             planId
               ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
@@ -212,16 +241,16 @@ export const useMediaUpload = ({
               memory?.keyMap as RecordKeyMap
             ) || sourceMediaId;
 
-          uploadFiles(files);
-          fileList.current = files;
+          uploadFiles(filesToSave);
+          fileList.current = filesToSave;
 
           const mediafile = {
             planId: getPlanId(),
             versionNumber: 1,
-            originalFile: (files[0] as File).name,
+            originalFile: (filesToSave[0] as File).name,
             contentType: getContentType(
-              files[0]?.type,
-              (files[0] as File).name
+              filesToSave[0]?.type,
+              (filesToSave[0] as File).name
             ),
             artifactTypeId: getArtifactId(),
             passageId: getPassageId(),
@@ -245,14 +274,14 @@ export const useMediaUpload = ({
           };
           nextUpload({
             record: mediafile,
-            files,
+            files: filesToSave,
             n: 0,
             token: accessToken || '',
             offline: getGlobal('offline'),
             errorReporter: reporter,
             uploadType: UploadType.Media,
             cb: (n, success, data) => {
-              void itemComplete(n, success, data)
+              void itemComplete(n, success, data, silent)
                 .then(() => {
                   if (success) resolve(true);
                   else reject(new Error(t.uploadFailed));
@@ -265,10 +294,11 @@ export const useMediaUpload = ({
                 ? pendingRestore()
                 : pendingRestore,
             onTerminalFailure: (info) => {
-              showMessage(
-                formatUploadTerminalFailureMessage(t, info),
-                AlertSeverity.Warning
-              );
+              if (!silent)
+                showMessage(
+                  formatUploadTerminalFailureMessage(t, info),
+                  AlertSeverity.Warning
+                );
             },
           });
         } catch (err) {

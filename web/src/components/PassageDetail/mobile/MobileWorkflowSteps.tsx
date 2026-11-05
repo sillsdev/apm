@@ -58,11 +58,7 @@ const MobileWorkflowSteps = () => {
   const ts = useSelector(sharedSelector, shallowEqual);
   const { showMessage } = useSnackBar();
   const getWfLabel = useWfLabel();
-  const passageNavigate = usePassageNavigate(
-    () => {},
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {}, isNavigationBlocked);
   const { getOrgDefault } = useOrgDefaults();
   const isStepProgression =
     getOrgDefault(orgDefaultWorkflowProgression) === WorkflowProgression.Step;
