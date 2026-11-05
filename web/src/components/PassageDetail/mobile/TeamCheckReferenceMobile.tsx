@@ -1,11 +1,4 @@
-import {
-  useContext,
-  useEffect,
-  useState,
-  useRef,
-  useLayoutEffect,
-  useMemo,
-} from 'react';
+import { useContext, useEffect, useState, useMemo } from 'react';
 import { Grid, GridProps, styled } from '@mui/material';
 import SelectMyResource from '../Internalization/SelectMyResource';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
@@ -41,12 +34,7 @@ const MobileGrid = styled(Grid)<GridProps>(() => ({
   alignContent: 'center',
 }));
 
-interface IProps {
-  width?: number;
-}
-
-export function TeamCheckReferenceMobile(props: IProps) {
-  const { width = 0 } = props;
+export function TeamCheckReferenceMobile() {
   const ctx = useContext(PassageDetailContext);
 
   const {
@@ -74,7 +62,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
     [mediaId, rowData]
   );
   const forceRefresh = () => {};
-  const setupLocate = () => {};
+  const setupLocate = () => () => {};
   const setCurrentSegment = (_region: IRegion | undefined, index: number) => {
     setCurrentSegmentIndex(index);
   };
@@ -144,33 +132,12 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
   const tool = useStepTool(currentstep).tool;
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [playerWidth, setPlayerWidth] = useState(0);
-
-  useLayoutEffect(() => {
-    if (!containerRef.current) return;
-
-    const updateWidth = () => {
-      setPlayerWidth(containerRef.current!.offsetWidth);
-    };
-    let observer: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== 'undefined') {
-      updateWidth();
-      observer = new ResizeObserver(updateWidth);
-      observer?.observe(containerRef.current as Element);
-    }
-    return () => observer?.disconnect();
-  }, [containerRef]);
-
   return (
     <MobileGrid container direction="column">
       <MobileGrid>
-        <StyledGrid ref={containerRef} size={{ xs: 12 }}>
+        <StyledGrid size={{ xs: 12 }}>
           {tool !== ToolSlug.KeyTerm && (
-            <PassageDetailPlayer
-              width={Math.max(playerWidth, width)}
-              allowZoomAndSpeed={true}
-            />
+            <PassageDetailPlayer allowZoomAndSpeed={true} />
           )}
         </StyledGrid>
       </MobileGrid>
@@ -190,7 +157,6 @@ export function TeamCheckReferenceMobile(props: IProps) {
           )}
           {tool !== ToolSlug.KeyTerm && mediaId && (
             <PassageDetailPlayer
-              width={Math.round(Math.max(playerWidth, width))}
               allowZoomAndSpeed={false}
               showTranscriptionButton={false}
               playerState={{

@@ -20,7 +20,6 @@ interface ArtifactStatusProps {
   currentVersion: number;
   rowData: IRow[];
   segments: string;
-  width?: number;
   vernacularMediaId?: string;
   languageBcp47?: string;
 }
@@ -30,7 +29,6 @@ export default function ArtifactStatus({
   currentVersion,
   rowData,
   segments,
-  width,
   vernacularMediaId,
   languageBcp47,
 }: ArtifactStatusProps) {
@@ -96,7 +94,7 @@ export default function ArtifactStatus({
   ]);
 
   return isPhraseSegmentArtifact(recordType) ? (
-    <StyledBox width={width} sx={{ overflowX: 'auto' }}>
+    <StyledBox sx={{ overflowX: 'auto' }}>
       <Typography>
         {t.segmentsComplete
           .replace('{0}', currentVersion.toString())

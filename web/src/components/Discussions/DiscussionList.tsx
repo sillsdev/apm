@@ -47,21 +47,22 @@ import SortMenu, { ISortState } from './SortMenu';
 import { discussionListSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import CloseIcon from '@mui/icons-material/Close';
+import ForumIcon from '@mui/icons-material/Forum';
 import { LightTooltip } from '../../control/LightTooltip';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
-  backgroundColor: theme.palette.secondary.light,
-  marginBottom: theme.spacing(1),
+  backgroundColor: theme.palette.background.paper,
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
   overflow: 'auto',
 }));
 
-const Title = styled(Typography)<TypographyProps>(() => ({
+const Title = styled(Typography)<TypographyProps>(({ theme }) => ({
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
+  gap: theme.spacing(1),
 }));
 
 const actionButtonProps = { color: 'primary.light' } as SxProps;
@@ -71,10 +72,18 @@ export const NewCommentToolId = NewDiscussionToolId + 'comment';
 
 interface DiscussionListProps {
   onClose?: () => void;
+  /** Reports whether there are unsaved edits, so a container can refuse to close. */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Rendered between the header and the cards (the drawer's player). */
+  player?: React.ReactNode;
 }
 
-export function DiscussionList({ onClose }: DiscussionListProps) {
-  const { isMobile, isMobileWidth } = useMobile();
+export function DiscussionList({
+  onClose,
+  onDirtyChange,
+  player,
+}: DiscussionListProps) {
+  const { isMobile } = useMobile();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const users = useOrbitData<User[]>('user');
@@ -96,7 +105,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   const {
     currentstep,
     rowData,
-    discussionSize,
     passage,
     currentSegment,
     currentSegmentIndex,
@@ -122,22 +130,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return playerMediafile?.id ?? '';
   }, [playerMediafile]);
 
-  const rootWidthStyle = useMemo(
-    () =>
-      isMobileWidth
-        ? {
-            width: '100%',
-            maxWidth: '100%',
-            maxHeight: `${discussionSize.height - 120}px`,
-            boxSizing: 'border-box' as const,
-          }
-        : {
-            width: '100%',
-            maxHeight: `${discussionSize.height - 120}px`,
-            boxSizing: 'border-box' as const,
-          },
-    [discussionSize.height, isMobileWidth]
-  );
   const { userIsAdmin } = useRole();
   const defaultFilterState: IFilterState = {
     forYou: false,
@@ -167,6 +159,9 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   const discussionOrg = useDiscussionOrg();
   const anyChangedRef = useRef(false);
   const [anyChanged, setAnyChanged] = useState(false);
+  useEffect(() => {
+    onDirtyChange?.(anyChanged || adding);
+  }, [anyChanged, adding, onDirtyChange]);
   const enum WaitSave {
     add = 'add',
     collapse = 'collapse',
@@ -514,11 +509,17 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   return (
     <StyledPaper
       id="DiscussionListHeader"
+      elevation={0}
+      square
       sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
         width: '100%',
         maxWidth: '100%',
         minWidth: 0,
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       <>
@@ -538,6 +539,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             sx={{ minWidth: 0, flex: '1 1 auto', overflow: 'hidden', pr: 0.5 }}
           >
             <Title variant={isMobile ? 'subtitle1' : 'h6'} component="div">
+              <ForumIcon />
               {t.title}
             </Title>
             <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
@@ -601,7 +603,14 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             </LightTooltip>
           </Box>
         </Box>
-        <StyledPaper ref={formRef} id="DiscussionList" style={rootWidthStyle}>
+        {player}
+        <StyledPaper
+          ref={formRef}
+          id="DiscussionList"
+          elevation={0}
+          square
+          sx={{ flex: '1 1 auto', minHeight: 0, width: '100%' }}
+        >
           <Grid container>
             {displayDiscussions.map((i, j) => (
               <DiscussionCard

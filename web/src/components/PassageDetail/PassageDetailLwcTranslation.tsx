@@ -55,10 +55,6 @@ import { Button } from '../../control/Button';
 
 const toolId = 'LwcTranslationTool';
 
-interface IProps {
-  width: number;
-}
-
 function getSpeakerFromRecordings(
   rowData: IRow[],
   artifactTypeId: string
@@ -69,7 +65,7 @@ function getSpeakerFromRecordings(
   return row?.mediafile?.attributes?.performedBy ?? '';
 }
 
-export function PassageDetailLwcTranslation({ width }: IProps) {
+export function PassageDetailLwcTranslation() {
   const t: ILwcTranslationStrings = useSelector(
     lwcTranslationSelector,
     shallowEqual
@@ -622,7 +618,6 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
       )}
       {editStep && entryPositioned && (
         <LwcTranslationControls
-          width={width}
           phase={phase}
           speaker={speaker}
           onSpeakerChange={setSpeaker}

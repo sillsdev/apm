@@ -146,7 +146,10 @@ const StyledCard = styled(Card, {
         }
       : {
           margin: theme.spacing(1),
-          backgroundColor: alpha(theme.palette.primary.light, 0.4),
+          // The tint over secondary.light (the list's old background) keeps the
+          // card's white text readable now that the list itself is white.
+          backgroundColor: theme.palette.secondary.light,
+          backgroundImage: `linear-gradient(${alpha(theme.palette.primary.light, 0.4)}, ${alpha(theme.palette.primary.light, 0.4)})`,
           flexGrow: 1,
         }),
 }));
