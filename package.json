@@ -28,7 +28,9 @@
     "qasl": "node env-config/changeEnvLocal.cjs qa",
     "prods": "node env-config/changeEnv.cjs prod",
     "prodsl": "node env-config/changeEnvLocal.cjs prod",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:jest": "npm --prefix web test",
+    "test:all": "npm --prefix web test && npm --prefix web run cy:run-ct"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.30.0",
