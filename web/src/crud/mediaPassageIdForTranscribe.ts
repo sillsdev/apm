@@ -19,8 +19,6 @@ export function mediaPassageIdForTranscribe(
   return passage.id;
 }
 
-/** Media attached to the given passage. Generic so callers holding plain
- * MediaFile[] (e.g. TranscriberContext's planMediaRef) need no cast. */
 export function filterMediaForPassage(
   media: MediaFileD[],
   passageId: string
