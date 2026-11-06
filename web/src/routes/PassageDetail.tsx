@@ -37,6 +37,8 @@ import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldC
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
 import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
+import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
+import PassageDetailPlayer from '../components/PassageDetail/PassageDetailPlayer';
 
 /**
  * Fallback for steps mobile has no UI for yet. Reads its string here rather
@@ -158,6 +160,22 @@ const MobileStep = () => {
     <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Transcribe ? (
     <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
+  ) : tool === ToolSlug.Discuss ? (
+    <>
+      <PassageDetailPlayer
+        width={Math.max(0, paneWidth - 40)}
+        allowZoomAndSpeed={true}
+      />
+      <PassageDetailDiscuss
+        width={Math.max(0, paneWidth - 40)}
+        currentStep={currentstep}
+      />
+    </>
+  ) : tool === ToolSlug.Done ? (
+    <PassageDetailDiscuss
+      width={Math.max(0, paneWidth - 40)}
+      currentStep={currentstep}
+    />
   ) : (
     <DesktopOnlyStep />
   );

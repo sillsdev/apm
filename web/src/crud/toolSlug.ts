@@ -17,11 +17,12 @@ export enum ToolSlug {
   Done = 'done',
 }
 
-/** Steps whose main UI is still valid when there is no vernacular audio yet (recording, internalization/resources). */
+/** Steps whose main UI is still valid when there is no vernacular audio yet (recording, internalization/resources, done instructions). */
 export function toolAllowsEmptyVernacularAudio(tool: string): boolean {
   return (
     tool === ToolSlug.Record ||
     tool === ToolSlug.Resource ||
-    tool === ToolSlug.Prompt
+    tool === ToolSlug.Prompt ||
+    tool === ToolSlug.Done
   );
 }

@@ -63,12 +63,12 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
 }
 
 // Tools that show the passage chooser on the page background (no Paper).
-const chooserTools = [
+const chooserTools: string[] = [
   ToolSlug.Resource,
   ToolSlug.Paratext,
   ToolSlug.Export,
   ToolSlug.Done,
-] as string[];
+];
 
 // Tools whose step content renders inside the shared Paper alongside the
 // discussion panel.
