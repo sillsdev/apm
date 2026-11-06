@@ -62,6 +62,14 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   return null;
 }
 
+// Tools that show the passage chooser on the page background (no Paper).
+const chooserTools = [
+  ToolSlug.Resource,
+  ToolSlug.Paratext,
+  ToolSlug.Export,
+  ToolSlug.Done,
+] as string[];
+
 // Tools whose step content renders inside the shared Paper alongside the
 // discussion panel.
 const paperTools = [
@@ -184,6 +192,7 @@ const PassageDetailGrids = () => {
     0,
     paneWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
   );
+  const showsChooser = chooserTools.includes(tool ?? '');
   const showsStepPaper = paperTools.includes(tool ?? '');
   const clipsStepContent = clippedPaperTools.includes(tool ?? '');
   const showsStepPlayer =
@@ -257,22 +266,39 @@ const PassageDetailGrids = () => {
       }
       contentSx={{ maxWidth: '100%' }}
     >
-      {tool === ToolSlug.Resource && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', minWidth: 0 }}>
+      {showsChooser && (
+        <Box
+          sx={{
+            minWidth: 0,
+            ...(tool === ToolSlug.Resource
+              ? { display: 'flex', flexWrap: 'wrap' }
+              : {}),
+          }}
+        >
           <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-          <PassageDetailArtifacts />
+          {tool === ToolSlug.Resource && <PassageDetailArtifacts />}
+          {tool === ToolSlug.Paratext && <PassageDetailParatextIntegration />}
+          {tool === ToolSlug.Export && (
+            <TranscriptionTab
+              projectPlans={plans}
+              floatTop
+              step={currentstep}
+              orgSteps={orgWorkflowSteps}
+              sectionArr={sectionArr}
+            />
+          )}
+          {tool === ToolSlug.Done && (
+            <PassageDetailDiscuss
+              width={width - 24}
+              currentStep={currentstep}
+            />
+          )}
         </Box>
       )}
       {tool === ToolSlug.Prompt && (
         <Box sx={{ minWidth: 0, px: 2 }}>
           <PassageDetailPrompt width={fittedPaneWidth} />
         </Box>
-      )}
-      {tool === ToolSlug.Paratext && (
-        <Stack sx={{ minWidth: 0 }}>
-          <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-          <PassageDetailParatextIntegration />
-        </Stack>
       )}
       {showsStepPaper && (
         <Paper
@@ -352,20 +378,6 @@ const PassageDetailGrids = () => {
             showTopic={tool === ToolSlug.Community}
             segments={undefined}
           />
-        </Box>
-      )}
-      {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
-        <Box sx={{ minWidth: 0 }}>
-          <PassageDetailChooser width={width - 16} />
-          {tool === ToolSlug.Export && (
-            <TranscriptionTab
-              projectPlans={plans}
-              floatTop
-              step={currentstep}
-              orgSteps={orgWorkflowSteps}
-              sectionArr={sectionArr}
-            />
-          )}
         </Box>
       )}
     </PassageDetailLayout>

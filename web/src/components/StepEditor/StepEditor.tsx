@@ -50,6 +50,7 @@ const settingsTools = new Set([
   ToolSlug.Transcribe,
   ToolSlug.Paratext,
   ToolSlug.Discuss,
+  ToolSlug.Done,
   ToolSlug.Record,
   ToolSlug.PhraseBackTranslate,
 ]);
@@ -623,7 +624,10 @@ export const StepEditor = ({ process, org }: IProps) => {
       {toolSettingsRow > -1 && (
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Discuss}
+          isOpen={
+            (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Discuss ||
+            (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Done
+          }
           onOpen={setToolSettingsOpen}
           bp={BigDialogBp.sm}
         >

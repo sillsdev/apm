@@ -22,8 +22,7 @@ export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
       const json = JSON.parse(step?.attributes?.tool || '{}');
       setValue(JSON.parse(json?.settings || '{}')?.markDown ?? '');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgSteps]);
+  }, [orgSteps, currentStep]);
 
   return (
     <Box sx={{ maxWidth: width, whiteSpace: 'normal', overflow: 'auto' }}>
