@@ -1029,6 +1029,11 @@ if (requestedSchema > 11 && schemaDefinition.models) {
   };
   schemaDefinition.version = 12;
 }
+if (requestedSchema > 12) {
+  // Removed hasMany links are still stored on records and in __inverseRels__.
+  // Orbit replays those links as record operations, which the schema now rejects.
+  schemaDefinition.version = 13;
+}
 
 export const schema = new RecordSchema(schemaDefinition);
 
@@ -1197,6 +1202,7 @@ const fixVersion8 = async (backup: IndexedDBSource): Promise<void> => {
   console.log('done with upgrade to v8');
 };
 const dropUndefinedRelationships = (transaction: IDBTransaction) => {
+  console.log('dropping undefined relationships');
   const gone = (type: string, relationship: string) =>
     !schema.hasRelationship(type, relationship);
   for (const type of Object.keys(schema.models)) {
@@ -1290,7 +1296,7 @@ if (backup?.cache) {
         migrating--;
       });
     }
-    if (event.newVersion === 12) {
+    if (event.newVersion === 13 && event.oldVersion < 13) {
       const transaction = (event.target as IDBOpenDBRequest).transaction;
       if (transaction) dropUndefinedRelationships(transaction);
     }
