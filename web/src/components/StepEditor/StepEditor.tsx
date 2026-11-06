@@ -44,7 +44,15 @@ import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
 import { DiscussStepSettings } from './DiscussStepSettings';
 import { RecordStepSettings } from './RecordStepSettings';
-import { reviewTranscribeName } from './reviewTranscribeName';
+import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
+
+const settingsTools = new Set([
+  ToolSlug.Transcribe,
+  ToolSlug.Paratext,
+  ToolSlug.Discuss,
+  ToolSlug.Record,
+  ToolSlug.PhraseBackTranslate,
+]);
 
 export interface IStepRow {
   id: string;
@@ -102,13 +110,6 @@ export const StepEditor = ({ process, org }: IProps) => {
   const focusIndex = useRef<number>(0);
   const scrollNewStepIntoViewRef = useRef(false);
   const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
-  const settingsTools = new Set([
-    ToolSlug.Transcribe,
-    ToolSlug.Paratext,
-    ToolSlug.Discuss,
-    ToolSlug.Record,
-    ToolSlug.PhraseBackTranslate,
-  ]);
   const mxSeq = useMemo(() => {
     let max = 0;
     rows.forEach((r) => {
@@ -153,13 +154,13 @@ export const StepEditor = ({ process, org }: IProps) => {
     mangleTranscribe: boolean = true
   ) => {
     if (mangleTranscribe) {
-      name = reviewTranscribeName(
+      name = resolveReviewTranscribeName({
         name,
-        localizedTool(ToolSlug.Transcribe),
-        st.review,
-        rows,
-        index
-      );
+        transcribeLabel: localizedTool(ToolSlug.Transcribe),
+        reviewLabel: st.review,
+        steps: rows,
+        index,
+      });
     }
     const baseName = name;
     let count = 1;
@@ -486,7 +487,15 @@ export const StepEditor = ({ process, org }: IProps) => {
   }, [sortKey]);
 
   const prettySettings = (tool: string, settings: string) => {
-    const json = settings ? JSON.parse(settings) : undefined;
+    let json: { artifactTypeId?: string } | undefined;
+    if (settings) {
+      try {
+        json = JSON.parse(settings);
+      } catch {
+        // Malformed server/Orbit settings must not crash render.
+        json = undefined;
+      }
+    }
     const toolName = localizedTool(tool);
     switch (tool as ToolSlug) {
       case ToolSlug.Record:
