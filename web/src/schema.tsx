@@ -1196,6 +1196,41 @@ const fixVersion8 = async (backup: IndexedDBSource): Promise<void> => {
   }
   console.log('done with upgrade to v8');
 };
+const dropUndefinedRelationships = (transaction: IDBTransaction) => {
+  const gone = (type: string, relationship: string) =>
+    !schema.hasRelationship(type, relationship);
+  for (const type of Object.keys(schema.models)) {
+    if (!transaction.db.objectStoreNames.contains(type)) continue;
+    const request = transaction.objectStore(type).openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      const rels = cursor.value?.relationships;
+      if (rels) {
+        let changed = false;
+        for (const name of Object.keys(rels)) {
+          if (gone(type, name)) {
+            delete rels[name];
+            changed = true;
+          }
+        }
+        if (changed) cursor.update(cursor.value);
+      }
+      cursor.continue();
+    };
+  }
+  if (!transaction.db.objectStoreNames.contains('__inverseRels__')) return;
+  const request = transaction.objectStore('__inverseRels__').openCursor();
+  request.onsuccess = () => {
+    const cursor = request.result;
+    if (!cursor) return;
+    const row = cursor.value;
+    if (row.type && row.relationship && gone(row.type, row.relationship)) {
+      cursor.delete();
+    }
+    cursor.continue();
+  };
+};
 export const backup = window.indexedDB
   ? new IndexedDBSource({
       schema,
@@ -1254,6 +1289,10 @@ if (backup?.cache) {
       fixVersion8(backup).then(() => {
         migrating--;
       });
+    }
+    if (event.newVersion === 12) {
+      const transaction = (event.target as IDBOpenDBRequest).transaction;
+      if (transaction) dropUndefinedRelationships(transaction);
     }
     migrating--;
   };
