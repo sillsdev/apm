@@ -17,7 +17,6 @@ import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import { asrStatesEqual, type IAsrState } from '../../../business/asr/asrState';
-import { MediaFileD, OrganizationD, Project } from '@model/index';
 import {
   carefulTranscriptionSelector,
   lwcTranscriptionSelector,
@@ -30,6 +29,10 @@ import {
   ILwcTranscriptionStrings,
   ISharedStrings,
   ITranscriberStrings,
+  IWsAudioPlayerStrings,
+  MediaFileD,
+  OrganizationD,
+  Project,
 } from '@model/index';
 import { useGlobal } from '../../../context/useGlobal';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
@@ -46,15 +49,16 @@ import {
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
 import { hasTranscriptionTask } from '../../../utils/namedSegments';
+import { parseTranscribeStepSettings } from '../../../crud/transcribeStepSettings';
+import { isStepSpellCheckOn } from '../../../crud/stepSpellCheck';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import type { FontData } from '../../../crud/fontChoice';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
 import { useTranscriptionAutosave } from './useTranscriptionAutosave';
-import { parseStepSettings, useBoldClauseAsr } from './useBoldClauseAsr';
+import { useBoldClauseAsr } from './useBoldClauseAsr';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
-import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
@@ -103,7 +107,7 @@ export default function BoldClauseTranscriptionEditor({
   flushSaveRef,
   artifactTypeId,
   transcriptionConfig,
-}: Props) {
+}: Readonly<Props>) {
   const t = useTranscriptionStrings(transcriptionConfig.stringsLayout);
   const tr: ITranscriberStrings = useSelector(
     transcriberSelector,
@@ -132,6 +136,10 @@ export default function BoldClauseTranscriptionEditor({
   const checkOnline = useCheckOnline(tr.run);
   const { currentstep } = usePassageDetailContext();
   const { settings: stepSettings } = useStepTool(currentstep);
+  const parsedSettings = useMemo(
+    () => parseTranscribeStepSettings(stepSettings),
+    [stepSettings]
+  );
   const {
     asrSettings,
     asrIsoReady,
@@ -185,8 +193,8 @@ export default function BoldClauseTranscriptionEditor({
   // Resolve the transcription language and spell-check flag from the workflow
   // step settings (falling back to the project language for the font/lang),
   // then hand getFontData a synthetic project record so the textarea gets the
-  // right lang/font and spellCheck. Spell check is driven solely by the step's
-  // `spellCheck` flag: on when the step enables it, off otherwise (TT-7518).
+  // right lang/font and spellCheck. Spell check follows the step's `spellCheck`
+  // flag, or the artifact default when the step has none (as Transcriber does).
   // getFontData always returns spellCheck:false, so the step value overrides it.
   useEffect(() => {
     if (!project) return;
@@ -195,14 +203,13 @@ export default function BoldClauseTranscriptionEditor({
     if (!projRec) return;
     let cancelled = false;
 
-    const lgSettings = parseStepSettings(stepSettings);
-    const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
+    const { bcp47: stepLang } = parseStepLanguageField(parsedSettings.language);
     const hasStepLanguage = isLangSet(stepLang);
 
     let langTag = hasStepLanguage ? stepLang : undefined;
-    let defaultFont = lgSettings?.font;
-    let rtl = lgSettings?.rtl ?? false;
-    let defaultFontSize = lgSettings?.fontSize;
+    let defaultFont = parsedSettings.font;
+    let rtl = parsedSettings.rtl ?? false;
+    let defaultFontSize = parsedSettings.fontSize;
     if (!hasStepLanguage) {
       langTag = projRec.attributes?.language ?? langTag;
       defaultFont = defaultFont ?? projRec.attributes?.defaultFont ?? undefined;
@@ -211,7 +218,11 @@ export default function BoldClauseTranscriptionEditor({
         defaultFontSize ?? projRec.attributes?.defaultFontSize ?? undefined;
     }
 
-    const spellCheck = lgSettings?.spellCheck === true;
+    const spellCheck = isStepSpellCheckOn(
+      parsedSettings,
+      transcriptionConfig.defaultArtifactSlug,
+      stepLang
+    );
 
     const rec = {
       attributes: { language: langTag, defaultFont, defaultFontSize, rtl },
@@ -222,7 +233,13 @@ export default function BoldClauseTranscriptionEditor({
     return () => {
       cancelled = true;
     };
-  }, [project, memory, artifactTypeId, stepSettings]);
+  }, [
+    project,
+    memory,
+    artifactTypeId,
+    parsedSettings,
+    transcriptionConfig.defaultArtifactSlug,
+  ]);
 
   // Cap growth so long transcriptions scroll inside the field (TT-7516),
   // matching Transcriber's fixed-height + overflow pattern.

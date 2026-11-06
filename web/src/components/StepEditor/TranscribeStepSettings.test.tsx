@@ -7,8 +7,8 @@ const mockSetTeamLanguage = jest.fn();
 jest.mock('../../crud', () => ({
   ArtifactTypeSlug: jest.requireActual('../../crud/artifactTypeSlug')
     .ArtifactTypeSlug,
-  defaultSpellCheckForArtifact: () => false,
-  resolveStepSpellCheck: () => false,
+  isSpellCheckOnByDefault: () => false,
+  isStepSpellCheckOn: () => false,
   // An empty artifactTypeId is the Vernacular step.
   useArtifactType: () => ({
     slugFromId: (id: string | null) => id || 'vernacular',
@@ -111,6 +111,10 @@ jest.mock('../../context/useGlobal', () => ({
 }));
 
 jest.mock('../../../api-variable', () => ({ isElectron: false }));
+jest.mock('../../auth/bugsnagClient', () => ({
+  __esModule: true,
+  default: {},
+}));
 
 // The utils barrel loads modules that need app config; only these two are used.
 jest.mock('../../utils', () => ({
@@ -129,6 +133,7 @@ describe('TranscribeStepSettings', () => {
         org="org-1"
         isOpen
         toolSettings='{"artifactTypeId":""}'
+        stepSeq={1}
         onChange={jest.fn()}
       />
     );

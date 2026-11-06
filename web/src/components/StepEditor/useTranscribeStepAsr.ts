@@ -3,7 +3,7 @@ import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import type { ILanguage } from '../../control/Language';
 import { initLang } from '../../control/initLang';
 import { useGlobal } from '../../context/useGlobal';
-import { JSONParse } from '../../utils/jsonParse';
+import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
 import { isLangSet } from '../../utils/langTag';
 import { explicitAsrMethod } from '../../business/asr/asrMethod';
 import { isoFromBcp47 } from '../../business/asr/asrLanguages';
@@ -21,7 +21,6 @@ import {
   stepAsrFromSettings,
   stepSettingsFromAsrState,
   teamVernacularAsr,
-  type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
 import type { IAsrState } from '../../business/asr/asrState';
 import { useSnackBar } from '../../hoc/useSnackBar';
@@ -62,8 +61,7 @@ export function useTranscribeStepAsr({
   const usesTeamAsr = artifactUsesOrgVernacularLanguage(
     currentSlug as ArtifactTypeSlug
   );
-  const settings = (JSONParse(toolSettings || '{}') ??
-    {}) as ITranscribeStepSettings;
+  const settings = parseTranscribeStepSettings(toolSettings);
   const asr: IAsrState = usesTeamAsr
     ? (teamVernacularAsr(getOrgDefault, org, settings) ??
       stepAsrFromSettings({}))

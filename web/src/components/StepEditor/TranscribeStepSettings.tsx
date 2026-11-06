@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArtifactTypeSlug,
-  defaultSpellCheckForArtifact,
-  resolveStepSpellCheck,
+  isSpellCheckOnByDefault,
+  isStepSpellCheckOn,
   useArtifactType,
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
 import { initLang } from '../../control/initLang';
 import { useGlobal } from '../../context/useGlobal';
-import { JSONParse, isLangSet } from '../../utils';
+import { isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
 import { MainAPI } from '@model/main-api';
 import {
@@ -18,7 +18,7 @@ import {
   FormControlLabel,
   FormLabel,
 } from '@mui/material';
-import { vProjectSelector } from '../../selector';
+import { vProjectSelector, transcriberSelector } from '../../selector';
 import { ITranscriberStrings, IVProjectStrings } from '../../model';
 
 const ipc = window?.api as MainAPI | undefined;
@@ -29,7 +29,6 @@ import {
   IAsrLanguageSuggestion,
 } from '../../business/asr/useRecommendAsrLanguage';
 import { shallowEqual, useSelector } from 'react-redux';
-import { transcriberSelector } from '../../selector';
 import { orgDefaultLangProps, useOrgDefaults } from '../../crud/useOrgDefaults';
 import {
   artifactUsesOrgVernacularLanguage,
@@ -40,6 +39,10 @@ import {
 } from '../../crud/transcribeStepAsrSettings';
 import { useTranscribeStepAsr } from './useTranscribeStepAsr';
 import { useSetTeamLanguage } from '../../crud/useSetTeamLanguage';
+import {
+  parseTranscribeStepSettings,
+  reportReplacedStepSettings,
+} from '../../crud/transcribeStepSettings';
 
 interface LangState {
   artId: string;
@@ -58,6 +61,8 @@ const initLangState = {
 
 interface IProps {
   org: string;
+  orgRemoteId?: string;
+  stepSeq: number;
   isOpen: boolean;
   toolSettings: string;
   onChange: (toolSettings: string) => void;
@@ -65,6 +70,8 @@ interface IProps {
 
 export const TranscribeStepSettings = ({
   org,
+  orgRemoteId,
+  stepSeq,
   isOpen,
   toolSettings,
   onChange,
@@ -133,21 +140,26 @@ export const TranscribeStepSettings = ({
     return 'und';
   }, [currentSlug, vernacularLanguage?.bcp47, lgState.bcp47, hasLang]);
 
+  const saveSettings = useCallback(
+    (settingsJson: string) => {
+      reportReplacedStepSettings(toolSettings, orgRemoteId, stepSeq);
+      onChange(settingsJson);
+    },
+    [toolSettings, orgRemoteId, stepSeq, onChange]
+  );
+
   const { asr, setAsr, showSisterLanguage } = useTranscribeStepAsr({
     org,
     toolSettings,
-    onChange,
+    onChange: saveSettings,
     primaryBcp47,
     currentSlug,
   });
 
   const handleSelect = (artifactTypeId: string | null) => {
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
-    const [, bcp47] = (json?.language as string | undefined)?.split('|') ?? [
-      '',
-      'und',
-    ];
-    const spellCheck = defaultSpellCheckForArtifact(
+    const settings = parseTranscribeStepSettings(toolSettings);
+    const { bcp47 } = parseStepLanguageField(settings.language);
+    const spellCheck = isSpellCheckOnByDefault(
       slugFromId(artifactTypeId),
       isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
@@ -158,14 +170,14 @@ export const TranscribeStepSettings = ({
       spellCheck,
       changed: false,
     }));
-    const { spellCheck: _omit, ...rest } = json;
-    onChange(JSON.stringify({ ...rest, artifactTypeId }));
+    const { spellCheck: _omit, ...rest } = settings;
+    saveSettings(JSON.stringify({ ...rest, artifactTypeId }));
   };
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
     setLgState((state) => ({ ...state, spellCheck, changed: true }));
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
-    onChange(JSON.stringify({ ...json, spellCheck }));
+    const settings = parseTranscribeStepSettings(toolSettings);
+    saveSettings(JSON.stringify({ ...settings, spellCheck }));
   };
 
   const handleLanguageChange = (val: ILanguage) => {
@@ -175,10 +187,10 @@ export const TranscribeStepSettings = ({
       lgState?.spellCheck !== val?.spellCheck
     ) {
       setLgState((state) => ({ ...state, ...val, changed: true }));
-      const json = JSONParse(toolSettings) as Record<string, unknown>;
-      onChange(
+      const settings = parseTranscribeStepSettings(toolSettings);
+      saveSettings(
         JSON.stringify({
-          ...json,
+          ...settings,
           language: formatStepLanguageField(val),
           font: val.font,
           rtl: val.rtl,
@@ -201,23 +213,24 @@ export const TranscribeStepSettings = ({
 
   useEffect(() => {
     if (!toolSettings) return;
-    const json = JSON.parse(toolSettings);
-    setInitialValue(json.artifactTypeId);
-    const { languageName, bcp47 } = parseStepLanguageField(json?.language);
-    const slug = slugFromId(json.artifactTypeId);
-    const spellCheck = resolveStepSpellCheck(
-      json,
+    const settings = parseTranscribeStepSettings(toolSettings);
+    const artId = settings.artifactTypeId ?? null;
+    setInitialValue(artId);
+    const { languageName, bcp47 } = parseStepLanguageField(settings.language);
+    const slug = slugFromId(artId);
+    const spellCheck = isStepSpellCheckOn(
+      settings,
       slug,
       isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
     );
     setLgState((state) => ({
       ...state,
-      artId: json.artifactTypeId,
+      artId: artId ?? '',
       languageName,
       bcp47,
-      font: json.font,
-      rtl: json.rtl,
+      font: settings.font ?? '',
+      rtl: settings.rtl ?? false,
       spellCheck,
       changed: false,
     }));
@@ -265,10 +278,10 @@ export const TranscribeStepSettings = ({
   const readCachedRecommendations = (
     lang: string
   ): IAsrLanguageSuggestion[] | undefined => {
-    const json = JSONParse(toolSettings) as Record<string, string>;
-    if (!json?.sisterRecommendations) return undefined;
+    const settings = parseTranscribeStepSettings(toolSettings);
+    if (typeof settings.sisterRecommendations !== 'string') return undefined;
     try {
-      const cached = JSON.parse(json.sisterRecommendations) as {
+      const cached = JSON.parse(settings.sisterRecommendations) as {
         forLanguage?: string;
         suggestions?: IAsrLanguageSuggestion[];
       };
@@ -284,7 +297,8 @@ export const TranscribeStepSettings = ({
     lang: string,
     found: IAsrLanguageSuggestion[]
   ) => {
-    const json = JSONParse(toolSettingsRef.current) as Record<string, string>;
+    const settings = parseTranscribeStepSettings(toolSettingsRef.current);
+    reportReplacedStepSettings(toolSettingsRef.current, orgRemoteId, stepSeq);
     const lean = found.map((s) => ({
       languageName: s.languageName,
       iso: s.iso,
@@ -293,7 +307,7 @@ export const TranscribeStepSettings = ({
     }));
     onChange(
       JSON.stringify({
-        ...json,
+        ...settings,
         sisterRecommendations: JSON.stringify({
           forLanguage: lang,
           suggestions: lean,

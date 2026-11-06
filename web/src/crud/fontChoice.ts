@@ -4,10 +4,12 @@ import Memory from '@orbit/memory';
 import { findRecord } from './tryFindRecord';
 import { LocalKey } from '../utils';
 import { parseStepLanguageField } from './transcribeStepAsrSettings';
+import { isStepSpellCheckOn } from './stepSpellCheck';
 import {
-  resolveStepSpellCheck,
-  TranscribeStepSettingsJson,
-} from './stepSpellCheck';
+  parseStepTool,
+  parseTranscribeStepSettings,
+  type TranscribeStepSettings,
+} from './transcribeStepSettings';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 
 export interface IFontConfig {
@@ -63,7 +65,7 @@ export const getFontData = async (r: Project, artifactId?: string | null) => {
 
   const langTag = r?.attributes?.language;
   const fontFamily = r?.attributes?.defaultFont
-    ? r.attributes.defaultFont.split(',')[0].replace(/ /g, '')
+    ? r.attributes.defaultFont.split(',')[0].replaceAll(' ', '')
     : 'CharisSIL';
   const fontSize =
     lastFontData?.fontSize ?? r?.attributes?.defaultFontSize ?? 'large';
@@ -97,17 +99,17 @@ export const getArtTypeFontData = (
     'artifacttype',
     exportId
   ) as ArtifactTypeD;
-  let stepSettings: TranscribeStepSettingsJson = {
+  let stepSettings: TranscribeStepSettings = {
     language: 'English|en',
     font: 'CharisSIL',
   };
 
   orgSteps?.find((s) => {
-    const toolData = JSON.parse(s.attributes?.tool || '{}');
-    if (toolData?.settings) {
-      const settings = JSON.parse(toolData.settings);
+    const toolData = parseStepTool(s.attributes?.tool);
+    if (toolData.settings) {
+      const settings = parseTranscribeStepSettings(toolData.settings);
       if (
-        settings?.artifactTypeId ===
+        settings.artifactTypeId ===
         (artifactType?.keys?.remoteId ?? artifactType?.id)
       ) {
         stepSettings = settings;
@@ -116,15 +118,15 @@ export const getArtTypeFontData = (
     }
     return false;
   });
-  const { bcp47: langTag } = parseStepLanguageField(stepSettings?.language);
+  const { bcp47: langTag } = parseStepLanguageField(stepSettings.language);
   const fontDir = getRtl(langTag) ? 'rtl' : 'ltr';
-  const fontFamily = stepSettings?.font || 'CharisSIL';
+  const fontFamily = stepSettings.font || 'CharisSIL';
   const url = getFontUrl(fontFamily);
 
   const lastFontData = loadFontData(exportId);
   const artSlug = (artifactType?.attributes?.typename ??
     ArtifactTypeSlug.Vernacular) as ArtifactTypeSlug;
-  const spellCheck = resolveStepSpellCheck(stepSettings, artSlug, langTag);
+  const spellCheck = isStepSpellCheckOn(stepSettings, artSlug, langTag);
 
   const data: FontData = {
     langTag,

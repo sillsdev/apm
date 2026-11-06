@@ -1,28 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { IAsrState } from '../../../business/asr/asrState';
 import { useBoldClauseTranscriptionAsrSettings } from '../../../crud/useBoldClauseTranscriptionAsrSettings';
-import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
+import { parseTranscribeStepSettings } from '../../../crud/transcribeStepSettings';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import { isLangSet } from '../../../utils/langTag';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
-
-export function parseStepSettings(
-  settings: unknown
-): TranscribeStepSettingsJson {
-  if (!settings) return {};
-  if (typeof settings === 'string') {
-    try {
-      return JSON.parse(settings) as TranscribeStepSettingsJson;
-    } catch {
-      return {};
-    }
-  }
-  if (typeof settings === 'object') {
-    return settings as TranscribeStepSettingsJson;
-  }
-  return {};
-}
 
 interface UseBoldClauseAsrOptions {
   transcriptionConfig: BoldClauseTranscriptionConfig;
@@ -92,7 +75,7 @@ export function useBoldClauseAsr({
   );
 
   const asrTip = useMemo(() => {
-    const step = parseStepSettings(stepSettings);
+    const step = parseTranscribeStepSettings(stepSettings);
     const primary = parseStepLanguageField(step.language);
     const sister = parseStepLanguageField(step.sisterlanguage);
     const asrBcp = asrSettings?.language?.bcp47;
