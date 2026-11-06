@@ -3,6 +3,7 @@ import { related } from '.';
 import { ProjectD, ProjectType, VProject } from '../model';
 import { ReplaceRelatedRecord } from '../model/baseModel';
 import { logError, Severity } from '../utils';
+import { findRecords } from './tryFindRecord';
 
 export const useProjectType = () => {
   const [memory] = useGlobal('memory');
@@ -46,9 +47,7 @@ export const useProjectType = () => {
         errorReporter,
         `missing project type=project${proj?.attributes?.name}${proj?.keys?.remoteId}`
       );
-      let pts = memory?.cache.query((q) =>
-        q.findRecords('projecttype')
-      ) as ProjectType[];
+      let pts = findRecords(memory, 'projecttype');
       const online = Boolean(proj?.keys?.remoteId);
       pts = pts.filter(
         (p) =>

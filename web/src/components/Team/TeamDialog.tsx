@@ -16,7 +16,6 @@ import {
   DialogMode,
   ICardsStrings,
   OptionType,
-  WorkflowStep,
   BibleD,
   ProjectD,
 } from '../../model';
@@ -56,6 +55,7 @@ import { useLocation } from 'react-router-dom';
 import { isElectron } from '../../../api-variable';
 import BurritoLogo from '../../control/BurritoLogo';
 import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
+import { findRecords } from '../../crud/tryFindRecord';
 
 interface IFeatures {
   [key: string]: any;
@@ -383,9 +383,7 @@ export function TeamDialog(props: IProps) {
     } else reset();
 
     if (isOpen && mode === DialogMode.add && processOptions.length === 0) {
-      const opts = memory?.cache.query((q) =>
-        q.findRecords('workflowstep')
-      ) as WorkflowStep[];
+      const opts = findRecords(memory, 'workflowstep');
       const newProcess = opts.reduce((prev, cur) => {
         return prev.indexOf(cur.attributes.process) !== -1
           ? prev

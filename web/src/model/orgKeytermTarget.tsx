@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 export interface OrgKeytermTarget extends BaseModel {
   attributes: {
     term: string;
@@ -18,6 +18,6 @@ export interface OrgKeytermTarget extends BaseModel {
   };
 }
 
-export type OrgKeytermTargetD = OrgKeytermTarget & InitializedRecord;
+export type OrgKeytermTargetD = Loaded<OrgKeytermTarget>;
 
 export default OrgKeytermTarget;

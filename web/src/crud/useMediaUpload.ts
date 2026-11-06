@@ -21,6 +21,7 @@ import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
+import { findRecords } from './tryFindRecord';
 
 interface IProps {
   artifactId: string | null;
@@ -96,9 +97,7 @@ export const useMediaUpload = ({
     let num = 1;
     const psgId = passageId || '';
     if (psgId && !artifactId) {
-      const mediaFiles = (
-        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
-      )
+      const mediaFiles = findRecords(memory, 'mediafile')
         .filter(
           (m) =>
             related(m, 'passage') === psgId &&

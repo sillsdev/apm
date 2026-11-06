@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export const BookSeq = -4;
 export const AltBkSeq = -3;
@@ -30,6 +30,6 @@ export interface Section extends BaseModel {
   };
 }
 
-export type SectionD = Section & InitializedRecord;
+export type SectionD = Loaded<Section>;
 
 export default Section;

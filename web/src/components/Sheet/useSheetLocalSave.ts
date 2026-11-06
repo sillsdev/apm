@@ -128,11 +128,17 @@ export const useWfLocalSave = (props: IProps) => {
             const t = new RecordTransformBuilder();
             const ops: RecordOperation[] = [
               ...AddRecord(t, newRec, user, memory),
-              ...ReplaceRelatedRecord(t, newRec, 'plan', 'plan', plan),
+              ...ReplaceRelatedRecord<SectionD>(
+                t,
+                newRec,
+                'plan',
+                'plan',
+                plan
+              ),
             ];
             if (item?.titleMediaId?.id)
               ops.push(
-                ...ReplaceRelatedRecord(
+                ...ReplaceRelatedRecord<SectionD>(
                   t,
                   newRec,
                   'titleMediafile',

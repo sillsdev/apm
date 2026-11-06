@@ -15,6 +15,7 @@ jest.mock('.', () => ({
 import MemorySource from '@orbit/memory';
 import { schema } from '../schema';
 import { RemoveUserFromOrg } from './user';
+import { findRecords } from './tryFindRecord';
 
 async function seed(memory: MemorySource, invitationAttributes?: object) {
   await memory.update((t) => [
@@ -124,9 +125,7 @@ describe('RemoveUserFromOrg self-delete', () => {
     const memory = new MemorySource({ schema });
     await seed(memory, { email: 'me@example.com' });
     await removeMe(memory);
-    const memberships = memory.cache.query((q) =>
-      q.findRecords('organizationmembership')
-    ) as { id: string }[];
+    const memberships = findRecords(memory, 'organizationmembership');
     expect(memberships.map((m) => m.id)).toEqual(['om-admin']);
   });
 
@@ -162,11 +161,7 @@ describe('RemoveUserFromOrg self-delete', () => {
       .spyOn(memory, 'update')
       .mockRejectedValueOnce(new Error('update failed'));
     const membershipIds = () =>
-      (
-        memory.cache.query((q) => q.findRecords('organizationmembership')) as {
-          id: string;
-        }[]
-      )
+      findRecords(memory, 'organizationmembership')
         .map((m) => m.id)
         .sort();
     try {
@@ -247,9 +242,7 @@ describe('RemoveUserFromOrg self-delete', () => {
     const memory = new MemorySource({ schema });
     await seed(memory);
     await removeMe(memory);
-    const memberships = memory.cache.query((q) =>
-      q.findRecords('organizationmembership')
-    ) as { id: string }[];
+    const memberships = findRecords(memory, 'organizationmembership');
     expect(memberships.map((m) => m.id)).toEqual(['om-admin']);
   });
 });

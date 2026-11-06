@@ -14,7 +14,7 @@ import {
 import Memory from '@orbit/memory';
 import { related } from './related';
 import { VernacularTag } from './useArtifactType';
-import { findRecord } from './tryFindRecord';
+import { findRecord, findRecords } from './tryFindRecord';
 import { getMediaInPlans } from './getMediaInPlans';
 import { getStepComplete } from './getStepComplete';
 import { afterStep } from './getNextStep';
@@ -266,9 +266,7 @@ export const mediaArtifacts = ({
   orgWorkflowSteps,
 }: IExportArtifacts) => {
   const plans = (related(projRec, 'plans') as PlanD[])?.map((p) => p.id);
-  const media = memory?.cache.query((q) =>
-    q.findRecords('mediafile')
-  ) as MediaFileD[];
+  const media = findRecords(memory, 'mediafile');
   let planMedia: MediaFileD[] | undefined = undefined;
   if (plans && plans.length > 0) {
     planMedia = getMediaInPlans(

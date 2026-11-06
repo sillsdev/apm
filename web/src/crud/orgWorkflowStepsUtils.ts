@@ -1,6 +1,7 @@
 import { OrgWorkflowStepD, WorkflowStepD } from '../model';
 import { related } from './related';
 import Memory from '@orbit/memory';
+import { findRecords } from './tryFindRecord';
 
 export const filterAndSortOrgWorkflowSteps = (
   orgworkflowsteps: OrgWorkflowStepD[],
@@ -48,8 +49,6 @@ export const readWorkflowStepTemplates = (
   process: string,
   offlineOnly: boolean
 ): WorkflowStepD[] => {
-  const steps = memory.cache.query((q) =>
-    q.findRecords('workflowstep')
-  ) as WorkflowStepD[];
+  const steps = findRecords(memory, 'workflowstep');
   return filterWorkflowStepTemplates(steps, process, offlineOnly);
 };

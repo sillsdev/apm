@@ -38,9 +38,9 @@ import {
   isRetryableError,
 } from '../utils/httpError';
 import { ReplaceRelatedRecord } from '../model/baseModel';
-import PassageType from '../model/passageType';
 import { withNetworkRetry } from '../utils/networkRetry';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
+import { findRecords } from './tryFindRecord';
 
 const saveOfflineProject = async (
   project: ProjectD,
@@ -194,7 +194,8 @@ export async function insertData(
           oparray.push(
             ...ReplaceRelatedRecord(
               tb,
-              rec,
+              // The name comes from the imported file, so pass an identity.
+              { type: rec.type, id: rec.id },
               rel,
               (item.relationships[rel].data as RecordIdentity)?.type,
               (item.relationships[rel].data as RecordIdentity).id
@@ -336,9 +337,10 @@ async function processData(
 async function cleanUpMemberships(memory: Memory, backup: IndexedDBSource) {
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
-  const orgmems: OrganizationMembershipD[] = memory.cache.query((q) =>
-    q.findRecords('organizationmembership')
-  ) as any;
+  const orgmems: OrganizationMembershipD[] = findRecords(
+    memory,
+    'organizationmembership'
+  );
   const badom = orgmems.filter(
     (om) => !om.attributes || !om.relationships?.user?.data
   );
@@ -347,9 +349,7 @@ async function cleanUpMemberships(memory: Memory, backup: IndexedDBSource) {
       t.removeRecord({ type: 'organizationmembership', id: i.id }).toOperation()
     );
   });
-  const grpmems: GroupMembershipD[] = memory.cache.query((q) =>
-    q.findRecords('groupmembership')
-  ) as any;
+  const grpmems: GroupMembershipD[] = findRecords(memory, 'groupmembership');
   const badgm = grpmems.filter(
     (om) => !om.attributes || !om.relationships?.user?.data
   );
@@ -536,11 +536,9 @@ export async function LoadProjectData(
         const x = JSON.parse(r.attributes.json);
         tables.push(...(x.data as ResourceDocument[]));
         //checkIt();
-        const len = (
-          memory.cache.query((q) =>
-            q.findRecords('passagetype')
-          ) as PassageType[]
-        ).filter((p) => Boolean(p?.keys?.remoteId)).length;
+        const len = findRecords(memory, 'passagetype').filter((p) =>
+          Boolean(p?.keys?.remoteId)
+        ).length;
         if (len > 5) console.log('projdata passagetype ' + len.toString());
 
         if (start === 0) {

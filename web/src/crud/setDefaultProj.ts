@@ -3,15 +3,14 @@ import { Project } from '../model';
 import { related } from './related';
 import { remoteIdGuid } from '.';
 import { RecordKeyMap } from '@orbit/records';
+import { findRecords } from './tryFindRecord';
 
 export const setDefaultProj = async (
   orgId: string,
   memory: Memory,
   cb: (pId: string) => void
 ) => {
-  let projs: Project[] | null = memory.cache.query((q) =>
-    q.findRecords('project')
-  ) as any;
+  let projs: Project[] | null = findRecords(memory, 'project');
   projs =
     projs &&
     projs

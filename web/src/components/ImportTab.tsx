@@ -99,6 +99,7 @@ import FilterContent from './FilterContent';
 import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
 import { readItfEmbeddedProject } from '../utils/readItfEmbeddedProject';
 import { importMountAction } from './shouldStartItfSyncUpload';
+import { findRecords } from '../crud/tryFindRecord';
 
 const ipc = window?.api as MainAPI;
 
@@ -499,8 +500,7 @@ export function ImportTab(props: IProps) {
           return false;
         }
 
-        const projects = memory.cache.query((q) => q.findRecords('project')) as
-          Project[] | undefined;
+        const projects = findRecords(memory, 'project');
 
         const embeddedGuid =
           remoteIdGuid('project', embedded.id, memory.keyMap as RecordKeyMap) ||

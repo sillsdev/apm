@@ -1,7 +1,8 @@
 import { useGlobal } from '../context/useGlobal';
-import { Passage, ActivityStates, ISharedStrings, MediaFileD } from '../model';
+import { Passage, ActivityStates, ISharedStrings } from '../model';
 import { remoteIdGuid, saveNewSection, AddFlatPassage } from '.';
 import { RecordKeyMap } from '@orbit/records';
+import { findRecords } from './tryFindRecord';
 
 export const useFlatAdd = (ts: ISharedStrings) => {
   const [memory] = useGlobal('memory');
@@ -13,9 +14,7 @@ export const useFlatAdd = (ts: ISharedStrings) => {
     book: string | undefined,
     setComplete?: (amt: number) => void
   ) => {
-    const mediaRecs = memory.cache.query((q) =>
-      q.findRecords('mediafile')
-    ) as MediaFileD[];
+    const mediaRecs = findRecords(memory, 'mediafile');
     const total = mediaRemoteIds.length;
     for (let seq = 0; seq < total; seq++) {
       if (setComplete) setComplete(Math.floor((100.0 * seq) / total));

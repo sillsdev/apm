@@ -1,9 +1,5 @@
-import {
-  RecordRelationship,
-  RecordHasManyRelationship,
-  InitializedRecord,
-} from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Passage extends BaseModel {
   attributes: {
@@ -26,14 +22,12 @@ export interface Passage extends BaseModel {
   };
   relationships?: {
     section: RecordRelationship;
-    users: RecordHasManyRelationship;
-    media: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
     sharedResource: RecordRelationship;
     passagetype: RecordRelationship;
   };
 }
 
-export type PassageD = Passage & InitializedRecord;
+export type PassageD = Loaded<Passage>;
 
 export default Passage;

@@ -10,7 +10,7 @@ import {
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import localStrings from '../selector/localize';
 import { useSelector, shallowEqual } from 'react-redux';
-import { findRecord } from './tryFindRecord';
+import { findRecords, findRecord } from './tryFindRecord';
 import { related } from './related';
 import { remoteId, remoteIdGuid } from './remoteId';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
@@ -75,9 +75,7 @@ export const useArtifactType = (org?: string) => {
         type: localizedArtifactType(ArtifactTypeSlug.Vernacular),
         id: undefined,
       });
-    const artifacts: ArtifactTypeD[] = memory?.cache.query((q) =>
-      q.findRecords('artifacttype')
-    ) as any;
+    const artifacts: ArtifactTypeD[] = findRecords(memory, 'artifacttype');
     artifacts
       .filter(
         (r) =>

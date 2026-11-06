@@ -1,5 +1,5 @@
-import { RecordRelationship, InitializedRecord } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface OrganizationBible extends BaseModel {
   attributes: {
@@ -10,11 +10,11 @@ export interface OrganizationBible extends BaseModel {
   };
   relationships?: {
     bible: RecordRelationship;
-    organiztion: RecordRelationship;
+    organization: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }
 
-export type OrganizationBibleD = OrganizationBible & InitializedRecord;
+export type OrganizationBibleD = Loaded<OrganizationBible>;
 
 export default OrganizationBible;

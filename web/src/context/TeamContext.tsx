@@ -83,6 +83,7 @@ import {
   SortMap,
   sortProjects,
 } from '../components/Team/ProjectDialog/projectSortUtils';
+import { findRecords } from '../crud/tryFindRecord';
 
 export type TeamIdType = OrganizationD | null;
 
@@ -129,7 +130,7 @@ const initState = {
   ) => {},
   importOpen: false,
   setImportOpen: (val: boolean) => {},
-  importProject: undefined as any,
+  importProject: undefined as VProject | undefined,
   doImport: (p: VProject | undefined = undefined) => {},
   resetProjectPermissions: async (team: string) => {},
   generalBook: (team?: string) => '000',
@@ -223,7 +224,10 @@ const TeamProvider = (props: IProps) => {
   const { getOrgDefault } = useOrgDefaults();
   const setProjectParams = (plan: PlanD | VProjectD) => {
     const projectId = related(plan, 'project');
-    const vproj = plan?.type === 'plan' ? vProject(plan) : plan;
+    // type is string on both members, so === 'plan' does not narrow.
+    // The other arm is already a VProjectD.
+    const vproj: VProjectD =
+      plan?.type === 'plan' ? vProject(plan) : (plan as VProjectD);
     const orgId = related(vproj, 'organization');
     setOrganization(orgId);
     localStorage.setItem(localUserKey(LocalKey.team), orgId);
@@ -651,15 +655,15 @@ const TeamProvider = (props: IProps) => {
   }, [organizations, orgMembers, user, isOffline]);
 
   const resetProjectPermissions = async (teamId: string) => {
-    const projects = (
-      memory?.cache.query((q) => q.findRecords('project')) as ProjectD[]
-    ).filter((p) => related(p, 'organization') === teamId);
+    const projects = findRecords(memory, 'project').filter(
+      (p) => related(p, 'organization') === teamId
+    );
     const checkit = [
       'editsheetuser',
       'editsheetgroup',
       'publishuser',
       'publishgroup',
-    ];
+    ] as const;
     const tb = new RecordTransformBuilder();
     const ops = [] as RecordOperation[];
     projects.forEach((p) => {

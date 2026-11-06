@@ -1,18 +1,10 @@
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
-import {
-  PlanD,
-  MediaFileD,
-  DiscussionD,
-  CommentD,
-  SectionD,
-  PassageD,
-  PassageStateChangeD,
-  SectionResourceD,
-} from '../model';
+import { PlanD, MediaFileD, SectionD } from '../model';
 import { useOfflnProjDelete } from './useOfflnProjDelete';
 import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
 import { related } from '.';
+import { findRecords } from './tryFindRecord';
 
 export const useProjectDelete = () => {
   const [memory] = useGlobal('memory');
@@ -49,16 +41,10 @@ export const useProjectDelete = () => {
         const mediareplacements = mediaReplacementsForPlans(memory, [
           planid,
         ]).map((m) => m.id);
-        const discussions = (
-          memory?.cache.query((q) =>
-            q.findRecords('discussion')
-          ) as DiscussionD[]
-        )
+        const discussions = findRecords(memory, 'discussion')
           .filter((d) => mediafiles.includes(related(d, 'mediafile')))
           .map((x) => x.id);
-        const comments = (
-          memory?.cache.query((q) => q.findRecords('comment')) as CommentD[]
-        )
+        const comments = findRecords(memory, 'comment')
           .filter((d) => discussions.includes(related(d, 'discussion')))
           .map((x) => x.id);
         const sections = (
@@ -69,23 +55,13 @@ export const useProjectDelete = () => {
             })
           ) as SectionD[]
         ).map((s) => s.id);
-        const passages = (
-          memory?.cache.query((q) => q.findRecords('passage')) as PassageD[]
-        )
+        const passages = findRecords(memory, 'passage')
           .filter((p) => sections.includes(related(p, 'section')))
           .map((p) => p.id);
-        const psc = (
-          memory?.cache.query((q) =>
-            q.findRecords('passagestatechange')
-          ) as PassageStateChangeD[]
-        )
+        const psc = findRecords(memory, 'passagestatechange')
           .filter((p) => passages.includes(related(p, 'passage')))
           .map((p) => p.id);
-        const sectionresources = (
-          memory?.cache.query((q) =>
-            q.findRecords('sectionresource')
-          ) as SectionResourceD[]
-        )
+        const sectionresources = findRecords(memory, 'sectionresource')
           .filter((r) => sections.includes(r.id))
           .map((r) => r.id);
 

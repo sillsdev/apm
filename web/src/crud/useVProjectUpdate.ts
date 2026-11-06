@@ -1,7 +1,11 @@
 import { useGlobal } from '../context/useGlobal';
 import { PlanD, ProjectD, VProjectD } from '../model';
 import { related, useTypeId } from '.';
-import { ReplaceRelatedRecord, UpdateRecord } from '../model/baseModel';
+import {
+  recordRef,
+  ReplaceRelatedRecord,
+  UpdateRecord,
+} from '../model/baseModel';
 
 export const useVProjectUpdate = () => {
   const [memory] = useGlobal('memory');
@@ -31,6 +35,7 @@ export const useVProjectUpdate = () => {
       publishUser,
       publishGroup,
     } = vProject.attributes;
+    const projectIdentity = recordRef('project', id);
     await memory.update((t) => [
       ...UpdateRecord(
         t,
@@ -56,7 +61,7 @@ export const useVProjectUpdate = () => {
       // We use the plan type and not the project type
       ...ReplaceRelatedRecord(
         t,
-        { type: 'project', id: id },
+        projectIdentity,
         'projecttype',
         'projecttype',
         getTypeId(
@@ -66,28 +71,28 @@ export const useVProjectUpdate = () => {
       ),
       ...ReplaceRelatedRecord(
         t,
-        { type: 'project', id: id },
+        projectIdentity,
         'editsheetuser',
         'user',
         sheetUser
       ),
       ...ReplaceRelatedRecord(
         t,
-        { type: 'project', id: id },
+        projectIdentity,
         'editsheetgroup',
         'group',
         sheetGroup
       ),
       ...ReplaceRelatedRecord(
         t,
-        { type: 'project', id: id },
+        projectIdentity,
         'publishuser',
         'user',
         publishUser
       ),
       ...ReplaceRelatedRecord(
         t,
-        { type: 'project', id: id },
+        projectIdentity,
         'publishgroup',
         'group',
         publishGroup
@@ -114,7 +119,7 @@ export const useVProjectUpdate = () => {
       ),
       ...ReplaceRelatedRecord(
         t,
-        { type: 'plan', id: vProject.id },
+        recordRef('plan', vProject.id),
         'plantype',
         'plantype',
         getTypeId(type, 'plan')

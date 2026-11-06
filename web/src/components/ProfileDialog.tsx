@@ -6,7 +6,6 @@ import {
   DigestPreference,
   OrganizationMembershipD,
   User,
-  OrganizationMembership,
 } from '../model';
 import {
   Dialog,
@@ -64,6 +63,7 @@ import ExtendableDeleteExpansion from './ExtendableDeleteExpansion';
 import { AltActionBar } from './AltActionBar';
 import { StyledDialogTitle } from './StyledDialogTitle';
 import { Button } from '../control/Button';
+import { findRecords } from '../crud/tryFindRecord';
 
 const Caption = styled(Typography)<TypographyProps>(() => ({
   width: 150,
@@ -721,9 +721,7 @@ export function ProfileDialog(props: Readonly<ProfileDialogProps>) {
       if (current.length === 1) {
         userRec = current[0];
         setCurrentUser(userRec as UserD);
-        const orgMbrRecs = memory?.cache.query((q) =>
-          q.findRecords('organizationmembership')
-        ) as OrganizationMembership[];
+        const orgMbrRecs = findRecords(memory, 'organizationmembership');
         const mbrRec = orgMbrRecs.filter(
           (r) =>
             related(r, 'user') === userRec.id &&

@@ -34,7 +34,9 @@ export const TeamProjects = () => {
         <ImportTab
           isOpen={importOpen}
           onOpen={setImportOpen}
-          planName={importProject ? getPlanName(importProject.id) : undefined}
+          planName={
+            importProject ? getPlanName(importProject.id ?? '') : undefined
+          }
           project={
             importProject ? related(importProject, 'project') : undefined
           } //actual project id...not plan id

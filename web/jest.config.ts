@@ -5,6 +5,7 @@ export const config: JestConfigWithTsJest = {
   testTimeout: 10000,
   // Run tests serially (one at a time) for better CI debugging
   // maxWorkers: 1,
+  maxWorkers: '50%',
   // Show verbose output to see which test is running
   // verbose: process.env.CI ? true : false,
   collectCoverageFrom: [

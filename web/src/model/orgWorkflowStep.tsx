@@ -1,4 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
+import { Loaded } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
 import { WorkflowStep } from '.';
 
 export interface OrgWorkflowStep extends WorkflowStep {
@@ -18,6 +19,6 @@ export interface OrgWorkflowStep extends WorkflowStep {
   };
 }
 
-export type OrgWorkflowStepD = OrgWorkflowStep & InitializedRecord;
+export type OrgWorkflowStepD = Loaded<OrgWorkflowStep>;
 
 export default OrgWorkflowStep;

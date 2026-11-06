@@ -9,7 +9,7 @@ import {
 import { isLangSet } from '../utils/langTag';
 import { initLang } from '../control/initLang';
 import { useGlobal } from '../context/useGlobal';
-import type { ProjectD } from '../model';
+
 import { teamLanguageInUse } from './teamLanguageInUse';
 import { normalizeAsrState } from '../business/asr/asrState';
 import {
@@ -17,6 +17,7 @@ import {
   orgDefaultLangProps,
   useOrgDefaults,
 } from './useOrgDefaults';
+import { findRecords } from './tryFindRecord';
 
 /**
  * The one way to change a team's default language. The team ASR language
@@ -98,9 +99,7 @@ export function useSetTeamLanguageForNewProject() {
       const teamLang = getOrgDefault(orgDefaultLangProps, teamId) as
         ILanguage | undefined;
       // One-off read when the project is created; no subscription needed.
-      const projects = memory.cache.query((q) =>
-        q.findRecords('project')
-      ) as ProjectD[];
+      const projects = findRecords(memory, 'project');
       if (teamLanguageInUse(projects, teamId, teamLang?.bcp47)) return;
     }
     setTeamLanguage(language, teamId);

@@ -2,8 +2,12 @@ import { describe, expect, it, beforeEach } from '@jest/globals';
 import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
+import type { CommentD } from '../../model/comment';
+
+import type { SectionD } from '../../model/section';
 import { restoreAfterPendingUpload } from './restoreAfterPendingUpload';
 import type { PendingUploadRestore } from './pendingMediaUploads';
+import { findRecords } from '../../crud/tryFindRecord';
 
 const schema = new RecordSchema({
   models: {
@@ -125,12 +129,8 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       user,
     });
 
-    const ips = memory.cache.query((q) =>
-      q.findRecords('intellectualproperty')
-    ) as unknown as Array<{
-      attributes: { rightsHolder: string };
-      relationships?: Record<string, { data: { id: string } | null }>;
-    }>;
+    // Orbit's query result does not overlap IntellectualPropertyD.
+    const ips = findRecords(memory, 'intellectualproperty');
     expect(ips).toHaveLength(1);
     expect(ips[0].attributes.rightsHolder).toBe('Speaker info test');
     expect(related(ips[0], 'releaseMediafile')).toBe('media-1');
@@ -157,11 +157,7 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       user,
     });
 
-    const comments = memory.cache.query((q) =>
-      q.findRecords('comment')
-    ) as unknown as Array<{
-      attributes: { commentText: string; visible: string };
-    }>;
+    const comments = findRecords(memory, 'comment');
     expect(comments).toHaveLength(1);
     expect(comments[0].attributes.commentText).toBe('audio comment note');
     expect(comments[0].attributes.visible).toBe(restore.visible);
@@ -205,7 +201,7 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
     const comment = memory.cache.getRecordSync({
       type: 'comment',
       id: 'cmt-1',
-    }) as unknown as { attributes: { commentText: string; visible: string } };
+    }) as unknown as CommentD;
     expect(comment.attributes.commentText).toBe('updated text');
     expect(comment.attributes.visible).toBe(restore.visible);
     expect(related(comment, 'mediafile')).toBe('media-1');
@@ -224,10 +220,11 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       user,
     });
 
+    // getRecordSync is untyped. This row is the section.
     const section = memory.cache.getRecordSync({
       type: 'section',
       id: 'sec-1',
-    });
+    }) as SectionD;
     expect(related(section, 'titleMediafile')).toBe('media-1');
   });
 });

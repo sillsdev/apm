@@ -18,13 +18,14 @@ import {
   remoteIdNum,
 } from '../crud';
 import { currentDateTime, localUserKey, LocalKey } from '../utils';
-import { OfflineProject, PassageStateChangeD, Plan, VProject } from '../model';
+import { OfflineProject, Plan, VProject } from '../model';
 import IndexedDBSource from '@orbit/indexeddb';
 import * as actions from '../store';
 import {
   DATA_CHANGES_NETWORK_ABORT,
   processDataChanges,
 } from './processDataChanges';
+import { findRecords } from '../crud/tryFindRecord';
 
 export const doDataChanges = async (
   token: string,
@@ -159,11 +160,9 @@ export const doDataChanges = async (
     if (version === 6) {
       const operations: RecordOperation[] = [];
       //clean up abandoned pscs
-      const pscs = (
-        memory.cache.query((q) =>
-          q.findRecords('passagestatechange')
-        ) as PassageStateChangeD[]
-      ).filter((p) => !p.keys?.remoteId);
+      const pscs = findRecords(memory, 'passagestatechange').filter(
+        (p) => !p.keys?.remoteId
+      );
       if (pscs.length > 0) {
         const tb = new RecordTransformBuilder();
         pscs.forEach((p) =>

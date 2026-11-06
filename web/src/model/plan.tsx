@@ -1,6 +1,6 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
+import { RecordRelationship } from '@orbit/records';
 import { ITag } from '.';
-import { BaseModel } from './baseModel';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Plan extends BaseModel {
   attributes: {
@@ -17,11 +17,11 @@ export interface Plan extends BaseModel {
   relationships?: {
     project: RecordRelationship;
     plantype: RecordRelationship;
-    sections: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
+    owner: RecordRelationship;
   };
 }
 
-export type PlanD = Plan & InitializedRecord;
+export type PlanD = Loaded<Plan>;
 
 export default Plan;

@@ -1,17 +1,11 @@
 import {
-  ArtifactCategoryD,
-  IntellectualPropertyD,
   MediaFile,
   MediaFileD,
-  OrgKeytermTargetD,
   OrganizationD,
-  PassageD,
   PlanD,
   ProjectD,
-  SectionD,
-  SharedResourceD,
 } from '../model';
-import { findRecord } from './tryFindRecord';
+import { findRecords, findRecord } from './tryFindRecord';
 import { mediaFileName } from './media';
 import { related } from './related';
 import { VernacularTag } from './useArtifactType';
@@ -84,18 +78,10 @@ export const getDownloadableMediaInPlan = (
   planid: string,
   memory: MemorySource
 ) => {
-  const mediaFiles = memory?.cache.query((q) =>
-    q.findRecords('mediafile')
-  ) as MediaFileD[];
-  const sections = memory?.cache.query((q) =>
-    q.findRecords('section')
-  ) as SectionD[];
-  const passages = memory?.cache.query((q) =>
-    q.findRecords('passage')
-  ) as PassageD[];
-  const sharedres = memory?.cache.query((q) =>
-    q.findRecords('sharedresource')
-  ) as SharedResourceD[];
+  const mediaFiles = findRecords(memory, 'mediafile');
+  const sections = findRecords(memory, 'section');
+  const passages = findRecords(memory, 'passage');
+  const sharedres = findRecords(memory, 'sharedresource');
   const plan = findRecord(memory, 'plan', planid) as PlanD;
   const proj = findRecord(
     memory,
@@ -117,11 +103,7 @@ export const getDownloadableMediaInPlan = (
   let ret: IPlanMedia[] = [];
   ret = ret.concat(mapMedia(media));
   //IP media
-  const ipmediaids = (
-    memory?.cache.query((q) =>
-      q.findRecords('intellectualproperty')
-    ) as IntellectualPropertyD[]
-  )
+  const ipmediaids = findRecords(memory, 'intellectualproperty')
     .filter(
       (ip) =>
         related(ip, 'organization') === org.id &&
@@ -133,11 +115,7 @@ export const getDownloadableMediaInPlan = (
     mapMedia(mediaFiles.filter((m) => ipmediaids.includes(m.id)))
   );
   //Category titles
-  const catmediaids = (
-    memory?.cache.query((q) =>
-      q.findRecords('artifactcategory')
-    ) as ArtifactCategoryD[]
-  )
+  const catmediaids = findRecords(memory, 'artifactcategory')
     .filter(
       (ip) =>
         related(ip, 'organization') === org.id && related(ip, 'titleMediafile')
@@ -147,11 +125,7 @@ export const getDownloadableMediaInPlan = (
     mapMedia(mediaFiles.filter((m) => catmediaids.includes(m.id)))
   );
   //Keyterm media
-  const okttmediaids = (
-    memory?.cache.query((q) =>
-      q.findRecords('orgkeytermtarget')
-    ) as OrgKeytermTargetD[]
-  )
+  const okttmediaids = findRecords(memory, 'orgkeytermtarget')
     .filter(
       (ip) => related(ip, 'organization') === org.id && related(ip, 'mediafile')
     )

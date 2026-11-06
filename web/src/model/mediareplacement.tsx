@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface MediaReplacement extends BaseModel {
   attributes: {
@@ -18,6 +18,6 @@ export interface MediaReplacement extends BaseModel {
   };
 }
 
-export type MediaReplacementD = MediaReplacement & InitializedRecord;
+export type MediaReplacementD = Loaded<MediaReplacement>;
 
 export default MediaReplacement;

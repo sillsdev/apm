@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface AudacityProject extends BaseModel {
   attributes: {
@@ -9,11 +9,11 @@ export interface AudacityProject extends BaseModel {
     lastModifiedBy: number;
   };
   relationships?: {
-    project: RecordRelationship;
+    passage: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }
 
-export type AudacityProjectD = AudacityProject & InitializedRecord;
+export type AudacityProjectD = Loaded<AudacityProject>;
 
 export default AudacityProject;

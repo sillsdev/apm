@@ -9,7 +9,9 @@ import {
 } from '@orbit/records';
 import { Dict } from '@orbit/utils';
 import Memory from '@orbit/memory';
-import { related } from '../crud/related';
+import { schema } from '../schema';
+import type { RelKey } from '../crud/related';
+import type { RecordByType } from './recordByType';
 import { currentDateTime } from '../utils/currentDateTime';
 
 export interface BaseModel extends UninitializedRecord {
@@ -23,7 +25,10 @@ export interface BaseModel extends UninitializedRecord {
   };
 }
 
-export type BaseModelD = BaseModel & InitializedRecord;
+/** Initialized record whose relationships stay the model's own list, not Orbit's string dictionary. */
+export type Loaded<T> = Omit<InitializedRecord, 'relationships'> & T;
+
+export type BaseModelD = Loaded<BaseModel>;
 
 export const UpdateRecord = (
   t: RecordTransformBuilder,
@@ -79,48 +84,80 @@ export const UpdateAttribute = (
     ...UpdateLastModifiedBy(t, rec, user),
   ];
 };
-export const ReplaceRelatedRecord = (
+// `{ type: 'passage', id }` widens to string under a RecordIdentity constraint.
+// The table argument stays a literal so RelName can see it.
+export function recordRef<T extends keyof RecordByType>(
+  type: T,
+  id: string
+): { type: T; id: string };
+export function recordRef<T extends keyof RecordByType>(
+  type: T,
+  id?: string
+): { type: T; id?: string };
+export function recordRef<T extends keyof RecordByType>(type: T, id?: string) {
+  return { type, id };
+}
+
+type IdentityType<T> = T extends { type: infer Type } ? Type : never;
+
+// A literal table selects that model's names. A plain string stays unchecked.
+type RelNameFromType<Type> = string extends Type
+  ? string
+  : Type extends keyof RecordByType
+    ? RelKey<RecordByType[Type]>
+    : string;
+
+// any and an open map do have a relationship list, and it names nothing.
+export type RelName<T> = [RelKey<T>] extends [never]
+  ? 'relationships' extends keyof NonNullable<T>
+    ? never
+    : RelNameFromType<IdentityType<T>>
+  : RelKey<T>;
+
+export const ReplaceRelatedRecord = <T extends { type: string; id?: string }>(
   t: RecordTransformBuilder,
-  rec: (BaseModel & InitializedRecord) | RecordIdentity,
-  relationship: string,
+  rec: T,
+  relationship: RelName<T>,
   relatedType: string,
   newId: string | undefined | null
 ): RecordOperation[] => {
-  if (related(rec, relationship) !== undefined)
+  // Kind comes from the schema. A passed identity has no relationships, so it
+  // cannot say whether the cached record already has this link.
+  // hasOne replaces the link, and an empty id clears it.
+  // hasMany adds one member. An empty id does nothing. This does not replace the set.
+  // A new row's id is optional until AddRecord normalizes it.
+  const row = rec as RecordIdentity;
+  const kind = schema.getRelationship(row.type, relationship).kind;
+  if (kind === 'hasMany') {
+    if (!newId) return [];
     return [
       t
-        .replaceRelatedRecord(
-          rec,
-          relationship,
-          newId
-            ? {
-                type: relatedType,
-                id: newId,
-              }
-            : null
-        )
-        .toOperation(),
-    ];
-  else if (newId)
-    return [
-      t
-        .addToRelatedRecords(rec, relationship, {
+        .addToRelatedRecords(row, relationship, {
           type: relatedType,
           id: newId,
         })
         .toOperation(),
     ];
-  return [];
+  }
+  return [
+    t
+      .replaceRelatedRecord(
+        row,
+        relationship,
+        newId ? { type: relatedType, id: newId } : null
+      )
+      .toOperation(),
+  ];
 };
 
-export const UpdateRelatedRecord = (
+export const UpdateRelatedRecord = <T extends RecordIdentity>(
   t: RecordTransformBuilder,
-  rec: BaseModel & InitializedRecord,
-  relationship: string,
+  rec: T,
+  relationship: RelName<T>,
   relatedType: string,
   newId: string | undefined,
   user: string
-): any => {
+): RecordOperation[] => {
   return [
     ...UpdateLastModifiedBy(t, rec, user),
     ...ReplaceRelatedRecord(t, rec, relationship, relatedType, newId),

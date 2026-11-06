@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface SectionResourceUser extends BaseModel {
   attributes: {
@@ -15,6 +15,6 @@ export interface SectionResourceUser extends BaseModel {
   };
 }
 
-export type SectionResourceUserD = SectionResourceUser & InitializedRecord;
+export type SectionResourceUserD = Loaded<SectionResourceUser>;
 
 export default SectionResourceUser;

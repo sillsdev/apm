@@ -1,12 +1,13 @@
 import { useGlobal } from '../context/useGlobal';
-import { Plan } from '../model';
+
 import { related } from '.';
+import { findRecords } from './tryFindRecord';
 
 export const useProjectPlans = () => {
   const [memory] = useGlobal('memory');
 
   return (projectId: string) => {
-    const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
+    const plans = findRecords(memory, 'plan');
     return plans.filter((p) => related(p, 'project') === projectId);
   };
 };

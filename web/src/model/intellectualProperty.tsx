@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface IntellectualProperty extends BaseModel {
   attributes: {
@@ -18,6 +18,6 @@ export interface IntellectualProperty extends BaseModel {
   };
 }
 
-export type IntellectualPropertyD = IntellectualProperty & InitializedRecord;
+export type IntellectualPropertyD = Loaded<IntellectualProperty>;
 
 export default IntellectualProperty;
