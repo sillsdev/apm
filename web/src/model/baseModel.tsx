@@ -123,6 +123,8 @@ export const ReplaceRelatedRecord = <T extends { type: string; id?: string }>(
 ): RecordOperation[] => {
   // Kind comes from the schema. A passed identity has no relationships, so it
   // cannot say whether the cached record already has this link.
+  // hasOne replaces the link, and an empty id clears it.
+  // hasMany adds one member. An empty id does nothing. This does not replace the set.
   // A new row's id is optional until AddRecord normalizes it.
   const row = rec as RecordIdentity;
   const kind = schema.getRelationship(row.type, relationship).kind;
