@@ -1,6 +1,6 @@
 import Memory from '@orbit/memory';
 import { related } from '../../crud/related';
-import { Passage, Section, SectionArray } from '../../model';
+import { Passage, SectionArray } from '../../model';
 import {
   domVnum,
   firstVerse,
@@ -15,6 +15,7 @@ import {
   isSection,
   isVerse,
 } from './usxNodeType';
+import { findRecords } from '../../crud/tryFindRecord';
 
 export const removeTimestamps = (transcript: string | null) =>
   transcript
@@ -190,9 +191,7 @@ export const addSection = ({
   addNumbers = true,
   sectionArr = [],
 }: IaddSection) => {
-  const sections = memory?.cache.query((q) =>
-    q.findRecords('section')
-  ) as Section[];
+  const sections = findRecords(memory, 'section');
   /* get the section for this passage to get the plan */
   const sectionId = related(passage, 'section');
   const sectionRec = sections.filter((s) => s.id === sectionId)[0];

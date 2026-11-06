@@ -6,8 +6,9 @@ import Memory from '@orbit/memory';
 import { getSerializer } from '../../serializers/getSerializer';
 import { InitializedRecord } from '@orbit/records';
 import { related, updateableFiles, staticFiles } from '../../crud';
-import { ProjectD, MediaFileD, OrganizationD } from '../../model';
+import { ProjectD, MediaFileD } from '../../model';
 import { createExportCollector } from './exportTableRecs';
+import { findRecords } from '../../crud/tryFindRecord';
 
 export interface ProjectDataFiles {
   [filename: string]: string;
@@ -92,9 +93,7 @@ export function getOrganizationIntellectualPropertyFiles(
   organizationId: string
 ): OrganizationIntellectualPropertyExport {
   const ser = getSerializer(memory);
-  const orgs = memory.cache.query((q) =>
-    q.findRecords('organization')
-  ) as OrganizationD[];
+  const orgs = findRecords(memory, 'organization');
   const org = orgs.find((o) => o.id === organizationId);
   const needsRemoteIds = Boolean(org?.keys?.remoteId);
   const { getTableRecs } = createExportCollector(memory, needsRemoteIds, {

@@ -11,7 +11,7 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import localStrings from '../selector/localize';
 import { useSelector, shallowEqual } from 'react-redux';
 import { related } from './related';
-import { findRecord } from './tryFindRecord';
+import { findRecords, findRecord } from './tryFindRecord';
 import {
   AddRecord,
   ReplaceRelatedRecord,
@@ -164,10 +164,9 @@ export const useArtifactCategory = (teamId?: string) => {
     // Read from the local Orbit cache only. Waiting on the remote request
     // queue here stalled the Note Details picker for whole seconds whenever
     // any mid-session sync work was still draining (TT-7656).
-    const allOrgRecs: ArtifactCategoryD[] = (
-      memory?.cache.query((q) =>
-        q.findRecords('artifactcategory')
-      ) as ArtifactCategoryD[]
+    const allOrgRecs: ArtifactCategoryD[] = findRecords(
+      memory,
+      'artifactcategory'
     ).filter(
       (r) =>
         Boolean(r.relationships) &&

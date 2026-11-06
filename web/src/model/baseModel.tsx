@@ -11,6 +11,7 @@ import { Dict } from '@orbit/utils';
 import Memory from '@orbit/memory';
 import { schema } from '../schema';
 import type { RelKey } from '../crud/related';
+import type { RecordByType } from './recordByType';
 import { currentDateTime } from '../utils/currentDateTime';
 
 export interface BaseModel extends UninitializedRecord {
@@ -83,12 +84,34 @@ export const UpdateAttribute = (
     ...UpdateLastModifiedBy(t, rec, user),
   ];
 };
-// A bare identity has no relationship list, so the name stays a string.
-// any and an open map do have one, and it names nothing.
-type RelName<T> = [RelKey<T>] extends [never]
+// `{ type: 'passage', id }` widens to string under a RecordIdentity constraint.
+// The table argument stays a literal so RelName can see it.
+export function recordRef<T extends keyof RecordByType>(
+  type: T,
+  id: string
+): { type: T; id: string };
+export function recordRef<T extends keyof RecordByType>(
+  type: T,
+  id?: string
+): { type: T; id?: string };
+export function recordRef<T extends keyof RecordByType>(type: T, id?: string) {
+  return { type, id };
+}
+
+type IdentityType<T> = T extends { type: infer Type } ? Type : never;
+
+// A literal table selects that model's names. A plain string stays unchecked.
+type RelNameFromType<Type> = string extends Type
+  ? string
+  : Type extends keyof RecordByType
+    ? RelKey<RecordByType[Type]>
+    : string;
+
+// any and an open map do have a relationship list, and it names nothing.
+export type RelName<T> = [RelKey<T>] extends [never]
   ? 'relationships' extends keyof NonNullable<T>
     ? never
-    : string
+    : RelNameFromType<IdentityType<T>>
   : RelKey<T>;
 
 export const ReplaceRelatedRecord = <T extends { type: string; id?: string }>(

@@ -1,10 +1,11 @@
 import { RecordIdentity } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { AxiosError } from 'axios';
-import { ArtifactType, MediaFileD } from '../model';
+import { MediaFileD } from '../model';
 import { UpdateRelatedRecord } from '../model/baseModel';
 import { logError, Severity } from '../utils';
 import { axiosGet } from '../utils/axios';
+import { findRecords } from './tryFindRecord';
 
 export const updateBackTranslationType = async (
   memory: MemorySource,
@@ -26,9 +27,7 @@ export const updateBackTranslationType = async (
     );
   } else {
     //offline
-    const artifacttypes = memory?.cache.query((q) =>
-      q.findRecords('artifacttype')
-    ) as ArtifactType[];
+    const artifacttypes = findRecords(memory, 'artifacttype');
     const bt = artifacttypes.find(
       (a) => a.attributes.typename === 'backtranslation'
     );

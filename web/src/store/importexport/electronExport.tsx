@@ -39,6 +39,8 @@ import { backupToMemory } from '../../crud/syncToMemory';
 import { MainAPI } from '@model/main-api';
 import { createExportCollector } from './exportTableRecs';
 import { isAttachedMediaFile } from './isAttachedMediaFile';
+import { findRecords } from '../../crud/tryFindRecord';
+
 const ipc = window?.api as MainAPI;
 
 // If burrito export needs to work offline again, do NOT rebuild it here.
@@ -381,9 +383,7 @@ export async function electronExport(
       // which can still be empty right after restoreBackup fills memory —
       // fall back to a live memory query for snapshotDate.
       if (!op?.attributes?.snapshotDate) {
-        const oprecs = memory.cache.query((q) =>
-          q.findRecords('offlineproject')
-        ) as OfflineProject[];
+        const oprecs = findRecords(memory, 'offlineproject');
         op = oprecs.find((o) => related(o, 'project') === projRec.id) ?? op;
       }
       imported = DateTime.fromISO(
@@ -457,16 +457,14 @@ export async function electronExport(
       await backupToMemory({ table: 'mediafile', backup, memory });
     }
 
-    projects = memory.cache.query((q) =>
-      q.findRecords('project')
-    ) as ProjectD[];
+    projects = findRecords(memory, 'project');
 
     // Prefer IndexedDB when present — memory may still be empty if restore
     // has not finished (Go Online race). Fall back to memory otherwise.
     let offlineprojects = (
       backup
         ? await backup.query((q) => q.findRecords('offlineproject'))
-        : memory.cache.query((q) => q.findRecords('offlineproject'))
+        : findRecords(memory, 'offlineproject')
     ) as OfflineProject[];
     if (!Array.isArray(offlineprojects)) offlineprojects = [offlineprojects];
     const ids = offlineprojects

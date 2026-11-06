@@ -3,10 +3,11 @@ import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
 import type { CommentD } from '../../model/comment';
-import type { IntellectualPropertyD } from '../../model/intellectualProperty';
+
 import type { SectionD } from '../../model/section';
 import { restoreAfterPendingUpload } from './restoreAfterPendingUpload';
 import type { PendingUploadRestore } from './pendingMediaUploads';
+import { findRecords } from '../../crud/tryFindRecord';
 
 const schema = new RecordSchema({
   models: {
@@ -129,9 +130,7 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
     });
 
     // Orbit's query result does not overlap IntellectualPropertyD.
-    const ips = memory.cache.query((q) =>
-      q.findRecords('intellectualproperty')
-    ) as unknown as IntellectualPropertyD[];
+    const ips = findRecords(memory, 'intellectualproperty');
     expect(ips).toHaveLength(1);
     expect(ips[0].attributes.rightsHolder).toBe('Speaker info test');
     expect(related(ips[0], 'releaseMediafile')).toBe('media-1');
@@ -158,9 +157,7 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       user,
     });
 
-    const comments = memory.cache.query((q) =>
-      q.findRecords('comment')
-    ) as unknown as CommentD[];
+    const comments = findRecords(memory, 'comment');
     expect(comments).toHaveLength(1);
     expect(comments[0].attributes.commentText).toBe('audio comment note');
     expect(comments[0].attributes.visible).toBe(restore.visible);

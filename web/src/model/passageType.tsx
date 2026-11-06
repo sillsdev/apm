@@ -1,12 +1,18 @@
-import { Loaded } from './baseModel';
-import { UninitializedRecord } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
 
-export interface PassageType extends UninitializedRecord {
+export interface PassageType extends BaseModel {
   attributes: {
     usfm: string;
     title: string;
     abbrev: string;
     defaultOrder: number;
+    lastModifiedBy: number;
+    dateCreated: string;
+    dateUpdated: string;
+  };
+  relationships?: {
+    lastModifiedByUser: RecordRelationship;
   };
 }
 

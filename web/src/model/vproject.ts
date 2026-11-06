@@ -38,7 +38,6 @@ export interface VProject extends BaseModel {
   relationships?: {
     project: RecordRelationship;
     plantype: RecordRelationship;
-    sections: RecordRelationship;
     projecttype: RecordRelationship;
     owner: RecordRelationship;
     organization: RecordRelationship;

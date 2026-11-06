@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
-import { SectionResource, OrgWorkflowStep } from '../model';
-import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
+import { SectionResource } from '../model';
+import { AddRecord, recordRef, ReplaceRelatedRecord } from '../model/baseModel';
 import { getTool, related, ToolSlug } from '.';
+import { findRecords } from './tryFindRecord';
 
 export const useSecResCreate = (
   section: RecordIdentity,
@@ -15,9 +16,7 @@ export const useSecResCreate = (
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
 
   const InternalizationStep = () => {
-    const workflowsteps = memory?.cache.query((q) =>
-      q.findRecords('orgworkflowstep')
-    ) as OrgWorkflowStep[];
+    const workflowsteps = findRecords(memory, 'orgworkflowstep');
     const internalizationStep = workflowsteps
       .filter((s) => related(s, 'organization') === organization)
       .find(
@@ -48,25 +47,26 @@ export const useSecResCreate = (
       },
     } as SectionResource;
     const t = new RecordTransformBuilder();
+    const sectionresourceIdentity = recordRef('sectionresource', secRes.id);
     const ops = [
       ...AddRecord(t, secRes, user, memory),
       ...ReplaceRelatedRecord(
         t,
-        secRes as RecordIdentity,
+        sectionresourceIdentity,
         'section',
         'section',
         secId || section.id
       ),
       ...ReplaceRelatedRecord(
         t,
-        secRes as RecordIdentity,
+        sectionresourceIdentity,
         'mediafile',
         'mediafile',
         mediafile.id
       ),
       ...ReplaceRelatedRecord(
         t,
-        secRes as RecordIdentity,
+        sectionresourceIdentity,
         'orgWorkflowStep',
         'orgworkflowstep',
         orgWorkflowStepId ?? internalization?.id
@@ -76,7 +76,7 @@ export const useSecResCreate = (
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          secRes as RecordIdentity,
+          sectionresourceIdentity,
           'passage',
           'passage',
           passId

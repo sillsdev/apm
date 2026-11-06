@@ -1,16 +1,16 @@
 import Memory from '@orbit/memory';
 import {
-  RecordIdentity,
   RecordKeyMap,
   RecordOperation,
   RecordTransformBuilder,
   UninitializedRecord,
 } from '@orbit/records';
-import { findRecord } from '../../crud/tryFindRecord';
+import { findRecords, findRecord } from '../../crud/tryFindRecord';
 import { related } from '../../crud/related';
 import { remoteIdGuid } from '../../crud/remoteId';
 import {
   AddRecord,
+  recordRef,
   ReplaceRelatedRecord,
   UpdateRelatedRecord,
   UpdateLastModifiedBy,
@@ -150,24 +150,27 @@ async function restoreIntellectualProperty({
       notes: restore.notes ?? '{}',
     },
   } as IntellectualProperty & UninitializedRecord;
-
-  await memory.update((t) => [
-    ...AddRecord(t, ip, user, memory),
-    ...ReplaceRelatedRecord(
-      t,
-      ip as RecordIdentity,
-      'releaseMediafile',
-      'mediafile',
-      mediaId
-    ),
-    ...ReplaceRelatedRecord(
-      t,
-      ip as RecordIdentity,
-      'organization',
-      'organization',
-      restore.organizationId
-    ),
-  ]);
+  await memory.update((t) => {
+    const added = AddRecord(t, ip, user, memory);
+    const ipIdentity = recordRef('intellectualproperty', ip.id);
+    return [
+      ...added,
+      ...ReplaceRelatedRecord(
+        t,
+        ipIdentity,
+        'releaseMediafile',
+        'mediafile',
+        mediaId
+      ),
+      ...ReplaceRelatedRecord(
+        t,
+        ipIdentity,
+        'organization',
+        'organization',
+        restore.organizationId
+      ),
+    ];
+  });
 }
 
 async function restoreComment({
@@ -276,18 +279,16 @@ async function restoreSectionResource({
   memory: Memory;
   user: string;
 }): Promise<void> {
-  const mediaRecId = { type: 'mediafile', id: mediaId };
+  const mediaRecId = recordRef('mediafile', mediaId);
   const mediaRec = findRecord(memory, 'mediafile', mediaId) as
     MediaFileD | undefined;
 
   // Pending meta freezes sequence at stage time; successful siblings or later
   // adds may already occupy it (batch compact / delayed retry). Prefer the
   // captured value when free; otherwise take max+1 for this section.
-  const existingForSection = (
-    memory.cache.query((q) =>
-      q.findRecords('sectionresource')
-    ) as SectionResource[]
-  ).filter((r) => related(r, 'section') === restore.sectionId);
+  const existingForSection = findRecords(memory, 'sectionresource').filter(
+    (r) => related(r, 'section') === restore.sectionId
+  );
   const usedSeqs = existingForSection.map(
     (r) => r.attributes?.sequenceNum ?? 0
   );
@@ -343,25 +344,26 @@ async function restoreSectionResource({
     );
   }
 
+  ops.push(...AddRecord(t, secRes, user, memory));
+  const secResIdentity = recordRef('sectionresource', secRes.id);
   ops.push(
-    ...AddRecord(t, secRes, user, memory),
     ...ReplaceRelatedRecord(
       t,
-      secRes as RecordIdentity,
+      secResIdentity,
       'section',
       'section',
       restore.sectionId
     ),
     ...ReplaceRelatedRecord(
       t,
-      secRes as RecordIdentity,
+      secResIdentity,
       'mediafile',
       'mediafile',
       mediaId
     ),
     ...ReplaceRelatedRecord(
       t,
-      secRes as RecordIdentity,
+      secResIdentity,
       'orgWorkflowStep',
       'orgworkflowstep',
       restore.orgWorkflowStepId
@@ -371,7 +373,7 @@ async function restoreSectionResource({
     ops.push(
       ...ReplaceRelatedRecord(
         t,
-        secRes as RecordIdentity,
+        secResIdentity,
         'passage',
         'passage',
         restore.passageId
@@ -433,7 +435,7 @@ async function restoreProjectResource({
   memory: Memory;
   user: string;
 }): Promise<void> {
-  const mediaRecId = { type: 'mediafile', id: mediaId };
+  const mediaRecId = recordRef('mediafile', mediaId);
   const mediaRec = findRecord(memory, 'mediafile', mediaId) as
     MediaFileD | undefined;
 
@@ -497,7 +499,7 @@ async function restoreOrgKeytermTarget({
     ...AddRecord(t, termTargetRec, user, memory),
     ...ReplaceRelatedRecord(
       t,
-      termTargetRec as RecordIdentity,
+      recordRef('orgkeytermtarget', termTargetRec.id),
       'organization',
       'organization',
       restore.organizationId

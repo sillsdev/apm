@@ -1,6 +1,5 @@
 import {
   IApiError,
-  Role,
   Plan,
   OfflineProject,
   VProject,
@@ -55,6 +54,7 @@ import { serializersSettings } from './serializers/serializersFor';
 import { requestedSchema } from './schema';
 import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
+import { findRecords } from './crud/tryFindRecord';
 type StategyError = (...args: unknown[]) => unknown;
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
@@ -325,7 +325,7 @@ const sourcesImpl = async (
     if (!isElectron) {
       //already did this if electron...
       setProjectsLoaded(await restoreBackup(coordinator));
-      const recs = memory?.cache.query((q) => q.findRecords('role')) as Role[];
+      const recs = findRecords(memory, 'role');
       if (recs.length === 0) {
         //orbitError(orbitInfo(null, 'Indexed DB corrupt or missing.'));
         goRemote = true;

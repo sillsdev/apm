@@ -19,6 +19,7 @@ import { workflowStepsSelector } from '../selector';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { addPt } from '../utils/addPt';
 import { useNewTime } from '../utils/useNewTime';
+import { findRecords } from './tryFindRecord';
 
 export const defaultWorkflow = 'draft';
 
@@ -81,9 +82,7 @@ export const useOrgWorkflowSteps = () => {
     /* wait for new workflow steps remote id to fill in */
     await waitForRemoteQueue('waiting for workflow update');
 
-    let orgworkflowsteps = memory.cache.query((q) =>
-      q.findRecords('orgworkflowstep')
-    ) as OrgWorkflowStepD[];
+    let orgworkflowsteps = findRecords(memory, 'orgworkflowstep');
     if (orgworkflowsteps.length === 0 && remote) {
       //check remote
       orgworkflowsteps = (await remote.query((q) =>

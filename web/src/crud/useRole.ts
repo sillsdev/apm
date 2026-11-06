@@ -10,6 +10,7 @@ import {
 import { findRecord, related } from '../crud';
 import { logError, Severity } from '../utils';
 import { ReplaceRelatedRecord } from '../model/baseModel';
+import { findRecords } from './tryFindRecord';
 
 export const useRole = () => {
   const [memory] = useGlobal('memory');
@@ -24,9 +25,9 @@ export const useRole = () => {
 
   const roles = React.useMemo(() => {
     const uniqueRoles = {} as IUniqueRoles;
-    const allRoles = (
-      memory?.cache.query((q) => q.findRecords('role')) as RoleD[]
-    ).filter((r) => r.attributes.orgRole);
+    const allRoles = findRecords(memory, 'role').filter(
+      (r) => r.attributes.orgRole
+    );
     allRoles.forEach((r) => {
       if (offlineOnly !== Boolean(r?.keys?.remoteId)) {
         if (r?.attributes?.roleName) uniqueRoles[r.attributes.roleName] = r;
@@ -74,9 +75,7 @@ export const useRole = () => {
     id: string,
     userId: string
   ) => {
-    const table = memory?.cache.query((q) =>
-      q.findRecords('organizationmembership')
-    ) as OrganizationMembershipD[];
+    const table = findRecords(memory, 'organizationmembership');
     const rows = table.filter(
       (tbl) => related(tbl, 'user') === userId && related(tbl, relate) === id
     );

@@ -1,5 +1,5 @@
 import { useGlobal } from '../context/useGlobal';
-import { VProject, Project, Plan, Group } from '../model';
+import { VProject, Project, Plan } from '../model';
 import { related, useTypeId, useOfflnProjCreate } from '.';
 import {
   useProjectsLoaded,
@@ -10,6 +10,7 @@ import {
 import JSONAPISource from '@orbit/jsonapi';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { recToMemory } from './syncToMemory';
+import { findRecords } from './tryFindRecord';
 
 export const useVProjectCreate = () => {
   const [memory] = useGlobal('memory');
@@ -24,9 +25,7 @@ export const useVProjectCreate = () => {
   const getTypeId = useTypeId();
 
   const getGroupId = (teamId: string) => {
-    const grpRecs = memory?.cache.query((q) =>
-      q.findRecords('group')
-    ) as Group[];
+    const grpRecs = findRecords(memory, 'group');
     const selected = grpRecs.filter(
       (g) => g?.attributes?.allUsers && related(g, 'owner') === teamId
     );
@@ -118,7 +117,7 @@ export const useVProjectCreate = () => {
     let slug = cleanFileName(name).substring(0, 6);
     if (offlineOnly) {
       //see if slug is unique
-      const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
+      const plans = findRecords(memory, 'plan');
       let tmp = '';
       const findit = (fnd: string) =>
         plans.findIndex((p) => p.attributes?.slug === fnd);

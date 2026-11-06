@@ -1,5 +1,5 @@
 import { Loaded } from './baseModel';
-import { UninitializedRecord, RecordRelationship } from '@orbit/records';
+import { RecordRelationship, UninitializedRecord } from '@orbit/records';
 
 export interface Integration extends UninitializedRecord {
   attributes: {
@@ -7,7 +7,7 @@ export interface Integration extends UninitializedRecord {
     url: string;
   };
   relationships?: {
-    projectIntegrations: RecordRelationship;
+    lastModifiedByUser: RecordRelationship;
   };
 }
 

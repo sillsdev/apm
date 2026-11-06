@@ -41,6 +41,7 @@ import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTermin
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
+import { findRecords } from '../crud/tryFindRecord';
 
 interface IProps {
   noBusy?: boolean | undefined;
@@ -262,9 +263,7 @@ export const Uploader = (props: IProps) => {
     let num = 1;
     const psgId = passageId || '';
     if (psgId && !artifactState?.id) {
-      const mediaFiles = (
-        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
-      )
+      const mediaFiles = findRecords(memory, 'mediafile')
         .filter(
           (m) =>
             related(m, 'passage') === psgId &&

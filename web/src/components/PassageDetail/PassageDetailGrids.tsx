@@ -33,7 +33,7 @@ import {
   useSharedResRead,
   useStepTool,
 } from '../../crud';
-import { Plan, IToolStrings } from '../../model';
+import { IToolStrings } from '../../model';
 import { useMobile } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { toolSelector } from '../../selector';
@@ -45,6 +45,7 @@ import { addPt } from '../../utils/addPt';
 import DiscussionPanel from '../Discussions/DiscussionPanel';
 import { usePaneWidth } from '../usePaneWidth';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
+import { findRecords } from '../../crud/tryFindRecord';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
@@ -155,7 +156,7 @@ const PassageDetailGrids = () => {
   );
 
   const plans = useMemo(() => {
-    const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
+    const plans = findRecords(memory, 'plan');
     return plans.filter((p) => p.id === plan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);

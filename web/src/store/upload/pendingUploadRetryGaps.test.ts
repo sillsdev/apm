@@ -12,8 +12,8 @@ import {
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { IRow } from '../../context/PassageDetailContext';
 import type { MediaFileD } from '../../model/mediafile';
-import type { OrgKeytermTargetD } from '../../model/orgKeytermTarget';
-import type { SectionResourceD } from '../../model/sectionResource';
+
+import { findRecords } from '../../crud/tryFindRecord';
 
 const clauseRegion: IRegion = { start: 0, end: 10, label: '' };
 
@@ -255,9 +255,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as SectionResourceD[];
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'mediafile')).toBe(
@@ -286,9 +284,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as SectionResourceD[];
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'passage')).toBe('pas-1');
     });
@@ -346,11 +342,9 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = (
-        memory.cache.query((q) =>
-          q.findRecords('sectionresource')
-        ) as unknown as SectionResourceD[]
-      ).filter((r) => related(r, 'section') === 'sec-1');
+      const sectionResources = findRecords(memory, 'sectionresource').filter(
+        (r) => related(r, 'section') === 'sec-1'
+      );
 
       expect(sectionResources).toHaveLength(2);
       const seqs = sectionResources.map((r) => r.attributes?.sequenceNum);
@@ -412,9 +406,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       expect(related(media, 'artifactCategory')).toBe('cat-1');
       expect(related(media, 'passage')).toBe('pas-1');
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as SectionResourceD[];
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'mediafile')).toBe(
         'resource-media-1'
@@ -479,9 +471,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       expect(related(media, 'artifactCategory')).toBe('cat-1');
 
       // Must not create a sectionresource — configuration still owns linking.
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      );
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(0);
 
       expect(takePendingProjectResourceConfigs()).toEqual(['proj-media-1']);
@@ -569,9 +559,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const targets = memory.cache.query((q) =>
-        q.findRecords('orgkeytermtarget')
-      ) as unknown as OrgKeytermTargetD[];
+      const targets = findRecords(memory, 'orgkeytermtarget');
       expect(targets).toHaveLength(1);
       expect(targets[0].attributes?.term).toBe('grace');
       expect(targets[0].attributes?.termIndex).toBe(0);
@@ -603,9 +591,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as SectionResourceD[];
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'mediafile')).toBe('prompt-media-1');

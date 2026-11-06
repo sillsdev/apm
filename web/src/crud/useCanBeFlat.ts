@@ -1,26 +1,25 @@
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import related from './related';
-import { Passage, Plan, Section } from '../model';
+
 import { passageTypeFromRef } from '../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../model/passageType';
+import { findRecords } from './tryFindRecord';
 
 export const useCanBeFlat = () => {
   const [memory] = useGlobal('memory');
   const getGlobal = useGetGlobal();
 
   return () => {
-    const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
+    const plans = findRecords(memory, 'plan');
     const plan = plans.find(
       (p) => related(p, 'project') === getGlobal('project')
     );
-    const sectionIds = (
-      memory?.cache.query((q) => q.findRecords('section')) as Section[]
-    )
+    const sectionIds = findRecords(memory, 'section')
       .filter((s) => related(s, 'plan') === plan?.id)
       .map((s) => s.id);
-    const passages = (
-      memory?.cache.query((q) => q.findRecords('passage')) as Passage[]
-    ).filter((p) => sectionIds.includes(related(p, 'section')));
+    const passages = findRecords(memory, 'passage').filter((p) =>
+      sectionIds.includes(related(p, 'section'))
+    );
     const canPublish = passages.reduce(
       (p, c) =>
         p ||

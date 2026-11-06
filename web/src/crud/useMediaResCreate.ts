@@ -5,7 +5,7 @@ import {
   UninitializedRecord,
 } from '@orbit/records';
 import { Resource, MediaFile, MediaFileD } from '../model';
-import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
+import { AddRecord, recordRef, ReplaceRelatedRecord } from '../model/baseModel';
 import { ArtifactTypeSlug, useArtifactType } from '.';
 import { getContentType } from '../utils/contentType';
 
@@ -37,18 +37,13 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
       },
     } as any as MediaFile;
     const t = new RecordTransformBuilder();
+    const mediaRecordIdentity = recordRef('mediafile', mediaRec.id);
     const ops = [
       ...AddRecord(t, mediaRec as unknown as UninitializedRecord, user, memory),
+      ...ReplaceRelatedRecord(t, mediaRecordIdentity, 'plan', 'plan', plan),
       ...ReplaceRelatedRecord(
         t,
-        mediaRec as RecordIdentity,
-        'plan',
-        'plan',
-        plan
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        mediaRec as RecordIdentity,
+        mediaRecordIdentity,
         'recordedbyUser',
         'user',
         user
@@ -59,7 +54,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
     ops.push(
       ...ReplaceRelatedRecord(
         t,
-        mediaRec as RecordIdentity,
+        mediaRecordIdentity,
         'artifactType',
         'artifacttype',
         getTypeId(ArtifactTypeSlug.SharedResource)
@@ -69,7 +64,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          mediaRec as RecordIdentity,
+          mediaRecordIdentity,
           'artifactCategory',
           'artifactcategory',
           artifactCategoryId
@@ -79,7 +74,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          mediaRec as RecordIdentity,
+          mediaRecordIdentity,
           'orgWorkflowStep',
           'orgworkflowstep',
           stepId

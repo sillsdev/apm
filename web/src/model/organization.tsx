@@ -18,7 +18,6 @@ export interface Organization extends BaseModel {
   };
   relationships?: {
     owner: RecordRelationship;
-    groups: RecordRelationship;
     cluster: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };

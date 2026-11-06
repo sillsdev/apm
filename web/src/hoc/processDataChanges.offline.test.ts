@@ -32,6 +32,7 @@ import { schema } from '../schema';
 import { axiosGet } from '../utils/axios';
 import { logError } from '../utils';
 import { processDataChanges } from './processDataChanges';
+import { findRecords } from '../crud/tryFindRecord';
 
 const axiosGetMock = axiosGet as jest.Mock;
 
@@ -155,11 +156,7 @@ async function seed(memory: MemorySource) {
 }
 
 function offlineIds(memory: MemorySource) {
-  return (
-    memory.cache.query((q) => q.findRecords('offlineproject')) as {
-      id: string;
-    }[]
-  )
+  return findRecords(memory, 'offlineproject')
     .map((op) => op.id)
     .sort();
 }

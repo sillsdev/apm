@@ -14,8 +14,6 @@ export interface Group extends BaseModel {
   };
   relationships?: {
     owner: RecordRelationship;
-    projects: RecordRelationship;
-    groupMemberships: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }

@@ -83,6 +83,7 @@ import {
   SortMap,
   sortProjects,
 } from '../components/Team/ProjectDialog/projectSortUtils';
+import { findRecords } from '../crud/tryFindRecord';
 
 export type TeamIdType = OrganizationD | null;
 
@@ -654,9 +655,9 @@ const TeamProvider = (props: IProps) => {
   }, [organizations, orgMembers, user, isOffline]);
 
   const resetProjectPermissions = async (teamId: string) => {
-    const projects = (
-      memory?.cache.query((q) => q.findRecords('project')) as ProjectD[]
-    ).filter((p) => related(p, 'organization') === teamId);
+    const projects = findRecords(memory, 'project').filter(
+      (p) => related(p, 'organization') === teamId
+    );
     const checkit = [
       'editsheetuser',
       'editsheetgroup',

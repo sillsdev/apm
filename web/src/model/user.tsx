@@ -30,8 +30,6 @@ export interface User extends BaseModel {
     lastModifiedBy: number;
   };
   relationships?: {
-    organizationMemberships: RecordRelationship;
-    groupMemberships: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }
@@ -67,8 +65,6 @@ export interface CurrentUser extends User {
     lastModifiedBy: number;
   };
   relationships?: {
-    organizationMemberships: RecordRelationship;
-    groupMemberships: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }
