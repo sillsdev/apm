@@ -540,7 +540,7 @@ describe('<LimitedMediaPlayer />', () => {
 
     render(<LimitedMediaPlayer {...props} />);
     expect(await screen.findByTestId('skip-back')).toBeInTheDocument();
-    user.click(screen.getByTestId('skip-back'));
-    await screen.findByText('-0:03');
+    await user.click(screen.getByTestId('skip-back'));
+    expect(await screen.findByText('-0:03')).toBeInTheDocument();
   });
 });
