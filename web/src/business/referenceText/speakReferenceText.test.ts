@@ -23,15 +23,12 @@ const david = {
 
 let spoken: FakeUtterance[];
 let voices: SpeechSynthesisVoice[];
-const synth = {
-  getVoices: () => voices,
-  speak: (u: FakeUtterance) => spoken.push(u),
-  cancel: jest.fn(() => {
-    const u = spoken[spoken.length - 1];
-    u?.onerror?.({ error: 'interrupted' });
-  }),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
+let synth: {
+  getVoices: () => SpeechSynthesisVoice[];
+  speak: (u: FakeUtterance) => void;
+  cancel: jest.Mock;
+  addEventListener: jest.Mock;
+  removeEventListener: jest.Mock;
 };
 
 const bsb = {
@@ -45,8 +42,24 @@ const bsb = {
 } as ReferenceText;
 const arabic = { ...bsb, id: 'arb_vdv', language: 'arb' } as ReferenceText;
 
-// Lets the voice lookup resolve and the first utterance be queued.
-const settle = () => new Promise((r) => setTimeout(r, 0));
+// First load waits until every voice is tagged and the list has been still.
+const VOICES_QUIET_MS = 200;
+const VOICES_WAIT_MS = 2000;
+const settle = () => jest.advanceTimersByTimeAsync(VOICES_QUIET_MS);
+
+// The fake synthesizer records `voiceschanged` so a test can publish a later list.
+const changedVoices = () => {
+  const listeners = new Set<() => void>();
+  synth.addEventListener.mockImplementation((event: string, cb: () => void) => {
+    if (event === 'voiceschanged') listeners.add(cb);
+  });
+  synth.removeEventListener.mockImplementation(
+    (event: string, cb: () => void) => {
+      if (event === 'voiceschanged') listeners.delete(cb);
+    }
+  );
+  return () => listeners.forEach((cb) => cb());
+};
 
 // Two sentences longer than one chunk together, so two utterances
 const text = `${'a'.repeat(150)}. ${'b'.repeat(150)}.`;
@@ -63,20 +76,34 @@ const setOnline = (onLine: boolean) =>
   jest.spyOn(globalThis.navigator, 'onLine', 'get').mockReturnValue(onLine);
 
 beforeEach(() => {
+  jest.useFakeTimers();
   spoken = [];
   voices = [david];
-  synth.cancel.mockClear();
+  synth = {
+    getVoices: () => voices,
+    speak: (u: FakeUtterance) => spoken.push(u),
+    cancel: jest.fn(() => {
+      const u = spoken[spoken.length - 1];
+      u?.onerror?.({ error: 'interrupted' });
+    }),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+  };
   Object.assign(globalThis, {
     speechSynthesis: synth,
     SpeechSynthesisUtterance: FakeUtterance,
   });
 });
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+});
 
 describe('speakReferenceText', () => {
   it('reports noVoice when no voice speaks the language', async () => {
     const speaking = speakReferenceText(arabic, text);
+    await jest.advanceTimersByTimeAsync(VOICES_WAIT_MS);
     await expect(speaking.done).resolves.toBe('noVoice');
     expect(spoken).toHaveLength(0);
   });
@@ -89,9 +116,9 @@ describe('speakReferenceText', () => {
   it('reports noVoiceOffline when offline and only network voices speak it', async () => {
     voices = [google];
     setOnline(false);
-    await expect(speakReferenceText(bsb, text).done).resolves.toBe(
-      'noVoiceOffline'
-    );
+    const speaking = speakReferenceText(bsb, text);
+    await settle();
+    await expect(speaking.done).resolves.toBe('noVoiceOffline');
     expect(spoken).toHaveLength(0);
   });
 
@@ -179,6 +206,113 @@ describe('speakReferenceText', () => {
     });
     await settle();
     expect(spoken[0].voice).toBe(zira);
+  });
+
+  it('speaks English when Windows lists Microsoft voices before their languages', async () => {
+    const blankDavid = {
+      ...david,
+      name: 'Microsoft David',
+      voiceURI: 'Microsoft David',
+      lang: '',
+    };
+    const blankFrench = {
+      ...david,
+      name: 'Microsoft Caroline',
+      voiceURI: 'Microsoft Caroline',
+      lang: '',
+      default: false,
+    };
+    voices = [blankDavid, blankFrench];
+    const changed = changedVoices();
+
+    const speaking = speakReferenceText(bsb, 'In the beginning.');
+    changed();
+    voices = [
+      { ...blankDavid, lang: 'en-US' },
+      { ...blankFrench, lang: 'fr-CA' },
+    ];
+    changed();
+    await settle();
+    expect(spoken[0]?.voice?.lang).toBe('en-US');
+    expect(spoken[0]?.voice?.name).toBe('Microsoft David');
+    spoken[0].onend?.();
+    await expect(speaking.done).resolves.toBe('ended');
+  });
+
+  it('waits to speak English while David is still untagged', async () => {
+    const blankDavid = {
+      ...david,
+      name: 'Microsoft David',
+      voiceURI: 'Microsoft David',
+      lang: '',
+    };
+    const caroline = {
+      ...david,
+      name: 'Microsoft Caroline',
+      voiceURI: 'Microsoft Caroline',
+      lang: 'fr-CA',
+      default: false,
+    };
+    voices = [blankDavid, caroline];
+    const changed = changedVoices();
+
+    const speaking = speakReferenceText(bsb, 'In the beginning.');
+    await settle();
+    changed();
+    await settle();
+    expect(spoken).toHaveLength(0);
+
+    voices = [{ ...blankDavid, lang: 'en-US' }, caroline];
+    changed();
+    await jest.advanceTimersByTimeAsync(VOICES_QUIET_MS - 1);
+    expect(spoken).toHaveLength(0);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(spoken[0]?.voice?.name).toBe('Microsoft David');
+    expect(spoken[0]?.voice?.lang).toBe('en-US');
+    spoken[0].onend?.();
+    await expect(speaking.done).resolves.toBe('ended');
+  });
+
+  it('waits to speak English when French is listed before David', async () => {
+    const caroline = {
+      ...david,
+      name: 'Microsoft Caroline',
+      voiceURI: 'Microsoft Caroline',
+      lang: 'fr-CA',
+      default: false,
+    };
+    const microsoftDavid = {
+      ...david,
+      name: 'Microsoft David',
+      voiceURI: 'Microsoft David',
+      lang: 'en-US',
+    };
+    voices = [caroline];
+    const changed = changedVoices();
+
+    const speaking = speakReferenceText(bsb, 'In the beginning.');
+    await settle();
+    expect(spoken).toHaveLength(0);
+
+    voices = [caroline, microsoftDavid];
+    changed();
+    await settle();
+    expect(spoken[0]?.voice?.name).toBe('Microsoft David');
+    expect(spoken[0]?.voice?.lang).toBe('en-US');
+    spoken[0].onend?.();
+    await expect(speaking.done).resolves.toBe('ended');
+  });
+
+  it('speaks a later passage without waiting for the voice list again', async () => {
+    speakReferenceText(bsb, 'One.');
+    await Promise.resolve();
+    expect(spoken).toHaveLength(0);
+    await settle();
+    expect(spoken.map((u) => u.text)).toEqual(['One.']);
+
+    speakReferenceText(bsb, 'Two.');
+    await Promise.resolve();
+    expect(spoken.map((u) => u.text)).toEqual(['One.', 'Two.']);
   });
 });
 
