@@ -16,6 +16,7 @@ import {
   useUrlContext,
   useArtifactType,
   remoteIdGuid,
+  toolShowsStepInstructions,
 } from '../crud';
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
 import { useMobile } from '../utils/useMobile';
@@ -159,16 +160,15 @@ const MobileStep = () => {
   if (tool === ToolSlug.Transcribe) {
     return <PassageDetailTranscribeMobile width={width} />;
   }
-  if (tool === ToolSlug.Discuss) {
+  if (toolShowsStepInstructions(tool)) {
     return (
       <>
-        <PassageDetailPlayer width={width} allowZoomAndSpeed={true} />
+        {tool === ToolSlug.Discuss && (
+          <PassageDetailPlayer width={width} allowZoomAndSpeed={true} />
+        )}
         <PassageDetailDiscuss width={width} currentStep={currentstep} />
       </>
     );
-  }
-  if (tool === ToolSlug.Done) {
-    return <PassageDetailDiscuss width={width} currentStep={currentstep} />;
   }
   return <DesktopOnlyStep />;
 };

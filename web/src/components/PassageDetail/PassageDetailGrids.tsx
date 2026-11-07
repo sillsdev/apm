@@ -25,15 +25,25 @@ import {
   ArtifactTypeSlug,
   passageRefText,
   PassageReference,
+  parseStepSettings,
   remoteIdGuid,
   sectionDescription,
   ToolSlug,
+  toolClipsPaperContent,
+  toolShowsChooserNoPaper,
+  toolShowsStepInstructions,
+  toolShowsStepPaper,
   useArtifactType,
   usePlanType,
   useSharedResRead,
   useStepTool,
 } from '../../crud';
-import { IToolStrings } from '../../model';
+import {
+  IToolStrings,
+  OrgWorkflowStepD,
+  Plan,
+  SectionArray,
+} from '../../model';
 import { useMobile } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { toolSelector } from '../../selector';
@@ -49,51 +59,41 @@ import { findRecords } from '../../crud/tryFindRecord';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
-function parseStepSettings(settings: unknown): Record<string, unknown> | null {
-  if (!settings) return null;
-  if (typeof settings === 'string') {
-    try {
-      return JSON.parse(settings) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
+function ChooserStepBody({
+  tool,
+  width,
+  currentstep,
+  orgWorkflowSteps,
+  sectionArr,
+  plans,
+}: {
+  tool: string | undefined;
+  width: number;
+  currentstep: string;
+  orgWorkflowSteps: OrgWorkflowStepD[];
+  sectionArr: SectionArray;
+  plans: Plan[];
+}) {
+  if (tool === ToolSlug.Resource) return <PassageDetailArtifacts />;
+  if (tool === ToolSlug.Paratext) return <PassageDetailParatextIntegration />;
+  if (tool === ToolSlug.Export) {
+    return (
+      <TranscriptionTab
+        projectPlans={plans}
+        floatTop
+        step={currentstep}
+        orgSteps={orgWorkflowSteps}
+        sectionArr={sectionArr}
+      />
+    );
   }
-  if (typeof settings === 'object') return settings as Record<string, unknown>;
+  if (toolShowsStepInstructions(tool)) {
+    return (
+      <PassageDetailDiscuss width={width - 24} currentStep={currentstep} />
+    );
+  }
   return null;
 }
-
-// Tools that show the passage chooser on the page background (no Paper).
-const chooserTools: string[] = [
-  ToolSlug.Resource,
-  ToolSlug.Paratext,
-  ToolSlug.Export,
-  ToolSlug.Done,
-];
-
-// Tools whose step content renders inside the shared Paper alongside the
-// discussion panel.
-const paperTools = [
-  ToolSlug.Discuss,
-  ToolSlug.TeamCheck,
-  ToolSlug.Record,
-  ToolSlug.Verses,
-  ToolSlug.CarefulSpeech,
-  ToolSlug.PhraseBackTranslate,
-  ToolSlug.Transcribe,
-  ToolSlug.ConsultantCheck,
-  ToolSlug.KeyTerm,
-] as string[];
-
-// Of those, the ones that size their own player/editor and must be clipped to
-// the pane rather than allowed to push the Paper wider.
-const clippedPaperTools = [
-  ToolSlug.Record,
-  ToolSlug.Verses,
-  ToolSlug.CarefulSpeech,
-  ToolSlug.PhraseBackTranslate,
-  ToolSlug.Transcribe,
-  ToolSlug.ConsultantCheck,
-] as string[];
 
 const PassageDetailGrids = () => {
   const [plan] = useGlobal('plan'); //will be constant here
@@ -164,8 +164,8 @@ const PassageDetailGrids = () => {
   );
 
   const plans = useMemo(() => {
-    const plans = findRecords(memory, 'plan');
-    return plans.filter((p) => p.id === plan);
+    // Orbit plan table rows match Plan.
+    return (findRecords(memory, 'plan') as Plan[]).filter((p) => p.id === plan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
   const headerToolLabel =
@@ -192,9 +192,9 @@ const PassageDetailGrids = () => {
     0,
     paneWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
   );
-  const showsChooser = chooserTools.includes(tool ?? '');
-  const showsStepPaper = paperTools.includes(tool ?? '');
-  const clipsStepContent = clippedPaperTools.includes(tool ?? '');
+  const showsChooser = toolShowsChooserNoPaper(tool);
+  const showsStepPaper = toolShowsStepPaper(tool);
+  const clipsStepContent = toolClipsPaperContent(tool);
   const showsStepPlayer =
     tool === ToolSlug.Discuss ||
     tool === ToolSlug.TeamCheck ||
@@ -276,23 +276,14 @@ const PassageDetailGrids = () => {
           }}
         >
           <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-          {tool === ToolSlug.Resource && <PassageDetailArtifacts />}
-          {tool === ToolSlug.Paratext && <PassageDetailParatextIntegration />}
-          {tool === ToolSlug.Export && (
-            <TranscriptionTab
-              projectPlans={plans}
-              floatTop
-              step={currentstep}
-              orgSteps={orgWorkflowSteps}
-              sectionArr={sectionArr}
-            />
-          )}
-          {tool === ToolSlug.Done && (
-            <PassageDetailDiscuss
-              width={width - 24}
-              currentStep={currentstep}
-            />
-          )}
+          <ChooserStepBody
+            tool={tool}
+            width={width}
+            currentstep={currentstep}
+            orgWorkflowSteps={orgWorkflowSteps}
+            sectionArr={sectionArr}
+            plans={plans}
+          />
         </Box>
       )}
       {tool === ToolSlug.Prompt && (
@@ -327,7 +318,7 @@ const PassageDetailGrids = () => {
                   <KeyTerms width={paneWidth} />
                 </Suspense>
               )}
-              {tool === ToolSlug.Discuss && (
+              {toolShowsStepInstructions(tool) && (
                 <PassageDetailDiscuss
                   width={paneWidth}
                   currentStep={currentstep}
