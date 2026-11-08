@@ -7,9 +7,10 @@ import {
   CHECKSUM_MODULUS,
   checksumOf,
   dedupedChecksumRows,
+  fullPullSinceMillis,
+  FULL_PULL_DAYS,
   isoToMillis,
-  LARGE_TABLE_ROW_COUNT,
-  pullSinceMillis,
+  maxUpdatedMillis,
   rowsForSanityTable,
 } from './sanityCheck';
 
@@ -162,15 +163,25 @@ describe('dedupedChecksumRows', () => {
   });
 });
 
-describe('pullSinceMillis', () => {
-  it('uses four years at the large-table boundary and two weeks above it', () => {
-    expect(pullSinceMillis(0, NOW)).toBe(NOW - 365 * 4 * MS_PER_DAY);
-    expect(pullSinceMillis(LARGE_TABLE_ROW_COUNT, NOW)).toBe(
-      NOW - 365 * 4 * MS_PER_DAY
-    );
-    expect(pullSinceMillis(LARGE_TABLE_ROW_COUNT + 1, NOW)).toBe(
-      NOW - 14 * MS_PER_DAY
-    );
+describe('maxUpdatedMillis', () => {
+  it('is 0 for no rows', () => {
+    expect(maxUpdatedMillis([])).toBe(0);
+  });
+
+  it('returns the newest dateUpdated millis', () => {
+    expect(
+      maxUpdatedMillis([
+        { id: 'a', num: 10 },
+        { id: 'b', num: 40 },
+        { id: 'c', num: 20 },
+      ])
+    ).toBe(40);
+  });
+});
+
+describe('fullPullSinceMillis', () => {
+  it('is four years before now', () => {
+    expect(fullPullSinceMillis(NOW)).toBe(NOW - FULL_PULL_DAYS * MS_PER_DAY);
   });
 });
 

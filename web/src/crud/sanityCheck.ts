@@ -11,12 +11,9 @@ import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
 /** Server vwchecksum sums each row's date millis modulo this. */
 export const CHECKSUM_MODULUS = 100_000_000;
 
-/** Above this many local rows, the first repair pull is two weeks instead of four years. */
-export const LARGE_TABLE_ROW_COUNT = 500;
-
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const RECENT_PULL_DAYS = 14;
-const FULL_PULL_DAYS = 365 * 4;
+/** Fallback repair window when a pull from the local max dateUpdated is still wrong. */
+export const FULL_PULL_DAYS = 365 * 4;
 
 const WHOLE_REMOTE_TABLES = new Set([
   'activitystate',
@@ -74,10 +71,12 @@ export function dedupedChecksumRows(rows: BaseModel[]): ChecksumRow[] {
   }));
 }
 
-export function pullSinceMillis(rowCount: number, now: number): number {
-  const days =
-    rowCount > LARGE_TABLE_ROW_COUNT ? RECENT_PULL_DAYS : FULL_PULL_DAYS;
-  return now - days * MS_PER_DAY;
+export function maxUpdatedMillis(rows: ChecksumRow[]): number {
+  return rows.reduce((max, row) => Math.max(max, row.num), 0);
+}
+
+export function fullPullSinceMillis(now: number): number {
+  return now - FULL_PULL_DAYS * MS_PER_DAY;
 }
 
 type RowQuery = Parameters<Memory['cache']['query']>[0];
@@ -173,6 +172,7 @@ export function rowsForSanityTable(props: {
     return remoteRows(findRecords(memory, table) as BaseModel[]);
   }
   if (ORG_TABLES.has(table)) {
+    // ORG_TABLES is a fixed list of RecordByType keys; Set.has widens to string.
     return byOrg(table as keyof RecordByType) as BaseModel[];
   }
 
