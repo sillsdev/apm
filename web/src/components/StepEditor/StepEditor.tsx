@@ -29,6 +29,8 @@ import {
   VernacularTag,
   getToolSettings,
   remoteIdGuid,
+  toolHasSettingsDialog,
+  toolHasMarkdownSettings,
 } from '../../crud';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
@@ -45,14 +47,6 @@ import { VertListDnd } from '../../hoc/VertListDnd';
 import { DiscussStepSettings } from './DiscussStepSettings';
 import { RecordStepSettings } from './RecordStepSettings';
 import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
-
-const settingsTools = new Set([
-  ToolSlug.Transcribe,
-  ToolSlug.Paratext,
-  ToolSlug.Discuss,
-  ToolSlug.Record,
-  ToolSlug.PhraseBackTranslate,
-]);
 
 export interface IStepRow {
   id: string;
@@ -250,7 +244,7 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const handleToolChange = (tool: string, index: number) => {
     focusIndex.current = index;
-    if (settingsTools.has(tool as ToolSlug)) toolRef.current = index;
+    if (toolHasSettingsDialog(tool)) toolRef.current = index;
     setToolSettingsRow(index); //bring up Settings editor
     let name = (rows[index] as IStepRow).name;
     if (name.includes(se.nextStep))
@@ -572,9 +566,7 @@ export const StepEditor = ({ process, org }: IProps) => {
               onDelete={handleHide}
               onRestore={handleVisible}
               onSettings={
-                settingsTools.has(r.tool as ToolSlug)
-                  ? handleSettings
-                  : undefined
+                toolHasSettingsDialog(r.tool) ? handleSettings : undefined
               }
               settingsTitle={prettySettings(r.tool, r.settings)}
             />
@@ -623,7 +615,9 @@ export const StepEditor = ({ process, org }: IProps) => {
       {toolSettingsRow > -1 && (
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Discuss}
+          isOpen={toolHasMarkdownSettings(
+            (rows[toolSettingsRow] as IStepRow).tool
+          )}
           onOpen={setToolSettingsOpen}
           bp={BigDialogBp.sm}
         >

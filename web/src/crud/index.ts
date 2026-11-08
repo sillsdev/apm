@@ -21,6 +21,7 @@ export * from './saveNewSection';
 export * from './section';
 export * from './setDefaultProj';
 export * from './toolSlug';
+export * from './stepToolSettings';
 export * from './updatePassageState';
 export * from './useAllUserGroup';
 export * from './useFlatAdd';

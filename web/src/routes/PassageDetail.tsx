@@ -16,6 +16,7 @@ import {
   useUrlContext,
   useArtifactType,
   remoteIdGuid,
+  toolShowsStepInstructions,
 } from '../crud';
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
 import { useMobile } from '../utils/useMobile';
@@ -37,6 +38,8 @@ import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldC
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
 import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
+import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
+import PassageDetailPlayer from '../components/PassageDetail/PassageDetailPlayer';
 
 /**
  * Fallback for steps mobile has no UI for yet. Reads its string here rather
@@ -112,55 +115,62 @@ const MobileStep = () => {
     isBoldWorkflow,
     artifactSlug
   );
+  const width = Math.max(0, paneWidth - 40);
 
-  return tool === ToolSlug.Record ? (
-    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Resource ? (
-    <PassageDetailsArtifactsMobile />
-  ) : tool === ToolSlug.Verses ? (
-    <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />
-  ) : tool === ToolSlug.CarefulSpeech ? (
+  if (tool === ToolSlug.Record) {
+    return <PassageDetailRecord width={width} />;
+  }
+  if (tool === ToolSlug.Resource) {
+    return <PassageDetailsArtifactsMobile />;
+  }
+  if (tool === ToolSlug.Verses) {
+    return <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />;
+  }
+  if (tool === ToolSlug.CarefulSpeech) {
     // Keyed for the same reason as the transcription steps below: a team can
     // configure several guided-record steps in a row, and they all render the
     // one PassageDetailGuidedPhraseRecord component. (TT-7643)
-    <PassageDetailCarefulSpeech
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
-    <PassageDetailLwcTranslation
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow ? (
+    return <PassageDetailCarefulSpeech key={currentstep} width={width} />;
+  }
+  if (tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) {
+    return <PassageDetailLwcTranslation key={currentstep} width={width} />;
+  }
+  if (tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow) {
     // A team can have one Phrase Back Translation step per language. Without a
     // key the reused instance carries the previous step's recording pass -
     // including the take loaded in its recorder - into the next language's
     // step, so the other language's audio plays there. (TT-7643)
-    <PassageDetailPhraseBackTranslate
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : boldClauseTranscription ? (
+    return <PassageDetailPhraseBackTranslate key={currentstep} width={width} />;
+  }
+  if (boldClauseTranscription) {
     // Key on currentstep so the shared transcription component remounts when
     // moving between the adjacent Careful- and LWC-Transcription steps. Desktop
     // gets this for free via <Paper key={currentstep}> in PassageDetailGrids;
     // without it here the reused instance carries state (and flushes the prior
     // step's text onto the new step's artifact), so LWC shows Careful's
     // transcriptions. (TT-7503)
-    <PassageDetailLwcTranscription
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : tool === ToolSlug.TeamCheck ? (
-    <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Prompt ? (
-    <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Transcribe ? (
-    <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
-  ) : (
-    <DesktopOnlyStep />
-  );
+    return <PassageDetailLwcTranscription key={currentstep} width={width} />;
+  }
+  if (tool === ToolSlug.TeamCheck) {
+    return <TeamCheckReferenceMobile width={width} />;
+  }
+  if (tool === ToolSlug.Prompt) {
+    return <PassageDetailPrompt width={width} />;
+  }
+  if (tool === ToolSlug.Transcribe) {
+    return <PassageDetailTranscribeMobile width={width} />;
+  }
+  if (toolShowsStepInstructions(tool)) {
+    return (
+      <>
+        {tool === ToolSlug.Discuss && (
+          <PassageDetailPlayer width={width} allowZoomAndSpeed={true} />
+        )}
+        <PassageDetailDiscuss width={width} currentStep={currentstep} />
+      </>
+    );
+  }
+  return <DesktopOnlyStep />;
 };
 
 const MobileDetail = () => {
