@@ -143,7 +143,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       table: string,
       rows: ChecksumRow[],
       remoteChecksum: number
-    ) => {
+    ): Promise<PullResult> => {
       const pull = async (sinceMillis: number): Promise<PullResult> => {
         const since = DateTime.fromMillis(sinceMillis).toISO() || '';
         return pullTableSince({
@@ -161,35 +161,36 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         const fullSince = fullPullSinceMillis();
         // Prefer the newest local stamp so we only page recent changes.
         // No local dates means the full window is the only pull.
-        if (maxUpdated <= 0) {
-          await pull(fullSince);
-          return;
-        }
+        if (maxUpdated <= 0) return pull(fullSince);
         const recent = await pull(maxUpdated);
-        // Network retries already failed; leave the table for a later pass.
-        if (recent.aborted) return;
+        // Network retries already failed; stop this pass entirely.
+        if (recent.aborted) return recent;
         const after = dedupedChecksumRows(tableRows(table));
-        if (checksumOf(after) === remoteChecksum) return;
+        if (checksumOf(after) === remoteChecksum) return { aborted: false };
         // Max dateUpdated was not enough; fall back to the four-year window.
-        await pull(fullSince);
+        return pull(fullSince);
       } catch (err: unknown) {
         logError(Severity.error, errorReporter, reportedError(err));
+        return { aborted: false };
       }
     };
 
-    const refreshIfStale = async (table: string) => {
+    const refreshIfStale = async (table: string): Promise<PullResult> => {
       const rows = dedupedChecksumRows(tableRows(table));
       const local = checksumOf(rows);
       const remoteChecksum =
         checksums.find((row) => row.attributes.name === table)?.attributes
           .checksum ?? 0;
-      if (local === remoteChecksum) return;
-      await refreshTable(table, rows, remoteChecksum);
+      if (local === remoteChecksum) return { aborted: false };
+      return refreshTable(table, rows, remoteChecksum);
     };
     // Sequential on purpose: parents before children, because a stale
     // mediafile list makes the discussion checksum wrong.
     for (const table of tables) {
-      await refreshIfStale(table); // NOSONAR: sequential by design, see above
+      // NOSONAR: sequential by design, see above
+      const { aborted } = await refreshIfStale(table);
+      // Same outage would hit every later table; wait for the next pass.
+      if (aborted) return;
     }
   };
 };
