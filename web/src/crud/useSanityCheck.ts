@@ -114,15 +114,8 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         onUnknownTable: (unknown) => {
           const message = `sanity check has no row filter for ${unknown}`;
           // A missing filter is a programming error: add the table to
-          // rowsForSanityTable. Developers get an uncaught error thrown from
-          // its own task, outside the sync's promise chain, so DataChanges'
-          // catch cannot swallow it and the rest of the check still runs.
-          if (getGlobal('developer')) {
-            setTimeout(() => {
-              throw new Error(message);
-            });
-            return;
-          }
+          // rowsForSanityTable. sanityCheck.test.ts fails for any fileOrder
+          // table without one, so this only reports what slipped past CI.
           logError(Severity.error, errorReporter, message);
         },
       });

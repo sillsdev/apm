@@ -11,6 +11,7 @@ import {
   maxUpdatedMillis,
   rowsForSanityTable,
 } from './sanityCheck';
+import { staticFiles, updateableFiles } from './fileOrder';
 
 const rec = (
   type: string,
@@ -291,4 +292,15 @@ describe('rowsForSanityTable', () => {
     expect(rowsFor('nope', {}, onUnknownTable)).toEqual([]);
     expect(onUnknownTable).toHaveBeenCalledWith('nope');
   });
+
+  // useSanityCheck walks these same lists, so a table added to fileOrder
+  // without a case in rowsForSanityTable fails here instead of at runtime.
+  it.each([...staticFiles, ...updateableFiles].map((file) => file.table))(
+    'has a row filter for synced table %s',
+    (table) => {
+      const onUnknownTable = jest.fn();
+      rowsFor(table, {}, onUnknownTable);
+      expect(onUnknownTable).not.toHaveBeenCalled();
+    }
+  );
 });
