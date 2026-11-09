@@ -6,12 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  IStepEditorStrings,
-  OrgWorkflowStep,
-  IWorkflowStepsStrings,
-  OrgWorkflowStepD,
-} from '../../model';
+import { IStepEditorStrings, IWorkflowStepsStrings } from '../../model';
 import { Box } from '@mui/material';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
 import { useGlobal } from '../../context/useGlobal';
@@ -23,40 +18,25 @@ import { toCamel } from '../../utils';
 import {
   getTool,
   ToolSlug,
-  defaultWorkflow,
   useTools,
   useArtifactType,
   VernacularTag,
   getToolSettings,
   remoteIdGuid,
   toolHasSettingsDialog,
-  toolHasMarkdownSettings,
 } from '../../crud';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
-import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import BigDialog from '../../hoc/BigDialog';
-import { BigDialogBp } from '../../hoc/BigDialogBp';
-import { TranscribeStepSettings } from './TranscribeStepSettings';
-import { ParatextStepSettings } from './ParatextStepSettings';
-import { PhraseBackTranslateStepSettings } from './PhraseBackTranslateStepSettings';
 import { stepEditorSelector, workflowStepsSelector } from '../../selector';
 import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
-import { DiscussStepSettings } from './DiscussStepSettings';
-import { RecordStepSettings } from './RecordStepSettings';
 import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
+import { IStepRow, rowSignature } from './stepRow';
+import { saveOrgWorkflowSteps } from './saveOrgWorkflowSteps';
+import { StepSettingsDialogs } from './StepSettingsDialogs';
 
-export interface IStepRow {
-  id: string;
-  seq: number;
-  name: string;
-  pos: number;
-  tool: string;
-  settings: string;
-  rIdx: number;
-}
+export type { IStepRow } from './stepRow';
 
 interface SortEndProps {
   oldIndex: number;
@@ -125,42 +105,21 @@ export const StepEditor = ({ process, org }: IProps) => {
     const sp = workflowScrollParent();
     if (sp) workflowScrollTopRef.current = sp.scrollTop;
   };
-  const mxSeq = useMemo(() => {
-    let max = 0;
-    rows.forEach((r) => {
-      max = Math.max(r.seq, max);
-    });
-    return max;
-  }, [rows]);
 
-  const visible = useMemo(() => {
-    return rows.filter((r) => r.seq >= 0).length;
-  }, [rows]);
-
-  const hidden = useMemo(() => {
-    return rows.filter((r) => r.seq < 0).length;
-  }, [rows]);
-
-  const hiddenMessage = useMemo(
-    () => se.stepsHidden.replace('{0}', hidden.toString()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hidden]
-  );
+  let mxSeq = 0;
+  let visible = 0;
+  let hidden = 0;
+  rows.forEach((r) => {
+    mxSeq = Math.max(r.seq, mxSeq);
+    if (r.seq >= 0) visible += 1;
+    else hidden += 1;
+  });
+  const hiddenMessage = se.stepsHidden.replace('{0}', hidden.toString());
+  const settingsRow = toolSettingsRow > -1 ? rows[toolSettingsRow] : undefined;
 
   const getOrgNames = (exceptId?: string) => {
     return rows.filter((r) => r.id !== exceptId).map((r) => r.name);
   };
-
-  // Captures the persisted fields of a row so two rows can be compared for
-  // real changes. Both sides go through the same transforms (localized name,
-  // camel tool, stringified tool/settings), so unchanged steps match exactly.
-  const rowSignature = (row: IStepRow) =>
-    JSON.stringify({
-      name: row.name,
-      seq: row.seq,
-      tool: row.tool,
-      settings: row.settings,
-    });
 
   const mangleName = (
     name: string,
@@ -218,9 +177,8 @@ export const StepEditor = ({ process, org }: IProps) => {
     }
     if (toolRef.current !== undefined) {
       focusIndex.current = toolRef.current;
-      const settings = (rows[toolRef.current as number] as IStepRow).settings
-        ? JSON.parse((rows[toolRef.current as number] as IStepRow).settings)
-        : {};
+      const edited = rows[toolRef.current];
+      const settings = edited.settings ? JSON.parse(edited.settings) : {};
       const artId =
         remoteIdGuid(
           'artifacttype',
@@ -238,10 +196,7 @@ export const StepEditor = ({ process, org }: IProps) => {
       const lang = settings?.language
         ? ` ${parseStepLanguageField(settings.language).languageName}`
         : '';
-      let name =
-        localizedTool((rows[toolRef.current as number] as IStepRow).tool) +
-        lang +
-        artShortName;
+      let name = localizedTool(edited.tool) + lang + artShortName;
       name = mangleName(name, getOrgNames(), toolRef.current);
       setRows(
         rows.map((r, i) =>
@@ -273,7 +228,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     focusIndex.current = index;
     if (toolHasSettingsDialog(tool)) toolRef.current = index;
     setToolSettingsRow(index); //bring up Settings editor
-    let name = (rows[index] as IStepRow).name;
+    let name = rows[index].name;
     if (name.includes(se.nextStep))
       name = mangleName(localizedTool(tool), getOrgNames());
     setRows(
@@ -308,7 +263,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     toolChanged(toolId, true);
   };
 
-  const handleVisible = async (index: number) => {
+  const handleVisible = (index: number) => {
     setRows((rows) =>
       rows
         .map((r, i) => (i === index ? { ...r, seq: mxSeq + 1 } : r))
@@ -322,7 +277,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     setShowAll(!showAll);
   };
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     focusIndex.current = rows.length;
     scrollNewStepIntoViewRef.current = true;
     const name = mangleName(se.nextStep, getOrgNames());
@@ -347,93 +302,21 @@ export const StepEditor = ({ process, org }: IProps) => {
     if (saving.current) return;
     saving.current = true;
     showMessage(se.saving);
-    const orgNames = new Set<string>();
-    let count = 0;
-    for (let ix = 0; ix < rows.length; ix += 1) {
-      const row = rows[ix] as IStepRow;
-      const id = row.id;
-      const tool = JSON.stringify({
-        tool: row.tool,
-        settings: row.settings,
+    try {
+      const count = await saveOrgWorkflowSteps({
+        rows,
+        org,
+        process,
+        memory,
+        user,
+        baseline: baselineRef.current,
+        mangleName,
+        getOrgNames,
       });
-      if (id) {
-        const baseline = baselineRef.current.get(id);
-        if (baseline !== undefined && baseline === rowSignature(row)) {
-          // Step is unchanged (name, sequence, tool and settings all match
-          // what was loaded) — skip the write.
-          continue;
-        }
-        const recId = { type: 'orgworkflowstep', id };
-        const rec = memory.cache.query((q) => q.findRecord(recId)) as
-          OrgWorkflowStep | undefined;
-
-        if (rec) {
-          let name = rec.attributes?.name;
-          if (name !== row.name) {
-            name = mangleName(
-              row.name,
-              getOrgNames(id).concat(Array.from(orgNames)),
-              ix,
-              false
-            );
-            orgNames.add(name);
-          }
-          if (
-            name !== rec.attributes?.name ||
-            row.seq !== rec.attributes?.sequencenum ||
-            tool !== rec.attributes?.tool
-          ) {
-            await memory.update((t) =>
-              t.updateRecord({
-                ...rec,
-                attributes: {
-                  ...rec.attributes,
-                  name,
-                  sequencenum: row.seq,
-                  tool: tool,
-                },
-              })
-            );
-            count += 1;
-          }
-        }
-      } else {
-        const name = mangleName(
-          row.name,
-          getOrgNames().concat(Array.from(orgNames)),
-          ix,
-          false
-        );
-        const rec = {
-          type: 'orgworkflowstep',
-          attributes: {
-            sequencenum: row.seq,
-            name,
-            process: process || defaultWorkflow,
-            tool: tool,
-            permissions: '{}',
-          },
-        } as OrgWorkflowStep;
-        if (org) {
-          await memory.update((t) => [
-            ...AddRecord(t, rec, user, memory),
-            ...ReplaceRelatedRecord(
-              t,
-              rec as OrgWorkflowStepD,
-              'organization',
-              'organization',
-              org
-            ),
-          ]);
-        }
-        count += 1;
-      }
+      showMessage(se.changes.replace('{0}', count.toString()));
+    } finally {
+      saving.current = false;
     }
-    rows.forEach((row) => {
-      if (row.id) baselineRef.current.set(row.id, rowSignature(row));
-    });
-    showMessage(se.changes.replace('{0}', count.toString()));
-    saving.current = false;
   };
 
   useEffect(() => {
@@ -625,88 +508,12 @@ export const StepEditor = ({ process, org }: IProps) => {
         aria-hidden
         sx={{ height: 1, width: '100%', flexShrink: 0 }}
       />
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={
-            (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
-          }
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <TranscribeStepSettings
-            org={org}
-            isOpen={
-              (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
-            }
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={
-            (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Paratext
-          }
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <ParatextStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={toolHasMarkdownSettings(
-            (rows[toolSettingsRow] as IStepRow).tool
-          )}
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <DiscussStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-            onClose={() => setToolSettingsOpen(false)}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Record}
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <RecordStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-            onClose={() => setToolSettingsOpen(false)}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={
-            (rows[toolSettingsRow] as IStepRow).tool ===
-            ToolSlug.PhraseBackTranslate
-          }
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <PhraseBackTranslateStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-            stepId={(rows[toolSettingsRow] as IStepRow).id}
-            organizationId={org}
-          />
-        </BigDialog>
-      )}
+      <StepSettingsDialogs
+        org={org}
+        row={settingsRow}
+        onOpen={setToolSettingsOpen}
+        onChange={handleSettingsChange}
+      />
     </div>
   );
 };
