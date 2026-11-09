@@ -33,8 +33,8 @@ function reportedError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
 
-/** `aborted` means network retries were exhausted — do not start another pull. */
-type PullResult = { aborted: boolean };
+/** `aborted` means network retries were exhausted — retry on a later sync pass. */
+export type SanityCheckResult = { aborted: boolean };
 
 const pullTableSince = async (props: {
   token: string;
@@ -44,7 +44,7 @@ const pullTableSince = async (props: {
   since: string;
   errorReporter: ErrorReporter;
   setLanguage: typeof actions.setLanguage;
-}): Promise<PullResult> => {
+}): Promise<SanityCheckResult> => {
   const api =
     API_CONFIG.host +
     `/api/datachanges/project/${props.remoteProjectId}/${props.table}/`;
@@ -83,15 +83,17 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const [errorReporter] = useGlobal('errorReporter');
   const getGlobal = useGetGlobal();
 
-  return async (projectId: string) => {
+  return async (projectId: string): Promise<SanityCheckResult> => {
     // `offline` is an Electron local-mode session. `connected` is false when
     // an online session has lost its network. Either way there is no server pull.
-    if (!token || getGlobal('offline') || !getGlobal('connected')) return;
-    if (!memory || !remote || !coordinator) return;
+    if (!token || getGlobal('offline') || !getGlobal('connected')) {
+      return { aborted: false };
+    }
+    if (!memory || !remote || !coordinator) return { aborted: false };
 
     const project = findRecord(memory, 'project', projectId);
     const remoteProjectId = project?.keys?.remoteId ?? '';
-    if (!project || !remoteProjectId) return;
+    if (!project || !remoteProjectId) return { aborted: false };
 
     // Relation filter stays on the query. The table selects the model.
     const plans =
@@ -103,7 +105,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       ) as PlanD[] | undefined) ?? [];
     const plan = plans[0];
     // Plan-scoped tables (mediafile, section, passage) have no owner without one.
-    if (!plan) return;
+    if (!plan) return { aborted: false };
 
     const tables = [...staticFiles, ...updateableFiles]
       .sort((a, b) => (a.sort <= b.sort ? -1 : 1))
@@ -136,15 +138,15 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
     } catch (err: unknown) {
       // Skip this pass. The next sync interval can try again.
       logError(Severity.error, errorReporter, reportedError(err));
-      return;
+      return { aborted: true };
     }
 
     const refreshTable = async (
       table: string,
       rows: ChecksumRow[],
       remoteChecksum: number
-    ): Promise<PullResult> => {
-      const pull = async (sinceMillis: number): Promise<PullResult> => {
+    ): Promise<SanityCheckResult> => {
+      const pull = async (sinceMillis: number): Promise<SanityCheckResult> => {
         const since = DateTime.fromMillis(sinceMillis).toISO() || '';
         return pullTableSince({
           token,
@@ -175,7 +177,9 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       }
     };
 
-    const refreshIfStale = async (table: string): Promise<PullResult> => {
+    const refreshIfStale = async (
+      table: string
+    ): Promise<SanityCheckResult> => {
       const rows = dedupedChecksumRows(tableRows(table));
       const local = checksumOf(rows);
       const remoteChecksum =
@@ -190,7 +194,8 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       // NOSONAR: sequential by design, see above
       const { aborted } = await refreshIfStale(table);
       // Same outage would hit every later table; wait for the next pass.
-      if (aborted) return;
+      if (aborted) return { aborted: true };
     }
+    return { aborted: false };
   };
 };

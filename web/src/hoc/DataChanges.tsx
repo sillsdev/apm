@@ -51,6 +51,9 @@ export function DataChanges(props: PropsWithChildren) {
   const [busyDelay, setBusyDelay] = useState<number | null>(null);
   const [dataDelay, setDataDelay] = useState<number | null>(null);
   const [firstRun, setFirstRun] = useState(true);
+  // firstRun is cleared by the delay effect; keep sanity pending until every
+  // project finishes without a network abort so later intervals can retry.
+  const sanityPending = useRef(true);
   const doingChanges = useRef(false);
   const getOfflineProject = useOfflnProjRead();
   const checkOnline = useCheckOnline('DataChanges');
@@ -143,18 +146,29 @@ export function DataChanges(props: PropsWithChildren) {
           setOrbitRetries
         );
         // Cleared only after a successful sync, so a failed first tick keeps
-        // the one-time sanity check for the next interval.
+        // firstRun for the next interval. Sanity uses sanityPending separately.
         setFirstRun(false);
-        if (check) {
+        if (check || sanityPending.current) {
           //make sure we have a bible media project and plan downloaded
           await getBibleMediaPlan();
           const bibleMediaProject = await getBibleMediaProject();
-          if (bibleMediaProject) await doSanityCheck(bibleMediaProject.id);
-          for (let ix = 0; ix < getGlobal('projectsLoaded').length; ix++)
-            await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
+          let aborted = false;
+          if (bibleMediaProject) {
+            aborted = (await doSanityCheck(bibleMediaProject.id)).aborted;
+          }
+          const loaded = getGlobal('projectsLoaded');
+          for (let ix = 0; !aborted && ix < loaded.length; ix++) {
+            aborted = (await doSanityCheck(loaded[ix] as string)).aborted;
+          }
+          // Keep pending across sync intervals until every project finishes.
+          sanityPending.current = aborted;
         }
         perfRecordMs('DataChanges.updateData', performance.now() - t0);
       } catch (err: unknown) {
+        // Leave the startup 10 ms tick so a persistent failure does not
+        // retry and log on every interval. Sanity stays pending via
+        // sanityPending / firstRun until a later successful pass.
+        setDataDelay(1000 * (userDataDelay * 60));
         // useInterval does not await updateData; report here so a failed
         // sync or sanity check is not an unhandled rejection.
         logError(
