@@ -209,7 +209,9 @@ function WSAudioPlayerSegment(props: IProps) {
             <span>
               <IconButton
                 id="wsSplit"
-                onClick={handleSplit}
+                // Match the tooltip: Add Boundary is a double-click gesture
+                // (waveform dblclick / mobile double-tap share that intent).
+                onDoubleClick={handleSplit}
                 disabled={splitDisabled}
                 // Use primary style only when Add is actionable.
                 variant={splitDisabled ? undefined : 'primary'}
