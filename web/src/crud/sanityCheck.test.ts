@@ -154,7 +154,9 @@ describe('dedupedChecksumRows', () => {
     ] as unknown as BaseModel[];
     expect(dedupedChecksumRows(rows)).toEqual([
       { id: '9', num: isoToMillis('2020-01-01T00:00:00Z') },
-      { id: '0', num: isoToMillis('2022-01-01T00:00:00Z') },
+      // Local-only rows keep placeholder id '0' with a zero timestamp so they
+      // do not shift the checksum the server computes from remote ids only.
+      { id: '0', num: 0 },
     ]);
   });
 });

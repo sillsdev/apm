@@ -67,7 +67,9 @@ export function dedupedChecksumRows(rows: BaseModel[]): ChecksumRow[] {
   }
   return [...byRemoteId.entries()].map(([id, row]) => ({
     id,
-    num: isoToMillis(row.attributes?.dateUpdated ?? ''),
+    // Local-only rows use placeholder id '0'. Their dateUpdated must not
+    // enter the checksum — the server has no matching row.
+    num: id === '0' ? 0 : isoToMillis(row.attributes?.dateUpdated ?? ''),
   }));
 }
 

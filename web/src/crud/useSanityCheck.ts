@@ -33,6 +33,9 @@ function reportedError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
 
+/** `aborted` means network retries were exhausted — do not start another pull. */
+type PullResult = { aborted: boolean };
+
 const pullTableSince = async (props: {
   token: string;
   coordinator: Coordinator;
@@ -41,7 +44,7 @@ const pullTableSince = async (props: {
   since: string;
   errorReporter: ErrorReporter;
   setLanguage: typeof actions.setLanguage;
-}) => {
+}): Promise<PullResult> => {
   const api =
     API_CONFIG.host +
     `/api/datachanges/project/${props.remoteProjectId}/${props.table}/`;
@@ -63,10 +66,11 @@ const pullTableSince = async (props: {
       setDataChangeCount: () => undefined,
       fetchUrl: undefined,
     });
-    if (startNext === DATA_CHANGES_NETWORK_ABORT) break;
+    if (startNext === DATA_CHANGES_NETWORK_ABORT) return { aborted: true };
     if (startNext === start) retriesLeft -= 1;
     else start = startNext;
   }
+  return { aborted: false };
 };
 
 export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
@@ -140,9 +144,9 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       rows: ChecksumRow[],
       remoteChecksum: number
     ) => {
-      const pull = async (sinceMillis: number) => {
+      const pull = async (sinceMillis: number): Promise<PullResult> => {
         const since = DateTime.fromMillis(sinceMillis).toISO() || '';
-        await pullTableSince({
+        return pullTableSince({
           token,
           coordinator,
           remoteProjectId,
@@ -161,7 +165,9 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           await pull(fullSince);
           return;
         }
-        await pull(maxUpdated);
+        const recent = await pull(maxUpdated);
+        // Network retries already failed; leave the table for a later pass.
+        if (recent.aborted) return;
         const after = dedupedChecksumRows(tableRows(table));
         if (checksumOf(after) === remoteChecksum) return;
         // Max dateUpdated was not enough; fall back to the four-year window.
