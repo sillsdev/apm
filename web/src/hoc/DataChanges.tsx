@@ -128,7 +128,6 @@ export function DataChanges(props: PropsWithChildren) {
       doingChanges.current = true; //attempt to prevent double calls
       try {
         const check = firstRun;
-        setFirstRun(false);
         await doDataChanges(
           ctx?.accessToken || '',
           coordinator,
@@ -143,6 +142,9 @@ export function DataChanges(props: PropsWithChildren) {
           undefined,
           setOrbitRetries
         );
+        // Cleared only after a successful sync, so a failed first tick keeps
+        // the one-time sanity check for the next interval.
+        setFirstRun(false);
         if (check) {
           //make sure we have a bible media project and plan downloaded
           await getBibleMediaPlan();
@@ -152,6 +154,14 @@ export function DataChanges(props: PropsWithChildren) {
             await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
         }
         perfRecordMs('DataChanges.updateData', performance.now() - t0);
+      } catch (err: unknown) {
+        // useInterval does not await updateData; report here so a failed
+        // sync or sanity check is not an unhandled rejection.
+        logError(
+          Severity.error,
+          errorReporter,
+          err instanceof Error ? err : new Error(String(err))
+        );
       } finally {
         doingChanges.current = false; //attempt to prevent double calls
       }

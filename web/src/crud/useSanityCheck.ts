@@ -127,7 +127,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       checksums = (await remote.query((q) =>
         q
           .findRecords('vwchecksum')
-          .filter({ attribute: 'project-id', value: project.keys?.remoteId })
+          .filter({ attribute: 'project-id', value: remoteProjectId })
       )) as VwChecksum[];
     } catch (err: unknown) {
       // Skip this pass. The next sync interval can try again.
@@ -154,17 +154,18 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       };
       try {
         const maxUpdated = maxUpdatedMillis(rows);
+        const fullSince = fullPullSinceMillis();
         // Prefer the newest local stamp so we only page recent changes.
-        // No local dates means go straight to the full window.
-        const usedMax = maxUpdated > 0;
-        await pull(
-          usedMax ? maxUpdated : fullPullSinceMillis(DateTime.now().toMillis())
-        );
-        if (!usedMax) return;
+        // No local dates means the full window is the only pull.
+        if (maxUpdated <= 0) {
+          await pull(fullSince);
+          return;
+        }
+        await pull(maxUpdated);
         const after = dedupedChecksumRows(tableRows(table));
         if (checksumOf(after) === remoteChecksum) return;
-        // Max dateUpdated was not enough; pull the four-year window.
-        await pull(fullPullSinceMillis(DateTime.now().toMillis()));
+        // Max dateUpdated was not enough; fall back to the four-year window.
+        await pull(fullSince);
       } catch (err: unknown) {
         logError(Severity.error, errorReporter, reportedError(err));
       }
@@ -179,15 +180,10 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       if (local === remoteChecksum) return;
       await refreshTable(table, rows, remoteChecksum);
     };
-    // Parents before children: a stale mediafile list makes discussion wrong.
-    // Recurse instead of `for`+`await` so Sonar does not flag await-in-loop,
-    // and instead of `.then` chaining so this stays async/await.
-    const refreshInOrder = async (remaining: string[]): Promise<void> => {
-      const [table, ...rest] = remaining;
-      if (!table) return;
-      await refreshIfStale(table);
-      await refreshInOrder(rest);
-    };
-    await refreshInOrder(tables);
+    // Sequential on purpose: parents before children, because a stale
+    // mediafile list makes the discussion checksum wrong.
+    for (const table of tables) {
+      await refreshIfStale(table); // NOSONAR: sequential by design, see above
+    }
   };
 };

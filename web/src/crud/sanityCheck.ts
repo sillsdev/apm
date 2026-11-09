@@ -75,8 +75,8 @@ export function maxUpdatedMillis(rows: ChecksumRow[]): number {
   return rows.reduce((max, row) => Math.max(max, row.num), 0);
 }
 
-export function fullPullSinceMillis(now: number): number {
-  return now - FULL_PULL_DAYS * MS_PER_DAY;
+export function fullPullSinceMillis(): number {
+  return DateTime.now().toMillis() - FULL_PULL_DAYS * MS_PER_DAY;
 }
 
 type RowQuery = Parameters<Memory['cache']['query']>[0];
@@ -90,7 +90,7 @@ function queryRecords<T extends BaseModel>(
 }
 
 export function rowsForSanityTable(props: {
-  memory: Memory | undefined;
+  memory: Memory;
   project: ProjectD;
   plan: PlanD;
   table: string;
@@ -98,9 +98,8 @@ export function rowsForSanityTable(props: {
   onUnknownTable?: (table: string) => void;
 }): BaseModel[] {
   const { memory, project, plan, table, onUnknownTable } = props;
-  if (!memory) return [];
   // related() returns the to-one id as any; a missing organization is null.
-  const org = related(project, 'organization') as string;
+  const org: string | null = related(project, 'organization') ?? null;
 
   const all = <Table extends keyof RecordByType>(name: Table) =>
     findRecords(memory, name);
@@ -128,7 +127,8 @@ export function rowsForSanityTable(props: {
 
   const idSet = (rows: { id?: string }[]) => new Set(rows.map((row) => row.id));
 
-  const pointingAt = <T extends BaseModel>(
+  /** Rows whose `relation` id is in `ids`. */
+  const filterByRelatedIds = <T extends BaseModel>(
     rows: T[],
     relation: RelKey<T>,
     ids: Set<string | undefined>
@@ -136,12 +136,12 @@ export function rowsForSanityTable(props: {
 
   const byOrg = <Table extends keyof RecordByType>(name: Table) =>
     // Org-scoped sync tables extend BaseModel; analytics tables do not use this path.
-    relatedTo(
-      name,
-      'organization',
-      'organization',
-      org
-    ) as RecordByType[Table][];
+    (org
+      ? relatedTo(name, 'organization', 'organization', org)
+      : []) as RecordByType[Table][];
+
+  const groups = () =>
+    org ? remoteIdRows(relatedTo('group', 'owner', 'organization', org)) : [];
 
   const mediafiles = () =>
     remoteRows(relatedTo('mediafile', 'plan', 'plan', plan.id));
@@ -150,10 +150,10 @@ export function rowsForSanityTable(props: {
     remoteIdRows(relatedTo('section', 'plan', 'plan', plan.id));
 
   const passages = () =>
-    pointingAt(all('passage'), 'section', idSet(sections()));
+    filterByRelatedIds(all('passage'), 'section', idSet(sections()));
 
   const sectionResources = () =>
-    pointingAt(all('sectionresource'), 'section', idSet(sections()));
+    filterByRelatedIds(all('sectionresource'), 'section', idSet(sections()));
 
   const discussions = () => {
     const mediafileIds = idSet(mediafiles());
@@ -165,7 +165,7 @@ export function rowsForSanityTable(props: {
   };
 
   const sharedResources = () =>
-    pointingAt(all('sharedresource'), 'passage', idSet(passages()));
+    filterByRelatedIds(all('sharedresource'), 'passage', idSet(passages()));
 
   if (WHOLE_REMOTE_TABLES.has(table)) {
     // activitystate is in the schema but not RecordByType.
@@ -184,27 +184,31 @@ export function rowsForSanityTable(props: {
           related(row, 'organization') === null
       );
     case 'comment':
-      return pointingAt(all('comment'), 'discussion', idSet(discussions()));
+      return filterByRelatedIds(
+        all('comment'),
+        'discussion',
+        idSet(discussions())
+      );
     case 'discussion':
       return discussions();
     case 'group':
-      return remoteIdRows(relatedTo('group', 'owner', 'organization', org));
+      return groups();
     case 'groupmembership':
-      return pointingAt(
+      return filterByRelatedIds(
         all('groupmembership'),
         'group',
-        idSet(remoteIdRows(relatedTo('group', 'owner', 'organization', org)))
+        idSet(groups())
       );
     case 'mediafile':
       return mediafiles();
     case 'mediareplacement':
       return remoteRows(mediaReplacementsForPlans(memory, [plan.id]));
     case 'organization': {
-      const record = findRecord(memory, 'organization', org);
+      const record = org ? findRecord(memory, 'organization', org) : undefined;
       return record ? [record] : [];
     }
     case 'organizationschemestep':
-      return pointingAt(
+      return filterByRelatedIds(
         all('organizationschemestep'),
         'organizationscheme',
         idSet(byOrg('organizationscheme'))
@@ -212,7 +216,7 @@ export function rowsForSanityTable(props: {
     case 'passage':
       return passages();
     case 'passagestatechange':
-      return pointingAt(
+      return filterByRelatedIds(
         all('passagestatechange'),
         'passage',
         idSet(passages())
@@ -228,7 +232,7 @@ export function rowsForSanityTable(props: {
     case 'sectionresource':
       return sectionResources();
     case 'sectionresourceuser':
-      return pointingAt(
+      return filterByRelatedIds(
         all('sectionresourceuser'),
         'sectionresource',
         idSet(sectionResources())
@@ -236,7 +240,7 @@ export function rowsForSanityTable(props: {
     case 'sharedresource':
       return sharedResources();
     case 'sharedresourcereference':
-      return pointingAt(
+      return filterByRelatedIds(
         all('sharedresourcereference'),
         'sharedResource',
         idSet(sharedResources())
