@@ -104,6 +104,27 @@ export const StepEditor = ({ process, org }: IProps) => {
   const focusIndex = useRef<number>(0);
   const scrollNewStepIntoViewRef = useRef(false);
   const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
+  // Edit Workflow DialogContent scroll — nested settings dialogs (and list
+  // remounts) can clear it; remember across open/change/close.
+  const workflowScrollTopRef = useRef(0);
+  const restoreWorkflowScrollRef = useRef(false);
+
+  const workflowScrollParent = () => {
+    const el = listEndAnchorRef.current;
+    if (!el) return null;
+    let p: HTMLElement | null = el.parentElement;
+    while (p) {
+      const oy = getComputedStyle(p).overflowY;
+      if (oy === 'auto' || oy === 'scroll') return p;
+      p = p.parentElement;
+    }
+    return null;
+  };
+
+  const rememberWorkflowScroll = () => {
+    const sp = workflowScrollParent();
+    if (sp) workflowScrollTopRef.current = sp.scrollTop;
+  };
   const mxSeq = useMemo(() => {
     let max = 0;
     rows.forEach((r) => {
@@ -191,7 +212,10 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const setToolSettingsOpen = (open: boolean) => {
-    if (!open) setToolSettingsRow(-1);
+    if (!open) {
+      setToolSettingsRow(-1);
+      restoreWorkflowScrollRef.current = true;
+    }
     if (toolRef.current !== undefined) {
       focusIndex.current = toolRef.current;
       const settings = (rows[toolRef.current as number] as IStepRow).settings
@@ -236,13 +260,16 @@ export const StepEditor = ({ process, org }: IProps) => {
   const handleSettingsChange = (settings: string) => {
     // Vernacular, Q&A and Retell ASR lives in the team default, so only this
     // step's settings change.
+    rememberWorkflowScroll();
     setRows((prev) =>
       prev.map((r, i) => (i === toolSettingsRow ? { ...r, settings } : r))
     );
+    restoreWorkflowScrollRef.current = true;
     toolChanged(toolId, true);
   };
 
   const handleToolChange = (tool: string, index: number) => {
+    rememberWorkflowScroll();
     focusIndex.current = index;
     if (toolHasSettingsDialog(tool)) toolRef.current = index;
     setToolSettingsRow(index); //bring up Settings editor
@@ -265,6 +292,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleSettings = (index: number) => {
+    rememberWorkflowScroll();
     setToolSettingsRow(index);
   };
 
@@ -448,24 +476,43 @@ export const StepEditor = ({ process, org }: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org]);
 
+  // Remount VertListDnd only when visible membership/order changes. Remounting
+  // on every rows write (Phrase Back Translate language, discuss markdown, …)
+  // collapses dialog content briefly and resets Edit Workflow scroll.
+  const listStructureKey = useMemo(
+    () =>
+      rows
+        .filter((r) => r.seq >= 0 || showAll)
+        .map((r) => `${r.id || `n${r.rIdx}`}:${r.seq}`)
+        .join('|'),
+    [rows, showAll]
+  );
+
   useEffect(() => {
     setSortKey((sortKey) => sortKey + 1);
-  }, [rows, showAll]);
+  }, [listStructureKey]);
+
+  // After nested settings close / settings writes, MUI focus restore can clear
+  // DialogContent scroll after layout — restore on the following frames.
+  useEffect(() => {
+    if (!restoreWorkflowScrollRef.current) return;
+    restoreWorkflowScrollRef.current = false;
+    const top = workflowScrollTopRef.current;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const sp = workflowScrollParent();
+        if (sp) sp.scrollTop = top;
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [rows, toolSettingsRow]);
 
   useLayoutEffect(() => {
     if (!scrollNewStepIntoViewRef.current) return;
     const el = listEndAnchorRef.current;
     if (!el) return;
     scrollNewStepIntoViewRef.current = false;
-    const scrollParent = (() => {
-      let p: HTMLElement | null = el.parentElement;
-      while (p) {
-        const oy = getComputedStyle(p).overflowY;
-        if (oy === 'auto' || oy === 'scroll') return p;
-        p = p.parentElement;
-      }
-      return null;
-    })();
+    const scrollParent = workflowScrollParent();
     if (scrollParent) {
       const pad = 8;
       const spRect = scrollParent.getBoundingClientRect();

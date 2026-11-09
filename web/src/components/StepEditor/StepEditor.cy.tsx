@@ -304,6 +304,52 @@ describe('StepEditor (Edit Workflow)', { tags: '@smoke' }, () => {
       .should('have.focus');
   });
 
+  // Phrase Back Translate language change (and any other step settings write)
+  // updates rows while the settings dialog is open. Remounting the step list
+  // on that update resets Edit Workflow scroll — keep position after close.
+  it('keeps Edit Workflow scroll after changing and closing step settings', () => {
+    const many = Array.from({ length: 18 }, (_, i) => ({
+      id: `wfs-${i}`,
+      name: `Scroll Settings Step ${i}`,
+      sequencenum: i,
+    }));
+    const memory = createWorkflowStepMemory(TEST_ORG_ID, many);
+    cy.viewport(900, 420);
+    mountStepEditor(memory);
+    cy.get('#wk-step-add').should('not.be.disabled');
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 18);
+    cy.get('.MuiDialogContent-root').should('be.visible').as('workflowContent');
+    // Remount after load can clear scrollTop; retry until it sticks.
+    cy.get('@workflowContent').should(($el) => {
+      const node = $el[0] as HTMLElement;
+      expect(node.scrollHeight).to.be.greaterThan(node.clientHeight);
+      node.scrollTop = node.scrollHeight;
+      expect(node.scrollTop).to.be.gt(50);
+    });
+    cy.get('@workflowContent')
+      .invoke('prop', 'scrollTop')
+      .should('be.gt', 50)
+      .as('scrolledTop');
+    cy.get('.MuiDialogContent-root input#stepName')
+      .last()
+      .closest('.MuiStack-root')
+      .find('button')
+      .last()
+      .click();
+    cy.get('#markdown').should('be.visible').clear().type('settings note');
+    cy.contains('button', 'Save').click();
+    cy.get('#markdown').should('not.exist');
+    cy.get('@scrolledTop').then((scrolledTop) => {
+      // Restore runs on rAF after MUI closes the nested dialog.
+      cy.get('@workflowContent').should(($el) => {
+        expect($el[0].scrollTop).to.be.closeTo(
+          scrolledTop as unknown as number,
+          20
+        );
+      });
+    });
+  });
+
   // Offline filter regression: StepEditor lists steps without remoteId when
   // offlineOnly. TT-7397 (wrong personalTeam org) is covered by personalWorkflowOrg.
   it('shows draft workflow steps for Work Alone Offline (no remoteId)', () => {
