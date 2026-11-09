@@ -247,6 +247,34 @@ describe('useMediaUpload', () => {
     expect(afterUploadCb).toHaveBeenCalledWith('media-1');
   });
 
+  it('pulls the mediafile before afterUploadCb, and only once', async () => {
+    // afterUploadCb consumers (e.g. ProvideRights) map the remote id to a local
+    // id via the keyMap; that only works once the mediafile has been pulled.
+    mockOffline = false;
+    const order: string[] = [];
+    pullTableList.mockImplementation(() => {
+      order.push('pull');
+      return Promise.resolve();
+    });
+    const afterUploadCb = jest.fn(() => {
+      order.push('afterUploadCb');
+      return Promise.resolve();
+    });
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<boolean>;
+
+    await completeUpload(upload, [makeFile()], 0, true, {
+      stringId: 'media-1',
+    });
+
+    expect(order).toEqual(['pull', 'afterUploadCb']);
+    expect(pullTableList).toHaveBeenCalledTimes(1);
+  });
+
   it('failure path: orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({

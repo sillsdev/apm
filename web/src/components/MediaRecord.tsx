@@ -445,17 +445,13 @@ function MediaRecord(props: IProps) {
   // `finish(ids)`. Hosts that mix both (ProvideRights, PassageDetailItem) write
   // a thin adapter between the two — see useMediaUpload's IMediaUploadProps.
   //
-  // TODO cleanup: retire the host-facing `afterUploadCb` in favor of `finish`.
-  // `afterUploadCb` fires per item BEFORE run() pulls the new mediafile, so every
-  // host that mutates/links it (comments, rights, sectionresource, keyterm,
-  // title) must work around the unresolved id (remoteIdGuid-or-fallback, or
-  // useTitleSave's waitForIt); `finish` runs post-pull with resolvable ids and
-  // would delete those workarounds. Do it either centrally (fire the host cb
-  // from a post-pull finish wrapper here — ~1 file, but shifts ALL record flows
-  // at once and needs a full manual sweep) or per-host (make afterUploadCb
-  // optional, migrate one chain + its tests + its manual flow at a time, comments
-  // first as the canary since their link behavior may change). MediaRecord's own
-  // `onUploaded` stays either way — it's internal per-take state, not host work.
+  // TODO cleanup in next PR: retire the host-facing `afterUploadCb` in favor of `finish`.
+  // Both now receive keyMap-resolvable ids (useMediaUpload pulls each mediafile
+  // before `afterUploadCb`), so consolidating would just remove the two callback
+  // shapes and the host adapters above. The hosts' unresolved-id fallbacks
+  // (remoteIdGuid-or-fallback, useTitleSave's waitForIt) are now belt-and-braces
+  // and could go with it. MediaRecord's own `onUploaded` stays either way — it's
+  // internal per-take state, not host work.
   // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
   // as claude thinks, but don't have time to look into it now)
   // MediaRecord runs its own upload pipeline, separate from its

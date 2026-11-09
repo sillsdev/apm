@@ -306,8 +306,28 @@ export const useMediaUpload = ({
     showMessage(msg, AlertSeverity.Error);
   };
 
-  /** Upload one file; resolves its mediaId ('' on normal failure). */
-  const uploadOne = (files: File[], n: number, gate: boolean) =>
+  /** Pull uploaded mediafiles from the server so their remote ids map to
+   *  local ids in the keyMap. A failed pull is swallowed: the upload itself
+   *  already succeeded, and cleanup must still run. */
+  const pullMedia = async (ids: string[]) => {
+    if (getGlobal('offline') || ids.length === 0) return;
+    try {
+      await pullTableList('mediafile', ids, memory, remote, backup, reporter);
+    } catch {
+      // Sync failure still runs upload cleanup.
+    }
+  };
+
+  /**
+   * Upload one file; resolves its mediaId ('' on normal failure). Ids pulled
+   * here (for afterUploadCb) are added to `pulled` so `run` doesn't re-pull them.
+   */
+  const uploadOne = (
+    files: File[],
+    n: number,
+    gate: boolean,
+    pulled: Set<string>
+  ) =>
     new Promise<string>((resolve, reject) => {
       const vndRecord = buildRecord(files[n] as File);
       nextUpload({
@@ -323,13 +343,15 @@ export const useMediaUpload = ({
           void (async () => {
             try {
               const id = await itemComplete(idx, upOk, data, files);
-              // TODO cleanup: pulling the mediafile here (before afterUploadCb)
-              // would be more globally correct — every afterUploadCb consumer
-              // would then get a keyMap-resolvable id like `finish` does — but it
-              // risks widening this pre-row-clear window with a network round-trip
-              // and changing timing for every recorder and its mocked tests.
               // Runs before nextUpload clears the pending row (TT-7363).
               if (afterUploadCb) {
+                // Pull first so the callback gets a keyMap-resolvable id
+                // (e.g. ProvideRights links the new mediafile as the IP's
+                // releaseMediafile; an unmapped remote id serializes with no id).
+                if (id && !getGlobal('offline')) {
+                  await pullMedia([id]);
+                  pulled.add(id);
+                }
                 try {
                   await afterUploadCb(id);
                 } catch {
@@ -371,6 +393,7 @@ export const useMediaUpload = ({
     if (!noBusy) setBusy(true);
 
     const ids: string[] = [];
+    const pulled = new Set<string>();
     for (let n = 0; n < staged.length; n += 1) {
       if (cancelled?.current) break;
       // A thrown bookkeeping error (offline createMedia) aborts the batch; a
@@ -378,19 +401,14 @@ export const useMediaUpload = ({
       const id = await uploadOne(
         staged,
         n,
-        !skipImportExportWait && n === 0 && startedBusy
+        !skipImportExportWait && n === 0 && startedBusy,
+        pulled
       );
       if (id) ids.push(id);
       setComplete(Math.min(((n + 1) * 100) / staged.length, 100));
     }
 
-    if (!getGlobal('offline') && ids.length > 0) {
-      try {
-        await pullTableList('mediafile', ids, memory, remote, backup, reporter);
-      } catch {
-        // Sync failure still runs upload cleanup.
-      }
-    }
+    await pullMedia(ids.filter((id) => !pulled.has(id)));
     uploadComplete();
     showMessage(
       t.uploadComplete
