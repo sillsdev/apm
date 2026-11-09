@@ -131,6 +131,7 @@
   "devDependencies": {
     "@bahmutov/cy-api": "^2.3.0",
     "@bahmutov/cypress-esbuild-preprocessor": "^2.2.8",
+    "@bugsnag/cli": "^3.10.7",
     "@cypress/grep": "7.0.0",
     "@cypress/vite-dev-server": "^8.0.0",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
