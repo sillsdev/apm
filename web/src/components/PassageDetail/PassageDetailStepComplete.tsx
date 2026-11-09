@@ -1,4 +1,11 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { Checkbox, IconButton, Box, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
@@ -51,6 +58,7 @@ export const PassageDetailStepComplete = () => {
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [importexportBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [view, setView] = useState('');
+  const toggling = useRef(false);
   const t: IPassageDetailStepCompleteStrings = useSelector(
     passageDetailStepCompleteSelector,
     shallowEqual
@@ -77,24 +85,26 @@ export const PassageDetailStepComplete = () => {
   );
 
   const handleToggleComplete = useCallback(async () => {
+    if (toggling.current) return;
+    toggling.current = true;
     const curStatus = complete;
-    const finish = async () => {
+    try {
+      if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
+        startSave(verseToolId);
+        try {
+          await waitForSave(undefined, 25);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message) showMessage(message);
+          return;
+        }
+      }
+
       await setStepComplete(currentstep, !complete);
       if (!curStatus) gotoNextStep();
-    };
-
-    if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
-      startSave(verseToolId);
-      try {
-        await waitForSave(undefined, 25);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (message) showMessage(message);
-        return;
-      }
+    } finally {
+      toggling.current = false;
     }
-
-    await finish();
   }, [
     complete,
     currentstep,
@@ -107,8 +117,8 @@ export const PassageDetailStepComplete = () => {
     showMessage,
   ]);
 
-  const handleSetCompleteTo = async () => {
-    setStepCompleteTo(currentstep);
+  const handleSetCompleteTo = () => {
+    void setStepCompleteTo(currentstep);
   };
   useEffect(() => {
     if (!busy && !importexportBusy && view) {

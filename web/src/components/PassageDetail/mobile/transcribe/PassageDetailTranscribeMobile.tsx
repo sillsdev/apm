@@ -311,18 +311,22 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
 
       waitPending
         .then(() => waitForSave(undefined, 200))
-        .then(async () => {
-          if (pendingSegmentSaveRef.current) {
-            await pendingSegmentSaveRef.current;
+        .then(() => pendingSegmentSaveRef.current)
+        .then(
+          async () => {
+            await setStepComplete(currentstep, complete);
+            if (complete) gotoNextStep();
+          },
+          (err: unknown) => {
+            // save failed or timed out; do not mark complete or navigate
+            showMessage(err instanceof Error ? err.message : String(err));
           }
-          await setStepComplete(currentstep, complete);
-          if (complete) gotoNextStep();
-        })
+        )
         .catch(() => {
-          // save failed or timed out; do not mark complete or navigate
+          // setStepComplete already reported and rolled back its failure
         });
     },
-    [waitForSave, setStepComplete, currentstep, gotoNextStep]
+    [waitForSave, setStepComplete, currentstep, gotoNextStep, showMessage]
   );
 
   const uncompletedSteps = useCallback(async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo } from 'react';
+import { useCallback, useContext, useMemo, useRef } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import CompleteIcon from '@mui/icons-material/CheckBox';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
@@ -34,6 +34,7 @@ export default function MobileStepComplete() {
   const { showMessage } = useSnackBar();
   const [busy] = useGlobal('remoteBusy');
   const [importexportBusy] = useGlobal('importexportBusy');
+  const toggling = useRef(false);
   const t: IPassageDetailStepCompleteStrings = useSelector(
     passageDetailStepCompleteSelector,
     shallowEqual
@@ -49,24 +50,26 @@ export default function MobileStepComplete() {
   );
 
   const handleToggleComplete = useCallback(async () => {
+    if (toggling.current) return;
+    toggling.current = true;
     const curStatus = complete;
-    const finish = async () => {
+    try {
+      if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
+        startSave(verseToolId);
+        try {
+          await waitForSave(undefined, 25);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message) showMessage(message);
+          return;
+        }
+      }
+
       await setStepComplete(currentstep, !complete);
       if (!curStatus) gotoNextStep();
-    };
-
-    if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
-      startSave(verseToolId);
-      try {
-        await waitForSave(undefined, 25);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (message) showMessage(message);
-        return;
-      }
+    } finally {
+      toggling.current = false;
     }
-
-    await finish();
   }, [
     complete,
     currentstep,

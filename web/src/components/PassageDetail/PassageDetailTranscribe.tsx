@@ -28,6 +28,7 @@ import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
+import { useSnackBar } from '../../hoc/SnackBar';
 import {
   getSegments,
   getSortedRegions,
@@ -78,6 +79,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     passage,
   });
   const { waitForSave } = useContext(UnsavedContext).state;
+  const { showMessage } = useSnackBar();
   const { setState } = useContext(PassageDetailContext);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission =
@@ -178,11 +180,21 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   }, [currentstep, vernacularSteps, stepSettings, hasChecking, hasPermission]);
 
   const handleComplete = (complete: boolean) => {
-    waitForSave(undefined, 200).finally(async () => {
-      await setStepComplete(currentstep, complete);
-      //if we're now complete, go to the next step or passage
-      if (complete) gotoNextStep();
-    });
+    waitForSave(undefined, 200)
+      .then(
+        async () => {
+          await setStepComplete(currentstep, complete);
+          //if we're now complete, go to the next step or passage
+          if (complete) gotoNextStep();
+        },
+        (err: unknown) => {
+          // save failed or timed out; do not mark complete or navigate
+          showMessage(err instanceof Error ? err.message : String(err));
+        }
+      )
+      .catch(() => {
+        // setStepComplete already reported and rolled back its failure
+      });
   };
 
   const uncompletedSteps = async () => {

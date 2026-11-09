@@ -261,14 +261,15 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     resolvedMethod: undefined | (() => any),
     waitCount: number
   ): Promise<any> => {
-    return waitForIt('Save', SaveComplete, () => false, waitCount)
-      .then(() => {
-        if (SaveUnsuccessful()) throw new Error(saveError());
-        if (resolvedMethod) return resolvedMethod();
-      })
-      .catch((err) => {
-        throw new Error(SaveUnsuccessful() ? saveError() : 'Timed Out');
-      });
+    try {
+      await waitForIt('Save', SaveComplete, () => false, waitCount);
+    } catch {
+      throw new Error(SaveUnsuccessful() ? saveError() : 'Timed Out');
+    }
+    if (SaveUnsuccessful()) throw new Error(saveError());
+    // Outside the try: errors from resolvedMethod keep their own message
+    // instead of being reported as a save timeout.
+    if (resolvedMethod) return resolvedMethod();
   };
 
   const checkSavedFn = (method: () => any) => {

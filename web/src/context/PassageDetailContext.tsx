@@ -37,7 +37,14 @@ import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
 import { ToolSlug } from '../crud/toolSlug';
 import { findRecord } from '../crud/tryFindRecord';
 import { getAllMediaRecs } from '../crud/media';
-import { getStepComplete } from '../crud/getStepComplete';
+import {
+  getStepComplete,
+  passageRecordForStepComplete,
+} from '../crud/getStepComplete';
+import {
+  applyStepComplete,
+  stepsCompleteThrough,
+} from '../crud/applyStepComplete';
 import { getTool } from '../crud/useStepTool';
 import { nextPasId } from '../crud/nextPasId';
 import {
@@ -180,8 +187,7 @@ const initState = {
   psgCompleted: [] as StepComplete[],
   setStepComplete: async (
     _stepId: string,
-    _complete: boolean,
-    _psgCompleted?: StepComplete[]
+    _complete: boolean
   ): Promise<void> => {},
   setStepCompleteTo: async (_stepId: string) => {},
   gotoNextStep: () => {},
@@ -305,6 +311,21 @@ const PassageDetailProvider = (props: IProps) => {
     allBookData,
     prjId: prjId ?? '',
   });
+  // Latest completed list for sequential/stale-closure callers (reopen, reject).
+  // Ceiling: every psgCompleted write must go through setPsgCompleted.
+  const psgCompletedRef = useRef(state.psgCompleted);
+  // Passage id (memory id) that psgCompleted currently describes.
+  const psgCompletedPassageRef = useRef('');
+  const setPsgCompleted = (completed: StepComplete[]) => {
+    psgCompletedRef.current = completed;
+    setState((s: ICtxState) =>
+      s.psgCompleted === completed ? s : { ...s, psgCompleted: completed }
+    );
+  };
+  // Skip Orbit→UI sync while a local complete write is in flight so a stale
+  // passages snapshot cannot uncheck the box we just flipped.
+  const pendingCompleteWrites = useRef(0);
+  const stepCompleteTail = useRef(Promise.resolve());
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
   const segmentsCb = useRef<((segments: string) => void) | undefined>(
@@ -339,7 +360,8 @@ const PassageDetailProvider = (props: IProps) => {
     stepid =
       remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
       stepid;
-    const step = state.psgCompleted.find((s) => s.stepid === stepid);
+    // Ref, not state: callers often check right after `await setStepComplete`.
+    const step = psgCompletedRef.current.find((s) => s.stepid === stepid);
     return Boolean(step?.complete);
   };
 
@@ -699,39 +721,18 @@ const PassageDetailProvider = (props: IProps) => {
       setCurrentStep('');
     } // setting to empty jumps to first uncompleted
   };
-  const setStepComplete = async (
-    stepid: string,
-    complete: boolean,
-    psgCompleted?: StepComplete[]
+  const persistPsgCompleted = async (
+    passageId: string,
+    completed: StepComplete[],
+    comment: string
   ) => {
-    if (stepid === '') return;
-    const completed = psgCompleted ?? [...state.psgCompleted];
-    const remId =
-      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
-      stepid;
-    const step = completed.find((s) => s.stepid === remId);
-    const rec = findRecord(
-      memory,
-      'orgworkflowstep',
-      stepid
-    ) as OrgWorkflowStep;
-    if (step) {
-      step.complete = complete;
-    } else {
-      completed.push({ stepid: remId, complete, name: rec.attributes.name });
-    }
-    const recId = {
-      type: 'passage',
-      id:
-        remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
-        pasId ||
-        '',
-    };
+    const recId = { type: 'passage', id: passageId };
     const curPassage = findRecord(memory, 'passage', recId.id) as Passage;
-    const curCompleteStr = curPassage?.attributes.stepComplete;
-    let stepComplete = {};
+    let stepCompleteJson: Record<string, unknown> = {};
     try {
-      stepComplete = JSON.parse(curCompleteStr || '{}');
+      stepCompleteJson = JSON.parse(
+        curPassage?.attributes.stepComplete || '{}'
+      );
     } catch (err) {
       logError(
         Severity.error,
@@ -746,72 +747,103 @@ const PassageDetailProvider = (props: IProps) => {
         .replaceAttribute(
           recId,
           'stepComplete',
-          JSON.stringify({ ...stepComplete, completed })
+          JSON.stringify({ ...stepCompleteJson, completed })
         )
         .toOperation()
     );
     ops.push(...UpdateLastModifiedBy(tb, recId, user));
-    AddPassageStateChangeToOps(
-      tb,
-      ops,
-      recId.id,
-      '',
-      `${
-        complete ? stepCompleteStr.title : stepCompleteStr.incomplete
-      } : ${localizedWorkStep(rec.attributes.name)}`,
-      user,
-      memory
-    );
-    await memory.update(ops);
-    setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
-  };
-  const setStepCompleteTo = async (stepid: string) => {
-    if (stepid === '') return;
-    const completed: StepComplete[] = [];
-    const steps = state.orgWorkflowSteps.sort(
-      (a, b) => a.attributes.sequencenum - b.attributes.sequencenum
-    );
-    let rec;
-    for (const step of steps) {
-      const remId =
-        remoteId('orgworkflowstep', step.id, memory.keyMap as RecordKeyMap) ||
-        step.id;
-      rec = findRecord(memory, 'orgworkflowstep', step.id) as OrgWorkflowStep;
-      completed.push({
-        stepid: remId,
-        complete: true,
-        name: rec.attributes.name,
-      });
-      if (step.id === stepid) break;
+    AddPassageStateChangeToOps(tb, ops, recId.id, '', comment, user, memory);
+    pendingCompleteWrites.current += 1;
+    try {
+      await memory.update(ops);
+    } finally {
+      pendingCompleteWrites.current -= 1;
     }
-    const recId = {
-      type: 'passage',
-      id:
-        remoteIdGuid('passage', pasId ?? '', memory.keyMap as RecordKeyMap) ||
-        pasId ||
-        '',
-    };
-    const tb = new RecordTransformBuilder();
-    const ops = [] as RecordOperation[];
-    ops.push(
-      tb
-        .replaceAttribute(recId, 'stepComplete', JSON.stringify({ completed }))
-        .toOperation()
+  };
+
+  const enqueueStepComplete = (run: () => Promise<void>) => {
+    const next = stepCompleteTail.current.then(run, run);
+    stepCompleteTail.current = next.then(
+      () => undefined,
+      () => undefined
     );
-    ops.push(...UpdateLastModifiedBy(tb, recId, user));
-    AddPassageStateChangeToOps(
-      tb,
-      ops,
-      recId.id,
-      '',
-      `${stepCompleteStr.title} : ${localizedWorkStep(
-        rec?.attributes?.name ?? ''
-      )}`,
-      user,
-      memory
-    );
-    await memory.update(ops);
-    setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
+    return next;
+  };
+
+  /**
+   * Queue one stepComplete write for the passage that is current *now*.
+   * The base list is read from the memory cache when the write runs (the queue
+   * guarantees earlier writes have landed), so a write that runs after
+   * navigation still edits its own passage, never the new one's list.
+   */
+  const writeStepComplete = (
+    build: (base: StepComplete[]) => {
+      completed: StepComplete[];
+      comment: string;
+    }
+  ) => {
+    const passageId =
+      remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
+      pasId ||
+      '';
+    return enqueueStepComplete(async () => {
+      const passage = findRecord(memory, 'passage', passageId) as
+        Passage | undefined;
+      const base = passage ? getStepComplete(passage) : [];
+      const { completed, comment } = build(base);
+      // Flip the checkbox before Orbit/IndexedDB finishes (only if the user is
+      // still looking at this passage).
+      if (psgCompletedPassageRef.current === passageId)
+        setPsgCompleted(completed);
+      try {
+        await persistPsgCompleted(passageId, completed, comment);
+      } catch (err) {
+        if (psgCompletedPassageRef.current === passageId) setPsgCompleted(base);
+        logError(
+          Severity.error,
+          errorReporter,
+          infoMsg(err as Error, 'Step complete save failed')
+        );
+        showMessage(err instanceof Error ? err.message : String(err));
+        throw err;
+      }
+    });
+  };
+
+  const setStepComplete = (stepid: string, complete: boolean) => {
+    if (stepid === '') return Promise.resolve();
+    const remId =
+      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
+      stepid;
+    const rec = findRecord(memory, 'orgworkflowstep', stepid) as
+      OrgWorkflowStep | undefined;
+    const name = rec?.attributes?.name ?? '';
+    return writeStepComplete((base) => ({
+      completed: applyStepComplete(base, remId, complete, name),
+      comment: `${
+        complete ? stepCompleteStr.title : stepCompleteStr.incomplete
+      } : ${localizedWorkStep(name)}`,
+    }));
+  };
+  const setStepCompleteTo = (stepid: string) => {
+    const steps = state.orgWorkflowSteps;
+    // Unknown step would otherwise mark every step complete.
+    if (!steps.some((s) => s.id === stepid)) return Promise.resolve();
+    return writeStepComplete(() => {
+      const completed = stepsCompleteThrough(
+        steps,
+        stepid,
+        (id) =>
+          remoteId('orgworkflowstep', id, memory.keyMap as RecordKeyMap) || id
+      );
+      const last = completed[completed.length - 1];
+      return {
+        completed,
+        comment: `${stepCompleteStr.title} : ${localizedWorkStep(
+          last?.name ?? ''
+        )}`,
+      };
+    });
   };
 
   const handleIncompleteNavCancel = () => {
@@ -831,10 +863,19 @@ const PassageDetailProvider = (props: IProps) => {
     const fromStep = state.currentstep;
     setIncompleteNavTarget('');
     if (!target || !fromStep) return;
-    void waitForSave(async () => {
-      await setStepComplete(fromStep, true);
-      handleSetCurrentStep(target);
-    }, 200);
+    waitForSave(undefined, 200)
+      .then(
+        async () => {
+          await setStepComplete(fromStep, true);
+          handleSetCurrentStep(target);
+        },
+        (err: unknown) => {
+          showMessage(err instanceof Error ? err.message : String(err));
+        }
+      )
+      .catch(() => {
+        // setStepComplete already reported and rolled back its failure
+      });
   };
 
   const incompleteNavMessage = (() => {
@@ -1070,45 +1111,44 @@ const PassageDetailProvider = (props: IProps) => {
   };
 
   const stepCmp = (a: StepComplete, b: StepComplete) =>
-    a.stepid > b.stepid ? 1 : -1;
+    a.stepid.localeCompare(b.stepid);
 
   useEffect(() => {
     const passageId =
       remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
       pasId ||
       '';
-    const p = passages.find((p) => p.id === passageId);
+    // useOrbitData may deliver a passages array captured before setStepComplete's
+    // memory.update; reading cache avoids Submit flickering complete→incomplete.
+    const p = passageRecordForStepComplete(memory, passageId, passages);
     if (p) {
       const complete = getStepComplete(p).sort(stepCmp);
       const s = sections.find((s) => s.id === related(p, 'section'));
       if (s) {
         if (p.id !== state.passage.id || s.id !== state.section.id) {
-          setState((state: ICtxState) => {
-            const sharedResource = findRecord(
-              memory,
-              'sharedresource',
-              related(p, 'sharedResource')
-            ) as SharedResourceD;
-            return {
-              ...state,
-              passage: p as PassageD,
-              section: s as SectionD,
-              sharedResource,
-              psgCompleted: [...complete],
-            };
-          });
+          const sharedResource = findRecord(
+            memory,
+            'sharedresource',
+            related(p, 'sharedResource')
+          ) as SharedResourceD;
+          psgCompletedPassageRef.current = passageId;
+          setPsgCompleted([...complete]);
+          setState((state: ICtxState) => ({
+            ...state,
+            passage: p as PassageD,
+            section: s as SectionD,
+            sharedResource,
+          }));
         } else {
-          const sortedPrev = [...state.psgCompleted].sort(stepCmp);
+          const sortedPrev = [...psgCompletedRef.current].sort(stepCmp);
           const sortedNew = [...complete].sort(stepCmp);
           const sameAsOrbit =
             sortedPrev.length === sortedNew.length &&
             sortedPrev.every((c, i) => shallowEqual(c, sortedNew[i]));
-          if (!sameAsOrbit) {
-            setState((state: ICtxState) => ({
-              ...state,
-              psgCompleted: [...complete],
-            }));
-          }
+          if (sameAsOrbit) return;
+          // Optimistic UI is ahead of memory until persist finishes.
+          if (pendingCompleteWrites.current > 0) return;
+          setPsgCompleted([...complete]);
         }
       }
     }

@@ -86,6 +86,7 @@ export * from './useDiscussionOrg';
 export * from './pullPlanMedia';
 export * from './useOfflnMediafileCreate';
 export * from './getStepComplete';
+export * from './applyStepComplete';
 export * from './useTranscription';
 export * from './usePassageState';
 export * from './useOrgWorkflowSteps';

@@ -759,9 +759,13 @@ export function IntegrationPanel(props: IProps) {
       setSyncing(false);
       forceDataChanges();
       if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
-        setStepComplete(currentstep, true).then(() => {
-          if (gotoNextStep) gotoNextStep();
-        });
+        setStepComplete(currentstep, true)
+          .then(() => {
+            if (gotoNextStep) gotoNextStep();
+          })
+          .catch(() => {
+            // failure already reported by setStepComplete; stay on this step
+          });
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
