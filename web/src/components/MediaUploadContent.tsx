@@ -172,7 +172,6 @@ interface IProps {
   team?: string | undefined; // used to check for speakers when adding a card
   onFiles?: ((files: File[]) => void) | undefined;
   inValue?: string | undefined;
-  onValue?: ((value: string) => void) | undefined;
   audioOnly?: boolean | undefined;
   saveButtonText?: string | undefined;
   validationMessage?: string | undefined;
@@ -215,7 +214,6 @@ function MediaUploadContent(props: IProps) {
     team,
     onFiles,
     inValue,
-    onValue,
     audioOnly,
     saveButtonText,
     validationMessage,
@@ -374,7 +372,6 @@ function MediaUploadContent(props: IProps) {
     const type =
       uploadType !== UploadType.MarkDown ? UriLinkType : MarkDownType;
     setFiles([{ name: newValue, size: newValue.length, type } as File]);
-    onValue && onValue(newValue);
   };
 
   useEffect(() => {

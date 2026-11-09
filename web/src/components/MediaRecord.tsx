@@ -36,6 +36,9 @@ import { useRecordSave } from './useRecordSave';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
+// TODO cleanup in next PR: no caller passes setCanCancel, onLoaded,
+// hideControls, onProgress, onDuration or hasRecording, and cancelMethod is
+// never read. (controlsRef is only passed by the Cypress specs; keep it.)
 export interface IProps {
   toolId: string;
   artifactId: string | null;
@@ -462,7 +465,7 @@ function MediaRecord(props: IProps) {
   // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
   // as claude thinks, but don't have time to look into it now)
   // MediaRecord runs its own upload pipeline, separate from its
-  // host's (e.g. PassageRecordDlg already holds the upload tab's `uploadMethod`).
+  // host's (e.g. PassageRecordPanel already holds the upload tab's `uploadMethod`).
   // That's why pendingRestore/beforeUpload/finish/afterUploadCb/uploadType are all
   // threaded through here just to feed this copy, and why the record and upload
   // tabs drifted (this hardcoded Media until the general-resource Retry fix).
