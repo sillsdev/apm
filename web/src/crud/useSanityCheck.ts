@@ -113,9 +113,16 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         table,
         onUnknownTable: (unknown) => {
           const message = `sanity check has no row filter for ${unknown}`;
-          // A missing filter is a programming error. Developers should see it
-          // immediately; everyone else reports it and continues the check.
-          if (getGlobal('developer')) throw new Error(message);
+          // A missing filter is a programming error: add the table to
+          // rowsForSanityTable. Developers get an uncaught error thrown from
+          // its own task, outside the sync's promise chain, so DataChanges'
+          // catch cannot swallow it and the rest of the check still runs.
+          if (getGlobal('developer')) {
+            setTimeout(() => {
+              throw new Error(message);
+            });
+            return;
+          }
           logError(Severity.error, errorReporter, message);
         },
       });

@@ -7,15 +7,10 @@ import {
   CHECKSUM_MODULUS,
   checksumOf,
   dedupedChecksumRows,
-  fullPullSinceMillis,
-  FULL_PULL_DAYS,
   isoToMillis,
   maxUpdatedMillis,
   rowsForSanityTable,
 } from './sanityCheck';
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const NOW = 1_700_000_000_000;
 
 const rec = (
   type: string,
@@ -176,12 +171,6 @@ describe('maxUpdatedMillis', () => {
         { id: 'c', num: 20 },
       ])
     ).toBe(40);
-  });
-});
-
-describe('fullPullSinceMillis', () => {
-  it('is four years before now', () => {
-    expect(fullPullSinceMillis(NOW)).toBe(NOW - FULL_PULL_DAYS * MS_PER_DAY);
   });
 });
 
