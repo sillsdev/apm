@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { infoMsg, logError, Severity, useCheckOnline } from '../utils';
+import { toError } from '../utils/toError';
 import { useInterval } from '../utils/useInterval';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
@@ -26,6 +27,12 @@ import { useDispatch } from 'react-redux';
 import { useOrbitData } from './useOrbitData';
 import { doDataChanges } from './doDataChanges';
 import { useRenderProfiler, perfRecordMs } from '../utils/perf';
+
+const MS_PER_MINUTE = 60 * 1000;
+
+/** The sync interval for the user's syncFreq. A syncFreq of 0 (sync off) gives 0. */
+const syncIntervalMs = (syncFreqMinutes: number) =>
+  syncFreqMinutes * MS_PER_MINUTE;
 
 export function DataChanges(props: PropsWithChildren) {
   useRenderProfiler('DataChanges');
@@ -51,6 +58,9 @@ export function DataChanges(props: PropsWithChildren) {
   const [busyDelay, setBusyDelay] = useState<number | null>(null);
   const [dataDelay, setDataDelay] = useState<number | null>(null);
   const [firstRun, setFirstRun] = useState(true);
+  // firstRun is cleared by the delay effect; keep sanity pending until every
+  // project finishes without a network abort so later intervals can retry.
+  const sanityPending = useRef(true);
   const doingChanges = useRef(false);
   const getOfflineProject = useOfflnProjRead();
   const checkOnline = useCheckOnline('DataChanges');
@@ -58,7 +68,7 @@ export function DataChanges(props: PropsWithChildren) {
   const defaultBackupDelay = isOffline ? 1000 * 60 * 30 : null; //30 minutes;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
-  const doSanityCheck = useSanityCheck(setLanguage);
+  const { checkAllProjects } = useSanityCheck(setLanguage);
   const { getBibleMediaProject, getBibleMediaPlan } = useBibleMedia();
   const fetchUrl = useFetchUrlNow();
   const users = useOrbitData<UserD[]>('user');
@@ -74,11 +84,13 @@ export function DataChanges(props: PropsWithChildren) {
 
   useEffect(() => {
     const defaultBusyDelay = 1000 * 5; //5 seconds
-    const defaultDataDelay = 1000 * (userDataDelay * 60);
+    const defaultDataDelay = syncIntervalMs(userDataDelay);
 
     setFirstRun(dataDelay === null);
-    //if userDataDelay = 0, then we don't want to sync but don't set it to null
-    //because that means we haven't run yet.
+    // If userDataDelay is 0 the user turned sync off: after the first sync,
+    // dataDelay becomes 0, which stops the interval below. It must stay 0, not
+    // null, because null means the first sync has not run and would schedule
+    // the 10 ms startup tick again.
     const newDelay =
       connected && loadComplete && remote && authenticated()
         ? dataDelay === null
@@ -116,6 +128,18 @@ export function DataChanges(props: PropsWithChildren) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remote, user]);
 
+  /** Makes sure the Bible media plan is downloaded, then checks every project. */
+  const runSanityChecks = async () => {
+    await getBibleMediaPlan();
+    const bibleMediaProject = await getBibleMediaProject();
+    const projectIds = getGlobal('projectsLoaded');
+    const { aborted } = await checkAllProjects(
+      bibleMediaProject ? [bibleMediaProject.id, ...projectIds] : projectIds
+    );
+    // Keep pending across sync intervals until every project finishes.
+    sanityPending.current = aborted;
+  };
+
   const updateData = async () => {
     const t0 = performance.now();
     if (
@@ -126,32 +150,38 @@ export function DataChanges(props: PropsWithChildren) {
       authenticated()
     ) {
       doingChanges.current = true; //attempt to prevent double calls
-      const check = firstRun;
-      setFirstRun(false);
-      await doDataChanges(
-        ctx?.accessToken || '',
-        coordinator,
-        fingerprint,
-        getGlobal('projectsLoaded'),
-        getOfflineProject,
-        errorReporter,
-        user,
-        setLanguage,
-        setDataChangeCount,
-        isElectron ? fetchUrl : undefined,
-        undefined,
-        setOrbitRetries
-      );
-      if (check) {
-        //make sure we have a bible media project and plan downloaded
-        await getBibleMediaPlan();
-        const bibleMediaProject = await getBibleMediaProject();
-        if (bibleMediaProject) await doSanityCheck(bibleMediaProject.id);
-        for (let ix = 0; ix < getGlobal('projectsLoaded').length; ix++)
-          await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
+      try {
+        const isFirstRun = firstRun;
+        await doDataChanges(
+          ctx?.accessToken || '',
+          coordinator,
+          fingerprint,
+          getGlobal('projectsLoaded'),
+          getOfflineProject,
+          errorReporter,
+          user,
+          setLanguage,
+          setDataChangeCount,
+          isElectron ? fetchUrl : undefined,
+          undefined,
+          setOrbitRetries
+        );
+        // Cleared only after a successful sync, so a failed first tick keeps
+        // firstRun for the next interval. Sanity uses sanityPending separately.
+        setFirstRun(false);
+        if (isFirstRun || sanityPending.current) await runSanityChecks();
+        perfRecordMs('DataChanges.updateData', performance.now() - t0);
+      } catch (err: unknown) {
+        // Leave the startup 10 ms tick so a persistent failure does not
+        // retry and log on every interval. Sanity stays pending via
+        // sanityPending / firstRun until a later successful pass.
+        setDataDelay(syncIntervalMs(userDataDelay));
+        // useInterval does not await updateData; report here so a failed
+        // sync or sanity check is not an unhandled rejection.
+        logError(Severity.error, errorReporter, toError(err));
+      } finally {
+        doingChanges.current = false; //attempt to prevent double calls
       }
-      doingChanges.current = false; //attempt to prevent double calls
-      perfRecordMs('DataChanges.updateData', performance.now() - t0);
     }
   };
 
@@ -177,6 +207,7 @@ export function DataChanges(props: PropsWithChildren) {
     }
   };
   useInterval(updateBusy, busyDelay);
+  // null (not started) and 0 (sync off) both leave the interval stopped.
   useInterval(updateData, (dataDelay ?? 0) <= 0 ? null : dataDelay);
   useInterval(backupElectron, defaultBackupDelay);
   // render the children component.
