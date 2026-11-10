@@ -26,6 +26,7 @@ import { infoMsg, logError, Severity } from '../utils';
 import { toError } from '../utils/toError';
 import path from 'path-browserify';
 import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
+import { findRecords } from './tryFindRecord';
 
 /**
  * The values that become the uploaded mediafile (its attributes and
@@ -146,9 +147,7 @@ export const useMediaUpload = ({
     let num = 1;
     const psgId = fields.passageId || '';
     if (psgId && !fields.artifactId) {
-      const mediaFiles = (
-        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
-      )
+      const mediaFiles = findRecords(memory, 'mediafile')
         .filter(
           (m) =>
             related(m, 'passage') === psgId &&

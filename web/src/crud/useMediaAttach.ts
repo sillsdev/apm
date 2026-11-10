@@ -16,6 +16,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
 import { useDispatch } from 'react-redux';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
+import { findRecords } from './tryFindRecord';
 
 export const useMediaAttach = () => {
   const [memory] = useGlobal('memory');
@@ -41,9 +42,7 @@ export const useMediaAttach = () => {
       if (isVernacular && plan) {
         const media = getMediaInPlans(
           [plan],
-          memory?.cache.query((q) =>
-            q.findRecords('mediafile')
-          ) as MediaFileD[],
+          findRecords(memory, 'mediafile'),
           VernacularTag,
           true
         ).filter((m) => related(m, 'passage') === passage);

@@ -45,13 +45,7 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        owner: { kind: 'hasOne', type: 'organization', inverse: 'groups' },
-        projects: { kind: 'hasMany', type: 'project', inverse: 'group' },
-        groupMemberships: {
-          kind: 'hasMany',
-          type: 'groupmembership',
-          inverse: 'group',
-        },
+        owner: { kind: 'hasOne', type: 'organization' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -65,8 +59,8 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        user: { kind: 'hasOne', type: 'user', inverse: 'groupMemberships' },
-        group: { kind: 'hasOne', type: 'group', inverse: 'groupMemberships' },
+        user: { kind: 'hasOne', type: 'user' },
+        group: { kind: 'hasOne', type: 'group' },
         role: { kind: 'hasOne', type: 'role' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
@@ -81,11 +75,6 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        projectIntegrations: {
-          kind: 'hasMany',
-          type: 'projectintegration',
-          inverse: 'integration',
-        },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -134,8 +123,6 @@ const schemaDefinition: RecordSchemaSettings = {
       },
       relationships: {
         owner: { kind: 'hasOne', type: 'user' },
-        users: { kind: 'hasMany', type: 'user' },
-        groups: { kind: 'hasMany', type: 'group', inverse: 'owner' },
         cluster: { kind: 'hasOne', type: 'organization' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
@@ -151,7 +138,6 @@ const schemaDefinition: RecordSchemaSettings = {
         user: {
           kind: 'hasOne',
           type: 'user',
-          inverse: 'organizationMemberships',
         },
         organization: { kind: 'hasOne', type: 'organization' },
         role: { kind: 'hasOne', type: 'role' },
@@ -174,9 +160,7 @@ const schemaDefinition: RecordSchemaSettings = {
       relationships: {
         owner: { kind: 'hasOne', type: 'user' },
         project: { kind: 'hasOne', type: 'project', inverse: 'plans' },
-        plantype: { kind: 'hasOne', type: 'plantype', inverse: 'plans' },
-        sections: { kind: 'hasMany', type: 'section', inverse: 'plan' },
-        mediafiles: { kind: 'hasMany', type: 'mediafile', inverse: 'plan' },
+        plantype: { kind: 'hasOne', type: 'plantype' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -190,7 +174,6 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        plans: { kind: 'hasMany', type: 'plan', inverse: 'plantype' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -217,20 +200,10 @@ const schemaDefinition: RecordSchemaSettings = {
         defaultParams: { type: 'string' },
       },
       relationships: {
-        projecttype: {
-          kind: 'hasOne',
-          type: 'projecttype',
-          inverse: 'projects',
-        },
+        projecttype: { kind: 'hasOne', type: 'projecttype' },
         owner: { kind: 'hasOne', type: 'user' },
         organization: { kind: 'hasOne', type: 'organization' },
-        group: { kind: 'hasOne', type: 'group', inverse: 'projects' },
-        projectIntegrations: {
-          kind: 'hasMany',
-          type: 'projectintegration',
-          inverse: 'project',
-        },
-        // sections: { kind: 'hasMany', type: 'section', inverse: 'project' },
+        group: { kind: 'hasOne', type: 'group' },
         plans: { kind: 'hasMany', type: 'plan', inverse: 'project' },
         editsheetuser: { kind: 'hasOne', type: 'user' },
         editsheetgroup: { kind: 'hasOne', type: 'group' },
@@ -251,12 +224,10 @@ const schemaDefinition: RecordSchemaSettings = {
         integration: {
           kind: 'hasOne',
           type: 'integration',
-          inverse: 'projectIntegrations',
         },
         project: {
           kind: 'hasOne',
           type: 'project',
-          inverse: 'projectIntegrations',
         },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
@@ -271,7 +242,6 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        projects: { kind: 'hasMany', type: 'project', inverse: 'projecttype' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -286,7 +256,6 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        userRoles: { kind: 'hasMany', type: 'organizationalmembership' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -304,8 +273,7 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        // projects: { kind: 'hasMany', type: 'project', inverse: 'sections' },
-        plan: { kind: 'hasOne', type: 'plan', inverse: 'sections' },
+        plan: { kind: 'hasOne', type: 'plan' },
         passages: {
           kind: 'hasMany',
           type: 'passage',
@@ -340,7 +308,6 @@ const schemaDefinition: RecordSchemaSettings = {
         unversionedRenderingUrl: { type: 'string' },
       },
       relationships: {
-        mediafiles: { kind: 'hasMany', type: 'mediafile', inverse: 'passage' },
         section: {
           kind: 'hasOne',
           type: 'section',
@@ -427,8 +394,8 @@ const schemaDefinition: RecordSchemaSettings = {
         artifactType: { kind: 'hasOne', type: 'artifacttype' },
         artifactCategory: { kind: 'hasOne', type: 'artifactcategory' },
         orgWorkflowStep: { kind: 'hasOne', type: 'orgworkflowstep' },
-        plan: { kind: 'hasOne', type: 'plan', inverse: 'mediafiles' },
-        passage: { kind: 'hasOne', type: 'passage', inverse: 'mediafiles' },
+        plan: { kind: 'hasOne', type: 'plan' },
+        passage: { kind: 'hasOne', type: 'passage' },
         resourcePassage: { kind: 'hasOne', type: 'passage' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
         recordedbyUser: { kind: 'hasOne', type: 'user' },
@@ -466,16 +433,6 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        organizationMemberships: {
-          kind: 'hasMany',
-          type: 'organizationmembership',
-          inverse: 'user',
-        },
-        groupMemberships: {
-          kind: 'hasMany',
-          type: 'groupmembership',
-          inverse: 'user',
-        },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -504,11 +461,6 @@ const schemaDefinition: RecordSchemaSettings = {
         lastModifiedBy: { type: 'number' }, //bkwd compat only
       },
       relationships: {
-        organizationMemberships: {
-          kind: 'hasMany',
-          type: 'organizationmembership',
-        },
-        groupMemberships: { kind: 'hasMany', type: 'groupmembership' },
         lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       },
     },
@@ -702,7 +654,6 @@ if (requestedSchema > 3 && schemaDefinition.models) {
     relationships: {
       discussion: { kind: 'hasOne', type: 'discussion' },
       mediafile: { kind: 'hasOne', type: 'mediafile' },
-      user: { kind: 'hasOne', type: 'user' },
       lastModifiedByUser: { kind: 'hasOne', type: 'user' },
       creatorUser: { kind: 'hasOne', type: 'user' },
     },
@@ -1070,17 +1021,18 @@ if (requestedSchema > 11 && schemaDefinition.models) {
       lastModifiedBy: { type: 'number' }, //bkwd compat only
     },
     relationships: {
-      plan: {
-        kind: 'hasOne',
-        type: 'plan',
-        inverse: 'mediareplacements',
-      },
+      passage: { kind: 'hasOne', type: 'passage' },
       replacementMediafile: { kind: 'hasOne', type: 'mediafile' },
       outputMediafile: { kind: 'hasOne', type: 'mediafile' },
       lastModifiedByUser: { kind: 'hasOne', type: 'user' },
     },
   };
   schemaDefinition.version = 12;
+}
+if (requestedSchema > 12) {
+  // Removed hasMany links are still stored on records and in __inverseRels__.
+  // Orbit replays those links as record operations, which the schema now rejects.
+  schemaDefinition.version = 13;
 }
 
 export const schema = new RecordSchema(schemaDefinition);
@@ -1249,6 +1201,42 @@ const fixVersion8 = async (backup: IndexedDBSource): Promise<void> => {
   }
   console.log('done with upgrade to v8');
 };
+const dropUndefinedRelationships = (transaction: IDBTransaction) => {
+  console.log('dropping undefined relationships');
+  const gone = (type: string, relationship: string) =>
+    !schema.hasRelationship(type, relationship);
+  for (const type of Object.keys(schema.models)) {
+    if (!transaction.db.objectStoreNames.contains(type)) continue;
+    const request = transaction.objectStore(type).openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      const rels = cursor.value?.relationships;
+      if (rels) {
+        let changed = false;
+        for (const name of Object.keys(rels)) {
+          if (gone(type, name)) {
+            delete rels[name];
+            changed = true;
+          }
+        }
+        if (changed) cursor.update(cursor.value);
+      }
+      cursor.continue();
+    };
+  }
+  if (!transaction.db.objectStoreNames.contains('__inverseRels__')) return;
+  const request = transaction.objectStore('__inverseRels__').openCursor();
+  request.onsuccess = () => {
+    const cursor = request.result;
+    if (!cursor) return;
+    const row = cursor.value;
+    if (row.type && row.relationship && gone(row.type, row.relationship)) {
+      cursor.delete();
+    }
+    cursor.continue();
+  };
+};
 export const backup = window.indexedDB
   ? new IndexedDBSource({
       schema,
@@ -1307,6 +1295,10 @@ if (backup?.cache) {
       fixVersion8(backup).then(() => {
         migrating--;
       });
+    }
+    if (event.newVersion === 13 && event.oldVersion < 13) {
+      const transaction = (event.target as IDBOpenDBRequest).transaction;
+      if (transaction) dropUndefinedRelationships(transaction);
     }
     migrating--;
   };

@@ -94,6 +94,7 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
   //data change can alter them while we sit on the sheet with an untouched passage
   rec.assign = item.assign;
   rec.discussionCount = item.discussionCount;
+  rec.stepDiscussionCount = item.stepDiscussionCount;
   //if it's a note with a category and the new reference doesn't have a category, keep the original reference
   const priorRef = rec.reference;
   rec.reference =
@@ -452,7 +453,7 @@ export const getSheet = ({
         if (stepRec) {
           const strTag = toCamel(stepRec.attributes.name);
           item.step = Object.hasOwn(wfStr, strTag)
-            ? addPt(wfStr.getString(strTag))
+            ? addPt(wfStr.getString(strTag) ?? stepRec.attributes.name)
             : stepRec.attributes.name;
           item.stepId = stepRec.id;
           const schemeStep = organizationSchemeSteps.find(
@@ -468,6 +469,10 @@ export const getSheet = ({
         item.discussionCount = item.passage.id
           ? getDiscussionCount(item.passage.id)
           : 0;
+        item.stepDiscussionCount =
+          item.passage.id && item.stepId
+            ? getDiscussionCount(item.passage.id, item.stepId)
+            : 0;
         item.deleted = false;
         item.filtered =
           sectionfiltered ||

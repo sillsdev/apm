@@ -7,7 +7,7 @@ import { related } from '../../crud';
 import { usePlan } from '../../crud/usePlan';
 import ImportTab from '../ImportTab';
 import { TeamItem } from '.';
-import { CardSizeProvider } from './CardSize';
+import { CardSizeProvider } from '../CardSize/CardSize';
 import PersonalItem from './PersonalItem';
 
 export const TeamProjects = () => {
@@ -34,7 +34,9 @@ export const TeamProjects = () => {
         <ImportTab
           isOpen={importOpen}
           onOpen={setImportOpen}
-          planName={importProject ? getPlanName(importProject.id) : undefined}
+          planName={
+            importProject ? getPlanName(importProject.id ?? '') : undefined
+          }
           project={
             importProject ? related(importProject, 'project') : undefined
           } //actual project id...not plan id

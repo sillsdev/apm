@@ -23,7 +23,6 @@ import {
   IWorkflowStepsStrings,
   IActivityStateStrings,
   Plan,
-  MediaFileD,
   BookName,
   ISharedStrings,
   ExportType,
@@ -82,6 +81,7 @@ import { TranscriptionViewCell } from './TranscriptionViewCell';
 import TranscriptionShow from './TranscriptionShow';
 import { TreeDataGrid } from './TreeDataGrid';
 import { WhichExportDlg } from './WhichExportDlg';
+import { findRecords } from '../crud/tryFindRecord';
 
 interface IRow {
   id: number;
@@ -261,10 +261,8 @@ export function TranscriptionTab(props: IProps) {
   const doProjectExport = (exportType: ExportType, importedDate?: DateTime) => {
     setBusy(true);
 
-    const mediaFiles = memory?.cache.query((q) =>
-      q.findRecords('mediafile')
-    ) as MediaFileD[];
-    const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
+    const mediaFiles = findRecords(memory, 'mediafile');
+    const plans = findRecords(memory, 'plan');
 
     const projectplans = plans.filter(
       (pl) => related(pl, 'project') === project

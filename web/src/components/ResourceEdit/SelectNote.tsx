@@ -22,6 +22,7 @@ import { OptionType } from '../BookSelect';
 import PassageDataTable, { IRRow } from '../PassageDataTable';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { RefLevel } from '../../components/RefLevel';
+import { findRecords } from '../../crud/tryFindRecord';
 
 interface IProps {
   passage?: PassageD;
@@ -89,18 +90,16 @@ export const SelectNote = (props: IProps) => {
       const addRes = (set: Set<string>, sr: SharedResourceReference) => {
         set.add(related(sr, 'sharedResource') as string);
       };
-      const refRecs = (
-        memory?.cache.query((q) =>
-          q.findRecords('sharedresourcereference')
-        ) as SharedResourceReference[]
-      ).filter((srr) => {
-        const sr = findRecord(
-          memory,
-          'sharedresource',
-          related(srr, 'sharedResource')
-        ) as SharedResource;
-        return sr?.attributes?.note ?? false;
-      });
+      const refRecs = findRecords(memory, 'sharedresourcereference').filter(
+        (srr) => {
+          const sr = findRecord(
+            memory,
+            'sharedresource',
+            related(srr, 'sharedResource')
+          ) as SharedResource;
+          return sr?.attributes?.note ?? false;
+        }
+      );
       const bookRefs = refRecs.filter((r) => r.attributes.book === bookCd);
       bookRefs.forEach((b) => addRes(bookSet, b));
       const rangeList = findRef.split(';');

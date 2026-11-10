@@ -23,6 +23,7 @@ import { IDialog } from '../../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { vProjectSelector } from '../../../selector';
 import { ProjectStory } from './ProjectStory';
+import { ProjectScripture } from './ProjectScripture';
 import { StyledDialogTitle } from '../../StyledDialogTitle';
 import Tags from '../../../control/Tags';
 import { AltActionBar } from '../../../components/AltActionBar';
@@ -95,7 +96,13 @@ export function ProjectDialog(props: IProps) {
       addingRef.current = true;
 
       if (onOpen) onOpen(false);
-      onCommit({ ...state, name: state.name.trim() });
+      const scripture =
+        state.type === 'scripture'
+          ? {}
+          : // the Scripture fields stay in the draft while hidden, in case the
+            // user switches back, but only a Scripture project saves them
+            { book: originalState.book, referenceTexts: [] };
+      onCommit({ ...state, ...scripture, name: state.name.trim() });
     }
   };
 
@@ -176,6 +183,13 @@ export function ProjectDialog(props: IProps) {
                   team={team}
                 />
                 <ProjectStory state={state} setState={setState} />
+                {type === 'scripture' && (
+                  <ProjectScripture
+                    state={state}
+                    setState={setState}
+                    team={team}
+                  />
+                )}
               </>
             )}
             <Stack sx={{ pt: 1, pb: 2 }}>

@@ -26,6 +26,7 @@ import PassageDataTable, { IRRow } from '../../PassageDataTable';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../../model/passageType';
 import { RefLevel } from '../../RefLevel';
+import { findRecords } from '../../../crud/tryFindRecord';
 
 interface IProps {
   sourcePassages: number[];
@@ -122,9 +123,7 @@ export const SelectSharedResource = (props: IProps) => {
           )
         );
       };
-      const refRecs = memory.cache.query((q) =>
-        q.findRecords('sharedresourcereference')
-      ) as SharedResourceReference[];
+      const refRecs = findRecords(memory, 'sharedresourcereference');
       const bookRefs = refRecs.filter((r) => r.attributes?.book === bookCd);
       bookRefs.forEach((b) => addRes(bookSet, b));
       const rangeList = findRef.split(';');

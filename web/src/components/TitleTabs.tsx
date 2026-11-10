@@ -37,6 +37,7 @@ interface IProps {
   /** Section id for titleMediafile restore after pending retry (TT-7363). */
   sectionId?: string;
   defaultFilename: string;
+  mediaId?: string;
   playing: boolean;
   changeTab?: (v: number) => void;
   // canRecord?: () => boolean;
@@ -52,6 +53,7 @@ const TitleTabs = (props: IProps) => {
     passageId,
     sectionId,
     defaultFilename,
+    mediaId,
     playing,
     changeTab,
     onRecording,
@@ -231,6 +233,7 @@ const TitleTabs = (props: IProps) => {
           planId={myPlanId}
           titleId={TitleId}
           defaultFilename={defaultFilename}
+          mediaId={mediaId}
           recToolId={recToolId}
           onMyRecording={handleMyRecording}
           canSave={canSaveRecording}

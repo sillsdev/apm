@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { UninitializedRecord } from '@orbit/records';
+import { RecordRelationship, UninitializedRecord } from '@orbit/records';
 import { IActivityStateStrings } from '.';
 import { ActivityStates } from './activityStates';
 
@@ -7,6 +7,9 @@ export interface ActivityState extends UninitializedRecord {
   attributes: {
     state: string;
     sequencenum: string;
+  };
+  relationships?: {
+    lastModifiedByUser: RecordRelationship;
   };
 }
 export default ActivityState;

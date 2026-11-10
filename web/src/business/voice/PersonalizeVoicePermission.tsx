@@ -66,7 +66,9 @@ export default function PersonalizeVoicePermission(props: IProps) {
   const [decorations, setDecorations] = React.useState<IDecorations>({});
   const langEl = React.useRef<any>(undefined);
   const t: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
-  const localOptions = voicePermOpts.map((option) => t.getString(option));
+  const localOptions = voicePermOpts.map(
+    (option) => t.getString(option) ?? option
+  );
   const [hideLang, setHideLang] = React.useState(false);
 
   const genderValid = (value?: string) => /^[a-zA-Z]{0,15}$/.test(value ?? '');
@@ -308,7 +310,9 @@ export default function PersonalizeVoicePermission(props: IProps) {
         <Options
           label={t.scope}
           options={localOptions}
-          defaultValue={t.getString(curState?.scope ?? voicePermOpts[0])}
+          defaultValue={
+            t.getString(curState?.scope ?? voicePermOpts[0]) ?? undefined
+          }
           onChange={handleScope}
           decorations={decorations}
         />

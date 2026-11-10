@@ -9,7 +9,7 @@ jest.mock('../../crud', () => ({
     .ArtifactTypeSlug,
   defaultSpellCheckForArtifact: () => false,
   resolveStepSpellCheck: () => false,
-  // An empty artifactTypeId is the Vernacular step.
+  // A missing or null artifact id is the vernacular step.
   useArtifactType: () => ({
     slugFromId: (id: string | null) => id || 'vernacular',
   }),
@@ -128,7 +128,7 @@ describe('TranscribeStepSettings', () => {
       <TranscribeStepSettings
         org="org-1"
         isOpen
-        toolSettings='{"artifactTypeId":""}'
+        toolSettings='{"artifactTypeId":null}'
         onChange={jest.fn()}
       />
     );

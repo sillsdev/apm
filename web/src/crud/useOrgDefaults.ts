@@ -23,6 +23,10 @@ export const orgDefaultResKw = 'ResKw';
 export const orgDefaultLangProps = 'langProps';
 export const orgDefaultFeatures = 'features';
 export const orgDefaultVoices = 'voices';
+/** Team Voice Ranking for Reference Text speech (ADR 0015); not {@link orgDefaultVoices}, which is voice conversion. */
+export const orgDefaultTtsVoices = 'ttsVoices';
+/** Whether Project Settings offers only Reference Texts in languages with a ranked voice. */
+export const orgDefaultTtsFilterRefText = 'ttsFilterRefText';
 /** Legacy org ASR; read fallback and written from Vernacular transcribe step settings. */
 export const orgDefaultAsr = 'asr';
 export const orgDefaultPermissions = 'permissions';

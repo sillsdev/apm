@@ -55,11 +55,9 @@ export const useKeyTermSave = ({ cb }: IProps) => {
     const ops: RecordOperation[] = [];
     let termTargetRec: OrgKeytermTarget;
     if (termTargetId) {
-      termTargetRec = findRecord(
-        memory,
-        'comment',
-        termTargetId
-      ) as OrgKeytermTargetD;
+      const found = findRecord(memory, 'orgkeytermtarget', termTargetId);
+      if (!found) return;
+      termTargetRec = found;
       termTargetRec.attributes.term = term;
       termTargetRec.attributes.termIndex = termIndex;
       termTargetRec.attributes.target = target;

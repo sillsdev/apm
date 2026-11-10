@@ -1974,7 +1974,7 @@
       </unit>
       <unit id="phraseBackTranslationGuided.noStepLanguage">
          <segment>
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
             <target/>
          </segment>
       </unit>
@@ -4756,6 +4756,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaActions.stop">
+         <segment>
+            <source>Stop</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaActions.view">
          <segment>
             <source>View</source>
@@ -5779,6 +5785,78 @@
       <unit id="passageDetailArtifacts.reference">
          <segment>
             <source>Reference</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextBookMissing">
+         <segment>
+            <source>This Bible does not include this book.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextEmpty">
+         <segment>
+            <source>This Bible has no text for these verses.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextFetchFailed">
+         <segment>
+            <source>The passage could not be loaded. Check your internet connection.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextForbidden">
+         <segment>
+            <source>You do not have access to this Reference Text.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextLoading">
+         <segment>
+            <source>Loading passage…</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoRange">
+         <segment>
+            <source>This passage has no verse range.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoice">
+         <segment>
+            <source>No voice for {0} on this device.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+         <segment>
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextRenewLogin">
+         <segment>
+            <source>Renew login</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextRetry">
+         <segment>
+            <source>Try again</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextSpeakFailed">
+         <segment>
+            <source>The passage could not be spoken.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextUnauthorized">
+         <segment>
+            <source>Your login has expired. Renew it to load the passage.</source>
             <target/>
          </segment>
       </unit>
@@ -8676,7 +8754,7 @@
       </unit>
       <unit id="transcriber.asrMethodDefault">
          <segment>
-            <source>Default ({0})</source>
+            <source>{0} (Default)</source>
             <target/>
          </segment>
       </unit>
@@ -9202,6 +9280,138 @@
             <target/>
          </segment>
       </unit>
+      <unit id="ttsVoices.add">
+         <segment>
+            <source>Add to ranking</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.explain">
+         <segment>
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.filterReferenceTexts">
+         <segment>
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.linuxNote">
+         <segment>
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.loading">
+         <segment>
+            <source>Loading voices…</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.local">
+         <segment>
+            <source>Local</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.macNote">
+         <segment>
+            <source>You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveDown">
+         <segment>
+            <source>Move down</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveUp">
+         <segment>
+            <source>Move up</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noMatch">
+         <segment>
+            <source>No languages match.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noVoices">
+         <segment>
+            <source>This device has no text-to-speech voices.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.notOnDevice">
+         <segment>
+            <source>Not on this device</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.online">
+         <segment>
+            <source>Online</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.rankedCount">
+         <segment>
+            <source>{0} ranked</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.read">
+         <segment>
+            <source>Read</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.remove">
+         <segment>
+            <source>Remove from ranking</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleDefault">
+         <segment>
+            <source>This is how this voice will sound.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleText">
+         <segment>
+            <source>Sample text</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.search">
+         <segment>
+            <source>Search languages</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.showOnline">
+         <segment>
+            <source>Show online voices</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.title">
+         <segment>
+            <source>Reference Text Voices</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.windowsNote">
+         <segment>
+            <source>You can add Windows voices for other languages under Settings → Time &amp; language → Speech → Add voices.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="uploadProgress.cancel">
          <segment>
             <source>Cancel</source>
@@ -9694,9 +9904,27 @@
             <target/>
          </segment>
       </unit>
+      <unit id="vProject.bibleListError">
+         <segment>
+            <source>The list of Bibles could not be loaded.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.book">
+         <segment>
+            <source>Book</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="vProject.cancel">
          <segment>
             <source>Cancel</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.chooseBookFirst">
+         <segment>
+            <source>Choose a book to see reference texts</source>
             <target/>
          </segment>
       </unit>
@@ -9733,6 +9961,12 @@
       <unit id="vProject.editorSettings">
          <segment>
             <source>Editor Settings</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.filteredToVoices">
+         <segment>
+            <source>Showing only languages your team has ranked voices for.</source>
             <target/>
          </segment>
       </unit>
@@ -9793,6 +10027,18 @@
       <unit id="vProject.layout">
          <segment>
             <source>Layout</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.licenseNotStated">
+         <segment>
+            <source>License not stated</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.loadingBibles">
+         <segment>
+            <source>Loading Bibles…</source>
             <target/>
          </segment>
       </unit>
@@ -9868,9 +10114,27 @@
             <target/>
          </segment>
       </unit>
+      <unit id="vProject.primaryReferenceText">
+         <segment>
+            <source>Primary Reference Text</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="vProject.projectName">
          <segment>
             <source>Audio Project Name</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.publicDomain">
+         <segment>
+            <source>Public Domain</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.referenceTextRemoved">
+         <segment>
+            <source>{0} was removed because it does not include {1}.</source>
             <target/>
          </segment>
       </unit>
@@ -9889,6 +10153,12 @@
       <unit id="vProject.scenes">
          <segment>
             <source>Scene/Scenes</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.secondaryReferenceText">
+         <segment>
+            <source>Secondary Reference Text</source>
             <target/>
          </segment>
       </unit>
@@ -9943,6 +10213,12 @@
       <unit id="vProject.type">
          <segment>
             <source>Audio Project Type</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="vProject.usedInTeam">
+         <segment>
+            <source>Used in this team</source>
             <target/>
          </segment>
       </unit>

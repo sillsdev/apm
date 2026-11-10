@@ -14,6 +14,7 @@ interface IProps {
   passageId: string | undefined;
   planId: string | undefined;
   defaultFilename: string;
+  mediaId?: string;
   autoStart?: boolean;
   canSave: boolean;
   onMyRecording: (recording: boolean) => void;
@@ -32,6 +33,7 @@ export default function TitleRecord(props: IProps) {
     passageId,
     planId,
     defaultFilename,
+    mediaId,
     onMyRecording,
     afterUploadCb,
     pendingRestore,
@@ -65,6 +67,7 @@ export default function TitleRecord(props: IProps) {
         artifactId={passageId !== undefined ? VernacularTag : titleId}
         onRecording={onMyRecording}
         defaultFilename={defaultFilename}
+        mediaId={mediaId}
         allowWave={false}
         setCanSave={handleSetCanSave}
         setStatusText={setStatusText}

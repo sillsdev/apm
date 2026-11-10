@@ -188,7 +188,7 @@ export const PlanMoreMenuItems = memo(
             id="passToPrev"
             onClick={() => onAction(rowIndex, ExtraIcon.PassageToPrev)}
             title={p.passageToPrevSection
-              .replace('{pt}', ty.getString(psgType))
+              .replace('{pt}', ty.getString(psgType) ?? psgType)
               .replace('{0}', passageSequenceNumber)}
           >
             <MoveUpIcon />
@@ -217,7 +217,7 @@ export const PlanMoreMenuItems = memo(
             id="passToNext"
             onClick={() => onAction(rowIndex, ExtraIcon.PassageToNext)}
             title={p.passageToNextSection
-              .replace('{pt}', ty.getString(psgType))
+              .replace('{pt}', ty.getString(psgType) ?? psgType)
               .replace('{0}', passageSequenceNumber)}
           >
             <MoveDownIcon />

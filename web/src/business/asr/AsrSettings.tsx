@@ -63,6 +63,9 @@ interface IAsrSettings {
   recommendKey?: string;
 }
 
+const capitalize = (value: string) =>
+  value.charAt(0).toUpperCase() + value.slice(1);
+
 /**
  * The shared "AI Automatic Transcription" controls: transcription type, the
  * transliterate option, and (when the vernacular language can't be transcribed
@@ -307,14 +310,17 @@ export const AsrSettings = ({
             <FormControlLabel
               value={asrMethodDefaultValue}
               control={<Radio />}
-              label={t.asrMethodDefault.replace('{0}', listedOptions.preferred)}
+              label={t.asrMethodDefault.replace(
+                '{0}',
+                capitalize(listedOptions.preferred)
+              )}
             />
             {listedOptions.others.map((method) => (
               <FormControlLabel
                 key={method}
                 value={method}
                 control={<Radio />}
-                label={method}
+                label={capitalize(method)}
               />
             ))}
           </RadioGroup>

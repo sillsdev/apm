@@ -2,6 +2,7 @@ import { useContext, useState, useEffect, useCallback } from 'react';
 import { OrbitContext } from './OrbitContextProvider';
 import { UninitializedRecord } from '@orbit/records';
 import { useRenderProfiler, perfRecordGlobalSet } from '../utils/perf';
+import { findRecords } from '../crud/tryFindRecord';
 
 // Stable empty result used before the memory source is available, so we don't
 // hand back a fresh array identity on every render.
@@ -18,9 +19,8 @@ const EMPTY: UninitializedRecord[] = [];
  *   ever-growing pile of callbacks — each triggering another render + another
  *   subscription — a self-amplifying render storm.
  *
- * - Data is read with `memory.cache.query` (the canonical synchronous read used
- *   throughout the codebase), NOT `liveQuery.query()`, which returns the live
- *   query's own internal snapshot and is stale until re-evaluated. The
+ * - Data is read with `findRecords`, which queries the memory cache. `liveQuery.query()`
+ *   returns the live query's own snapshot and is stale until re-evaluated. The
  *   liveQuery is used purely as a change signal.
  *
  * - A catch-up read runs immediately after subscribing. Records can finish
@@ -40,10 +40,7 @@ export function useOrbitData<S extends UninitializedRecord[]>(
   const { memory } = useContext(OrbitContext);
 
   const read = useCallback(
-    (): S =>
-      memory
-        ? (memory.cache.query((q) => q.findRecords(model)) as S)
-        : (EMPTY as S),
+    (): S => (memory ? (findRecords(memory, model) as S) : (EMPTY as S)),
     [memory, model]
   );
 

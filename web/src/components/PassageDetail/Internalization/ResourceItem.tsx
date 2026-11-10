@@ -57,7 +57,11 @@ export default function ResourceItem({
   };
 
   const handleHelp = (resource?: BibleResource) => () => {
-    showMessage(resource?.help && !open ? t.getString(resource.help) : '');
+    showMessage(
+      resource?.help && !open
+        ? (t.getString(resource.help) ?? resource.help)
+        : ''
+    );
     setOpen(!open);
   };
 
@@ -70,7 +74,11 @@ export default function ResourceItem({
             ? handleClick(resource.name, resource.href)
             : handleHelp(resource)
         }
-        title={resource.help ? t.getString(resource.help) : undefined}
+        title={
+          resource.help
+            ? (t.getString(resource.help) ?? resource.help)
+            : undefined
+        }
       >
         {resource.ai ? (
           <Badge badgeContent={ts.ai}>{resource.name}</Badge>

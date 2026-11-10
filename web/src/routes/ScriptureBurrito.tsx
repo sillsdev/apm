@@ -181,7 +181,7 @@ export function ScriptureBurrito() {
 
         <Stack direction="row" spacing={1} alignItems="center">
           {isCreating && (
-            <Button aria-label={t.getString('cancelCreation')} onClick={cancel}>
+            <Button aria-label={t.cancelCreation} onClick={cancel}>
               {ts.cancel}
             </Button>
           )}

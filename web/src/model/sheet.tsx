@@ -48,6 +48,7 @@ export interface ISheet {
   deleted: boolean;
   filtered: boolean;
   discussionCount?: number | undefined;
+  stepDiscussionCount?: number | undefined;
   published: PublishDestinationEnum[];
   graphicUri?: string | undefined;
   graphicRights?: string | undefined;

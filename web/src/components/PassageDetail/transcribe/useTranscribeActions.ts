@@ -46,7 +46,7 @@ export interface UseTranscribeActionsProps {
   errorReporter?: any;
 }
 
-const stateRole: { [key: string]: string } = {
+const stateRole: Record<string, 'transcriber' | 'editor'> = {
   transcribing: 'transcriber',
   reviewing: 'editor',
   transcribeReady: 'transcriber',

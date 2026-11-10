@@ -1,7 +1,14 @@
 import { useContext, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { shallowEqual, useSelector } from 'react-redux';
-import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UsersIcon from '@mui/icons-material/People';
 import { RecordIdentity } from '@orbit/records';
@@ -113,6 +120,19 @@ export const OrgHead = () => {
 
   const showTeamActions = isTeamScreen && isMobile;
 
+  const teamName = cleanOrgName(orgRec);
+  const projectName =
+    !isSwitchTeamsScreen && !isTeamScreen
+      ? projectRec?.attributes.name
+      : undefined;
+  const headerText = isSwitchTeamsScreen
+    ? API_CONFIG.productName
+    : isTeamScreen
+      ? (isMobile && teamName) || API_CONFIG.productName
+      : projectName || API_CONFIG.productName;
+  // Empty title hides the tooltip when the header is not a project name.
+  const teamTip = projectName ? teamName : '';
+
   const handleSettingsMenuOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     setSettingsMenuEl(e.currentTarget);
   };
@@ -169,21 +189,20 @@ export const OrgHead = () => {
 
   return (
     <Box sx={[rowSx, { alignItems: 'center' }]}>
-      <Typography
-        noWrap
-        sx={{
-          minWidth: 0,
-          fontWeight: 'bold',
-          position: 'relative',
-          top: '1px',
-        }}
-      >
-        {isSwitchTeamsScreen
-          ? API_CONFIG.productName
-          : isTeamScreen
-            ? (isMobile && cleanOrgName(orgRec)) || API_CONFIG.productName
-            : projectRec?.attributes.name || API_CONFIG.productName}
-      </Typography>
+      <Tooltip title={teamTip} describeChild>
+        <Typography
+          id="orgHeadTitle"
+          noWrap
+          sx={{
+            minWidth: 0,
+            fontWeight: 'bold',
+            position: 'relative',
+            top: '1px',
+          }}
+        >
+          {headerText}
+        </Typography>
+      </Tooltip>
       {showTeamActions && canModify && (
         <IconButton
           onClick={handleSettingsMenuOpen}

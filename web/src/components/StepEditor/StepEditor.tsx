@@ -29,6 +29,8 @@ import {
   VernacularTag,
   getToolSettings,
   remoteIdGuid,
+  toolHasSettingsDialog,
+  toolHasMarkdownSettings,
 } from '../../crud';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
@@ -44,6 +46,7 @@ import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
 import { DiscussStepSettings } from './DiscussStepSettings';
 import { RecordStepSettings } from './RecordStepSettings';
+import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
 
 export interface IStepRow {
   id: string;
@@ -52,7 +55,6 @@ export interface IStepRow {
   pos: number;
   tool: string;
   settings: string;
-  prettySettings: string;
   rIdx: number;
 }
 
@@ -102,13 +104,6 @@ export const StepEditor = ({ process, org }: IProps) => {
   const focusIndex = useRef<number>(0);
   const scrollNewStepIntoViewRef = useRef(false);
   const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
-  const settingsTools = [
-    ToolSlug.Transcribe,
-    ToolSlug.Paratext,
-    ToolSlug.Discuss,
-    ToolSlug.Record,
-    ToolSlug.PhraseBackTranslate,
-  ];
   const mxSeq = useMemo(() => {
     let max = 0;
     rows.forEach((r) => {
@@ -153,14 +148,13 @@ export const StepEditor = ({ process, org }: IProps) => {
     mangleTranscribe: boolean = true
   ) => {
     if (mangleTranscribe) {
-      const hasTranscribe =
-        name === st.transcribe &&
-        rows.some((r, i) => {
-          const settings = r.settings ? JSON.parse(r.settings) : undefined;
-          if (!settings) return r.tool === ToolSlug.Transcribe && i !== index;
-          return false;
-        });
-      name = hasTranscribe ? st.review : name;
+      name = resolveReviewTranscribeName({
+        name,
+        transcribeLabel: localizedTool(ToolSlug.Transcribe),
+        reviewLabel: st.review,
+        steps: rows,
+        index,
+      });
     }
     const baseName = name;
     let count = 1;
@@ -243,18 +237,14 @@ export const StepEditor = ({ process, org }: IProps) => {
     // Vernacular, Q&A and Retell ASR lives in the team default, so only this
     // step's settings change.
     setRows((prev) =>
-      prev.map((r, i) =>
-        i === toolSettingsRow
-          ? { ...r, settings, prettySettings: prettySettings(r.tool, settings) }
-          : r
-      )
+      prev.map((r, i) => (i === toolSettingsRow ? { ...r, settings } : r))
     );
     toolChanged(toolId, true);
   };
 
   const handleToolChange = (tool: string, index: number) => {
     focusIndex.current = index;
-    if (settingsTools.includes(tool as ToolSlug)) toolRef.current = index;
+    if (toolHasSettingsDialog(tool)) toolRef.current = index;
     setToolSettingsRow(index); //bring up Settings editor
     let name = (rows[index] as IStepRow).name;
     if (name.includes(se.nextStep))
@@ -266,7 +256,6 @@ export const StepEditor = ({ process, org }: IProps) => {
               ...r,
               tool,
               settings: '',
-              prettySettings: prettySettings(tool, ''),
               name,
             }
           : r
@@ -318,7 +307,6 @@ export const StepEditor = ({ process, org }: IProps) => {
         pos: 0,
         tool,
         settings: '',
-        prettySettings: prettySettings(tool, ''),
         seq: mxSeq + 1,
         rIdx: rows.length,
       },
@@ -443,7 +431,6 @@ export const StepEditor = ({ process, org }: IProps) => {
             pos: 0,
             tool: toCamel(tool),
             settings: settings,
-            prettySettings: prettySettings(tool, settings),
             rIdx: newRows.length,
           });
         });
@@ -494,27 +481,39 @@ export const StepEditor = ({ process, org }: IProps) => {
   }, [sortKey]);
 
   const prettySettings = (tool: string, settings: string) => {
-    const json = settings ? JSON.parse(settings) : undefined;
+    let json: { artifactTypeId?: string } | undefined;
+    if (settings) {
+      try {
+        json = JSON.parse(settings);
+      } catch {
+        // Malformed server/Orbit settings must not crash render.
+        json = undefined;
+      }
+    }
+    const toolName = localizedTool(tool);
     switch (tool as ToolSlug) {
       case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
-      case ToolSlug.PhraseBackTranslate:
-        if (json)
+        if (json) {
+          const artifactTypeId = json.artifactTypeId;
           return se.settingsFor
-            .replace('{0}', st.getString(tool as keyof typeof se))
+            .replace('{0}', toolName)
             .replace(
               '{1}',
               localizedArtifactTypeFromId(
-                remoteIdGuid(
-                  'artifacttype',
-                  json.artifactTypeId,
-                  memory?.keyMap as RecordKeyMap
-                ) ?? json.artifactTypeId
+                artifactTypeId
+                  ? (remoteIdGuid(
+                      'artifacttype',
+                      artifactTypeId,
+                      memory?.keyMap as RecordKeyMap
+                    ) ?? artifactTypeId)
+                  : null
               )
             );
+        }
         return se.settingsFor
-          .replace('{0}', st.getString(tool as keyof typeof se))
+          .replace('{0}', toolName)
           .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
       default:
         return '';
@@ -567,11 +566,9 @@ export const StepEditor = ({ process, org }: IProps) => {
               onDelete={handleHide}
               onRestore={handleVisible}
               onSettings={
-                settingsTools.includes(r.tool as ToolSlug)
-                  ? handleSettings
-                  : undefined
+                toolHasSettingsDialog(r.tool) ? handleSettings : undefined
               }
-              settingsTitle={r.prettySettings}
+              settingsTitle={prettySettings(r.tool, r.settings)}
             />
           ))}
       </VertListDnd>
@@ -618,7 +615,9 @@ export const StepEditor = ({ process, org }: IProps) => {
       {toolSettingsRow > -1 && (
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Discuss}
+          isOpen={toolHasMarkdownSettings(
+            (rows[toolSettingsRow] as IStepRow).tool
+          )}
           onOpen={setToolSettingsOpen}
           bp={BigDialogBp.sm}
         >

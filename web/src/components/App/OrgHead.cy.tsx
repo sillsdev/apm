@@ -869,6 +869,31 @@ describe('OrgHead', { tags: '@smoke' }, () => {
     cy.contains(projectName).should('be.visible');
   });
 
+  it('shows the team name when hovering the project name', () => {
+    const projectId = 'test-project-id';
+    const projectName = 'Test Project';
+    const orgId = 'test-org-id';
+    const orgData = createMockOrganization(orgId, '>Team Alpha<');
+    const projectData = createMockProject(projectId, projectName);
+
+    mountOrgHead(
+      createInitialState({ project: projectId, developer: false }, orgData, [
+        projectData,
+      ]),
+      ['/plan/123/0'],
+      orgId,
+      orgData,
+      false,
+      undefined,
+      [projectData]
+    );
+
+    cy.get('#orgHeadTitle').should('have.text', projectName);
+    cy.contains('Team Alpha').should('not.exist');
+    cy.get('#orgHeadTitle').trigger('mouseover');
+    cy.get('[role="tooltip"]').should('have.text', 'Team Alpha');
+  });
+
   it('should display project name from projects table using global project id', () => {
     const projectId1 = 'test-project-id-1';
     const projectName1 = 'First Project';

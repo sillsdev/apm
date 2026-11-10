@@ -25,6 +25,7 @@ import { ArtifactTypeSlug, useArtifactType } from '.';
 import PassageType, { PassageTypeD } from '../model/passageType';
 import { requestedSchema } from '../schema';
 import { NamedRegions } from '../utils';
+import { findRecords } from './tryFindRecord';
 
 export const useOfflineSetup = () => {
   const [memory] = useGlobal('memory');
@@ -36,8 +37,9 @@ export const useOfflineSetup = () => {
     : null;
 
   const makeTypeRecs = async (kind: string) => {
-    const allTypeRecs = memory?.cache.query((q) =>
-      q.findRecords(`${kind}type`)
+    const allTypeRecs = findRecords(
+      memory,
+      `${kind}type`
     ) as unknown as ProjectTypeD[];
     const offlineTypeRecs = allTypeRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineTypeRecs.length === 0) {
@@ -65,9 +67,7 @@ export const useOfflineSetup = () => {
   };
 
   const makeIntegrationRecs = async () => {
-    const allRecs = memory?.cache.query((q) =>
-      q.findRecords('integration')
-    ) as Integration[];
+    const allRecs = findRecords(memory, 'integration');
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length === 0) {
       let paratextRec = {
@@ -105,9 +105,7 @@ export const useOfflineSetup = () => {
   };
 
   const makeRoleRecs = async () => {
-    const allRoleRecs = memory?.cache.query((q) =>
-      q.findRecords('role')
-    ) as Role[];
+    const allRoleRecs = findRecords(memory, 'role');
     const offlineRoleRecs = allRoleRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRoleRecs.length === 0) {
       let adminRec = {
@@ -385,9 +383,7 @@ export const useOfflineSetup = () => {
   };
 
   const makeArtifactCategoryRecs = async () => {
-    const allRecs = memory?.cache.query((q) =>
-      q.findRecords('artifactcategory')
-    ) as WorkflowStep[];
+    const allRecs = findRecords(memory, 'artifactcategory');
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length === 0) {
       const t = new RecordTransformBuilder();
@@ -415,9 +411,7 @@ export const useOfflineSetup = () => {
   };
 
   const makeArtifactTypeRecs = async () => {
-    const allRecs = memory?.cache.query((q) =>
-      q.findRecords('artifacttype')
-    ) as WorkflowStep[];
+    const allRecs = findRecords(memory, 'artifacttype');
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length === 0) {
       const t = new RecordTransformBuilder();
@@ -462,9 +456,7 @@ export const useOfflineSetup = () => {
   };
 
   const makeMoreArtifactTypeRecs = async () => {
-    const allRecs = memory?.cache.query((q) =>
-      q.findRecords('artifacttype')
-    ) as WorkflowStep[];
+    const allRecs = findRecords(memory, 'artifacttype');
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
@@ -484,9 +476,7 @@ export const useOfflineSetup = () => {
   };
 
   const makeTitleArtifactTypeRec = async () => {
-    const allRecs = memory?.cache.query((q) =>
-      q.findRecords('artifacttype')
-    ) as WorkflowStep[];
+    const allRecs = findRecords(memory, 'artifacttype');
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
@@ -506,9 +496,7 @@ export const useOfflineSetup = () => {
   };
 
   const makePassageTypeRecs = async () => {
-    const allRecs = memory?.cache.query((q) =>
-      q.findRecords('passagetype')
-    ) as PassageType[];
+    const allRecs = findRecords(memory, 'passagetype');
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length === 0) {
       const t = new RecordTransformBuilder();

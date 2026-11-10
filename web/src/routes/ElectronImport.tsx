@@ -1,6 +1,6 @@
 import path from 'path-browserify';
 import { DateTime } from 'luxon';
-import { IElectronImportStrings, IState, IApiError, ProjectD } from '../model';
+import { IElectronImportStrings, IState, IApiError } from '../model';
 import {
   remoteIdGuid,
   useArtifactType,
@@ -25,6 +25,8 @@ import { TokenContext } from '../context/TokenProvider';
 import { ImportProjectToElectronProps } from '../store';
 import { RecordKeyMap } from '@orbit/records';
 import { MainAPI } from '@model/main-api';
+import { findRecords } from '../crud/tryFindRecord';
+
 const ipc = window?.api as MainAPI;
 
 export interface IImportData {
@@ -200,9 +202,7 @@ export const useElectronImport = () => {
     );
 
     //if we already have projects...check dates
-    const projectRecs = memory.cache.query((q) =>
-      q.findRecords('project')
-    ) as ProjectD[];
+    const projectRecs = findRecords(memory, 'project');
     if (projectRecs && projectRecs.length > 0) {
       let projectNames: string = '';
       const id = importProj.id;

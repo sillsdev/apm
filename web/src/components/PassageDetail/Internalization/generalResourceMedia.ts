@@ -1,4 +1,4 @@
-import { ArtifactType, MediaFile } from '../../../model';
+import { ArtifactType, MediaFileD } from '../../../model';
 import { related } from '../../../crud/related';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
@@ -35,25 +35,22 @@ export const projectResourceTypeIds = (
  * for callers (Delete) that only ever act on derived copies: rows never show
  * the general resource itself, so resolving one to itself would be wrong there.
  */
-export const generalResourceMedia = <T extends MediaFile>(
-  media: T | undefined,
-  mediafiles: T[],
+export const generalResourceMedia = (
+  media: MediaFileD | undefined,
+  mediafiles: MediaFileD[],
   projResourceTypeIds: (string | null | undefined)[],
   { includeSelf = true }: { includeSelf?: boolean } = {}
-): T | undefined => {
+): MediaFileD | undefined => {
   // Ignore blank ids on both sides, so media without an artifactType never
   // matches a type record that happens to have no id.
   const typeIds = projResourceTypeIds.filter(Boolean);
-  const isProjectType = (m: T | undefined) => {
+  const isProjectType = (m: MediaFileD | undefined) => {
     const typeId = m ? related(m, 'artifactType') : undefined;
     return Boolean(typeId) && typeIds.includes(typeId);
   };
   const sourceMedia = mediafiles.find(
     (m) => m.id === related(media, 'sourceMedia')
   );
-  return isProjectType(sourceMedia)
-    ? sourceMedia
-    : includeSelf && isProjectType(media)
-      ? media
-      : undefined;
+  if (isProjectType(sourceMedia)) return sourceMedia;
+  return includeSelf && isProjectType(media) ? media : undefined;
 };

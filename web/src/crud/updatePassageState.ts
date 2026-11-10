@@ -10,11 +10,11 @@ import {
 } from '../model';
 import {
   AddRecord,
+  recordRef,
   ReplaceRelatedRecord,
   UpdateLastModifiedBy,
 } from '../model/baseModel';
 import {
-  InitializedRecord,
   RecordIdentity,
   RecordOperation,
   RecordTransformBuilder,
@@ -37,37 +37,21 @@ export const AddPassageStateChangeToOps = (
     },
   } as PassageStateChange;
   ops.push(...AddRecord(t, psc, userId, memory));
-  ops.push(
-    ...ReplaceRelatedRecord(
-      t,
-      psc as InitializedRecord,
-      'passage',
-      'passage',
-      passage
-    )
-  );
+  ops.push(...ReplaceRelatedRecord(t, psc, 'passage', 'passage', passage));
 };
 
 export const AddFlatPassage = (
   rec: Passage,
   section: RecordIdentity,
   planid: string,
-  media: RecordIdentity,
+  media: { type: 'mediafile'; id: string },
   userId: string,
   memory: Memory
 ): RecordOperation[] => {
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
   ops.push(...AddRecord(t, rec, userId, memory));
-  ops.push(
-    ...ReplaceRelatedRecord(
-      t,
-      rec as RecordIdentity,
-      'section',
-      'section',
-      section.id
-    )
-  );
+  ops.push(...ReplaceRelatedRecord(t, rec, 'section', 'section', section.id));
   AddPassageStateChangeToOps(
     t,
     ops,
@@ -103,13 +87,13 @@ export const UpdateMediaStateOps = (
   memory: Memory,
   comment: string
 ): RecordOperation[] => {
-  const mediaRecId = { type: 'mediafile', id: mediafile };
+  const mediaRecId = recordRef('mediafile', mediafile);
   if (state)
     ops.push(
       t.replaceAttribute(mediaRecId, 'transcriptionstate', state).toOperation()
     );
   const mediaRec = findRecord(memory, 'mediafile', mediafile) as MediaFileD;
-  const isVernacular = !related(mediaRec, 'artifacttype');
+  const isVernacular = !related(mediaRec, 'artifactType');
   ops.push(...UpdateLastModifiedBy(t, mediaRecId, userId));
   AddPassageStateChangeToOps(
     t,

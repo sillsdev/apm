@@ -1,5 +1,5 @@
 import { useGlobal } from '../context/useGlobal';
-import { VProject, Project, Plan, Group } from '../model';
+import { VProject, Project, Plan } from '../model';
 import { related, useTypeId, useOfflnProjCreate } from '.';
 import {
   useProjectsLoaded,
@@ -9,8 +9,8 @@ import {
 } from '../utils';
 import JSONAPISource from '@orbit/jsonapi';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
-import { InitializedRecord } from '@orbit/records';
 import { recToMemory } from './syncToMemory';
+import { findRecords } from './tryFindRecord';
 
 export const useVProjectCreate = () => {
   const [memory] = useGlobal('memory');
@@ -25,9 +25,7 @@ export const useVProjectCreate = () => {
   const getTypeId = useTypeId();
 
   const getGroupId = (teamId: string) => {
-    const grpRecs = memory?.cache.query((q) =>
-      q.findRecords('group')
-    ) as Group[];
+    const grpRecs = findRecords(memory, 'group');
     const selected = grpRecs.filter(
       (g) => g?.attributes?.allUsers && related(g, 'owner') === teamId
     );
@@ -80,7 +78,7 @@ export const useVProjectCreate = () => {
       // We use the plan type and not the project type
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
+        project,
         'projecttype',
         'projecttype',
         getTypeId(
@@ -88,51 +86,27 @@ export const useVProjectCreate = () => {
           'project'
         )
       ),
+      ...ReplaceRelatedRecord(t, project, 'group', 'group', getGroupId(teamId)),
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
-        'group',
-        'group',
-        getGroupId(teamId)
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
+        project,
         'organization',
         'organization',
         teamId
       ),
+      ...ReplaceRelatedRecord(t, project, 'owner', 'user', user),
+      ...ReplaceRelatedRecord(t, project, 'editsheetuser', 'user', sheetUser),
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
-        'owner',
-        'user',
-        user
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
-        'editsheetuser',
-        'user',
-        sheetUser
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
+        project,
         'editsheetgroup',
         'group',
         sheetGroup
       ),
+      ...ReplaceRelatedRecord(t, project, 'publishuser', 'user', publishUser),
       ...ReplaceRelatedRecord(
         t,
-        project as InitializedRecord,
-        'publishuser',
-        'user',
-        publishUser
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        project as InitializedRecord,
+        project,
         'publishgroup',
         'group',
         publishGroup
@@ -143,7 +117,7 @@ export const useVProjectCreate = () => {
     let slug = cleanFileName(name).substring(0, 6);
     if (offlineOnly) {
       //see if slug is unique
-      const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
+      const plans = findRecords(memory, 'plan');
       let tmp = '';
       const findit = (fnd: string) =>
         plans.findIndex((p) => p.attributes?.slug === fnd);
@@ -166,18 +140,12 @@ export const useVProjectCreate = () => {
       ...AddRecord(t, plan, user, memory),
       ...ReplaceRelatedRecord(
         t,
-        plan as InitializedRecord,
+        plan,
         'plantype',
         'plantype',
         getTypeId(type, 'plan')
       ),
-      ...ReplaceRelatedRecord(
-        t,
-        plan as InitializedRecord,
-        'project',
-        'project',
-        project.id
-      ),
+      ...ReplaceRelatedRecord(t, plan, 'project', 'project', project.id),
     ]);
     //fetch the slug from the server
     if (!offlineOnly) {

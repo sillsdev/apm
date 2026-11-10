@@ -1,19 +1,19 @@
-import {
-  InitializedRecord,
-  RecordRelationship,
-  UninitializedRecord,
-} from '@orbit/records';
+import { Loaded, BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
 
-export interface PlanType extends UninitializedRecord {
+export interface PlanType extends BaseModel {
   attributes: {
     name: string;
     description: string;
+    lastModifiedBy: number;
+    dateCreated: string;
+    dateUpdated: string;
   };
   relationships?: {
-    plans: RecordRelationship;
+    lastModifiedByUser: RecordRelationship;
   };
 }
 
-export type PlanTypeD = PlanType & InitializedRecord;
+export type PlanTypeD = Loaded<PlanType>;
 
 export default PlanType;

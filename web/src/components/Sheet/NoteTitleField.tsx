@@ -1,38 +1,39 @@
-import { TextField } from '@mui/material';
-import { IScriptureTableStrings } from '@model/index';
-import { useSelector, shallowEqual } from 'react-redux';
-import { scriptureTableSelector } from '../../selector';
+import { NoteIcon } from '../../control/PlanIcons';
+import { useGlobal } from '../../context/useGlobal';
+import { PassagePlayButton } from './PassagePlayButton';
 
 export function NoteTitleField({
   value,
-  onChange,
-  readonly = false,
-}: Readonly<{
-  value: string;
-  onChange: (value: string) => void;
-  readonly?: boolean;
-}>) {
-  const t: IScriptureTableStrings = useSelector(
-    scriptureTableSelector,
-    shallowEqual
-  );
+  mediaId,
+  disabled = false,
+}: Readonly<{ value: string; mediaId?: string; disabled?: boolean }>) {
+  const [playingMediaId] = useGlobal('playingMediaId');
+  const playDisabled = disabled || Boolean(playingMediaId);
   return (
-    <TextField
-      value={value}
-      onChange={(event) => {
-        if (readonly) return;
-        onChange(event.target.value);
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
       }}
-      size="small"
-      spellCheck
-      slotProps={{
-        htmlInput: {
-          // Same text as the visible Title column header.
-          'aria-label': t.title,
-          spellCheck: true,
-          readOnly: readonly,
-        },
-      }}
-    />
+    >
+      {mediaId ? (
+        <span
+          style={{ display: 'inline-flex', marginInlineEnd: 8 }}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <PassagePlayButton
+            mediaId={mediaId}
+            ring="playing"
+            disabled={playDisabled}
+          />
+        </span>
+      ) : null}
+      {NoteIcon}
+      {'\u00A0'}
+      {value}
+    </span>
   );
 }

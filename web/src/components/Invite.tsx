@@ -31,7 +31,6 @@ import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import SelectRole from '../control/SelectRole';
 import { inviteSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { InitializedRecord } from '@orbit/records';
 import packageJson from '../../package.json';
 import { Button } from '../control/Button';
 
@@ -114,25 +113,13 @@ function Invite(props: IProps) {
         ...AddRecord(t, invitation, user, memory),
         ...ReplaceRelatedRecord(
           t,
-          invitation as InitializedRecord,
+          invitation,
           'organization',
           'organization',
           organization
         ),
-        ...ReplaceRelatedRecord(
-          t,
-          invitation as InitializedRecord,
-          'role',
-          'role',
-          role
-        ),
-        ...ReplaceRelatedRecord(
-          t,
-          invitation as InitializedRecord,
-          'allUsersRole',
-          'role',
-          role
-        ),
+        ...ReplaceRelatedRecord(t, invitation, 'role', 'role', role),
+        ...ReplaceRelatedRecord(t, invitation, 'allUsersRole', 'role', role),
       ]);
     }
   };

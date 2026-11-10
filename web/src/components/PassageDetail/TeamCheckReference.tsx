@@ -5,6 +5,8 @@ import { LimitedMediaPlayer } from '../LimitedMediaPlayer';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { getSegments, NamedRegions } from '../../utils';
 import { storedCompareKey } from '../../utils/storedCompareKey';
+import { useCompareReferenceText } from './Internalization/useCompareReferenceText';
+import { CompareReferenceText } from './Internalization/CompareReferenceText';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -38,8 +40,13 @@ export function TeamCheckReference() {
     passage,
     section
   );
+  const { referenceRank, selectReferenceText, clearReferenceText } =
+    useCompareReferenceText({ removeStoredKeys, saveKey }, () =>
+      setPlayItem('')
+    );
 
   const handleResource = (id: string) => {
+    if (selectReferenceText(id)) return;
     const row = rowData.find((r) => r.id === id);
     if (row) {
       removeStoredKeys();
@@ -74,6 +81,10 @@ export function TeamCheckReference() {
 
   useEffect(() => {
     setPlayItem('');
+    // Reset here, not with a key: this effect must run anyway to clear the
+    // context's playItem and restore the saved choice, and a key would
+    // remount the player on every passage change. TT-7819
+    clearReferenceText();
     // We track the user's choices for each passage of the section
     const res = localStorage.getItem(storeKey());
     const secId = localStorage.getItem(storeKey(SecSlug));
@@ -90,15 +101,19 @@ export function TeamCheckReference() {
         <SelectMyResource onChange={handleResource} inResource={resource} />
       </Grid>
       <StyledGrid size={{ xs: 10 }}>
-        <LimitedMediaPlayer
-          srcMediaId={playItem}
-          requestPlay={itemPlaying}
-          onTogglePlay={handleItemTogglePlay}
-          onEnded={handleEnded}
-          noClose={true}
-          controls={true}
-          limits={{ start: mediaStart, end: mediaEnd }}
-        />
+        {referenceRank ? (
+          <CompareReferenceText key={passage.id} rank={referenceRank} />
+        ) : (
+          <LimitedMediaPlayer
+            srcMediaId={playItem}
+            requestPlay={itemPlaying}
+            onTogglePlay={handleItemTogglePlay}
+            onEnded={handleEnded}
+            noClose={true}
+            controls={true}
+            limits={{ start: mediaStart, end: mediaEnd }}
+          />
+        )}
       </StyledGrid>
     </Grid>
   );

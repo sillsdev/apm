@@ -56,6 +56,9 @@ declare module '@mui/material/styles' {
 export const LAYOUT_GAP = 1.5;
 export const LAYOUT_P: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
 
+// Default background of the round play buttons
+export const PLAY_BUTTON_BG = '#bec0bfff';
+
 const colors = {
   primary: '#135cb9',
   secondary: '#00a7e1',

@@ -1,6 +1,5 @@
 import type Memory from '@orbit/memory';
 import type { ProjectD } from '../../model';
-import { related } from '../../crud/related';
 
 jest.mock('../../serializers/getSerializer', () => ({
   getSerializer: () => ({
@@ -76,7 +75,17 @@ function memoryStub(store: Record<string, unknown[]>): Memory {
                 return origFilter(f as (r: { id: string }) => boolean);
               const spec = f as { relation: string; record: { id: string } };
               return origFilter(
-                (r) => related(r, spec.relation) === spec.record.id
+                (r: {
+                  id: string;
+                  relationships?: Record<
+                    string,
+                    { data?: { id?: string } | null }
+                  >;
+                }) => {
+                  // The filter name is runtime data, so this reads the link itself.
+                  const data = r.relationships?.[spec.relation]?.data;
+                  return !Array.isArray(data) && data?.id === spec.record.id;
+                }
               );
             };
             return recs;
@@ -1347,12 +1356,12 @@ describe('media replacements from the project plan', () => {
     },
   } as unknown as ProjectD;
 
-  const replacement = (id: string, planId: string) => ({
+  const replacement = (id: string, passageId: string) => ({
     type: 'mediareplacement',
     id,
     keys: { remoteId: id },
     attributes: { ...dates, selectionStart: 0, selectionEnd: 1 },
-    relationships: { plan: rel('plan', planId) },
+    relationships: { passage: rel('passage', passageId) },
   });
 
   const store: Record<string, unknown[]> = {
@@ -1383,9 +1392,41 @@ describe('media replacements from the project plan', () => {
         relationships: { project: rel('project', 'proj-other') },
       },
     ],
+    section: [
+      {
+        type: 'section',
+        id: 'sec-mine',
+        keys: { remoteId: 'sec-mine' },
+        attributes: dates,
+        relationships: { plan: rel('plan', 'plan-mine') },
+      },
+      {
+        type: 'section',
+        id: 'sec-other',
+        keys: { remoteId: 'sec-other' },
+        attributes: dates,
+        relationships: { plan: rel('plan', 'plan-other') },
+      },
+    ],
+    passage: [
+      {
+        type: 'passage',
+        id: 'pas-mine',
+        keys: { remoteId: 'pas-mine' },
+        attributes: dates,
+        relationships: { section: rel('section', 'sec-mine') },
+      },
+      {
+        type: 'passage',
+        id: 'pas-other',
+        keys: { remoteId: 'pas-other' },
+        attributes: dates,
+        relationships: { section: rel('section', 'sec-other') },
+      },
+    ],
     mediareplacement: [
-      replacement('repl-mine', 'plan-mine'),
-      replacement('repl-other', 'plan-other'),
+      replacement('repl-mine', 'pas-mine'),
+      replacement('repl-other', 'pas-other'),
     ],
   };
 

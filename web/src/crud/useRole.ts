@@ -1,10 +1,16 @@
 import React, { useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { Role, RoleD, RoleNames, User } from '../model';
-import { InitializedRecord } from '@orbit/records';
+import {
+  Role,
+  RoleD,
+  RoleNames,
+  User,
+  OrganizationMembershipD,
+} from '../model';
 import { findRecord, related } from '../crud';
 import { logError, Severity } from '../utils';
 import { ReplaceRelatedRecord } from '../model/baseModel';
+import { findRecords } from './tryFindRecord';
 
 export const useRole = () => {
   const [memory] = useGlobal('memory');
@@ -19,9 +25,9 @@ export const useRole = () => {
 
   const roles = React.useMemo(() => {
     const uniqueRoles = {} as IUniqueRoles;
-    const allRoles = (
-      memory?.cache.query((q) => q.findRecords('role')) as RoleD[]
-    ).filter((r) => r.attributes.orgRole);
+    const allRoles = findRecords(memory, 'role').filter(
+      (r) => r.attributes.orgRole
+    );
     allRoles.forEach((r) => {
       if (offlineOnly !== Boolean(r?.keys?.remoteId)) {
         if (r?.attributes?.roleName) uniqueRoles[r.attributes.roleName] = r;
@@ -64,11 +70,12 @@ export const useRole = () => {
     return '';
   };
 
-  const getMbrRoleRec = (relate: string, id: string, userId: string) => {
-    const tableName = 'organizationmembership';
-    const table = memory?.cache.query((q) =>
-      q.findRecords(tableName)
-    ) as InitializedRecord[];
+  const getMbrRoleRec = (
+    relate: 'organization',
+    id: string,
+    userId: string
+  ) => {
+    const table = findRecords(memory, 'organizationmembership');
     const rows = table.filter(
       (tbl) => related(tbl, 'user') === userId && related(tbl, relate) === id
     );
@@ -76,7 +83,7 @@ export const useRole = () => {
     return undefined;
   };
 
-  const getMbrRole = (memberRec: InitializedRecord | undefined) => {
+  const getMbrRole = (memberRec: OrganizationMembershipD | undefined) => {
     if (memberRec) {
       let roleId = related(memberRec, 'role');
       if (!roleId) {

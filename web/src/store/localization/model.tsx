@@ -932,6 +932,7 @@ export interface IMediaActionsStrings extends Localize.LocalizedStringsMethods {
     "edit": string;
     "pause": string;
     "play": string;
+    "stop": string;
     "view": string;
 };
 
@@ -1124,6 +1125,18 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "projectResourceConfigure": string;
     "recordResource": string;
     "reference": string;
+    "referenceTextBookMissing": string;
+    "referenceTextEmpty": string;
+    "referenceTextFetchFailed": string;
+    "referenceTextForbidden": string;
+    "referenceTextLoading": string;
+    "referenceTextNoRange": string;
+    "referenceTextNoVoice": string;
+    "referenceTextNoVoiceOffline": string;
+    "referenceTextRenewLogin": string;
+    "referenceTextRetry": string;
+    "referenceTextSpeakFailed": string;
+    "referenceTextUnauthorized": string;
     "research": string;
     "resource": string;
     "resources": string;
@@ -1810,6 +1823,31 @@ export interface ITreeChartStrings extends Localize.LocalizedStringsMethods {
     "status": string;
 };
 
+export interface ITtsVoicesStrings extends Localize.LocalizedStringsMethods {
+    "add": string;
+    "explain": string;
+    "filterReferenceTexts": string;
+    "linuxNote": string;
+    "loading": string;
+    "local": string;
+    "macNote": string;
+    "moveDown": string;
+    "moveUp": string;
+    "noMatch": string;
+    "noVoices": string;
+    "notOnDevice": string;
+    "online": string;
+    "rankedCount": string;
+    "read": string;
+    "remove": string;
+    "sampleDefault": string;
+    "sampleText": string;
+    "search": string;
+    "showOnline": string;
+    "title": string;
+    "windowsNote": string;
+};
+
 export interface IUploadProgressStrings extends Localize.LocalizedStringsMethods {
     "cancel": string;
     "canceling": string;
@@ -1911,13 +1949,17 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "advanced": string;
     "backtranslation": string;
     "basic": string;
+    "bibleListError": string;
+    "book": string;
     "cancel": string;
+    "chooseBookFirst": string;
     "configure": string;
     "cannotChangeLayout": string;
     "correctformat": string;
     "description": string;
     "edit": string;
     "editorSettings": string;
+    "filteredToVoices": string;
     "generalBook": string;
     "generalStory": string;
     "flat": string;
@@ -1928,6 +1970,8 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "howToPublic": string;
     "language": string;
     "layout": string;
+    "licenseNotStated": string;
+    "loadingBibles": string;
     "movement": string;
     "movements": string;
     "nameInUse": string;
@@ -1940,10 +1984,14 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "permissionEditSheet": string;
     "permissionPublish": string;
     "preview": string;
+    "primaryReferenceText": string;
     "projectName": string;
+    "publicDomain": string;
+    "referenceTextRemoved": string;
     "renderRecommended": string;
     "save": string;
     "scenes": string;
+    "secondaryReferenceText": string;
     "sections": string;
     "sets": string;
     "sharedResources": string;
@@ -1953,6 +2001,7 @@ export interface IVProjectStrings extends Localize.LocalizedStringsMethods {
     "testing": string;
     "training": string;
     "type": string;
+    "usedInTeam": string;
 };
 
 export interface IWelcomeStrings extends Localize.LocalizedStringsMethods {
@@ -2242,6 +2291,7 @@ export interface ILocalizedStrings {
 	transcriptionShow: ITranscriptionShowStrings;
 	transcriptionTab: ITranscriptionTabStrings;
 	treeChart: ITreeChartStrings;
+	ttsVoices: ITtsVoicesStrings;
 	uploadProgress: IUploadProgressStrings;
 	userListMode: IUserListModeStrings;
 	usertable: IUsertableStrings;

@@ -1,8 +1,8 @@
 import Memory from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import { RecordTransformBuilder } from '@orbit/records';
-import { OfflineProjectD, ProjectD } from '../model';
-import { findRecord } from './tryFindRecord';
+import { OfflineProjectD } from '../model';
+import { findRecords, findRecord } from './tryFindRecord';
 import { related } from './related';
 
 /**
@@ -15,8 +15,7 @@ export const offlineProjectIdsForDeleted = (
   type: string,
   localId: string
 ): string[] => {
-  const projects = () =>
-    memory.cache.query((q) => q.findRecords('project')) as ProjectD[];
+  const projects = () => findRecords(memory, 'project');
   const idsFor = (rel: 'organization' | 'group', id: string | null) => {
     // A missing link must not match every project that also has no link.
     if (!id) return [];
@@ -27,13 +26,17 @@ export const offlineProjectIdsForDeleted = (
 
   if (type === 'project') return [localId];
   if (type === 'organization') return idsFor('organization', localId);
-  if (type !== 'organizationmembership' && type !== 'groupmembership')
-    return [];
-
-  const membership = findRecord(memory, type, localId);
-  if (!membership || related(membership, 'user') !== currentUser) return [];
-  const rel = type === 'organizationmembership' ? 'organization' : 'group';
-  return idsFor(rel, related(membership, rel));
+  if (type === 'organizationmembership') {
+    const membership = findRecord(memory, 'organizationmembership', localId);
+    if (!membership || related(membership, 'user') !== currentUser) return [];
+    return idsFor('organization', related(membership, 'organization'));
+  }
+  if (type === 'groupmembership') {
+    const membership = findRecord(memory, 'groupmembership', localId);
+    if (!membership || related(membership, 'user') !== currentUser) return [];
+    return idsFor('group', related(membership, 'group'));
+  }
+  return [];
 };
 
 export const offlineProjectsFor = (
@@ -42,11 +45,9 @@ export const offlineProjectsFor = (
 ): OfflineProjectD[] => {
   const ids = new Set(projectIds);
   if (ids.size === 0) return [];
-  return (
-    memory.cache.query((q) =>
-      q.findRecords('offlineproject')
-    ) as OfflineProjectD[]
-  ).filter((op) => ids.has(related(op, 'project')));
+  return findRecords(memory, 'offlineproject').filter((op) =>
+    ids.has(related(op, 'project'))
+  );
 };
 
 export const deleteOfflineProjects = async (

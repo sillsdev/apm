@@ -169,7 +169,12 @@ export function PassageHistory(props: IProps) {
         if (psc?.attributes?.state && psc.attributes.state !== curState) {
           curState = psc.attributes.state;
           results.push(
-            historyItem(psc, activityStateStr.getString(curState), 's', false)
+            historyItem(
+              psc,
+              activityStateStr.getString(curState) ?? curState,
+              's',
+              false
+            )
           );
         }
       });
