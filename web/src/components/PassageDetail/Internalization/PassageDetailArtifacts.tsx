@@ -86,7 +86,6 @@ import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { AddResourceAction } from './AddResourceAction';
 import AddResourceWizard from './AddResourceWizard';
 import { WizardLaunch } from './useAddResourceWizard';
-import { useResourceScopeLabels } from './useResourceScopeLabels';
 import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
@@ -492,8 +491,6 @@ export function PassageDetailArtifacts() {
     launchWizard({ kind: 'faithbridge', query, audioUrl, transcript });
   };
 
-  const { sectDesc, passDesc } = useResourceScopeLabels();
-
   const listFilter = (r: IRow) =>
     r?.isResource &&
     (allResources || r.passageId === '' || r.passageId === passage.id);
@@ -785,8 +782,6 @@ export function PassageDetailArtifacts() {
           onPassResChange={handlePassRes}
           allowGeneralResourceOption={false}
           onTextChange={handleTextChange}
-          sectDesc={sectDesc}
-          passDesc={passDesc}
         />
       </BigDialog>
       {confirm &&

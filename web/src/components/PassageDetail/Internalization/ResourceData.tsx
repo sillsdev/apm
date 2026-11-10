@@ -12,7 +12,13 @@ import {
 import React, { useEffect, useState, type RefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
-import { IPassageDetailArtifactsStrings, MediaFileD } from '../../../model';
+import {
+  IPassageDetailArtifactsStrings,
+  MediaFileD,
+  SheetLevel,
+} from '../../../model';
+import { PassageTypeEnum } from '../../../model/passageTypeEnum';
+import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { passageDetailArtifactsSelector } from '../../../selector';
 import SelectArtifactCategory from '../../Sheet/SelectArtifactCategory';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
@@ -24,6 +30,7 @@ import { mediaContentType } from '../../../utils/contentType';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { ArtCatScr } from '../../../components/Sheet/ArtCatScr';
 import { descriptionRequiredForResource } from './resourceArtifactName';
+import usePassageDetailContext from '../../../context/usePassageDetailContext';
 
 type ResourceKindRadio = 'section' | 'passage' | 'general';
 
@@ -60,8 +67,6 @@ interface IProps {
   // Forwarded to SelectArtifactCategory so the parent form can create a new
   // category at submission (rather than on blur).
   catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
-  sectDesc?: string | undefined;
-  passDesc?: string | undefined;
   wrapPreviewOverflow?: boolean;
 }
 export function ResourceData(props: IProps) {
@@ -75,8 +80,6 @@ export function ResourceData(props: IProps) {
     catRequired,
     catAllowNew,
     allowGeneralResourceOption,
-    sectDesc,
-    passDesc,
     media,
     uploadType,
     onTextChange,
@@ -85,11 +88,25 @@ export function ResourceData(props: IProps) {
   } = props;
   const [description, setDescription] = useState(initDescription);
   const { getOrganizedBy } = useOrganizedBy();
+  const { section, passage } = usePassageDetailContext();
   const [text, setText] = useState(media?.attributes?.originalFile ?? '');
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
   );
+  // Scope radio labels: Book/Movement sections and Note passages get their own wording.
+  const sectionLevel = section?.attributes?.level;
+  const sectionScopeLabel =
+    sectionLevel === SheetLevel.Book
+      ? t.bookResource
+      : sectionLevel === SheetLevel.Movement
+        ? t.movementResource
+        : getOrganizedBy(true);
+  const passageScopeLabel =
+    passageTypeFromRef(passage?.attributes?.reference ?? undefined) ===
+    PassageTypeEnum.NOTE
+      ? t.noteResource
+      : t.passageResource;
   const descriptionRequired = descriptionRequiredForResource(
     mediaContentType(media),
     uploadType,
@@ -161,18 +178,12 @@ export function ResourceData(props: IProps) {
             <FormControlLabel
               value={'section'}
               control={<Radio />}
-              label={t.currentResource.replace(
-                '{0}',
-                sectDesc ?? getOrganizedBy(true)
-              )}
+              label={t.currentResource.replace('{0}', sectionScopeLabel)}
             />
             <FormControlLabel
               value={'passage'}
               control={<Radio />}
-              label={t.currentResource.replace(
-                '{0}',
-                passDesc ?? t.passageResource
-              )}
+              label={t.currentResource.replace('{0}', passageScopeLabel)}
             />
             {allowGeneralResourceOption &&
               !NON_FILE_UPLOAD_TYPES.includes(

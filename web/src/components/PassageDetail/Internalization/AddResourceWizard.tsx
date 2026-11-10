@@ -8,6 +8,7 @@ import ProjectResourceConfigure from './ProjectResourceConfigure';
 import Confirm from '../../AlertDialog';
 import { safeFileBasename } from '../../../utils';
 import { UploadType } from '../../UploadType';
+import { useOrganizedBy } from '../../../crud';
 import {
   useAddResourceWizard,
   WizardStep,
@@ -32,6 +33,7 @@ export function AddResourceWizard({
   configureWidth = 1000,
 }: IProps) {
   const w = useAddResourceWizard({ launchSource, onClose });
+  const { getOrganizedBy } = useOrganizedBy();
 
   return (
     <>
@@ -41,7 +43,7 @@ export function AddResourceWizard({
           w.step === WizardStep.SelectSections ? (
             <Typography sx={{ color: 'text.secondary' }}>
               {w.isAddingAudioResource
-                ? w.t.selectPassagesSub.replace('{0}', w.getOrganizedBy(false))
+                ? w.t.selectPassagesSub.replace('{0}', getOrganizedBy(false))
                 : w.t.editingFile.replace(
                     '{0}',
                     safeFileBasename(w.projMedia?.attributes?.originalFile)
@@ -76,11 +78,11 @@ export function AddResourceWizard({
                 finish={w.afterUpload}
                 beforeUpload={w.handleBeforeUpload}
                 cancelled={w.cancelled}
-                artifactState={w.artifactState.current}
+                artifactId={w.artifactId}
                 uploadType={w.uploadType}
                 ready={() => w.resourceReady}
-                performedBy={w.performedBy}
-                onSpeakerChange={w.setPerformedBy}
+                speaker={w.speaker}
+                onSpeaker={w.setSpeaker}
                 inValue={w.markdownValue}
                 eafUrl={w.eafUrl}
                 defaultFilename={w.filename}
@@ -96,7 +98,7 @@ export function AddResourceWizard({
                   <ResourceData
                     uploadType={w.uploadType}
                     catAllowNew={true} //if they can upload they can add cat
-                    initCategory={w.initCategory}
+                    initCategory=""
                     onCategoryChange={w.handleCategory}
                     catCommitRef={w.addCategorySaveRef}
                     initDescription={w.initDescription}
@@ -105,8 +107,6 @@ export function AddResourceWizard({
                     resourceKind={w.resourceKind}
                     onPassResChange={w.handlePassRes}
                     allowGeneralResourceOption={w.isAddingAudioResource}
-                    sectDesc={w.sectDesc}
-                    passDesc={w.passDesc}
                   />
                 }
               />
@@ -124,7 +124,7 @@ export function AddResourceWizard({
             }}
           >
             <SelectSections
-              initialItems={w.getInitialItems()}
+              initialItems={w.initialItems}
               // If we went to step 3 and then Back, no need to re-upload the media.
               uploadsOnNext={w.isAddingAudioResource && !w.projMedia}
               uploading={w.uploading}

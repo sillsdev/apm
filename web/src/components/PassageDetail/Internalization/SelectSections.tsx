@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { useSelector, shallowEqual } from 'react-redux';
 import {
@@ -17,7 +17,6 @@ import {
   Box,
   Checkbox,
   CircularProgress,
-  debounce,
   Paper,
   PaperProps,
   styled,
@@ -38,7 +37,7 @@ import { Button } from '../../../control/Button';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
-  marginBottom: theme.spacing(1),
+  marginBottom: theme.spacing(2),
   '& .MuiPaper-rounded': {
     borderRadius: '8px',
   },
@@ -49,78 +48,32 @@ type IRow = SelectSectionRow;
 
 interface IProps {
   initialItems?: RecordIdentity[];
-  /** Visual resources are written immediately, so the button says so. */
-  visual?: boolean;
-  /**
-   * True when clicking Next now performs the (deferred) media upload — the
-   * new-add general-resource flow. The button then reads "Upload" instead of
-   * "Next". Editing an existing resource leaves this false (Next just advances
-   * to the configure step; the media already exists).
-   */
-  uploadsOnNext?: boolean;
-  /**
-   * True while the deferred upload triggered by this dialog's Upload button is
-   * in flight. The dialog stays open (so selections survive) with the button
-   * disabled and a spinner; on success the caller advances to the configure
-   * step, on failure it re-enables so the user can retry without re-selecting.
-   */
-  uploading?: boolean;
-  /**
-   * `candidates` is every identity offered by the dialog; the caller needs it to
-   * limit cleanup of unselected assignments to what the user could actually see.
-   */
+  uploadsOnNext?: boolean; // need to upload after selecting sections in the "deferred" flow of adding a new resource
+  uploading?: boolean; // deferred upload is in flight, keep dialog open with button disabled and spinner, retry may be needed
   onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
-  /**
-   * When set, a "Back" button (the reverse of Next/Upload) is shown — for now
-   * only in developer mode. The add flow wires this to reopen the upload
-   * dialog; leaving it undefined hides the button for entry points that have no
-   * previous step here.
-   */
-  onBack?: () => void;
+  onBack?: () => void; // show back button if present
 }
 
 export function SelectSections(props: IProps) {
-  const { initialItems, visual, uploadsOnNext, uploading, onSelect, onBack } =
-    props;
-  const initialSelectionKey = (initialItems ?? [])
-    .map((item) => `${item.type}:${item.id}`)
-    .join('|');
+  const { initialItems, uploadsOnNext, uploading, onSelect, onBack } = props;
   const passages = useOrbitData<PassageD[]>('passage');
   const sections = useOrbitData<SectionD[]>('section');
   const [memory] = useGlobal('memory');
-  const [plan] = useGlobal('plan'); //will be constant here
-  const [isDeveloper] = useGlobal('developer');
-  const [data, setData] = useState(Array<IRow>());
-  const [heightStyle, setHeightStyle] = useState({
-    maxHeight: `${window.innerHeight - 200}px`,
-  });
+  const [plan] = useGlobal('plan'); // will be constant here
   const { getOrganizedBy } = useOrganizedBy();
-  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
-  // respond to changes in the language setting until the dialog is reopened.
+  // There is no way for the user to change the language while dialog is open
   const ta: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const allBookData = useSelector((state: IState) => state.books.bookData);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const setDimensions = () => {
-    setHeightStyle({
-      maxHeight: `${window.innerHeight - 200}px`,
-    });
-  };
+  // Seeded once at mount; later changes to initialItems must not reset the
+  // user's ticks (the wizard keeps this mounted across steps).
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set((initialItems ?? []).map((item) => `${item.type}:${item.id}`))
+  );
   const planType = usePlanType();
-
-  useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   const planRec = useMemo(
     () => findRecord(memory, 'plan', plan) as Plan | undefined,
@@ -133,8 +86,8 @@ export function SelectSections(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
 
-  useEffect(() => {
-    setData(
+  const data = useMemo(
+    () =>
       buildSelectSectionRows({
         passages,
         sections,
@@ -142,16 +95,10 @@ export function SelectSections(props: IProps) {
         planId: planRec?.id,
         isFlat: Boolean(isFlat),
         organizedBy: getOrganizedBy(true),
-      })
-    );
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, passages, sections, allBookData, isFlat]);
-
-  useEffect(() => {
-    setSelected(
-      new Set(initialSelectionKey ? initialSelectionKey.split('|') : [])
-    );
-  }, [initialSelectionKey]);
+    [plan, passages, sections, allBookData, isFlat]
+  );
 
   /** `passage:<id>` keys of each section's passage rows, by section id. */
   const passageKeysBySection = useMemo(() => {
@@ -167,9 +114,8 @@ export function SelectSections(props: IProps) {
 
   /**
    * A section's checkbox has its own selection state, independent of its
-   * passages. Checking a section is the one cross-influence: as a convenience it
-   * also checks every passage in the section. Unchecking a section only clears
-   * the section itself and leaves its passages as they were.
+   * passages. Checking a section also checks every passage in the section.
+   * Unchecking a section only clears the section itself and leaves its passages as they were.
    */
   const toggleSection = (sectionId: string) => {
     setSelected((current) => {
@@ -179,7 +125,6 @@ export function SelectSections(props: IProps) {
         next.delete(sectionKey);
       } else {
         next.add(sectionKey);
-        // Checking a section checks all of its passages (default behavior).
         (passageKeysBySection.get(sectionId) ?? []).forEach((key) =>
           next.add(key)
         );
@@ -206,7 +151,6 @@ export function SelectSections(props: IProps) {
   const allSelected =
     data.length > 0 && rowKeys().every((key) => selected.has(key));
 
-  /** Tick every row's box, or clear them all when everything is already ticked. */
   const toggleAll = () => {
     setSelected((current) =>
       rowKeys().every((key) => current.has(key))
@@ -221,8 +165,7 @@ export function SelectSections(props: IProps) {
         type: row.kind,
         id: row.recId,
       })) as RecordIdentity[];
-    // Section and passage checkboxes are independent, so create an assignment
-    // for each row whose own box is ticked: a checked section yields a section
+    // Section and passage checkboxes are independent, a checked section yields a section
     // assignment, a checked passage a passage assignment.
     onSelect?.(
       identities(
@@ -235,7 +178,14 @@ export function SelectSections(props: IProps) {
   return (
     <Box
       id="SelectSections"
-      sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
+      sx={{
+        pt: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
     >
       <Box sx={{ ...rowSx, justifyContent: 'flex-start', pb: 1 }}>
         <Button
@@ -246,14 +196,7 @@ export function SelectSections(props: IProps) {
           {allSelected ? ta.deselectAll : ta.selectAll}
         </Button>
       </Box>
-      <StyledPaper
-        id="PassageList"
-        style={heightStyle}
-        sx={{ flex: 1, minHeight: 0 }}
-      >
-        {/* Plain striped table (theme MuiTable variant="striped"); no row-hover
-            tint, so hovering a row never greys it. The checkbox hover feedback
-            is unaffected. */}
+      <StyledPaper id="PassageList" sx={{ flex: '0 1 auto', minHeight: 0 }}>
         <Table
           size="small"
           variant="striped"
@@ -313,7 +256,7 @@ export function SelectSections(props: IProps) {
         </Table>
       </StyledPaper>
       <ActionRow>
-        {onBack && isDeveloper && (
+        {onBack && (
           <Button
             id="select-sections-back"
             onClick={onBack}
@@ -330,7 +273,7 @@ export function SelectSections(props: IProps) {
             onClick={handleSelected}
             disabled={selected.size === 0 || uploading}
           >
-            {visual ? ta.createResources : uploadsOnNext ? ts.upload : ta.next}
+            {uploadsOnNext ? ts.upload : ta.next}
           </Button>
         </Box>
       </ActionRow>
