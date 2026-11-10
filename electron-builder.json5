@@ -12,7 +12,13 @@
   // Only the build output (plus production node_modules, which electron-builder
   // adds itself). Without this list the whole repo — including env-config
   // secrets — was packed into app.asar.
-  files: ['dist', 'dist-electron', 'resources', 'package.json'],
+  files: [
+    'dist/**/*',
+    '!dist/**/*.map',
+    'dist-electron',
+    'resources',
+    'package.json',
+  ],
   asarUnpack: [
     'resources/**',
     'node_modules/ffmpeg-static/**',

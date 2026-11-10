@@ -52,6 +52,7 @@ export default defineConfig({
     port: 3000,
   },
   build: {
+    sourcemap: 'hidden',
     outDir: path.join(repoRoot, 'dist'),
     emptyOutDir: true,
     rolldownOptions: {
