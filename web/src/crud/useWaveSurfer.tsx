@@ -460,6 +460,7 @@ export function useWaveSurfer(
 
     wavesurferRef.current = wavesurfer;
     regionsLoadedRef.current = false;
+    isReadyRef.current = false;
     if (wavesurfer) {
       wavesurfer.on('ready', handleReady);
       //this is received way more times than expected
@@ -767,7 +768,9 @@ export function useWaveSurfer(
   };
 
   const wsLoadRegions = (regions: string, loop: boolean) => {
-    if (isReadyRef.current) {
+    // Without a duration (media being swapped) the regions plugin would clamp
+    // every region to 0-0, so hold them until the next 'ready'.
+    if (isReadyRef.current && wavesurferRef.current?.getDuration()) {
       loadRegions(parseRegions(regions), loop);
       regionsLoadedRef.current = true;
     } else {

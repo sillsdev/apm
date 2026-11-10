@@ -92,6 +92,7 @@ export const getSegmentRegionColor = (index: number, alpha: number = 0.28) => {
 
 /** Same tint as a drag-created record selection. */
 const DRAG_SELECTION_COLOR = 'rgba(255, 0, 0, 0.1)';
+const MARKER_ID_PREFIX = 'marker';
 
 const withRegionColorAlpha = (color: string, alpha: number) => {
   const match = color.match(
@@ -326,10 +327,11 @@ export function useWaveSurferRegions(
     Regions()
       ?.getRegions()
       .filter((reg) => reg.start !== reg.end) ?? ([] as Region[]);
+
   const markers = () =>
     Regions()
       ?.getRegions()
-      .filter((reg) => reg.start === reg.end) ?? ([] as Region[]);
+      .filter((reg) => reg.id.startsWith(MARKER_ID_PREFIX)) ?? ([] as Region[]);
   const region = (id: string) => regions().find((x) => x.id === id);
   const numRegions = () => regions().length;
   const currentRegion = () => {
@@ -1367,7 +1369,7 @@ export function useWaveSurferRegions(
     if (!wsRef.current || !Regions()) return;
 
     const region = Regions()?.addRegion({
-      id: 'marker' + index.toString(),
+      id: MARKER_ID_PREFIX + index.toString(),
       start: m.time,
       end: m.time,
       color: m.color ?? 'blue',
