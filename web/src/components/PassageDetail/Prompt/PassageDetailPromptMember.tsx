@@ -90,7 +90,7 @@ export default function PassageDetailPromptMember(props: IProps) {
       playbackCompleteRef.current = true;
       setPromptPlaybackComplete(true);
       if (isBoldWorkflow) {
-        // Failure is reported (and rolled back) by setStepComplete.
+        // Failure is reported by setStepComplete.
         setStepComplete(currentstep, true).catch(() => undefined);
       }
     }

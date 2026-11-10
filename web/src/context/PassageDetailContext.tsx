@@ -37,10 +37,7 @@ import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
 import { ToolSlug } from '../crud/toolSlug';
 import { findRecord } from '../crud/tryFindRecord';
 import { getAllMediaRecs } from '../crud/media';
-import {
-  getStepComplete,
-  passageRecordForStepComplete,
-} from '../crud/getStepComplete';
+import { getStepComplete } from '../crud/getStepComplete';
 import {
   applyStepComplete,
   stepsCompleteThrough,
@@ -311,20 +308,7 @@ const PassageDetailProvider = (props: IProps) => {
     allBookData,
     prjId: prjId ?? '',
   });
-  // Latest completed list for sequential/stale-closure callers (reopen, reject).
-  // Ceiling: every psgCompleted write must go through setPsgCompleted.
-  const psgCompletedRef = useRef(state.psgCompleted);
-  // Passage id (memory id) that psgCompleted currently describes.
-  const psgCompletedPassageRef = useRef('');
-  const setPsgCompleted = (completed: StepComplete[]) => {
-    psgCompletedRef.current = completed;
-    setState((s: ICtxState) =>
-      s.psgCompleted === completed ? s : { ...s, psgCompleted: completed }
-    );
-  };
-  // Skip Orbit→UI sync while a local complete write is in flight so a stale
-  // passages snapshot cannot uncheck the box we just flipped.
-  const pendingCompleteWrites = useRef(0);
+  // Serializes stepComplete writes; see writeStepComplete.
   const stepCompleteTail = useRef(Promise.resolve());
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
@@ -360,8 +344,7 @@ const PassageDetailProvider = (props: IProps) => {
     stepid =
       remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
       stepid;
-    // Ref, not state: callers often check right after `await setStepComplete`.
-    const step = psgCompletedRef.current.find((s) => s.stepid === stepid);
+    const step = state.psgCompleted.find((s) => s.stepid === stepid);
     return Boolean(step?.complete);
   };
 
@@ -753,12 +736,7 @@ const PassageDetailProvider = (props: IProps) => {
     );
     ops.push(...UpdateLastModifiedBy(tb, recId, user));
     AddPassageStateChangeToOps(tb, ops, recId.id, '', comment, user, memory);
-    pendingCompleteWrites.current += 1;
-    try {
-      await memory.update(ops);
-    } finally {
-      pendingCompleteWrites.current -= 1;
-    }
+    await memory.update(ops);
   };
 
   const enqueueStepComplete = (run: () => Promise<void>) => {
@@ -791,14 +769,9 @@ const PassageDetailProvider = (props: IProps) => {
         Passage | undefined;
       const base = passage ? getStepComplete(passage) : [];
       const { completed, comment } = build(base);
-      // Flip the checkbox before Orbit/IndexedDB finishes (only if the user is
-      // still looking at this passage).
-      if (psgCompletedPassageRef.current === passageId)
-        setPsgCompleted(completed);
       try {
         await persistPsgCompleted(passageId, completed, comment);
       } catch (err) {
-        if (psgCompletedPassageRef.current === passageId) setPsgCompleted(base);
         logError(
           Severity.error,
           errorReporter,
@@ -807,6 +780,7 @@ const PassageDetailProvider = (props: IProps) => {
         showMessage(err instanceof Error ? err.message : String(err));
         throw err;
       }
+      setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
     });
   };
 
@@ -874,7 +848,7 @@ const PassageDetailProvider = (props: IProps) => {
         }
       )
       .catch(() => {
-        // setStepComplete already reported and rolled back its failure
+        // setStepComplete already reported its failure
       });
   };
 
@@ -1111,44 +1085,45 @@ const PassageDetailProvider = (props: IProps) => {
   };
 
   const stepCmp = (a: StepComplete, b: StepComplete) =>
-    a.stepid.localeCompare(b.stepid);
+    a.stepid > b.stepid ? 1 : -1;
 
   useEffect(() => {
     const passageId =
       remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
       pasId ||
       '';
-    // useOrbitData may deliver a passages array captured before setStepComplete's
-    // memory.update; reading cache avoids Submit flickering complete→incomplete.
-    const p = passageRecordForStepComplete(memory, passageId, passages);
+    const p = passages.find((p) => p.id === passageId);
     if (p) {
       const complete = getStepComplete(p).sort(stepCmp);
       const s = sections.find((s) => s.id === related(p, 'section'));
       if (s) {
         if (p.id !== state.passage.id || s.id !== state.section.id) {
-          const sharedResource = findRecord(
-            memory,
-            'sharedresource',
-            related(p, 'sharedResource')
-          ) as SharedResourceD;
-          psgCompletedPassageRef.current = passageId;
-          setPsgCompleted([...complete]);
-          setState((state: ICtxState) => ({
-            ...state,
-            passage: p as PassageD,
-            section: s as SectionD,
-            sharedResource,
-          }));
+          setState((state: ICtxState) => {
+            const sharedResource = findRecord(
+              memory,
+              'sharedresource',
+              related(p, 'sharedResource')
+            ) as SharedResourceD;
+            return {
+              ...state,
+              passage: p as PassageD,
+              section: s as SectionD,
+              sharedResource,
+              psgCompleted: [...complete],
+            };
+          });
         } else {
-          const sortedPrev = [...psgCompletedRef.current].sort(stepCmp);
+          const sortedPrev = [...state.psgCompleted].sort(stepCmp);
           const sortedNew = [...complete].sort(stepCmp);
           const sameAsOrbit =
             sortedPrev.length === sortedNew.length &&
             sortedPrev.every((c, i) => shallowEqual(c, sortedNew[i]));
-          if (sameAsOrbit) return;
-          // Optimistic UI is ahead of memory until persist finishes.
-          if (pendingCompleteWrites.current > 0) return;
-          setPsgCompleted([...complete]);
+          if (!sameAsOrbit) {
+            setState((state: ICtxState) => ({
+              ...state,
+              psgCompleted: [...complete],
+            }));
+          }
         }
       }
     }

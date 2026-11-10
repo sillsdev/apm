@@ -323,7 +323,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           }
         )
         .catch(() => {
-          // setStepComplete already reported and rolled back its failure
+          // setStepComplete already reported its failure
         });
     },
     [waitForSave, setStepComplete, currentstep, gotoNextStep, showMessage]

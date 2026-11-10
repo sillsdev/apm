@@ -8,6 +8,7 @@ import {
   IMainStrings,
 } from './model';
 import Coordinator, {
+  ConnectionStrategy,
   RequestStrategy,
   SyncStrategy,
   LogLevel,
@@ -55,6 +56,8 @@ import { requestedSchema } from './schema';
 import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
 import { findRecords } from './crud/tryFindRecord';
+import { RecordTransform } from '@orbit/records';
+import { withoutIncludedRecords } from './utils/withoutIncludedRecords';
 type StategyError = (...args: unknown[]) => unknown;
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
@@ -82,11 +85,26 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
     );
   if (!coordinator.strategyNames.includes('remote-sync'))
     coordinator.addStrategy(
-      new SyncStrategy({
+      // A SyncStrategy (remote 'transform' → memory.sync) with a custom action
+      // that skips `included` records from update responses; see
+      // withoutIncludedRecords for why they revert queued local writes.
+      // SyncStrategyOptions' typings don't expose `action`, hence the base class.
+      new ConnectionStrategy({
         name: 'remote-sync',
         source: 'remote',
         target: 'memory',
+        on: 'transform',
         blocking: true,
+        action: function (this: ConnectionStrategy, ...args: unknown[]) {
+          const transform = args[0] as RecordTransform;
+          const remote = this.source as JSONAPISource;
+          const operations = withoutIncludedRecords(
+            transform.operations,
+            remote.requestQueue.current
+          );
+          if (operations.length === 0) return undefined;
+          return (this.target as Memory).sync({ ...transform, operations });
+        },
       })
     );
 };
