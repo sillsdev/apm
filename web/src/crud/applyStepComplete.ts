@@ -1,4 +1,9 @@
-import { StepComplete } from '../model';
+import { OrgWorkflowStepD, StepComplete } from '../model';
+
+/** The parts of an org workflow step that stepsCompleteThrough reads. */
+export type StepCompleteSource = Pick<OrgWorkflowStepD, 'id'> & {
+  attributes: Pick<OrgWorkflowStepD['attributes'], 'sequencenum' | 'name'>;
+};
 
 /** Immutable update of one step in the passage completed list. */
 export function applyStepComplete(
@@ -20,17 +25,15 @@ export function applyStepComplete(
 
 /**
  * Mark every org workflow step through `stepId` (inclusive) complete.
- * Returns [] when `stepId` is not one of `steps`.
+ * Returns undefined when `stepId` is not one of `steps`, so the caller skips
+ * the write instead of saving an empty list that clears every step.
  */
 export function stepsCompleteThrough(
-  steps: {
-    id: string;
-    attributes: { sequencenum: number; name: string };
-  }[],
+  steps: StepCompleteSource[],
   stepId: string,
   remIdOf: (id: string) => string
-): StepComplete[] {
-  if (!steps.some((s) => s.id === stepId)) return [];
+): StepComplete[] | undefined {
+  if (!steps.some((s) => s.id === stepId)) return undefined;
   const sorted = [...steps].sort(
     (a, b) => a.attributes.sequencenum - b.attributes.sequencenum
   );

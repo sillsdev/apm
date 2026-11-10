@@ -1,4 +1,3 @@
-import { useCallback, useContext, useMemo, useRef } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import CompleteIcon from '@mui/icons-material/CheckBox';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
@@ -8,33 +7,22 @@ import { passageDetailStepCompleteSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import { ToolSlug, useStepTool } from '../../../crud';
-import { UnsavedContext } from '../../../context/UnsavedContext';
-import { verseToolId } from '../markVersesTool';
-import { useSnackBar } from '../../../hoc/SnackBar';
+import { useToggleStepComplete } from '../useToggleStepComplete';
 import { Button } from '../../../control/Button';
 
 export default function MobileStepComplete() {
   const {
     currentstep,
-    stepComplete,
-    setStepComplete,
-    gotoNextStep,
-    psgCompleted,
     section,
     recording,
     isBoldWorkflow,
     passage,
     sharedResource,
   } = usePassageDetailContext();
-  const { tool } = useStepTool(currentstep);
   const { canDoSectionStep } = useStepPermissions();
-  const { isChanged, startSave, waitForSave } =
-    useContext(UnsavedContext).state;
-  const { showMessage } = useSnackBar();
+  const { complete, toggleComplete } = useToggleStepComplete();
   const [busy] = useGlobal('remoteBusy');
   const [importexportBusy] = useGlobal('importexportBusy');
-  const toggling = useRef(false);
   const t: IPassageDetailStepCompleteStrings = useSelector(
     passageDetailStepCompleteSelector,
     shallowEqual
@@ -43,45 +31,6 @@ export default function MobileStepComplete() {
   const hasPermission =
     canDoSectionStep(currentstep, section) &&
     !isLinkedNote(passage, sharedResource);
-  const complete = useMemo(
-    () => stepComplete(currentstep),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentstep, psgCompleted]
-  );
-
-  const handleToggleComplete = useCallback(async () => {
-    if (toggling.current) return;
-    toggling.current = true;
-    const curStatus = complete;
-    try {
-      if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
-        startSave(verseToolId);
-        try {
-          await waitForSave(undefined, 25);
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : String(err);
-          if (message) showMessage(message);
-          return;
-        }
-      }
-
-      await setStepComplete(currentstep, !complete);
-      if (!curStatus) gotoNextStep();
-    } finally {
-      toggling.current = false;
-    }
-  }, [
-    complete,
-    currentstep,
-    tool,
-    isChanged,
-    startSave,
-    waitForSave,
-    setStepComplete,
-    gotoNextStep,
-    showMessage,
-  ]);
-
   if (isBoldWorkflow) return null;
 
   return (
@@ -97,7 +46,7 @@ export default function MobileStepComplete() {
         )
       }
       disabled={!hasPermission || recording || busy || importexportBusy}
-      onClick={handleToggleComplete}
+      onClick={toggleComplete}
     >
       {t.title}
     </Button>

@@ -29,6 +29,7 @@ import { isLinkedNote } from '../../crud/isLinkedNote';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useSnackBar } from '../../hoc/SnackBar';
+import { errorMessage } from '../../utils/toError';
 import {
   getSegments,
   getSortedRegions,
@@ -189,7 +190,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
         },
         (err: unknown) => {
           // save failed or timed out; do not mark complete or navigate
-          showMessage(err instanceof Error ? err.message : String(err));
+          showMessage(errorMessage(err));
         }
       )
       .catch(() => {

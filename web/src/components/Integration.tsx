@@ -100,11 +100,7 @@ interface IProps {
   passage?: Passage;
   currentstep?: string;
   sectionArr?: SectionArray;
-  setStepComplete?: (
-    stepId: string,
-    complete: boolean,
-    psgCompleted?: any[]
-  ) => Promise<void>;
+  setStepComplete?: (stepId: string, complete: boolean) => Promise<void>;
   gotoNextStep?: () => void;
   isPermitted?: boolean;
   projectId?: string;

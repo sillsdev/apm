@@ -1,9 +1,8 @@
+import { Task } from '@orbit/core';
 import { RecordOperation } from '@orbit/records';
 
-interface QueueTask {
-  type?: string;
-  data?: unknown;
-}
+/** The fields of a remote request-queue task this filter reads. */
+type QueueTask = Pick<Task, 'type' | 'data'>;
 
 const opsOf = (operations: unknown): RecordOperation[] =>
   (Array.isArray(operations) ? operations : [operations]).filter(

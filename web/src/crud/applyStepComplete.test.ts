@@ -18,6 +18,12 @@ describe('applyStepComplete', () => {
     expect(base[1].complete).toBe(false);
   });
 
+  it('adds the first step to an empty list', () => {
+    expect(applyStepComplete([], '1', true, 'Record')).toEqual([
+      { stepid: '1', complete: true, name: 'Record' },
+    ]);
+  });
+
   it('appends a missing step', () => {
     const next = applyStepComplete(base, '3', true, 'Review');
     expect(next).toHaveLength(3);
@@ -61,7 +67,17 @@ describe('stepsCompleteThrough', () => {
     );
   });
 
-  it('returns [] for an unknown step instead of marking all complete', () => {
-    expect(stepsCompleteThrough(steps, 'zzz', (id) => id)).toEqual([]);
+  it('returns undefined for an unknown step so nothing is written', () => {
+    expect(stepsCompleteThrough(steps, 'zzz', (id) => id)).toBeUndefined();
+  });
+
+  it('returns undefined for an empty step list', () => {
+    expect(stepsCompleteThrough([], 'a', (id) => id)).toBeUndefined();
+  });
+
+  it('marks only the first step when it is the target', () => {
+    expect(stepsCompleteThrough(steps, 'b', (id) => id)).toEqual([
+      { stepid: 'b', complete: true, name: 'Record' },
+    ]);
   });
 });

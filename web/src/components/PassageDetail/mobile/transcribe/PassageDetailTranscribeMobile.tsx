@@ -90,6 +90,7 @@ import TranscribeReject from '../../../TranscribeReject';
 import { asrStatesEqual } from '../../../../business/asr/asrState';
 import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
+import { errorMessage } from '../../../../utils/toError';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
 import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
 import { IRegionParams } from '../../../../crud/useWavesurferRegions';
@@ -319,7 +320,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           },
           (err: unknown) => {
             // save failed or timed out; do not mark complete or navigate
-            showMessage(err instanceof Error ? err.message : String(err));
+            showMessage(errorMessage(err));
           }
         )
         .catch(() => {
