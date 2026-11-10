@@ -66,11 +66,12 @@ export const useSharedResCreate = ({
       },
     } as SharedResource;
     const t = new RecordTransformBuilder();
+    // AddRecord assigns sharedRes.id, so build the identity after it.
+    const ops = [...AddRecord(t, sharedRes, user, memory)];
     const srIdentity = recordRef('sharedresource', sharedRes.id);
-    const ops = [
-      ...AddRecord(t, sharedRes, user, memory),
-      ...ReplaceRelatedRecord(t, srIdentity, 'passage', 'passage', passage.id),
-    ];
+    ops.push(
+      ...ReplaceRelatedRecord(t, srIdentity, 'passage', 'passage', passage.id)
+    );
     if (cluster) {
       ops.push(
         ...ReplaceRelatedRecord(
