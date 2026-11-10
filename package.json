@@ -18,6 +18,7 @@
     "start": "vite",
     "build": "npm run typecheck && vite build",
     "postinstall": "electron-builder install-app-deps",
+    "bugsnag:upload": "node env-config/bugsnagUpload.cjs --desktop",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
