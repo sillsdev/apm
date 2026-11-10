@@ -253,7 +253,17 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
-  cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
+  /**
+   * Called once per file. On failure, errorMessage carries the raw error code
+   * (unsupported type, too big, local write, or network) for the caller to
+   * surface.
+   */
+  cb?: (
+    n: number,
+    success: boolean,
+    data?: MediaFileAttributes,
+    errorMessage?: string
+  ) => void;
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -303,7 +313,7 @@ export const nextUpload =
         },
         type: UPLOAD_ITEM_FAILED,
       });
-      if (cb) cb(n, false);
+      if (cb) cb(n, false, undefined, message);
     };
     const { name, size, type } = files[n] as File;
     const isDownloadable = !isNotDownloadable(type);
@@ -368,16 +378,14 @@ export const nextUpload =
             originalFile: pendingRec.originalFile,
           });
         } else {
+          // statusNum is undefined when the request never reached the server,
+          // so don't render a literal "(undefined)" at the user (TT-7583).
+          const message = `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`;
           dispatch({
-            payload: {
-              current: n,
-              // statusNum is undefined when the request never reached the server,
-              // so don't render a literal "(undefined)" at the user (TT-7583).
-              error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
-            },
+            payload: { current: n, error: message },
             type: UPLOAD_ITEM_FAILED,
           });
-          if (cb) cb(n, false, data);
+          if (cb) cb(n, false, data, message);
         }
       })();
     };

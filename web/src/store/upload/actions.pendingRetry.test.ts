@@ -679,7 +679,12 @@ describe('writeFileLocal disk write (TT-7348)', () => {
         }),
       })
     );
-    expect(cb).toHaveBeenCalledWith(0, false);
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      false,
+      undefined,
+      expect.stringContaining('local save failed')
+    );
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 });

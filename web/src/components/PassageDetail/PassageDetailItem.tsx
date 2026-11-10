@@ -99,7 +99,6 @@ export function PassageDetailItem(props: IProps) {
   const memory = coordinator?.getSource('memory') as Memory;
   const [speaker, setSpeaker] = useState('');
   const [topic, setTopic] = useState('');
-  const [importList, setImportList] = useState<File[]>();
   const [uploadVisible, setUploadVisiblex] = useState(false);
   const [resetMedia, setResetMedia] = useState(false);
   const [confirm, setConfirm] = useState('');
@@ -274,7 +273,7 @@ export function PassageDetailItem(props: IProps) {
     }
   };
 
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (mediaRemoteIds?: string[]) => {
     if (mediaRemoteIds && mediaRemoteIds[0]) {
       if (cancelled.current) {
         const id =
@@ -291,10 +290,6 @@ export function PassageDetailItem(props: IProps) {
       setTopic('');
       saveCompleted(toolId);
       setResetMedia(true);
-      if (importList) {
-        setImportList(undefined);
-        setUploadVisible(false);
-      }
     } else {
       saveCompleted(toolId, ts.NoSaveWoMedia);
       showMessage(ts.NoSaveWoMedia);
@@ -304,7 +299,7 @@ export function PassageDetailItem(props: IProps) {
 
   //from recorder
   const afterUploadCb = async (mediaId: string | undefined) => {
-    afterUpload('', mediaId ? [mediaId] : undefined);
+    afterUpload(mediaId ? [mediaId] : undefined);
   };
 
   const handleCancel = () => {
@@ -320,7 +315,6 @@ export function PassageDetailItem(props: IProps) {
       showMessage(t.saveFirst);
       return;
     }
-    setImportList(undefined);
     setUploadVisible(true);
   };
 
@@ -605,7 +599,6 @@ export function PassageDetailItem(props: IProps) {
       </Paper>
       <Uploader
         noBusy={true}
-        importList={importList ?? []}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}
