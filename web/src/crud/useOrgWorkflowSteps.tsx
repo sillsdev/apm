@@ -21,7 +21,7 @@ import { addPt } from '../utils/addPt';
 import { useNewTime } from '../utils/useNewTime';
 import { findRecords } from './tryFindRecord';
 
-export const defaultWorkflow = 'draft';
+export { defaultWorkflow } from './defaultWorkflow';
 
 interface ISwitches {
   [key: string]: any;

@@ -24,15 +24,20 @@ export const StepName = ({ name, pos, isFocused, onChange }: IProps) => {
 
   useEffect(() => {
     setResponse(name);
-    const input = elRef.current?.childNodes[1]?.firstChild as HTMLInputElement;
-    if (input) input.setSelectionRange(pos, pos);
+    const input = elRef.current?.querySelector(
+      'input'
+    ) as HTMLInputElement | null;
+    if (!input) return;
+    // autoFocus only runs on mount; remount is no longer used for every rows
+    // write, so focus when the step editor marks this row as focused.
+    if (isFocused) input.focus();
+    input.setSelectionRange(pos, pos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, pos]);
+  }, [name, pos, isFocused]);
 
   return (
     <TextField
       ref={elRef}
-      autoFocus={isFocused}
       id="stepName"
       label={t.name}
       value={response}
