@@ -8,11 +8,11 @@ export type StepCompleteSource = Pick<OrgWorkflowStepD, 'id'> & {
 /** Immutable update of one step in the passage completed list. */
 export function applyStepComplete(
   completed: StepComplete[],
-  remId: string,
+  remoteStepId: string,
   complete: boolean,
   name: string
 ): StepComplete[] {
-  const idx = completed.findIndex((s) => s.stepid === remId);
+  const idx = completed.findIndex((s) => s.stepid === remoteStepId);
   if (idx >= 0) {
     const cur = completed[idx];
     if (cur.complete === complete && cur.name === name) return completed;
@@ -20,7 +20,7 @@ export function applyStepComplete(
     next[idx] = { ...cur, complete, name };
     return next;
   }
-  return [...completed, { stepid: remId, complete, name }];
+  return [...completed, { stepid: remoteStepId, complete, name }];
 }
 
 /**
@@ -31,7 +31,7 @@ export function applyStepComplete(
 export function stepsCompleteThrough(
   steps: StepCompleteSource[],
   stepId: string,
-  remIdOf: (id: string) => string
+  remoteStepIdOf: (id: string) => string
 ): StepComplete[] | undefined {
   if (!steps.some((s) => s.id === stepId)) return undefined;
   const sorted = [...steps].sort(
@@ -40,7 +40,7 @@ export function stepsCompleteThrough(
   const completed: StepComplete[] = [];
   for (const step of sorted) {
     completed.push({
-      stepid: remIdOf(step.id),
+      stepid: remoteStepIdOf(step.id),
       complete: true,
       name: step.attributes.name,
     });

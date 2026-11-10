@@ -953,6 +953,7 @@ const initialState = {
 			"reports": "Reports",
 			"reportWhenOnline": "You must be online to use this menu item.",
 			"saveFirst": "Do you want to save before leaving this page?",
+			"saveTimedOut": "Saving is taking too long. Please try again.",
 			"saving": "Saving...",
 			"scriptureBurrito": "Scripture Burrito",
 			"sessionExpireTask": "Your session will expire in {0} seconds. Would you like to continue?",

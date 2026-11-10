@@ -173,11 +173,12 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     setSaveResult('');
   };
 
-  const saveError = () => saveErr.current || '';
+  /** The latest save result, not the one from this render. */
+  const liveSaveResult = () =>
+    (getGlobal('saveResult') as string | undefined) || '';
 
   const SaveComplete = () =>
     Object.keys(toolsChangedRef.current).length === 0 || completeWithErrors();
-  const SaveUnsuccessful = () => (saveResult || '') !== '';
 
   const saveCompleted = (toolId: string, saveErr?: string) => {
     toolChanged(toolId, false, saveErr);
@@ -264,9 +265,14 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     try {
       await waitForIt('Save', SaveComplete, () => false, waitCount);
     } catch {
-      throw new Error(SaveUnsuccessful() ? saveError() : 'Timed Out');
+      // Callers show this message to the user, so it must be localized.
+      throw new Error(liveSaveResult() || t.saveTimedOut);
     }
-    if (SaveUnsuccessful()) throw new Error(saveError());
+    // A save that failed during the wait is only in the live global:
+    // allSaveCompleted clears saveErr, and this closure's saveResult is from
+    // the render the caller captured. Reading either would report success.
+    const result = liveSaveResult();
+    if (result) throw new Error(result);
     // Outside the try: errors from resolvedMethod keep their own message
     // instead of being reported as a save timeout.
     if (resolvedMethod) return resolvedMethod();

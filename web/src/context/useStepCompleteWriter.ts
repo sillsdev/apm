@@ -67,7 +67,13 @@ export function useStepCompleteWriter({
     passageDetailStepCompleteSelector,
     shallowEqual
   );
-  const tail = useRef(Promise.resolve());
+  // Each write chains on this, so writes run one at a time.
+  const writeQueueTail = useRef(Promise.resolve());
+
+  /** The id stored in stepComplete for an org workflow step. */
+  const remoteStepId = (stepId: string) =>
+    remoteId('orgworkflowstep', stepId, memory?.keyMap as RecordKeyMap) ||
+    stepId;
 
   const persist = async (
     passageId: string,
@@ -105,8 +111,8 @@ export function useStepCompleteWriter({
   };
 
   const enqueue = (run: () => Promise<void>) => {
-    const next = tail.current.then(run, run);
-    tail.current = next.then(
+    const next = writeQueueTail.current.then(run, run);
+    writeQueueTail.current = next.then(
       () => undefined,
       () => undefined
     );
@@ -140,14 +146,11 @@ export function useStepCompleteWriter({
 
   const setStepComplete = (stepid: string, complete: boolean) => {
     if (stepid === '') return Promise.resolve();
-    const remId =
-      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
-      stepid;
     const rec = findRecord(memory, 'orgworkflowstep', stepid) as
       OrgWorkflowStep | undefined;
     const name = rec?.attributes?.name ?? '';
     return write((base) => ({
-      completed: applyStepComplete(base, remId, complete, name),
+      completed: applyStepComplete(base, remoteStepId(stepid), complete, name),
       comment: `${complete ? t.title : t.incomplete} : ${localizedWorkStep(
         name
       )}`,
@@ -157,12 +160,7 @@ export function useStepCompleteWriter({
   const setStepCompleteTo = (stepid: string) => {
     const steps = orgWorkflowSteps;
     return write(() => {
-      const completed = stepsCompleteThrough(
-        steps,
-        stepid,
-        (id) =>
-          remoteId('orgworkflowstep', id, memory.keyMap as RecordKeyMap) || id
-      );
+      const completed = stepsCompleteThrough(steps, stepid, remoteStepId);
       if (!completed) return undefined;
       const last = completed[completed.length - 1];
       return {

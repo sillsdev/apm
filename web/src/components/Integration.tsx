@@ -68,6 +68,7 @@ import {
 } from '../utils';
 import { localSync } from '../business/localParatext/localSync';
 import { TokenContext } from '../context/TokenProvider';
+import { trySetStepComplete } from '../context/completeStepAfterSave';
 import { IAxiosStatus } from '../store/AxiosStatus';
 import Memory from '@orbit/memory';
 import {
@@ -469,10 +470,16 @@ export function IntegrationPanel(props: IProps) {
     resetCount();
     if (!isMounted())
       showMessage(translateParatextErr(err, ts, organizedBy) || t.syncComplete);
-    if (setStepComplete && currentstep && !err) {
-      await setStepComplete(currentstep, true);
-      if (!isMounted() && gotoNextStep) gotoNextStep();
-    }
+    if (
+      setStepComplete &&
+      currentstep &&
+      !err &&
+      // A failed write was shown by setStepComplete; stay on this step.
+      (await trySetStepComplete(setStepComplete, currentstep, true)) &&
+      !isMounted() &&
+      gotoNextStep
+    )
+      gotoNextStep();
     setSyncing(false);
   };
 
@@ -755,13 +762,13 @@ export function IntegrationPanel(props: IProps) {
       setSyncing(false);
       forceDataChanges();
       if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
-        setStepComplete(currentstep, true)
-          .then(() => {
-            if (gotoNextStep) gotoNextStep();
-          })
-          .catch(() => {
-            // failure already reported by setStepComplete; stay on this step
-          });
+        // Never rejects for a failed write (shown by setStepComplete; we stay
+        // on this step); a gotoNextStep error still surfaces.
+        void trySetStepComplete(setStepComplete, currentstep, true).then(
+          (saved) => {
+            if (saved && gotoNextStep) gotoNextStep();
+          }
+        );
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */

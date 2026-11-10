@@ -3,7 +3,7 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { ToolSlug, useStepTool } from '../../crud';
 import { useSnackBar } from '../../hoc/SnackBar';
-import { errorMessage } from '../../utils/toError';
+import { completeStepAfterSave } from '../../context/completeStepAfterSave';
 import { verseToolId } from './markVersesTool';
 
 /**
@@ -42,20 +42,22 @@ export function useToggleStepComplete() {
     toggling.current = true;
     const wasComplete = complete;
     try {
-      if (!wasComplete && tool === ToolSlug.Verses && isChanged(verseToolId)) {
-        startSave(verseToolId);
-        try {
+      // Save and step-write failures are shown inside; a gotoNextStep error
+      // still rejects, so a navigation bug surfaces instead of being hidden.
+      await completeStepAfterSave({
+        stepId: currentstep,
+        complete: !wasComplete,
+        waitForSaves: async () => {
+          // Mark Verses keeps edits until saved; save them before completing.
+          if (wasComplete || tool !== ToolSlug.Verses) return;
+          if (!isChanged(verseToolId)) return;
+          startSave(verseToolId);
           await waitForSave(undefined, 25);
-        } catch (err: unknown) {
-          const message = errorMessage(err);
-          if (message) showMessage(message);
-          return;
-        }
-      }
-      await setStepComplete(currentstep, !wasComplete);
-      if (!wasComplete) gotoNextStep();
-    } catch {
-      // setStepComplete already logged and showed the failure; stay on this step
+        },
+        setStepComplete,
+        showMessage,
+        onDone: wasComplete ? undefined : gotoNextStep,
+      });
     } finally {
       toggling.current = false;
     }

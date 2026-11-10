@@ -64,7 +64,7 @@ import {
   Severity,
 } from '../utils';
 import { useSnackBar } from '../hoc/SnackBar';
-import { errorMessage } from '../utils/toError';
+import { completeStepAfterSave } from './completeStepAfterSave';
 import { useStepCompleteWriter } from './useStepCompleteWriter';
 import * as actions from '../store';
 import LimitedMediaPlayer from '../components/LimitedMediaPlayer';
@@ -714,19 +714,15 @@ const PassageDetailProvider = (props: IProps) => {
     const fromStep = state.currentstep;
     setIncompleteNavTarget('');
     if (!target || !fromStep) return;
-    waitForSave(undefined, 200)
-      .then(
-        async () => {
-          await setStepComplete(fromStep, true);
-          handleSetCurrentStep(target);
-        },
-        (err: unknown) => {
-          showMessage(errorMessage(err));
-        }
-      )
-      .catch(() => {
-        // setStepComplete already reported its failure
-      });
+    // Save and step-write failures are shown inside; only an onDone bug rejects, and it should surface.
+    void completeStepAfterSave({
+      stepId: fromStep,
+      complete: true,
+      waitForSaves: () => waitForSave(undefined, 200),
+      setStepComplete,
+      showMessage,
+      onDone: () => handleSetCurrentStep(target),
+    });
   };
 
   const incompleteNavMessage = (() => {

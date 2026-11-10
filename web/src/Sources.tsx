@@ -57,7 +57,7 @@ import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
 import { findRecords } from './crud/tryFindRecord';
 import { RecordTransform } from '@orbit/records';
-import { withoutIncludedRecords } from './utils/withoutIncludedRecords';
+import { remoteSyncOperations } from './utils/remoteSyncOperations';
 type StategyError = (...args: unknown[]) => unknown;
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
@@ -86,9 +86,9 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
   if (!coordinator.strategyNames.includes('remote-sync'))
     coordinator.addStrategy(
       // A SyncStrategy (remote 'transform' → memory.sync) with a custom action
-      // that skips `included` records from update responses; see
-      // withoutIncludedRecords for why they revert queued local writes.
-      // SyncStrategyOptions' typings don't expose `action`, hence the base class.
+      // that skips response data older than writes still queued; see
+      // remoteSyncOperations. SyncStrategyOptions' typings don't expose
+      // `action`, hence the base class.
       new ConnectionStrategy({
         name: 'remote-sync',
         source: 'remote',
@@ -96,11 +96,14 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
         on: 'transform',
         blocking: true,
         action: function (this: ConnectionStrategy, ...args: unknown[]) {
+          // Safe casts: Orbit calls a 'transform' listener with the
+          // transform first, and this strategy is only registered with the
+          // JSON:API 'remote' source and the 'memory' target.
           const transform = args[0] as RecordTransform;
           const remote = this.source as JSONAPISource;
-          const operations = withoutIncludedRecords(
+          const operations = remoteSyncOperations(
             transform.operations,
-            remote.requestQueue.current
+            remote.requestQueue.entries
           );
           if (operations.length === 0) return undefined;
           return (this.target as Memory).sync({ ...transform, operations });
