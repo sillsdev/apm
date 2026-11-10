@@ -426,7 +426,7 @@ export function useAddResourceWizard({
   }, [needConfirmClose]);
 
   // Nothing to save here: answer a save-all (e.g. Electron exit) as done so it
-  // isn't blocked. Unsaved wizard work is dropped, like MediaTitle/TitleTabs.
+  // isn't blocked. Unfinished wizard work is deliberately dropped.
   useEffect(() => {
     if (saveRequested(wizardCloseGuardToolId))
       saveCompleted(wizardCloseGuardToolId);

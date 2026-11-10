@@ -636,6 +636,12 @@ function MediaRecord(props: IProps) {
     !sizeBlocksSave &&
     !inFlight &&
     !recording;
+  // TODO cleanup in next PR: this effect only copies a derived value up to the
+  // parent, which CODING_STANDARDS "Effects" calls a finding. Notify the parent
+  // from the handlers that change hasTake's inputs (recording start/stop,
+  // waveform load, upload start/finish), or lift those inputs up so the parent
+  // derives hasTake itself. setCanSave/setCanCancel above follow the same
+  // pattern and should move together.
   useEffect(() => {
     setHasTake?.(hasTake);
   }, [hasTake, setHasTake]);

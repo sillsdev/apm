@@ -13,9 +13,9 @@ export interface BuildResourcePendingRestoreArgs {
 
 /**
  * Serializable restore metadata for resource Uploader / MediaRecord pending
- * uploads (TT-7363). Section and passage resources recreate a sectionresource;
- * general (project) resources only carry topic/category so Home Retry can
- * apply them and resume the configure wizard.
+ * uploads (TT-7363). Section and passage resources recreate a sectionresource.
+ * General (project) resources get none: they are never queued for retry, since
+ * they must be uploaded and configured in one go.
  */
 export function buildResourcePendingRestore(
   args: BuildResourcePendingRestoreArgs
@@ -30,15 +30,8 @@ export function buildResourcePendingRestore(
     artifactCategoryId,
   } = args;
 
-  if (resourceType === ResourceTypeEnum.projectResource) {
-    return {
-      kind: 'projectresource' as const,
-      ...(description ? { topic: description } : {}),
-      ...(artifactCategoryId ? { artifactCategoryId } : {}),
-    };
-  }
-
-  if (!orgWorkflowStepId) return undefined;
+  if (resourceType === ResourceTypeEnum.projectResource || !orgWorkflowStepId)
+    return undefined;
 
   return {
     kind: 'sectionresource' as const,

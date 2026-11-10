@@ -31,7 +31,8 @@ const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
   alignSelf: 'center',
   display: 'block',
-  gutterBottom: 'true',
+  // Typography's gutterBottom margin (a prop, not a CSS key, so set it here).
+  marginBottom: '0.35em',
 }));
 
 export interface IPassageRecordPanelProps {
