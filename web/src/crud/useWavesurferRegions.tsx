@@ -328,16 +328,14 @@ export function useWaveSurferRegions(
       ?.getRegions()
       .filter((reg) => reg.start !== reg.end) ?? ([] as Region[]);
 
+  const isMarker = (r: Pick<Region, 'id'>) => r.id.startsWith(MARKER_ID_PREFIX);
   const markers = () =>
-    Regions()
-      ?.getRegions()
-      .filter((reg) => reg.id.startsWith(MARKER_ID_PREFIX)) ?? ([] as Region[]);
+    Regions()?.getRegions().filter(isMarker) ?? ([] as Region[]);
   const region = (id: string) => regions().find((x) => x.id === id);
   const numRegions = () => regions().length;
   const currentRegion = () => {
     return currentRegionRef.current;
   };
-  const isMarker = (r: any) => r.start === r.end;
 
   useEffect(() => {
     singleRegionRef.current = singleRegionOnly;
