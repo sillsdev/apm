@@ -780,7 +780,14 @@ const PassageDetailProvider = (props: IProps) => {
         showMessage(err instanceof Error ? err.message : String(err));
         throw err;
       }
-      setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
+      // Navigation may have finished while we awaited the save; never put this
+      // passage's list on another passage. The sync effect keeps the
+      // displayed passage's list current from Orbit.
+      setState((state: ICtxState) =>
+        state.passage.id === passageId
+          ? { ...state, psgCompleted: completed }
+          : state
+      );
     });
   };
 
