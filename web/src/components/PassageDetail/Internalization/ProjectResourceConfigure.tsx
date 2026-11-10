@@ -3,11 +3,11 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useContext,
   ChangeEvent,
   ReactNode,
 } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
+import { logError, Severity } from '../../../utils';
 import {
   Section,
   IPassageDetailArtifactsStrings,
@@ -46,7 +46,6 @@ import {
   transcriptionTabSelector,
 } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { UnsavedContext } from '../../../context/UnsavedContext';
 import { useProjectResourceSave } from './useProjectResourceSave';
 import { useProjectSegmentSave } from './useProjectSegmentSave';
 import { useFullReference, IInfo } from './useFullReference';
@@ -55,8 +54,6 @@ import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
-
-const wizToolId = 'ProjResWizard';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -205,10 +202,9 @@ interface IProps {
   onOpen?: (open: boolean) => void;
   /**
    * When set, a "Back" button (the reverse of the selection dialog's Next) is
-   * shown — for now only in developer mode. It returns to SelectSections
-   * keeping the media, so the caller must not tear down the media on this
-   * path. Undefined hides the button (e.g. the edit flow, which has no
-   * previous wizard step).
+   * shown. It returns to SelectSections keeping the media, so the caller must
+   * not tear down the media on this path. Undefined hides the button (e.g. the
+   * edit flow, which has no previous wizard step).
    */
   onBack?: () => void;
   bookData?: BookName[];
@@ -227,8 +223,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
+  const [errorReporter] = useGlobal('errorReporter');
   const [, setComplete] = useGlobal('progress');
-  const [isDeveloper] = useGlobal('developer');
   const [data, setDatax] = useState<ICell[][]>([]);
   const [suffix, setSuffix] = useState('');
   const [numSegments, setNumSegments] = useState(0);
@@ -252,17 +248,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   // Match useFullReference's book-data resolution so the display label uses the
   // same source as the (unchanged) stored reference.
   const labelBookData = props.bookData ?? reduxBookData;
-  const {
-    toolChanged,
-    toolsChanged,
-    isChanged,
-    saveRequested,
-    startSave,
-    saveCompleted,
-    clearRequested,
-    clearCompleted,
-  } = useContext(UnsavedContext).state;
-  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
   const projectResourceSave = useProjectResourceSave();
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
@@ -300,6 +286,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
     setDatax(newData);
     dataRef.current = newData;
   };
+  // TODO cleanup in next PR: this only mounts on the wizard's Configure step,
+  // after `items` is set, so the table could be built once as lazy initial state
+  // instead of in an effect (mind the handleSegment call).
   useEffect(() => {
     if (items?.length > 0) {
       const newData: ICell[][] = emptyTable();
@@ -331,14 +320,14 @@ export const ProjectResourceConfigure = (props: IProps) => {
       });
       infoRef.current = newInfo;
       setData(newData);
-      if (segmentsRef.current) handleSegment(segmentsRef.current, true);
+      if (segmentsRef.current) handleSegment(segmentsRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   const writeResources = async () => {
-    if (!savingRef.current) {
-      savingRef.current = true;
+    if (!saving) {
+      setSaving(true);
       if (media) {
         const t = new RecordTransformBuilder();
         let ix = 0;
@@ -389,15 +378,11 @@ export const ProjectResourceConfigure = (props: IProps) => {
             segmentsRef.current
           ),
         })
-          .then(() => {
-            saveCompleted(wizToolId);
-          })
           .catch((err) => {
-            //so we don't come here...we go to continue/logout
-            saveCompleted(wizToolId, err.message);
+            showMessage(err.message);
           })
           .finally(() => {
-            savingRef.current = false;
+            setSaving(false);
             setComplete(0);
             onOpen && onOpen(false);
           });
@@ -406,26 +391,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
   };
 
   const handleCreate = () => {
-    if (!saveRequested(wizToolId)) {
-      startSave(wizToolId);
-    }
+    void writeResources();
   };
-
-  useEffect(() => {
-    if (saveRequested(wizToolId) && !savingRef.current) writeResources();
-    else if (clearRequested(wizToolId)) clearCompleted(wizToolId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged]);
-
-  // Real edits mark the tool dirty (see the Title and segment handlers) so
-  // a browser/app close mid-edit fires the beforeunload "unsaved changes" warning
-  // (AppHead reads the global `changed` flag). The dialog's own close is
-  // confirm-gated by the parent; clear the flag on unmount so a normal
-  // discard/save close doesn't leak it into the rest of the app.
-  useEffect(() => {
-    return () => toolChanged(wizToolId, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleCopy = () => {
     const config: string[] = [];
@@ -440,16 +407,22 @@ export const ProjectResourceConfigure = (props: IProps) => {
       });
 
     const content = config.join('\n');
-    if (content.length > 0)
-      navigator.clipboard
-        .writeText(content)
-        .then(() => {
-          showMessage(tt.availableOnClipboard);
-        })
-        .catch(() => {
-          showMessage(ts.cantCopy);
-        });
-    else showMessage(tt.noData.replace('{0}', t.projectResourceConfigure));
+    if (content.length === 0) {
+      logError(
+        Severity.error,
+        errorReporter,
+        'ProjectResourceConfigure: copy found no rows to copy. Should not have been reachable with no content.'
+      );
+      return;
+    }
+    navigator.clipboard
+      .writeText(content)
+      .then(() => {
+        showMessage(tt.availableOnClipboard);
+      })
+      .catch(() => {
+        showMessage(ts.cantCopy);
+      });
   };
 
   const loadPastedSegments = (newData: ICell[][]) => {
@@ -556,12 +529,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
       newData[c.row][c.col].value = c.value;
     });
     setData(newData);
-    // Editing a Title marks the wizard dirty so a browser/app close warns
-    // (same tracking the segment handler uses).
-    if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
-  const handleSegment = (segments: string, init: boolean) => {
+  const handleSegment = (segments: string) => {
     if (dataRef.current.length === 0) return;
     const regions = parseRegions(segments).regions.sort(
       (i, j) => i.start - j.start
@@ -633,7 +603,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     if (change) {
       setData(newData);
       setPastedSegments('');
-      if (!init && !isChanged(wizToolId)) toolChanged(wizToolId);
     }
   };
 
@@ -656,9 +625,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
 
   const handleSuffix = (e: ChangeEvent<HTMLInputElement>) => {
     setSuffix(e.target.value);
-    // The suffix feeds the saved topic, so editing it marks the wizard dirty too
-    // (so a browser/app close mid-edit warns).
-    if (!isChanged(wizToolId)) toolChanged(wizToolId);
   };
 
   // Reference cells carry their row's `info`; derive the localized label here so
@@ -767,12 +733,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
           Box neutralizes its flexGrow:1 inside this flex column. */}
       <Box sx={{ flexShrink: 0 }}>
         <ActionRow>
-          {onBack && isDeveloper && (
-            <Button
-              id="res-configure-back"
-              disabled={savingRef.current}
-              onClick={onBack}
-            >
+          {onBack && (
+            <Button id="res-configure-back" disabled={saving} onClick={onBack}>
               {t.back}
             </Button>
           )}
@@ -780,7 +742,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
             <Button
               id="res-create"
               color="primary"
-              disabled={numResourcesToCreate === 0 || savingRef.current}
+              disabled={numResourcesToCreate === 0 || saving}
               onClick={handleCreate}
             >
               {t.createXResources.replace(

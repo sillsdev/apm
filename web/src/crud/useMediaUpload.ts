@@ -12,7 +12,7 @@ import JSONAPISource from '@orbit/jsonapi';
 import { TokenContext } from '../context/TokenProvider';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { IndexedDBSource } from '@orbit/indexeddb';
-import { NO_LIST_TYPES, UploadType } from '../components/UploadType';
+import { NON_FILE_UPLOAD_TYPES, UploadType } from '../components/UploadType';
 import { RecordKeyMap } from '@orbit/records';
 import { getContentType } from '../utils/contentType';
 import { ISharedStrings, MediaFileAttributes, MediaFileD } from '../model';
@@ -230,7 +230,7 @@ export const useMediaUpload = ({
 
   /** Rename files that lack the passage version suffix (opt-in, upload tab only). */
   const applyVersionSuffix = (files: File[]) => {
-    if (!versionFilenames || NO_LIST_TYPES.includes(effectiveType))
+    if (!versionFilenames || NON_FILE_UPLOAD_TYPES.includes(effectiveType))
       return files;
     // passageDefaultSuffix looks the plan up in the local Orbit cache, so it
     // needs the local plan id (UUID)
@@ -387,7 +387,7 @@ export const useMediaUpload = ({
     if (!files || files.length === 0) return false;
     if (beforeUpload) await beforeUpload();
     const staged = applyVersionSuffix(files);
-    if (!NO_LIST_TYPES.includes(effectiveType)) uploadFiles(staged);
+    if (!NON_FILE_UPLOAD_TYPES.includes(effectiveType)) uploadFiles(staged);
     const startedBusy = Boolean(getGlobal('importexportBusy'));
     if (!noBusy) setBusy(true);
 

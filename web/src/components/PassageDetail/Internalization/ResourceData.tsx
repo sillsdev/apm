@@ -17,7 +17,7 @@ import { passageDetailArtifactsSelector } from '../../../selector';
 import SelectArtifactCategory from '../../Sheet/SelectArtifactCategory';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { MarkDownType, UriLinkType } from '../../../utils/contentType';
-import { UploadType } from '../../UploadType';
+import { NON_FILE_UPLOAD_TYPES, UploadType } from '../../UploadType';
 import { LinkEdit } from '../../../control/LinkEdit';
 import { MarkDownEdit } from '../../../control/MarkDownEdit';
 import { mediaContentType } from '../../../utils/contentType';
@@ -53,6 +53,8 @@ interface IProps {
   onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
   onTextChange?: ((text: string) => void) | undefined;
   allowGeneralResourceOption: boolean;
+  // TODO cleanup in next PR: every caller passes catRequired={false} and
+  // catAllowNew={true}; hard-code them and drop the props.
   catRequired: boolean;
   catAllowNew?: boolean | undefined;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
@@ -173,11 +175,9 @@ export function ResourceData(props: IProps) {
               )}
             />
             {allowGeneralResourceOption &&
-              ![
-                UploadType.Link,
-                UploadType.MarkDown,
-                UploadType.FaithbridgeLink,
-              ].includes(uploadType ?? UploadType.Resource) && (
+              !NON_FILE_UPLOAD_TYPES.includes(
+                uploadType ?? UploadType.Resource
+              ) && (
                 <FormControlLabel
                   value={'general'}
                   control={<Radio />}

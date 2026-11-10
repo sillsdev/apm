@@ -173,7 +173,7 @@ interface IProps {
   onFiles?: ((files: File[]) => void) | undefined;
   inValue?: string | undefined;
   audioOnly?: boolean | undefined;
-  saveButtonText?: string | undefined;
+  primaryButtonText?: string | undefined;
   validationMessage?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
@@ -215,7 +215,7 @@ function MediaUploadContent(props: IProps) {
     onFiles,
     inValue,
     audioOnly,
-    saveButtonText,
+    primaryButtonText,
     validationMessage,
     controlsRef,
     onSaveDisabled,
@@ -485,7 +485,7 @@ function MediaUploadContent(props: IProps) {
             disabled={saveDisabled}
             sx={{ minWidth: '96px' }}
           >
-            {saveButtonText || t.upload}
+            {primaryButtonText || t.upload}
           </Button>
         </DialogActions>
       )}

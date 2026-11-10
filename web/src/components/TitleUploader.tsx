@@ -47,7 +47,7 @@ export function TitleUploader(props: IProps) {
       uploadMethod={uploadMethod}
       cancelMethod={uploadCancel}
       metaData={metadata}
-      saveButtonText={t.upload}
+      primaryButtonText={t.upload}
       onFiles={onFiles}
     />
   ) : (

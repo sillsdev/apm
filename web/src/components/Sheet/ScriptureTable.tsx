@@ -1492,8 +1492,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
         />
       )}
       <Uploader
-        defaultFilename={defaultFilename}
-        mediaId={uploadItem.current?.mediaId?.id || ''}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}

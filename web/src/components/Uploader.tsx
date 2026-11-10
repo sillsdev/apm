@@ -9,6 +9,10 @@ import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 
+// TODO cleanup in next PR: no caller passes metaData, beforeUpload, cancelReset,
+// onFiles, eafUrl, inValue, team, uploadDialogBp, validationMessage or
+// hideUploadCancel (only the old Add Resource flow did, before the wizard), and
+// showMessage is never read. Remove them, plus the Faithbridge split (inValue).
 interface IProps {
   noBusy?: boolean | undefined;
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
