@@ -143,10 +143,8 @@ export function useAddResourceWizard({
         : launchSource.transcript
       : '';
   const [speaker, setSpeaker] = useState('');
-  const [resourceReady, setResourceReady] = useState(
-    descriptionRequiredForResource(undefined, initUploadType)
-      ? Boolean(initDescription.trim())
-      : true
+  const [hasDescription, setHasDescription] = useState(
+    Boolean(initDescription.trim())
   );
   const [resourceUploadFiles, setResourceUploadFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -161,7 +159,8 @@ export function useAddResourceWizard({
 
   const categoryIdRef = useRef<string | undefined>(undefined);
 
-  // A ref, not state, so typing doesn't re-render. ResourceData owns the live value.
+  // The description's single copy (ResourceData's field is uncontrolled). A ref,
+  // not state: it's only read at upload time, so typing needn't re-render.
   const descriptionRef = useRef<string>(initDescription);
   const addCategorySaveRef = useRef<(() => Promise<string>) | null>(null);
   const pendingResourceSeqRef = useRef(0);
@@ -233,25 +232,17 @@ export function useAddResourceWizard({
     files: File[],
     kind: ResourceTypeEnum
   ) => kind === ResourceTypeEnum.projectResource && files.length > 1;
-  const resourceUploadValidationMessage = hasGeneralResourceUploadConflict(
+  const uploadConflict = hasGeneralResourceUploadConflict(
     resourceUploadFiles,
     resourceKind
-  )
+  );
+  const resourceUploadValidationMessage = uploadConflict
     ? t.generalResourcesIndividually
     : '';
-  const syncResourceReady = (
-    type: UploadType,
-    desc: string,
-    files: File[] = resourceUploadFiles,
-    kind: ResourceTypeEnum = resourceKind
-  ) => {
-    const descriptionReady = descriptionRequiredForResource(undefined, type)
-      ? Boolean(desc.trim())
-      : true;
-    setResourceReady(
-      descriptionReady && !hasGeneralResourceUploadConflict(files, kind)
-    );
-  };
+  const resourceReady =
+    (!descriptionRequiredForResource(undefined, uploadType) ||
+      hasDescription) &&
+    !uploadConflict;
 
   const afterUpload = async (mediaRemoteIds?: string[]) => {
     let cnt = rowData.length;
@@ -398,34 +389,17 @@ export function useAddResourceWizard({
     categoryIdRef.current = categoryId;
   };
 
-  const handleResourceUploadFiles = (files: File[]) => {
-    setResourceUploadFiles(files);
-    syncResourceReady(uploadType, descriptionRef.current, files);
-  };
-
   const handleDescription = (desc: string) => {
     descriptionRef.current = desc;
-    syncResourceReady(uploadType, desc);
+    setHasDescription(Boolean(desc.trim()));
   };
 
   const handlePassRes = (newValue: ResourceTypeEnum) => {
     setResourceKind(newValue);
     if (newValue === ResourceTypeEnum.projectResource) {
       setUploadType(UploadType.ProjectResource);
-      syncResourceReady(
-        UploadType.ProjectResource,
-        descriptionRef.current,
-        resourceUploadFiles,
-        newValue
-      );
     } else if (uploadType === UploadType.ProjectResource) {
       setUploadType(UploadType.Resource);
-      syncResourceReady(
-        UploadType.Resource,
-        descriptionRef.current,
-        resourceUploadFiles,
-        newValue
-      );
     }
   };
 
@@ -527,7 +501,7 @@ export function useAddResourceWizard({
     afterUpload,
     handleBeforeUpload,
     resourcePendingRestore,
-    handleResourceUploadFiles,
+    setResourceUploadFiles,
     handleDescription,
     handleCategory,
     handlePassRes,

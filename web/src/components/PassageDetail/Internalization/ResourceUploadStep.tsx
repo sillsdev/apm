@@ -17,7 +17,7 @@ interface IProps {
   eafUrl?: string | undefined;
   inValue?: string | undefined;
   defaultFilename: string;
-  ready?: (() => boolean) | undefined;
+  ready?: boolean | undefined; // false disables the save/upload button
   validationMessage?: string | undefined;
   metaData?: React.JSX.Element | undefined;
   finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;

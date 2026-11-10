@@ -40,7 +40,7 @@ export interface IPassageRecordPanelProps {
   finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;
   metaData?: React.JSX.Element | undefined;
   defaultFilename: string;
-  ready?: (() => boolean) | undefined;
+  ready?: boolean | undefined; // false disables the save/upload button
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   onFiles?: ((files: File[]) => void) | undefined;
@@ -204,7 +204,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
               color="primary"
               disabled={
                 busy ||
-                (ready && !ready()) ||
+                ready === false ||
                 !(onNext ? hasTake : canSave) ||
                 !hasRights
               }

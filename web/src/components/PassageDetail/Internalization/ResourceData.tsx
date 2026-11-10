@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import React, { useEffect, useState, type RefObject } from 'react';
+import React, { useState, type RefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
 import {
@@ -86,7 +86,13 @@ export function ResourceData(props: IProps) {
     wrapPreviewOverflow,
     catCommitRef,
   } = props;
-  const [description, setDescription] = useState(initDescription);
+  // The TextField is uncontrolled (the parent owns the value via
+  // onDescriptionChange); only emptiness is tracked here, for the error state,
+  // so typing re-renders only when it flips. Callers remount (new dialog open)
+  // to seed a different initDescription.
+  const [hasDescription, setHasDescription] = useState(
+    Boolean(initDescription.trim())
+  );
   const { getOrganizedBy } = useOrganizedBy();
   const { section, passage } = usePassageDetailContext();
   const [text, setText] = useState(media?.attributes?.originalFile ?? '');
@@ -113,14 +119,13 @@ export function ResourceData(props: IProps) {
     media?.attributes?.originalFile
   );
 
-  useEffect(() => setDescription(initDescription), [initDescription]);
-
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onPassResChange?.(radioToResourceKind(event.target.value));
   };
-  const handleChangeDescription = (e: any) => {
-    e.persist();
-    setDescription(e.target.value);
+  const handleChangeDescription = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setHasDescription(Boolean(e.target.value.trim()));
     onDescriptionChange(e.target.value);
   };
 
@@ -147,10 +152,10 @@ export function ResourceData(props: IProps) {
             id="description"
             // Labeled "Title" for users, though it is stored in the description field.
             label={t.title}
-            value={description || ''}
+            defaultValue={initDescription}
             onChange={handleChangeDescription}
             required={descriptionRequired}
-            error={descriptionRequired && !(description || '').trim()}
+            error={descriptionRequired && !hasDescription}
             fullWidth={true}
           />
         </Grid>

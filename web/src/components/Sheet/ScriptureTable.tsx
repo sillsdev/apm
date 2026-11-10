@@ -1367,7 +1367,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     if (!cancelled.current) setUploadVisible(false);
     cancelled.current = false;
   };
-  const isReady = () => true;
 
   const handleLookupBook = (book: string) =>
     lookupBook({ book, allBookData, bookMap });
@@ -1504,7 +1503,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
         }
         performedBy={speaker}
         onSpeakerChange={handleNameChange}
-        ready={isReady}
       />
       <GraphicPicker
         bookCode={firstBook}

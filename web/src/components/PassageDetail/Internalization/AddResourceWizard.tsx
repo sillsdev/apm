@@ -80,14 +80,14 @@ export function AddResourceWizard({
                 cancelled={w.cancelled}
                 artifactId={w.artifactId}
                 uploadType={w.uploadType}
-                ready={() => w.resourceReady}
+                ready={w.resourceReady}
                 speaker={w.speaker}
                 onSpeaker={w.setSpeaker}
                 inValue={w.markdownValue}
                 eafUrl={w.eafUrl}
                 defaultFilename={w.filename}
                 pendingRestore={w.resourcePendingRestore}
-                onFiles={w.handleResourceUploadFiles}
+                onFiles={w.setResourceUploadFiles}
                 deferred={
                   w.uploadType === UploadType.ProjectResource
                     ? { onNext: w.handleUploadStepNext, submitRef: w.submitRef }
@@ -102,6 +102,7 @@ export function AddResourceWizard({
                     onCategoryChange={w.handleCategory}
                     catCommitRef={w.addCategorySaveRef}
                     initDescription={w.initDescription}
+                    // TODO naming consistency
                     onDescriptionChange={w.handleDescription}
                     catRequired={false}
                     resourceKind={w.resourceKind}

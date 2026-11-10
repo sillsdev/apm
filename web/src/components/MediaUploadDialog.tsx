@@ -18,7 +18,7 @@ interface IProps {
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   metaData?: React.JSX.Element | undefined;
-  ready?: (() => boolean) | undefined;
+  ready?: boolean | undefined; // false disables the save/upload button
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   team?: string | undefined; // used to check for speakers when adding a card

@@ -64,7 +64,7 @@ export function GraphicUploader(props: IProps) {
       cancelMethod={uploadCancel}
       cancelLabel={ts.close}
       metaData={metadata}
-      ready={() => Boolean(hasRights)}
+      ready={Boolean(hasRights)}
       onFiles={showFile}
       controlsRef={props.mediaUploadControlsRef}
       onSaveDisabled={onSaveDisabled}

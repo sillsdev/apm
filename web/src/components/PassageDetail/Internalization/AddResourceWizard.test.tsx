@@ -164,7 +164,7 @@ jest.mock('./ResourceUploadStep', () => {
     }: {
       active?: boolean;
       uploadType?: unknown;
-      ready?: () => boolean;
+      ready?: boolean;
       validationMessage?: string;
       onFiles?: (f: File[]) => void;
       deferred?: { onNext: () => void; submitRef: ControlsRef };
@@ -224,7 +224,7 @@ jest.mock('./ResourceUploadStep', () => {
                 finish-upload
               </button>
               {validationMessage && <div>{validationMessage}</div>}
-              <button type="button" disabled={!ready?.()}>
+              <button type="button" disabled={ready === false}>
                 {isProject ? 'Next' : 'Upload'}
               </button>
             </div>

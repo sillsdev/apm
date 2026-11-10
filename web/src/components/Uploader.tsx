@@ -28,7 +28,7 @@ interface IProps {
   // embedded metaData commit deferred edits (e.g. create a new artifact
   // category) so `finish` sees the resolved ids.
   beforeUpload?: (() => Promise<void>) | undefined;
-  ready?: (() => boolean) | undefined; // if false control is disabled
+  ready?: boolean | undefined; // if false control is disabled
   cancelled: React.RefObject<boolean>;
   cancelReset?: (() => void) | undefined; // reset the cancelled state
   multiple?: boolean | undefined;

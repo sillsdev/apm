@@ -166,7 +166,7 @@ interface IProps {
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
   metaData?: React.JSX.Element | undefined;
-  ready?: (() => boolean) | undefined;
+  ready?: boolean | undefined; // false disables the save/upload button
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   team?: string | undefined; // used to check for speakers when adding a card
@@ -286,7 +286,7 @@ function MediaUploadContent(props: IProps) {
   };
   const saveDisabled = useMemo(
     () =>
-      (ready && !ready()) ||
+      ready === false ||
       !files ||
       files.length === 0 ||
       (files[0] as File).name.trim() === '' ||
