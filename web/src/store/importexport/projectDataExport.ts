@@ -5,7 +5,12 @@
 import Memory from '@orbit/memory';
 import { getSerializer } from '../../serializers/getSerializer';
 import { InitializedRecord } from '@orbit/records';
-import { related, updateableFiles, staticFiles } from '../../crud';
+import {
+  related,
+  updateableFiles,
+  staticFiles,
+  type fileInfo,
+} from '../../crud';
 import { ProjectD, MediaFileD } from '../../model';
 import { createExportCollector } from './exportTableRecs';
 import { findRecords } from '../../crud/tryFindRecord';
@@ -55,10 +60,7 @@ export async function getProjectDataFiles(
     files[`data/${sort}_${table}.json`] = json;
   };
 
-  const addAll = (
-    info: (typeof updateableFiles)[number],
-    excludeNew: boolean
-  ) => {
+  const addAll = (info: fileInfo, excludeNew: boolean) => {
     let recs = getTableRecs(info, project, needsRemoteIds);
     if (!recs?.length) return;
     if (needsRemoteIds && excludeNew)

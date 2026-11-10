@@ -7,6 +7,7 @@ import type { ProjectD } from '../model/project';
 import { findRecord, findRecords } from './tryFindRecord';
 import { related, type RelKey } from './related';
 import { mediaReplacementsForPlans } from './mediaReplacementsForPlans';
+import type { SyncTable } from './fileOrder';
 
 /** Server vwchecksum sums each row's date millis modulo this. */
 export const CHECKSUM_MODULUS = 100_000_000;
@@ -15,7 +16,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Fallback repair window when a pull from the local max dateUpdated is still wrong. */
 export const FULL_PULL_DAYS = 365 * 4;
 
-const WHOLE_REMOTE_TABLES = new Set([
+const WHOLE_REMOTE_TABLES = [
   'activitystate',
   'artifacttype',
   'bible',
@@ -25,9 +26,10 @@ const WHOLE_REMOTE_TABLES = new Set([
   'projecttype',
   'role',
   'workflowstep',
-]);
+] as const satisfies readonly SyncTable[];
+type WholeRemoteTable = (typeof WHOLE_REMOTE_TABLES)[number];
 
-const ORG_TABLES = new Set([
+const ORG_TABLES = [
   'graphic',
   'intellectualproperty',
   'invitation',
@@ -38,11 +40,22 @@ const ORG_TABLES = new Set([
   'orgkeytermreference',
   'orgkeytermtarget',
   'orgworkflowstep',
-]);
+] as const satisfies readonly (SyncTable & keyof RecordByType)[];
+type OrgTable = (typeof ORG_TABLES)[number];
+
+// includes() on a literal tuple only accepts its own members; widening the
+// array to SyncTable[] is safe because every member is a SyncTable.
+const isWholeRemoteTable = (table: SyncTable): table is WholeRemoteTable =>
+  (WHOLE_REMOTE_TABLES as readonly SyncTable[]).includes(table);
+const isOrgTable = (table: SyncTable): table is OrgTable =>
+  (ORG_TABLES as readonly SyncTable[]).includes(table);
+
+/** Rows with no remote id share this key: the server has no row for them. */
+export const LOCAL_ONLY_REMOTE_ID = '0';
 
 export interface ChecksumRow {
   id: string;
-  num: number;
+  updatedMillis: number;
 }
 
 /** Empty or unparseable timestamps contribute 0 so one bad row cannot NaN the checksum. */
@@ -54,7 +67,10 @@ export function isoToMillis(value: string): number {
 }
 
 export function checksumOf(rows: ChecksumRow[]): number {
-  return rows.reduce((sum, row) => sum + (row.num % CHECKSUM_MODULUS), 0);
+  return rows.reduce(
+    (sum, row) => sum + (row.updatedMillis % CHECKSUM_MODULUS),
+    0
+  );
 }
 
 /** One row per remote id. The first row wins; rows with no relationships are ignored. */
@@ -62,48 +78,59 @@ export function dedupedChecksumRows(rows: BaseModel[]): ChecksumRow[] {
   const byRemoteId = new Map<string, BaseModel>();
   for (const row of rows) {
     if (!row?.relationships) continue;
-    const id = row.keys?.remoteId || '0';
+    const id = row.keys?.remoteId || LOCAL_ONLY_REMOTE_ID;
     if (!byRemoteId.has(id)) byRemoteId.set(id, row);
   }
   return [...byRemoteId.entries()].map(([id, row]) => ({
     id,
-    // Local-only rows use placeholder id '0'. Their dateUpdated must not
-    // enter the checksum — the server has no matching row.
-    num: id === '0' ? 0 : isoToMillis(row.attributes?.dateUpdated ?? ''),
+    // A local-only row's dateUpdated must not enter the checksum, because
+    // the server has no matching row.
+    updatedMillis:
+      id === LOCAL_ONLY_REMOTE_ID
+        ? 0
+        : isoToMillis(row.attributes?.dateUpdated ?? ''),
   }));
 }
 
 export function maxUpdatedMillis(rows: ChecksumRow[]): number {
-  return rows.reduce((max, row) => Math.max(max, row.num), 0);
+  return rows.reduce((max, row) => Math.max(max, row.updatedMillis), 0);
 }
 
 export function fullPullSinceMillis(): number {
   return DateTime.now().toMillis() - FULL_PULL_DAYS * MS_PER_DAY;
 }
 
-type RowQuery = Parameters<Memory['cache']['query']>[0];
-
-/** Relation-filtered cache.query stays untyped; the table selects the model. */
-function queryRecords<T extends BaseModel>(
+/** Records of `table` whose `relation` points at `record`. */
+export function recordsRelatedTo<T extends BaseModel>(
   memory: Memory,
-  build: RowQuery
+  table: string,
+  relation: string,
+  record: { type: string; id: string }
 ): T[] {
-  return (memory.cache.query(build) as T[] | undefined) ?? [];
+  // Relation-filtered cache.query is untyped; the table selects the model.
+  return (
+    (memory.cache.query((q) =>
+      q.findRecords(table).filter({ relation, record })
+    ) as T[] | undefined) ?? []
+  );
 }
 
-export function rowsForSanityTable(props: {
+/** The records one project's sanity check is scoped to. */
+export interface SanityScope {
   memory: Memory;
   project: ProjectD;
   plan: PlanD;
-  table: string;
-  /** Called when `table` has no filter. The caller still receives [] and may refresh it. */
-  onUnknownTable?: (table: string) => void;
-}): BaseModel[] {
-  const { memory, project, plan, table, onUnknownTable } = props;
+}
+
+export function rowsForSanityTable(
+  scope: SanityScope,
+  table: SyncTable
+): BaseModel[] {
+  const { memory, project, plan } = scope;
   // related() returns the to-one id as any; a missing organization is null.
   const org: string | null = related(project, 'organization') ?? null;
 
-  const all = <Table extends keyof RecordByType>(name: Table) =>
+  const allRecords = <Table extends keyof RecordByType>(name: Table) =>
     findRecords(memory, name);
 
   const relatedTo = <T extends BaseModel>(
@@ -111,13 +138,7 @@ export function rowsForSanityTable(props: {
     relation: string,
     recordType: string,
     id: string
-  ) =>
-    queryRecords<T>(memory, (q) =>
-      q.findRecords(name).filter({
-        relation,
-        record: { type: recordType, id },
-      })
-    );
+  ) => recordsRelatedTo<T>(memory, name, relation, { type: recordType, id });
 
   const remoteRows = <T extends BaseModel>(rows: T[]) =>
     rows.filter(
@@ -152,14 +173,18 @@ export function rowsForSanityTable(props: {
     remoteIdRows(relatedTo('section', 'plan', 'plan', plan.id));
 
   const passages = () =>
-    filterByRelatedIds(all('passage'), 'section', idSet(sections()));
+    filterByRelatedIds(allRecords('passage'), 'section', idSet(sections()));
 
   const sectionResources = () =>
-    filterByRelatedIds(all('sectionresource'), 'section', idSet(sections()));
+    filterByRelatedIds(
+      allRecords('sectionresource'),
+      'section',
+      idSet(sections())
+    );
 
   const discussions = () => {
     const mediafileIds = idSet(mediafiles());
-    return all('discussion').filter(
+    return allRecords('discussion').filter(
       (row) =>
         Boolean(row.relationships) &&
         mediafileIds.has(related(row, 'mediafile'))
@@ -167,27 +192,28 @@ export function rowsForSanityTable(props: {
   };
 
   const sharedResources = () =>
-    filterByRelatedIds(all('sharedresource'), 'passage', idSet(passages()));
+    filterByRelatedIds(
+      allRecords('sharedresource'),
+      'passage',
+      idSet(passages())
+    );
 
-  if (WHOLE_REMOTE_TABLES.has(table)) {
+  if (isWholeRemoteTable(table)) {
     // activitystate is in the schema but not RecordByType.
     return remoteRows(findRecords(memory, table) as BaseModel[]);
   }
-  if (ORG_TABLES.has(table)) {
-    // ORG_TABLES is a fixed list of RecordByType keys; Set.has widens to string.
-    return byOrg(table as keyof RecordByType) as BaseModel[];
-  }
+  if (isOrgTable(table)) return byOrg(table);
 
   switch (table) {
     case 'artifactcategory':
-      return remoteRows(all('artifactcategory')).filter(
+      return remoteRows(allRecords('artifactcategory')).filter(
         (row) =>
           related(row, 'organization') === org ||
           related(row, 'organization') === null
       );
     case 'comment':
       return filterByRelatedIds(
-        all('comment'),
+        allRecords('comment'),
         'discussion',
         idSet(discussions())
       );
@@ -197,7 +223,7 @@ export function rowsForSanityTable(props: {
       return groups();
     case 'groupmembership':
       return filterByRelatedIds(
-        all('groupmembership'),
+        allRecords('groupmembership'),
         'group',
         idSet(groups())
       );
@@ -211,7 +237,7 @@ export function rowsForSanityTable(props: {
     }
     case 'organizationschemestep':
       return filterByRelatedIds(
-        all('organizationschemestep'),
+        allRecords('organizationschemestep'),
         'organizationscheme',
         idSet(byOrg('organizationscheme'))
       );
@@ -219,7 +245,7 @@ export function rowsForSanityTable(props: {
       return passages();
     case 'passagestatechange':
       return filterByRelatedIds(
-        all('passagestatechange'),
+        allRecords('passagestatechange'),
         'passage',
         idSet(passages())
       );
@@ -235,7 +261,7 @@ export function rowsForSanityTable(props: {
       return sectionResources();
     case 'sectionresourceuser':
       return filterByRelatedIds(
-        all('sectionresourceuser'),
+        allRecords('sectionresourceuser'),
         'sectionresource',
         idSet(sectionResources())
       );
@@ -243,7 +269,7 @@ export function rowsForSanityTable(props: {
       return sharedResources();
     case 'sharedresourcereference':
       return filterByRelatedIds(
-        all('sharedresourcereference'),
+        allRecords('sharedresourcereference'),
         'sharedResource',
         idSet(sharedResources())
       );
@@ -253,10 +279,13 @@ export function rowsForSanityTable(props: {
           .map((row) => related(row, 'user'))
           .filter((id): id is string => typeof id === 'string')
       );
-      return all('user').filter((row) => userIds.has(row.id ?? ''));
+      return allRecords('user').filter((row) => userIds.has(row.id ?? ''));
     }
-    default:
-      onUnknownTable?.(table);
-      return [];
+    default: {
+      // Exhaustive: a table added to fileOrder without a case here is a
+      // compile error on this line.
+      const unhandled: never = table;
+      return unhandled;
+    }
   }
 }

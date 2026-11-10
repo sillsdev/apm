@@ -8,10 +8,11 @@ import {
   checksumOf,
   dedupedChecksumRows,
   isoToMillis,
+  LOCAL_ONLY_REMOTE_ID,
   maxUpdatedMillis,
   rowsForSanityTable,
 } from './sanityCheck';
-import { staticFiles, updateableFiles } from './fileOrder';
+import type { SyncTable } from './fileOrder';
 
 const rec = (
   type: string,
@@ -124,8 +125,8 @@ describe('checksumOf', () => {
   it('sums each timestamp modulo the checksum range', () => {
     expect(
       checksumOf([
-        { id: 'a', num: CHECKSUM_MODULUS },
-        { id: 'b', num: CHECKSUM_MODULUS + 1 },
+        { id: 'a', updatedMillis: CHECKSUM_MODULUS },
+        { id: 'b', updatedMillis: CHECKSUM_MODULUS + 1 },
       ])
     ).toBe(1);
   });
@@ -153,10 +154,10 @@ describe('dedupedChecksumRows', () => {
       }),
     ] as unknown as BaseModel[];
     expect(dedupedChecksumRows(rows)).toEqual([
-      { id: '9', num: isoToMillis('2020-01-01T00:00:00Z') },
-      // Local-only rows keep placeholder id '0' with a zero timestamp so they
-      // do not shift the checksum the server computes from remote ids only.
-      { id: '0', num: 0 },
+      { id: '9', updatedMillis: isoToMillis('2020-01-01T00:00:00Z') },
+      // Local-only rows get a zero timestamp so they do not shift the
+      // checksum the server computes from remote ids only.
+      { id: LOCAL_ONLY_REMOTE_ID, updatedMillis: 0 },
     ]);
   });
 });
@@ -169,9 +170,9 @@ describe('maxUpdatedMillis', () => {
   it('returns the newest dateUpdated millis', () => {
     expect(
       maxUpdatedMillis([
-        { id: 'a', num: 10 },
-        { id: 'b', num: 40 },
-        { id: 'c', num: 20 },
+        { id: 'a', updatedMillis: 10 },
+        { id: 'b', updatedMillis: 40 },
+        { id: 'c', updatedMillis: 20 },
       ])
     ).toBe(40);
   });
@@ -179,17 +180,13 @@ describe('maxUpdatedMillis', () => {
 
 describe('rowsForSanityTable', () => {
   const rowsFor = (
-    table: string,
-    byType: Record<string, ReturnType<typeof rec>[]>,
-    onUnknownTable?: (table: string) => void
+    table: SyncTable,
+    byType: Record<string, ReturnType<typeof rec>[]>
   ) =>
-    rowsForSanityTable({
-      memory: memoryWith(byType),
-      project,
-      plan,
-      table,
-      onUnknownTable,
-    }).map((row) => row.id);
+    rowsForSanityTable(
+      { memory: memoryWith(byType), project, plan },
+      table
+    ).map((row) => row.id);
 
   it('keeps section resource users on this plan only', () => {
     expect(
@@ -288,21 +285,4 @@ describe('rowsForSanityTable', () => {
       })
     ).toEqual(['kept']);
   });
-
-  it('reports an unknown table and returns no rows', () => {
-    const onUnknownTable = jest.fn();
-    expect(rowsFor('nope', {}, onUnknownTable)).toEqual([]);
-    expect(onUnknownTable).toHaveBeenCalledWith('nope');
-  });
-
-  // useSanityCheck walks these same lists, so a table added to fileOrder
-  // without a case in rowsForSanityTable fails here instead of at runtime.
-  it.each([...staticFiles, ...updateableFiles].map((file) => file.table))(
-    'has a row filter for synced table %s',
-    (table) => {
-      const onUnknownTable = jest.fn();
-      rowsFor(table, {}, onUnknownTable);
-      expect(onUnknownTable).not.toHaveBeenCalled();
-    }
-  );
 });
