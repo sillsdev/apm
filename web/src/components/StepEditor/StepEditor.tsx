@@ -35,6 +35,8 @@ import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
 import { IStepRow, rowSignature } from './stepRow';
 import { saveOrgWorkflowSteps } from './saveOrgWorkflowSteps';
 import { StepSettingsDialogs } from './StepSettingsDialogs';
+import { useRememberedScroll } from './useRememberedScroll';
+import logError, { Severity } from '../../utils/logErrorService';
 
 export type { IStepRow } from './stepRow';
 
@@ -49,7 +51,6 @@ interface IProps {
 }
 
 export const StepEditor = ({ process, org }: IProps) => {
-  const [sortKey, setSortKey] = useState(0);
   const [rows, setRows] = useState<IStepRow[]>([]);
   const [stepsLoaded, setStepsLoaded] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -60,6 +61,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   );
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
+  const [errorReporter] = useGlobal('errorReporter');
   const {
     isChanged,
     toolChanged,
@@ -83,28 +85,8 @@ export const StepEditor = ({ process, org }: IProps) => {
   const baselineRef = useRef<Map<string, string>>(new Map());
   const focusIndex = useRef<number>(0);
   const scrollNewStepIntoViewRef = useRef(false);
-  const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
-  // Edit Workflow DialogContent scroll — nested settings dialogs (and list
-  // remounts) can clear it; remember across open/change/close.
-  const workflowScrollTopRef = useRef(0);
-  const restoreWorkflowScrollRef = useRef(false);
-
-  const workflowScrollParent = () => {
-    const el = listEndAnchorRef.current;
-    if (!el) return null;
-    let p: HTMLElement | null = el.parentElement;
-    while (p) {
-      const oy = getComputedStyle(p).overflowY;
-      if (oy === 'auto' || oy === 'scroll') return p;
-      p = p.parentElement;
-    }
-    return null;
-  };
-
-  const rememberWorkflowScroll = () => {
-    const sp = workflowScrollParent();
-    if (sp) workflowScrollTopRef.current = sp.scrollTop;
-  };
+  const workflowScroll = useRememberedScroll();
+  const listEndAnchorRef = workflowScroll.anchorRef;
 
   let mxSeq = 0;
   let visible = 0;
@@ -173,7 +155,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   const setToolSettingsOpen = (open: boolean) => {
     if (!open) {
       setToolSettingsRow(-1);
-      restoreWorkflowScrollRef.current = true;
+      workflowScroll.restoreAfterRender();
     }
     if (toolRef.current !== undefined) {
       focusIndex.current = toolRef.current;
@@ -214,20 +196,25 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const handleSettingsChange = (settings: string) => {
     // Vernacular, Q&A and Retell ASR lives in the team default, so only this
-    // step's settings change.
-    rememberWorkflowScroll();
+    // step's settings change. The scroll position was remembered when the
+    // dialog opened; re-reading it here could pick up a value already reset
+    // by the dialog's scroll lock or a focus change.
     setRows((prev) =>
       prev.map((r, i) => (i === toolSettingsRow ? { ...r, settings } : r))
     );
-    restoreWorkflowScrollRef.current = true;
+    workflowScroll.restoreAfterRender();
     toolChanged(toolId, true);
   };
 
+  const openSettings = (index: number) => {
+    workflowScroll.remember();
+    setToolSettingsRow(index);
+  };
+
   const handleToolChange = (tool: string, index: number) => {
-    rememberWorkflowScroll();
     focusIndex.current = index;
     if (toolHasSettingsDialog(tool)) toolRef.current = index;
-    setToolSettingsRow(index); //bring up Settings editor
+    openSettings(index); //bring up Settings editor
     let name = rows[index].name;
     if (name.includes(se.nextStep))
       name = mangleName(localizedTool(tool), getOrgNames());
@@ -244,11 +231,6 @@ export const StepEditor = ({ process, org }: IProps) => {
       )
     );
     toolChanged(toolId, true);
-  };
-
-  const handleSettings = (index: number) => {
-    rememberWorkflowScroll();
-    setToolSettingsRow(index);
   };
 
   const handleHide = (index: number) => {
@@ -298,8 +280,9 @@ export const StepEditor = ({ process, org }: IProps) => {
     toolChanged(toolId, true);
   };
 
-  const saveRecs = async () => {
-    if (saving.current) return;
+  /** Saves changed steps; resolves to an error message when the save fails. */
+  const saveRecs = async (): Promise<string | undefined> => {
+    if (saving.current) return undefined;
     saving.current = true;
     showMessage(se.saving);
     try {
@@ -314,13 +297,21 @@ export const StepEditor = ({ process, org }: IProps) => {
         getOrgNames,
       });
       showMessage(se.changes.replace('{0}', count.toString()));
+      return undefined;
+    } catch (err) {
+      logError(Severity.error, errorReporter, err as Error);
+      // saveCompleted with an error keeps the step editor marked changed and
+      // surfaces the message through UnsavedContext.
+      return err instanceof Error ? err.message : String(err);
     } finally {
       saving.current = false;
     }
   };
 
   useEffect(() => {
-    if (saveRequested(toolId)) saveRecs().then(() => saveCompleted(toolId));
+    if (saveRequested(toolId))
+      // saveRecs catches its own errors, so this promise does not reject.
+      void saveRecs().then((saveErr) => saveCompleted(toolId, saveErr));
     else if (clearRequested(toolId)) clearCompleted(toolId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
@@ -371,31 +362,12 @@ export const StepEditor = ({ process, org }: IProps) => {
     [rows, showAll]
   );
 
-  useEffect(() => {
-    setSortKey((sortKey) => sortKey + 1);
-  }, [listStructureKey]);
-
-  // After nested settings close / settings writes, MUI focus restore can clear
-  // DialogContent scroll after layout — restore on the following frames.
-  useEffect(() => {
-    if (!restoreWorkflowScrollRef.current) return;
-    restoreWorkflowScrollRef.current = false;
-    const top = workflowScrollTopRef.current;
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const sp = workflowScrollParent();
-        if (sp) sp.scrollTop = top;
-      });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [rows, toolSettingsRow]);
-
   useLayoutEffect(() => {
     if (!scrollNewStepIntoViewRef.current) return;
     const el = listEndAnchorRef.current;
     if (!el) return;
     scrollNewStepIntoViewRef.current = false;
-    const scrollParent = workflowScrollParent();
+    const scrollParent = workflowScroll.scrollParent();
     if (scrollParent) {
       const pad = 8;
       const spRect = scrollParent.getBoundingClientRect();
@@ -408,7 +380,9 @@ export const StepEditor = ({ process, org }: IProps) => {
     } else {
       el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     }
-  }, [sortKey]);
+    // scrollParent is stable (useCallback); only a list remount matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listStructureKey]);
 
   const prettySettings = (tool: string, settings: string) => {
     let json: { artifactTypeId?: string } | undefined;
@@ -481,7 +455,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           />
         </div>
       </Box>
-      <VertListDnd key={`sort-${sortKey}`} onDrop={handleSortEnd} dragHandle>
+      <VertListDnd key={listStructureKey} onDrop={handleSortEnd} dragHandle>
         {rows
           .map((r, i) => ({ ...r, rIdx: i }))
           .filter((r) => r.seq >= 0 || showAll)
@@ -496,7 +470,7 @@ export const StepEditor = ({ process, org }: IProps) => {
               onDelete={handleHide}
               onRestore={handleVisible}
               onSettings={
-                toolHasSettingsDialog(r.tool) ? handleSettings : undefined
+                toolHasSettingsDialog(r.tool) ? openSettings : undefined
               }
               settingsTitle={prettySettings(r.tool, r.settings)}
             />

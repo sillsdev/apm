@@ -1,10 +1,8 @@
 import Memory from '@orbit/memory';
 import { OrgWorkflowStep, OrgWorkflowStepD } from '../../model';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
+import { defaultWorkflow } from '../../crud/defaultWorkflow';
 import { IStepRow, rowSignature } from './stepRow';
-
-/** Same default as `defaultWorkflow` in useOrgWorkflowSteps — avoid that import graph in Jest. */
-const DEFAULT_WORKFLOW = 'draft';
 
 export type MangleStepName = (
   name: string,
@@ -100,7 +98,7 @@ export async function saveOrgWorkflowSteps({
         attributes: {
           sequencenum: row.seq,
           name,
-          process: process || DEFAULT_WORKFLOW,
+          process: process || defaultWorkflow,
           tool: tool,
           permissions: '{}',
         },
