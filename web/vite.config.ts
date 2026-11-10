@@ -93,6 +93,7 @@ export default defineConfig({
     }),
   ],
   build: {
+    sourcemap: 'hidden',
     rolldownOptions: {
       output: {
         // Rolldown splits the app into chunks that import each other

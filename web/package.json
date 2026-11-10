@@ -6,6 +6,7 @@
     "start": "vite",
     "build": "tsc -p tsconfig.app.json --composite false && vite build",
     "serve": "vite preview",
+    "bugsnag:upload": "cd .. && node env-config/bugsnagUpload.cjs",
     "test": "jest",
     "test:ci": "jest --ci --verbose --maxWorkers=1 --no-cache",
     "test:smoke": "jest --config jest.smoke.config.ts",
