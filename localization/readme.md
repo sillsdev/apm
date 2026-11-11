@@ -2,6 +2,36 @@
 
 Localization is set up so that CrowdIn translations will be used in preference to translations created by the development team. Currently the code is being localized in French, Portuguese and Russian in addition to the English original.
 
+### Automated refresh (`l10n.mjs`)
+
+`localization/l10n.mjs` automates the Crowdin round trip and the AI fill-in of
+missing dev-team translations (replacing CrowdInRefresh.exe, MissingTargetWithId.xsl,
+the spreadsheet/regex step, MissingTargetUpdate.xsl and the pretty-print). From the repo root:
+
+```powershell
+$env:CROWDIN_TOKEN = '<personal access token>'   # Crowdin > Account Settings > API
+$env:ANTHROPIC_API_KEY = '<key>'                  # optional; see "session" below
+npm run l10n -- all                               # upload, download, translate es fr id pt ru zh
+cd .\localization\bin\Debug ; &.\.\updateLocalization.exe
+```
+
+Individual steps: `upload`, `download`, `refresh <crowdin.zip>` (for a zip
+downloaded by hand), `translate [langs]`, `merge [langs]`. Add `--out=<dir>` to
+write the `.xlf` files somewhere else for review.
+
+For each string the target is, in order: the Crowdin translation (state
+`translated` or `final`), a new AI translation, or the existing target in
+`TranscriberAdmin-<lang>.xlf`. Only strings with no Crowdin translation and an
+empty or stale (English changed) local target are sent for translation.
+
+Without `ANTHROPIC_API_KEY` (or with `--translator=session`), `translate` writes
+`l10n-work/missing-<lang>.json`. Ask Claude Code to fill in each item's `target`,
+then run `npm run l10n -- merge`. Translations whose `{0}` placeholders don't
+match the English are skipped with a warning.
+
+`zh-TW` is dropped when Crowdin folders are collapsed to two-letter codes
+(`--exclude=` changes the list).
+
 ### Adding localization strings
 
 1. Edit `TranscriberAdmin-en-1.2.xliff` adding a new `<trans-unit>` element for each string. This element should have an id with two parts: the contest and the string id. Normally the context refers to the file where the string is used although we do have some strings in a shared context. The string itself is given as source and the file name containing the string is given in the `<context-group>` following the example. The target is left as an empty element. This is where any CrowdIn translation would be inserted in copies of this file for each localized language.
