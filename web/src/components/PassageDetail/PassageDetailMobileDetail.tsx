@@ -126,9 +126,6 @@ export default function PassageDetailMobileDetail({ recordContent }: Props) {
             overflowX: 'clip',
           }}
         >
-          {/* Stays mounted while the discussion drawer is open; unmounting
-                drops PassageDetailRecord/MediaRecord state and clears an
-                in-progress recording. */}
           <Box sx={{ minWidth: 0, width: '100%' }}>{recordContent}</Box>
           {doesStepSupportDiscussions && <DiscussionDrawer />}
         </Stack>
