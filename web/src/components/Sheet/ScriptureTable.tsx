@@ -398,7 +398,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
     if (minSection !== defaultFilterState.minSection) {
       setDefaultFilterState((fs) => ({ ...fs, minSection }));
     }
-    import('../../assets/eng-vrs').then((module) => {
+    void import('../../assets/eng-vrs').then((module) => {
       setEngVrs(new Map<string, number[]>(module.default as IVrs[]));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -578,11 +578,11 @@ export function ScriptureTable(props: Readonly<IProps>) {
   const saveIfChanged = (cb: () => void) => {
     if (myChangedRef.current) {
       startSave();
-      waitForSave(cb, SaveWait);
+      void waitForSave(cb, SaveWait);
     } else cb();
   };
   const waitForPassageId = (i: number, cb: () => void) => {
-    waitForIt(
+    void waitForIt(
       'passageId to be set',
       () => {
         return getByIndex(sheetRef.current, i).ws?.passage !== undefined;
@@ -1393,7 +1393,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
       showMessage(s.refErr);
       return;
     }
-    onPublishing(false);
+    void onPublishing(false);
   };
 
   return (
@@ -1435,7 +1435,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
                 i: number,
                 destinations: PublishDestinationEnum[]
               ) => {
-                setSectionPublish(i, destinations);
+                void setSectionPublish(i, destinations);
               }}
               handleGraphic={canPublish && !offline ? handleGraphic : undefined}
             />

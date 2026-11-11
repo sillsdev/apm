@@ -431,7 +431,7 @@ export function PassageDetailArtifactsMobile() {
     );
     if (secRes) {
       removeKey(related(secRes, 'mediafile'));
-      DeleteSectionResource(secRes);
+      void DeleteSectionResource(secRes);
     }
     setConfirm('');
     setBusy(false);
@@ -649,7 +649,7 @@ export function PassageDetailArtifactsMobile() {
       catIdRef.current = catId;
     }
     if (editResource) {
-      UpdateSectionResource({
+      void UpdateSectionResource({
         ...editResource,
         attributes: {
           ...editResource.attributes,
@@ -844,7 +844,7 @@ export function PassageDetailArtifactsMobile() {
         (r) => related(r, 'mediafile') === rowData[newIndexes[i]].id
       );
       if (secResRec && secResRec.attributes?.sequenceNum !== i) {
-        UpdateSectionResource({
+        void UpdateSectionResource({
           ...secResRec,
           attributes: { ...secResRec?.attributes, sequenceNum: i },
         });
@@ -970,7 +970,7 @@ export function PassageDetailArtifactsMobile() {
   }, [sectionResources, rowData]);
 
   useEffect(() => {
-    getArtifactCategorys(ArtifactCategoryType.Resource).then(
+    void getArtifactCategorys(ArtifactCategoryType.Resource).then(
       (cats) => (catRef.current = cats)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
