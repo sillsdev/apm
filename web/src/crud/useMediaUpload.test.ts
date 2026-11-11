@@ -58,6 +58,7 @@ jest.mock('./index', () => {
   const pullTableList = jest.fn(() => Promise.resolve());
   const createMedia = jest.fn().mockResolvedValue({ id: 'created-id' });
   return {
+    ArtifactTypeSlug: jest.requireActual('./artifactTypeSlug').ArtifactTypeSlug,
     pullTableList,
     related: jest.requireActual('./related').related,
     /** Avoid real keyMap: pass through local ids for plan/passage/user/media */
@@ -65,7 +66,15 @@ jest.mock('./index', () => {
       (_table: string, localId: string | undefined) => localId ?? ''
     ),
     useArtifactType: () => ({
-      localizedArtifactTypeFromId: jest.fn(() => 'artifact-label'),
+      // Any non-vernacular slug resolves to the local id 'art-1'...
+      localIdFromSlug: jest.fn((slug: string | null) =>
+        slug ? 'art-1' : null
+      ),
+      // ...and to the remote id 101 at the API boundary.
+      remoteIdNumFromSlug: jest.fn((slug: string | null) =>
+        slug ? 101 : undefined
+      ),
+      localizedArtifactType: jest.fn(() => 'artifact-label'),
     }),
     useOfflnMediafileCreate: () => ({
       createMedia,
@@ -165,7 +174,7 @@ describe('useMediaUpload', () => {
   });
 
   function renderUploadHook(props: {
-    artifactId: string | null;
+    artifactTypeSlug: string | null;
     passageId: string | undefined;
     localPlanId?: string;
     afterUploadCb: jest.Mock;
@@ -177,7 +186,7 @@ describe('useMediaUpload', () => {
     return renderHook(() =>
       useMediaUpload({
         fields: {
-          artifactId: props.artifactId,
+          artifactTypeSlug: props.artifactTypeSlug,
           passageId: props.passageId,
           localPlanId: props.localPlanId,
         },
@@ -219,7 +228,7 @@ describe('useMediaUpload', () => {
     mockOffline = false;
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -261,7 +270,7 @@ describe('useMediaUpload', () => {
       return Promise.resolve();
     });
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -278,7 +287,7 @@ describe('useMediaUpload', () => {
   it('failure path: orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -302,7 +311,7 @@ describe('useMediaUpload', () => {
     mockOffline = true;
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -335,7 +344,7 @@ describe('useMediaUpload', () => {
     ];
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -359,7 +368,7 @@ describe('useMediaUpload', () => {
     mockMediaFiles = [];
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -383,7 +392,7 @@ describe('useMediaUpload', () => {
     mockMediaFiles = [vernacularMedia('m1', 'psg-1', 5)];
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: 'art-1',
+      artifactTypeSlug: 'comment',
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -407,7 +416,7 @@ describe('useMediaUpload', () => {
     createMedia.mockRejectedValue(new Error('create failed'));
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -422,7 +431,7 @@ describe('useMediaUpload', () => {
   it('empty file list resolves false without starting upload', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -437,7 +446,7 @@ describe('useMediaUpload', () => {
       .fn()
       .mockRejectedValue(new Error('parent failed'));
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -453,7 +462,7 @@ describe('useMediaUpload', () => {
   it('dispatches uploadComplete action object, not the action creator function', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -481,7 +490,7 @@ describe('useMediaUpload', () => {
       (props: { performedBy?: string; topic?: string }) =>
         useMediaUpload({
           fields: {
-            artifactId: 'art-1',
+            artifactTypeSlug: 'comment',
             passageId: 'psg-1',
             performedBy: props.performedBy,
             topic: props.topic,
@@ -533,7 +542,7 @@ describe('useMediaUpload', () => {
     }));
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: 'res-art',
+      artifactTypeSlug: 'resource',
       passageId: 'psg-1',
       afterUploadCb,
       beforeUpload,
@@ -572,7 +581,7 @@ describe('useMediaUpload', () => {
     const { useMediaUpload } = require('./useMediaUpload');
     renderHook(() =>
       useMediaUpload({
-        fields: { artifactId: null, passageId: undefined },
+        fields: { artifactTypeSlug: null, passageId: undefined },
         importList: [makeFile('take.ogg')],
         beforeUpload: async () => {
           throw new Error('import failed');

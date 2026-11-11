@@ -78,7 +78,7 @@ export function AddResourceWizard({
                 finish={w.afterUpload}
                 beforeUpload={w.handleBeforeUpload}
                 cancelled={w.cancelled}
-                artifactId={w.artifactId}
+                artifactTypeSlug={w.artifactTypeSlug}
                 uploadType={w.uploadType}
                 ready={w.resourceReady}
                 speaker={w.speaker}

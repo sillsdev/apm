@@ -2,12 +2,10 @@
  * TT-7553: reopening Phrase Back Translate step settings after a language was
  * saved must not thrash parent toolSettings via Language's mount/sync onChange.
  * TT-7555: artifact type is not choosable here (no Community Test Retell dropdown).
- * TT-7583: the artifact type written to settings must be the remote id.
+ * TT-7583: settings store the artifact-type slug; a legacy id in saved settings
+ * is normalized to its slug.
  */
 
-/** Swapped per test; read lazily by the useGlobal mock below. */
-let mockKeyMap:
-  { idToKey: (...args: string[]) => string | undefined } | undefined;
 jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
   shallowEqual: jest.fn(),
@@ -18,25 +16,30 @@ jest.mock('../../selector', () => ({
   artifactTypeSelector: () => ({ artifactType: 'Artifact Type' }),
 }));
 
-jest.mock('../../context/useGlobal', () => ({
-  useGlobal: jest.fn(() => [{ keyMap: mockKeyMap }, jest.fn()]),
-}));
-
 jest.mock('../../hoc/useOrbitData', () => ({
   useOrbitData: jest.fn(() => []),
 }));
 
-jest.mock('../../crud', () => ({
-  ArtifactTypeSlug: jest.requireActual('../../crud/artifactTypeSlug')
-    .ArtifactTypeSlug,
-  useArtifactType: () => ({
-    getTypeId: (slug: string) => `type-${slug}`,
-    getArtifactTypes: () => [
-      { id: 'type-phraseBackTranslation', type: 'Phrase Back Translation' },
-      { id: 'type-retell', type: 'Community Test' },
-    ],
-  }),
-}));
+jest.mock('../../crud', () => {
+  const actual = jest.requireActual('../../crud/artifactTypeSlug');
+  // Slug-tolerant like the real slugFromId, and maps the legacy ids the
+  // fixtures below use ('77' stands in for a legacy remote id).
+  const legacy: Record<string, string> = {
+    'type-retell': actual.ArtifactTypeSlug.Retell,
+    'type-phraseBackTranslation': actual.ArtifactTypeSlug.PhraseBackTranslation,
+    '77': actual.ArtifactTypeSlug.PhraseBackTranslation,
+  };
+  return {
+    ArtifactTypeSlug: actual.ArtifactTypeSlug,
+    useArtifactType: () => ({
+      slugFromId: (id: string | null) => {
+        if (!id) return actual.ArtifactTypeSlug.Vernacular;
+        if (actual.isArtifactTypeSlug(id)) return id;
+        return legacy[id] ?? actual.ArtifactTypeSlug.Vernacular;
+      },
+    }),
+  };
+});
 
 jest.mock('../../crud/transcribeStepAsrSettings', () => ({
   formatStepLanguageField: (lang: { languageName?: string; bcp47?: string }) =>
@@ -179,7 +182,6 @@ function ReopenHarness({
 describe('PhraseBackTranslateStepSettings', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockKeyMap = undefined;
     mockUseSelector.mockImplementation(
       (sel: (state: { stepEditor: Record<string, string> }) => unknown) =>
         sel({
@@ -272,22 +274,13 @@ describe('PhraseBackTranslateStepSettings', () => {
         artifactTypeId?: string;
         language?: string;
       };
-      expect(last.artifactTypeId).toBe('type-retell');
+      // The legacy id in the saved settings is rewritten as its slug.
+      expect(last.artifactTypeId).toBe('retell');
       expect(last.language).toBe('English|en');
     });
   });
 
-  it('seeds a new step with the remote artifact type id, not the local one (TT-7583)', async () => {
-    // getTypeId is mocked as `type-${slug}`; PhraseBackTranslation is
-    // 'backtranslation'.
-    mockKeyMap = {
-      idToKey: (table: string, key: string, localId: string) =>
-        table === 'artifacttype' &&
-        key === 'remoteId' &&
-        localId === 'type-backtranslation'
-          ? '77'
-          : undefined,
-    };
+  it('seeds a new step with the Phrase BT slug (TT-7583)', async () => {
     const onChangeSpy = jest.fn();
     render(<ReopenHarness onChangeSpy={onChangeSpy} initialSettings="" />);
 
@@ -303,15 +296,22 @@ describe('PhraseBackTranslateStepSettings', () => {
         artifactTypeId?: string;
         language?: string;
       };
-      expect(last.artifactTypeId).toBe('77');
+      expect(last.artifactTypeId).toBe('backtranslation');
       expect(last.language).toBe('English|en');
     });
   });
 
-  it('keeps the local artifact type id when there is no remote mapping (offline)', async () => {
-    mockKeyMap = { idToKey: () => undefined };
+  it('normalizes a legacy remote id in saved settings to its slug (TT-7583)', async () => {
     const onChangeSpy = jest.fn();
-    render(<ReopenHarness onChangeSpy={onChangeSpy} initialSettings="" />);
+    render(
+      <ReopenHarness
+        onChangeSpy={onChangeSpy}
+        initialSettings={JSON.stringify({
+          artifactTypeId: '77',
+          language: 'Tamil|ta',
+        })}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('language-mock')).toBeTruthy();
@@ -324,7 +324,7 @@ describe('PhraseBackTranslateStepSettings', () => {
       const last = JSON.parse(onChangeSpy.mock.calls.at(-1)?.[0] as string) as {
         artifactTypeId?: string;
       };
-      expect(last.artifactTypeId).toBe('type-backtranslation');
+      expect(last.artifactTypeId).toBe('backtranslation');
     });
   });
 });

@@ -7,11 +7,10 @@ import {
   useState,
 } from 'react';
 import { Box } from '@mui/material';
-import { RecordKeyMap } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
-import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
+import { useArtifactType, useStepTool } from '../../crud';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
   ICarefulTranscriptionStrings,
@@ -75,7 +74,8 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const { slugFromId, getTypeId } = useArtifactType();
+  const { slugFromId, localIdFromSlug, localIdFromIdOrSlug } =
+    useArtifactType();
   const {
     mediafileId,
     rowData,
@@ -96,10 +96,9 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   const artifactSlug = useMemo(() => {
     const id = stepSettingsParsed?.artifactTypeId as string | undefined;
     if (!id) return null;
-    const resolved =
-      remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
-    return slugFromId(resolved);
-  }, [stepSettingsParsed, memory?.keyMap, slugFromId]);
+    // slugFromId accepts a slug (current format) or a remote/local id (legacy).
+    return slugFromId(id);
+  }, [stepSettingsParsed, slugFromId]);
 
   const transcriptionConfig = useMemo(
     () => configForRecordingArtifact(artifactSlug),
@@ -131,15 +130,16 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
 
   const recordingArtifactTypeId = useMemo((): string => {
     const id = stepSettingsParsed?.artifactTypeId as string | undefined;
-    if (id) {
-      return (
-        remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
-      );
-    }
+    if (id) return localIdFromIdOrSlug(id) ?? '';
     return transcriptionConfig?.defaultArtifactSlug
-      ? (getTypeId(transcriptionConfig.defaultArtifactSlug) ?? '')
+      ? (localIdFromSlug(transcriptionConfig.defaultArtifactSlug) ?? '')
       : '';
-  }, [stepSettingsParsed, memory?.keyMap, transcriptionConfig, getTypeId]);
+  }, [
+    stepSettingsParsed,
+    transcriptionConfig,
+    localIdFromSlug,
+    localIdFromIdOrSlug,
+  ]);
 
   const currentVersion = mediafile?.attributes?.versionNumber ?? 0;
   const currentRegion = clauseRegions[currentIndex];

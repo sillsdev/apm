@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import MediaUploadDialog from './MediaUploadDialog';
-import { useMediaUpload, VernacularTag, findRecord, related } from '../crud';
+import { ArtifactTypeSlug, useMediaUpload, findRecord, related } from '../crud';
 import { useGlobal } from '../context/useGlobal';
 import { restoreScroll } from '../utils';
 import { splitFaithbridgeValue } from '../utils/contentType';
@@ -34,7 +34,8 @@ interface IProps {
   multiple?: boolean | undefined;
   importList?: File[] | undefined;
   onFiles?: ((files: File[]) => void) | undefined;
-  artifactState?: { id?: string | null } | undefined;
+  /** The artifact type to tag the upload with (null/omitted = Vernacular). */
+  artifactTypeSlug?: ArtifactTypeSlug | null | undefined;
   passageId?: string | undefined;
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
@@ -70,7 +71,7 @@ export const Uploader = (props: IProps) => {
     multiple,
     importList,
     onFiles,
-    artifactState,
+    artifactTypeSlug,
     passageId,
     planId,
     sourceMediaId,
@@ -129,7 +130,7 @@ export const Uploader = (props: IProps) => {
   // unsupported/toobig messages, and the importList trigger) lives in the hook.
   const uploadMedia = useMediaUpload({
     fields: {
-      artifactId: artifactState?.id ?? VernacularTag,
+      artifactTypeSlug: artifactTypeSlug ?? null,
       passageId,
       localPlanId: resolvedLocalPlanId,
       sourceMediaId,
@@ -179,7 +180,8 @@ export const Uploader = (props: IProps) => {
           ready={ready}
           speaker={performedBy}
           onSpeaker={
-            !artifactState?.id &&
+            (!artifactTypeSlug ||
+              artifactTypeSlug === ArtifactTypeSlug.Vernacular) &&
             (uploadType || UploadType.Media) === UploadType.Media
               ? handleSpeakerChange
               : undefined

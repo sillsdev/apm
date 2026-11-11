@@ -164,7 +164,7 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     { aiTranscribe?: boolean } | undefined;
   const showAsrButton = Boolean(features?.aiTranscribe) && !offline;
   const { getProjType } = useProjectType();
-  const { slugFromId } = useArtifactType();
+  const { slugFromId, localIdFromIdOrSlug } = useArtifactType();
 
   const teams = useOrbitData<OrganizationD[]>('organization');
   const team = useMemo(
@@ -190,7 +190,9 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     }
   }, [stepSettings]);
 
-  const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
+  // Settings hold a slug (current format) or a remote id (legacy); resolve to
+  // the local id that mediafile relationships and TranscriberProvider use.
+  const artifactTypeId = localIdFromIdOrSlug(parsedSettings?.artifactTypeId);
 
   const { rowData, transSelected } = useTodo();
 
@@ -1005,9 +1007,11 @@ export default function PassageDetailTranscribeMobile(props: IProps) {
       return {} as { artifactTypeId?: string };
     }
   }, [stepSettings]);
+  const { slugFromId, localIdFromIdOrSlug } = useArtifactType();
 
-  const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
-  const { slugFromId } = useArtifactType();
+  // Settings hold a slug (current format) or a remote id (legacy); resolve to
+  // the local id that mediafile relationships and TranscriberProvider use.
+  const artifactTypeId = localIdFromIdOrSlug(parsedSettings?.artifactTypeId);
 
   const parsedSteps = useMemo(() => {
     if (!orgWorkflowSteps) return [];

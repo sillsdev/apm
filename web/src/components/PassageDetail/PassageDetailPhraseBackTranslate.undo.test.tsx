@@ -157,7 +157,11 @@ jest.mock('../../crud', () => ({
     Retell: 'retell',
   },
   remoteIdGuid: jest.fn((_t: string, id: string) => id),
-  useArtifactType: () => ({ getTypeId: () => 'art1', slugFromId: () => 'x' }),
+  useArtifactType: () => ({
+    localIdFromSlug: () => 'art1',
+    localIdFromIdOrSlug: (id?: string | null) => id ?? null,
+    slugFromId: () => 'x',
+  }),
   useStepTool: () => ({
     settings: { artifactTypeId: 'art1', language: 'French|fr' },
   }),

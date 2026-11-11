@@ -5,6 +5,7 @@ import { MediaFileD } from '../model';
 import { UpdateRelatedRecord } from '../model/baseModel';
 import { logError, Severity } from '../utils';
 import { axiosGet } from '../utils/axios';
+import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { findRecords } from './tryFindRecord';
 
 export const updateBackTranslationType = async (
@@ -29,16 +30,16 @@ export const updateBackTranslationType = async (
     //offline
     const artifacttypes = findRecords(memory, 'artifacttype');
     const bt = artifacttypes.find(
-      (a) => a.attributes.typename === 'backtranslation'
+      (a) => a.attributes.typename === ArtifactTypeSlug.PhraseBackTranslation
     );
     let wbt = artifacttypes.find(
-      (a) => a.attributes.typename === 'wholebacktranslation'
+      (a) => a.attributes.typename === ArtifactTypeSlug.WholeBackTranslation
     );
 
     if (!bt || !wbt) {
       await offlineSetup();
       wbt = artifacttypes.find(
-        (a) => a.attributes.typename === 'wholebacktranslation'
+        (a) => a.attributes.typename === ArtifactTypeSlug.WholeBackTranslation
       );
       if (!wbt) {
         logError(

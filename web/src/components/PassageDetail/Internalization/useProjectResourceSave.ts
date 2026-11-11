@@ -45,11 +45,11 @@ export const useProjectResourceSave = () => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const { AddSectionResource } = useSecResCreate({} as RecordIdentity);
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
   const fullReference = useFullReference();
 
   const resourceType = useMemo(
-    () => getTypeId(ArtifactTypeSlug.Resource) || '',
+    () => localIdFromSlug(ArtifactTypeSlug.Resource) || '',
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );

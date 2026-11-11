@@ -10,6 +10,7 @@ import {
   useCallback,
 } from 'react';
 import {
+  ArtifactTypeSlug,
   findRecord,
   IMediaState,
   MediaSt,
@@ -412,7 +413,7 @@ export function PassageDetailRecord(props: IProps) {
       </Box>
       <MediaRecord
         toolId={toolId}
-        artifactId={VernacularTag}
+        artifactTypeSlug={ArtifactTypeSlug.Vernacular}
         passageId={passageId}
         afterUploadCb={afterUploadCb}
         performedBy={speaker}

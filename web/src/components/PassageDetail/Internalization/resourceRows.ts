@@ -23,8 +23,12 @@ import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
  */
 const LinkedTypeSlug = 'linked';
 
-const isResource = (typeSlug: string) =>
-  ['resource', 'sharedresource', 'airesource'].indexOf(typeSlug) !== -1;
+const resourceSlugs: string[] = [
+  ArtifactTypeSlug.Resource,
+  ArtifactTypeSlug.SharedResource,
+  ArtifactTypeSlug.AIResource,
+];
+const isResource = (typeSlug: string) => resourceSlugs.includes(typeSlug);
 
 interface DataProps {
   artifactTypes: ArtifactType[];
@@ -63,10 +67,10 @@ export const oneMediaRow = ({
   const artifactType = artifactTypes.find((t) => t.id === typId);
   let typeNameSlug = artifactType?.attributes?.typename || '';
   if (
-    typeNameSlug === 'resource' &&
+    typeNameSlug === ArtifactTypeSlug.Resource &&
     media?.attributes.eafUrl?.includes(AIGenerated)
   )
-    typeNameSlug = 'airesource';
+    typeNameSlug = ArtifactTypeSlug.AIResource;
   // Derived copies of a general resource carry the plain `resource` type, so
   // the general-resource label comes from the same source-media resolution the
   // Edit action uses (see [[generalResourceMedia]]).
@@ -125,9 +129,10 @@ export const oneMediaRow = ({
     resource: r,
     isResource: isResource(typeNameSlug),
     passageId: (r ? related(r, 'passage') : related(media, 'passage')) || '',
-    isComment: typeNameSlug === 'comment',
-    isKeyTerm: typeNameSlug === 'keyterm',
-    isVernacular: typeNameSlug === '' || typeNameSlug === 'vernacular',
+    isComment: typeNameSlug === ArtifactTypeSlug.Comment,
+    isKeyTerm: typeNameSlug === ArtifactTypeSlug.KeyTerm,
+    isVernacular:
+      typeNameSlug === '' || typeNameSlug === ArtifactTypeSlug.Vernacular,
     isText: isVisual(media),
     sourceVersion: sourceversion,
   });

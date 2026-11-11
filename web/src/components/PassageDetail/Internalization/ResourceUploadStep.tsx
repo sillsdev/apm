@@ -2,7 +2,7 @@ import { RefObject } from 'react';
 import { Box } from '@mui/material';
 import MediaUploadContent from '../../MediaUploadContent';
 import PassageRecordPanel, { IDeferredUpload } from '../../PassageRecordPanel';
-import { useMediaUpload, VernacularTag } from '../../../crud';
+import { ArtifactTypeSlug, useMediaUpload } from '../../../crud';
 import { splitFaithbridgeValue } from '../../../utils/contentType';
 import { UploadType } from '../../UploadType';
 import type { PendingRestoreInput } from '../../../store/upload/pendingMediaUploads';
@@ -11,7 +11,8 @@ interface IProps {
   active: boolean;
   isAudioMode: boolean; //shows a Record option as well as upload
   uploadType: UploadType;
-  artifactId?: string | null | undefined;
+  /** The artifact type to tag the upload with (null/omitted = Vernacular). */
+  artifactTypeSlug?: ArtifactTypeSlug | null | undefined;
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   eafUrl?: string | undefined;
@@ -40,7 +41,7 @@ export function ResourceUploadStep(props: IProps) {
     active,
     isAudioMode,
     uploadType,
-    artifactId: artifactIdProp,
+    artifactTypeSlug: artifactTypeSlugProp,
     speaker,
     onSpeaker,
     eafUrl,
@@ -57,7 +58,7 @@ export function ResourceUploadStep(props: IProps) {
     deferred,
     onStartRecording,
   } = props;
-  const artifactId = artifactIdProp ?? VernacularTag;
+  const artifactTypeSlug = artifactTypeSlugProp ?? null;
 
   // A Faithbridge link arrives as `url||transcript` in inValue; split it here
   const faithbridge =
@@ -68,7 +69,7 @@ export function ResourceUploadStep(props: IProps) {
 
   const uploadMedia = useMediaUpload({
     fields: {
-      artifactId,
+      artifactTypeSlug,
       performedBy: speaker,
       eafUrl,
       transcription: faithbridge?.transcription,
@@ -107,7 +108,7 @@ export function ResourceUploadStep(props: IProps) {
         <PassageRecordPanel
           active={active}
           onStartRecording={onStartRecording}
-          artifactId={artifactId}
+          artifactTypeSlug={artifactTypeSlug}
           finish={recordFinish}
           metaData={metaData}
           ready={ready}

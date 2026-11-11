@@ -105,7 +105,7 @@ jest.mock('../../crud', () => ({
   }),
   useRole: () => ({ userIsAdmin: true }),
   findRecord: jest.fn(),
-  useArtifactType: () => ({ commentId: 'comment-artifact' }),
+  useArtifactType: () => ({}),
 }));
 
 jest.mock('../../crud/computeCommentVisible', () => ({

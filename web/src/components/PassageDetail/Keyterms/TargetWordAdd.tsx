@@ -31,7 +31,7 @@ import { UnsavedContext } from '../../../context/UnsavedContext';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { IKeyTermRow } from './KeyTermTable';
 import { useSnackBar } from '../../../hoc/SnackBar';
-import { useArtifactType } from '../../../crud';
+import { ArtifactTypeSlug } from '../../../crud';
 
 const ColumnDiv = styled('div')(() => ({
   display: 'flex',
@@ -101,7 +101,6 @@ export default function TargetWordAdd(props: IProps) {
   const doRecordRef = useRef(false);
   const [recording, setRecording] = useState(false);
   // const [myChanged, setMyChanged] = useState(false);
-  const { keyTermId } = useArtifactType();
 
   const {
     toolsChanged,
@@ -300,7 +299,7 @@ export default function TargetWordAdd(props: IProps) {
           afterUploadCb={afterUploadCb}
           pendingRestore={pendingRestore}
           passageId={passageId}
-          artifactId={keyTermId}
+          artifactTypeSlug={ArtifactTypeSlug.KeyTerm}
           defaultFilename={fileName}
           allowWave={false}
           setCanSave={handleSetCanSave}

@@ -9,6 +9,7 @@ import {
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
 import { MediaUploadControlsRef } from '../../MediaUploadContent';
 import {
+  ArtifactTypeSlug,
   remoteIdGuid,
   useSecResCreate,
   findRecord,
@@ -118,7 +119,7 @@ export function useAddResourceWizard({
     shallowEqual
   );
 
-  const { resourceType, projResourceType } = useResourceArtifactTypes();
+  const { resourceType } = useResourceArtifactTypes();
 
   // launchSource never changes while mounted
   const initUploadType = initialUploadType(launchSource);
@@ -188,10 +189,10 @@ export function useAddResourceWizard({
     ResourceTypeEnum.sectionResource
   );
   // Artifact type for the upload (Edit never uploads, so it doesn't need one).
-  const artifactId =
-    (resourceKind === ResourceTypeEnum.projectResource
-      ? projResourceType
-      : resourceType) ?? null;
+  const artifactTypeSlug =
+    resourceKind === ResourceTypeEnum.projectResource
+      ? ArtifactTypeSlug.ProjectResource
+      : ArtifactTypeSlug.Resource;
 
   const planRec = plan ? getPlan(plan) : null;
   const filename = planRec?.attributes?.slug
@@ -488,7 +489,7 @@ export function useAddResourceWizard({
     projIdentity: projSelection.items,
     projCandidate: projSelection.candidates,
     cancelled,
-    artifactId,
+    artifactTypeSlug,
     addCategorySaveRef,
     submitRef,
     // section-select

@@ -1202,7 +1202,7 @@ export interface ImportProjectToElectronProps {
   offlineOnly: boolean;
   AddProjectLoaded: (project: string) => void;
   reportError: (ex: IApiError) => void;
-  getTypeId: (slug: string) => string | null;
+  localIdFromSlug: (slug: string) => string | null;
   pendingmsg: string;
   completemsg: string;
   oldfilemsg: string;
@@ -1220,7 +1220,7 @@ export const importProjectToElectron =
     coordinator,
     AddProjectLoaded,
     reportError,
-    getTypeId,
+    localIdFromSlug,
     pendingmsg,
     completemsg,
     oldfilemsg,
@@ -1342,7 +1342,7 @@ export const importProjectToElectron =
           (m) =>
             planids.includes(related(m, 'plan')) &&
             related(m, 'artifactType') !==
-              getTypeId(ArtifactTypeSlug.IntellectualProperty)
+              localIdFromSlug(ArtifactTypeSlug.IntellectualProperty)
         )
         .map((m) => m.id);
       const discussionids = findRecords(memory, 'discussion')

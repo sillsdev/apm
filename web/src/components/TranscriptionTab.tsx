@@ -193,7 +193,7 @@ export function TranscriptionTab(props: IProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
 
-  const { getTypeId, localizedArtifactType } = useArtifactType();
+  const { localIdFromSlug, localizedArtifactType } = useArtifactType();
   const { getSharedResource } = useSharedResRead();
   const projectPlan = useMemo(
     () => projectPlans?.[0] as Plan | undefined,
@@ -271,7 +271,7 @@ export function TranscriptionTab(props: IProps) {
     const onlyTypeId = [ExportType.DBL, ExportType.BURRITO].includes(exportType)
       ? VernacularTag
       : [ExportType.AUDIO, ExportType.ELAN].includes(exportType)
-        ? getTypeId(artifactType)
+        ? localIdFromSlug(artifactType)
         : undefined;
     const onlyLatest = onlyTypeId !== undefined;
     const media = getMediaInPlans(
@@ -319,7 +319,7 @@ export function TranscriptionTab(props: IProps) {
   };
 
   const exportId = useMemo(
-    () => (artifactType ? getTypeId(artifactType) : VernacularTag),
+    () => (artifactType ? localIdFromSlug(artifactType) : VernacularTag),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [artifactType]
   );

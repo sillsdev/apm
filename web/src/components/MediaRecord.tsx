@@ -19,7 +19,12 @@ import {
   waitForIt,
 } from '../utils';
 import { isElectron } from '../../api-variable';
-import { IMediaState, MediaSt, useFetchMediaUrl } from '../crud';
+import {
+  ArtifactTypeSlug,
+  IMediaState,
+  MediaSt,
+  useFetchMediaUrl,
+} from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
@@ -41,7 +46,7 @@ import { passageRecordSelector, sharedSelector } from '../selector';
 // never read. (controlsRef is only passed by the Cypress specs; keep it.)
 export interface IProps {
   toolId: string;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   passageId: string | undefined;
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
@@ -165,7 +170,7 @@ function MediaRecord(props: IProps) {
     defaultFilename,
     allowDeltaVoice,
     allowDownload,
-    artifactId,
+    artifactTypeSlug,
     passageId,
     planId,
     sourceMediaId,
@@ -529,7 +534,7 @@ function MediaRecord(props: IProps) {
     onUploaded,
     upload: {
       fields: {
-        artifactId,
+        artifactTypeSlug,
         passageId,
         sourceMediaId,
         sourceSegments,

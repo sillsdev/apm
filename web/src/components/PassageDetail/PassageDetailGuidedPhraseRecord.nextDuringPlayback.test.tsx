@@ -115,7 +115,11 @@ jest.mock('./carefulSpeech/carefulSpeechCompletion', () => {
 jest.mock('../../crud', () => ({
   ArtifactTypeSlug: { PhraseBackTranslation: 'phrase-back-translation' },
   remoteIdGuid: jest.fn((_t: string, id: string) => id),
-  useArtifactType: () => ({ getTypeId: () => 'art1' }),
+  useArtifactType: () => ({
+    localIdFromSlug: () => 'art1',
+    localIdFromIdOrSlug: (id?: string | null) => id ?? null,
+    slugFromId: () => 'carefulspeech',
+  }),
   useStepTool: (step: string) => ({ settings: stepSettings[step] ?? {} }),
 }));
 jest.mock('../../crud/related', () => ({ related: () => 'p1' }));

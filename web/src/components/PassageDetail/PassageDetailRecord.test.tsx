@@ -159,6 +159,8 @@ jest.mock('../../context/UnsavedContext', () => {
 });
 
 jest.mock('../../crud', () => ({
+  ArtifactTypeSlug: jest.requireActual('../../crud/artifactTypeSlug')
+    .ArtifactTypeSlug,
   VernacularTag: null,
   findRecord: jest.fn(),
   related: jest.fn(

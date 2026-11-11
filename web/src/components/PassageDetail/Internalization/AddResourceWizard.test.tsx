@@ -77,6 +77,8 @@ jest.mock('../../../context/useGlobal', () => ({
 // --- crud / helpers ----------------------------------------------------------
 const mockAddSectionResource = jest.fn();
 jest.mock('../../../crud', () => ({
+  ArtifactTypeSlug: jest.requireActual('../../../crud/artifactTypeSlug')
+    .ArtifactTypeSlug,
   remoteIdGuid: (_t: string, remId: string) => remId,
   useSecResCreate: () => ({
     AddSectionResource: mockAddSectionResource,

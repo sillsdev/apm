@@ -12,18 +12,12 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
-import {
-  ToolSlug,
-  useStepTool,
-  useArtifactType,
-  remoteIdGuid,
-} from '../../crud';
+import { ToolSlug, useStepTool, useArtifactType } from '../../crud';
 import { useMobile } from '../../utils';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { verseToolId } from './markVersesTool';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
-import { RecordKeyMap } from '@orbit/records';
 
 export const PassageDetailStepComplete = () => {
   const {
@@ -44,7 +38,6 @@ export const PassageDetailStepComplete = () => {
   } = usePassageDetailContext();
   const { tool, settings } = useStepTool(currentstep);
   const { isMobile } = useMobile();
-  const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
   const { canDoSectionStep, canAlwaysDoStep } = useStepPermissions();
   const { pathname } = useLocation();
@@ -139,10 +132,9 @@ export const PassageDetailStepComplete = () => {
         : ((settings as { artifactTypeId?: string }) ?? {});
     const id = parsed?.artifactTypeId;
     if (!id) return null;
-    const resolved =
-      remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
-    return slugFromId(resolved);
-  }, [settings, memory?.keyMap, slugFromId]);
+    // slugFromId accepts a slug (current format) or a remote/local id (legacy).
+    return slugFromId(id);
+  }, [settings, slugFromId]);
 
   const boldRecordCheckboxDisabled =
     isBoldWorkflow &&

@@ -22,6 +22,7 @@ import UploadRecordToggle, {
 import { UploadType } from './UploadType';
 import { getRefWidth } from '../utils/getRefWidth';
 import MediaRecord from './MediaRecord';
+import { ArtifactTypeSlug } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import SpeakerName from './SpeakerName';
 import { Button } from '../control';
@@ -37,7 +38,7 @@ const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
 
 export interface IPassageRecordPanelProps {
   active: boolean;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;
   metaData?: React.JSX.Element | undefined;
   defaultFilename: string;
@@ -64,7 +65,7 @@ export interface IDeferredUpload {
 export function PassageRecordPanel(props: IPassageRecordPanelProps) {
   const {
     active,
-    artifactId,
+    artifactTypeSlug,
     finish,
     defaultFilename,
     ready,
@@ -168,7 +169,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
               <MediaRecord
                 toolId={myToolId}
                 hotkeys={active}
-                artifactId={artifactId}
+                artifactTypeSlug={artifactTypeSlug}
                 passageId={undefined}
                 afterUploadCb={async () => {}}
                 finish={finish}

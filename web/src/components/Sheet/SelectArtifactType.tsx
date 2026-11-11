@@ -8,16 +8,17 @@ import { selectArtifactTypeSelector } from '../../selector';
 const smallProps = { fontSize: 'small' } as SxProps;
 
 interface IProps {
-  onTypeChange: (artifactTypeId: string | null) => void;
-  initialValue?: string | null;
+  /** Receives the chosen artifact-type slug, or null for Vernacular. */
+  onTypeChange: (artifactTypeSlug: ArtifactTypeSlug | null) => void;
+  /** The currently selected slug (null/Vernacular when unset). */
+  initialValue?: ArtifactTypeSlug | null;
   limit?: ArtifactTypeSlug[];
-  allowNew?: boolean;
 }
 
 export const SelectArtifactType = (props: IProps) => {
   const { onTypeChange, initialValue, limit } = props;
-  const [artifactType, setArtifactType] = useState(
-    ArtifactTypeSlug.Vernacular as string
+  const [artifactType, setArtifactType] = useState<ArtifactTypeSlug>(
+    ArtifactTypeSlug.Vernacular
   );
   const { getArtifactTypes } = useArtifactType();
   const [artifactTypes, setArtifactTypes] = useState<IArtifactType[]>([]);
@@ -27,27 +28,20 @@ export const SelectArtifactType = (props: IProps) => {
   );
 
   const handleArtifactTypeChange = (e: any) => {
-    setArtifactType(e.target.value);
+    const artifactTypeSlug = e.target.value as ArtifactTypeSlug;
+    setArtifactType(artifactTypeSlug);
     onTypeChange(
-      e.target.value === (ArtifactTypeSlug.Vernacular as string)
-        ? null
-        : e.target.value
+      artifactTypeSlug === ArtifactTypeSlug.Vernacular ? null : artifactTypeSlug
     );
   };
 
   useEffect(() => {
-    setArtifactTypes(
-      getArtifactTypes(limit, true).map((a) =>
-        !a.id ? { ...a, id: ArtifactTypeSlug.Vernacular as string } : a
-      )
-    );
+    setArtifactTypes(getArtifactTypes(limit));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [limit]);
 
   useEffect(() => {
-    const curType = initialValue
-      ? initialValue
-      : (ArtifactTypeSlug.Vernacular as string);
+    const curType = initialValue ?? ArtifactTypeSlug.Vernacular;
     if (curType !== artifactType) setArtifactType(curType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialValue]);
@@ -60,7 +54,7 @@ export const SelectArtifactType = (props: IProps) => {
         label={t.artifactType}
         sx={{ mx: 1, width: '400px' }}
         value={
-          artifactTypes.map((t) => t.id).includes(artifactType)
+          artifactTypes.map((t) => t.slug).includes(artifactType)
             ? artifactType
             : ''
         }
@@ -81,7 +75,7 @@ export const SelectArtifactType = (props: IProps) => {
         required={true}
       >
         {artifactTypes.map((option: IArtifactType) => (
-          <MenuItem key={option.id} value={option.id}>
+          <MenuItem key={option.slug} value={option.slug}>
             {option?.type}
           </MenuItem>
         ))}

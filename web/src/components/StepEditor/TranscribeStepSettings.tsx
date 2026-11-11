@@ -78,7 +78,9 @@ export const TranscribeStepSettings = ({
     ArtifactTypeSlug.QandA,
     ArtifactTypeSlug.Retell,
   ];
-  const [initialValue, setInitialValue] = useState<string | null>(null);
+  const [initialValue, setInitialValue] = useState<ArtifactTypeSlug | null>(
+    null
+  );
   const [lgState, setLgState] = useState<LangState>({ ...initLangState });
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const { slugFromId } = useArtifactType();
@@ -141,25 +143,26 @@ export const TranscribeStepSettings = ({
     currentSlug,
   });
 
-  const handleSelect = (artifactTypeId: string | null) => {
+  // Step settings store the slug; readers convert it to an id at the DB boundary.
+  const handleSelect = (artifactTypeSlug: ArtifactTypeSlug | null) => {
     const json = JSONParse(toolSettings) as Record<string, unknown>;
     const [, bcp47] = (json?.language as string | undefined)?.split('|') ?? [
       '',
       'und',
     ];
     const spellCheck = defaultSpellCheckForArtifact(
-      slugFromId(artifactTypeId),
+      slugFromId(artifactTypeSlug),
       isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
     );
     setLgState((state) => ({
       ...state,
-      artId: artifactTypeId ?? '',
+      artId: artifactTypeSlug ?? '',
       spellCheck,
       changed: false,
     }));
     const { spellCheck: _omit, ...rest } = json;
-    onChange(JSON.stringify({ ...rest, artifactTypeId }));
+    onChange(JSON.stringify({ ...rest, artifactTypeId: artifactTypeSlug }));
   };
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
@@ -202,9 +205,10 @@ export const TranscribeStepSettings = ({
   useEffect(() => {
     if (!toolSettings) return;
     const json = JSON.parse(toolSettings);
-    setInitialValue(json.artifactTypeId);
-    const { languageName, bcp47 } = parseStepLanguageField(json?.language);
+    // Normalizes settings that still hold an id from before the slug switch.
     const slug = slugFromId(json.artifactTypeId);
+    setInitialValue(slug);
+    const { languageName, bcp47 } = parseStepLanguageField(json?.language);
     const spellCheck = resolveStepSpellCheck(
       json,
       slug,
@@ -213,7 +217,7 @@ export const TranscribeStepSettings = ({
     );
     setLgState((state) => ({
       ...state,
-      artId: json.artifactTypeId,
+      artId: slug === ArtifactTypeSlug.Vernacular ? '' : slug,
       languageName,
       bcp47,
       font: json.font,

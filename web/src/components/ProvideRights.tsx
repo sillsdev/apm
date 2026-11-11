@@ -5,18 +5,10 @@ import {
   Organization,
 } from '../model';
 import { SxProps } from '@mui/material/styles';
-import {
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from 'react';
+import { useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { getRefWidth } from '../utils/getRefWidth';
 import {
   ArtifactTypeSlug,
-  useArtifactType,
   remoteIdGuid,
   findRecord,
   related,
@@ -93,7 +85,6 @@ export function ProvideRights(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
 
-  const { getTypeId } = useArtifactType();
   const { showMessage } = useSnackBar();
   const cancelled = useRef(false);
   const updateRecord = useUpdateRecord();
@@ -125,13 +116,6 @@ export function ProvideRights(props: IProps) {
     toolChanged(toolId, canSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
-
-  const recordTypeId = useMemo(
-    () => getTypeId(recordType),
-    [recordType, getTypeId]
-  );
-
-  const artifactState = useMemo(() => ({ id: recordTypeId }), [recordTypeId]);
 
   const pendingRestore = useCallback(() => {
     let orgId = team || organizationId;
@@ -323,7 +307,7 @@ export function ProvideRights(props: IProps) {
         statusText={statusText}
         teamRec={teamRec}
         defaultFilename={defaultFilename}
-        artifactState={artifactState}
+        artifactTypeSlug={recordType}
         setSaving={setSaving}
         setStatusText={setStatusText}
         setResetMedia={setResetMedia}
@@ -341,7 +325,7 @@ export function ProvideRights(props: IProps) {
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
-        artifactState={artifactState}
+        artifactTypeSlug={recordType}
         performedBy={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}

@@ -18,6 +18,7 @@ import {
 import { IVoicePerm } from '../../../../business/voice/PersonalizeVoicePermission';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useMobile } from '../../../../utils';
+import { ArtifactTypeSlug } from '../../../../crud';
 
 interface IProps {
   paperRef: React.RefObject<HTMLDivElement | null>;
@@ -41,7 +42,7 @@ interface IProps {
   team: string | undefined;
   planId?: string | undefined;
   defaultFilename: string;
-  artifactState: { id: string | null };
+  artifactTypeSlug: ArtifactTypeSlug | null;
   setSaving: React.Dispatch<React.SetStateAction<boolean>>;
   setStatusText: React.Dispatch<React.SetStateAction<string>>;
   setResetMedia: React.Dispatch<React.SetStateAction<boolean>>;
@@ -89,7 +90,7 @@ const ProvideRightsMobile = (props: IProps) => {
         afterUploadCb={async (mediaId) => {
           await props.afterUploadCb(mediaId || '', props.defaultFilename);
         }}
-        artifactId={props.artifactState.id}
+        artifactTypeSlug={props.artifactTypeSlug}
         passageId={undefined}
         planId={props.planId}
         performedBy={props.speaker}

@@ -106,9 +106,12 @@ export const getArtTypeFontData = (
     const toolData = JSON.parse(s.attributes?.tool || '{}');
     if (toolData?.settings) {
       const settings = JSON.parse(toolData.settings);
+      // Settings identify the type by slug (typename); tolerate legacy ids.
       if (
+        (artifactType?.attributes?.typename &&
+          settings?.artifactTypeId === artifactType.attributes.typename) ||
         settings?.artifactTypeId ===
-        (artifactType?.keys?.remoteId ?? artifactType?.id)
+          (artifactType?.keys?.remoteId ?? artifactType?.id)
       ) {
         stepSettings = settings;
         return true;

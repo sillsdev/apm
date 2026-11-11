@@ -2,6 +2,7 @@
 import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import MediaRecord from './MediaRecord';
+import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
 
 type WsProps = {
   blob?: Blob;
@@ -126,7 +127,7 @@ jest.mock('../selector', () => ({
 
 const props = {
   toolId: 'phrase-tool',
-  artifactId: 'phrasebt',
+  artifactTypeSlug: ArtifactTypeSlug.PhraseBackTranslation,
   passageId: 'p1',
   afterUploadCb: jest.fn(),
   defaultFilename: 'rec',

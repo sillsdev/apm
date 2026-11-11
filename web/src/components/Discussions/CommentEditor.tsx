@@ -17,7 +17,7 @@ import { ICommentEditorStrings, ISharedStrings } from '../../model';
 import { useSelector, shallowEqual } from 'react-redux';
 import { commentEditorSelector, sharedSelector } from '../../selector';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { useArtifactType } from '../../crud';
+import { ArtifactTypeSlug } from '../../crud';
 import { Button } from '../../control/Button';
 
 const RowDiv = styled('div')(() => ({
@@ -98,7 +98,6 @@ export const CommentEditor = (props: IProps) => {
   const [recording, setRecording] = useState(false);
   const [myChanged, setMyChanged] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
-  const { commentId } = useArtifactType();
 
   const {
     toolsChanged,
@@ -230,7 +229,7 @@ export const CommentEditor = (props: IProps) => {
       <MediaRecord
         toolId={toolId}
         passageId={passageId}
-        artifactId={commentId}
+        artifactTypeSlug={ArtifactTypeSlug.Comment}
         onRecording={onRecording}
         afterUploadCb={afterUploadCb}
         pendingRestore={pendingRestore}

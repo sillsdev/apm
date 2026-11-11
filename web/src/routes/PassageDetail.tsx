@@ -15,7 +15,6 @@ import {
   useStepTool,
   useUrlContext,
   useArtifactType,
-  remoteIdGuid,
   toolShowsStepInstructions,
 } from '../crud';
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
@@ -27,7 +26,6 @@ import { mobileSelector, sharedSelector } from '../selector';
 import { Paper, Typography } from '@mui/material';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
 import { usePaneWidth } from '../components/usePaneWidth';
-import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
@@ -86,7 +84,6 @@ const MobileStep = () => {
     isBoldWorkflow: false,
   };
   const { tool, settings } = useStepTool(currentstep);
-  const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
   const { paneWidth } = usePaneWidth();
 
@@ -105,10 +102,9 @@ const MobileStep = () => {
         : ((settings as { artifactTypeId?: string }) ?? {});
     const id = parsed?.artifactTypeId;
     if (!id) return null;
-    const resolved =
-      remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
-    return slugFromId(resolved);
-  }, [settings, memory?.keyMap, slugFromId]);
+    // slugFromId accepts a slug (current format) or a remote/local id (legacy).
+    return slugFromId(id);
+  }, [settings, slugFromId]);
 
   const boldClauseTranscription = isBoldClauseTranscriptionStep(
     tool ?? '',

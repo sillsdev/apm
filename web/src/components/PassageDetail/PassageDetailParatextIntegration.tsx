@@ -1,6 +1,5 @@
 import {
   ArtifactTypeSlug,
-  remoteIdGuid,
   useArtifactType,
   usePlanType,
   useStepTool,
@@ -8,7 +7,6 @@ import {
 import Integration from '../Integration';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { useMemo } from 'react';
-import { RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../../context/useGlobal';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../model/passageType';
@@ -31,9 +29,8 @@ export default function PassageDetailParatextIntegration() {
     setStepComplete,
     sharedResource,
   } = usePassageDetailContext();
-  const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
-  const { slugFromId } = useArtifactType();
+  const { slugFromId, localIdFromIdOrSlug } = useArtifactType();
   const planType = usePlanType();
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission =
@@ -54,11 +51,7 @@ export default function PassageDetailParatextIntegration() {
 
   const artifactId = useMemo(() => {
     if (settings) {
-      const id = JSON.parse(settings).artifactTypeId;
-      if (id)
-        return (
-          remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
-        );
+      return localIdFromIdOrSlug(JSON.parse(settings).artifactTypeId);
     }
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps

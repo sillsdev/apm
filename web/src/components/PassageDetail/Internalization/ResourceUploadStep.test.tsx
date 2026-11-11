@@ -1,8 +1,9 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { UploadType } from '../../UploadType';
+import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
 type PanelProps = {
-  artifactId?: string | null;
+  artifactTypeSlug?: string | null;
   finish: (mediaRemoteIds?: string[]) => Promise<void>;
   uploadMethod?: unknown;
 };
@@ -36,7 +37,6 @@ const mockUploadMethod = jest.fn();
 const mockUseMediaUpload = jest.fn((_opts: unknown) => mockUploadMethod);
 jest.mock('../../../crud', () => ({
   useMediaUpload: (opts: unknown) => mockUseMediaUpload(opts),
-  VernacularTag: 'vern-tag',
 }));
 
 jest.mock('../../../utils', () => ({
@@ -166,22 +166,22 @@ describe('ResourceUploadStep', () => {
     });
   });
 
-  describe('artifactId', () => {
+  describe('artifactTypeSlug', () => {
     it.each([
       ['undefined', undefined],
       ['null', null],
-    ])('defaults to VernacularTag when %s', (_, artifactId) => {
-      renderStep({ artifactId });
+    ])('defaults to null (Vernacular) when %s', (_, artifactTypeSlug) => {
+      renderStep({ artifactTypeSlug });
 
-      expect(hookOptions().fields.artifactId).toBe('vern-tag');
-      expect(capturedPanel?.artifactId).toBe('vern-tag');
+      expect(hookOptions().fields.artifactTypeSlug).toBeNull();
+      expect(capturedPanel?.artifactTypeSlug).toBeNull();
     });
 
-    it('uses the given artifactId', () => {
-      renderStep({ artifactId: 'art-1' });
+    it('uses the given artifactTypeSlug', () => {
+      renderStep({ artifactTypeSlug: ArtifactTypeSlug.Resource });
 
-      expect(hookOptions().fields.artifactId).toBe('art-1');
-      expect(capturedPanel?.artifactId).toBe('art-1');
+      expect(hookOptions().fields.artifactTypeSlug).toBe('resource');
+      expect(capturedPanel?.artifactTypeSlug).toBe('resource');
     });
   });
 

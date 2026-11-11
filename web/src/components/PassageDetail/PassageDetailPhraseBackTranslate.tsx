@@ -1,13 +1,6 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { useMemo } from 'react';
-import { RecordKeyMap } from '@orbit/records';
-import {
-  ArtifactTypeSlug,
-  remoteIdGuid,
-  useArtifactType,
-  useStepTool,
-} from '../../crud';
-import { useGlobal } from '../../context/useGlobal';
+import { ArtifactTypeSlug, useArtifactType, useStepTool } from '../../crud';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { useRenderProfiler } from '../../utils/perf';
 import { NamedRegions } from '../../utils/namedSegments';
@@ -60,7 +53,6 @@ interface IProps {
 
 export function PassageDetailPhraseBackTranslate({ width }: IProps) {
   useRenderProfiler('PassageDetailPhraseBackTranslate');
-  const [memory] = useGlobal('memory');
   const { currentstep } = usePassageDetailContext();
   const { settings } = useStepTool(currentstep);
   const { slugFromId } = useArtifactType();
@@ -83,13 +75,12 @@ export function PassageDetailPhraseBackTranslate({ width }: IProps) {
   const artifactSlug = useMemo((): ArtifactTypeSlug => {
     const id = stepSettingsParsed?.artifactTypeId as string | undefined;
     if (id) {
-      const resolved =
-        remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
-      const slug = slugFromId(resolved) as ArtifactTypeSlug;
+      // slugFromId accepts a slug (current format) or a remote/local id (legacy).
+      const slug = slugFromId(id) as ArtifactTypeSlug;
       if (slug && slug !== ArtifactTypeSlug.Vernacular) return slug;
     }
     return ArtifactTypeSlug.PhraseBackTranslation;
-  }, [stepSettingsParsed, memory?.keyMap, slugFromId]);
+  }, [stepSettingsParsed, slugFromId]);
 
   const namedRegion = useMemo(
     () => phraseBackNamedRegionFromSettings(stepSettingsParsed),

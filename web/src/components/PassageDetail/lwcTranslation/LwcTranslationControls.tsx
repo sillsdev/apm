@@ -3,6 +3,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { Button } from '../../../control';
 import Guidance from '../../../control/Guidance';
 import MediaRecord from '../../MediaRecord';
+import { ArtifactTypeSlug } from '../../../crud';
 import { ICarefulSpeechStrings, ILwcTranslationStrings } from '@model/index';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -36,7 +37,7 @@ interface Props {
   onSaveSettled?: () => void;
   toolId: string;
   passageId: string | undefined;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   sourceMediaId: string;
   sourceSegments: string;
   defaultFilename: string;
@@ -68,7 +69,7 @@ export default function LwcTranslationControls({
   onSaveSettled,
   toolId,
   passageId,
-  artifactId,
+  artifactTypeSlug,
   sourceMediaId,
   sourceSegments,
   defaultFilename,
@@ -132,7 +133,7 @@ export default function LwcTranslationControls({
             passageId={passageId}
             sourceMediaId={sourceMediaId}
             sourceSegments={sourceSegments}
-            artifactId={artifactId}
+            artifactTypeSlug={artifactTypeSlug}
             performedBy={speaker}
             defaultFilename={defaultFilename}
             mediaId={recordingMediaId}

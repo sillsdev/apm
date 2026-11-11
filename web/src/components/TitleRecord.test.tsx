@@ -4,6 +4,8 @@ jest.mock('react-redux', () => ({
 }));
 
 jest.mock('../crud', () => ({
+  ArtifactTypeSlug: jest.requireActual('../crud/artifactTypeSlug')
+    .ArtifactTypeSlug,
   VernacularTag: null,
 }));
 

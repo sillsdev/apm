@@ -1,6 +1,7 @@
 import { RefObject, useContext, useEffect, useRef } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import {
+  ArtifactTypeSlug,
   pullTableList,
   related,
   remoteIdNum,
@@ -34,7 +35,8 @@ import { findRecords } from './tryFindRecord';
  * top-level props
  */
 export interface IMediaUploadFields {
-  artifactId: string | null;
+  /** The artifact type to tag the upload with (null = Vernacular). */
+  artifactTypeSlug: ArtifactTypeSlug | null;
   passageId?: string | undefined;
   /** Local Orbit plan id (UUID). Defaults to the global `plan`; converted to the
    *  remote id via `getRemotePlanId` where the vendor record needs it. */
@@ -139,14 +141,21 @@ export const useMediaUpload = ({
   const { createMedia } = useOfflnMediafileCreate();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t = useSelector(mediaTabSelector, shallowEqual);
-  const { localizedArtifactTypeFromId } = useArtifactType();
+  const { localIdFromSlug, remoteIdNumFromSlug, localizedArtifactType } =
+    useArtifactType();
+  // Vernacular is represented as null throughout; treat the Vernacular slug the
+  // same so callers can pass either.
+  const artifactTypeSlug =
+    fields.artifactTypeSlug === ArtifactTypeSlug.Vernacular
+      ? null
+      : fields.artifactTypeSlug;
   const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
   const effectiveType = uploadType ?? UploadType.Media;
 
   const getLatestVersion = () => {
     let num = 1;
     const psgId = fields.passageId || '';
-    if (psgId && !fields.artifactId) {
+    if (psgId && !artifactTypeSlug) {
       const mediaFiles = findRecords(memory, 'mediafile')
         .filter(
           (m) =>
@@ -171,14 +180,13 @@ export const useMediaUpload = ({
   const getRemotePlanId = () =>
     remoteIdNum('plan', localPlanId, memory?.keyMap as RecordKeyMap) ||
     localPlanId;
+  // The API takes the remote id; an unsynced (offline-only) type falls back to
+  // its local id, as before.
   const getArtifactId = () =>
-    fields.artifactId === null
+    artifactTypeSlug === null
       ? null
-      : remoteIdNum(
-          'artifacttype',
-          fields.artifactId,
-          memory?.keyMap as RecordKeyMap
-        ) || fields.artifactId;
+      : (remoteIdNumFromSlug(artifactTypeSlug) ??
+        localIdFromSlug(artifactTypeSlug));
   const getPassageId = () =>
     fields.passageId
       ? remoteIdNum(
@@ -214,9 +222,9 @@ export const useMediaUpload = ({
       languagebcp47: fields.languagebcp47 ?? '',
       eafUrl:
         fields.eafUrl ??
-        (!fields.artifactId
+        (!artifactTypeSlug
           ? ts.mediaAttached
-          : localizedArtifactTypeFromId(fields.artifactId)), //put psc message here
+          : localizedArtifactType(artifactTypeSlug)), //put psc message here
       transcription: fields.transcription ?? '',
     } as MediaFileAttributes & {
       planId: string;
@@ -271,7 +279,7 @@ export const useMediaUpload = ({
         num,
         (files[n] as File).size,
         fields.passageId ?? '',
-        fields.artifactId,
+        localIdFromSlug(artifactTypeSlug),
         fields.sourceMediaId ?? '',
         user
       );

@@ -33,6 +33,7 @@ jest.mock('../../../control', () => ({
 }));
 
 import CarefulSpeechControls from './CarefulSpeechControls';
+import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
 const controlStrings = {
   allComplete: 'All clauses are complete.',
@@ -73,7 +74,7 @@ const baseProps: React.ComponentProps<typeof CarefulSpeechControls> = {
   allowRecord: false,
   toolId: 'CarefulSpeechTool',
   passageId: 'p1',
-  artifactId: 'art1',
+  artifactTypeSlug: ArtifactTypeSlug.CarefulSpeech,
   sourceMediaId: 'mf1',
   sourceSegments: '{}',
   defaultFilename: 'test.ogg',

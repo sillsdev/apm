@@ -14,7 +14,7 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import StepMessage from './boldClause/StepMessage';
-import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
+import { useArtifactType, useStepTool } from '../../crud';
 import {
   getSegments,
   getSortedRegions,
@@ -32,7 +32,6 @@ import {
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { evictMediaCache } from '../../utils/evictMediaCache';
 import { related } from '../../crud/related';
-import { RecordKeyMap } from '@orbit/records';
 import CarefulSpeechControls, {
   CarefulSpeechPhase,
 } from './carefulSpeech/CarefulSpeechControls';
@@ -137,7 +136,8 @@ export function PassageDetailGuidedPhraseRecord({
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const [connected] = useGlobal('connected');
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug, localIdFromIdOrSlug, slugFromId } =
+    useArtifactType();
   const {
     passage,
     sharedResource,
@@ -325,13 +325,14 @@ export function PassageDetailGuidedPhraseRecord({
 
   const artifactTypeId = useMemo((): string => {
     const id = stepSettings.artifactTypeId as string | undefined;
-    if (id) {
-      return (
-        remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
-      );
-    }
-    return getTypeId(config.defaultArtifactSlug) ?? '';
-  }, [stepSettings, memory?.keyMap, getTypeId, config.defaultArtifactSlug]);
+    if (id) return localIdFromIdOrSlug(id) ?? '';
+    return localIdFromSlug(config.defaultArtifactSlug) ?? '';
+  }, [
+    stepSettings,
+    localIdFromSlug,
+    localIdFromIdOrSlug,
+    config.defaultArtifactSlug,
+  ]);
 
   const stepLanguageBcp47 = useMemo(() => {
     if (config.requireBoldWorkflow) return undefined;
@@ -1992,7 +1993,7 @@ export function PassageDetailGuidedPhraseRecord({
           }}
           toolId={toolId}
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
-          artifactId={artifactTypeId}
+          artifactTypeSlug={slugFromId(artifactTypeId)}
           sourceMediaId={mediafileId}
           sourceSegments={JSON.stringify(takeRegion ?? {})}
           languagebcp47={stepLanguageField}

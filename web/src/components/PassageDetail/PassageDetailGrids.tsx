@@ -26,7 +26,6 @@ import {
   passageRefText,
   PassageReference,
   parseStepSettings,
-  remoteIdGuid,
   sectionDescription,
   ToolSlug,
   toolClipsPaperContent,
@@ -48,7 +47,6 @@ import { useMobile } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { toolSelector } from '../../selector';
 import Busy from '../Busy';
-import { RecordKeyMap } from '@orbit/records';
 import PassageDetailParatextIntegration from './PassageDetailParatextIntegration';
 import { PassageDetailDiscuss } from './PassageDetailDiscuss';
 import { addPt } from '../../utils/addPt';
@@ -126,7 +124,7 @@ const PassageDetailGrids = () => {
   const sectionPassageRef = passageRefText(passage, allBookData);
   const sectionPassageRefDelim =
     sectionPassageRef !== '' ? `\u00A0-\u00A0` : '';
-  const { slugFromId } = useArtifactType();
+  const { slugFromId, localIdFromIdOrSlug } = useArtifactType();
   const stepSettingsParsed = useMemo(
     () => parseStepSettings(settings),
     [settings]
@@ -137,12 +135,8 @@ const PassageDetailGrids = () => {
 
   const artifactId = useMemo(() => {
     const id = stepSettingsParsed?.artifactTypeId as string | undefined;
-    if (id)
-      return (
-        remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
-      );
-    return null;
-  }, [stepSettingsParsed, memory?.keyMap]);
+    return localIdFromIdOrSlug(id);
+  }, [stepSettingsParsed, localIdFromIdOrSlug]);
 
   const [communitySlugs] = useState([
     ArtifactTypeSlug.Retell,

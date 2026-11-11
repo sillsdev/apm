@@ -63,7 +63,7 @@ describe('useRecordSave', () => {
       onReady,
       onSaveRejected,
       onUploaded: jest.fn(async () => undefined),
-      upload: { fields: { artifactId: null, passageId: undefined } },
+      upload: { fields: { artifactTypeSlug: null, passageId: undefined } },
       saveRequested: () => requested,
       saveCompleted,
       clearRequested: () => false,

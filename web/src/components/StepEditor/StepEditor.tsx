@@ -22,14 +22,12 @@ import {
   useArtifactType,
   VernacularTag,
   getToolSettings,
-  remoteIdGuid,
   toolHasSettingsDialog,
 } from '../../crud';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { stepEditorSelector, workflowStepsSelector } from '../../selector';
-import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
 import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
 import { IStepRow, rowSignature } from './stepRow';
@@ -161,12 +159,9 @@ export const StepEditor = ({ process, org }: IProps) => {
       focusIndex.current = toolRef.current;
       const edited = rows[toolRef.current];
       const settings = edited.settings ? JSON.parse(edited.settings) : {};
-      const artId =
-        remoteIdGuid(
-          'artifacttype',
-          settings?.artifactTypeId,
-          memory?.keyMap as RecordKeyMap
-        ) ?? settings?.artifactTypeId;
+      // A slug (current format) or a remote/local id (legacy); slugFromId and
+      // localizedArtifactTypeFromId accept either.
+      const artId = settings?.artifactTypeId;
       const artSlug = slugFromId(artId);
       const artShortName = artId
         ? ` ${
@@ -405,15 +400,7 @@ export const StepEditor = ({ process, org }: IProps) => {
             .replace('{0}', toolName)
             .replace(
               '{1}',
-              localizedArtifactTypeFromId(
-                artifactTypeId
-                  ? (remoteIdGuid(
-                      'artifacttype',
-                      artifactTypeId,
-                      memory?.keyMap as RecordKeyMap
-                    ) ?? artifactTypeId)
-                  : null
-              )
+              localizedArtifactTypeFromId(artifactTypeId || null)
             );
         }
         return se.settingsFor

@@ -13,10 +13,6 @@ jest.mock('../../crud/useStepTool', () => ({
   },
 }));
 
-jest.mock('../../crud/remoteId', () => ({
-  remoteIdGuid: (_t: string, id: string) => id,
-}));
-
 jest.mock('../../crud/related', () => ({
   related: (
     rec: {
@@ -66,6 +62,12 @@ function pbtStep(
   } as OrgWorkflowStepD;
 }
 
+// The production slugFromId accepts slugs and resolves legacy ids; mirror that
+// here so both slug data and a legacy id normalize to the same slug.
+const identity = (id: string) => id;
+const idOrSlugToSlug = (id: string) =>
+  id === 'art-pbt-legacy' ? 'backtranslation' : id;
+
 describe('isDuplicatePhraseBtLanguage', () => {
   it('ignores Phrase BT steps that belong to another organization', () => {
     const steps = [
@@ -79,6 +81,7 @@ describe('isDuplicatePhraseBtLanguage', () => {
         artifactTypeId: 'art-pbt',
         languageBcp47: 'en',
         organizationId: 'org-a',
+        slugFromId: identity,
       })
     ).toBe(false);
   });
@@ -95,6 +98,25 @@ describe('isDuplicatePhraseBtLanguage', () => {
         artifactTypeId: 'art-pbt',
         languageBcp47: 'en',
         organizationId: 'org-a',
+        slugFromId: identity,
+      })
+    ).toBe(true);
+  });
+
+  it('detects a duplicate across a legacy-id step and a slug step (TT-7583)', () => {
+    const steps = [
+      // This step holds the slug; its sibling still holds a legacy id.
+      pbtStep('mine', 'org-a', 'English|en', 'backtranslation'),
+      pbtStep('sibling', 'org-a', 'English|en', 'art-pbt-legacy'),
+    ];
+
+    expect(
+      isDuplicatePhraseBtLanguage(steps, {
+        stepId: 'mine',
+        artifactTypeId: 'backtranslation',
+        languageBcp47: 'en',
+        organizationId: 'org-a',
+        slugFromId: idOrSlugToSlug,
       })
     ).toBe(true);
   });
