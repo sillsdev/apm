@@ -15,10 +15,10 @@ export function ReferenceTextActions({
   progress,
   onPlay,
   onView,
-  sx,
+  sx = [],
 }: Readonly<IProps>) {
   return (
-    <Stack direction="row" sx={{ alignItems: 'center', ...sx }}>
+    <Stack direction="row" sx={[{ alignItems: 'center' }, ...[sx].flat()]}>
       <ReferenceTextPlayButton
         speaking={speaking}
         progress={progress}

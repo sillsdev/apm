@@ -21,7 +21,7 @@ export default function ClauseProgress({
   completedCount,
   totalClauses,
   progressLabel,
-  sx,
+  sx = [],
 }: Props) {
   if (totalClauses === 0) return null;
 
@@ -32,12 +32,14 @@ export default function ClauseProgress({
     <Box
       component="span"
       data-cy="bold-clause-progress"
-      sx={{
-        position: 'relative',
-        display: 'inline-flex',
-        flexShrink: 0,
-        ...sx,
-      }}
+      sx={[
+        {
+          position: 'relative',
+          display: 'inline-flex',
+          flexShrink: 0,
+        },
+        ...[sx].flat(),
+      ]}
       aria-label={progressLabel
         .replace('{0}', String(completedCount))
         .replace('{1}', String(totalClauses))}

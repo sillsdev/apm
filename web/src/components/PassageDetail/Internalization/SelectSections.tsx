@@ -237,7 +237,7 @@ export function SelectSections(props: IProps) {
       id="SelectSections"
       sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
     >
-      <Box sx={{ ...rowSx, justifyContent: 'flex-start', pb: 1 }}>
+      <Box sx={[rowSx, { justifyContent: 'flex-start', pb: 1 }]}>
         <Button
           id="select-sections-all"
           onClick={toggleAll}
@@ -322,7 +322,7 @@ export function SelectSections(props: IProps) {
             {ta.back}
           </Button>
         )}
-        <Box sx={{ ...rowSx, ml: 'auto', alignItems: 'center', gap: 1 }}>
+        <Box sx={[rowSx, { ml: 'auto', alignItems: 'center', gap: 1 }]}>
           {uploading && <CircularProgress size={20} color="primary" />}
           <Button
             id="select-sections-next"

@@ -6,17 +6,19 @@ interface IProps {
   sx?: SxProps;
 }
 
-export const BurritoLogo = (props: IProps) => {
+export const BurritoLogo = ({ sx = [] }: IProps) => {
   return (
     <LogoImg
       src={recordOrUpload}
-      sx={{
-        px: 1,
-        alignSelf: 'center',
-        width: '48px',
-        height: '24px',
-        ...props.sx,
-      }}
+      sx={[
+        {
+          px: 1,
+          alignSelf: 'center',
+          width: '48px',
+          height: '24px',
+        },
+        ...[sx].flat(),
+      ]}
       alt="Record or Upload Icon"
     />
   );
