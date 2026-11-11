@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
+import logError, { Severity } from '../../../utils/logErrorService';
 import {
   IPassageDetailArtifactsStrings,
   Passage,
@@ -140,6 +141,7 @@ export function PassageDetailArtifacts() {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
   const [memory] = useGlobal('memory');
+  const [errorReporter] = useGlobal('errorReporter');
   const [busy, setBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [remoteBusy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -429,7 +431,10 @@ export function PassageDetailArtifacts() {
     );
     if (secRes) {
       removeKey(related(secRes, 'mediafile'));
-      void DeleteSectionResource(secRes);
+      DeleteSectionResource(secRes).catch((err: Error) => {
+        logError(Severity.error, errorReporter, err);
+        showMessage(err.message);
+      });
     }
     setConfirm('');
     setBusy(false);
@@ -648,12 +653,15 @@ export function PassageDetailArtifacts() {
       catIdRef.current = catId;
     }
     if (editResource) {
-      void UpdateSectionResource({
+      UpdateSectionResource({
         ...editResource,
         attributes: {
           ...editResource.attributes,
           description: descriptionRef.current,
         },
+      }).catch((err: Error) => {
+        logError(Severity.error, errorReporter, err);
+        showMessage(err.message);
       });
       if (Boolean(related(editResource, 'passage')) !== isPassageResource()) {
         await memory.update((t) => [
@@ -843,9 +851,12 @@ export function PassageDetailArtifacts() {
         (r) => related(r, 'mediafile') === rowData[newIndexes[i]].id
       );
       if (secResRec && secResRec.attributes?.sequenceNum !== i) {
-        void UpdateSectionResource({
+        UpdateSectionResource({
           ...secResRec,
           attributes: { ...secResRec?.attributes, sequenceNum: i },
+        }).catch((err: Error) => {
+          logError(Severity.error, errorReporter, err);
+          showMessage(err.message);
         });
       }
     }
@@ -979,9 +990,9 @@ export function PassageDetailArtifacts() {
   }, [sectionResources, rowData]);
 
   useEffect(() => {
-    void getArtifactCategorys(ArtifactCategoryType.Resource).then(
-      (cats) => (catRef.current = cats)
-    );
+    getArtifactCategorys(ArtifactCategoryType.Resource)
+      .then((cats) => (catRef.current = cats))
+      .catch((err: Error) => logError(Severity.error, errorReporter, err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -376,6 +376,7 @@ function MediaUploadContent(props: IProps) {
   useEffect(() => {
     if (controlsRef !== undefined) {
       controlsRef.current.handleAddOrSave = () => {
+        // void: handleAddOrSave catches its own errors, so it cannot reject.
         void handleAddOrSave();
       };
       controlsRef.current.handleCancel = handleCancel;
