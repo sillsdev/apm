@@ -1,20 +1,27 @@
-import { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
+import { Badge, Box, Drawer, Fab, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import ForumIcon from '@mui/icons-material/Forum';
 import {
   DiscussionD,
-  MediaFileD,
   GroupMembership,
   IDiscussionListStrings,
+  ISharedStrings,
+  MediaFileD,
 } from '../../model';
-import { Badge, Box, Drawer, Fab } from '@mui/material';
-import PassageDetailPlayer from '../PassageDetail/PassageDetailPlayer';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
-import DiscussionList from './DiscussionList';
-import ForumIcon from '@mui/icons-material/Forum';
-import { LightTooltip } from '../../control/LightTooltip';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { discussionListSelector, sharedSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
-import { discussionListSelector } from '../../selector';
+import { LightTooltip } from '../../control/LightTooltip';
+import Confirm from '../AlertDialog';
+import PassageDetailPlayer from '../PassageDetail/PassageDetailPlayer';
+import DiscussionList, {
+  actionButtonProps,
+  NewDiscussionToolId,
+} from './DiscussionList';
 
 export default function DiscussionDrawer() {
   const ctx = useContext(PassageDetailContext);
@@ -26,6 +33,7 @@ export default function DiscussionDrawer() {
     setDiscussOpen,
     setPlaying,
   } = ctx.state;
+  const { toolsChanged, startClear } = useContext(UnsavedContext).state;
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
@@ -33,26 +41,13 @@ export default function DiscussionDrawer() {
     discussionListSelector,
     shallowEqual
   );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+
   // The drawer's player keeps its own play state so it doesn't also start the
   // step's player underneath, which reads the shared context `playing`.
   const [miniPlaying, setMiniPlaying] = useState(false);
-  // Unsaved edits in the list; a backdrop click or Escape must not discard them.
-  const dirtyRef = useRef(false);
-  const handleDirtyChange = useCallback((dirty: boolean) => {
-    dirtyRef.current = dirty;
-  }, []);
-
-  const openDrawer = () => {
-    // The step's player is covered by the backdrop; stop it so only the
-    // drawer's player is heard.
-    setPlaying(false);
-    setDiscussOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setMiniPlaying(false);
-    setDiscussOpen(false);
-  };
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
 
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
@@ -63,6 +58,41 @@ export default function DiscussionDrawer() {
     () => getDiscussionCount(passage.id, currentstep, true),
     [passage.id, currentstep, getDiscussionCount]
   );
+
+  const unsentIds = useMemo(() => {
+    const ids = new Set(discussions.map((d) => d.id));
+    ids.add(NewDiscussionToolId);
+    return Object.keys(toolsChanged).filter((id) => ids.has(id));
+  }, [discussions, toolsChanged]);
+
+  const openDrawer = () => {
+    setPlaying(false);
+    setDiscussOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setMiniPlaying(false);
+    setDiscussOpen(false);
+  };
+
+  const requestClose = () => {
+    if (unsentIds.length > 0) setConfirmClose(true);
+    else closeDrawer();
+  };
+
+  const discardAndClose = () => {
+    setConfirmClose(false);
+    unsentIds.forEach((id) => startClear(id));
+    setDiscarding(true);
+  };
+
+  useEffect(() => {
+    if (discarding && unsentIds.length === 0) {
+      setDiscarding(false);
+      closeDrawer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discarding, unsentIds]);
 
   const discussionFab = (
     <LightTooltip title={t.open}>
@@ -119,9 +149,7 @@ export default function DiscussionDrawer() {
         <Drawer
           anchor="right"
           open={discussOpen}
-          onClose={() => {
-            if (!dirtyRef.current) closeDrawer();
-          }}
+          onClose={requestClose}
           slotProps={{
             paper: {
               sx: {
@@ -136,16 +164,22 @@ export default function DiscussionDrawer() {
         >
           {discussOpen && (
             <DiscussionList
-              onClose={closeDrawer}
-              onDirtyChange={handleDirtyChange}
+              closeButton={
+                <LightTooltip title={t.close}>
+                  <IconButton
+                    id="closeDiscussion"
+                    sx={actionButtonProps}
+                    onClick={requestClose}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </LightTooltip>
+              }
               player={
                 <Box data-cy="discussion-mini-player" sx={{ px: 1, pb: 1 }}>
                   <PassageDetailPlayer
                     playing={miniPlaying}
                     setPlayingOverride={setMiniPlaying}
-                    // The step's player keeps the hotkeys: the hotkey registry
-                    // holds one handler per key, so claiming them here would
-                    // drop the step player's when the drawer closes.
                     hotkeys={false}
                     showTranscriptionButton={false}
                   />
@@ -154,6 +188,17 @@ export default function DiscussionDrawer() {
             />
           )}
         </Drawer>
+        {confirmClose && (
+          <Confirm
+            title={t.confirmCloseTitle}
+            text={t.confirmClose}
+            no={t.stayOpen}
+            yes={ts.close}
+            primaryButton="no"
+            noResponse={() => setConfirmClose(false)}
+            yesResponse={discardAndClose}
+          />
+        )}
       </>
     )
   );

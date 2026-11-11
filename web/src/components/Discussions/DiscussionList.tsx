@@ -46,7 +46,6 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import SortMenu, { ISortState } from './SortMenu';
 import { discussionListSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import CloseIcon from '@mui/icons-material/Close';
 import ForumIcon from '@mui/icons-material/Forum';
 import { LightTooltip } from '../../control/LightTooltip';
 
@@ -65,24 +64,19 @@ const Title = styled(Typography)<TypographyProps>(({ theme }) => ({
   gap: theme.spacing(1),
 }));
 
-const actionButtonProps = { color: 'primary.light' } as SxProps;
+export const actionButtonProps = { color: 'primary.light' } as SxProps;
 
 export const NewDiscussionToolId = 'newDiscussion';
 export const NewCommentToolId = NewDiscussionToolId + 'comment';
 
 interface DiscussionListProps {
-  onClose?: () => void;
-  /** Reports whether there are unsaved edits, so a container can refuse to close. */
-  onDirtyChange?: (dirty: boolean) => void;
+  /** Rendered at the end of the header's actions (the drawer's close button). */
+  closeButton?: React.ReactNode;
   /** Rendered between the header and the cards (the drawer's player). */
   player?: React.ReactNode;
 }
 
-export function DiscussionList({
-  onClose,
-  onDirtyChange,
-  player,
-}: DiscussionListProps) {
+export function DiscussionList({ closeButton, player }: DiscussionListProps) {
   const { isMobile } = useMobile();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -158,10 +152,6 @@ export function DiscussionList({
   const [confirmAction, setConfirmAction] = useState<string>('');
   const discussionOrg = useDiscussionOrg();
   const anyChangedRef = useRef(false);
-  const [anyChanged, setAnyChanged] = useState(false);
-  useEffect(() => {
-    onDirtyChange?.(anyChanged || adding);
-  }, [anyChanged, adding, onDirtyChange]);
   const enum WaitSave {
     add = 'add',
     collapse = 'collapse',
@@ -440,7 +430,6 @@ export function DiscussionList({
     myIds.push(NewDiscussionToolId);
     const changed = Object.keys(toolsChanged).some((t) => myIds.includes(t));
     anyChangedRef.current = changed;
-    setAnyChanged(changed);
   }, [toolsChanged, displayDiscussions]);
 
   const checkChanged = (whatNext: string) => {
@@ -589,18 +578,7 @@ export function DiscussionList({
                 {collapsed ? <ShowIcon /> : <HideIcon />}
               </IconButton>
             </LightTooltip>
-            <LightTooltip title={t.close}>
-              <span>
-                <IconButton
-                  id="closeDiscussion"
-                  sx={actionButtonProps}
-                  onClick={onClose}
-                  disabled={anyChanged || adding}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </span>
-            </LightTooltip>
+            {closeButton}
           </Box>
         </Box>
         {player}
