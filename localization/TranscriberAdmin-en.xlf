@@ -2260,6 +2260,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="discussionList.confirmClose">
+         <segment>
+            <source>You have an unsent comment. Are you sure you want to close?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="discussionList.confirmCloseTitle">
+         <segment>
+            <source>Confirm Close</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="discussionList.discussionFilter">
          <segment>
             <source>Discussion Filter</source>
@@ -2281,6 +2293,12 @@
       <unit id="discussionList.saveFirst">
          <segment>
             <source>Save changed discussions and comments first?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="discussionList.stayOpen">
+         <segment>
+            <source>Stay Open</source>
             <target/>
          </segment>
       </unit>
