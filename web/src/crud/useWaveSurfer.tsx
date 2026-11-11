@@ -768,9 +768,7 @@ export function useWaveSurfer(
   };
 
   const wsLoadRegions = (regions: string, loop: boolean) => {
-    // Without a duration (media being swapped) the regions plugin would clamp
-    // every region to 0-0, so hold them until the next 'ready'.
-    if (isReadyRef.current && wavesurferRef.current?.getDuration()) {
+    if (isReadyRef.current) {
       loadRegions(parseRegions(regions), loop);
       regionsLoadedRef.current = true;
     } else {
