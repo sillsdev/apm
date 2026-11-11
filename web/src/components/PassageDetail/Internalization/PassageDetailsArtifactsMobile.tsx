@@ -79,7 +79,7 @@ import { AddResourceAction } from './AddResourceAction';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import IconMenu from '../../../control/IconMenu';
 import AddResourceWizard from './AddResourceWizard';
-import { WizardLaunch } from './useAddResourceWizard';
+import { WizardLaunch, WizardLaunchKind } from './useAddResourceWizard';
 import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 export function PassageDetailArtifactsMobile() {
@@ -356,7 +356,10 @@ export function PassageDetailArtifactsMobile() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
       setResourceKind(ResourceTypeEnum.projectResource);
-      launchWizard({ kind: 'editGeneralResource', media: projectMedia });
+      launchWizard({
+        kind: WizardLaunchKind.EditGeneralResource,
+        media: projectMedia,
+      });
       return;
     }
     setEditResource(secRes);
@@ -479,7 +482,7 @@ export function PassageDetailArtifactsMobile() {
       what === AddResourceAction.Text ||
       what === AddResourceAction.Link
     ) {
-      launchWizard({ kind: 'add', action: what });
+      launchWizard({ kind: WizardLaunchKind.Add, action: what });
     }
   };
 
@@ -488,7 +491,12 @@ export function PassageDetailArtifactsMobile() {
     audioUrl: string,
     transcript: string
   ) => {
-    launchWizard({ kind: 'faithbridge', query, audioUrl, transcript });
+    launchWizard({
+      kind: WizardLaunchKind.FaithBridge,
+      query,
+      audioUrl,
+      transcript,
+    });
   };
 
   const listFilter = (r: IRow) =>

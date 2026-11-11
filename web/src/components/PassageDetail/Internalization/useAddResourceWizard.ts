@@ -46,14 +46,25 @@ export type AddUploadAction =
   | AddResourceAction.Text
   | AddResourceAction.Link;
 
+export enum WizardLaunchKind {
+  Add = 'add',
+  FaithBridge = 'faithbridge',
+  EditGeneralResource = 'editGeneralResource',
+}
+
 /** Which action opened the wizard (see PassageDetailArtifacts). */
 export type WizardLaunch =
   // Add menu: Audio / Pdf / Text / Link — enters at the upload step.
-  | { kind: 'add'; action: AddUploadAction }
+  | { kind: WizardLaunchKind.Add; action: AddUploadAction }
   // FaithBridge answer (markdown, or audio link + transcript) seeds the upload step.
-  | { kind: 'faithbridge'; query: string; audioUrl: string; transcript: string }
+  | {
+      kind: WizardLaunchKind.FaithBridge;
+      query: string;
+      audioUrl: string;
+      transcript: string;
+    }
   // Edit an existing general resource — starts at SelectSections, no upload.
-  | { kind: 'editGeneralResource'; media: MediaFileD };
+  | { kind: WizardLaunchKind.EditGeneralResource; media: MediaFileD };
 // Non-general resources are edited in a separate dialog.
 
 // Steps reachable per launch:
@@ -73,11 +84,11 @@ const wizardCloseGuardToolId = 'AddResourceWizard-CloseGuard';
 
 const initialUploadType = (launch: WizardLaunch): UploadType => {
   switch (launch.kind) {
-    case 'faithbridge':
+    case WizardLaunchKind.FaithBridge:
       return launch.audioUrl ? UploadType.FaithbridgeLink : UploadType.MarkDown;
-    case 'editGeneralResource':
+    case WizardLaunchKind.EditGeneralResource:
       return UploadType.Resource; // unused: edit has no Upload step
-    case 'add':
+    case WizardLaunchKind.Add:
       switch (launch.action) {
         case AddResourceAction.Link:
           return UploadType.Link;
@@ -123,21 +134,23 @@ export function useAddResourceWizard({
   // launchSource never changes while mounted
   const initUploadType = initialUploadType(launchSource);
   const initDescription =
-    launchSource.kind === 'faithbridge' ? launchSource.query : '';
+    launchSource.kind === WizardLaunchKind.FaithBridge
+      ? launchSource.query
+      : '';
 
   const [step, setStep] = useState<WizardStep>(
-    launchSource.kind === 'editGeneralResource'
+    launchSource.kind === WizardLaunchKind.EditGeneralResource
       ? WizardStep.SelectSections
       : WizardStep.Upload
   );
   const [recordingStarted, setRecordingStarted] = useState(false);
   const [uploadType, setUploadType] = useState<UploadType>(initUploadType);
   const isAddingAudioResource =
-    launchSource.kind === 'add' &&
+    launchSource.kind === WizardLaunchKind.Add &&
     launchSource.action === AddResourceAction.Audio;
-  const aiGenerated = launchSource.kind === 'faithbridge';
+  const aiGenerated = launchSource.kind === WizardLaunchKind.FaithBridge;
   const markdownValue =
-    launchSource.kind === 'faithbridge'
+    launchSource.kind === WizardLaunchKind.FaithBridge
       ? launchSource.audioUrl
         ? `${launchSource.audioUrl}||${launchSource.transcript}`
         : launchSource.transcript
@@ -170,7 +183,9 @@ export function useAddResourceWizard({
     candidates: RecordIdentity[];
   }>({ items: [], candidates: [] });
   const [projMedia, setProjMedia] = useState<MediaFileD | undefined>(
-    launchSource.kind === 'editGeneralResource' ? launchSource.media : undefined
+    launchSource.kind === WizardLaunchKind.EditGeneralResource
+      ? launchSource.media
+      : undefined
   );
   // Handle to the (hidden, still-mounted) Upload step's active tab;
   // SelectSections' Upload button calls it to upload the held file/take.
@@ -368,7 +383,7 @@ export function useAddResourceWizard({
   // TODO cleanup in next PR: this needn't be an effect — the parent's "edit
   // general resource" handler could call setSelected before opening the wizard.
   useEffect(() => {
-    if (launchSource.kind === 'editGeneralResource') {
+    if (launchSource.kind === WizardLaunchKind.EditGeneralResource) {
       setSelected(launchSource.media.id, PlayInPlayer.yes);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -455,7 +470,7 @@ export function useAddResourceWizard({
   // SelectSections reads this only at mount and stays mounted for the whole
   // wizard, so compute it once: the saved assignments when editing, none when adding.
   const [initialItems] = useState<RecordIdentity[]>(() =>
-    launchSource.kind === 'editGeneralResource'
+    launchSource.kind === WizardLaunchKind.EditGeneralResource
       ? getProjectResourceAssignments(
           launchSource.media,
           mediafiles,

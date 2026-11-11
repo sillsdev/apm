@@ -85,7 +85,7 @@ import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { AddResourceAction } from './AddResourceAction';
 import AddResourceWizard from './AddResourceWizard';
-import { WizardLaunch } from './useAddResourceWizard';
+import { WizardLaunch, WizardLaunchKind } from './useAddResourceWizard';
 import { useResourceArtifactTypes } from './useResourceArtifactTypes';
 
 const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
@@ -355,7 +355,10 @@ export function PassageDetailArtifacts() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (projectMedia) {
       setResourceKind(ResourceTypeEnum.projectResource);
-      launchWizard({ kind: 'editGeneralResource', media: projectMedia });
+      launchWizard({
+        kind: WizardLaunchKind.EditGeneralResource,
+        media: projectMedia,
+      });
       return;
     }
     setEditResource(secRes);
@@ -479,7 +482,7 @@ export function PassageDetailArtifacts() {
       what === AddResourceAction.Text ||
       what === AddResourceAction.Link
     ) {
-      launchWizard({ kind: 'add', action: what });
+      launchWizard({ kind: WizardLaunchKind.Add, action: what });
     }
   };
 
@@ -488,7 +491,12 @@ export function PassageDetailArtifacts() {
     audioUrl: string,
     transcript: string
   ) => {
-    launchWizard({ kind: 'faithbridge', query, audioUrl, transcript });
+    launchWizard({
+      kind: WizardLaunchKind.FaithBridge,
+      query,
+      audioUrl,
+      transcript,
+    });
   };
 
   const listFilter = (r: IRow) =>

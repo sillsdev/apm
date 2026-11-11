@@ -191,9 +191,11 @@ export function ResourceData(props: IProps) {
               label={t.currentResource.replace('{0}', passageScopeLabel)}
             />
             {allowGeneralResourceOption &&
-              !NON_FILE_UPLOAD_TYPES.includes(
-                uploadType ?? UploadType.Resource
-              ) && (
+              ![
+                ...NON_FILE_UPLOAD_TYPES,
+                UploadType.PdfResource,
+                UploadType.Graphic,
+              ].includes(uploadType ?? UploadType.Resource) && (
                 <FormControlLabel
                   value={'general'}
                   control={<Radio />}

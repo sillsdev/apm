@@ -13,6 +13,7 @@ import {
   useAddResourceWizard,
   WizardStep,
   type WizardLaunch,
+  WizardLaunchKind,
 } from './useAddResourceWizard';
 
 interface IProps {
@@ -62,7 +63,7 @@ export function AddResourceWizard({
         <>
           {/* Step 1: stays mounted across the flow (gets css-hidden on other steps) so a
                 recorded take survives Next→Back (see PassageRecordPanel).*/}
-          {launchSource.kind !== 'editGeneralResource' && (
+          {launchSource.kind !== WizardLaunchKind.EditGeneralResource && (
             <Box
               sx={{
                 display: w.step === WizardStep.Upload ? 'flex' : 'none',

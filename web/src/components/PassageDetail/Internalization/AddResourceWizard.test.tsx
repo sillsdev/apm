@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { createAppTheme } from '../../../theme';
 import AddResourceWizard from './AddResourceWizard';
-import { WizardLaunch } from './useAddResourceWizard';
+import { WizardLaunch, WizardLaunchKind } from './useAddResourceWizard';
 import { AddResourceAction } from './AddResourceAction';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 
@@ -400,7 +400,10 @@ describe('AddResourceWizard', () => {
   });
 
   it('disables Next and shows the validation message for multi-file general uploads', () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     fireEvent.click(screen.getByText('set-general'));
     fireEvent.click(screen.getByText('select-two-files'));
 
@@ -412,22 +415,31 @@ describe('AddResourceWizard', () => {
 
   it('titles the single dialog by the upload step type', () => {
     const audio = renderWizard({
-      kind: 'add',
+      kind: WizardLaunchKind.Add,
       action: AddResourceAction.Audio,
     });
     expect(screen.getByText('Add Audio Resource')).toBeInTheDocument();
     audio.unmount();
 
-    const pdf = renderWizard({ kind: 'add', action: AddResourceAction.Pdf });
+    const pdf = renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Pdf,
+    });
     expect(screen.getByText('Add PDF Resource')).toBeInTheDocument();
     pdf.unmount();
 
-    renderWizard({ kind: 'add', action: AddResourceAction.Link });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Link,
+    });
     expect(screen.getByText('Add Link')).toBeInTheDocument();
   });
 
   it('advances from upload to the section-select step when a single general file is staged', () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     stageToSelectSections();
 
     expect(screen.getByTestId('select-sections')).toBeInTheDocument();
@@ -436,7 +448,10 @@ describe('AddResourceWizard', () => {
   });
 
   it('returns to the upload step when going Back from section-select', () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     stageToSelectSections();
 
     fireEvent.click(screen.getByText('sections-back'));
@@ -448,7 +463,10 @@ describe('AddResourceWizard', () => {
   });
 
   it('keeps SelectSections mounted while on the configure step (Back preserves it)', async () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     stageToSelectSections();
 
     // Choose sections → the wizard fires the deferred upload through submitRef,
@@ -469,7 +487,7 @@ describe('AddResourceWizard', () => {
 
   it('opens an existing general resource at section-select with no upload, advancing straight to configure', () => {
     renderWizard({
-      kind: 'editGeneralResource',
+      kind: WizardLaunchKind.EditGeneralResource,
       media: {
         id: 'm1',
         type: 'mediafile',
@@ -490,7 +508,10 @@ describe('AddResourceWizard', () => {
   });
 
   it('closes the section-select step via the X after a discard confirm when a recording was staged', () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     stageRecordingToSelectSections();
 
     fireEvent.click(screen.getByText('dialog-x'));
@@ -502,7 +523,10 @@ describe('AddResourceWizard', () => {
   });
 
   it('closes the section-select step via the X without confirming when only a file was staged (#719)', () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     stageToSelectSections();
 
     fireEvent.click(screen.getByText('dialog-x'));
@@ -513,7 +537,10 @@ describe('AddResourceWizard', () => {
   });
 
   it('closes the wizard after a terminal (section-resource) upload', async () => {
-    renderWizard({ kind: 'add', action: AddResourceAction.Audio });
+    renderWizard({
+      kind: WizardLaunchKind.Add,
+      action: AddResourceAction.Audio,
+    });
     // No General toggle: a plain section resource.
     fireEvent.click(screen.getByText('finish-upload'));
 
