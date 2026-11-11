@@ -139,6 +139,7 @@ import PlanSheet, { ICell } from './PlanSheet';
 import { PlanView } from './PlanView';
 import { createPendingTitleMediaQueue } from './pendingTitleMediaQueue';
 import type { TitleMediaPending } from './pendingTitleMediaQueue';
+import { findRecords } from '../../crud/tryFindRecord';
 
 const SaveWait = 500;
 
@@ -269,7 +270,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     useState('1:1-25');
   const { curNoteRef } = useNotes();
   const { computeSectionRef, computeMovementRef } = useComputeRef();
-  const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const uploadItem = useRef<ISheet | undefined>(undefined);
@@ -626,7 +626,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
           )
         );
       }
-      setImportList(undefined);
       setUploadVisible(true);
     });
   };
@@ -722,9 +721,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
     if (planRec !== null) {
       //do this even if the wait above failed
       //don't use sections here, it hasn't been updated yet
-      const plansections = memory.cache.query((qb) =>
-        qb.findRecords('section')
-      ) as Section[];
+      const plansections = findRecords(memory, 'section');
       planRec.attributes.sectionCount = plansections.filter(
         (s) => related(s, 'plan') === plan
       ).length;
@@ -784,15 +781,9 @@ export function ScriptureTable(props: Readonly<IProps>) {
     setUpdate(true);
     //because we ignore data changes if we are dirty,
     // we need to refresh the data when we do refresh the sheet
-    const freshSections = memory.cache.query((q) =>
-      q.findRecords('section')
-    ) as SectionD[];
-    const freshPassages = memory.cache.query((q) =>
-      q.findRecords('passage')
-    ) as PassageD[];
-    const freshSchemeSteps = memory.cache.query((q) =>
-      q.findRecords('organizationschemestep')
-    ) as OrganizationSchemeStepD[];
+    const freshSections = findRecords(memory, 'section');
+    const freshPassages = findRecords(memory, 'passage');
+    const freshSchemeSteps = findRecords(memory, 'organizationschemestep');
     // race after save where myChanged is false, this runs,
     // orbit has the new passageid, but we don't yet so another new
     // row gets added in getSheet
@@ -801,9 +792,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
       (s) => !isPassageRow(s) || s.deleted || Boolean(s.passage?.id)
     );
     const getSharedResource = lookupSharedResource(
-      memory.cache.query((q) =>
-        q.findRecords('sharedresource')
-      ) as SharedResourceD[]
+      findRecords(memory, 'sharedresource')
     );
     setSheet(
       getSheet({
@@ -1377,9 +1366,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     uploadItem.current = undefined;
     if (!cancelled.current) setUploadVisible(false);
     cancelled.current = false;
-    if (importList) {
-      setImportList(undefined);
-    }
   };
   const isReady = () => true;
 
@@ -1441,17 +1427,19 @@ export function ScriptureTable(props: Readonly<IProps>) {
           drawBottomBorder={true}
           contentSx={(theme) => ({ p: theme.layout.gap })}
         >
-          <PlanView
-            rowInfo={rowinfo}
-            publishingView={publishingOn && !hidePublishing}
-            handlePublish={(
-              i: number,
-              destinations: PublishDestinationEnum[]
-            ) => {
-              setSectionPublish(i, destinations);
-            }}
-            handleGraphic={canPublish && !offline ? handleGraphic : undefined}
-          />
+          <Box sx={(theme) => ({ p: theme.layout.p })}>
+            <PlanView
+              rowInfo={rowinfo}
+              publishingView={publishingOn && !hidePublishing}
+              handlePublish={(
+                i: number,
+                destinations: PublishDestinationEnum[]
+              ) => {
+                setSectionPublish(i, destinations);
+              }}
+              handleGraphic={canPublish && !offline ? handleGraphic : undefined}
+            />
+          </Box>
         </ContentLayout>
       ) : (
         <PlanSheet
@@ -1506,7 +1494,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
       <Uploader
         defaultFilename={defaultFilename}
         mediaId={uploadItem.current?.mediaId?.id || ''}
-        importList={importList as File[]}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}

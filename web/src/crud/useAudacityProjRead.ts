@@ -1,14 +1,13 @@
 import { useGlobal } from '../context/useGlobal';
 import { AudacityProjectD } from '../model';
 import { related } from '.';
+import { findRecords } from './tryFindRecord';
 
 export const useAudacityProjRead = () => {
   const [memory] = useGlobal('memory');
 
   return (passageId: string) => {
-    const audacityProjectRecs = memory?.cache.query((q) =>
-      q.findRecords('audacityproject')
-    ) as AudacityProjectD[];
+    const audacityProjectRecs = findRecords(memory, 'audacityproject');
     const selected = audacityProjectRecs.filter(
       (o) => related(o, 'passage') === passageId
     );

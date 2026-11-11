@@ -39,6 +39,7 @@ export interface Resource extends BaseModel {
     lastModifiedBy: number;
   };
   relationships?: {
+    passage: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }

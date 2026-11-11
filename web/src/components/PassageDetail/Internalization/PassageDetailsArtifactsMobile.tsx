@@ -11,6 +11,7 @@ import {
   Resource,
   SheetLevel,
   ISharedStrings,
+  PassageD,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
@@ -49,7 +50,11 @@ import MediaDisplay from '../../MediaDisplay';
 import SelectSharedResource from './SelectSharedResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
-import { MarkDownType, UriLinkType } from '../../../utils/contentType';
+import {
+  MarkDownType,
+  UriLinkType,
+  mediaContentType,
+} from '../../../utils/contentType';
 import {
   canSaveResourceEdit,
   descriptionRequiredForResource,
@@ -94,7 +99,6 @@ import {
 } from './projectResourceAssignments';
 import GeneralResourceDeleteDialog from './GeneralResourceDeleteDialog';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
-import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
 import {
@@ -104,6 +108,7 @@ import {
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
+import { ReferenceTextRows } from './ReferenceTextRows';
 import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
@@ -854,7 +859,7 @@ export function PassageDetailArtifactsMobile() {
     forceRefresh(newRows);
   };
 
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (mediaRemoteIds?: string[]) => {
     let cnt = rowData.length;
     const projRes = new Array<MediaFileD>();
     if (mediaRemoteIds && mediaRemoteIds.length > 0) {
@@ -1044,7 +1049,12 @@ export function PassageDetailArtifactsMobile() {
         rec?.type === 'section'
           ? (rec as Section)
           : (memory.cache.query((q) =>
-              q.findRecord({ type: 'section', id: related(rec, 'section') })
+              q.findRecord({
+                type: 'section',
+                // type is string, so the section check does not narrow.
+                // This arm is a cached passage, which is initialized.
+                id: related(rec as PassageD, 'section'),
+              })
             ) as Section);
       const secNum = secRec?.attributes.sequencenum || 0;
       const topicIn =
@@ -1219,6 +1229,12 @@ export function PassageDetailArtifactsMobile() {
         )}
       </Stack>
       <Box sx={{ width: '100%' }}>
+        <ReferenceTextRows
+          variant="card"
+          showDragHandle={modifiable}
+          expandedId={expandedArtifactNameId}
+          setExpandedId={setExpandedArtifactNameId}
+        />
         <VertListDnd
           key={`sort-${sortKey}`}
           onDrop={onSortEnd}

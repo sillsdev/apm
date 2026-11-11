@@ -33,7 +33,7 @@ export function OrgWorkflowStepList(props: IProps) {
 
   const localName = (name: string) => {
     const lookUp = toCamel(name);
-    return Object.hasOwn(t, lookUp) ? addPt(t.getString(lookUp)) : name;
+    return Object.hasOwn(t, lookUp) ? addPt(t.getString(lookUp) ?? name) : name;
   };
 
   return (

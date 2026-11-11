@@ -6,7 +6,8 @@ import { restoreAfterPendingUpload } from '../../../store/upload/restoreAfterPen
 import { findPromptRow } from './usePromptSectionResource';
 import { promptPendingRestore } from './promptPendingRestore';
 import { IRow } from '../../../context/PassageDetailContext';
-import { SectionD, SectionResourceD } from '../../../model';
+import { SectionD } from '../../../model';
+import { findRecords } from '../../../crud/tryFindRecord';
 
 const schema = new RecordSchema({
   models: {
@@ -122,9 +123,7 @@ describe('promptPendingRestore (TT-7724)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as SectionResourceD[];
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
 
       const sr = sectionResources[0];

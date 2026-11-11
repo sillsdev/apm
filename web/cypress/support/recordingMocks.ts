@@ -17,6 +17,8 @@ export interface RecordingMockHelpers {
   /** AudioBuffers the app decoded with decodeAudioData (newest last). */
   decodedBuffers: AudioBuffer[];
   simulateMacSampleRateMismatch: boolean;
+  captureChannels: number;
+  signalChannel: number;
 }
 
 declare global {
@@ -166,6 +168,15 @@ export interface InstallRecordingMocksOptions {
    * elsewhere resamples, so the fault needs this patch to reproduce.
    */
   simulateMacSampleRateMismatch?: boolean;
+  /**
+   * Model a multi-input interface (TT-7805: 4-channel mic). The stream source
+   * emits this many discrete channels with the voice only on `signalChannel`.
+   * Chrome downmixes a WebAudio-made multi-channel track to mono, so the
+   * source node is patched instead. Default: 1 (unpatched).
+   */
+  captureChannels?: number;
+  /** Zero-based channel carrying the voice when `captureChannels` > 1. Default: 0. */
+  signalChannel?: number;
 }
 
 /**
@@ -239,6 +250,7 @@ function setWindowGlobal(
 type PatchedAudioContextProto = AudioContext & {
   __apmRateMismatchPatched?: boolean;
   __apmDecodeCapturePatched?: boolean;
+  __apmMultiChannelPatched?: boolean;
 };
 
 function audioContextProto(
@@ -271,6 +283,29 @@ function patchMediaStreamSourceRateMismatch(
     return native.call(this, stream);
   };
   proto.__apmRateMismatchPatched = true;
+}
+
+/** Patched once per window; `win.__recordingMock` gates each test. */
+function patchMediaStreamSourceMultiChannel(
+  win: Window & typeof globalThis
+): void {
+  const proto = audioContextProto(win);
+  if (!proto || proto.__apmMultiChannelPatched) return;
+  const native = proto.createMediaStreamSource;
+  proto.createMediaStreamSource = function (
+    this: AudioContext,
+    stream: MediaStream
+  ) {
+    const source = native.call(this, stream);
+    const { captureChannels = 1, signalChannel = 0 } =
+      win.__recordingMock ?? {};
+    if (captureChannels <= 1) return source;
+    const merger = this.createChannelMerger(captureChannels);
+    source.connect(merger, 0, signalChannel);
+    // WavRecorder only calls connect/disconnect on the source node.
+    return merger as unknown as MediaStreamAudioSourceNode;
+  };
+  proto.__apmMultiChannelPatched = true;
 }
 
 function patchDecodeCapture(win: Window & typeof globalThis): void {
@@ -426,12 +461,15 @@ export async function installRecordingMocks(
     useMockMediaRecorder = false,
     captureSampleRate = 48000,
     simulateMacSampleRateMismatch = false,
+    captureChannels = 1,
+    signalChannel = 0,
   } = options;
 
   MockMediaRecorder.instances = [];
 
   patchAudioContextResume(win);
   patchMediaStreamSourceRateMismatch(win);
+  patchMediaStreamSourceMultiChannel(win);
   patchDecodeCapture(win);
   const audioContext = await createCaptureAudioContext(win, captureSampleRate);
 
@@ -504,6 +542,8 @@ export async function installRecordingMocks(
     },
     decodedBuffers: [],
     simulateMacSampleRateMismatch,
+    captureChannels,
+    signalChannel,
   };
 
   win.__recordingMock = helpers;

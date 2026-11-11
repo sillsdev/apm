@@ -16,6 +16,8 @@
  * TT-7805 runs the real AudioWorklet WavRecorder with a 44.1 kHz mock mic and
  * models Chrome on macOS returning silence for a rate-mismatched stream source;
  * it asserts the decoded stop take has signal (a silent take still has duration).
+ * A second TT-7805 suite feeds a 4-channel mic with the voice on channel 3 only;
+ * unfixed WavRecorder keeps channel 1 and saves silence.
  *
  * Future E2E smoke (deferred): login → Record step → Luke 4:1–13 → pause → save.
  */
@@ -466,6 +468,30 @@ describe(
     afterEach(teardownRecording);
 
     it('keeps recorded audio after pause when the mic runs at 44.1 kHz', () => {
+      mountMediaRecord();
+      startRecording();
+      advanceRecordingTicks(3);
+      pauseRecording();
+
+      assertSaveReady();
+      assertRecordedTakeHasAudio();
+    });
+  }
+);
+
+describe(
+  'MediaRecord recording from a multi-channel interface — TT-7805',
+  { tags: '@recording' },
+  () => {
+    beforeEach(() => {
+      clockArmed = false;
+      // Real AudioWorklet WavRecorder; a 4-input interface with the mic on input 3.
+      cy.installRecordingMocks({ captureChannels: 4, signalChannel: 2 });
+    });
+
+    afterEach(teardownRecording);
+
+    it('keeps recorded audio after pause when the voice is not on the first channel', () => {
       mountMediaRecord();
       startRecording();
       advanceRecordingTicks(3);

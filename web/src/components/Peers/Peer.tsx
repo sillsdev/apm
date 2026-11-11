@@ -27,7 +27,6 @@ import { toCamel } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { peerSelector } from '../../selector';
 import { usePeerGroups, IUserName } from './usePeerGroups';
-import { InitializedRecord } from '@orbit/records';
 import { useOrbitData } from '../../hoc/useOrbitData';
 
 export function Peer() {
@@ -99,23 +98,11 @@ export function Peer() {
     } as GroupMembership;
     await memory.update((t) => [
       ...AddRecord(t, membership, user, memory),
+      ...ReplaceRelatedRecord(t, membership, 'user', 'user', row.userId),
+      ...ReplaceRelatedRecord(t, membership, 'group', 'group', col.id),
       ...ReplaceRelatedRecord(
         t,
-        membership as InitializedRecord,
-        'user',
-        'user',
-        row.userId
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        membership as InitializedRecord,
-        'group',
-        'group',
-        col.id
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        membership as InitializedRecord,
+        membership,
         'role',
         'role',
         getRoleId(RoleNames.Member)

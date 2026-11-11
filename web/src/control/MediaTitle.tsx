@@ -495,6 +495,7 @@ export default function MediaTitle(props: IProps) {
           <TitleTabs
             onRecording={onMyRecording}
             defaultFilename={defaultFilename}
+            mediaId={mediaId}
             titlekey={titlekey}
             onMediaIdChange={handleMediaIdChange}
             onDialogVisible={() => setShowRecorder(false)}

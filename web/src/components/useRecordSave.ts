@@ -85,6 +85,9 @@ export function useRecordSave(input: RecordSaveInput) {
 
   const uploadMedia = useMediaUpload({
     ...upload,
+    // Recordings never touched importexportBusy before the shared hook.
+    noBusy: true,
+    skipImportExportWait: true,
     afterUploadCb: (mediaId) => onUploaded(mediaId, submittedBlobRef.current),
   });
 

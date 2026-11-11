@@ -6,6 +6,9 @@ import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { related, useArtifactCategory } from '../../../crud';
 import { teamCheckRefSelector } from '../../../selector';
 import { useMobile } from '../../../utils';
+import { compareReferenceTextId } from './compareReferenceTextId';
+import { ReferenceTextOptionLabel } from './ReferenceTextOptionLabel';
+import { useShownReferenceTexts } from './useShownReferenceTexts';
 
 interface IProps {
   inResource?: string;
@@ -24,6 +27,7 @@ export const SelectMyResource = (props: IProps) => {
   const [myWidth, setMyWidth] = useState(0);
   const controlRef = useRef<any>(undefined);
   const isMobile = useMobile();
+  const { shown: referenceTexts } = useShownReferenceTexts();
   const t: ITeamCheckReferenceStrings = useSelector(
     teamCheckRefSelector,
     shallowEqual
@@ -94,6 +98,18 @@ export const SelectMyResource = (props: IProps) => {
             {r.artifactName}
           </MenuItem>
         ))}
+      {referenceTexts.map(([rank, value]) => (
+        <MenuItem
+          id={`my-res-${rank}`}
+          value={compareReferenceTextId(rank)}
+          key={rank}
+        >
+          <ReferenceTextOptionLabel
+            rank={rank}
+            referenceText={value.referenceText}
+          />
+        </MenuItem>
+      ))}
     </TextField>
   );
 };

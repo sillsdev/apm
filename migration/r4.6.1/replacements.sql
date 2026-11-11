@@ -7,21 +7,23 @@ alter table passages add unversionedrenderingurl text;
 alter table mediafiles add rendersourcemediaid int REFERENCES mediafiles(id) ON DELETE CASCADE;
 alter table mediafiles add note text;
 
-drop table mediareplacements;
+--drop table mediareplacements;
 
-CREATE TABLE mediareplacements (
-    id SERIAL PRIMARY KEY,
-    planid int not null REFERENCES plans(id) ON DELETE cascade,
-    replacementmediafileid INTEGER NOT NULL
-        REFERENCES mediafiles(id) ON DELETE cascade,
-    selectionstart float8 not null,
-    selectionend float8 not null,
-    outputmediafileid INTEGER REFERENCES "mediafiles"(id) ON DELETE set NULL,
-    datecreated timestamp NULL,
-	dateupdated timestamp null,
-	lastmodifiedby int references users(id) on delete set null,
-	lastmodifiedorigin text,
-	archived boolean
+CREATE TABLE public.mediareplacements (
+	id serial4 PRIMARY KEY,
+	passageid int4 NOT NULL REFERENCES passages(id) ON DELETE CASCADE,
+	replacementmediafileid int4 NOT NULL REFERENCES mediafiles(id) ON DELETE CASCADE,
+	selectionstart float8  NULL,
+	selectionend float8  NULL,
+	outputmediafileid int4 NULL REFERENCES mediafiles(id) ON DELETE set NULL,
+	datecreated timestamp NULL,
+	dateupdated timestamp NULL,
+	lastmodifiedby int4 NULL REFERENCES users(id) ON DELETE set NULL,
+	lastmodifiedorigin text NULL,
+	offlineid text null,
+	archived boolean default false NOT NULL,
+
 );
+
 grant all on mediareplacements to transcriber;
 

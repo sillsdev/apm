@@ -6,12 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  IStepEditorStrings,
-  OrgWorkflowStep,
-  IWorkflowStepsStrings,
-  OrgWorkflowStepD,
-} from '../../model';
+import { IStepEditorStrings, IWorkflowStepsStrings } from '../../model';
 import { Box } from '@mui/material';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
 import { useGlobal } from '../../context/useGlobal';
@@ -23,38 +18,27 @@ import { toCamel } from '../../utils';
 import {
   getTool,
   ToolSlug,
-  defaultWorkflow,
   useTools,
   useArtifactType,
   VernacularTag,
   getToolSettings,
   remoteIdGuid,
+  toolHasSettingsDialog,
 } from '../../crud';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
-import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import BigDialog from '../../hoc/BigDialog';
-import { BigDialogBp } from '../../hoc/BigDialogBp';
-import { TranscribeStepSettings } from './TranscribeStepSettings';
-import { ParatextStepSettings } from './ParatextStepSettings';
-import { PhraseBackTranslateStepSettings } from './PhraseBackTranslateStepSettings';
 import { stepEditorSelector, workflowStepsSelector } from '../../selector';
 import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
-import { DiscussStepSettings } from './DiscussStepSettings';
-import { RecordStepSettings } from './RecordStepSettings';
+import { resolveReviewTranscribeName } from './resolveReviewTranscribeName';
+import { IStepRow, rowSignature } from './stepRow';
+import { saveOrgWorkflowSteps } from './saveOrgWorkflowSteps';
+import { StepSettingsDialogs } from './StepSettingsDialogs';
+import { useRememberedScroll } from './useRememberedScroll';
+import logError, { Severity } from '../../utils/logErrorService';
 
-export interface IStepRow {
-  id: string;
-  seq: number;
-  name: string;
-  pos: number;
-  tool: string;
-  settings: string;
-  prettySettings: string;
-  rIdx: number;
-}
+export type { IStepRow } from './stepRow';
 
 interface SortEndProps {
   oldIndex: number;
@@ -67,7 +51,6 @@ interface IProps {
 }
 
 export const StepEditor = ({ process, org }: IProps) => {
-  const [sortKey, setSortKey] = useState(0);
   const [rows, setRows] = useState<IStepRow[]>([]);
   const [stepsLoaded, setStepsLoaded] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -78,6 +61,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   );
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
+  const [errorReporter] = useGlobal('errorReporter');
   const {
     isChanged,
     toolChanged,
@@ -101,50 +85,23 @@ export const StepEditor = ({ process, org }: IProps) => {
   const baselineRef = useRef<Map<string, string>>(new Map());
   const focusIndex = useRef<number>(0);
   const scrollNewStepIntoViewRef = useRef(false);
-  const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
-  const settingsTools = [
-    ToolSlug.Transcribe,
-    ToolSlug.Paratext,
-    ToolSlug.Discuss,
-    ToolSlug.Record,
-    ToolSlug.PhraseBackTranslate,
-  ];
-  const mxSeq = useMemo(() => {
-    let max = 0;
-    rows.forEach((r) => {
-      max = Math.max(r.seq, max);
-    });
-    return max;
-  }, [rows]);
+  const workflowScroll = useRememberedScroll();
+  const listEndAnchorRef = workflowScroll.anchorRef;
 
-  const visible = useMemo(() => {
-    return rows.filter((r) => r.seq >= 0).length;
-  }, [rows]);
-
-  const hidden = useMemo(() => {
-    return rows.filter((r) => r.seq < 0).length;
-  }, [rows]);
-
-  const hiddenMessage = useMemo(
-    () => se.stepsHidden.replace('{0}', hidden.toString()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hidden]
-  );
+  let mxSeq = 0;
+  let visible = 0;
+  let hidden = 0;
+  rows.forEach((r) => {
+    mxSeq = Math.max(r.seq, mxSeq);
+    if (r.seq >= 0) visible += 1;
+    else hidden += 1;
+  });
+  const hiddenMessage = se.stepsHidden.replace('{0}', hidden.toString());
+  const settingsRow = toolSettingsRow > -1 ? rows[toolSettingsRow] : undefined;
 
   const getOrgNames = (exceptId?: string) => {
     return rows.filter((r) => r.id !== exceptId).map((r) => r.name);
   };
-
-  // Captures the persisted fields of a row so two rows can be compared for
-  // real changes. Both sides go through the same transforms (localized name,
-  // camel tool, stringified tool/settings), so unchanged steps match exactly.
-  const rowSignature = (row: IStepRow) =>
-    JSON.stringify({
-      name: row.name,
-      seq: row.seq,
-      tool: row.tool,
-      settings: row.settings,
-    });
 
   const mangleName = (
     name: string,
@@ -153,14 +110,13 @@ export const StepEditor = ({ process, org }: IProps) => {
     mangleTranscribe: boolean = true
   ) => {
     if (mangleTranscribe) {
-      const hasTranscribe =
-        name === st.transcribe &&
-        rows.some((r, i) => {
-          const settings = r.settings ? JSON.parse(r.settings) : undefined;
-          if (!settings) return r.tool === ToolSlug.Transcribe && i !== index;
-          return false;
-        });
-      name = hasTranscribe ? st.review : name;
+      name = resolveReviewTranscribeName({
+        name,
+        transcribeLabel: localizedTool(ToolSlug.Transcribe),
+        reviewLabel: st.review,
+        steps: rows,
+        index,
+      });
     }
     const baseName = name;
     let count = 1;
@@ -197,12 +153,14 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const setToolSettingsOpen = (open: boolean) => {
-    if (!open) setToolSettingsRow(-1);
+    if (!open) {
+      setToolSettingsRow(-1);
+      workflowScroll.restoreAfterRender();
+    }
     if (toolRef.current !== undefined) {
       focusIndex.current = toolRef.current;
-      const settings = (rows[toolRef.current as number] as IStepRow).settings
-        ? JSON.parse((rows[toolRef.current as number] as IStepRow).settings)
-        : {};
+      const edited = rows[toolRef.current];
+      const settings = edited.settings ? JSON.parse(edited.settings) : {};
       const artId =
         remoteIdGuid(
           'artifacttype',
@@ -220,10 +178,7 @@ export const StepEditor = ({ process, org }: IProps) => {
       const lang = settings?.language
         ? ` ${parseStepLanguageField(settings.language).languageName}`
         : '';
-      let name =
-        localizedTool((rows[toolRef.current as number] as IStepRow).tool) +
-        lang +
-        artShortName;
+      let name = localizedTool(edited.tool) + lang + artShortName;
       name = mangleName(name, getOrgNames(), toolRef.current);
       setRows(
         rows.map((r, i) =>
@@ -241,22 +196,26 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const handleSettingsChange = (settings: string) => {
     // Vernacular, Q&A and Retell ASR lives in the team default, so only this
-    // step's settings change.
+    // step's settings change. The scroll position was remembered when the
+    // dialog opened; re-reading it here could pick up a value already reset
+    // by the dialog's scroll lock or a focus change.
     setRows((prev) =>
-      prev.map((r, i) =>
-        i === toolSettingsRow
-          ? { ...r, settings, prettySettings: prettySettings(r.tool, settings) }
-          : r
-      )
+      prev.map((r, i) => (i === toolSettingsRow ? { ...r, settings } : r))
     );
+    workflowScroll.restoreAfterRender();
     toolChanged(toolId, true);
+  };
+
+  const openSettings = (index: number) => {
+    workflowScroll.remember();
+    setToolSettingsRow(index);
   };
 
   const handleToolChange = (tool: string, index: number) => {
     focusIndex.current = index;
-    if (settingsTools.includes(tool as ToolSlug)) toolRef.current = index;
-    setToolSettingsRow(index); //bring up Settings editor
-    let name = (rows[index] as IStepRow).name;
+    if (toolHasSettingsDialog(tool)) toolRef.current = index;
+    openSettings(index); //bring up Settings editor
+    let name = rows[index].name;
     if (name.includes(se.nextStep))
       name = mangleName(localizedTool(tool), getOrgNames());
     setRows(
@@ -266,17 +225,12 @@ export const StepEditor = ({ process, org }: IProps) => {
               ...r,
               tool,
               settings: '',
-              prettySettings: prettySettings(tool, ''),
               name,
             }
           : r
       )
     );
     toolChanged(toolId, true);
-  };
-
-  const handleSettings = (index: number) => {
-    setToolSettingsRow(index);
   };
 
   const handleHide = (index: number) => {
@@ -291,7 +245,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     toolChanged(toolId, true);
   };
 
-  const handleVisible = async (index: number) => {
+  const handleVisible = (index: number) => {
     setRows((rows) =>
       rows
         .map((r, i) => (i === index ? { ...r, seq: mxSeq + 1 } : r))
@@ -305,7 +259,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     setShowAll(!showAll);
   };
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     focusIndex.current = rows.length;
     scrollNewStepIntoViewRef.current = true;
     const name = mangleName(se.nextStep, getOrgNames());
@@ -318,7 +272,6 @@ export const StepEditor = ({ process, org }: IProps) => {
         pos: 0,
         tool,
         settings: '',
-        prettySettings: prettySettings(tool, ''),
         seq: mxSeq + 1,
         rIdx: rows.length,
       },
@@ -327,101 +280,38 @@ export const StepEditor = ({ process, org }: IProps) => {
     toolChanged(toolId, true);
   };
 
-  const saveRecs = async () => {
-    if (saving.current) return;
+  /** Saves changed steps; resolves to an error message when the save fails. */
+  const saveRecs = async (): Promise<string | undefined> => {
+    if (saving.current) return undefined;
     saving.current = true;
     showMessage(se.saving);
-    const orgNames = new Set<string>();
-    let count = 0;
-    for (let ix = 0; ix < rows.length; ix += 1) {
-      const row = rows[ix] as IStepRow;
-      const id = row.id;
-      const tool = JSON.stringify({
-        tool: row.tool,
-        settings: row.settings,
+    try {
+      const count = await saveOrgWorkflowSteps({
+        rows,
+        org,
+        process,
+        memory,
+        user,
+        baseline: baselineRef.current,
+        mangleName,
+        getOrgNames,
       });
-      if (id) {
-        const baseline = baselineRef.current.get(id);
-        if (baseline !== undefined && baseline === rowSignature(row)) {
-          // Step is unchanged (name, sequence, tool and settings all match
-          // what was loaded) — skip the write.
-          continue;
-        }
-        const recId = { type: 'orgworkflowstep', id };
-        const rec = memory.cache.query((q) => q.findRecord(recId)) as
-          OrgWorkflowStep | undefined;
-
-        if (rec) {
-          let name = rec.attributes?.name;
-          if (name !== row.name) {
-            name = mangleName(
-              row.name,
-              getOrgNames(id).concat(Array.from(orgNames)),
-              ix,
-              false
-            );
-            orgNames.add(name);
-          }
-          if (
-            name !== rec.attributes?.name ||
-            row.seq !== rec.attributes?.sequencenum ||
-            tool !== rec.attributes?.tool
-          ) {
-            await memory.update((t) =>
-              t.updateRecord({
-                ...rec,
-                attributes: {
-                  ...rec.attributes,
-                  name,
-                  sequencenum: row.seq,
-                  tool: tool,
-                },
-              })
-            );
-            count += 1;
-          }
-        }
-      } else {
-        const name = mangleName(
-          row.name,
-          getOrgNames().concat(Array.from(orgNames)),
-          ix,
-          false
-        );
-        const rec = {
-          type: 'orgworkflowstep',
-          attributes: {
-            sequencenum: row.seq,
-            name,
-            process: process || defaultWorkflow,
-            tool: tool,
-            permissions: '{}',
-          },
-        } as OrgWorkflowStep;
-        if (org) {
-          await memory.update((t) => [
-            ...AddRecord(t, rec, user, memory),
-            ...ReplaceRelatedRecord(
-              t,
-              rec as OrgWorkflowStepD,
-              'organization',
-              'organization',
-              org
-            ),
-          ]);
-        }
-        count += 1;
-      }
+      showMessage(se.changes.replace('{0}', count.toString()));
+      return undefined;
+    } catch (err) {
+      logError(Severity.error, errorReporter, err as Error);
+      // saveCompleted with an error keeps the step editor marked changed and
+      // surfaces the message through UnsavedContext.
+      return err instanceof Error ? err.message : String(err);
+    } finally {
+      saving.current = false;
     }
-    rows.forEach((row) => {
-      if (row.id) baselineRef.current.set(row.id, rowSignature(row));
-    });
-    showMessage(se.changes.replace('{0}', count.toString()));
-    saving.current = false;
   };
 
   useEffect(() => {
-    if (saveRequested(toolId)) saveRecs().then(() => saveCompleted(toolId));
+    if (saveRequested(toolId))
+      // saveRecs catches its own errors, so this promise does not reject.
+      void saveRecs().then((saveErr) => saveCompleted(toolId, saveErr));
     else if (clearRequested(toolId)) clearCompleted(toolId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
@@ -443,7 +333,6 @@ export const StepEditor = ({ process, org }: IProps) => {
             pos: 0,
             tool: toCamel(tool),
             settings: settings,
-            prettySettings: prettySettings(tool, settings),
             rIdx: newRows.length,
           });
         });
@@ -461,24 +350,24 @@ export const StepEditor = ({ process, org }: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org]);
 
-  useEffect(() => {
-    setSortKey((sortKey) => sortKey + 1);
-  }, [rows, showAll]);
+  // Remount VertListDnd only when visible membership/order changes. Remounting
+  // on every rows write (Phrase Back Translate language, discuss markdown, …)
+  // collapses dialog content briefly and resets Edit Workflow scroll.
+  const listStructureKey = useMemo(
+    () =>
+      rows
+        .filter((r) => r.seq >= 0 || showAll)
+        .map((r) => `${r.id || `n${r.rIdx}`}:${r.seq}`)
+        .join('|'),
+    [rows, showAll]
+  );
 
   useLayoutEffect(() => {
     if (!scrollNewStepIntoViewRef.current) return;
     const el = listEndAnchorRef.current;
     if (!el) return;
     scrollNewStepIntoViewRef.current = false;
-    const scrollParent = (() => {
-      let p: HTMLElement | null = el.parentElement;
-      while (p) {
-        const oy = getComputedStyle(p).overflowY;
-        if (oy === 'auto' || oy === 'scroll') return p;
-        p = p.parentElement;
-      }
-      return null;
-    })();
+    const scrollParent = workflowScroll.scrollParent();
     if (scrollParent) {
       const pad = 8;
       const spRect = scrollParent.getBoundingClientRect();
@@ -491,30 +380,44 @@ export const StepEditor = ({ process, org }: IProps) => {
     } else {
       el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
     }
-  }, [sortKey]);
+    // scrollParent is stable (useCallback); only a list remount matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listStructureKey]);
 
   const prettySettings = (tool: string, settings: string) => {
-    const json = settings ? JSON.parse(settings) : undefined;
+    let json: { artifactTypeId?: string } | undefined;
+    if (settings) {
+      try {
+        json = JSON.parse(settings);
+      } catch {
+        // Malformed server/Orbit settings must not crash render.
+        json = undefined;
+      }
+    }
+    const toolName = localizedTool(tool);
     switch (tool as ToolSlug) {
       case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
-      case ToolSlug.PhraseBackTranslate:
-        if (json)
+        if (json) {
+          const artifactTypeId = json.artifactTypeId;
           return se.settingsFor
-            .replace('{0}', st.getString(tool as keyof typeof se))
+            .replace('{0}', toolName)
             .replace(
               '{1}',
               localizedArtifactTypeFromId(
-                remoteIdGuid(
-                  'artifacttype',
-                  json.artifactTypeId,
-                  memory?.keyMap as RecordKeyMap
-                ) ?? json.artifactTypeId
+                artifactTypeId
+                  ? (remoteIdGuid(
+                      'artifacttype',
+                      artifactTypeId,
+                      memory?.keyMap as RecordKeyMap
+                    ) ?? artifactTypeId)
+                  : null
               )
             );
+        }
         return se.settingsFor
-          .replace('{0}', st.getString(tool as keyof typeof se))
+          .replace('{0}', toolName)
           .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
       default:
         return '';
@@ -552,7 +455,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           />
         </div>
       </Box>
-      <VertListDnd key={`sort-${sortKey}`} onDrop={handleSortEnd} dragHandle>
+      <VertListDnd key={listStructureKey} onDrop={handleSortEnd} dragHandle>
         {rows
           .map((r, i) => ({ ...r, rIdx: i }))
           .filter((r) => r.seq >= 0 || showAll)
@@ -567,11 +470,9 @@ export const StepEditor = ({ process, org }: IProps) => {
               onDelete={handleHide}
               onRestore={handleVisible}
               onSettings={
-                settingsTools.includes(r.tool as ToolSlug)
-                  ? handleSettings
-                  : undefined
+                toolHasSettingsDialog(r.tool) ? openSettings : undefined
               }
-              settingsTitle={r.prettySettings}
+              settingsTitle={prettySettings(r.tool, r.settings)}
             />
           ))}
       </VertListDnd>
@@ -581,86 +482,12 @@ export const StepEditor = ({ process, org }: IProps) => {
         aria-hidden
         sx={{ height: 1, width: '100%', flexShrink: 0 }}
       />
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={
-            (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
-          }
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <TranscribeStepSettings
-            org={org}
-            isOpen={
-              (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
-            }
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={
-            (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Paratext
-          }
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <ParatextStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Discuss}
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <DiscussStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-            onClose={() => setToolSettingsOpen(false)}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Record}
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <RecordStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-            onClose={() => setToolSettingsOpen(false)}
-          />
-        </BigDialog>
-      )}
-      {toolSettingsRow > -1 && (
-        <BigDialog
-          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
-          isOpen={
-            (rows[toolSettingsRow] as IStepRow).tool ===
-            ToolSlug.PhraseBackTranslate
-          }
-          onOpen={setToolSettingsOpen}
-          bp={BigDialogBp.sm}
-        >
-          <PhraseBackTranslateStepSettings
-            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
-            onChange={handleSettingsChange}
-            stepId={(rows[toolSettingsRow] as IStepRow).id}
-            organizationId={org}
-          />
-        </BigDialog>
-      )}
+      <StepSettingsDialogs
+        org={org}
+        row={settingsRow}
+        onOpen={setToolSettingsOpen}
+        onChange={handleSettingsChange}
+      />
     </div>
   );
 };

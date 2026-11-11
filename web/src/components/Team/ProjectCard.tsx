@@ -67,13 +67,16 @@ import {
 import {
   projDefBook,
   projDefSectionMap,
+  projDefReferenceTexts,
   projDefStory,
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
+import { parseReferenceTexts } from '../../business/referenceText/referenceText';
 import BigDialog from '../../hoc/BigDialog';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
+import { useReferenceTextsParam } from '../../business/referenceText/useReferenceTextsParam';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import Confirm from '../AlertDialog';
@@ -85,7 +88,7 @@ import CategoryTabs from './CategoryTabs';
 import ProjectMenu from './ProjectMenu';
 import { ProjectDialog } from './ProjectDialog';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
-import { useCardHeight, useMeasureCardHeight } from './useCardSize';
+import { useCardHeight, useMeasureCardHeight } from '../CardSize/useCardSize';
 import { Button } from '../../control/Button';
 
 interface IProps {
@@ -158,6 +161,7 @@ export const ProjectCard = (props: IProps) => {
   const { userIsOrgAdmin } = useRole();
   const { leaveHome } = useHome();
   const { getParam, setParam } = useJsonParams();
+  const setReferenceTexts = useReferenceTextsParam();
   const sections = useOrbitData<Section[]>('section');
   const getGlobal = useGetGlobal();
   const handleSelect = (project: VProjectD) => () => {
@@ -300,6 +304,7 @@ export const ProjectCard = (props: IProps) => {
       organizedBy,
       book,
       story,
+      referenceTexts,
       sheetGroup,
       sheetUser,
       publishGroup,
@@ -315,6 +320,7 @@ export const ProjectCard = (props: IProps) => {
       project?.attributes?.defaultParams
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
+    defaultParams = setReferenceTexts(referenceTexts, defaultParams);
     projectUpdate({
       ...project,
       attributes: {
@@ -423,6 +429,9 @@ export const ProjectCard = (props: IProps) => {
           projDefBook,
           project as any as ProjectD
         ) as string) || '',
+      referenceTexts: parseReferenceTexts(
+        getProjectDefault(projDefReferenceTexts, project as any as ProjectD)
+      ),
       story: isStory,
       bcp47: attr.language,
       languageName: attr.languageName || '',
@@ -676,6 +685,11 @@ export const ProjectCard = (props: IProps) => {
         isOpen={openProject}
         onOpen={handleOpen}
         onCommit={handleCommit}
+        team={
+          personalProjects.includes(project)
+            ? undefined
+            : (related(project, 'organization') as string)
+        }
       />
       <BigDialog
         title={tpb.integrationsTitle.replace('{0}', getPlanName(project.id))}

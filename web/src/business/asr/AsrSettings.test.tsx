@@ -40,7 +40,7 @@ jest.mock('react-redux', () => ({
     phonetic: 'Phonetic',
     phoneticTip: 'tip',
     asrMethod: 'Method',
-    asrMethodDefault: 'Default ({0})',
+    asrMethodDefault: '{0} (Default)',
     asrMethodHint: 'hint',
     asrRequestFailed: 'failed',
   }),
@@ -110,15 +110,25 @@ describe('AsrSettings method list', () => {
     getMethodsForAsr.mockReset();
   });
 
+  it('shows the method list when the service offers only one method', async () => {
+    getMethodsForAsr.mockResolvedValue(['whisper']);
+    render(<Harness method={undefined} />);
+
+    expect(
+      await screen.findByRole('radio', { name: 'Whisper (Default)' })
+    ).toBeChecked();
+  });
+
   it('shows Default for a method the service no longer lists, without saving it', async () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'w2v-bert']);
     render(<Harness method="mms" />);
 
     expect(
-      await screen.findByRole('radio', { name: 'Default (whisper)' })
+      await screen.findByRole('radio', { name: 'Whisper (Default)' })
     ).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'W2v-bert' })).toBeInTheDocument();
     expect(
-      screen.queryByRole('radio', { name: 'mms' })
+      screen.queryByRole('radio', { name: 'Mms' })
     ).not.toBeInTheDocument();
     // Rendering never changes the saved settings.
     expect(screen.getByTestId('chosen')).toHaveTextContent('mms');
@@ -127,7 +137,7 @@ describe('AsrSettings method list', () => {
   it('drops that method when the user changes the settings', async () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'w2v-bert']);
     render(<Harness method="mms" />);
-    await screen.findByRole('radio', { name: 'Default (whisper)' });
+    await screen.findByRole('radio', { name: 'Whisper (Default)' });
 
     fireEvent.click(screen.getByRole('radio', { name: 'Phonetic' }));
 
@@ -139,7 +149,7 @@ describe('AsrSettings method list', () => {
     render(<Harness method="whisper" />);
 
     expect(
-      await screen.findByRole('radio', { name: 'Default (whisper)' })
+      await screen.findByRole('radio', { name: 'Whisper (Default)' })
     ).toBeChecked();
     expect(screen.getByTestId('chosen')).toHaveTextContent('whisper');
   });
@@ -148,7 +158,7 @@ describe('AsrSettings method list', () => {
     getMethodsForAsr.mockResolvedValue(['whisper', 'mms']);
     render(<Harness method="mms" />);
 
-    expect(await screen.findByRole('radio', { name: 'mms' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'Mms' })).toBeChecked();
     expect(screen.getByTestId('chosen')).toHaveTextContent('mms');
   });
 

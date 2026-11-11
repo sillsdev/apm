@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { PassageD, SharedResourceD } from '../model';
 import related from './related';
-import { findRecord } from './tryFindRecord';
+import { findRecords, findRecord } from './tryFindRecord';
 
 /** One pass over the shared-resource cache. getSheet used to re-query it per passage. */
 export const lookupSharedResource = (
@@ -26,9 +26,7 @@ export const useSharedResRead = () => {
   const [memory] = useGlobal('memory');
 
   const readSharedResource = useCallback((passId: string) => {
-    const sharedResources = memory?.cache.query((q) =>
-      q.findRecords('sharedresource')
-    ) as SharedResourceD[];
+    const sharedResources = findRecords(memory, 'sharedresource');
     const selected = sharedResources.filter(
       (sr) => related(sr, 'passage') === passId
     );

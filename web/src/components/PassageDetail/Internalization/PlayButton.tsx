@@ -27,7 +27,11 @@ export const PlayButton = (props: IProps) => {
   return (
     <LightTooltip title={props.value ? t.play : t.pause}>
       <span>
-        <IconButton id="res-play-pause" onClick={handlePlay(props)}>
+        <IconButton
+          id="res-play-pause"
+          aria-label={props.value ? t.play : t.pause}
+          onClick={handlePlay(props)}
+        >
           {props.value ? <PlayIcon /> : <PauseIcon />}
         </IconButton>
       </span>

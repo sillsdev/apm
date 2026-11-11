@@ -8,6 +8,8 @@ import { IRegion, ToolSlug, useStepTool } from '../../../crud';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
 import { IMarker } from '../../../crud/useWaveSurfer';
+import { useCompareReferenceText } from '../Internalization/useCompareReferenceText';
+import { CompareReferenceText } from '../Internalization/CompareReferenceText';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -70,6 +72,10 @@ export function TeamCheckReferenceMobile() {
     passage,
     section
   );
+  const { referenceRank, selectReferenceText, clearReferenceText } =
+    useCompareReferenceText({ removeStoredKeys, saveKey }, () =>
+      setMediaId(undefined)
+    );
 
   // Mutual exclusion with the top (vernacular) player.
   const setPlaying = (play: boolean) => {
@@ -82,6 +88,7 @@ export function TeamCheckReferenceMobile() {
   }, [topPlaying, playing]);
 
   const handleResource = (id: string) => {
+    if (selectReferenceText(id)) return;
     const row = rowData.find((r) => r.id === id);
     if (row) {
       removeStoredKeys();
@@ -110,6 +117,10 @@ export function TeamCheckReferenceMobile() {
 
   useEffect(() => {
     setPlayItem('');
+    // Reset here, not with a key: this effect must run anyway to clear the
+    // context's playItem and restore the saved choice, and a key would
+    // remount the player on every passage change. TT-7819
+    clearReferenceText();
     const res = localStorage.getItem(storeKey());
     const secId = localStorage.getItem(storeKey(SecSlug));
     if (res && secId === section.id) {
@@ -141,6 +152,9 @@ export function TeamCheckReferenceMobile() {
 
       <MobileGrid>
         <StyledGrid size={{ xs: 12 }}>
+          {referenceRank && (
+            <CompareReferenceText rank={referenceRank} mobile />
+          )}
           {tool !== ToolSlug.KeyTerm && mediaId && (
             <PassageDetailPlayer
               allowZoomAndSpeed={false}

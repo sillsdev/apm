@@ -1,8 +1,5 @@
-import {
-  UninitializedRecord,
-  RecordRelationship,
-  InitializedRecord,
-} from '@orbit/records';
+import { Loaded } from './baseModel';
+import { UninitializedRecord, RecordRelationship } from '@orbit/records';
 
 export interface Graphic extends UninitializedRecord {
   attributes: {
@@ -20,6 +17,6 @@ export interface Graphic extends UninitializedRecord {
   };
 }
 
-export type GraphicD = Graphic & InitializedRecord;
+export type GraphicD = Loaded<Graphic>;
 
 export default Graphic;

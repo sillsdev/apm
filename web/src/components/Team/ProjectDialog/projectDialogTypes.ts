@@ -1,10 +1,13 @@
 import { ITag, IVProjectStrings } from '../../../model';
+import type { ReferenceText } from '../../../business/referenceText/referenceText';
 
 const initState = {
   name: '',
   description: '',
   type: 'scripture',
   book: '',
+  /** Primary then Secondary (ADR 0014). */
+  referenceTexts: [] as ReferenceText[],
   story: true,
   bcp47: 'und',
   languageName: '',

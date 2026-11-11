@@ -79,6 +79,7 @@ jest.mock('../crud', () => {
   return {
     ToolSlug: toolSlug.ToolSlug,
     toolAllowsEmptyVernacularAudio: toolSlug.toolAllowsEmptyVernacularAudio,
+    toolShowsStepInstructions: toolSlug.toolShowsStepInstructions,
     useUrlContext: () => (id: string) => id,
     useProjectType: () => ({ setProjectType: () => true }),
     useStepTool: () => ({ tool: mockStep.tool, settings: '{}' }),
@@ -186,6 +187,16 @@ jest.mock(
   '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile',
   () => mockNull
 );
+// Avoid react-markdown ESM in Jest; these steps are covered elsewhere.
+jest.mock('../components/PassageDetail/PassageDetailDiscuss', () => ({
+  PassageDetailDiscuss: () => <div data-testid="discuss" />,
+}));
+jest.mock('../components/PassageDetail/PassageDetailPlayer', () => {
+  function PassageDetailPlayer() {
+    return <div data-testid="player" />;
+  }
+  return PassageDetailPlayer;
+});
 
 import PassageDetail from './PassageDetail';
 import { navigationCancelled } from '../utils/useMyNavigate';
@@ -263,7 +274,6 @@ describe('PassageDetail', () => {
 
     it.each([
       ToolSlug.KeyTerm,
-      ToolSlug.Discuss,
       ToolSlug.WholeBackTranslate,
       ToolSlug.ConsultantCheck,
       ToolSlug.Paratext,
@@ -291,5 +301,15 @@ describe('PassageDetail', () => {
       expect(screen.getByTestId('record')).toBeInTheDocument();
       expect(screen.queryByText(desktopOnlyEn)).not.toBeInTheDocument();
     });
+
+    it.each([ToolSlug.Discuss, ToolSlug.Done])(
+      'renders instructions for the %s step on mobile',
+      (tool) => {
+        mockStep.tool = tool;
+        render(<PassageDetail />);
+        expect(screen.getByTestId('discuss')).toBeInTheDocument();
+        expect(screen.queryByText(desktopOnlyEn)).not.toBeInTheDocument();
+      }
+    );
   });
 });

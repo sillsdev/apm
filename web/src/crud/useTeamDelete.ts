@@ -1,19 +1,10 @@
 import { useGlobal } from '../context/useGlobal';
-import {
-  OrganizationMembershipD,
-  GroupMembershipD,
-  ProjectD,
-  GroupD,
-  OrgWorkflowStepD,
-  ArtifactCategoryD,
-  ArtifactTypeD,
-  DiscussionD,
-  CommentD,
-} from '../model';
+import { OrgWorkflowStepD, ArtifactCategoryD, ArtifactTypeD } from '../model';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { related, findRecord } from '.';
 import { useProjectDelete } from './useProjectDelete';
 import IndexedDBSource from '@orbit/indexeddb';
+import { findRecords } from './tryFindRecord';
 
 export const useTeamDelete = () => {
   const [memory] = useGlobal('memory');
@@ -27,25 +18,19 @@ export const useTeamDelete = () => {
 
   return async (teamid: string) => {
     if (noTeam(teamid)) return;
-    const teamgrpIds = (
-      memory?.cache.query((q) => q.findRecords('group')) as GroupD[]
-    )
+    const teamgrpIds = findRecords(memory, 'group')
       .filter((g) => related(g, 'owner') === teamid)
       .map((tg) => tg.id);
-    const teamgms = (
-      memory?.cache.query((q) =>
-        q.findRecords('groupmembership')
-      ) as GroupMembershipD[]
-    ).filter((gm) => teamgrpIds.includes(related(gm, 'group')));
-    const teamprojs = (
-      memory?.cache.query((q) => q.findRecords('project')) as ProjectD[]
-    ).filter((p) => teamgrpIds.includes(related(p, 'group')));
+    const teamgms = findRecords(memory, 'groupmembership').filter((gm) =>
+      teamgrpIds.includes(related(gm, 'group'))
+    );
+    const teamprojs = findRecords(memory, 'project').filter((p) =>
+      teamgrpIds.includes(related(p, 'group'))
+    );
     const projIds = teamprojs.map((p) => p.id);
-    const teamoms = (
-      memory?.cache.query((q) =>
-        q.findRecords('organizationmembership')
-      ) as OrganizationMembershipD[]
-    ).filter((g) => related(g, 'organization') === teamid);
+    const teamoms = findRecords(memory, 'organizationmembership').filter(
+      (g) => related(g, 'organization') === teamid
+    );
     /* Remove the memberships first, deliberately: dropping the membership makes
        the team disappear from the UI at once, so it cannot be messed with while
        the one-project-at-a-time deletes below are still running. Refreshing
@@ -96,15 +81,11 @@ export const useTeamDelete = () => {
         ) as ArtifactTypeD[]
       ).map((s) => s.id);
 
-      const discussions = (
-        memory?.cache.query((q) => q.findRecords('discussion')) as DiscussionD[]
-      )
+      const discussions = findRecords(memory, 'discussion')
         .filter((d) => orgSteps.includes(related(d, 'orgWorkflowStep')))
         .map((s) => s.id);
 
-      const comments = (
-        memory?.cache.query((q) => q.findRecords('comment')) as CommentD[]
-      )
+      const comments = findRecords(memory, 'comment')
         .filter((d) => discussions.includes(related(d, 'discussion')))
         .map((s) => s.id);
 

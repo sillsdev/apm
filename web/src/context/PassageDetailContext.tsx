@@ -27,12 +27,10 @@ import {
   ArtifactType,
   ArtifactCategory,
   IWorkflowStepsStrings,
-  IPassageDetailStepCompleteStrings,
   StepComplete,
   SectionResourceD,
   SharedResourceD,
 } from '../model';
-import { AddPassageStateChangeToOps } from '../crud/updatePassageState';
 import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
 import { ToolSlug } from '../crud/toolSlug';
 import { findRecord } from '../crud/tryFindRecord';
@@ -66,6 +64,8 @@ import {
   Severity,
 } from '../utils';
 import { useSnackBar } from '../hoc/SnackBar';
+import { completeStepAfterSave } from './completeStepAfterSave';
+import { useStepCompleteWriter } from './useStepCompleteWriter';
 import * as actions from '../store';
 import LimitedMediaPlayer from '../components/LimitedMediaPlayer';
 import {
@@ -79,20 +79,11 @@ import StepNavigationConfirmDialog from '../components/PassageDetail/StepNavigat
 import { getNextStep } from '../crud/getNextStep';
 import { UnsavedContext } from './UnsavedContext';
 import { IRegion, IRegionParams } from '../crud/useWavesurferRegions';
-import { UpdateLastModifiedBy } from '../model/baseModel';
 import { IMarker } from '../crud/useWaveSurfer';
 import { useSelector } from 'react-redux';
-import {
-  passageDetailStepCompleteSelector,
-  sharedSelector,
-  workflowStepsSelector,
-} from '../selector';
+import { sharedSelector, workflowStepsSelector } from '../selector';
 import { useDispatch } from 'react-redux';
-import {
-  RecordKeyMap,
-  RecordOperation,
-  RecordTransformBuilder,
-} from '@orbit/records';
+import { RecordKeyMap } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
 import {
   projDefSectionMap,
@@ -180,8 +171,7 @@ const initState = {
   psgCompleted: [] as StepComplete[],
   setStepComplete: async (
     _stepId: string,
-    _complete: boolean,
-    _psgCompleted?: StepComplete[]
+    _complete: boolean
   ): Promise<void> => {},
   setStepCompleteTo: async (_stepId: string) => {},
   gotoNextStep: () => {},
@@ -277,10 +267,6 @@ const PassageDetailProvider = (props: IProps) => {
     shallowEqual
   );
   const sharedStr: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const stepCompleteStr: IPassageDetailStepCompleteStrings = useSelector(
-    passageDetailStepCompleteSelector,
-    shallowEqual
-  );
   const lang = useSelector((state: IState) => state.strings.lang);
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const booksLoaded = useSelector((state: IState) => state.books.loaded);
@@ -303,6 +289,18 @@ const PassageDetailProvider = (props: IProps) => {
     ...initState,
     allBookData,
     prjId: prjId ?? '',
+  });
+  const { setStepComplete, setStepCompleteTo } = useStepCompleteWriter({
+    pasId,
+    orgWorkflowSteps: state.orgWorkflowSteps,
+    // Only the passage still on screen takes the saved list; the sync effect
+    // refreshes whichever passage navigation moved to.
+    onSaved: (passageId, completed) =>
+      setState((state: ICtxState) =>
+        state.passage.id === passageId
+          ? { ...state, psgCompleted: completed }
+          : state
+      ),
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
@@ -681,121 +679,6 @@ const PassageDetailProvider = (props: IProps) => {
       setCurrentStep('');
     } // setting to empty jumps to first uncompleted
   };
-  const setStepComplete = async (
-    stepid: string,
-    complete: boolean,
-    psgCompleted?: StepComplete[]
-  ) => {
-    if (stepid === '') return;
-    const completed = psgCompleted ?? [...state.psgCompleted];
-    const remId =
-      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
-      stepid;
-    const step = completed.find((s) => s.stepid === remId);
-    const rec = findRecord(
-      memory,
-      'orgworkflowstep',
-      stepid
-    ) as OrgWorkflowStep;
-    if (step) {
-      step.complete = complete;
-    } else {
-      completed.push({ stepid: remId, complete, name: rec.attributes.name });
-    }
-    const recId = {
-      type: 'passage',
-      id:
-        remoteIdGuid('passage', pasId ?? '', memory?.keyMap as RecordKeyMap) ||
-        pasId ||
-        '',
-    };
-    const curPassage = findRecord(memory, 'passage', recId.id) as Passage;
-    const curCompleteStr = curPassage?.attributes.stepComplete;
-    let stepComplete = {};
-    try {
-      stepComplete = JSON.parse(curCompleteStr || '{}');
-    } catch (err) {
-      logError(
-        Severity.error,
-        errorReporter,
-        infoMsg(err as Error, 'Json conversion error')
-      );
-    }
-    const tb = new RecordTransformBuilder();
-    const ops = [] as RecordOperation[];
-    ops.push(
-      tb
-        .replaceAttribute(
-          recId,
-          'stepComplete',
-          JSON.stringify({ ...stepComplete, completed })
-        )
-        .toOperation()
-    );
-    ops.push(...UpdateLastModifiedBy(tb, recId, user));
-    AddPassageStateChangeToOps(
-      tb,
-      ops,
-      recId.id,
-      '',
-      `${
-        complete ? stepCompleteStr.title : stepCompleteStr.incomplete
-      } : ${localizedWorkStep(rec.attributes.name)}`,
-      user,
-      memory
-    );
-    await memory.update(ops);
-    setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
-  };
-  const setStepCompleteTo = async (stepid: string) => {
-    if (stepid === '') return;
-    const completed: StepComplete[] = [];
-    const steps = state.orgWorkflowSteps.sort(
-      (a, b) => a.attributes.sequencenum - b.attributes.sequencenum
-    );
-    let rec;
-    for (const step of steps) {
-      const remId =
-        remoteId('orgworkflowstep', step.id, memory.keyMap as RecordKeyMap) ||
-        step.id;
-      rec = findRecord(memory, 'orgworkflowstep', step.id) as OrgWorkflowStep;
-      completed.push({
-        stepid: remId,
-        complete: true,
-        name: rec.attributes.name,
-      });
-      if (step.id === stepid) break;
-    }
-    const recId = {
-      type: 'passage',
-      id:
-        remoteIdGuid('passage', pasId ?? '', memory.keyMap as RecordKeyMap) ||
-        pasId ||
-        '',
-    };
-    const tb = new RecordTransformBuilder();
-    const ops = [] as RecordOperation[];
-    ops.push(
-      tb
-        .replaceAttribute(recId, 'stepComplete', JSON.stringify({ completed }))
-        .toOperation()
-    );
-    ops.push(...UpdateLastModifiedBy(tb, recId, user));
-    AddPassageStateChangeToOps(
-      tb,
-      ops,
-      recId.id,
-      '',
-      `${stepCompleteStr.title} : ${localizedWorkStep(
-        rec?.attributes?.name ?? ''
-      )}`,
-      user,
-      memory
-    );
-    await memory.update(ops);
-    setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
-  };
-
   const handleIncompleteNavCancel = () => {
     setIncompleteNavTarget('');
   };
@@ -813,10 +696,15 @@ const PassageDetailProvider = (props: IProps) => {
     const fromStep = state.currentstep;
     setIncompleteNavTarget('');
     if (!target || !fromStep) return;
-    void waitForSave(async () => {
-      await setStepComplete(fromStep, true);
-      handleSetCurrentStep(target);
-    }, 200);
+    // Save and step-write failures are shown inside; only an onDone bug rejects, and it should surface.
+    void completeStepAfterSave({
+      stepId: fromStep,
+      complete: true,
+      waitForSaves: () => waitForSave(undefined, 200),
+      setStepComplete,
+      showMessage,
+      onDone: () => handleSetCurrentStep(target),
+    });
   };
 
   const incompleteNavMessage = (() => {

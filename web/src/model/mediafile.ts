@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface MediaFileAttributes {
   versionNumber: number;
@@ -50,6 +50,6 @@ export interface MediaFile extends BaseModel {
   };
 }
 
-export type MediaFileD = MediaFile & InitializedRecord;
+export type MediaFileD = Loaded<MediaFile>;
 
 export default MediaFile;

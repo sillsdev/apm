@@ -16,15 +16,12 @@ import { toCamel, useWaitForRemoteQueue, waitForIt } from '../utils';
 import JSONAPISource from '@orbit/jsonapi';
 import { shallowEqual, useSelector } from 'react-redux';
 import { workflowStepsSelector } from '../selector';
-import {
-  InitializedRecord,
-  RecordOperation,
-  RecordTransformBuilder,
-} from '@orbit/records';
+import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { addPt } from '../utils/addPt';
 import { useNewTime } from '../utils/useNewTime';
+import { findRecords } from './tryFindRecord';
 
-export const defaultWorkflow = 'draft';
+export { defaultWorkflow } from './defaultWorkflow';
 
 interface ISwitches {
   [key: string]: any;
@@ -78,22 +75,14 @@ export const useOrgWorkflowSteps = () => {
     } as OrgWorkflowStep;
     ops.push(...AddRecord(tb, wfs, user, memory, newTime()));
     ops.push(
-      ...ReplaceRelatedRecord(
-        tb,
-        wfs as InitializedRecord,
-        'organization',
-        'organization',
-        org
-      )
+      ...ReplaceRelatedRecord(tb, wfs, 'organization', 'organization', org)
     );
   };
   const QueryOrgWorkflowSteps = async (process: string, org: string) => {
     /* wait for new workflow steps remote id to fill in */
     await waitForRemoteQueue('waiting for workflow update');
 
-    let orgworkflowsteps = memory.cache.query((q) =>
-      q.findRecords('orgworkflowstep')
-    ) as OrgWorkflowStepD[];
+    let orgworkflowsteps = findRecords(memory, 'orgworkflowstep');
     if (orgworkflowsteps.length === 0 && remote) {
       //check remote
       orgworkflowsteps = (await remote.query((q) =>

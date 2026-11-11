@@ -1,5 +1,8 @@
 import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
-import { logAudioDiagnostic } from './audioDiagnostics';
+import {
+  getAudioTrackDiagnostics,
+  logAudioDiagnostic,
+} from './audioDiagnostics';
 import type { APMRecorder } from './useWavRecorder';
 
 /** Saved takes are 48 kHz on every platform (Opus is 48 kHz internally). */
@@ -36,6 +39,98 @@ function resampleAudioBuffer(
   source.start();
   return offline.startRendering();
 }
+
+// Inlined rather than a separate file so the worklet loads in Electron.
+export const RECORDER_WORKLET_SOURCE = `
+  class AudioRecorderProcessor extends AudioWorkletProcessor {
+    constructor() {
+      super();
+      this.isRecording = false;
+      this.audioData = [];
+      this.channelEnergy = [];
+      this.selectedChannel = -1;
+
+      // Set up message handler
+      this.port.onmessage = (event) => {
+        const { type, data } = event.data;
+        console.log('worklet received message:', type);
+
+        switch (type) {
+          case 'startRecording':
+            this.isRecording = true;
+            this.audioData = [];
+            this.channelEnergy = [];
+            this.selectedChannel = -1;
+            console.log('worklet: started recording');
+            break;
+
+          case 'stopRecording':
+            this.isRecording = false;
+            console.log('worklet: stopped recording, data chunks:', this.audioData.length);
+            // Send all collected audio data
+            this.port.postMessage({
+              type: 'recordingComplete',
+              data: this.audioData,
+            });
+            this.audioData = [];
+            break;
+        }
+      };
+    }
+
+    static get parameterDescriptors() {
+      return [];
+    }
+
+    // TT-7805: a multi-input interface can carry the voice on any channel.
+    // Rank by energy so far this take so the choice settles and does not flip.
+    loudestChannel(input) {
+      let best = 0;
+      for (let ch = 0; ch < input.length; ch++) {
+        const samples = input[ch];
+        let energy = 0;
+        for (let i = 0; i < samples.length; i++) {
+          energy += samples[i] * samples[i];
+        }
+        this.channelEnergy[ch] = (this.channelEnergy[ch] || 0) + energy;
+        if (this.channelEnergy[ch] > this.channelEnergy[best]) best = ch;
+      }
+      if (input.length > 1 && best !== this.selectedChannel) {
+        this.port.postMessage({
+          type: 'channelSelected',
+          data: { channel: best, channels: input.length },
+        });
+      }
+      this.selectedChannel = best;
+      return best;
+    }
+
+    process(inputs, outputs, parameters) {
+      const input = inputs[0];
+
+      if (input.length > 0 && this.isRecording) {
+        // Mono recording from the loudest input channel
+        const inputChannel = input[this.loudestChannel(input)];
+
+        // Copy the audio data to our buffer
+        const audioChunk = new Float32Array(inputChannel.length);
+        audioChunk.set(inputChannel);
+
+        this.audioData.push(audioChunk);
+
+        // Send the audio data to the main thread (optional - for real-time feedback)
+        this.port.postMessage({
+          type: 'audioData',
+          data: audioChunk,
+        });
+      }
+
+      return true; // Keep the processor alive
+    }
+  }
+
+  registerProcessor('audio-recorder-processor', AudioRecorderProcessor);
+`;
 
 /** New Float32 chunks since last preview emit (exported for unit tests). */
 export function takeRecordingDeltaChunks(
@@ -85,73 +180,10 @@ export function createWavRecorder(
     if (workletLoaded) return;
 
     try {
-      // Inline the worklet code to work in Electron
-      const workletCode = `
-        class AudioRecorderProcessor extends AudioWorkletProcessor {
-          constructor() {
-            super();
-            this.isRecording = false;
-            this.audioData = [];
-
-            // Set up message handler
-            this.port.onmessage = (event) => {
-              const { type, data } = event.data;
-              console.log('worklet received message:', type);
-
-              switch (type) {
-                case 'startRecording':
-                  this.isRecording = true;
-                  this.audioData = [];
-                  console.log('worklet: started recording');
-                  break;
-
-                case 'stopRecording':
-                  this.isRecording = false;
-                  console.log('worklet: stopped recording, data chunks:', this.audioData.length);
-                  // Send all collected audio data
-                  this.port.postMessage({
-                    type: 'recordingComplete',
-                    data: this.audioData,
-                  });
-                  this.audioData = [];
-                  break;
-              }
-            };
-          }
-
-          static get parameterDescriptors() {
-            return [];
-          }
-
-          process(inputs, outputs, parameters) {
-            const input = inputs[0];
-
-            if (input.length > 0 && this.isRecording) {
-              // Get the first channel (mono recording)
-              const inputChannel = input[0];
-
-              // Copy the audio data to our buffer
-              const audioChunk = new Float32Array(inputChannel.length);
-              audioChunk.set(inputChannel);
-
-              this.audioData.push(audioChunk);
-
-              // Send the audio data to the main thread (optional - for real-time feedback)
-              this.port.postMessage({
-                type: 'audioData',
-                data: audioChunk,
-              });
-            }
-
-            return true; // Keep the processor alive
-          }
-        }
-
-        registerProcessor('audio-recorder-processor', AudioRecorderProcessor);
-      `;
-
       // Create a blob URL from the worklet code
-      const blob = new Blob([workletCode], { type: 'application/javascript' });
+      const blob = new Blob([RECORDER_WORKLET_SOURCE], {
+        type: 'application/javascript',
+      });
       const workletUrl = URL.createObjectURL(blob);
 
       await audioContext.audioWorklet.addModule(workletUrl);
@@ -173,6 +205,13 @@ export function createWavRecorder(
             if (isRecording) {
               audioData.push(data);
             }
+            break;
+
+          case 'channelSelected':
+            logAudioDiagnostic('wav-recorder-input-channel', {
+              inputChannel: data,
+              audioTracks: getAudioTrackDiagnostics(stream),
+            });
             break;
 
           case 'recordingComplete':

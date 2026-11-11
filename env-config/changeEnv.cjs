@@ -11,18 +11,6 @@ fs.copyFile(`env-config/.env.${argEnv}.local`, '.env.local', (err) => {
 });
 
 // destination.txt will be created or overwritten by default.
-fs.copyFile(
-  `env-config/.env.${argEnv}.development.local`,
-  '.env.development.local',
-  (err) => {
-    if (err) throw err;
-    console.log(
-      `env-config/.env.${argEnv}.development.local was copied to .env.development.local`
-    );
-  }
-);
-
-// destination.txt will be created or overwritten by default.
 fs.copyFile(`env-config/.env.${argEnv}.local`, 'web/.env.local', (err) => {
   if (err) throw err;
   console.log(`env-config/.env.${argEnv}.local was copied to .env.local`);
@@ -35,7 +23,7 @@ fs.copyFile(
   (err) => {
     if (err) throw err;
     console.log(
-      `env-config/.env.${argEnv}.development.local was copied to .env.development.local`
+      `env-config/.env.${argEnv}.development.local was copied to web/.env.development.local`
     );
   }
 );

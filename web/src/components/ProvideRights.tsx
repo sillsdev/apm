@@ -75,7 +75,6 @@ export function ProvideRights(props: IProps) {
   const [defaultFilename, setDefaultFileName] = useState('');
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
-  const [importList, setImportList] = useState<File[]>();
   const [uploadVisible, setUploadVisiblex] = useState(false);
   const uploadVisibleRef = useRef(false);
   const [resetMedia, setResetMedia] = useState(false);
@@ -261,11 +260,6 @@ export function ProvideRights(props: IProps) {
         ]);
         onRights && onRights(true);
       }
-      if (importList) {
-        setImportList(undefined);
-        setUploadVisible(false);
-        setResetMedia(true);
-      }
       setStatusText('');
       saveCompleted(toolId);
     } else {
@@ -276,7 +270,7 @@ export function ProvideRights(props: IProps) {
     cancelled.current = false;
   };
 
-  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (mediaRemoteIds?: string[]) => {
     afterUploadCb(
       mediaRemoteIds && mediaRemoteIds.length > 0
         ? mediaRemoteIds[0]
@@ -292,7 +286,6 @@ export function ProvideRights(props: IProps) {
       showMessage(t.saveFirst);
       return;
     }
-    setImportList(undefined);
     setUploadVisible(true);
   };
 
@@ -335,14 +328,13 @@ export function ProvideRights(props: IProps) {
         setStatusText={setStatusText}
         setResetMedia={setResetMedia}
         resetMedia={resetMedia}
-        afterUploadCb={(mediaId) => afterUploadCb(mediaId)}
+        afterUploadCb={afterUploadCb}
         pendingRestore={pendingRestore}
         handleSetCanSave={handleSetCanSave}
         paperWidth={paperWidth}
       />
       <Uploader
         noBusy={false}
-        importList={importList}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}

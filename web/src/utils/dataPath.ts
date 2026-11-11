@@ -12,6 +12,7 @@ export enum PathType {
   MEDIA = 'media',
   ZIP = 'zip',
   BURRITO = 'burrito',
+  REFERENCE_TEXT = 'referencetext',
 }
 
 export const dataPath = async (
@@ -32,6 +33,10 @@ export const dataPath = async (
         localName = path.join(homeDir, offlineData, tail);
         break;
       }
+      case PathType.REFERENCE_TEXT:
+        // relPath is {translation}/{BOOK}/{chapter}.simple.json
+        localName = path.join(homeDir, offlineData, type, relPath);
+        break;
       case PathType.MEDIA: {
         const parsedUrl = parse(relPath);
         const fileName = relPath?.startsWith('http')

@@ -1,6 +1,5 @@
 import {
   IApiError,
-  Role,
   Plan,
   OfflineProject,
   VProject,
@@ -9,6 +8,7 @@ import {
   IMainStrings,
 } from './model';
 import Coordinator, {
+  ConnectionStrategy,
   RequestStrategy,
   SyncStrategy,
   LogLevel,
@@ -55,6 +55,9 @@ import { serializersSettings } from './serializers/serializersFor';
 import { requestedSchema } from './schema';
 import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
+import { findRecords } from './crud/tryFindRecord';
+import { RecordTransform } from '@orbit/records';
+import { remoteSyncOperations } from './utils/remoteSyncOperations';
 type StategyError = (...args: unknown[]) => unknown;
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
@@ -82,11 +85,29 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
     );
   if (!coordinator.strategyNames.includes('remote-sync'))
     coordinator.addStrategy(
-      new SyncStrategy({
+      // A SyncStrategy (remote 'transform' → memory.sync) with a custom action
+      // that skips response data older than writes still queued; see
+      // remoteSyncOperations. SyncStrategyOptions' typings don't expose
+      // `action`, hence the base class.
+      new ConnectionStrategy({
         name: 'remote-sync',
         source: 'remote',
         target: 'memory',
+        on: 'transform',
         blocking: true,
+        action: function (this: ConnectionStrategy, ...args: unknown[]) {
+          // Safe casts: Orbit calls a 'transform' listener with the
+          // transform first, and this strategy is only registered with the
+          // JSON:API 'remote' source and the 'memory' target.
+          const transform = args[0] as RecordTransform;
+          const remote = this.source as JSONAPISource;
+          const operations = remoteSyncOperations(
+            transform.operations,
+            remote.requestQueue.entries
+          );
+          if (operations.length === 0) return undefined;
+          return (this.target as Memory).sync({ ...transform, operations });
+        },
       })
     );
 };
@@ -325,7 +346,7 @@ const sourcesImpl = async (
     if (!isElectron) {
       //already did this if electron...
       setProjectsLoaded(await restoreBackup(coordinator));
-      const recs = memory?.cache.query((q) => q.findRecords('role')) as Role[];
+      const recs = findRecords(memory, 'role');
       if (recs.length === 0) {
         //orbitError(orbitInfo(null, 'Indexed DB corrupt or missing.'));
         goRemote = true;

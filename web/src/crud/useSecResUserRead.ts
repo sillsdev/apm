@@ -1,15 +1,14 @@
 import { useGlobal } from '../context/useGlobal';
-import { SectionResourceD, SectionResourceUserD } from '../model';
+import { SectionResourceD } from '../model';
 import { related } from '.';
+import { findRecords } from './tryFindRecord';
 
 export const useSecResUserRead = () => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
 
   return async (resource: SectionResourceD) => {
-    const sectionResourceUsers = memory?.cache.query((q) =>
-      q.findRecords('sectionresourceuser')
-    ) as SectionResourceUserD[];
+    const sectionResourceUsers = findRecords(memory, 'sectionresourceuser');
     const rec = sectionResourceUsers.filter(
       (r) =>
         related(r, 'sectionresource') === resource.id &&

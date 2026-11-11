@@ -1,14 +1,4 @@
-import {
-  Group,
-  GroupMembershipD,
-  InvitationD,
-  OrganizationMembership,
-  OrganizationMembershipD,
-  Plan,
-  ProjectD,
-  SectionD,
-  User,
-} from '../model';
+import { InvitationD, User } from '../model';
 import Memory from '@orbit/memory';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { localeDefault } from '../utils';
@@ -16,6 +6,7 @@ import * as actions from '../store';
 import { related } from '.';
 import { UpdateRelatedRecord } from '../model/baseModel';
 import JSONAPISource from '@orbit/jsonapi';
+import { findRecords } from './tryFindRecord';
 
 export function getUserById(users: User[], id: string): User {
   const findit = users.filter((u) => u.id === id);
@@ -25,9 +16,7 @@ export function getUserById(users: User[], id: string): User {
 }
 
 export function GetUser(memory: Memory, user: string): User {
-  const userRec: User[] = memory?.cache.query((q) =>
-    q.findRecords('user')
-  ) as any;
+  const userRec: User[] = findRecords(memory, 'user');
   return getUserById(userRec, user);
 }
 export async function AcceptInvitation(
@@ -64,9 +53,7 @@ export async function RemoveUserFromOrg(
 
   if (deletedUser.id === '') return; // user already deleted
 
-  const orgMemberRecs = memory?.cache.query((q) =>
-    q.findRecords('organizationmembership')
-  ) as OrganizationMembershipD[];
+  const orgMemberRecs = findRecords(memory, 'organizationmembership');
   let userOrgRec = orgMemberRecs.filter(
     (o) => related(o, 'user') === deletedUser.id
   );
@@ -82,9 +69,7 @@ export async function RemoveUserFromOrg(
     ops.push(t.removeRecord(o).toOperation());
   });
 
-  const invites = memory?.cache.query((q) =>
-    q.findRecords('invitation')
-  ) as InvitationD[];
+  const invites = findRecords(memory, 'invitation');
 
   const inviteRec = invites.filter(
     (i) =>
@@ -95,17 +80,13 @@ export async function RemoveUserFromOrg(
   inviteRec.forEach((i) => {
     ops.push(t.removeRecord(i).toOperation());
   });
-  const groupRecs = memory?.cache.query((q) =>
-    q.findRecords('group')
-  ) as Group[];
+  const groupRecs = findRecords(memory, 'group');
   const orgGroups = new Set(
     groupRecs
       .filter((g) => organizationIds.includes(related(g, 'owner')))
       .map((og) => og.id)
   );
-  const grpMbrRecs = memory?.cache.query((q) =>
-    q.findRecords('groupmembership')
-  ) as GroupMembershipD[];
+  const grpMbrRecs = findRecords(memory, 'groupmembership');
   const userGrpOrgRecs = grpMbrRecs.filter(
     (g) =>
       related(g, 'user') === deletedUser.id &&
@@ -115,21 +96,17 @@ export async function RemoveUserFromOrg(
     ops.push(t.removeRecord(g).toOperation());
   });
   /* in theory there might be projects online with this user assigned that the user has never downloaded...but such a small chance ignore it */
-  const projects = memory?.cache.query((q) =>
-    q.findRecords('project')
-  ) as ProjectD[];
+  const projects = findRecords(memory, 'project');
   const projectids = new Set(
     projects
       .filter((p) => organizationIds.includes(related(p, 'organization')))
       .map((p) => p.id)
   );
-  const plans = memory?.cache.query((q) => q.findRecords('plan')) as Plan[];
+  const plans = findRecords(memory, 'plan');
   const planids = new Set(
     plans.filter((p) => projectids.has(related(p, 'project'))).map((p) => p.id)
   );
-  let sections = memory?.cache.query((q) =>
-    q.findRecords('section')
-  ) as SectionD[];
+  let sections = findRecords(memory, 'section');
   sections = sections.filter((s) => planids.has(related(s, 'plan')));
 
   let assigned = sections.filter(
@@ -150,11 +127,9 @@ export async function RemoveUserFromOrg(
 
     //now...if any orgs are orphaned (this was the only user) delete those too
     const orgWithMembers = new Set(
-      (
-        memory?.cache.query((q) =>
-          q.findRecords('organizationmembership')
-        ) as OrganizationMembership[]
-      ).map((om) => related(om, 'organization'))
+      findRecords(memory, 'organizationmembership').map((om) =>
+        related(om, 'organization')
+      )
     );
     const orphaned = organizationIds.filter((o) => !orgWithMembers.has(o));
     await Promise.all(orphaned.map((o) => teamDelete(o)));

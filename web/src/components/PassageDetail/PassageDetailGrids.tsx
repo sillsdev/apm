@@ -8,15 +8,25 @@ import {
   ArtifactTypeSlug,
   passageRefText,
   PassageReference,
+  parseStepSettings,
   remoteIdGuid,
   sectionDescription,
   ToolSlug,
+  toolClipsPaperContent,
+  toolShowsChooserNoPaper,
+  toolShowsStepInstructions,
+  toolShowsStepPaper,
   useArtifactType,
   usePlanType,
   useSharedResRead,
   useStepTool,
 } from '../../crud';
-import { Plan, IToolStrings } from '../../model';
+import {
+  IToolStrings,
+  OrgWorkflowStepD,
+  Plan,
+  SectionArray,
+} from '../../model';
 import { toolSelector } from '../../selector';
 import { useMobile } from '../../utils';
 import { addPt } from '../../utils/addPt';
@@ -43,42 +53,41 @@ import PassageDetailTranscribe from './PassageDetailTranscribe';
 import PassageDetailRecord from './PassageDetailRecord';
 import ConsultantCheck from './ConsultantCheck';
 import PassageDetailItem from './PassageDetailItem';
+import { findRecords } from '../../crud/tryFindRecord';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
-function parseStepSettings(settings: unknown): Record<string, unknown> | null {
-  if (!settings) return null;
-  if (typeof settings === 'string') {
-    try {
-      return JSON.parse(settings) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
+function ChooserStepBody({
+  tool,
+  currentstep,
+  orgWorkflowSteps,
+  sectionArr,
+  plans,
+}: {
+  tool: string | undefined;
+  currentstep: string;
+  orgWorkflowSteps: OrgWorkflowStepD[];
+  sectionArr: SectionArray;
+  plans: Plan[];
+}) {
+  if (tool === ToolSlug.Resource) return <PassageDetailArtifacts />;
+  if (tool === ToolSlug.Paratext) return <PassageDetailParatextIntegration />;
+  if (tool === ToolSlug.Export) {
+    return (
+      <TranscriptionTab
+        projectPlans={plans}
+        floatTop
+        step={currentstep}
+        orgSteps={orgWorkflowSteps}
+        sectionArr={sectionArr}
+      />
+    );
   }
-  if (typeof settings === 'object') return settings as Record<string, unknown>;
+  if (toolShowsStepInstructions(tool)) {
+    return <PassageDetailDiscuss currentStep={currentstep} />;
+  }
   return null;
 }
-
-const stepColumnTools = [
-  ToolSlug.Discuss,
-  ToolSlug.TeamCheck,
-  ToolSlug.Record,
-  ToolSlug.Verses,
-  ToolSlug.CarefulSpeech,
-  ToolSlug.PhraseBackTranslate,
-  ToolSlug.Transcribe,
-  ToolSlug.ConsultantCheck,
-  ToolSlug.KeyTerm,
-] as string[];
-
-const clippedStepTools = [
-  ToolSlug.Record,
-  ToolSlug.Verses,
-  ToolSlug.CarefulSpeech,
-  ToolSlug.PhraseBackTranslate,
-  ToolSlug.Transcribe,
-  ToolSlug.ConsultantCheck,
-] as string[];
 
 const PassageDetailGrids = () => {
   const [plan] = useGlobal('plan'); //will be constant here
@@ -147,16 +156,17 @@ const PassageDetailGrids = () => {
   );
 
   const plans = useMemo(() => {
-    const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
-    return plans.filter((p) => p.id === plan);
+    // Orbit plan table rows match Plan.
+    return (findRecords(memory, 'plan') as Plan[]).filter((p) => p.id === plan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
   const headerToolLabel =
     tool && Object.prototype.hasOwnProperty.call(t, tool)
-      ? addPt(t.getString(tool))
+      ? addPt(t.getString(tool) ?? tool)
       : tool;
-  const showsStepColumn = stepColumnTools.includes(tool ?? '');
-  const clipsStepContent = clippedStepTools.includes(tool ?? '');
+  const showsChooser = toolShowsChooserNoPaper(tool);
+  const showsStepColumn = toolShowsStepPaper(tool);
+  const clipsStepContent = toolClipsPaperContent(tool);
   // Transcribe stretches to the pane so its task list and text box can fill it.
   const fillsPane =
     (tool === ToolSlug.Transcribe && !boldClauseTranscription) ||
@@ -233,22 +243,29 @@ const PassageDetailGrids = () => {
       contentSx={{ maxWidth: '100%', px: 1.5 }}
       fill={fillsPane}
     >
-      {tool === ToolSlug.Resource && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', minWidth: 0 }}>
+      {showsChooser && (
+        <Box
+          sx={{
+            minWidth: 0,
+            ...(tool === ToolSlug.Resource
+              ? { display: 'flex', flexWrap: 'wrap' }
+              : {}),
+          }}
+        >
           <PassageDetailChooser />
-          <PassageDetailArtifacts />
+          <ChooserStepBody
+            tool={tool}
+            currentstep={currentstep}
+            orgWorkflowSteps={orgWorkflowSteps}
+            sectionArr={sectionArr}
+            plans={plans}
+          />
         </Box>
       )}
       {tool === ToolSlug.Prompt && (
         <Box sx={{ minWidth: 0 }}>
           <PassageDetailPrompt />
         </Box>
-      )}
-      {tool === ToolSlug.Paratext && (
-        <Stack sx={{ minWidth: 0 }}>
-          <PassageDetailChooser />
-          <PassageDetailParatextIntegration />
-        </Stack>
       )}
       {showsStepColumn && (
         <>
@@ -270,7 +287,7 @@ const PassageDetailGrids = () => {
                 <KeyTerms />
               </Suspense>
             )}
-            {tool === ToolSlug.Discuss && (
+            {toolShowsStepInstructions(tool) && (
               <PassageDetailDiscuss currentStep={currentstep} />
             )}
             {tool === ToolSlug.Verses && <PassageDetailMarkVerses />}
@@ -303,20 +320,6 @@ const PassageDetailGrids = () => {
             showTopic={tool === ToolSlug.Community}
             segments={undefined}
           />
-        </Box>
-      )}
-      {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
-        <Box sx={{ minWidth: 0 }}>
-          <PassageDetailChooser />
-          {tool === ToolSlug.Export && (
-            <TranscriptionTab
-              projectPlans={plans}
-              floatTop
-              step={currentstep}
-              orgSteps={orgWorkflowSteps}
-              sectionArr={sectionArr}
-            />
-          )}
         </Box>
       )}
     </PassageDetailLayout>

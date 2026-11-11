@@ -23,7 +23,6 @@ import {
   type GridRowSelectionModel,
   type GridSortModel,
 } from '@mui/x-data-grid';
-import { RecordIdentity } from '@orbit/records';
 import {
   IState,
   PassageD,
@@ -394,18 +393,12 @@ export function AssignmentTable() {
 
   const RemoveOneAssignment = async (s: SectionD) => {
     await memory.update((t) => [
-      ...UpdateLastModifiedBy(t, s as RecordIdentity, user),
+      ...UpdateLastModifiedBy(t, s, user),
+      ...ReplaceRelatedRecord(t, s, 'transcriber', 'user', ''),
+      ...ReplaceRelatedRecord(t, s, 'editor', 'user', ''),
       ...ReplaceRelatedRecord(
         t,
-        s as RecordIdentity,
-        'transcriber',
-        'user',
-        ''
-      ),
-      ...ReplaceRelatedRecord(t, s as RecordIdentity, 'editor', 'user', ''),
-      ...ReplaceRelatedRecord(
-        t,
-        s as RecordIdentity,
+        s,
         'organizationScheme',
         'organizationscheme',
         ''

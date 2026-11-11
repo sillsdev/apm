@@ -1,5 +1,5 @@
 import Memory from '@orbit/memory';
-import { MediaFile, MediaFileD, PassageD } from '../model';
+import { MediaFileD, PassageD } from '../model';
 import related from './related';
 import { findRecord } from './tryFindRecord';
 import { VernacularTag } from './useArtifactType';
@@ -19,12 +19,10 @@ export function mediaPassageIdForTranscribe(
   return passage.id;
 }
 
-/** Media attached to the given passage. Generic so callers holding plain
- * MediaFile[] (e.g. TranscriberContext's planMediaRef) need no cast. */
-export function filterMediaForPassage<T extends MediaFile>(
-  media: T[],
+export function filterMediaForPassage(
+  media: MediaFileD[],
   passageId: string
-): T[] {
+): MediaFileD[] {
   if (!passageId) return [];
   return media.filter((m) => related(m, 'passage') === passageId);
 }

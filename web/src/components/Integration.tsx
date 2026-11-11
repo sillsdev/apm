@@ -68,6 +68,7 @@ import {
 } from '../utils';
 import { localSync } from '../business/localParatext/localSync';
 import { TokenContext } from '../context/TokenProvider';
+import { trySetStepComplete } from '../context/completeStepAfterSave';
 import { IAxiosStatus } from '../store/AxiosStatus';
 import Memory from '@orbit/memory';
 import {
@@ -100,11 +101,7 @@ interface IProps {
   passage?: Passage;
   currentstep?: string;
   sectionArr?: SectionArray;
-  setStepComplete?: (
-    stepId: string,
-    complete: boolean,
-    psgCompleted?: any[]
-  ) => Promise<void>;
+  setStepComplete?: (stepId: string, complete: boolean) => Promise<void>;
   gotoNextStep?: () => void;
   isPermitted?: boolean;
   projectId?: string;
@@ -349,8 +346,20 @@ export function IntegrationPanel(props: IProps) {
     } as any;
     await memory.update((t) => [
       ...AddRecord(t, pi, user, memory),
-      ...ReplaceRelatedRecord(t, pi, 'project', 'project', project),
-      ...ReplaceRelatedRecord(t, pi, 'integration', 'integration', integration),
+      ...ReplaceRelatedRecord<ProjectIntegration>(
+        t,
+        pi,
+        'project',
+        'project',
+        project
+      ),
+      ...ReplaceRelatedRecord<ProjectIntegration>(
+        t,
+        pi,
+        'integration',
+        'integration',
+        integration
+      ),
     ]);
     return pi.id;
   };
@@ -461,10 +470,16 @@ export function IntegrationPanel(props: IProps) {
     resetCount();
     if (!isMounted())
       showMessage(translateParatextErr(err, ts, organizedBy) || t.syncComplete);
-    if (setStepComplete && currentstep && !err) {
-      await setStepComplete(currentstep, true);
-      if (!isMounted() && gotoNextStep) gotoNextStep();
-    }
+    if (
+      setStepComplete &&
+      currentstep &&
+      !err &&
+      // A failed write was shown by setStepComplete; stay on this step.
+      (await trySetStepComplete(setStepComplete, currentstep, true)) &&
+      !isMounted() &&
+      gotoNextStep
+    )
+      gotoNextStep();
     setSyncing(false);
   };
 
@@ -747,9 +762,13 @@ export function IntegrationPanel(props: IProps) {
       setSyncing(false);
       forceDataChanges();
       if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
-        setStepComplete(currentstep, true).then(() => {
-          if (gotoNextStep) gotoNextStep();
-        });
+        // Never rejects for a failed write (shown by setStepComplete; we stay
+        // on this step); a gotoNextStep error still surfaces.
+        void trySetStepComplete(setStepComplete, currentstep, true).then(
+          (saved) => {
+            if (saved && gotoNextStep) gotoNextStep();
+          }
+        );
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */

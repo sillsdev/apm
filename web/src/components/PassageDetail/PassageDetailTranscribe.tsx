@@ -28,6 +28,11 @@ import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
+import { useSnackBar } from '../../hoc/SnackBar';
+import {
+  completeStepAfterSave,
+  trySetStepComplete,
+} from '../../context/completeStepAfterSave';
 import {
   getSegments,
   getSortedRegions,
@@ -78,6 +83,7 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
     passage,
   });
   const { waitForSave } = useContext(UnsavedContext).state;
+  const { showMessage } = useSnackBar();
   const { setState } = useContext(PassageDetailContext);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission =
@@ -178,41 +184,61 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
   }, [currentstep, vernacularSteps, stepSettings, hasChecking, hasPermission]);
 
   const handleComplete = (complete: boolean) => {
-    waitForSave(undefined, 200).finally(async () => {
-      await setStepComplete(currentstep, complete);
-      //if we're now complete, go to the next step or passage
-      if (complete) gotoNextStep();
+    // Save and step-write failures are shown inside; only an onDone bug rejects, and it should surface.
+    void completeStepAfterSave({
+      stepId: currentstep,
+      complete,
+      waitForSaves: () => waitForSave(undefined, 200),
+      setStepComplete,
+      showMessage,
+      // if we're now complete, go to the next step or passage
+      onDone: complete ? gotoNextStep : undefined,
     });
   };
 
+  /**
+   * Unmark this step and, with checking, the step after it; then an editor
+   * goes back a step. Resolves false (and stops) if a write failed — that
+   * failure was already shown by setStepComplete.
+   */
   const uncompletedSteps = async () => {
-    await setStepComplete(currentstep, false);
-    if (hasChecking && nextStep) await setStepComplete(nextStep, false);
+    if (!(await trySetStepComplete(setStepComplete, currentstep, false)))
+      return false;
+    if (
+      hasChecking &&
+      nextStep &&
+      !(await trySetStepComplete(setStepComplete, nextStep, false))
+    )
+      return false;
     if (curRole === 'editor' && prevStep) setCurrentStep(prevStep || '');
+    return true;
   };
 
   const handleReopen = () => {
-    uncompletedSteps();
+    // Never rejects: step-write failures are shown by setStepComplete.
+    void uncompletedSteps();
   };
 
   const handleReject = async (reason: string) => {
-    uncompletedSteps();
+    if (!(await uncompletedSteps())) return;
     if (reason === ActivityStates.NeedsNewRecording) {
       const curStep = parsedSteps.find((s) => s.id === currentstep);
       if (curStep?.settings === '{}') {
         // only for vernacular
         const recordStep = parsedSteps.find((s) => s.tool === ToolSlug.Record);
         if (recordStep) {
-          await setStepComplete(recordStep.id, false);
-          setCurrentStep(recordStep.id);
+          if (await trySetStepComplete(setStepComplete, recordStep.id, false))
+            setCurrentStep(recordStep.id);
           return;
         }
       }
     }
-    if (curRole === 'editor' && prevStep) {
-      await setStepComplete(prevStep, false);
+    if (
+      curRole === 'editor' &&
+      prevStep &&
+      (await trySetStepComplete(setStepComplete, prevStep, false))
+    )
       setCurrentStep(prevStep);
-    }
   };
 
   const handleReloadPlayer = (playerMediafile: MediaFile) => {

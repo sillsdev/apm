@@ -1,10 +1,15 @@
 import { StepComplete, Passage } from '../model';
 
-export const getStepComplete = (p: Passage) => {
-  let complete = [] as StepComplete[];
-  if (p?.attributes?.stepComplete && p?.attributes.stepComplete !== '{}') {
-    const tmp = JSON.parse(p.attributes.stepComplete);
-    if (tmp) complete = tmp.completed;
+/** Parse passage.stepComplete; malformed or missing data yields []. */
+export const getStepComplete = (p: Passage | undefined): StepComplete[] => {
+  const raw = p?.attributes?.stepComplete;
+  if (!raw || raw === '{}') return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.completed)
+      ? (parsed.completed as StepComplete[])
+      : [];
+  } catch {
+    return [];
   }
-  return complete;
 };

@@ -37,6 +37,7 @@ interface IProps {
   /** Section id for titleMediafile restore after pending retry (TT-7363). */
   sectionId?: string;
   defaultFilename: string;
+  mediaId?: string;
   playing: boolean;
   changeTab?: (v: number) => void;
   // canRecord?: () => boolean;
@@ -52,6 +53,7 @@ const TitleTabs = (props: IProps) => {
     passageId,
     sectionId,
     defaultFilename,
+    mediaId,
     playing,
     changeTab,
     onRecording,
@@ -198,11 +200,16 @@ const TitleTabs = (props: IProps) => {
   };
 
   const uploadMedia = useMediaUpload({
-    artifactId: passageId !== undefined ? VernacularTag : TitleId,
-    passageId,
-    planId: myPlanId,
-    afterUploadCb,
+    fields: {
+      artifactId: passageId !== undefined ? VernacularTag : TitleId,
+      passageId,
+      localPlanId: myPlanId,
+    },
     pendingRestore: titlePendingRestore,
+    afterUploadCb,
+    // Title uploads never touched importexportBusy before the shared hook.
+    noBusy: true,
+    skipImportExportWait: true,
   });
 
   return (
@@ -226,6 +233,7 @@ const TitleTabs = (props: IProps) => {
           planId={myPlanId}
           titleId={TitleId}
           defaultFilename={defaultFilename}
+          mediaId={mediaId}
           recToolId={recToolId}
           onMyRecording={handleMyRecording}
           canSave={canSaveRecording}

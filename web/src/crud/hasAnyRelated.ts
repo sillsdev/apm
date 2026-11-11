@@ -1,9 +1,17 @@
-export const hasAnyRelated = (rec: any, key: string) =>
-  rec &&
-  rec.relationships &&
-  key in rec.relationships &&
-  rec.relationships[key].data
-    ? !Array.isArray(rec.relationships[key].data)
-      ? true
-      : rec.relationships[key].data.length !== 0
-    : false;
+import { RelKey } from './related';
+
+// A generic relationship map has no index signature, so the read is untyped.
+export const hasAnyRelated = <
+  T extends { relationships?: object } | null | undefined,
+>(
+  rec: T,
+  key: RelKey<T>
+): boolean => {
+  const record = rec as {
+    relationships?: Record<string, { data?: unknown }>;
+  } | null;
+  const data = record?.relationships?.[key]?.data;
+  if (!data) return false;
+  if (Array.isArray(data)) return data.length !== 0;
+  return true;
+};

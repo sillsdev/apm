@@ -90,6 +90,10 @@ import TranscribeReject from '../../../TranscribeReject';
 import { asrStatesEqual } from '../../../../business/asr/asrState';
 import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
+import {
+  completeStepAfterSave,
+  trySetStepComplete,
+} from '../../../../context/completeStepAfterSave';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
 import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
 import { IRegionParams } from '../../../../crud/useWavesurferRegions';
@@ -301,30 +305,36 @@ export function PassageDetailTranscribeMobileContent() {
 
   const handleComplete = useCallback(
     (complete: boolean) => {
-      const waitPending = pendingSegmentSaveRef.current
-        ? pendingSegmentSaveRef.current
-        : Promise.resolve();
-
-      waitPending
-        .then(() => waitForSave(undefined, 200))
-        .then(async () => {
-          if (pendingSegmentSaveRef.current) {
-            await pendingSegmentSaveRef.current;
-          }
-          await setStepComplete(currentstep, complete);
-          if (complete) gotoNextStep();
-        })
-        .catch(() => {
-          // save failed or timed out; do not mark complete or navigate
-        });
+      // Save and step-write failures are shown inside; only an onDone bug rejects, and it should surface.
+      void completeStepAfterSave({
+        stepId: currentstep,
+        complete,
+        // A segment save can start while the tool save is awaited; wait out both.
+        waitForSaves: async () => {
+          await pendingSegmentSaveRef.current;
+          await waitForSave(undefined, 200);
+          await pendingSegmentSaveRef.current;
+        },
+        setStepComplete,
+        showMessage,
+        onDone: complete ? gotoNextStep : undefined,
+      });
     },
-    [waitForSave, setStepComplete, currentstep, gotoNextStep]
+    [waitForSave, setStepComplete, currentstep, gotoNextStep, showMessage]
   );
 
+  // Resolves false (and stops) if a write failed; setStepComplete showed it.
   const uncompletedSteps = useCallback(async () => {
-    await setStepComplete(currentstep, false);
-    if (hasChecking && nextStep) await setStepComplete(nextStep, false);
+    if (!(await trySetStepComplete(setStepComplete, currentstep, false)))
+      return false;
+    if (
+      hasChecking &&
+      nextStep &&
+      !(await trySetStepComplete(setStepComplete, nextStep, false))
+    )
+      return false;
     if (curRole === 'editor' && prevStep) setCurrentStep(prevStep || '');
+    return true;
   }, [
     setStepComplete,
     currentstep,
@@ -336,12 +346,13 @@ export function PassageDetailTranscribeMobileContent() {
   ]);
 
   const handleReopenCallback = useCallback(() => {
-    uncompletedSteps();
+    // Never rejects: step-write failures are shown by setStepComplete.
+    void uncompletedSteps();
   }, [uncompletedSteps]);
 
   const handleRejectCallback = useCallback(
     async (reason: string) => {
-      await uncompletedSteps();
+      if (!(await uncompletedSteps())) return;
       if (reason === ActivityStates.NeedsNewRecording) {
         const curStep = parsedSteps.find((s) => s.id === currentstep);
         if (curStep?.settings === '{}') {
@@ -349,16 +360,18 @@ export function PassageDetailTranscribeMobileContent() {
             (s) => s.tool === ToolSlug.Record
           );
           if (recordStep) {
-            await setStepComplete(recordStep.id, false);
-            setCurrentStep(recordStep.id);
+            if (await trySetStepComplete(setStepComplete, recordStep.id, false))
+              setCurrentStep(recordStep.id);
             return;
           }
         }
       }
-      if (curRole === 'editor' && prevStep) {
-        await setStepComplete(prevStep, false);
+      if (
+        curRole === 'editor' &&
+        prevStep &&
+        (await trySetStepComplete(setStepComplete, prevStep, false))
+      )
         setCurrentStep(prevStep);
-      }
     },
     [
       uncompletedSteps,

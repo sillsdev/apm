@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { User, GroupMembership, IUsertableStrings } from '../model';
+import { User, IUsertableStrings } from '../model';
 import {
   Dialog,
   DialogActions,
@@ -16,6 +16,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { userTableSelector } from '../selector';
 import useAllUsers from '../crud/useAllUsers';
 import { Button } from '../control/Button';
+import { findRecords } from '../crud/tryFindRecord';
 
 const StyledDialog = styled(Dialog)<DialogProps>(() => ({
   '& .MuiPaper-root': {
@@ -56,9 +57,7 @@ export function UserAdd(props: IProps) {
     const userRec = users.filter((u) => u?.id === userId);
     if (userRec.length === 0) return false;
     const groupId = allUsersRec(organization)?.id;
-    const memberRecs = memory?.cache.query((q) =>
-      q.findRecords('groupmembership')
-    ) as GroupMembership[];
+    const memberRecs = findRecords(memory, 'groupmembership');
     const memberRec = memberRecs.filter(
       (gm) => related(gm, 'group') === groupId && related(gm, 'user') === userId
     );

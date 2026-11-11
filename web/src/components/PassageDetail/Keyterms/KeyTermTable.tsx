@@ -24,7 +24,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useCallback, useContext } from 'react';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import { LoadAndPlay } from '../../../components/LoadAndPLay';
+import { LoadAndPlay } from '../../../components/LoadAndPlay';
 import AudioProgressButton from '../../../components/AudioProgressButton';
 import { useGlobal } from '../../../context/useGlobal';
 

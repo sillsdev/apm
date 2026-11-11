@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Invitation extends BaseModel {
   attributes: {
@@ -16,10 +16,11 @@ export interface Invitation extends BaseModel {
   relationships?: {
     organization: RecordRelationship;
     role: RecordRelationship;
+    allUsersRole: RecordRelationship;
     lastModifiedByUser: RecordRelationship;
   };
 }
 
-export type InvitationD = Invitation & InitializedRecord;
+export type InvitationD = Loaded<Invitation>;
 
 export default Invitation;

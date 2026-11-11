@@ -11,6 +11,9 @@ import {
 } from '../../components/PassageDetail/carefulSpeech/carefulSpeechCompletion';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { IRow } from '../../context/PassageDetailContext';
+import type { MediaFileD } from '../../model/mediafile';
+
+import { findRecords } from '../../crud/tryFindRecord';
 
 const clauseRegion: IRegion = { start: 0, end: 10, label: '' };
 
@@ -252,11 +255,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as Array<{
-        attributes?: { description?: string };
-      }>;
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'mediafile')).toBe(
@@ -285,9 +284,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as Array<Record<string, unknown>>;
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'passage')).toBe('pas-1');
     });
@@ -345,12 +342,9 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = (
-        memory.cache.query((q) => q.findRecords('sectionresource')) as Array<{
-          id: string;
-          attributes?: { sequenceNum?: number; description?: string };
-        }>
-      ).filter((r) => related(r, 'section') === 'sec-1');
+      const sectionResources = findRecords(memory, 'sectionresource').filter(
+        (r) => related(r, 'section') === 'sec-1'
+      );
 
       expect(sectionResources).toHaveLength(2);
       const seqs = sectionResources.map((r) => r.attributes?.sequenceNum);
@@ -407,14 +401,12 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
 
       const media = memory.cache.query((q) =>
         q.findRecord({ type: 'mediafile', id: 'resource-media-1' })
-      ) as { attributes?: { topic?: string } };
+      ) as MediaFileD;
       expect(media.attributes?.topic).toBe('Intro');
       expect(related(media, 'artifactCategory')).toBe('cat-1');
       expect(related(media, 'passage')).toBe('pas-1');
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as Array<Record<string, unknown>>;
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'mediafile')).toBe(
         'resource-media-1'
@@ -474,14 +466,12 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
       const media = memory.cache.getRecordSync({
         type: 'mediafile',
         id: 'proj-media-1',
-      }) as { attributes?: { topic?: string } };
+      }) as MediaFileD;
       expect(media.attributes?.topic).toBe('General resource take');
       expect(related(media, 'artifactCategory')).toBe('cat-1');
 
       // Must not create a sectionresource — configuration still owns linking.
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      );
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(0);
 
       expect(takePendingProjectResourceConfigs()).toEqual(['proj-media-1']);
@@ -502,10 +492,11 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
+      // getRecordSync is untyped. This row is the lwc mediafile.
       const media = memory.cache.getRecordSync({
         type: 'mediafile',
         id: 'lwc-media-1',
-      });
+      }) as MediaFileD;
       expect(related(media, 'sourceMedia')).toBe('vern-1');
     });
 
@@ -522,10 +513,11 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
+      // getRecordSync is untyped. This row is the lwc mediafile.
       const media = memory.cache.getRecordSync({
         type: 'mediafile',
         id: 'lwc-media-1',
-      });
+      }) as MediaFileD;
       const row = makeLwcRow({
         id: 'lwc-row',
         sourceMediaId: related(media, 'sourceMedia') ?? undefined,
@@ -567,11 +559,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const targets = memory.cache.query((q) =>
-        q.findRecords('orgkeytermtarget')
-      ) as unknown as Array<{
-        attributes?: { term?: string; termIndex?: number; target?: string };
-      }>;
+      const targets = findRecords(memory, 'orgkeytermtarget');
       expect(targets).toHaveLength(1);
       expect(targets[0].attributes?.term).toBe('grace');
       expect(targets[0].attributes?.termIndex).toBe(0);
@@ -603,12 +591,7 @@ describe('pending upload retry gaps (TT-7363 reopen)', () => {
         user,
       });
 
-      const sectionResources = memory.cache.query((q) =>
-        q.findRecords('sectionresource')
-      ) as unknown as Array<{
-        id: string;
-        attributes?: { sequenceNum?: number; description?: string };
-      }>;
+      const sectionResources = findRecords(memory, 'sectionresource');
       expect(sectionResources).toHaveLength(1);
       expect(related(sectionResources[0], 'section')).toBe('sec-1');
       expect(related(sectionResources[0], 'mediafile')).toBe('prompt-media-1');

@@ -3,14 +3,14 @@ import { axiosGet } from '../../utils/axios';
 import { isLangSet } from '../../utils/langTag';
 
 /**
- * Methods to list under Default. Undefined when the choice should be hidden
- * (fewer than two methods). The first entry is the one aero ranked highest.
+ * Methods to list under Default. Undefined when there is nothing to show.
+ * The first entry is the one aero ranked highest.
  */
 export function specificAsrMethods(
   methods: string[]
 ): { preferred: string; others: string[] } | undefined {
   const [preferred, ...others] = methods;
-  if (!preferred || others.length === 0) return undefined;
+  if (!preferred) return undefined;
   return { preferred, others };
 }
 

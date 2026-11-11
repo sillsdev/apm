@@ -3,14 +3,13 @@ import Memory from '@orbit/memory';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { related } from '.';
 import { currentDateTime } from '../utils';
+import { findRecords } from './tryFindRecord';
 
 export const offlineProjectFromProject = (
   memory: Memory,
   projectid: string
 ) => {
-  const orec = memory?.cache.query((q) =>
-    q.findRecords('offlineproject')
-  ) as OfflineProject[];
+  const orec = findRecords(memory, 'offlineproject');
   const oprecs = orec.filter((r) => related(r, 'project') === projectid);
   if (oprecs.length > 0) {
     return oprecs[0];

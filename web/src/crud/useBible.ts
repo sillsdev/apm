@@ -8,7 +8,7 @@ import {
   UpdateRecord,
 } from '../model/baseModel';
 import related from './related';
-import { findRecord } from './tryFindRecord';
+import { findRecord, findRecords } from './tryFindRecord';
 import { useJsonParams } from '../utils';
 
 export const pubDataCopyright = 'copyright';
@@ -21,18 +21,16 @@ export const useBible = () => {
   const { getParam, setParam } = useJsonParams();
 
   const getBible = (bibleId: string) => {
-    const bibles = (
-      memory?.cache.query((q: any) => q.findRecords('bible')) as BibleD[]
-    ).filter((b) => b.attributes.bibleId === bibleId);
+    const bibles = findRecords(memory, 'bible').filter(
+      (b) => b.attributes.bibleId === bibleId
+    );
     if (bibles.length > 0) return bibles[0];
     return undefined;
   };
   const getBibleOwner = (bibleid: string) => {
-    const bibles = (
-      memory?.cache.query((q: any) =>
-        q.findRecords('organizationbible')
-      ) as OrganizationBibleD[]
-    ).filter((b) => related(b, 'bible') === bibleid && b.attributes.ownerorg);
+    const bibles = findRecords(memory, 'organizationbible').filter(
+      (b) => related(b, 'bible') === bibleid && b.attributes.ownerorg
+    );
 
     if (bibles.length > 0) return related(bibles[0], 'organization');
     return undefined;
@@ -44,11 +42,9 @@ export const useBible = () => {
     return undefined;
   };
   const getOrgBibleRec = (orgId: string) => {
-    const bibles = (
-      memory?.cache.query((q: any) =>
-        q.findRecords('organizationbible')
-      ) as OrganizationBibleD[]
-    ).filter((b) => related(b, 'organization') === orgId);
+    const bibles = findRecords(memory, 'organizationbible').filter(
+      (b) => related(b, 'organization') === orgId
+    );
     if (bibles.length > 0) return bibles[0];
     return undefined;
   };

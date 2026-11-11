@@ -148,6 +148,12 @@ export const ContentDiv = styled('div')(({ theme }) => ({
     textAlign: 'center',
     padding: theme.spacing(1),
   },
+  // The grid editor is 11px tall, which clips the spelling underline.
+  '& .data-grid-container .data-grid .cell.title-spell.editing > input': {
+    height: 'auto',
+    textAlign: 'left',
+    paddingBottom: 2,
+  },
   '& .data-grid-container .data-grid .cell.pass': {
     backgroundColor: theme.palette.background.paper,
     textAlign: 'left',
@@ -213,6 +219,8 @@ export interface ICell {
   readOnly?: boolean;
   width?: number;
   className?: string;
+  key?: string;
+  valueViewer?: DataSheet.ValueViewer<ICell>;
 }
 
 export interface ICellChange {

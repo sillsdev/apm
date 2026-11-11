@@ -1,6 +1,5 @@
 import { RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
-import { InitializedRecord } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Bible extends BaseModel {
   attributes: {
@@ -22,6 +21,6 @@ export interface Bible extends BaseModel {
   };
 }
 
-export type BibleD = Bible & InitializedRecord;
+export type BibleD = Loaded<Bible>;
 
 export default Bible;

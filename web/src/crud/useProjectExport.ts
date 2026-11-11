@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import * as actions from '../store';
-import { ITranscriptionTabStrings, ExportType, PlanD } from '../model';
+import { ITranscriptionTabStrings, ExportType } from '../model';
 import {
   IPlanMedia,
   getDownloadableMediaInPlans,
@@ -15,6 +15,7 @@ import { RecordKeyMap } from '@orbit/records';
 import { useSelector } from 'react-redux';
 import { transcriptionTabSelector } from '../selector';
 import { useDispatch } from 'react-redux';
+import { findRecords } from './tryFindRecord';
 
 interface IProps {
   message?: string;
@@ -39,7 +40,7 @@ export const useProjectExport = (props: IProps) => {
   return (exportType: ExportType, projectId: string) => {
     setBusy(true);
 
-    const plans = memory.cache.query((q) => q.findRecords('plan')) as PlanD[];
+    const plans = findRecords(memory, 'plan');
 
     const projectplans = plans.filter(
       (pl) => related(pl, 'project') === projectId

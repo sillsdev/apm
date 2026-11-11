@@ -2300,7 +2300,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="phraseBackTranslationGuided.noStepLanguage">
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
@@ -5379,6 +5379,13 @@
                <context context-type="sourcefile">drawer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.saveTimedOut">
+            <source>Saving is taking too long. Please try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">UnsavedContext.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.saving">
             <source>Saving...</source>
             <target/>
@@ -5566,6 +5573,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaActions.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaActions.stop">
+            <source>Stop</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPlayButton.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaActions.view">
@@ -6766,6 +6780,90 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextBookMissing">
+            <source>This Bible does not include this book.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextEmpty">
+            <source>This Bible has no text for these verses.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextFetchFailed">
+            <source>The passage could not be loaded. Check your internet connection.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextForbidden">
+            <source>You do not have access to this Reference Text.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextLoading">
+            <source>Loading passage…</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoRange">
+            <source>This passage has no verse range.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoVoice">
+            <source>No voice for {0} on this device.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextRenewLogin">
+            <source>Renew login</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextRetry">
+            <source>Try again</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextSpeakFailed">
+            <source>The passage could not be spoken.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextUnauthorized">
+            <source>Your login has expired. Renew it to load the passage.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.research">
             <source>Research</source>
             <target/>
@@ -10144,7 +10242,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrMethodDefault">
-            <source>Default ({0})</source>
+            <source>{0} (Default)</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">AsrSettings.tsx</context>
@@ -10759,6 +10857,160 @@
                <context context-type="sourcefile">treeChart.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="ttsVoices.add">
+            <source>Add to ranking</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.explain">
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.filterReferenceTexts">
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.linuxNote">
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.loading">
+            <source>Loading voices&#8230;</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.local">
+            <source>Local</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.macNote">
+            <source>You can add Mac voices for other languages under System Settings &#8594; Accessibility &#8594; Spoken Content &#8594; System voice &#8594; Manage Voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.moveDown">
+            <source>Move down</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.moveUp">
+            <source>Move up</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.noMatch">
+            <source>No languages match.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.noVoices">
+            <source>This device has no text-to-speech voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.notOnDevice">
+            <source>Not on this device</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.online">
+            <source>Online</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.rankedCount">
+            <source>{0} ranked</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceLanguageGroup.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.read">
+            <source>Read</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.remove">
+            <source>Remove from ranking</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.sampleDefault">
+            <source>This is how this voice will sound.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.sampleText">
+            <source>Sample text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.search">
+            <source>Search languages</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.showOnline">
+            <source>Show online voices</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.title">
+            <source>Reference Text Voices</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.windowsNote">
+            <source>You can add Windows voices for other languages under Settings &#8594; Time &amp; language &#8594; Speech &#8594; Add voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="uploadProgress.cancel">
             <source>Cancel</source>
             <target/>
@@ -11335,11 +11587,32 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="vProject.bibleListError">
+            <source>The list of Bibles could not be loaded.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.book">
+            <source>Book</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="vProject.cancel">
             <source>Cancel</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.chooseBookFirst">
+            <source>Choose a book to see reference texts</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.configure">
@@ -11382,6 +11655,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.filteredToVoices">
+            <source>Showing only languages your team has ranked voices for.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.generalBook">
@@ -11452,6 +11732,20 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.licenseNotStated">
+            <source>License not stated</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.loadingBibles">
+            <source>Loading Bibles…</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.movement">
@@ -11538,11 +11832,32 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="vProject.primaryReferenceText">
+            <source>Primary Reference Text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="vProject.projectName">
             <source>Audio Project Name</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.publicDomain">
+            <source>Public Domain</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.referenceTextRemoved">
+            <source>{0} was removed because it does not include {1}.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.renderRecommended">
@@ -11564,6 +11879,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">LastEdit.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.secondaryReferenceText">
+            <source>Secondary Reference Text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.sections">
@@ -11627,6 +11949,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.usedInTeam">
+            <source>Used in this team</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="welcome.alone">

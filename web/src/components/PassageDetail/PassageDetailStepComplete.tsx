@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { Checkbox, IconButton, Box, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
@@ -20,8 +20,7 @@ import {
 } from '../../crud';
 import { useMobile } from '../../utils';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { verseToolId } from './markVersesTool';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { useToggleStepComplete } from './useToggleStepComplete';
 import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 import { RecordKeyMap } from '@orbit/records';
 
@@ -29,11 +28,7 @@ export const PassageDetailStepComplete = () => {
   const {
     currentstep,
     setCurrentStep,
-    stepComplete,
-    setStepComplete,
     setStepCompleteTo,
-    gotoNextStep,
-    psgCompleted,
     section,
     recording,
     isBoldWorkflow,
@@ -62,53 +57,17 @@ export const PassageDetailStepComplete = () => {
     setCurrentStep,
     isNavigationBlocked
   );
-  const { isChanged, startSave, waitForSave } =
-    useContext(UnsavedContext).state;
-  const { showMessage } = useSnackBar();
+  const { isChanged } = useContext(UnsavedContext).state;
+  const { complete, toggleComplete } = useToggleStepComplete();
 
   const hasPermission =
     canDoSectionStep(currentstep, section) &&
     !isLinkedNote(passage, sharedResource);
 
-  const complete = useMemo(
-    () => stepComplete(currentstep),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentstep, psgCompleted]
-  );
-
-  const handleToggleComplete = useCallback(async () => {
-    const curStatus = complete;
-    const finish = async () => {
-      await setStepComplete(currentstep, !complete);
-      if (!curStatus) gotoNextStep();
-    };
-
-    if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
-      startSave(verseToolId);
-      try {
-        await waitForSave(undefined, 25);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (message) showMessage(message);
-        return;
-      }
-    }
-
-    await finish();
-  }, [
-    complete,
-    currentstep,
-    tool,
-    isChanged,
-    startSave,
-    waitForSave,
-    setStepComplete,
-    gotoNextStep,
-    showMessage,
-  ]);
-
-  const handleSetCompleteTo = async () => {
-    setStepCompleteTo(currentstep);
+  const handleSetCompleteTo = () => {
+    setStepCompleteTo(currentstep).catch(() => {
+      // setStepComplete already logged and showed the failure
+    });
   };
   useEffect(() => {
     if (!busy && !importexportBusy && view) {
@@ -168,7 +127,7 @@ export const PassageDetailStepComplete = () => {
         title={t.title}
         slotProps={{ input: { title: t.title, 'aria-label': t.title } }}
         checked={complete}
-        onChange={handleToggleComplete}
+        onChange={toggleComplete}
         icon={<NotCompleteIcon id="step-no" />}
         checkedIcon={<CompleteIcon id="step-yes" />}
         disabled={

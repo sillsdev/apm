@@ -17,7 +17,8 @@ import {
   audioCommentPendingRestore,
   startAudioCommentSave,
 } from './startAudioCommentSave';
-import { CommentD, DiscussionD } from '../../model';
+import { DiscussionD } from '../../model';
+import { findRecords } from '../../crud/tryFindRecord';
 
 /**
  * TT-7363 (reopen, 2026-09-16): "Audio Translation and Audio Comment files
@@ -190,9 +191,7 @@ describe('new discussion with an audio comment (TT-7363)', () => {
       user,
     });
 
-    const comments = memory.cache.query((q) =>
-      q.findRecords('comment')
-    ) as CommentD[];
+    const comments = findRecords(memory, 'comment');
     expect(comments).toHaveLength(1);
     expect(comments[0].attributes.commentText).toBe(commentText);
     expect(related(comments[0], 'mediafile')).toBe('comment-media-1');

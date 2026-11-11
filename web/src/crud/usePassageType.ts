@@ -1,7 +1,7 @@
 import { useGlobal } from '../context/useGlobal';
 import PassageTypeD, { PassageTypeEnum } from '../model/passageType';
 import { remoteId } from './remoteId';
-import { findRecord } from './tryFindRecord';
+import { findRecords, findRecord } from './tryFindRecord';
 import { useSnackBar } from '../hoc/SnackBar';
 import { RecordKeyMap } from '@orbit/records';
 
@@ -23,9 +23,7 @@ export const usePassageType = () => {
 
   const getPassageTypeRec = (pt: PassageTypeEnum) => {
     if (pt !== PassageTypeEnum.PASSAGE) {
-      let recs = memory.cache.query((q) =>
-        q.findRecords('passagetype')
-      ) as PassageTypeD[];
+      let recs = findRecords(memory, 'passagetype');
       recs = recs.filter(
         (r) =>
           r.attributes.abbrev === pt &&
@@ -42,11 +40,9 @@ export const usePassageType = () => {
     return undefined;
   };
   const checkIt = (whereAmI: string) => {
-    const len = (
-      memory.cache.query((q) =>
-        q.findRecords('passagetype')
-      ) as unknown as PassageTypeD[]
-    ).filter((p) => Boolean(p?.keys?.remoteId)).length;
+    const len = findRecords(memory, 'passagetype').filter((p) =>
+      Boolean(p?.keys?.remoteId)
+    ).length;
     if (len > 5) showMessage(whereAmI + 'passagetype ' + len.toString());
   };
   return {

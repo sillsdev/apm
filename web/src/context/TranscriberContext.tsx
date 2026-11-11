@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect, useRef, useMemo, useContext } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGlobal } from '../context/useGlobal';
@@ -16,6 +15,7 @@ import {
   MediaFileD,
   BookName,
   ActivityStates,
+  PlanD,
 } from '../model';
 import {
   related,
@@ -103,13 +103,13 @@ const initState = {
     _rowData?: IRowData[]
   ) => {},
   index: -1,
-  rowData: Array<IRowData>(),
-  expandedGroups: Array<string>(),
+  rowData: new Array<IRowData>(),
+  expandedGroups: new Array<string>(),
   playItem: '',
   allDone: false,
   setAllDone: (_val: boolean) => {},
   refresh: () => {},
-  allBookData: Array<BookName>(),
+  allBookData: new Array<BookName>(),
   flat: false,
   artifactId: null as string | null,
   isDetail: false,
@@ -153,10 +153,10 @@ const TranscriberProvider = (props: IProps) => {
   const { getPlan, getPlanRecName } = usePlan();
   const view = React.useRef('');
   const [refreshed, setRefreshed] = useState(0);
-  const [planMedia, setPlanMedia] = useState<MediaFile[]>([]);
-  const planMediaRef = useRef<MediaFile[]>([]);
-  const passageMediaRef = useRef<MediaFile[]>([]);
-  const [planRec, setPlanRec] = useState<Plan>({} as Plan);
+  const [planMedia, setPlanMedia] = useState<MediaFileD[]>([]);
+  const planMediaRef = useRef<MediaFileD[]>([]);
+  const passageMediaRef = useRef<MediaFileD[]>([]);
+  const [planRec, setPlanRec] = useState<PlanD>({} as PlanD);
   const { sectionArr } = useContext(PassageDetailContext).state;
   const sectionMap = new Map<number, string>(sectionArr);
   const [state, setState] = useState({
@@ -537,16 +537,18 @@ const TranscriberProvider = (props: IProps) => {
     state.rowData.forEach((r) => {
       const secRecs = sections.filter((s) => s.id === r.section.id);
       if (secRecs.length > 0) {
-        const section = { ...secRecs[0] } as SectionD;
-        const transcriber = related(section, 'transcriber');
-        if (transcriber !== r.transcriber) changed = true;
-        const editor = related(section, 'editor');
-        if (editor !== r.editor) changed = true;
         const state =
           r.mediafile.attributes?.transcriptionstate ||
           ActivityStates.TranscribeReady;
+        const section = { ...secRecs[0] } as SectionD;
+        const transcriber = related(section, 'transcriber') || '';
+        if (transcriber !== r.transcriber) changed = true;
+        const editor = related(section, 'editor') || '';
+        if (editor !== r.editor) changed = true;
         const rowRole = actor[state] || 'view';
-        const assigned = related(section, rowRole);
+        let assigned = '';
+        if (rowRole === 'editor') assigned = editor;
+        else if (rowRole === 'transcriber') assigned = transcriber;
         rowData.push({
           ...r,
           section,

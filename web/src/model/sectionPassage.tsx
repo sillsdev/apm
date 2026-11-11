@@ -1,4 +1,5 @@
-import { InitializedRecord, UninitializedRecord } from '@orbit/records';
+import { Loaded } from './baseModel';
+import { UninitializedRecord } from '@orbit/records';
 
 export interface SectionPassage extends UninitializedRecord {
   attributes: {
@@ -9,6 +10,6 @@ export interface SectionPassage extends UninitializedRecord {
   };
 }
 
-export type SectionPassageD = SectionPassage & InitializedRecord;
+export type SectionPassageD = Loaded<SectionPassage>;
 
 export default SectionPassage;

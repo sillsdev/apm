@@ -18,6 +18,7 @@ import {
 } from './pendingTitleMediaQueue';
 import { getByIndex } from './sheetRowIndex';
 import { resolveTitleMediaRowIndex } from './resolveTitleMediaRowIndex';
+import { findRecords } from '../../crud/tryFindRecord';
 
 export interface ScriptureSheetSaveDeps {
   sheetRef: MutableRefObject<ISheet[]>;
@@ -228,12 +229,8 @@ export function useScriptureSheetSave(deps: ScriptureSheetSaveDeps) {
       const saveFn = async (sheet: ISheet[]) => {
         // Prefer Orbit cache over closed-over React lists — publishing rows
         // can exist on the sheet before the sections prop catches up (TT-7660).
-        const freshSections = memory.cache.query((q) =>
-          q.findRecords('section')
-        ) as SectionD[];
-        const freshPassages = memory.cache.query((q) =>
-          q.findRecords('passage')
-        ) as PassageD[];
+        const freshSections = findRecords(memory, 'section');
+        const freshPassages = findRecords(memory, 'passage');
         if (!offlineOnly && numChanges > 10) {
           return await onlineSave(sheet, prevSave);
         }

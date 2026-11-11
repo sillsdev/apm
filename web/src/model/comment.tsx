@@ -1,5 +1,5 @@
-import { InitializedRecord, RecordRelationship } from '@orbit/records';
-import { BaseModel } from './baseModel';
+import { RecordRelationship } from '@orbit/records';
+import { BaseModel, Loaded } from './baseModel';
 
 export interface Comment extends BaseModel {
   attributes: {
@@ -20,6 +20,6 @@ export interface Comment extends BaseModel {
   };
 }
 
-export type CommentD = Comment & InitializedRecord;
+export type CommentD = Loaded<Comment>;
 
 export default Comment;

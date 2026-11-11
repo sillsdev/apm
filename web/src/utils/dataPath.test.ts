@@ -85,6 +85,19 @@ describe('dataPath', () => {
     expect(p).toBe('C:\\\\home/offline/burrito/TST/text/metadata.json');
   });
 
+  it('in electron+offline, REFERENCE_TEXT keeps the chapter path under referencetext', async () => {
+    const { mod } = load({ isElectron: true, offlineData: 'offline' });
+    const out = { localname: '' };
+    await mod.dataPath(
+      'BSB/JHN/3.simple.json',
+      mod.PathType.REFERENCE_TEXT,
+      out
+    );
+    expect(out.localname).toBe(
+      'C:\\\\home/offline/referencetext/BSB/JHN/3.simple.json'
+    );
+  });
+
   it('dataPath() still returns the offline data root when that folder does not exist yet', async () => {
     const { mod } = load({
       isElectron: true,

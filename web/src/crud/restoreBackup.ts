@@ -1,13 +1,13 @@
 import { memory, backup, schema } from '../schema';
 import { logError, Severity, infoMsg, waitForIt, LocalKey } from '../utils';
 import { trackBackupRestore } from '../utils/removeOrbitRemote';
-import { RecordQueryBuilder, UninitializedRecord } from '@orbit/records';
+import { UninitializedRecord } from '@orbit/records';
 import { related } from '../crud';
-import { OfflineProject } from '../model';
 import Coordinator from '@orbit/coordinator';
 import MemorySource from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import bugsnagClient from '../auth/bugsnagClient';
+import { findRecords } from './tryFindRecord';
 
 let restorePromise: Promise<string[]> | null = null;
 
@@ -54,9 +54,7 @@ async function restoreBackupOnce(coordinator?: Coordinator): Promise<string[]> {
       allRecords?.map((r: UninitializedRecord) => t.addRecord(r))
     );
 
-    const ops = myMemory?.cache.query((q: RecordQueryBuilder) =>
-      q.findRecords('offlineproject')
-    ) as OfflineProject[];
+    const ops = findRecords(myMemory, 'offlineproject');
     const loaded = ops.filter((o) => o.attributes?.snapshotDate);
 
     const projs = new Set(loaded.map((p) => related(p, 'project') as string));

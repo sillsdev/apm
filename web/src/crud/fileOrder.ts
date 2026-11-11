@@ -19,7 +19,7 @@ export const updateableFiles = [
   { table: 'section', sort: 'F' },
   { table: 'sectionresourceuser', sort: 'J' },
   { table: 'user', sort: 'A' },
-];
+] as const satisfies readonly fileInfo[];
 
 /* If these can change in electron, they must extend BaseModel instead of Record,
       call UpdateRecord instead of t.updateRecord, and be moved up to the files array */
@@ -48,7 +48,12 @@ export const staticFiles = [
   { table: 'sharedresource', sort: 'I' },
   { table: 'sharedresourcereference', sort: 'J' },
   { table: 'workflowstep', sort: 'B' },
-];
+] as const satisfies readonly fileInfo[];
+
+/** Every table that sync and the sanity check walk; a new entry above extends it. */
+export type SyncTable =
+  | (typeof updateableFiles)[number]['table']
+  | (typeof staticFiles)[number]['table'];
 
 export const localFiles = [
   { table: 'offlineproject', sort: 'K' },
