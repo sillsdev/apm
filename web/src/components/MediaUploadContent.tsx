@@ -375,7 +375,10 @@ function MediaUploadContent(props: IProps) {
 
   useEffect(() => {
     if (controlsRef !== undefined) {
-      controlsRef.current.handleAddOrSave = handleAddOrSave;
+      controlsRef.current.handleAddOrSave = () => {
+        // void: handleAddOrSave catches its own errors, so it cannot reject.
+        void handleAddOrSave();
+      };
       controlsRef.current.handleCancel = handleCancel;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
