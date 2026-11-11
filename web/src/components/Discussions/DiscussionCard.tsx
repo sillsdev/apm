@@ -1,7 +1,6 @@
 import { useEffect, useContext, useMemo, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import {
-  alpha,
   Box,
   BoxProps,
   Card,
@@ -146,10 +145,7 @@ const StyledCard = styled(Card, {
         }
       : {
           margin: theme.spacing(1),
-          // The tint over secondary.light (the list's old background) keeps the
-          // card's white text readable now that the list itself is white.
-          backgroundColor: theme.palette.secondary.light,
-          backgroundImage: `linear-gradient(${alpha(theme.palette.primary.light, 0.4)}, ${alpha(theme.palette.primary.light, 0.4)})`,
+          backgroundColor: '#39a0da',
           flexGrow: 1,
         }),
 }));
