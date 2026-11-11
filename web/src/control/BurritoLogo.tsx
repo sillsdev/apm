@@ -19,7 +19,7 @@ export const BurritoLogo = ({ sx = [] }: IProps) => {
         },
         ...[sx].flat(),
       ]}
-      alt="Record or Upload Icon"
+      alt="Burrito Logo"
     />
   );
 };
