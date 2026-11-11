@@ -56,7 +56,6 @@ import {
 } from '../crud/useTeamWorkflowProcess';
 import StickyRedirect from '../components/StickyRedirect';
 import {
-  infoMsg,
   logError,
   needsStepNavigationConfirm,
   prettySegment,
