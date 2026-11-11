@@ -2053,14 +2053,8 @@ export default [
   ],
   [1683, { G: 'Humtah', D: 'location; territory of Judah' }],
   [1684, { G: 'Hamran', D: 'son of Dishon; descendant of Seir' }],
-  [
-    1687,
-    { G: 'Hamath', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת צוֹבָה' },
-  ],
-  [
-    1689,
-    { G: 'Hamath-zobah', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת' },
-  ],
+  [1687, { G: 'Hamath', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת צוֹבָה' }],
+  [1689, { G: 'Hamath-zobah', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת' }],
   [1691, { G: 'Hamathite', D: 'inhabitant of Hamath; descendant of Canaan' }],
   [
     1692,
@@ -2766,10 +2760,7 @@ export default [
   [2012, { G: 'Jehucal', D: 'son of Shelemiah; official; time of Zedekiah' }],
   [2013, { G: 'Jehonadab', D: 'son of Shimea, brother of David' }],
   [2014, { G: 'Jehonadab', D: 'son of Rechab; ancestor of Rechabites' }],
-  [
-    2015,
-    { G: 'Jonathan', D: 'son of king Saul; tribe of Benjamin; 1- יוֹנָתָן' },
-  ],
+  [2015, { G: 'Jonathan', D: 'son of king Saul; tribe of Benjamin; 1- יוֹנָתָן' }],
   [2016, { G: 'Jonathan', D: 'son of Abiathar; tribe of Levi; 2- יוֹנָתָן' }],
   [
     2017,
@@ -2799,10 +2790,7 @@ export default [
       D: 'son of Jehoshaphat; king of Judah (848-841); 1- יוֹרָם',
     },
   ],
-  [
-    2026,
-    { G: 'Jehoram', D: 'son of Ahab; king of Israel (852-841); 2- יוֹרָם' },
-  ],
+  [2026, { G: 'Jehoram', D: 'son of Ahab; king of Israel (852-841); 2- יוֹרָם' }],
   [2027, { G: 'Jehoram', D: 'priest; time of Jehoshaphat; 3- יוֹרָם' }],
   [
     2030,
@@ -2983,10 +2971,7 @@ export default [
       D: 'son of Jehoshaphat; king of Judah (848-841); 1- יְהוֹרָם',
     },
   ],
-  [
-    2132,
-    { G: 'Joram', D: 'son of Ahab; king of Israel (852-841); 2- יְהוֹרָם' },
-  ],
+  [2132, { G: 'Joram', D: 'son of Ahab; king of Israel (852-841); 2- יְהוֹרָם' }],
   [2133, { G: 'Joram', D: 'priest; time of Jehoshaphat; 3- יְהוֹרָם' }],
   [2134, { G: 'Joram', D: 'son of Toi, king of Hamath' }],
   [2141, { G: 'Jotham', D: 'son of Gideon, Jerubbaal; tribe of Manasseh' }],
@@ -4414,14 +4399,8 @@ export default [
     3174,
     { G: 'um voto, juro, ou promesa', D: 'uma promessa solene de fazer algo' },
   ],
-  [
-    3175,
-    { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלֹל' },
-  ],
-  [
-    3176,
-    { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלָל' },
-  ],
+  [3175, { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלֹל' }],
+  [3176, { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלָל' }],
   [3177, { G: 'Nod', D: 'location' }],
   [3178, { G: 'Nodab', D: 'people' }],
   [3179, { G: 'Nohah', D: 'son of Benjamin' }],
@@ -6298,15 +6277,9 @@ export default [
   [4284, { G: 'Kerioth', D: 'town; Moab' }],
   [4285, { G: 'Kerioth', D: 'town; territory of Judah' }],
   [4288, { G: 'Kiriath-Huzoth', D: 'town; Moab' }],
-  [
-    4289,
-    { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת עָרִים' },
-  ],
+  [4289, { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת עָרִים' }],
   [4291, { G: 'Kiriath-Sepher', D: 'town; for priests; territory of Judah' }],
-  [
-    4292,
-    { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת יְעָרִים' },
-  ],
+  [4292, { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת יְעָרִים' }],
   [
     4293,
     { G: 'Kiriathaim', D: 'town east of Jordan; territory of Reuben, Moab' },
