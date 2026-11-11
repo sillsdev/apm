@@ -484,10 +484,13 @@ const initialState = {
 			"categoryList": "Category List",
 			"close": "Hide Discussion pane",
 			"collapse": "Show/Hide All Comments",
+			"confirmClose": "You have an unsent comment. Are you sure you want to close?",
+			"confirmCloseTitle": "Confirm Close",
 			"discussionFilter": "Discussion Filter",
 			"filterStatus": "{0} / {1} discussions",
 			"open": "Show Discussion pane",
 			"saveFirst": "Save changed discussions and comments first?",
+			"stayOpen": "Stay Open",
 			"title": "Discussions",
 		}
 	}),

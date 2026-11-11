@@ -453,10 +453,13 @@ export interface IDiscussionListStrings extends Localize.LocalizedStringsMethods
     "categoryList": string;
     "close": string;
     "collapse": string;
+    "confirmClose": string;
+    "confirmCloseTitle": string;
     "discussionFilter": string;
     "filterStatus": string;
     "open": string;
     "saveFirst": string;
+    "stayOpen": string;
     "title": string;
 };
 

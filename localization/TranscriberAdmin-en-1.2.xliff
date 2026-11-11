@@ -2635,6 +2635,20 @@
                <context context-type="sourcefile">discussionList.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="discussionList.confirmClose">
+            <source>You have an unsent comment. Are you sure you want to close?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">DiscussionList.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="discussionList.confirmCloseTitle">
+            <source>Confirm Close</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">DiscussionList.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="discussionList.discussionFilter">
             <source>Discussion Filter</source>
             <target/>
@@ -2661,6 +2675,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">discussionList.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="discussionList.stayOpen">
+            <source>Stay Open</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">DiscussionList.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="discussionList.title">
