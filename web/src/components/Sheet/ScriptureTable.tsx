@@ -1493,7 +1493,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
       <Uploader
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
-        showMessage={showMessage}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}

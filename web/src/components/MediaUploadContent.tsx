@@ -169,7 +169,6 @@ interface IProps {
   ready?: boolean | undefined; // false disables the save/upload button
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
-  team?: string | undefined; // used to check for speakers when adding a card
   onFiles?: ((files: File[]) => void) | undefined;
   inValue?: string | undefined;
   audioOnly?: boolean | undefined;
@@ -211,7 +210,6 @@ function MediaUploadContent(props: IProps) {
     ready,
     speaker,
     onSpeaker,
-    team,
     onFiles,
     inValue,
     audioOnly,
@@ -427,7 +425,6 @@ function MediaUploadContent(props: IProps) {
             name={hasRights ? speaker || '' : ''}
             onRights={handleRights}
             onChange={handleSpeaker}
-            team={team}
             aiip={false}
           />
         )}

@@ -601,7 +601,6 @@ export function PassageDetailItem(props: IProps) {
         noBusy={true}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
-        showMessage={showMessage}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}

@@ -252,7 +252,6 @@ const TitleTabs = (props: IProps) => {
           onOpen={handleClose}
           cancelled={cancelled}
           uploadMethod={uploadMedia}
-          onSave={handleSave}
           onFiles={(files) => setFiles(files)}
         />
       )}
