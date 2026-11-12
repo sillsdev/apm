@@ -2635,6 +2635,20 @@
                <context context-type="sourcefile">discussionList.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="discussionList.confirmClose">
+            <source>You have an unsent comment. If you close, your changes will be discarded.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">DiscussionList.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="discussionList.confirmCloseTitle">
+            <source>Confirm Close</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">DiscussionList.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="discussionList.discussionFilter">
             <source>Discussion Filter</source>
             <target/>
@@ -2661,6 +2675,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">discussionList.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="discussionList.stayOpen">
+            <source>Stay Open</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">DiscussionList.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="discussionList.title">
@@ -6500,13 +6521,6 @@
       			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.createResources">
-      		<source>Create Resources</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PassageMedia.tsx</context>
-      		</context-group>
-      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.createXResources">
       		<source>Create {0} resources</source>
       		<target/>
@@ -6561,13 +6575,6 @@
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">SelectSections.tsx</context>
-      		</context-group>
-      	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.discardAndClose">
-      		<source>Discard and Close</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.editAudioResource">
@@ -9181,6 +9188,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">ResourceData.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="shared.discardAndClose">
+            <source>Discard and Close</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="shared.editor">

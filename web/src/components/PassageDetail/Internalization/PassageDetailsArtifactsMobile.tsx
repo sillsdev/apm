@@ -793,13 +793,11 @@ export function PassageDetailArtifactsMobile() {
         <ResourceData
           media={mediaRef.current}
           uploadType={uploadType}
-          catAllowNew={true}
           initCategory={catIdRef.current || ''}
           onCategoryChange={handleCategory}
           catCommitRef={editCatCommitRef}
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
-          catRequired={false}
           resourceKind={resourceKind}
           onPassResChange={handlePassRes}
           allowGeneralResourceOption={false}
@@ -835,7 +833,7 @@ export function PassageDetailArtifactsMobile() {
           text={t.confirmClose}
           no={t.keepOpen}
           primaryButton="no"
-          yes={t.discardAndClose}
+          yes={ts.discardAndClose}
           noResponse={() => setEditCloseConfirmation(false)}
           yesResponse={handleEditDiscard}
         />

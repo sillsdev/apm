@@ -217,7 +217,6 @@ interface IProps {
   /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
   applyRegionColor?: ApplyRegionColor;
   hideToolbar?: boolean;
-  hideControls?: boolean;
   /**
    * When false, this player registers none of its keyboard shortcuts (transport,
    * region nav, and record) — e.g. used by a second, non-owning player (e.g. an off-screen
@@ -240,7 +239,6 @@ interface IProps {
   resetDisabled?: boolean;
   /** Hide Reset while still showing +/− (Phrase BT listen pass). */
   hideSegmentReset?: boolean;
-  hasRecording?: boolean;
   isStopLogic?: boolean;
   /** When true, hide undo, copy, cut, and paste waveform edit tools. */
   hideWaveformEditTools?: boolean;
@@ -445,7 +443,6 @@ function WSAudioPlayer(props: IProps) {
     controlsRef,
     applyRegionColor,
     hideToolbar,
-    hideControls,
     hotkeys = true,
     highlightPlay,
     beforePlay,
@@ -453,7 +450,6 @@ function WSAudioPlayer(props: IProps) {
     onClearSegments,
     resetDisabled,
     hideSegmentReset,
-    hasRecording,
     isStopLogic,
     hideWaveformEditTools,
     hasSegmentUndo,
@@ -2383,7 +2379,6 @@ function WSAudioPlayer(props: IProps) {
     isSmall: boolean;
     isMobileView?: boolean;
     isRecordingRights?: boolean;
-    showText?: boolean;
   }) => (
     <RecordButton
       recording={recording}
@@ -2401,7 +2396,6 @@ function WSAudioPlayer(props: IProps) {
         (!allowRecord && !recording)
       }
       tooltipTitle={recordTooltipTitle}
-      hasRecording={hasRecording ?? false}
       isStopLogic={isStopLogic ?? false}
       oneShotUsed={oneShotUsed}
       {...opts}
@@ -2430,7 +2424,6 @@ function WSAudioPlayer(props: IProps) {
       waveformLoading,
       oneTryOnly,
       oneShotUsed,
-      hasRecording,
       isStopLogic,
       recordTooltipTitle,
     ]
@@ -2813,6 +2806,7 @@ function WSAudioPlayer(props: IProps) {
         px: 1,
         boxSizing: 'border-box',
         overflowX: 'hidden',
+        overflowY: 'hidden',
         ...(dockRecordButton
           ? {}
           : {
@@ -2925,7 +2919,7 @@ function WSAudioPlayer(props: IProps) {
           </Box>
         )}
 
-        {!hideControls && isTransportLayout ? (
+        {isTransportLayout ? (
           <Stack
             direction="row"
             spacing={1}
@@ -2963,7 +2957,7 @@ function WSAudioPlayer(props: IProps) {
               )}
             </Stack>
           </Stack>
-        ) : !hideControls ? (
+        ) : (
           <Stack
             direction="row"
             spacing={1}
@@ -3089,10 +3083,10 @@ function WSAudioPlayer(props: IProps) {
               )}
             </Stack>
           </Stack>
-        ) : null}
+        )}
       </Stack>
 
-      {allowRecord && !dockRecordButton && !keepItSmall && !hideControls && (
+      {allowRecord && !dockRecordButton && !keepItSmall && (
         <Box
           sx={{
             display: 'flex',
@@ -3106,7 +3100,6 @@ function WSAudioPlayer(props: IProps) {
             isSmall: Boolean(isMobileView),
             isMobileView: Boolean(isMobileView),
             isRecordingRights: false,
-            showText: isMobileView ? undefined : (hasRecording ?? false),
           })}
         </Box>
       )}

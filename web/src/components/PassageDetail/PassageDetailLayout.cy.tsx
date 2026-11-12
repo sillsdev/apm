@@ -2,7 +2,7 @@ import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import PassageDetailLayout from './PassageDetailLayout';
 
-/** Stands in for a collapsed DiscussionPanel: a fab pinned to the corner. */
+/** Stands in for a collapsed DiscussionDrawer: a fab pinned to the corner. */
 const PinnedFab = () => (
   <button
     data-cy="layout-fab"

@@ -63,7 +63,6 @@ type TranscriptionStrings =
   ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
 
 interface Props {
-  width: number;
   mediafile: MediaFileD | undefined;
   text: string;
   onTextChange: (value: string) => void;

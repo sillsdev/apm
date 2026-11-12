@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
+import DiscussionDrawer from '../../components/Discussions/DiscussionDrawer';
 import PassageDetailLayout from './PassageDetailLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
 import PassageDetailMobileFooter from './mobile/PassageDetailMobileFooter';
@@ -24,18 +24,12 @@ import { ISharedStrings } from '@model/index';
 import { sharedSelector } from '../../selector';
 
 interface Props {
-  showSideBySide: boolean;
-  flushDiscussionLeft?: boolean;
   recordContent: React.ReactNode;
 }
 
 const noAudioGraceMs = 5000;
 
-export default function PassageDetailMobileDetail({
-  showSideBySide: areDiscussionsSideBySide,
-  flushDiscussionLeft,
-  recordContent,
-}: Props) {
+export default function PassageDetailMobileDetail({ recordContent }: Props) {
   const {
     currentstep,
     section,
@@ -61,14 +55,8 @@ export default function PassageDetailMobileDetail({
   }, [passageId, tool]);
 
   const showLoading = isWaitingForAudio && !graceExpired;
-  // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
+  // Desktop omits DiscussionDrawer for Internalize (Resource); match that on mobile (TT-7281).
   const doesStepSupportDiscussions = tool !== ToolSlug.Resource;
-  const contentSx = useMemo(
-    () => ({
-      ...(flushDiscussionLeft ? { pl: 0 } : {}),
-    }),
-    [flushDiscussionLeft]
-  );
   const { userIsAdmin } = useRole();
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
   const showPromptAdmin =
@@ -125,66 +113,22 @@ export default function PassageDetailMobileDetail({
         backgroundColor: 'background.default',
         px: 1.5,
         pb: 1.5,
-        ...contentSx,
       }}
     >
       {!isWaitingForAudio ? (
-        <>
-          {areDiscussionsSideBySide && doesStepSupportDiscussions ? (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 5,
-                pt: 1.5,
-                width: '100%',
-                minWidth: 0,
-                overflow: 'clip',
-              }}
-              data-cy="discussion-side-by-side"
-            >
-              <Box sx={{ flex: 1, minWidth: 0, overflow: 'clip' }}>
-                {recordContent}
-              </Box>
-              <Box
-                sx={{
-                  flexShrink: 0,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                }}
-                data-cy="discussion-side-column"
-              >
-                <DiscussionPanel />
-              </Box>
-            </Box>
-          ) : (
-            <Stack
-              spacing={1}
-              sx={{
-                pt: 1.5,
-                width: '100%',
-                maxWidth: '100%',
-                minWidth: 0,
-                overflowX: 'clip',
-              }}
-            >
-              <Box
-                sx={
-                  flushDiscussionLeft
-                    ? { display: 'none' }
-                    : { minWidth: 0, width: '100%' }
-                }
-              >
-                {recordContent}
-              </Box>
-              {doesStepSupportDiscussions && (
-                <Box sx={{ width: '100%', minWidth: 0 }}>
-                  <DiscussionPanel />
-                </Box>
-              )}
-            </Stack>
-          )}
-        </>
+        <Stack
+          spacing={1}
+          sx={{
+            pt: 1.5,
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            overflowX: 'clip',
+          }}
+        >
+          <Box sx={{ minWidth: 0, width: '100%' }}>{recordContent}</Box>
+          {doesStepSupportDiscussions && <DiscussionDrawer />}
+        </Stack>
       ) : showLoading ? (
         <Backdrop
           open
