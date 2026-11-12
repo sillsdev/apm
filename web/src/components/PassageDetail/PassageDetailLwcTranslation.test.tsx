@@ -168,7 +168,7 @@ describe('PassageDetailLwcTranslation', () => {
   });
 
   it('shows prerequisite when careful speech is incomplete', () => {
-    render(<PassageDetailLwcTranslation width={400} />);
+    render(<PassageDetailLwcTranslation />);
     expect(
       screen.getByText('Complete Careful Speech first')
     ).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('PassageDetailLwcTranslation', () => {
 
   it('shows the guided UI when careful speech is complete', () => {
     mockCarefulSpeechComplete = new Set([0]);
-    render(<PassageDetailLwcTranslation width={400} />);
+    render(<PassageDetailLwcTranslation />);
     expect(
       document.querySelector('[data-cy="lwc-reference-player"]')
     ).toBeTruthy();
@@ -187,7 +187,7 @@ describe('PassageDetailLwcTranslation', () => {
   it('opens on a recorded clause in review mode', async () => {
     mockCarefulSpeechComplete = new Set([0]);
     mockLwcComplete = new Set([0]);
-    render(<PassageDetailLwcTranslation width={400} />);
+    render(<PassageDetailLwcTranslation />);
     await waitFor(() => expect(controlsProps?.phase).toBe('recorded'));
     expect(controlsProps?.showRecorder).toBe(true);
     expect(
@@ -208,7 +208,7 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
 
   // Play the reference clause through, which is what reveals the recorder.
   const openRecorder = async () => {
-    render(<PassageDetailLwcTranslation width={400} />);
+    render(<PassageDetailLwcTranslation />);
     await waitFor(() => expect(referenceProps).toBeDefined());
     await act(async () => {
       (referenceProps?.onPlaybackComplete as () => void)();

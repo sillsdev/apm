@@ -29,19 +29,16 @@ interface Mark {
 }
 
 interface IProps {
-  width: number;
   sx?: SxProps;
 }
 
-export const PassageDetailChooser = ({ width, sx }: IProps) => {
+export const PassageDetailChooser = ({ sx }: IProps) => {
   const [memory] = useGlobal('memory');
   const {
     passage,
     section,
     prjId,
     allBookData,
-    chooserSize,
-    setChooserSize,
     setCurrentStep,
     isNavigationBlocked,
   } = usePassageDetailContext();
@@ -123,8 +120,6 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
         }
       });
     if (newCount !== passageCount) setPassageCount(newCount);
-    const newSize = newCount > 1 ? 48 : 0;
-    if (chooserSize !== newSize) setChooserSize(newSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, allBookData]);
 
@@ -139,10 +134,8 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
     passageNavigate(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-  const SCROLL_BUTTONS_WIDTH = 48;
   return passageCount > 1 ? (
     <StyledBox
-      width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
       sx={{
         ...sx,
         alignItems: 'center',

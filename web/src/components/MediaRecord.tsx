@@ -107,7 +107,7 @@ export interface IProps {
   oneTryOnly?: boolean | undefined;
   allowWave?: boolean | undefined;
   height?: number;
-  width: number;
+  width?: number;
   doReset?: boolean | undefined;
   setDoReset?: ((r: boolean) => void) | undefined;
   preload?: number | undefined;
@@ -920,8 +920,8 @@ function MediaRecord(props: IProps) {
     <Paper
       id="mediaRecord"
       sx={{
-        width: width, // isMobileView is false here
-        maxWidth: width,
+        width: width ?? '100%', // isMobileView is false here
+        maxWidth: width ?? '100%',
         minWidth: 0,
       }}
     >

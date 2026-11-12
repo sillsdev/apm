@@ -11,7 +11,6 @@ import {
   Box,
   SxProps,
   styled,
-  Stack,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -50,7 +49,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
 import { btDefaultSegParams } from './btDefaultSegParams';
-import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
+import DiscussionDrawer from '../../components/Discussions/DiscussionDrawer';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { SuggestedSegments } from '../../business/player/usePlayerLogic';
 
@@ -63,7 +62,13 @@ const PlayerRow = styled('div')(() => ({
   display: 'flex',
 }));
 
-const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
+const paperProps = {
+  p: 2,
+  m: 'auto',
+  width: '100%',
+  boxSizing: 'border-box',
+} as SxProps;
+const rowProp = { display: 'flex', width: '100%', minWidth: 0 } as SxProps;
 const buttonProp = { mx: 1 } as SxProps;
 const ctlProps = { m: 1, pb: 2 } as SxProps;
 const statusProps = {
@@ -75,14 +80,13 @@ const statusProps = {
 
 interface IProps {
   ready?: () => boolean;
-  width: number;
   slugs: ArtifactTypeSlug[];
   segments: NamedRegions | undefined;
   showTopic: boolean;
 }
 
 export function PassageDetailItem(props: IProps) {
-  const { width, slugs, segments, showTopic } = props;
+  const { slugs, segments, showTopic } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const oneTryOnly = slugs.includes(ArtifactTypeSlug.WholeBackTranslation);
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
@@ -107,7 +111,6 @@ export function PassageDetailItem(props: IProps) {
     passage,
     sharedResource,
     playerMediafile,
-    discussionSize,
     rowData,
     currentSegment,
     currentSegmentIndex,
@@ -122,7 +125,6 @@ export function PassageDetailItem(props: IProps) {
     setRecording,
     currentstep,
     section,
-    discussOpen,
   } = usePassageDetailContext();
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
@@ -148,18 +150,6 @@ export function PassageDetailItem(props: IProps) {
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
   const toolId = 'RecordBackTranslationTool';
-  const [paneWidth, setPaneWidth] = useState(0);
-
-  const rowProp = useMemo(
-    () => ({ display: 'flex', width: paneWidth - 40 }),
-    [paneWidth]
-  );
-
-  useEffect(() => {
-    let newPaneWidth = width - 16;
-    if (discussOpen) newPaneWidth -= discussionSize.width;
-    setPaneWidth(newPaneWidth);
-  }, [discussionSize, width, discussOpen]);
 
   const setUploadVisible = (value: boolean) => {
     if (value) {
@@ -379,11 +369,10 @@ export function PassageDetailItem(props: IProps) {
       <Paper sx={paperProps}>
         <div>
           {currentVersion !== 0 ? (
-            <Stack direction="row" spacing={1}>
-              <Box>
-                <PassageDetailChooser width={paneWidth} />
+            <>
+              <Box sx={{ minWidth: 0 }}>
+                <PassageDetailChooser />
                 <PassageDetailPlayer
-                  width={paneWidth - 40}
                   allowSegment={segments}
                   allowSegmentNav={segments !== undefined}
                   allowAutoSegment={segments !== undefined}
@@ -419,7 +408,6 @@ export function PassageDetailItem(props: IProps) {
                       currentVersion={currentVersion}
                       rowData={rowData}
                       segments={segString}
-                      width={paneWidth}
                     />
                   </Box>
                   {canRecord && (
@@ -508,7 +496,6 @@ export function PassageDetailItem(props: IProps) {
                     doReset={resetMedia}
                     setDoReset={setResetMedia}
                     height={200}
-                    width={paneWidth - 40}
                     onRecording={onRecordingOrPlaying}
                     onPlayStatus={onRecordingOrPlaying}
                     oneTryOnly={oneTryOnly}
@@ -579,8 +566,8 @@ export function PassageDetailItem(props: IProps) {
                   </Box>
                 </Box>
               </Box>
-              <DiscussionPanel />
-            </Stack>
+              <DiscussionDrawer />
+            </>
           ) : (
             <Paper sx={paperProps}>
               <Typography variant="h2" align="center">

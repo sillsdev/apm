@@ -55,7 +55,6 @@ import {
 
 interface IProps {
   ready?: () => boolean;
-  width: number;
 }
 
 const SaveWait = 500;
@@ -86,7 +85,6 @@ export function PassageDetailRecord(props: IProps) {
     passage,
     sharedResource,
     mediafileId,
-    chooserSize,
     recording,
     setRecording,
     currentstep,
@@ -373,7 +371,7 @@ export function PassageDetailRecord(props: IProps) {
     !isLinkedNote(passage, sharedResource);
 
   return (
-    <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
+    <Stack sx={{ width: '100%', minWidth: 0 }}>
       <Box sx={{ py: 1 }}>
         <Stack
           direction="row"
@@ -429,8 +427,7 @@ export function PassageDetailRecord(props: IProps) {
         setStatusText={setStatusText}
         doReset={resetMedia}
         setDoReset={setResetMedia}
-        height={300 - chooserSize}
-        width={props.width}
+        height={252}
         allowNoNoise={true}
         allowDeltaVoice={true}
         handleSave={handleSave}

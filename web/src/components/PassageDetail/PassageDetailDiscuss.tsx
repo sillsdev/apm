@@ -7,11 +7,10 @@ import { MarkDownView } from '../../control/MarkDownView';
 import { getTool, stepToolMarkDown, ToolSlug } from '../../crud';
 
 interface IProps {
-  width: number;
   currentStep?: string;
 }
 
-export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
+export const PassageDetailDiscuss = ({ currentStep }: IProps) => {
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const t = useSelector(discussSelector, shallowEqual) as IDiscussStrings;
   const step = orgSteps?.find((s) => s.id === currentStep);
@@ -24,7 +23,7 @@ export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
   if (!value) return null;
 
   return (
-    <Box sx={{ maxWidth: width, whiteSpace: 'normal', overflow: 'auto' }}>
+    <Box sx={{ maxWidth: '100%', whiteSpace: 'normal', overflow: 'auto' }}>
       <MarkDownView value={value} />
     </Box>
   );

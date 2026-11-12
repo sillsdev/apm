@@ -177,7 +177,7 @@ describe('ConsultantCheck', () => {
   });
 
   it('should render', () => {
-    const { container } = render(<ConsultantCheck width={500} />);
+    const { container } = render(<ConsultantCheck />);
     expect(container).not.toBe(null);
   });
 
@@ -188,7 +188,7 @@ describe('ConsultantCheck', () => {
         label: 'Record',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByText('ConsultantCheckReview')).not.toBe(null);
     expect(screen.getByText('vernacular')).not.toBe(null);
   });
@@ -200,7 +200,7 @@ describe('ConsultantCheck', () => {
         label: 'Record',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByText('Vernacular')).not.toBe(null);
   });
 
@@ -211,7 +211,7 @@ describe('ConsultantCheck', () => {
         label: 'Record',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByTestId('action-row')).not.toBe(null);
   });
 
@@ -222,7 +222,7 @@ describe('ConsultantCheck', () => {
         label: 'Record',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByTestId('pri-button')).not.toBe(null);
   });
 
@@ -233,7 +233,7 @@ describe('ConsultantCheck', () => {
         label: 'Record',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     fireEvent.click(screen.getByTestId('pri-button'));
     expect(screen.getByTestId('alt-button')).not.toBe(null);
     expect(screen.queryAllByTestId('pri-button')).toHaveLength(0);
@@ -247,7 +247,7 @@ describe('ConsultantCheck', () => {
       },
     ];
     mockCurrentStep = 'record';
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     fireEvent.click(screen.getByTestId('pri-button'));
     expect(screen.getByText('Vernacular')).toHaveClass('Mui-selected');
     await waitFor(() => expect(mockSetStepComplete).toHaveBeenCalledTimes(1));
@@ -262,7 +262,7 @@ describe('ConsultantCheck', () => {
       },
     ];
     mockCurrentStep = 'record';
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     fireEvent.click(screen.getByTestId('pri-button'));
     await waitFor(() => expect(mockSetStepComplete).toHaveBeenCalledTimes(1));
     expect(mockSetStepComplete).toHaveBeenCalledWith('record', true);
@@ -282,7 +282,7 @@ describe('ConsultantCheck', () => {
     ];
     mockCurrentStep = 'record';
     mockPassageStepComplete = `{"completed":["record"]}`;
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     fireEvent.click(screen.getByTestId('pri-button'));
     await waitFor(() => expect(mockSetStepComplete).toHaveBeenCalledTimes(1));
     expect(mockSetStepComplete).toHaveBeenCalledWith('record', true);
@@ -304,7 +304,7 @@ describe('ConsultantCheck', () => {
         label: 'Phrase Back Translation',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByText('Vernacular')).not.toBe(null);
     expect(screen.getByText('Phrase Back Translation')).not.toBe(null);
   });
@@ -320,7 +320,7 @@ describe('ConsultantCheck', () => {
         label: 'Phrase Back Translation',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByText('Phrase Back Translation')).not.toBe(null);
     expect(screen.getByText('Phrase Back Translation')).toHaveClass(
       'Mui-selected'
@@ -338,7 +338,7 @@ describe('ConsultantCheck', () => {
         label: 'Phrase Back Translation',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     fireEvent.click(screen.getByTestId('pri-button'));
     expect(screen.getByText('Vernacular')).not.toBe(null);
     expect(screen.getByText('Vernacular')).toHaveClass('Mui-selected');
@@ -355,7 +355,7 @@ describe('ConsultantCheck', () => {
         label: 'Phrase Back Translation',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.getByText('compare-close')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('compare-button'));
     expect(screen.getByText('compare-open')).toBeInTheDocument();
@@ -368,7 +368,7 @@ describe('ConsultantCheck', () => {
         label: 'Record',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.queryAllByTestId('compare-button')).toHaveLength(0);
   });
 
@@ -384,7 +384,7 @@ describe('ConsultantCheck', () => {
       },
     ];
     mockCompare = ['1', '2'];
-    const { container } = render(<ConsultantCheck width={500} />);
+    const { container } = render(<ConsultantCheck />);
     expect(container.querySelector('table')).toBeInTheDocument();
   });
 
@@ -403,7 +403,7 @@ describe('ConsultantCheck', () => {
         label: 'Phrase Back Translation',
       },
     ];
-    render(<ConsultantCheck width={500} />);
+    render(<ConsultantCheck />);
     expect(screen.queryAllByText('Phrase Back Translation')).toHaveLength(1);
   });
 });

@@ -9,6 +9,9 @@ import Confirm from '../../AlertDialog';
 import { safeFileBasename } from '../../../utils';
 import { UploadType } from '../../UploadType';
 import { useOrganizedBy } from '../../../crud';
+import { shallowEqual, useSelector } from 'react-redux';
+import { ISharedStrings } from '../../../model';
+import { sharedSelector } from '../../../selector';
 import {
   useAddResourceWizard,
   WizardStep,
@@ -35,6 +38,7 @@ export function AddResourceWizard({
 }: IProps) {
   const w = useAddResourceWizard({ launchSource, onClose });
   const { getOrganizedBy } = useOrganizedBy();
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   return (
     <>
@@ -160,7 +164,7 @@ export function AddResourceWizard({
           text={w.t.confirmClose}
           no={w.t.keepOpen}
           primaryButton="no"
-          yes={w.t.discardAndClose}
+          yes={ts.discardAndClose}
           noResponse={() => w.setPendingCloseConfirmation(false)}
           yesResponse={() => {
             w.setPendingCloseConfirmation(false);

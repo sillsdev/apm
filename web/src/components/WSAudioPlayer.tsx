@@ -2806,6 +2806,7 @@ function WSAudioPlayer(props: IProps) {
         px: 1,
         boxSizing: 'border-box',
         overflowX: 'hidden',
+        overflowY: 'hidden',
         ...(dockRecordButton
           ? {}
           : {

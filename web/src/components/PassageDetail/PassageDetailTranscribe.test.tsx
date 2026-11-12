@@ -63,7 +63,6 @@ jest.mock('../Transcriber', () => ({
 jest.mock('../TaskList', () => ({
   __esModule: true,
   default: () => null,
-  TaskTableWidth: 0,
 }));
 
 jest.mock('../../utils/perf', () => ({
@@ -166,7 +165,7 @@ describe('PassageDetailTranscribe linked note (TT-5873)', () => {
   });
 
   it('keeps transcribe permission on the source note', () => {
-    render(<PassageDetailTranscribe width={400} artifactTypeId={null} />);
+    render(<PassageDetailTranscribe artifactTypeId={null} />);
     expect(screen.getByTestId('transcriber')).toBeTruthy();
     expect(captured.hasPermission).toBe(true);
     expect(captured.curRole).not.toBe('view');
@@ -174,7 +173,7 @@ describe('PassageDetailTranscribe linked note (TT-5873)', () => {
 
   it('is view-only on a linked note while still showing the transcriber', () => {
     passageDetailCtx.sharedResource = linkedSharedResource;
-    render(<PassageDetailTranscribe width={400} artifactTypeId={null} />);
+    render(<PassageDetailTranscribe artifactTypeId={null} />);
     expect(screen.getByTestId('transcriber')).toBeTruthy();
     expect(screen.queryByText('no audio')).toBeNull();
     expect(captured.hasPermission).toBe(false);
