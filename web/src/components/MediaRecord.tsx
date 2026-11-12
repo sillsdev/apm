@@ -36,6 +36,9 @@ import { useRecordSave } from './useRecordSave';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
+// TODO cleanup in next PR: no caller passes setCanCancel, onLoaded,
+// hideControls, onProgress, onDuration or hasRecording, and cancelMethod is
+// never read. (controlsRef is only passed by the Cypress specs; keep it.)
 export interface IProps {
   toolId: string;
   artifactId: string | null;
@@ -67,13 +70,6 @@ export interface IProps {
    * `pendingRestore` can include newly created category ids.
    */
   beforeUpload?: () => Promise<void>;
-  /**
-   * When set, `doUpload` hands the finished (already converted) take here and
-   * returns instead of calling `uploadMedia` — the general-resource flow defers
-   * the upload until the user has chosen passages/sections (SelectSections).
-   * When absent, a saved take uploads immediately as usual.
-   */
-  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -85,6 +81,20 @@ export interface IProps {
   /** When false, hide the Download item in the recorder's more menu. Default true if omitted. */
   allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
+  /**
+   * Reports whether a usable take is loaded in the waveform, independent of
+   * whether it counts as an unsaved change. Unlike `setCanSave`, this stays true
+   * after a take has been uploaded (the upload clears the dirty flags but leaves
+   * the take shown). The deferred add-resource wizard uses it to keep its "Next"
+   * button live when the user steps back to the still-mounted Record step after
+   * the take already uploaded once.
+   */
+  // TODO cleanup: combine a bunch of these props that describe what stage the recording is in
+  // into one lifecycle prop that sets the current stage as e.g. Recording, Saving, Loading, Unsaved, etc. Maybe even HasValidTake or HasInvalidTake?
+  // Also, in particular, make the situation around recording and the recorder more readable.
+  // At the very least, allowRecord should be renamed to indicate that it controls the total
+  // presence or absence of the recorder, unlike recordBlocked.
+  setHasTake?: ((hasTake: boolean) => void) | undefined;
   /**
    * Called when a save attempt is rejected — the upload failed or finished
    * without a mediaId. May fire more than once for a single failed save, so
@@ -168,8 +178,8 @@ function MediaRecord(props: IProps) {
     pendingRestore,
     uploadType = UploadType.Media,
     beforeUpload,
-    onStageFile,
     setCanSave,
+    setHasTake,
     setCanCancel,
     setStatusText,
     allowRecord,
@@ -455,7 +465,7 @@ function MediaRecord(props: IProps) {
   // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
   // as claude thinks, but don't have time to look into it now)
   // MediaRecord runs its own upload pipeline, separate from its
-  // host's (e.g. PassageRecordDlg already holds the upload tab's `uploadMethod`).
+  // host's (e.g. PassageRecordPanel already holds the upload tab's `uploadMethod`).
   // That's why pendingRestore/beforeUpload/finish/afterUploadCb/uploadType are all
   // threaded through here just to feed this copy, and why the record and upload
   // tabs drifted (this hardcoded Media until the general-resource Retry fix).
@@ -516,7 +526,6 @@ function MediaRecord(props: IProps) {
     onSaving,
     onReady,
     onSaveRejected,
-    onStageFile,
     onUploaded,
     upload: {
       fields: {
@@ -615,6 +624,27 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (setCanCancel) setCanCancel(!inFlight);
   }, [inFlight, setCanCancel]);
+
+  // A usable take is loaded in the waveform — the same readiness canSave
+  // requires, but without the (pendingSave || filechanged) dirty gate. A
+  // successful upload clears those flags (so canSave drops) yet leaves the take
+  // shown; this stays true so the deferred wizard's Next button survives a Back
+  // to the already-uploaded Record step.
+  const hasTake =
+    waveformDuration > 0 &&
+    blobReady &&
+    !sizeBlocksSave &&
+    !inFlight &&
+    !recording;
+  // TODO cleanup in next PR: this effect only copies a derived value up to the
+  // parent, which CODING_STANDARDS "Effects" calls a finding. Notify the parent
+  // from the handlers that change hasTake's inputs (recording start/stop,
+  // waveform load, upload start/finish), or lift those inputs up so the parent
+  // derives hasTake itself. setCanSave/setCanCancel above follow the same
+  // pattern and should move together.
+  useEffect(() => {
+    setHasTake?.(hasTake);
+  }, [hasTake, setHasTake]);
 
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;

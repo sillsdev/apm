@@ -3,7 +3,10 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { IPassageDetailArtifactsStrings } from '../../../model';
 import { resourceSelector } from '../../../selector';
 
-export type AudioAddMode = 'upload' | 'record';
+export enum AudioAddMode {
+  Upload = 'upload',
+  Record = 'record',
+}
 
 interface IProps {
   mode: AudioAddMode;
@@ -12,7 +15,6 @@ interface IProps {
 }
 
 // Upload | Record toggle shown at the top of the "Add Audio Resource" dialog.
-// PassageRecordDlg owns the selected mode and swaps the dialog body.
 export function UploadRecordToggle({
   mode,
   onMode,
@@ -56,10 +58,14 @@ export function UploadRecordToggle({
           },
         })}
       >
-        <ToggleButton id="tab-upload" value="upload" disabled={disableUpload}>
+        <ToggleButton
+          id="tab-upload"
+          value={AudioAddMode.Upload}
+          disabled={disableUpload}
+        >
           {t.uploadTab}
         </ToggleButton>
-        <ToggleButton id="tab-record" value="record">
+        <ToggleButton id="tab-record" value={AudioAddMode.Record}>
           {t.recordResource}
         </ToggleButton>
       </ToggleButtonGroup>

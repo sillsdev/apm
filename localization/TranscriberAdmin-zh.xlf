@@ -63,9 +63,7 @@
       </unit>
       <unit id="access.noOnlineUsers2">
          <segment>
-            <source>Log in and select Offline Available in the audio project card menu and then log
-               out. Or, click IMPORT AUDIO PROJECT to import an audio project your admin
-               exported.</source>
+            <source>Log in and select Offline Available in the audio project card menu and then log out. Or, click IMPORT AUDIO PROJECT to import an audio project your admin exported.</source>
             <target>登录并选择离线在音频项目卡片菜单中可用，然后登出。 或者单击输入音频项目 导入您的管理员导出的音频项目。</target>
          </segment>
       </unit>
@@ -339,6 +337,12 @@
             <target>社区测试问题和答案</target>
          </segment>
       </unit>
+      <unit id="artifactType.replacement">
+         <segment>
+            <source>Replacement</source>
+            <target>替换</target>
+         </segment>
+      </unit>
       <unit id="artifactType.resource">
          <segment>
             <source>Resource</source>
@@ -515,8 +519,7 @@
       </unit>
       <unit id="assignSection.modifySections">
          <segment>
-            <source>{0} {1} are selelected but modifying the permissions will change all {2} {3}
-               with this permission scheme</source>
+            <source>{0} {1} are selelected but modifying the permissions will change all {2} {3} with this permission scheme</source>
             <target>选择了 {0} {1} 但修改权限会更改所有 {2} {3} 的权限。{3}使用此权限方案</target>
          </segment>
       </unit>
@@ -594,9 +597,7 @@
       </unit>
       <unit id="audacityManager.checkDownload">
          <segment>
-            <source>Return to the team screen, mark the project for offline use and change modes to
-               let the project be downloaded. That will put the media files into a local folder
-               where Audacity can get them.</source>
+            <source>Return to the team screen, mark the project for offline use and change modes to let the project be downloaded. That will put the media files into a local folder where Audacity can get them.</source>
             <target>返回团队屏幕，标记离线项目并更改模式让项目下载。 这将把媒体文件放入本地文件夹，供胆敢获取。</target>
          </segment>
       </unit>
@@ -644,8 +645,7 @@
       </unit>
       <unit id="audacityManager.missingImport">
          <segment>
-            <source>Missing import file: {0}. Please open Audacity again and use File, Export to
-               save the contents and then use Import here.</source>
+            <source>Missing import file: {0}. Please open Audacity again and use File, Export to save the contents and then use Import here.</source>
             <target>缺少导入文件： {0}。请再次打开 胆敢并使用文件：导出以保存内容，然后在此使用导入。</target>
          </segment>
       </unit>
@@ -669,9 +669,7 @@
       </unit>
       <unit id="audacityManager.tip">
          <segment>
-            <source>If you have an existing Audacity project you want to link to this passage, click
-               BROWSE. To create a new Audacity project with an automatically created name, click
-               CREATE.</source>
+            <source>If you have an existing Audacity project you want to link to this passage, click BROWSE. To create a new Audacity project with an automatically created name, click CREATE.</source>
             <target>如果您有一个现有的 胆敢项目，您想要链接到此通道，请点击漫游。 要创建一个自动创建名称的新的 胆敢的项目，请点击创建 。</target>
          </segment>
       </unit>
@@ -923,8 +921,7 @@
       </unit>
       <unit id="burrito.valueWarning">
          <segment>
-            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or
-               square brackets)</source>
+            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)</source>
             <target>警告：输入内容包含 JSON 结构字符（引号、大括号或方括号）</target>
          </segment>
       </unit>
@@ -942,8 +939,7 @@
       </unit>
       <unit id="burrito.vernacularAudioMissingTranscriptionWarning">
          <segment>
-            <source>Audio files without transcriptions will make it difficult to associate the audio
-               with the proper section.</source>
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
             <target>没有文字转录的音频文件会难以将其与相应的章节对应起来。</target>
          </segment>
       </unit>
@@ -985,15 +981,13 @@
       </unit>
       <unit id="cards.bibleidexists">
          <segment>
-            <source>Bible Id already exists. Please contact support if you need to work on this
-               Bible.</source>
+            <source>Bible Id already exists. Please contact support if you need to work on this Bible.</source>
             <target>圣经 Id 已经存在。如果您需要使用该圣经，请联系技术支持。</target>
          </segment>
       </unit>
       <unit id="cards.bibleidformat">
          <segment>
-            <source>Bible Id must begin with the language code and version (a total of at least six
-               letters).</source>
+            <source>Bible Id must begin with the language code and version (a total of at least six letters).</source>
             <target>《圣经》ID 必须以语言代码和版本开头（总计至少六个字母）。</target>
          </segment>
       </unit>
@@ -1047,8 +1041,7 @@
       </unit>
       <unit id="cards.convertPrompt">
          <segment>
-            <source>Enter the name of the organization that will hold the rights for recordings of
-               the converted voices.</source>
+            <source>Enter the name of the organization that will hold the rights for recordings of the converted voices.</source>
             <target>输入有权录制转换后声音的机构名称。</target>
          </segment>
       </unit>
@@ -1606,8 +1599,7 @@
       </unit>
       <unit id="community.autoSegment">
          <segment>
-            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual
-               segmentation</source>
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
             <target>使用 {0} 进行自动分段，或在波形上点击并使用 + 进行手动分段</target>
          </segment>
       </unit>
@@ -1655,8 +1647,7 @@
       </unit>
       <unit id="community.noVoiceCreation">
          <segment>
-            <source>New Voice change samples must be created before a recording is waiting to be
-               saved.</source>
+            <source>New Voice change samples must be created before a recording is waiting to be saved.</source>
             <target>必须在录音等待保存之前创建新的变声样本。</target>
          </segment>
       </unit>
@@ -1668,9 +1659,7 @@
       </unit>
       <unit id="community.releaseRights">
          <segment>
-            <source>Upload or record a statement releasing the rights to publish material recorded
-               by this speaker. A suggested script for the recorded permission is given which can be
-               personalized.</source>
+            <source>Upload or record a statement releasing the rights to publish material recorded by this speaker. A suggested script for the recorded permission is given which can be personalized.</source>
             <target>上传或录制一份声明，授权发布该发言人录制的材料。录制的许可建议脚本可进行个性化设置。</target>
          </segment>
       </unit>
@@ -1694,8 +1683,7 @@
       </unit>
       <unit id="community.segmentsChanged">
          <segment>
-            <source>Changing segments will invalidate some recordings since they are linked to the
-               segment start and end.</source>
+            <source>Changing segments will invalidate some recordings since they are linked to the segment start and end.</source>
             <target>更改片段会使某些记录失效，因为它们与片段的开始和结束相关联。</target>
          </segment>
       </unit>
@@ -1749,9 +1737,7 @@
       </unit>
       <unit id="community.voiceRights">
          <segment>
-            <source>The recorded permission is used both as a voice sample to change the audio and
-               as a license to use the voice sample in recordings. A suggested script for the
-               recorded permission is given which can be personalized.</source>
+            <source>The recorded permission is used both as a voice sample to change the audio and as a license to use the voice sample in recordings. A suggested script for the recorded permission is given which can be personalized.</source>
             <target>录制的许可既可用作更改音频的语音样本，也可用作在录音中使用语音样本的许可。建议的录音许可脚本可进行个性化设置。</target>
          </segment>
       </unit>
@@ -1865,8 +1851,7 @@
       </unit>
       <unit id="carefulTranscription.prerequisite">
          <segment>
-            <source>Complete Careful Speech for every clause before starting Careful
-               transcription.</source>
+            <source>Complete Careful Speech for every clause before starting Careful transcription.</source>
             <target>在开始“谨慎转录”之前，请先为每个句子完成“谨慎发言”步骤。</target>
          </segment>
       </unit>
@@ -1896,8 +1881,7 @@
       </unit>
       <unit id="lwcTranslation.prerequisite">
          <segment>
-            <source>Complete Careful Speech for every clause before starting LWC
-               translation.</source>
+            <source>Complete Careful Speech for every clause before starting LWC translation.</source>
             <target>在开始 LWC 翻译之前，请先为每个子句完成“谨慎发言”步骤。</target>
          </segment>
       </unit>
@@ -1939,8 +1923,7 @@
       </unit>
       <unit id="lwcTranscription.prerequisite">
          <segment>
-            <source>Complete LWC Translation for every clause before starting LWC
-               transcription.</source>
+            <source>Complete LWC Translation for every clause before starting LWC transcription.</source>
             <target>在开始 LWC 转录之前，请先完成每个子句的 LWC 翻译。</target>
          </segment>
       </unit>
@@ -1988,23 +1971,19 @@
       </unit>
       <unit id="phraseBackTranslationGuided.noStepLanguage">
          <segment>
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before
-               recording.</source>
-            <target>在录制前，请在“步骤编辑器”中为该“短语反向翻译”步骤配置语言。</target>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
+            <target>录音前，请在“编辑工作流”对话框中为此词语回译步骤配置语言。</target>
          </segment>
       </unit>
       <unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
          <segment>
-            <source>Resetting will restore segment boundaries to how they were when you opened this
-               step. Continue?</source>
+            <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
             <target>重置将把片段边界恢复为您打开此步骤时的状态。继续吗？</target>
          </segment>
       </unit>
       <unit id="phraseBackTranslationGuided.resetConfirmRecordings">
          <segment>
-            <source>Resetting will delete back-translation recordings for this language on the
-               current vernacular recording and restore segment boundaries to how they were when you
-               opened this step. Continue?</source>
+            <source>Resetting will delete back-translation recordings for this language on the current vernacular recording and restore segment boundaries to how they were when you opened this step. Continue?</source>
             <target>重置将删除当前方言录音中该语言的反向翻译录音，并将片段分界线恢复为您打开此步骤时的状态。继续吗？</target>
          </segment>
       </unit>
@@ -2130,8 +2109,7 @@
       </unit>
       <unit id="discuss.howToChange">
          <segment>
-            <source>Change instructions for this step on the workflow settings for this
-               step.</source>
+            <source>Change instructions for this step on the workflow settings for this step.</source>
             <target>在该步骤的工作流设置中更改此步骤的操作说明。</target>
          </segment>
       </unit>
@@ -2413,8 +2391,7 @@
       </unit>
       <unit id="electronImport.importOldFile">
          <segment>
-            <source>This file was not exported from the latest version. Reexport your PTF file from
-               the online version.</source>
+            <source>This file was not exported from the latest version. Reexport your PTF file from the online version.</source>
             <target>此文件没有从最新版本导出。从在线版本中导出您的 PTF 文件。</target>
          </segment>
       </unit>
@@ -2450,16 +2427,13 @@
       </unit>
       <unit id="electronImport.neverExported">
          <segment>
-            <source>Current data in audio project '{name0}' has never been exported to an itf file
-               to preserve changes.</source>
+            <source>Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.</source>
             <target>音频项目“{name0}”中的当前数据从未导出为itf文件以保留更改。</target>
          </segment>
       </unit>
       <unit id="electronImport.newerVersion">
          <segment>
-            <source>This file was exported with a newer version of the program. You should download
-               the latest version before importing! If you continue, some data may not be imported
-               correctly.</source>
+            <source>This file was exported with a newer version of the program. You should download the latest version before importing! If you continue, some data may not be imported correctly.</source>
             <target>此文件已用程序的新版本导出。 您需要在导入之前下载最新版本！如果您继续，一些数据可能无法正确导入。</target>
          </segment>
       </unit>
@@ -2483,8 +2457,7 @@
       </unit>
       <unit id="electronImport.userWontSeeProject">
          <segment>
-            <source>You are not a member of this audio project team. This audio project will not be
-               accessible after import.</source>
+            <source>You are not a member of this audio project team. This audio project will not be accessible after import.</source>
             <target>您不是此音频项目团队的成员。导入后此音频项目将无法访问。</target>
          </segment>
       </unit>
@@ -2508,15 +2481,13 @@
       </unit>
       <unit id="emailUnverified.resendError">
          <segment>
-            <source>We couldn't send the verification link. Please check your connection and try
-               again.</source>
+            <source>We couldn't send the verification link. Please check your connection and try again.</source>
             <target>我们无法发送验证链接。请检查您的网络连接并重试。</target>
          </segment>
       </unit>
       <unit id="emailUnverified.resendSuccess">
          <segment>
-            <source>Sent! Please check your inbox for a new verification link. It may be in your
-               spam folder.</source>
+            <source>Sent! Please check your inbox for a new verification link. It may be in your spam folder.</source>
             <target>已发送！请检查您的收件箱，查看新的验证链接。该链接可能位于您的垃圾邮件文件夹中。</target>
          </segment>
       </unit>
@@ -2534,8 +2505,7 @@
       </unit>
       <unit id="emailUnverified.verify">
          <segment>
-            <source>Please check your email for a verification link from us to finish setting up
-               your account</source>
+            <source>Please check your email for a verification link from us to finish setting up your account</source>
             <target>请查收您的电子邮件，点击我们发送的验证链接以完成账户设置</target>
          </segment>
       </unit>
@@ -2709,16 +2679,13 @@
       </unit>
       <unit id="findResource.aiDesc">
          <segment>
-            <source>Copy the query contents and paste it into one or more of the AI chat
-               tools:</source>
+            <source>Copy the query contents and paste it into one or more of the AI chat tools:</source>
             <target>复制查询内容并粘贴到一个或多个人工智能聊天工具中：</target>
          </segment>
       </unit>
       <unit id="findResource.aquiferSearchTip">
          <segment>
-            <source>The keyword to search on. Currently only searches against content names (not
-               inside content). Non-English names are supported. Must be at least 3 characters in
-               length.</source>
+            <source>The keyword to search on. Currently only searches against content names (not inside content). Non-English names are supported. Must be at least 3 characters in length.</source>
             <target>要搜索的关键字。目前只针对内容名称（非内容内部）进行搜索。支持非英文名称。长度必须至少为 3 个字符。</target>
          </segment>
       </unit>
@@ -3006,11 +2973,8 @@
       </unit>
       <unit id="findResource.whatsAppHelp">
          <segment>
-            <source>Install the What's App app on your phone and join the group for your language.
-               You can also install What's App on Windows and link to your phone App. Use Meta
-               AI</source>
-            <target>在您的手机上安装 What's App 应用程序，并加入您所使用语言的群组。您也可以在 Windows 上安装 What's
-               App，并链接到您的手机应用程序。使用 Meta AI</target>
+            <source>Install the What's App app on your phone and join the group for your language. You can also install What's App on Windows and link to your phone App. Use Meta AI</source>
+            <target>在您的手机上安装 What's App 应用程序，并加入您所使用语言的群组。您也可以在 Windows 上安装 What's App，并链接到您的手机应用程序。使用 Meta AI</target>
          </segment>
       </unit>
       <unit id="findResource.withTiming">
@@ -3039,8 +3003,7 @@
       </unit>
       <unit id="graphic.keywordSearchHint">
          <segment>
-            <source>The Keywords search only filters the keyword list. To filter images, select one
-               or more keywords or use the main search.</source>
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
             <target>“关键词”搜索仅对关键词列表进行筛选。若要筛选图片，请选择一个或多个关键词，或使用主搜索功能。</target>
          </segment>
       </unit>
@@ -3484,8 +3447,7 @@
       </unit>
       <unit id="import.newTeamChainFailed">
          <segment>
-            <source>Could not determine the new team after the first import. Import the first file
-               alone, then add the rest to that team.</source>
+            <source>Could not determine the new team after the first import. Import the first file alone, then add the rest to that team.</source>
             <target>首次导入后无法确定新团队。请先单独导入第一个文件，然后将其余文件添加到该团队中。</target>
          </segment>
       </unit>
@@ -3497,11 +3459,8 @@
       </unit>
       <unit id="import.offlineImport">
          <segment>
-            <source>Import an APM Project File to use offline and sync when online, or a project
-               file from an external source that you will only use offline. Projects from an
-               external source that are not imported while online cannot be synced online.</source>
-            <target>导入 APM
-               项目文件以便离线使用并在上线时同步，或者从外部来源导入仅用于离线使用的项目文件。来自外部来源且未在在线状态下导入的项目无法在线同步。</target>
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline. Projects from an external source that are not imported while online cannot be synced online.</source>
+            <target>导入 APM 项目文件以便离线使用并在上线时同步，或者从外部来源导入仅用于离线使用的项目文件。来自外部来源且未在在线状态下导入的项目无法在线同步。</target>
          </segment>
       </unit>
       <unit id="import.old">
@@ -3548,8 +3507,7 @@
       </unit>
       <unit id="import.projectNotFound">
          <segment>
-            <source>ITF does not contain current audio project. It contains audio project
-               {0}.</source>
+            <source>ITF does not contain current audio project. It contains audio project {0}.</source>
             <target>ITF 不包含当前音频项目。它包含音频项目 {0}。</target>
          </segment>
       </unit>
@@ -3597,9 +3555,7 @@
       </unit>
       <unit id="import.unknownError">
          <segment>
-            <source>If this error occurred while syncing offline changes, please close the app
-               immediately and reopen. If the error persists, contact support. If you continue to
-               use the app, you will lose offline changes.</source>
+            <source>If this error occurred while syncing offline changes, please close the app immediately and reopen. If the error persists, contact support. If you continue to use the app, you will lose offline changes.</source>
             <target>如果此错误发生在同步离线更改时，请立即关闭应用并重新打开。如果错误仍然存在，请联系客服。如果您继续使用该应用，离线更改将会丢失。</target>
          </segment>
       </unit>
@@ -4505,8 +4461,7 @@
       </unit>
       <unit id="main.inviteError">
          <segment>
-            <source>Invitation not accepted. You must login with the email that the invitation was
-               sent to.</source>
+            <source>Invitation not accepted. You must login with the email that the invitation was sent to.</source>
             <target>邀请不被接受。您必须使用邀请函发送到的电子邮箱登录。</target>
          </segment>
       </unit>
@@ -4518,8 +4473,7 @@
       </unit>
       <unit id="main.loadDataOffline">
          <segment>
-            <source>Unable to complete loading while offline. Check your internet connection and try
-               again.</source>
+            <source>Unable to complete loading while offline. Check your internet connection and try again.</source>
             <target>离线状态下无法完成加载。请检查网络连接并重试。</target>
          </segment>
       </unit>
@@ -4637,6 +4591,12 @@
             <target>您想要在离开此页面之前保存吗？</target>
          </segment>
       </unit>
+      <unit id="main.saveTimedOut">
+         <segment>
+            <source>Saving is taking too long. Please try again.</source>
+            <target>保存时间过长。请重试。</target>
+         </segment>
+      </unit>
       <unit id="main.saving">
          <segment>
             <source>Saving...</source>
@@ -4723,8 +4683,7 @@
       </unit>
       <unit id="main.updateFailedNetwork">
          <segment>
-            <source>Could not reach the server to save your last change. It was undone - please
-               check your connection and try again.</source>
+            <source>Could not reach the server to save your last change. It was undone - please check your connection and try again.</source>
             <target>无法连接到服务器以保存您的最后一次更改。该更改已被撤销——请检查网络连接并重试。</target>
          </segment>
       </unit>
@@ -4798,6 +4757,12 @@
          <segment>
             <source>Play</source>
             <target>播放</target>
+         </segment>
+      </unit>
+      <unit id="mediaActions.stop">
+         <segment>
+            <source>Stop</source>
+            <target>停止</target>
          </segment>
       </unit>
       <unit id="mediaActions.view">
@@ -4988,9 +4953,7 @@
       </unit>
       <unit id="mediaTab.pendingUploadDeleteFailed">
          <segment>
-            <source>The online media record could not be removed (id {0}). Others may still see a
-               broken entry until an administrator cleans it up. Your file is saved
-               locally.</source>
+            <source>The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.</source>
             <target>无法删除该在线媒体记录（ID {0}）。在管理员清理之前，其他人可能仍会看到该条目显示异常。您的文件已保存在本地。</target>
          </segment>
       </unit>
@@ -5008,8 +4971,7 @@
       </unit>
       <unit id="mediaTab.pendingUploadExistsWarn">
          <segment>
-            <source>A recording for this passage is already pending upload. Recording it again will
-               replace the existing pending recording. Do you want to continue?</source>
+            <source>A recording for this passage is already pending upload. Recording it again will replace the existing pending recording. Do you want to continue?</source>
             <target>该段落的录音已处于待上传状态。再次录制将替换现有的待上传录音。是否继续？</target>
          </segment>
       </unit>
@@ -5255,8 +5217,7 @@
       </unit>
       <unit id="mediaUpload.graphicTask">
          <segment>
-            <source>Drag and drop a file here, or click here to browse for the file. Formats
-               accepted are .png, .jpg (or .jpeg) and .webp.</source>
+            <source>Drag and drop a file here, or click here to browse for the file. Formats accepted are .png, .jpg (or .jpeg) and .webp.</source>
             <target>将文件拖放到此处，或点击此处浏览文件。可接受的格式有 .png、.jpg（或 .jpeg）和 .webp。</target>
          </segment>
       </unit>
@@ -5268,18 +5229,14 @@
       </unit>
       <unit id="mediaUpload.intellectualPropertyAudioTask">
          <segment>
-            <source>Upload a speaker rights release for {0} in audio format. Formats accepted are
-               .mp3, .m4a, .wav or .ogg.</source>
+            <source>Upload a speaker rights release for {0} in audio format. Formats accepted are .mp3, .m4a, .wav or .ogg.</source>
             <target>上传音频格式的 {0} 演讲者权利声明。可接受的格式有 .mp3、.m4a、.wav 或 .ogg。</target>
          </segment>
       </unit>
       <unit id="mediaUpload.intellectualPropertyTask">
          <segment>
-            <source>Upload a speaker rights release for {0} in audio or visual format. Audio formats
-               accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or
-               .jpg.</source>
-            <target>上传音频或视频格式的 {0} 演讲者权利声明。可接受的音频格式有 .mp3、.m4a、.wav 或 .ogg。可接受的视觉格式有 .pdf、.png 或
-               .jpg。</target>
+            <source>Upload a speaker rights release for {0} in audio or visual format. Audio formats accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or .jpg.</source>
+            <target>上传音频或视频格式的 {0} 演讲者权利声明。可接受的音频格式有 .mp3、.m4a、.wav 或 .ogg。可接受的视觉格式有 .pdf、.png 或 .jpg。</target>
          </segment>
       </unit>
       <unit id="mediaUpload.intellectualPropertyTitle">
@@ -5296,8 +5253,7 @@
       </unit>
       <unit id="mediaUpload.ITFtask">
          <segment>
-            <source>Upload an Incremental Transcriber File (itf file) exported from the Desktop
-               app.</source>
+            <source>Upload an Incremental Transcriber File (itf file) exported from the Desktop app.</source>
             <target>上传从桌面应用程序导出的增量文件（itf 文件）</target>
          </segment>
       </unit>
@@ -5399,8 +5355,7 @@
       </unit>
       <unit id="mobile.desktopOnlyStep">
          <segment>
-            <source>This step is only available on computers right now. We are working to bring it
-               to mobile phones soon.</source>
+            <source>This step is only available on computers right now. We are working to bring it to mobile phones soon.</source>
             <target>目前此步骤仅在电脑端可用。我们正在努力尽快将其引入手机端。</target>
          </segment>
       </unit>
@@ -5706,8 +5661,7 @@
       </unit>
       <unit id="passageDetailArtifacts.findResourceDesc">
          <segment>
-            <source>Create (using artificial intelligence -- AI) resources for internalizing
-               scripture.</source>
+            <source>Create (using artificial intelligence -- AI) resources for internalizing scripture.</source>
             <target>创建（利用人工智能——AI）资源，以帮助内化经文。</target>
          </segment>
       </unit>
@@ -5797,15 +5751,13 @@
       </unit>
       <unit id="passageDetailArtifacts.pasteFormat">
          <segment>
-            <source>Pasted data must contain two or three columns. One of them must be the
-               reference.</source>
+            <source>Pasted data must contain two or three columns. One of them must be the reference.</source>
             <target>粘贴的数据必须包含两个或三个列。其中一个必须是引用。</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.pasteError">
          <segment>
-            <source>Unable to parse {0} segment boundaries. {1} segment boundaries were
-               adjusted.</source>
+            <source>Unable to parse {0} segment boundaries. {1} segment boundaries were adjusted.</source>
             <target>无法解析 {0} 区段边界。调整了 {1} 区段边界。</target>
          </segment>
       </unit>
@@ -5831,6 +5783,78 @@
          <segment>
             <source>Reference</source>
             <target>章节</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextBookMissing">
+         <segment>
+            <source>This Bible does not include this book.</source>
+            <target>此圣经不包含这卷书。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextEmpty">
+         <segment>
+            <source>This Bible has no text for these verses.</source>
+            <target>此圣经没有这些经文的文本。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextFetchFailed">
+         <segment>
+            <source>The passage could not be loaded. Check your internet connection.</source>
+            <target>无法加载段落。请检查您的网络连接。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextForbidden">
+         <segment>
+            <source>You do not have access to this Reference Text.</source>
+            <target>您无权访问此参考文本。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextLoading">
+         <segment>
+            <source>Loading passage…</source>
+            <target>正在加载段落…</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoRange">
+         <segment>
+            <source>This passage has no verse range.</source>
+            <target>此段落没有经文范围。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoice">
+         <segment>
+            <source>No voice for {0} on this device.</source>
+            <target>此设备上没有 {0} 的语音。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+         <segment>
+            <source>Voices for {0} on this device need the internet.</source>
+            <target>此设备上 {0} 的语音需要联网。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextRenewLogin">
+         <segment>
+            <source>Renew login</source>
+            <target>重新登录</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextRetry">
+         <segment>
+            <source>Try again</source>
+            <target>重试</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextSpeakFailed">
+         <segment>
+            <source>The passage could not be spoken.</source>
+            <target>无法朗读该段落。</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextUnauthorized">
+         <segment>
+            <source>Your login has expired. Renew it to load the passage.</source>
+            <target>您的登录已过期。请重新登录以加载段落。</target>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.research">
@@ -5907,8 +5931,7 @@
       </unit>
       <unit id="passageDetailArtifacts.suffixTip">
          <segment>
-            <source>A Suffix is added to the end of the Reference (if there is no Title to override
-               it).</source>
+            <source>A Suffix is added to the end of the Reference (if there is no Title to override it).</source>
             <target>会在“参考”末尾添加一个后缀（如果没有“标题”覆盖它的话）。</target>
          </segment>
       </unit>
@@ -6056,6 +6079,12 @@
             <target>压缩失败。正在保存未压缩文件。</target>
          </segment>
       </unit>
+      <unit id="passageRecord.compressErrorTooBig">
+         <segment>
+            <source>Compression failed but the file is too big to save uncompressed.</source>
+            <target>压缩失败，但文件太大，无法以未压缩形式保存。</target>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -6102,6 +6131,12 @@
          <segment>
             <source>File is too large ({0}MB). File Limit is {1}MB</source>
             <target>文件过大 ({0}MB)。文件限制为 {1}MB</target>
+         </segment>
+      </unit>
+      <unit id="passageRecord.tooBigAfterCompression">
+         <segment>
+            <source>Our estimate was incorrect. The file is too large after compression ({0}MB). File Limit is {1}MB</source>
+            <target>我们的估计有误。压缩后文件仍然太大（{0}MB）。文件大小限制为 {1}MB</target>
          </segment>
       </unit>
       <unit id="passageRecord.toobigwarn">
@@ -6166,8 +6201,7 @@
       </unit>
       <unit id="peer.peerDescription">
          <segment>
-            <source>Peer Groups allow you to assign tasks to a group rather than an
-               individual.</source>
+            <source>Peer Groups allow you to assign tasks to a group rather than an individual.</source>
             <target>管理员组允许您将任务分配给一个小组而不是个人。</target>
          </segment>
       </unit>
@@ -6233,8 +6267,7 @@
       </unit>
       <unit id="peer.removeConfirm">
          <segment>
-            <source>Do you want to remove the peer group and information about who are the
-               members?</source>
+            <source>Do you want to remove the peer group and information about who are the members?</source>
             <target>您想要删除管理员组和相关成员的信息吗？</target>
          </segment>
       </unit>
@@ -6276,8 +6309,7 @@
       </unit>
       <unit id="permission.consultantInTrainingTip">
          <segment>
-            <source>CITs comments will only be visible to Mentors until a mentor approves the
-               comment.</source>
+            <source>CITs comments will only be visible to Mentors until a mentor approves the comment.</source>
             <target>CIT的评论将仅对导师可见直到一个导师批准此评论。</target>
          </segment>
       </unit>
@@ -6289,15 +6321,13 @@
       </unit>
       <unit id="permission.mentorTip">
          <segment>
-            <source>Mentor's comments will only be visible to CITs. Mentors can approve CIT's
-               comments to make them visible to the rest of the team.</source>
+            <source>Mentor's comments will only be visible to CITs. Mentors can approve CIT's comments to make them visible to the rest of the team.</source>
             <target>导师的评论只对CIT成员可见。导师可批准CIT成员的评论然后向其余成员显示可见。</target>
          </segment>
       </unit>
       <unit id="permission.nspTip">
          <segment>
-            <source>General Peer Group with no special permissions. Use to assign discussions to
-               team groups.</source>
+            <source>General Peer Group with no special permissions. Use to assign discussions to team groups.</source>
             <target>没有特殊权限的管理员组。用来分配讨论到各个团队。</target>
          </segment>
       </unit>
@@ -6417,40 +6447,25 @@
       </unit>
       <unit id="planSheet.confirmPublishMovement">
          <segment>
-            <source>If you choose to publish, the {0} and the latest version of all passages and
-               notes in all {0} in this movement will be marked as published. If you have previously
-               published and now choose not to publish, the {0} and passages and notes will be
-               marked as not published.</source>
-            <target>如果您选择发布，本乐章中的 {0} 以及所有 {0}
-               中所有段落和注释的最新版本都将标记为已发布。如果您之前已发表，但现在选择不发表，则{0}以及段落和注释将被标记为未发表。</target>
+            <source>If you choose to publish, the {0} and the latest version of all passages and notes in all {0} in this movement will be marked as published. If you have previously published and now choose not to publish, the {0} and passages and notes will be marked as not published.</source>
+            <target>如果您选择发布，本乐章中的 {0} 以及所有 {0} 中所有段落和注释的最新版本都将标记为已发布。如果您之前已发表，但现在选择不发表，则{0}以及段落和注释将被标记为未发表。</target>
          </segment>
       </unit>
       <unit id="planSheet.confirmPublishMovementNoPropagate">
          <segment>
-            <source>The publishing status of the {0} in the movement will not be changed. If you
-               choose to publish, the movement will be marked as published. If you have previously
-               published and now choose not to publish, the movement will be marked as not
-               published, but if any {0} are published to {1}, the movement will still appear in
-               {1}.</source>
+            <source>The publishing status of the {0} in the movement will not be changed. If you choose to publish, the movement will be marked as published. If you have previously published and now choose not to publish, the movement will be marked as not published, but if any {0} are published to {1}, the movement will still appear in {1}.</source>
             <target>乐章中{0}的出版状态不会改变。如果您选择发表，乐章将被标记为已发表。如果您之前已出版，但现在选择不出版，则乐章将被标记为未出版，但如果有任何{0}已出版至{1}，则乐章仍将出现在{1}中。</target>
          </segment>
       </unit>
       <unit id="planSheet.confirmPublishSection">
          <segment>
-            <source>If you choose to publish, the {0} and the latest version of all passages and
-               notes (except linked notes) in this {0} will be marked as published. If you have
-               previously published and now choose not to publish, the passages and notes will be
-               marked as not published.</source>
-            <target>如果您选择发布，{0} 以及该{0}
-               中所有段落和注释（链接注释除外）的最新版本都将标记为已发布。如果您以前发表过，但现在选择不发表，那么这些段落和注释将被标记为未发表。</target>
+            <source>If you choose to publish, the {0} and the latest version of all passages and notes (except linked notes) in this {0} will be marked as published. If you have previously published and now choose not to publish, the passages and notes will be marked as not published.</source>
+            <target>如果您选择发布，{0} 以及该{0} 中所有段落和注释（链接注释除外）的最新版本都将标记为已发布。如果您以前发表过，但现在选择不发表，那么这些段落和注释将被标记为未发表。</target>
          </segment>
       </unit>
       <unit id="planSheet.confirmPublishSectionNoPropagate">
          <segment>
-            <source>If you choose to publish, the {0} will be marked as published but the publishing
-               status of the passages and notes in this {0} will not be changed. If you have
-               previously published and now choose not to publish, the {0} will be marked as not
-               published.</source>
+            <source>If you choose to publish, the {0} will be marked as published but the publishing status of the passages and notes in this {0} will not be changed. If you have previously published and now choose not to publish, the {0} will be marked as not published.</source>
             <target>如果您选择发表，{0}将被标记为已发表，但该{0}中的段落和注释的发表状态不会改变。如果之前已发布，现在选择不发布，则{0}将标记为未发布。</target>
          </segment>
       </unit>
@@ -6570,8 +6585,7 @@
       </unit>
       <unit id="planSheet.paratextRequired">
          <segment>
-            <source>You must be a {0} user with access to FOBAI resources and project Editor or
-               Publisher permission to use this feature.</source>
+            <source>You must be a {0} user with access to FOBAI resources and project Editor or Publisher permission to use this feature.</source>
             <target>您必须是可以访问 FOBAI 资源的{0}用户，并拥有项目编辑或发布权限，才能使用此功能。</target>
          </segment>
       </unit>
@@ -6625,8 +6639,7 @@
       </unit>
       <unit id="planSheet.refErr">
          <segment>
-            <source>This project contains invalid Books or References and will not sync or publish.
-               (A valid reference would be 3:2-5 or similar.)</source>
+            <source>This project contains invalid Books or References and will not sync or publish. (A valid reference would be 3:2-5 or similar.)</source>
             <target>该项目包含无效的书目或参考文献，因此无法同步或发布。（有效的参考文献格式应为 3:2-5 或类似形式。）</target>
          </segment>
       </unit>
@@ -6750,10 +6763,10 @@
             <target>{1} / {2} 的片段</target>
          </segment>
       </unit>
-      <unit id="planTabs.sectionsPassages">
+      <unit id="planTabs.projectOverview">
          <segment>
-            <source>{0} &amp; Passages</source>
-            <target>{0} &amp; 片段</target>
+            <source>Project Overview</source>
+            <target>项目概览</target>
          </segment>
       </unit>
       <unit id="planTabs.sectionStatus">
@@ -6770,8 +6783,7 @@
       </unit>
       <unit id="prompt.adminInstructions">
          <segment>
-            <source>Record a short prompt for this {0}, then save. Team members will listen before
-               they record.</source>
+            <source>Record a short prompt for this {0}, then save. Team members will listen before they record.</source>
             <target>为该 {0} 录制一段简短的提示音，然后保存。团队成员在录制前会先收听该提示音。</target>
          </segment>
       </unit>
@@ -6843,8 +6855,7 @@
       </unit>
       <unit id="profile.deleteExplained">
          <segment>
-            <source>Deleting your user will block you from using the program and remove references
-               to your work. Are you sure you want to do this?</source>
+            <source>Deleting your user will block you from using the program and remove references to your work. Are you sure you want to do this?</source>
             <target>删除您的用户将阻止您使用该程序，并删除对您作品的引用。您确定要这样做吗？</target>
          </segment>
       </unit>
@@ -7114,15 +7125,8 @@
       </unit>
       <unit id="projectDownload.downloadDescription">
          <segment>
-            <source>If the estimated time for download is too long for you, use the 'x' in the upper
-               corner to close this dialog box. Then add a minimum and / or maximum {1} to the
-               filter. The filter icon is {0} (a downward pointing dashed triangle) and is located
-               before the {3} button on the {4} &amp; PASSAGES tab. After setting the {1} filter,
-               choose the filtered option on this dialog box to see how much time will be needed for
-               the filtered {2}.</source>
-            <target>如果预计下载时间过长，请使用上角的 “x
-               ”关闭此对话框。然后为过滤器添加最小值和/或最大值{1}。过滤器图标为{0}（一个向下的虚线三角形），位于{4}&amp;
-               PASSAGES选项卡上{3}按钮之前。设置{1}过滤器后，请在对话框中选择过滤选项，查看过滤后的{2}所需的时间。</target>
+            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the Project Overview tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
+            <target>如果预计的下载时间对您来说太长，请使用右上角的“x”关闭此对话框。然后在筛选器中添加最小和/或最大{1}。筛选图标是 {0}（一个向下的虚线三角形），位于“项目概览”选项卡上的 {3} 按钮之前。设置{1}筛选后，在此对话框中选择筛选选项，即可查看筛选后的{2}需要多少时间。</target>
          </segment>
       </unit>
       <unit id="projectDownload.downloadLater">
@@ -7133,8 +7137,7 @@
       </unit>
       <unit id="projectDownload.downloadMb">
          <segment>
-            <source>Download {0}MB of offline audio project files? (It may take {1} to download on a
-               fast Internet connection or {2} on a slow broadband connection.)</source>
+            <source>Download {0}MB of offline audio project files? (It may take {1} to download on a fast Internet connection or {2} on a slow broadband connection.)</source>
             <target>下载 {0}MB 的离线音频项目文件？（在快速互联网连接下可能需要 {1} 的下载时间，在慢速宽带连接下可能需要 {2} 的下载时间）。</target>
          </segment>
       </unit>
@@ -7224,15 +7227,13 @@
       </unit>
       <unit id="publishLevel.bibleRequired">
          <segment>
-            <source>You must have set up a Bible Id and Name in the Team Settings to publish to {0}
-               or {1}.</source>
+            <source>You must have set up a Bible Id and Name in the Team Settings to publish to {0} or {1}.</source>
             <target>您必须在 “团队设置 ”中设置圣经 ID 和名称，才能发布到{0}或{1}。</target>
          </segment>
       </unit>
       <unit id="publishLevel.beta">
          <segment>
-            <source>Beta - visible on the {0} website when using the beta parameter (not available
-               in the app)</source>
+            <source>Beta - visible on the {0} website when using the beta parameter (not available in the app)</source>
             <target>测试版--使用测试版参数时，在{0}网站上可见（在应用程序中不可用）</target>
          </segment>
       </unit>
@@ -7274,8 +7275,7 @@
       </unit>
       <unit id="resource.changes">
          <segment>
-            <source>Edit this note in the project where it was created. Changes there apply to all
-               linked locations.</source>
+            <source>Edit this note in the project where it was created. Changes there apply to all linked locations.</source>
             <target>请在创建此笔记的项目中进行编辑。该处的更改将应用于所有关联位置。</target>
          </segment>
       </unit>
@@ -7431,8 +7431,7 @@
       </unit>
       <unit id="recordStepSettings.echoCancellationHelper">
          <segment>
-            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a
-               cleaner capture when using headphones or a quiet room.</source>
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
             <target>使用扬声器时可减少回声。可能会降低录音质量。使用耳机或在安静的房间内录音时，请关闭此功能以获得更清晰的录音效果。</target>
          </segment>
       </unit>
@@ -7456,8 +7455,7 @@
       </unit>
       <unit id="recordStepSettings.noiseSuppressionHelper">
          <segment>
-            <source>Reduces background noise. May make speech sound less natural. Leave off for the
-               most faithful capture when the environment is already quiet.</source>
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
             <target>可减少背景噪音。可能会使语音听起来不够自然。当环境已经很安静时，请关闭此功能以获得最真实的录音效果。</target>
          </segment>
       </unit>
@@ -7475,8 +7473,7 @@
       </unit>
       <unit id="recordStepSettings.saveAsWavHelper">
          <segment>
-            <source>These files are large and we suggest you only select this for the final
-               recording.</source>
+            <source>These files are large and we suggest you only select this for the final recording.</source>
             <target>此类文件体积较大，建议仅在最终录音时选择此选项。</target>
          </segment>
       </unit>
@@ -7596,8 +7593,7 @@
       </unit>
       <unit id="scriptureTable.publishingWarning">
          <segment>
-            <source>Once publishing rows are added, there is no automated way to remove them.
-               Publishing projects cannot be made flat projects.</source>
+            <source>Once publishing rows are added, there is no automated way to remove them. Publishing projects cannot be made flat projects.</source>
             <target>一旦添加了出版行，就无法自动删除它们。出版项目不能成为平面项目。</target>
          </segment>
       </unit>
@@ -7735,8 +7731,7 @@
       </unit>
       <unit id="selectArtifactCategory.scriptureHighlight">
          <segment>
-            <source>Resources of this type will be available in steps using the Compare
-               tool.</source>
+            <source>Resources of this type will be available in steps using the Compare tool.</source>
             <target>此类型的资源将使用比较工具分步骤使用。</target>
          </segment>
       </unit>
@@ -7886,15 +7881,13 @@
       </unit>
       <unit id="shared.expiredParatextToken">
          <segment>
-            <source>Your {Pt} login has expired and can't be automatically renewed. Please log out
-               and login again.</source>
+            <source>Your {Pt} login has expired and can't be automatically renewed. Please log out and login again.</source>
             <target>您的 {Pt} 登录已过期，无法自动更新。 请退出并重新登录。</target>
          </segment>
       </unit>
       <unit id="shared.expiredToken">
          <segment>
-            <source>Your login token has expired and can't be automatically renewed. Please log out
-               and login again.</source>
+            <source>Your login token has expired and can't be automatically renewed. Please log out and login again.</source>
             <target>您的登录已过期，不能自动更新。请注销并重新登录。</target>
          </segment>
       </unit>
@@ -7930,8 +7923,7 @@
       </unit>
       <unit id="shared.leaveUnsavedChanges">
          <segment>
-            <source>You have unsaved changes that will be lost if you leave this page. Leave
-               anyway?</source>
+            <source>You have unsaved changes that will be lost if you leave this page. Leave anyway?</source>
             <target>您有未保存的更改，如果离开此页面，这些更改将会丢失。仍要离开吗？</target>
          </segment>
       </unit>
@@ -7943,8 +7935,7 @@
       </unit>
       <unit id="shared.loadError">
          <segment>
-            <source>The passage has not properly loaded. You can verify that the passage has audio
-               or continue waiting.</source>
+            <source>The passage has not properly loaded. You can verify that the passage has audio or continue waiting.</source>
             <target>该段落未正确加载。您可以确认该段落是否有音频，或者继续等待。</target>
          </segment>
       </unit>
@@ -7974,9 +7965,7 @@
       </unit>
       <unit id="shared.mediaQueuedForUpload">
          <segment>
-            <source>You are not connected to the network, so this media has been added to the
-               pending upload queue. Once your connection is restored, you can retry the save from
-               the Teams screen.</source>
+            <source>You are not connected to the network, so this media has been added to the pending upload queue. Once your connection is restored, you can retry the save from the Teams screen.</source>
             <target>您当前未连接到网络，因此该媒体已添加到待上传队列中。网络连接恢复后，您可以在“团队”界面重试保存操作。</target>
          </segment>
       </unit>
@@ -8078,8 +8067,7 @@
       </unit>
       <unit id="shared.referenceNotFound">
          <segment>
-            <source>Reference does not exist in {Pt} chapter, or reference is within a larger verse
-               range.</source>
+            <source>Reference does not exist in {Pt} chapter, or reference is within a larger verse range.</source>
             <target>参考文献不存在于 {Pt} 章节中，或参考文献位于较大的诗句范围内。</target>
          </segment>
       </unit>
@@ -8247,9 +8235,7 @@
       </unit>
       <unit id="spelling.restart">
          <segment>
-            <source>To load or unload dictionaries requires this app to be restarted. Loading
-               dictionaries that have not been loaded before will require this device to have a
-               connection to the Internet. Do you want to restart this desktop app now?</source>
+            <source>To load or unload dictionaries requires this app to be restarted. Loading dictionaries that have not been loaded before will require this device to have a connection to the Internet. Do you want to restart this desktop app now?</source>
             <target>要加载或卸载字典，需要重启此应用程序。 加载之前尚未加载的字典将需要此设备连接到互联网。 您想要现在重新启动此桌面应用程序吗？</target>
          </segment>
       </unit>
@@ -8753,12 +8739,56 @@
       </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
-            <source>The AI will continue to work on the transcription even if you close this
-               progress box. Click the {0} button to open the progress box on this workflow step to
-               see the results. Use the settings gear on {0} button to see the transcription using a
-               different language.</source>
-            <target>即使您关闭此进度框，人工智能仍将继续转录工作。单击 {0}
-               按钮打开此工作流程步骤的进度框，查看结果。使用{0}按钮上的设置齿轮查看使用不同语言进行的转录。</target>
+            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
+            <target>即使您关闭此进度框，人工智能仍将继续转录工作。单击 {0} 按钮打开此工作流程步骤的进度框，查看结果。使用{0}按钮上的设置齿轮查看使用不同语言进行的转录。</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrChooseLanguage">
+         <segment>
+            <source>Choose the language of this recording for automatic transcription.</source>
+            <target>选择此录音的语言以进行自动转录。</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethod">
+         <segment>
+            <source>Method</source>
+            <target>方法</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethodDefault">
+         <segment>
+            <source>{0} (Default)</source>
+            <target>{0}（默认）</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethodHint">
+         <segment>
+            <source>Choose a specific method only if the default method is not working well.</source>
+            <target>仅当默认方法效果不佳时，才选择特定方法。</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrRequestFailed">
+         <segment>
+            <source>Speech recognition settings could not be loaded.</source>
+            <target>无法加载语音识别设置。</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSaveFailed">
+         <segment>
+            <source>Speech recognition settings could not be saved.</source>
+            <target>无法保存语音识别设置。</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSaveTeamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target>保存为团队默认设置</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrTeamDefaultSaved">
+         <segment>
+            <source>Saved as the team default.</source>
+            <target>已保存为团队默认设置。</target>
          </segment>
       </unit>
       <unit id="transcriber.comment">
@@ -8799,8 +8829,7 @@
       </unit>
       <unit id="transcriber.missingSegmentRecordings">
          <segment>
-            <source>Some Phrase Back Translation segments are missing recordings. Complete recording
-               for every segment before starting transcription.</source>
+            <source>Some Phrase Back Translation segments are missing recordings. Complete recording for every segment before starting transcription.</source>
             <target>部分“短语反向翻译”片段缺少录音。在开始转录前，请先为每个片段完成录音。</target>
          </segment>
       </unit>
@@ -8924,18 +8953,9 @@
             <target>脚本</target>
          </segment>
       </unit>
-      <unit id="transcriber.invalidSisterLang">
-         <segment>
-            <source>This language is not supported for speech recognition. Choose another sister
-               language.</source>
-            <target>此语言不支持语音识别。请选择另一种相关语言。</target>
-         </segment>
-      </unit>
       <unit id="transcriber.sisterLang">
          <segment>
-            <source>Your language is not supported for speech recognition. To use automatic
-               transcription, choose a closely related language with a similar writing
-               system.</source>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
             <target>您的语言不支持语音识别。如需使用自动转录功能，请选择一种书写系统相似的、与之密切相关的语言。</target>
          </segment>
       </unit>
@@ -9061,8 +9081,7 @@
       </unit>
       <unit id="transcriptionTab.availableOnClipboard">
          <segment>
-            <source>Exported data is available on the clipboard. Use paste to insert it into another
-               program.</source>
+            <source>Exported data is available on the clipboard. Use paste to insert it into another program.</source>
             <target>导出的数据存在于剪贴板。使用粘贴将其插入另一个程序。</target>
          </segment>
       </unit>
@@ -9146,8 +9165,7 @@
       </unit>
       <unit id="transcriptionTab.exportExplanation">
          <segment>
-            <source>Export the full audio project to store locally or share with another offline
-               member. Export incremental file to import changes into online app.</source>
+            <source>Export the full audio project to store locally or share with another offline member. Export incremental file to import changes into online app.</source>
             <target>导出完整的音频项目以存储本地或与另一个离线成员分享。导出增量文件以导入变化到在线应用程序。</target>
          </segment>
       </unit>
@@ -9219,8 +9237,7 @@
       </unit>
       <unit id="transcriptionTab.offlineData">
          <segment>
-            <source>You have new changes locally that were not included in the PTF export. Please
-               also export an itf file to capture all changes.</source>
+            <source>You have new changes locally that were not included in the PTF export. Please also export an itf file to capture all changes.</source>
             <target>您在本地有新的更改，但未包含在 PTF 导出中。 请同时导出一个 itf 文件以记录所有更改。</target>
          </segment>
       </unit>
@@ -9264,6 +9281,138 @@
          <segment>
             <source>Status of</source>
             <target>状态</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.add">
+         <segment>
+            <source>Add to ranking</source>
+            <target>添加到排序</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.explain">
+         <segment>
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target>为朗读参考文本所用的语音排序。对于每种语言，设备会使用其拥有的排序最靠前的语音。</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.filterReferenceTexts">
+         <segment>
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target>在项目设置中，仅提供有已排序语音的语言的参考文本</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.linuxNote">
+         <segment>
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target>Linux 上的语音来自 speech-dispatcher（例如 espeak-ng）。请使用软件包管理器安装更多语音。</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.loading">
+         <segment>
+            <source>Loading voices…</source>
+            <target>正在加载语音…</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.local">
+         <segment>
+            <source>Local</source>
+            <target>本地</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.macNote">
+         <segment>
+            <source>You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.</source>
+            <target>您可以在“系统设置”→“辅助功能”→“朗读内容”→“系统语音”→“管理语音”中添加其他语言的 Mac 语音。</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveDown">
+         <segment>
+            <source>Move down</source>
+            <target>下移</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveUp">
+         <segment>
+            <source>Move up</source>
+            <target>上移</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noMatch">
+         <segment>
+            <source>No languages match.</source>
+            <target>没有匹配的语言。</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noVoices">
+         <segment>
+            <source>This device has no text-to-speech voices.</source>
+            <target>此设备没有文字转语音的语音。</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.notOnDevice">
+         <segment>
+            <source>Not on this device</source>
+            <target>不在此设备上</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.online">
+         <segment>
+            <source>Online</source>
+            <target>在线</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.rankedCount">
+         <segment>
+            <source>{0} ranked</source>
+            <target>已排序 {0} 个</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.read">
+         <segment>
+            <source>Read</source>
+            <target>朗读</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.remove">
+         <segment>
+            <source>Remove from ranking</source>
+            <target>从排序中移除</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleDefault">
+         <segment>
+            <source>This is how this voice will sound.</source>
+            <target>这就是此语音的声音。</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleText">
+         <segment>
+            <source>Sample text</source>
+            <target>示例文本</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.search">
+         <segment>
+            <source>Search languages</source>
+            <target>搜索语言</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.showOnline">
+         <segment>
+            <source>Show online voices</source>
+            <target>显示在线语音</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.title">
+         <segment>
+            <source>Reference Text Voices</source>
+            <target>参考文本语音</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.windowsNote">
+         <segment>
+            <source>You can add Windows voices for other languages under Settings → Time &amp; language → Speech → Add voices.</source>
+            <target>您可以在“设置”→“时间和语言”→“语音”→“添加语音”中添加其他语言的 Windows 语音。</target>
          </segment>
       </unit>
       <unit id="uploadProgress.cancel">
@@ -9400,8 +9549,7 @@
       </unit>
       <unit id="verse.btNotUpdated">
          <segment>
-            <source>WARNING: Since back translation recordings already exist, back translation
-               segments will not be updated to line up with verse changes.</source>
+            <source>WARNING: Since back translation recordings already exist, back translation segments will not be updated to line up with verse changes.</source>
             <target>警告：由于背译录音已经存在，背译片段将不会更新以与诗句变化保持一致。</target>
          </segment>
       </unit>
@@ -9641,8 +9789,7 @@
       </unit>
       <unit id="voice.stHired">
          <segment>
-            <source>Since I am being compensated by the team, my voice can be used by the team
-               without additional compensation.</source>
+            <source>Since I am being compensated by the team, my voice can be used by the team without additional compensation.</source>
             <target>既然团队给了我报酬，我的声音就可以被团队使用，无需额外补偿。</target>
          </segment>
       </unit>
@@ -9654,8 +9801,7 @@
       </unit>
       <unit id="voice.stLangClause">
          <segment>
-            <source>I understand that {0} will only use my voice with languages I do not regularly
-               use, to prevent impersonation. {1}. </source>
+            <source>I understand that {0} will only use my voice with languages I do not regularly use, to prevent impersonation. {1}. </source>
             <target>我明白，{0} 将只在我不经常使用的语言中使用我的声音，以防止冒充。{1}. </target>
          </segment>
       </unit>
@@ -9685,47 +9831,14 @@
       </unit>
       <unit id="voice.aiipStatement">
          <segment>
-            <source>I {0} provide consent for {1} to record and store this file with my voice in the
-               cloud and possibly in a voice library for publishing and use in AI applications that
-               require a voice sample, including voice conversion. The recording created by {1} of
-               me reading this script will become the exclusive property of {1} which shall have the
-               unlimited right to make, have made, use, copy, display in public, reconstruct,
-               repair, modify, reproduce, publish, distribute and sell the Work Product, in whole or
-               in part, or combine the Work Product with other matter, or not use the Work Product
-               at all, as it sees fit. {1} will use the recording in a variety of ways, including,
-               but not limited to, Audio books, narrating apps, and scripture engagement to further
-               the mission of the organization. {2}{3} I have been provided this script in a
-               language I understand, and have been given the option to request this script in a
-               language of my choice. This recording will act as my signature in place of a written
-               agreement. {4} I sign with my voice, {5}.</source>
-            <target>我 {0} 同意 {1} 将包含我声音的此文件录制并存储于云端，并可能将其收录至语音库中，用于发布以及在需要语音样本的 AI 应用（包括语音转换）中使用。由
-               {1} 录制的我朗读本脚本的录音将归 {1} 独家所有，{1}
-               享有无限制的权利，可根据其意愿，对该作品进行制作、委托制作、使用、复制、公开展示、重建、修复、修改、再现、出版、分发和销售（无论全部或部分），或将该作品与其他内容结合，或完全不使用该作品。{1}
-               将以多种方式使用该录音，包括但不限于有声读物、旁白应用程序以及经文互动，以推进该组织的使命。{2}{3}
-               我已收到一份我能够理解的语言版本的脚本，并有权要求以我选择的语言获取该脚本。本录音将作为我的签名，代替书面协议。{4} 我以声音签署本协议，{5}。</target>
+            <source>I {0} provide consent for {1} to record and store this file with my voice in the cloud and possibly in a voice library for publishing and use in AI applications that require a voice sample, including voice conversion. The recording created by {1} of me reading this script will become the exclusive property of {1} which shall have the unlimited right to make, have made, use, copy, display in public, reconstruct, repair, modify, reproduce, publish, distribute and sell the Work Product, in whole or in part, or combine the Work Product with other matter, or not use the Work Product at all, as it sees fit. {1} will use the recording in a variety of ways, including, but not limited to, Audio books, narrating apps, and scripture engagement to further the mission of the organization. {2}{3} I have been provided this script in a language I understand, and have been given the option to request this script in a language of my choice. This recording will act as my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
+            <target>我 {0} 同意 {1} 将包含我声音的此文件录制并存储于云端，并可能将其收录至语音库中，用于发布以及在需要语音样本的 AI 应用（包括语音转换）中使用。由 {1} 录制的我朗读本脚本的录音将归 {1} 独家所有，{1} 享有无限制的权利，可根据其意愿，对该作品进行制作、委托制作、使用、复制、公开展示、重建、修复、修改、再现、出版、分发和销售（无论全部或部分），或将该作品与其他内容结合，或完全不使用该作品。{1} 将以多种方式使用该录音，包括但不限于有声读物、旁白应用程序以及经文互动，以推进该组织的使命。{2}{3} 我已收到一份我能够理解的语言版本的脚本，并有权要求以我选择的语言获取该脚本。本录音将作为我的签名，代替书面协议。{4} 我以声音签署本协议，{5}。</target>
          </segment>
       </unit>
       <unit id="voice.ipStatement">
          <segment>
-            <source>I {0} give {1} permission to record and use my recordings and other
-               contributions made for {2}. I grant {1} a perpetual, worldwide, royalty-free right to
-               record, reproduce, edit, modify, combine, publish, distribute, broadcast, stream, and
-               otherwise use Work Products I make, in whole or in part, in the {2} and in any
-               derivative works, whether now existing or developed in the future. My Work Products
-               are the exclusive property of {1}, which shall have the unlimited right to make, have
-               made, use, copy, repair, modify, reproduce, publish, distribute and sell the Work
-               Products, in whole or in part, or combine the Work Products with other matter, or not
-               use the Work Products at all, as it sees fit. {1} will use the Work Products in a
-               variety of ways, including, but not limited to, Scripture Publication, Audio books,
-               narrating apps, and scripture engagement to further the mission of the organization.
-               I have been provided this script in a language I understand, and have been given the
-               option to request this script in a language of my choice. This recording will act as
-               my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
-            <target>我 {0} 授权 {1} 录制并使用我为 {2} 制作的录音及其他贡献内容。我授予 {1}
-               一项永久性、全球范围内的、免版税的权利，允许其录制、复制、编辑、修改、组合、发布、分发、广播、流媒体播放以及以其他方式使用我制作的成果，无论全部或部分，均适用于 {2}
-               以及任何衍生作品，无论该等作品目前是否存在或未来是否开发。我的工作成果为{1}的专有财产，{1}享有无限制的权利，可自行决定制作、委托制作、使用、复制、修复、修改、再现、出版、分发和销售工作成果（无论全部或部分），或将工作成果与其他内容结合，或完全不使用工作成果。{1}
-               将以多种方式使用工作成果，包括但不限于圣经出版、有声读物、朗读应用程序以及圣经互动，以推进该组织的使命。我已收到一份我能够理解的语言版本的脚本，并有权要求以我选择的语言获取该脚本。本录音将作为我的签名，代替书面协议。{4}
-               我以声音签署，{5}。</target>
+            <source>I {0} give {1} permission to record and use my recordings and other contributions made for {2}. I grant {1} a perpetual, worldwide, royalty-free right to record, reproduce, edit, modify, combine, publish, distribute, broadcast, stream, and otherwise use Work Products I make, in whole or in part, in the {2} and in any derivative works, whether now existing or developed in the future. My Work Products are the exclusive property of {1}, which shall have the unlimited right to make, have made, use, copy, repair, modify, reproduce, publish, distribute and sell the Work Products, in whole or in part, or combine the Work Products with other matter, or not use the Work Products at all, as it sees fit. {1} will use the Work Products in a variety of ways, including, but not limited to, Scripture Publication, Audio books, narrating apps, and scripture engagement to further the mission of the organization. I have been provided this script in a language I understand, and have been given the option to request this script in a language of my choice. This recording will act as my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
+            <target>我 {0} 授权 {1} 录制并使用我为 {2} 制作的录音及其他贡献内容。我授予 {1} 一项永久性、全球范围内的、免版税的权利，允许其录制、复制、编辑、修改、组合、发布、分发、广播、流媒体播放以及以其他方式使用我制作的成果，无论全部或部分，均适用于 {2} 以及任何衍生作品，无论该等作品目前是否存在或未来是否开发。我的工作成果为{1}的专有财产，{1}享有无限制的权利，可自行决定制作、委托制作、使用、复制、修复、修改、再现、出版、分发和销售工作成果（无论全部或部分），或将工作成果与其他内容结合，或完全不使用工作成果。{1} 将以多种方式使用工作成果，包括但不限于圣经出版、有声读物、朗读应用程序以及圣经互动，以推进该组织的使命。我已收到一份我能够理解的语言版本的脚本，并有权要求以我选择的语言获取该脚本。本录音将作为我的签名，代替书面协议。{4} 我以声音签署，{5}。</target>
          </segment>
       </unit>
       <unit id="voice.stTeam">
@@ -9736,9 +9849,7 @@
       </unit>
       <unit id="voice.stTeamClause">
          <segment>
-            <source>I understand that my voice can be used by {0} for any or all of its projects on
-               audio files for the vernacular language, navigation language or any back translation
-               languages.</source>
+            <source>I understand that my voice can be used by {0} for any or all of its projects on audio files for the vernacular language, navigation language or any back translation languages.</source>
             <target>我明白我的声音可被 {0} 用于其任何或所有项目的音频文件，包括白话、导航语言或任何回译语言。</target>
          </segment>
       </unit>
@@ -9796,10 +9907,28 @@
             <target>基本</target>
          </segment>
       </unit>
+      <unit id="vProject.bibleListError">
+         <segment>
+            <source>The list of Bibles could not be loaded.</source>
+            <target>无法加载圣经列表。</target>
+         </segment>
+      </unit>
+      <unit id="vProject.book">
+         <segment>
+            <source>Book</source>
+            <target>书卷</target>
+         </segment>
+      </unit>
       <unit id="vProject.cancel">
          <segment>
             <source>Cancel</source>
             <target>取消</target>
+         </segment>
+      </unit>
+      <unit id="vProject.chooseBookFirst">
+         <segment>
+            <source>Choose a book to see reference texts</source>
+            <target>选择一卷书以查看参考文本</target>
          </segment>
       </unit>
       <unit id="vProject.configure">
@@ -9836,6 +9965,12 @@
          <segment>
             <source>Editor Settings</source>
             <target>编辑器设置</target>
+         </segment>
+      </unit>
+      <unit id="vProject.filteredToVoices">
+         <segment>
+            <source>Showing only languages your team has ranked voices for.</source>
+            <target>仅显示您的团队已为其语音排序的语言。</target>
          </segment>
       </unit>
       <unit id="vProject.generalBook">
@@ -9876,15 +10011,13 @@
       </unit>
       <unit id="vProject.isPublic">
          <segment>
-            <source>This project contains resources that can be used in other projects for
-               Internalization.</source>
+            <source>This project contains resources that can be used in other projects for Internalization.</source>
             <target>该项目包含可用于其他内部化项目的资源。</target>
          </segment>
       </unit>
       <unit id="vProject.howToPublic">
          <segment>
-            <source>Contact Nathan Payne (nathan_payne at sil.org) for access to create shared
-               content.</source>
+            <source>Contact Nathan Payne (nathan_payne at sil.org) for access to create shared content.</source>
             <target>请联系 Nathan Payne (nathan_payne at sil.org) 以获取创建共享内容的权限。</target>
          </segment>
       </unit>
@@ -9898,6 +10031,18 @@
          <segment>
             <source>Layout</source>
             <target>布局</target>
+         </segment>
+      </unit>
+      <unit id="vProject.licenseNotStated">
+         <segment>
+            <source>License not stated</source>
+            <target>未注明许可</target>
+         </segment>
+      </unit>
+      <unit id="vProject.loadingBibles">
+         <segment>
+            <source>Loading Bibles…</source>
+            <target>正在加载圣经…</target>
          </segment>
       </unit>
       <unit id="vProject.movement">
@@ -9972,10 +10117,28 @@
             <target>预览</target>
          </segment>
       </unit>
+      <unit id="vProject.primaryReferenceText">
+         <segment>
+            <source>Primary Reference Text</source>
+            <target>主要参考文本</target>
+         </segment>
+      </unit>
       <unit id="vProject.projectName">
          <segment>
             <source>Audio Project Name</source>
             <target>音频项目的名称</target>
+         </segment>
+      </unit>
+      <unit id="vProject.publicDomain">
+         <segment>
+            <source>Public Domain</source>
+            <target>公共领域</target>
+         </segment>
+      </unit>
+      <unit id="vProject.referenceTextRemoved">
+         <segment>
+            <source>{0} was removed because it does not include {1}.</source>
+            <target>已移除 {0}，因为它不包含 {1}。</target>
          </segment>
       </unit>
       <unit id="vProject.renderRecommended">
@@ -9994,6 +10157,12 @@
          <segment>
             <source>Scene/Scenes</source>
             <target>场景</target>
+         </segment>
+      </unit>
+      <unit id="vProject.secondaryReferenceText">
+         <segment>
+            <source>Secondary Reference Text</source>
+            <target>次要参考文本</target>
          </segment>
       </unit>
       <unit id="vProject.sections">
@@ -10048,6 +10217,12 @@
          <segment>
             <source>Audio Project Type</source>
             <target>音频项目的类型</target>
+         </segment>
+      </unit>
+      <unit id="vProject.usedInTeam">
+         <segment>
+            <source>Used in this team</source>
+            <target>在此团队中使用</target>
          </segment>
       </unit>
       <unit id="welcome.alone">
@@ -10130,9 +10305,7 @@
       </unit>
       <unit id="welcome.setupTeamTip">
          <segment>
-            <source>Set up the audio project, dividing work into passages that can be assigned to
-               various transcribers and editors. Transcribers and editors can work online or offline
-               by downloading or importing the audio project.</source>
+            <source>Set up the audio project, dividing work into passages that can be assigned to various transcribers and editors. Transcribers and editors can work online or offline by downloading or importing the audio project.</source>
             <target>设置音频项目，将工作分成可分配给各种听写员和编辑员的片段。 听写员和编辑员可以通过下载或导入音频项目在线或离线工作。</target>
          </segment>
       </unit>
@@ -10150,9 +10323,7 @@
       </unit>
       <unit id="welcome.teamTip">
          <segment>
-            <source>A audio project has been set up online. Transcribers and editors can work
-               online, offline by selecting the Offline Available option on the audio project card
-               menu, or offline by importing it.</source>
+            <source>A audio project has been set up online. Transcribers and editors can work online, offline by selecting the Offline Available option on the audio project card menu, or offline by importing it.</source>
             <target>在线设置了一个音频项目。 听写者和编辑者可以在线工作，通过选择在音频项目卡菜单上的离线可用选项，或通过导入离线选项。</target>
          </segment>
       </unit>
@@ -10224,8 +10395,7 @@
       </unit>
       <unit id="workflowSteps.freeTranslationTip">
          <segment>
-            <source>Record a free translation of the entire passage in the language of wider
-               communication.</source>
+            <source>Record a free translation of the entire passage in the language of wider communication.</source>
             <target>用通用语言录制整段内容的自由翻译。</target>
          </segment>
       </unit>
@@ -10249,8 +10419,7 @@
       </unit>
       <unit id="workflowSteps.lwcTranslationTip">
          <segment>
-            <source>Listen to each careful speech segment and record a translation in the language
-               of wider communication.</source>
+            <source>Listen to each careful speech segment and record a translation in the language of wider communication.</source>
             <target>仔细聆听每个语音片段，并用通用语言录制翻译。</target>
          </segment>
       </unit>
@@ -10298,8 +10467,7 @@
       </unit>
       <unit id="workflowSteps.consultantCheckTip">
          <segment>
-            <source>The consultant listens to recorded content and asks questions in
-               discussions.</source>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
             <target>顾问会收听录音内容，并在讨论中提出问题。</target>
          </segment>
       </unit>
@@ -10311,8 +10479,7 @@
       </unit>
       <unit id="workflowSteps.consultantCheck1Tip">
          <segment>
-            <source>The consultant listens to recorded content and asks questions in
-               discussions.</source>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
             <target>顾问会收听录音内容，并在讨论中提出问题。</target>
          </segment>
       </unit>
@@ -10324,8 +10491,7 @@
       </unit>
       <unit id="workflowSteps.consultantCheck2Tip">
          <segment>
-            <source>The consultant listens to recorded content and asks questions in
-               discussions.</source>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
             <target>顾问会收听录音内容，并在讨论中提出问题。</target>
          </segment>
       </unit>
@@ -10373,8 +10539,7 @@
       </unit>
       <unit id="workflowSteps.finalReviewTip">
          <segment>
-            <source>Listen one last time to the results to see if any more changes are
-               needed.</source>
+            <source>Listen one last time to the results to see if any more changes are needed.</source>
             <target>最后再听一遍成果，看看是否还需要进行任何修改。</target>
          </segment>
       </unit>
@@ -10386,8 +10551,7 @@
       </unit>
       <unit id="workflowSteps.finalReviewTextTip">
          <segment>
-            <source>Read through the transcription one last time to see if any additional changes
-               are needed.</source>
+            <source>Read through the transcription one last time to see if any additional changes are needed.</source>
             <target>请最后再通读一遍转录文本，看看是否还需要进行其他修改。</target>
          </segment>
       </unit>
@@ -10423,8 +10587,7 @@
       </unit>
       <unit id="workflowSteps.internalizeTip">
          <segment>
-            <source>Review the resources to become able to tell the passage from memory in the
-               target languages.</source>
+            <source>Review the resources to become able to tell the passage from memory in the target languages.</source>
             <target>复习相关资料，以便能够用目标语言背诵这段文字。</target>
          </segment>
       </unit>
@@ -10508,8 +10671,7 @@
       </unit>
       <unit id="workflowSteps.pBTParatextSyncTip">
          <segment>
-            <source>Synchronize the back translated text to another tool for analysis and
-               review.</source>
+            <source>Synchronize the back translated text to another tool for analysis and review.</source>
             <target>将反向翻译后的文本同步到另一款工具中，以便进行分析和审核。</target>
          </segment>
       </unit>
@@ -10557,8 +10719,7 @@
       </unit>
       <unit id="workflowSteps.retellBTTranscribeTip">
          <segment>
-            <source>Transcribe the recording of the text being retold in the language of the
-               consultant.</source>
+            <source>Transcribe the recording of the text being retold in the language of the consultant.</source>
             <target>将用顾问语言复述的文本录音转录成文字。</target>
          </segment>
       </unit>
@@ -10600,8 +10761,7 @@
       </unit>
       <unit id="workflowSteps.termVerifyTip">
          <segment>
-            <source>Make recordings of how terms contained in the passage are being
-               rendered.</source>
+            <source>Make recordings of how terms contained in the passage are being rendered.</source>
             <target>录制音频，记录文中术语的译法。</target>
          </segment>
       </unit>
@@ -10613,8 +10773,7 @@
       </unit>
       <unit id="workflowSteps.teamReviewTip">
          <segment>
-            <source>Review how terms were rendered before and how they are rendered this
-               time.</source>
+            <source>Review how terms were rendered before and how they are rendered this time.</source>
             <target>对比术语以往的译法与本次的译法。</target>
          </segment>
       </unit>
@@ -10656,8 +10815,7 @@
       </unit>
       <unit id="workflowSteps.promptAdminTip">
          <segment>
-            <source>Record a prompt for this {0}, save it, then continue to the next step when
-               ready.</source>
+            <source>Record a prompt for this {0}, save it, then continue to the next step when ready.</source>
             <target>为该 {0} 录制提示音，保存后，准备就绪时继续下一步。</target>
          </segment>
       </unit>
@@ -10675,8 +10833,7 @@
       </unit>
       <unit id="workflowSteps.wholeBackTranslateTip">
          <segment>
-            <source>Record the back translation of the entire passage in the language of the
-               consultant.</source>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
             <target>将整段文字的回译录制为顾问的语言。</target>
          </segment>
       </unit>
@@ -10688,8 +10845,7 @@
       </unit>
       <unit id="workflowSteps.wholeBackTranslationTip">
          <segment>
-            <source>Record the back translation of the entire passage in the language of the
-               consultant.</source>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
             <target>将整段文字的回译录制为顾问的语言。</target>
          </segment>
       </unit>
@@ -10701,8 +10857,7 @@
       </unit>
       <unit id="workflowSteps.wBTTranscribeTip">
          <segment>
-            <source>Transcribe the recording of the passage in the language of the
-               consultant.</source>
+            <source>Transcribe the recording of the passage in the language of the consultant.</source>
             <target>将该段文字的录音转录为顾问的语言。</target>
          </segment>
       </unit>
@@ -10714,8 +10869,7 @@
       </unit>
       <unit id="workflowSteps.wBTParatextSyncTip">
          <segment>
-            <source>Sync transcription of the back translation to another tool for analysis and
-               review.</source>
+            <source>Sync transcription of the back translation to another tool for analysis and review.</source>
             <target>将回译的转录文本同步到另一款工具中，以便进行分析和审核。</target>
          </segment>
       </unit>
@@ -10733,15 +10887,32 @@
       </unit>
       <unit id="wsAudioPlayer.aiInProgress">
          <segment>
-            <source>AI Service In Progress... This is a remote service that may take a long time if
-               the recording is large, or if there are other requests ahead of yours.</source>
+            <source>AI Service In Progress... This is a remote service that may take a long time if the recording is large, or if there are other requests ahead of yours.</source>
             <target>人工智能服务进行中... 这是一项远程服务，如果录制内容较多，或有其他请求排在您的请求之前，则可能需要很长时间。</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.aiTakingLonger">
+         <segment>
+            <source>Taking longer than usual: {0} elapsed</source>
+            <target>耗时比平常长：已用 {0}</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.aiTimeRemaining">
+         <segment>
+            <source>About {0} remaining</source>
+            <target>约剩 {0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.beginVoiceConvert">
          <segment>
             <source>Beginning voice conversion...</source>
             <target>开始语音转换...</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.changeFailed">
+         <segment>
+            <source>Could not update the recording: {0}</source>
+            <target>无法更新录音：{0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.convertVoice">
@@ -10774,10 +10945,22 @@
             <target>清除</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRegion">
+      <unit id="wsAudioPlayer.copyRegion">
          <segment>
-            <source>Delete Region</source>
-            <target>删除段</target>
+            <source>Copy [{0}]</source>
+            <target>复制 [{0}]</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.cutFailed">
+         <segment>
+            <source>Cut failed: {0}</source>
+            <target>剪切失败：{0}</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.cutRegion">
+         <segment>
+            <source>Cut [{0}]</source>
+            <target>剪切 [{0}]</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.fasterTip">
@@ -10843,7 +11026,19 @@
       <unit id="wsAudioPlayer.normalizeInProgress">
          <segment>
             <source>Audio loudness normalization In Progress...</source>
-            <target/>
+            <target>正在进行音频响度标准化...</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.pasteFailed">
+         <segment>
+            <source>Paste failed: {0}</source>
+            <target>粘贴失败：{0}</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.pasteRegion">
+         <segment>
+            <source>Paste [{0}]</source>
+            <target>粘贴 [{0}]</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.pauseTip">
@@ -10886,6 +11081,12 @@
          <segment>
             <source>Record [{0}]</source>
             <target>录音 [{0}]</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.recordStartFailed">
+         <segment>
+            <source>Recording could not start: {0}</source>
+            <target>无法开始录音：{0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.reduceNoise">
@@ -10950,8 +11151,7 @@
       </unit>
       <unit id="wsAudioPlayer.selectVoicePrompt">
          <segment>
-            <source>Enter the full name of the person whose voice will be used to modify the voice
-               or voices in the original recording.</source>
+            <source>Enter the full name of the person whose voice will be used to modify the voice or voices in the original recording.</source>
             <target>输入将用来修改原始录音中声音的人的全名。</target>
          </segment>
       </unit>
@@ -10983,6 +11183,12 @@
          <segment>
             <source>The sample is too quiet.</source>
             <target>样本音量过低。</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.undoFailed">
+         <segment>
+            <source>Undo failed: {0}</source>
+            <target>撤销失败：{0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.undoTip">

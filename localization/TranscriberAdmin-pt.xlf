@@ -337,6 +337,12 @@
             <target>Pergunta e resposta de teste comunitário</target>
          </segment>
       </unit>
+      <unit id="artifactType.replacement">
+         <segment>
+            <source>Replacement</source>
+            <target>Substituição</target>
+         </segment>
+      </unit>
       <unit id="artifactType.resource">
          <segment>
             <source>Resource</source>
@@ -1198,7 +1204,7 @@
       <unit id="cards.normalize">
          <segment>
             <source>Audio Normalize</source>
-            <target/>
+            <target>Normalizar áudio</target>
          </segment>
       </unit>
       <unit id="cards.OBS">
@@ -1336,7 +1342,7 @@
       <unit id="cards.sortProjects">
          <segment>
             <source>Sort Projects</source>
-            <target/>
+            <target>Ordenar projetos</target>
          </segment>
       </unit>
       <unit id="cards.switchTeams">
@@ -1965,8 +1971,8 @@
       </unit>
       <unit id="phraseBackTranslationGuided.noStepLanguage">
          <segment>
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
-            <target>Configure um idioma para esta etapa de tradução inversa de frases no Editor de Etapas antes de gravar.</target>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
+            <target>Configure um idioma para esta etapa de tradução reversa de frase na caixa de diálogo Editar Fluxo de Trabalho antes de gravar.</target>
          </segment>
       </unit>
       <unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
@@ -2104,7 +2110,7 @@
       <unit id="discuss.howToChange">
          <segment>
             <source>Change instructions for this step on the workflow settings for this step.</source>
-            <target/>
+            <target>Altere as instruções desta etapa nas configurações do fluxo de trabalho desta etapa.</target>
          </segment>
       </unit>
       <unit id="discussionCard.addComment">
@@ -2560,7 +2566,7 @@
       <unit id="faithbridge.video">
          <segment>
             <source>video</source>
-            <target/>
+            <target>vídeo</target>
          </segment>
       </unit>
       <unit id="filterContent.allChapters">
@@ -4585,6 +4591,12 @@
             <target>Deseja salvar antes de sair desta página?</target>
          </segment>
       </unit>
+      <unit id="main.saveTimedOut">
+         <segment>
+            <source>Saving is taking too long. Please try again.</source>
+            <target>O salvamento está demorando demais. Tente novamente.</target>
+         </segment>
+      </unit>
       <unit id="main.saving">
          <segment>
             <source>Saving...</source>
@@ -4745,6 +4757,12 @@
          <segment>
             <source>Play</source>
             <target>Reproduzir</target>
+         </segment>
+      </unit>
+      <unit id="mediaActions.stop">
+         <segment>
+            <source>Stop</source>
+            <target>Parar</target>
          </segment>
       </unit>
       <unit id="mediaActions.view">
@@ -5767,6 +5785,78 @@
             <target>Referência</target>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.referenceTextBookMissing">
+         <segment>
+            <source>This Bible does not include this book.</source>
+            <target>Esta Bíblia não inclui este livro.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextEmpty">
+         <segment>
+            <source>This Bible has no text for these verses.</source>
+            <target>Esta Bíblia não tem texto para estes versículos.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextFetchFailed">
+         <segment>
+            <source>The passage could not be loaded. Check your internet connection.</source>
+            <target>Não foi possível carregar a passagem. Verifique sua conexão com a internet.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextForbidden">
+         <segment>
+            <source>You do not have access to this Reference Text.</source>
+            <target>Você não tem acesso a este Texto de Referência.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextLoading">
+         <segment>
+            <source>Loading passage…</source>
+            <target>Carregando passagem…</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoRange">
+         <segment>
+            <source>This passage has no verse range.</source>
+            <target>Esta passagem não tem intervalo de versículos.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoice">
+         <segment>
+            <source>No voice for {0} on this device.</source>
+            <target>Nenhuma voz para {0} neste dispositivo.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+         <segment>
+            <source>Voices for {0} on this device need the internet.</source>
+            <target>As vozes para {0} neste dispositivo precisam de internet.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextRenewLogin">
+         <segment>
+            <source>Renew login</source>
+            <target>Renovar login</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextRetry">
+         <segment>
+            <source>Try again</source>
+            <target>Tentar novamente</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextSpeakFailed">
+         <segment>
+            <source>The passage could not be spoken.</source>
+            <target>Não foi possível ler a passagem em voz alta.</target>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.referenceTextUnauthorized">
+         <segment>
+            <source>Your login has expired. Renew it to load the passage.</source>
+            <target>Seu login expirou. Renove-o para carregar a passagem.</target>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.research">
          <segment>
             <source>Research</source>
@@ -5989,6 +6079,12 @@
             <target>Falha na compactação. Salvando sem compactação.</target>
          </segment>
       </unit>
+      <unit id="passageRecord.compressErrorTooBig">
+         <segment>
+            <source>Compression failed but the file is too big to save uncompressed.</source>
+            <target>A compactação falhou, mas o arquivo é grande demais para ser salvo sem compactação.</target>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -6035,6 +6131,12 @@
          <segment>
             <source>File is too large ({0}MB). File Limit is {1}MB</source>
             <target>O arquivo é muito grande ({0}MB). Limite de arquivo é {1}MB</target>
+         </segment>
+      </unit>
+      <unit id="passageRecord.tooBigAfterCompression">
+         <segment>
+            <source>Our estimate was incorrect. The file is too large after compression ({0}MB). File Limit is {1}MB</source>
+            <target>Nossa estimativa estava incorreta. O arquivo ficou grande demais após a compactação ({0}MB). O limite de arquivo é {1}MB</target>
          </segment>
       </unit>
       <unit id="passageRecord.toobigwarn">
@@ -6661,10 +6763,10 @@
             <target>{1} de {2} passagens</target>
          </segment>
       </unit>
-      <unit id="planTabs.sectionsPassages">
+      <unit id="planTabs.projectOverview">
          <segment>
-            <source>{0} &amp; Passages</source>
-            <target>{0} &amp; Passagens</target>
+            <source>Project Overview</source>
+            <target>Visão geral do projeto</target>
          </segment>
       </unit>
       <unit id="planTabs.sectionStatus">
@@ -7023,8 +7125,8 @@
       </unit>
       <unit id="projectDownload.downloadDescription">
          <segment>
-            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the {4} &amp; PASSAGES tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
-            <target>Se o tempo estimado para a transferência for demasiado longo, utilize o “x” no canto superior para fechar esta caixa de diálogo. De seguida, adiciona um mínimo e/ou máximo {1} ao filtro. O ícone do filtro é {0} (um triângulo tracejado virado para baixo) e está localizado antes do botão {3} no separador {4} &amp; PASSAGENS. Depois de definir o filtro {1}, selecionar a opção filtrada nesta caixa de diálogo para ver quanto tempo será necessário para o {2} filtrado.</target>
+            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the Project Overview tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
+            <target>Se o tempo estimado de download for longo demais para você, use o 'x' no canto superior para fechar esta caixa de diálogo. Em seguida, adicione um {1} mínimo e/ou máximo ao filtro. O ícone do filtro é {0} (um triângulo tracejado apontando para baixo) e fica antes do botão {3} na guia Visão geral do projeto. Depois de definir o filtro de {1}, escolha a opção filtrada nesta caixa de diálogo para ver quanto tempo será necessário para os {2} filtrados.</target>
          </segment>
       </unit>
       <unit id="projectDownload.downloadLater">
@@ -8641,6 +8743,54 @@
             <target>A IA continuará a trabalhar na transcrição mesmo que você feche essa caixa de progresso. Clique no botão {0} para abrir a caixa de progresso nesta etapa do fluxo de trabalho e ver os resultados. Use a engrenagem de configurações no botão {0} para ver a transcrição usando um idioma diferente.</target>
          </segment>
       </unit>
+      <unit id="transcriber.asrChooseLanguage">
+         <segment>
+            <source>Choose the language of this recording for automatic transcription.</source>
+            <target>Escolha o idioma desta gravação para a transcrição automática.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethod">
+         <segment>
+            <source>Method</source>
+            <target>Método</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethodDefault">
+         <segment>
+            <source>{0} (Default)</source>
+            <target>{0} (Padrão)</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrMethodHint">
+         <segment>
+            <source>Choose a specific method only if the default method is not working well.</source>
+            <target>Escolha um método específico somente se o método padrão não estiver funcionando bem.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrRequestFailed">
+         <segment>
+            <source>Speech recognition settings could not be loaded.</source>
+            <target>Não foi possível carregar as configurações de reconhecimento de fala.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSaveFailed">
+         <segment>
+            <source>Speech recognition settings could not be saved.</source>
+            <target>Não foi possível salvar as configurações de reconhecimento de fala.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSaveTeamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target>Salvar como padrão da equipe</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrTeamDefaultSaved">
+         <segment>
+            <source>Saved as the team default.</source>
+            <target>Salvo como padrão da equipe.</target>
+         </segment>
+      </unit>
       <unit id="transcriber.comment">
          <segment>
             <source>Comment</source>
@@ -8801,12 +8951,6 @@
          <segment>
             <source>Script</source>
             <target>Roteiro</target>
-         </segment>
-      </unit>
-      <unit id="transcriber.invalidSisterLang">
-         <segment>
-            <source>This language is not supported for speech recognition. Choose another sister language.</source>
-            <target>Este idioma não é compatível com o reconhecimento de fala. Escolha outro idioma irmão.</target>
          </segment>
       </unit>
       <unit id="transcriber.sisterLang">
@@ -9137,6 +9281,138 @@
          <segment>
             <source>Status of</source>
             <target>Status de</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.add">
+         <segment>
+            <source>Add to ranking</source>
+            <target>Adicionar à classificação</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.explain">
+         <segment>
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target>Classifique as vozes usadas para ler os Textos de Referência em voz alta. Para cada idioma, um dispositivo usa a primeira voz classificada que tiver.</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.filterReferenceTexts">
+         <segment>
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target>Nas Configurações do Projeto, oferecer apenas Textos de Referência em idiomas com uma voz classificada</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.linuxNote">
+         <segment>
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target>No Linux, as vozes vêm do speech-dispatcher (por exemplo, espeak-ng). Instale mais vozes com seu gerenciador de pacotes.</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.loading">
+         <segment>
+            <source>Loading voices…</source>
+            <target>Carregando vozes…</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.local">
+         <segment>
+            <source>Local</source>
+            <target>Local</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.macNote">
+         <segment>
+            <source>You can add Mac voices for other languages under System Settings → Accessibility → Spoken Content → System voice → Manage Voices.</source>
+            <target>Você pode adicionar vozes do Mac para outros idiomas em Ajustes do Sistema → Acessibilidade → Conteúdo Falado → Voz do sistema → Gerenciar Vozes.</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveDown">
+         <segment>
+            <source>Move down</source>
+            <target>Mover para baixo</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.moveUp">
+         <segment>
+            <source>Move up</source>
+            <target>Mover para cima</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noMatch">
+         <segment>
+            <source>No languages match.</source>
+            <target>Nenhum idioma corresponde.</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.noVoices">
+         <segment>
+            <source>This device has no text-to-speech voices.</source>
+            <target>Este dispositivo não tem vozes de conversão de texto em fala.</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.notOnDevice">
+         <segment>
+            <source>Not on this device</source>
+            <target>Não está neste dispositivo</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.online">
+         <segment>
+            <source>Online</source>
+            <target>Online</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.rankedCount">
+         <segment>
+            <source>{0} ranked</source>
+            <target>{0} classificada(s)</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.read">
+         <segment>
+            <source>Read</source>
+            <target>Ler</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.remove">
+         <segment>
+            <source>Remove from ranking</source>
+            <target>Remover da classificação</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleDefault">
+         <segment>
+            <source>This is how this voice will sound.</source>
+            <target>É assim que esta voz vai soar.</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.sampleText">
+         <segment>
+            <source>Sample text</source>
+            <target>Texto de exemplo</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.search">
+         <segment>
+            <source>Search languages</source>
+            <target>Pesquisar idiomas</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.showOnline">
+         <segment>
+            <source>Show online voices</source>
+            <target>Mostrar vozes online</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.title">
+         <segment>
+            <source>Reference Text Voices</source>
+            <target>Vozes dos Textos de Referência</target>
+         </segment>
+      </unit>
+      <unit id="ttsVoices.windowsNote">
+         <segment>
+            <source>You can add Windows voices for other languages under Settings → Time &amp; language → Speech → Add voices.</source>
+            <target>Você pode adicionar vozes do Windows para outros idiomas em Configurações → Hora e idioma → Fala → Adicionar vozes.</target>
          </segment>
       </unit>
       <unit id="uploadProgress.cancel">
@@ -9631,10 +9907,28 @@
             <target>Básico</target>
          </segment>
       </unit>
+      <unit id="vProject.bibleListError">
+         <segment>
+            <source>The list of Bibles could not be loaded.</source>
+            <target>Não foi possível carregar a lista de Bíblias.</target>
+         </segment>
+      </unit>
+      <unit id="vProject.book">
+         <segment>
+            <source>Book</source>
+            <target>Livro</target>
+         </segment>
+      </unit>
       <unit id="vProject.cancel">
          <segment>
             <source>Cancel</source>
             <target>Cancelar</target>
+         </segment>
+      </unit>
+      <unit id="vProject.chooseBookFirst">
+         <segment>
+            <source>Choose a book to see reference texts</source>
+            <target>Escolha um livro para ver os textos de referência</target>
          </segment>
       </unit>
       <unit id="vProject.configure">
@@ -9671,6 +9965,12 @@
          <segment>
             <source>Editor Settings</source>
             <target>Configurações do Editor</target>
+         </segment>
+      </unit>
+      <unit id="vProject.filteredToVoices">
+         <segment>
+            <source>Showing only languages your team has ranked voices for.</source>
+            <target>Mostrando apenas idiomas para os quais sua equipe classificou vozes.</target>
          </segment>
       </unit>
       <unit id="vProject.generalBook">
@@ -9731,6 +10031,18 @@
          <segment>
             <source>Layout</source>
             <target>Layout</target>
+         </segment>
+      </unit>
+      <unit id="vProject.licenseNotStated">
+         <segment>
+            <source>License not stated</source>
+            <target>Licença não informada</target>
+         </segment>
+      </unit>
+      <unit id="vProject.loadingBibles">
+         <segment>
+            <source>Loading Bibles…</source>
+            <target>Carregando Bíblias…</target>
          </segment>
       </unit>
       <unit id="vProject.movement">
@@ -9805,10 +10117,28 @@
             <target>Pré-visualizar</target>
          </segment>
       </unit>
+      <unit id="vProject.primaryReferenceText">
+         <segment>
+            <source>Primary Reference Text</source>
+            <target>Texto de Referência Principal</target>
+         </segment>
+      </unit>
       <unit id="vProject.projectName">
          <segment>
             <source>Audio Project Name</source>
             <target>Nome do Projeto de Áudio</target>
+         </segment>
+      </unit>
+      <unit id="vProject.publicDomain">
+         <segment>
+            <source>Public Domain</source>
+            <target>Domínio Público</target>
+         </segment>
+      </unit>
+      <unit id="vProject.referenceTextRemoved">
+         <segment>
+            <source>{0} was removed because it does not include {1}.</source>
+            <target>{0} foi removido porque não inclui {1}.</target>
          </segment>
       </unit>
       <unit id="vProject.renderRecommended">
@@ -9827,6 +10157,12 @@
          <segment>
             <source>Scene/Scenes</source>
             <target>Cena/Cenas</target>
+         </segment>
+      </unit>
+      <unit id="vProject.secondaryReferenceText">
+         <segment>
+            <source>Secondary Reference Text</source>
+            <target>Texto de Referência Secundário</target>
          </segment>
       </unit>
       <unit id="vProject.sections">
@@ -9881,6 +10217,12 @@
          <segment>
             <source>Audio Project Type</source>
             <target>Tipo do Projeto de Áudio</target>
+         </segment>
+      </unit>
+      <unit id="vProject.usedInTeam">
+         <segment>
+            <source>Used in this team</source>
+            <target>Usado nesta equipe</target>
          </segment>
       </unit>
       <unit id="welcome.alone">
@@ -10549,10 +10891,28 @@
             <target>Serviço de IA em andamento... Este é um serviço remoto que pode levar muito tempo se a gravação for grande ou se houver outras solicitações antes da sua.</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.aiTakingLonger">
+         <segment>
+            <source>Taking longer than usual: {0} elapsed</source>
+            <target>Demorando mais que o normal: {0} decorrido</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.aiTimeRemaining">
+         <segment>
+            <source>About {0} remaining</source>
+            <target>Cerca de {0} restante</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginVoiceConvert">
          <segment>
             <source>Beginning voice conversion...</source>
             <target>A iniciar a conversão de voz...</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.changeFailed">
+         <segment>
+            <source>Could not update the recording: {0}</source>
+            <target>Não foi possível atualizar a gravação: {0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.convertVoice">
@@ -10585,10 +10945,22 @@
             <target>Limpar</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRegion">
+      <unit id="wsAudioPlayer.copyRegion">
          <segment>
-            <source>Delete Region</source>
-            <target>Excluir Região</target>
+            <source>Copy [{0}]</source>
+            <target>Copiar [{0}]</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.cutFailed">
+         <segment>
+            <source>Cut failed: {0}</source>
+            <target>Falha ao recortar: {0}</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.cutRegion">
+         <segment>
+            <source>Cut [{0}]</source>
+            <target>Recortar [{0}]</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.fasterTip">
@@ -10642,19 +11014,31 @@
       <unit id="wsAudioPlayer.normalize">
          <segment>
             <source>Normalize</source>
-            <target/>
+            <target>Normalizar</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.normalizeFail">
          <segment>
             <source>Normalization failed: {0}</source>
-            <target/>
+            <target>Falha na normalização: {0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.normalizeInProgress">
          <segment>
             <source>Audio loudness normalization In Progress...</source>
             <target>Normalização do volume do áudio Em andamento...</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.pasteFailed">
+         <segment>
+            <source>Paste failed: {0}</source>
+            <target>Falha ao colar: {0}</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.pasteRegion">
+         <segment>
+            <source>Paste [{0}]</source>
+            <target>Colar [{0}]</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.pauseTip">
@@ -10697,6 +11081,12 @@
          <segment>
             <source>Record [{0}]</source>
             <target>Registro [{0}]</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.recordStartFailed">
+         <segment>
+            <source>Recording could not start: {0}</source>
+            <target>Não foi possível iniciar a gravação: {0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.reduceNoise">
@@ -10792,7 +11182,13 @@
       <unit id="wsAudioPlayer.tooQuiet">
          <segment>
             <source>The sample is too quiet.</source>
-            <target/>
+            <target>A amostra está muito baixa.</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.undoFailed">
+         <segment>
+            <source>Undo failed: {0}</source>
+            <target>Falha ao desfazer: {0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.undoTip">

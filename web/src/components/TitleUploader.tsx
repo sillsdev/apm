@@ -43,11 +43,11 @@ export function TitleUploader(props: IProps) {
     <MediaUploadContent
       onVisible={onOpen}
       uploadType={uploadType || UploadType.Media}
-      ready={() => Boolean(hasRights)}
+      ready={Boolean(hasRights)}
       uploadMethod={uploadMethod}
       cancelMethod={uploadCancel}
       metaData={metadata}
-      saveButtonText={t.upload}
+      primaryButtonText={t.upload}
       onFiles={onFiles}
     />
   ) : (
