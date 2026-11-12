@@ -902,6 +902,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "reports": string;
     "reportWhenOnline": string;
     "saveFirst": string;
+    "saveTimedOut": string;
     "saving": string;
     "scriptureBurrito": string;
     "sessionExpireTask": string;

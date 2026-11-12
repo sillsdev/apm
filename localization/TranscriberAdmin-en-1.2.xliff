@@ -5358,6 +5358,13 @@
                <context context-type="sourcefile">drawer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.saveTimedOut">
+            <source>Saving is taking too long. Please try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">UnsavedContext.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.saving">
             <source>Saving...</source>
             <target/>

@@ -4594,6 +4594,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.saveTimedOut">
+         <segment>
+            <source>Saving is taking too long. Please try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.saving">
          <segment>
             <source>Saving...</source>

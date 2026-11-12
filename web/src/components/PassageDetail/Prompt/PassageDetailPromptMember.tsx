@@ -4,6 +4,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
+import { trySetStepComplete } from '../../../context/completeStepAfterSave';
 import { promptSelector, workflowStepsSelector } from '../../../selector';
 import { IWorkflowStepsStrings, IPromptStrings } from '../../../model';
 import { usePromptSectionResource } from './usePromptSectionResource';
@@ -90,7 +91,8 @@ export default function PassageDetailPromptMember(props: IProps) {
       playbackCompleteRef.current = true;
       setPromptPlaybackComplete(true);
       if (isBoldWorkflow) {
-        setStepComplete(currentstep, true);
+        // Never rejects: a failed write is shown by setStepComplete.
+        void trySetStepComplete(setStepComplete, currentstep, true);
       }
     }
   };
