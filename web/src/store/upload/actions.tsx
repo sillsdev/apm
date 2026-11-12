@@ -135,11 +135,19 @@ export const deleteMediaAfterFailedUploadWithRetries = async (
   return false;
 };
 
-export type UploadFileReject = {
+export class UploadFileReject extends Error {
   statusNum: number;
   statusText: string;
   httpStatus?: number;
-};
+
+  constructor(statusNum: number, statusText: string, httpStatus?: number) {
+    super(statusText);
+    this.name = 'UploadFileReject';
+    this.statusNum = statusNum;
+    this.statusText = statusText;
+    this.httpStatus = httpStatus;
+  }
+}
 
 export const uploadFile = (
   data: MediaFileAttributes,
@@ -170,11 +178,11 @@ export const uploadFile = (
           errorReporter,
           `upload ${file.name}: (${xhr.status}) ${xhr.responseText}`
         );
-        const rej: UploadFileReject = {
-          statusNum: xhr.status,
-          statusText: xhr.responseText || 'upload failed',
-          httpStatus: xhr.status,
-        };
+        const rej = new UploadFileReject(
+          xhr.status,
+          xhr.responseText || 'upload failed',
+          xhr.status
+        );
         // cleanup removes the xhr values loaded into UploadFileReject (above)
         cleanup();
         reject(rej);
@@ -206,30 +214,26 @@ export const uploadFile = (
         `upload ${file.name}: ${statusText}`
       );
       cleanup();
-      const rej: UploadFileReject = {
-        statusNum: httpStatus || 500,
+      const rej = new UploadFileReject(
+        httpStatus || 500,
         statusText,
-        httpStatus: httpStatus || undefined,
-      };
+        httpStatus || undefined
+      );
       reject(rej);
     };
     xhr.onabort = () => {
       cleanup();
-      const rej: UploadFileReject = {
-        statusNum: 499,
-        statusText: 'upload aborted',
-        httpStatus: 499,
-      };
+      const rej = new UploadFileReject(499, 'upload aborted', 499);
       reject(rej);
     };
     xhr.ontimeout = () => {
       const timeoutMs = xhr.timeout;
       cleanup();
-      const rej: UploadFileReject = {
-        statusNum: 408,
-        statusText: `upload timed out after ${timeoutMs}ms`,
-        httpStatus: 408,
-      };
+      const rej = new UploadFileReject(
+        408,
+        `upload timed out after ${timeoutMs}ms`,
+        408
+      );
       reject(rej);
     };
     xhr.send(file.slice());

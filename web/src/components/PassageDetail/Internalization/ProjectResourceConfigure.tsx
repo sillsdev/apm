@@ -434,15 +434,11 @@ export const ProjectResourceConfigure = (props: IProps) => {
     let regs = segBoundaries
       .map((b: string) => {
         const boundaries = b.split('-');
-        if (
-          boundaries.length > 1 &&
-          !isNaN(parseFloat(boundaries[0])) &&
-          !isNaN(parseFloat(boundaries[1]))
-        )
-          return {
-            start: parseFloat(boundaries[0]),
-            end: parseFloat(boundaries[1]),
-          };
+        if (boundaries.length > 1) {
+          const start = Number.parseFloat(boundaries[0]);
+          const end = Number.parseFloat(boundaries[1]);
+          if (!Number.isNaN(start) && !Number.isNaN(end)) return { start, end };
+        }
         return { start: 0, end: 0 };
       })
       .filter(
@@ -559,7 +555,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
         newData.push(dataRef.current[ix]);
       }
       if (ix < ilen) {
-        const [vStart, vEnd] = v.split('-').map((n) => parseFloat(n));
+        const [vStart, vEnd] = v.split('-').map((n) => Number.parseFloat(n));
         const secNum = infoRef.current[ix].secNum;
         if (regs.has(secNum)) {
           regs.set(secNum, {
