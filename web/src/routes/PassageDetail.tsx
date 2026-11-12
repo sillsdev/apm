@@ -113,54 +113,39 @@ const MobileStep = () => {
     artifactSlug
   );
 
-  return tool === ToolSlug.Record ? (
-    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Resource ? (
-    <PassageDetailsArtifactsMobile />
-  ) : tool === ToolSlug.Verses ? (
-    <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />
-  ) : tool === ToolSlug.CarefulSpeech ? (
-    // Keyed for the same reason as the transcription steps below: a team can
-    // configure several guided-record steps in a row, and they all render the
-    // one PassageDetailGuidedPhraseRecord component. (TT-7643)
-    <PassageDetailCarefulSpeech
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
-    <PassageDetailLwcTranslation
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow ? (
-    // A team can have one Phrase Back Translation step per language. Without a
-    // key the reused instance carries the previous step's recording pass -
-    // including the take loaded in its recorder - into the next language's
-    // step, so the other language's audio plays there. (TT-7643)
-    <PassageDetailPhraseBackTranslate
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : boldClauseTranscription ? (
-    // Key on currentstep so the shared transcription component remounts when
-    // moving between the adjacent Careful- and LWC-Transcription steps. Desktop
-    // gets this for free via <Paper key={currentstep}> in PassageDetailGrids;
-    // without it here the reused instance carries state (and flushes the prior
-    // step's text onto the new step's artifact), so LWC shows Careful's
-    // transcriptions. (TT-7503)
-    <PassageDetailLwcTranscription
-      key={currentstep}
-      width={Math.max(0, paneWidth - 40)}
-    />
-  ) : tool === ToolSlug.TeamCheck ? (
-    <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Prompt ? (
-    <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
-  ) : tool === ToolSlug.Transcribe ? (
-    <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
-  ) : (
-    <DesktopOnlyStep />
-  );
+  const width = Math.max(0, paneWidth - 40);
+
+  // Steps that can repeat back-to-back share one component, so key on
+  // currentstep to remount and drop the previous step's state. (TT-7503, TT-7643)
+  switch (tool) {
+    case ToolSlug.Record:
+      return <PassageDetailRecord width={width} />;
+    case ToolSlug.Resource:
+      return <PassageDetailsArtifactsMobile />;
+    case ToolSlug.Verses:
+      return <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />;
+    case ToolSlug.CarefulSpeech:
+      return <PassageDetailCarefulSpeech key={currentstep} width={width} />;
+    case ToolSlug.PhraseBackTranslate:
+      return isBoldWorkflow ? (
+        <PassageDetailLwcTranslation key={currentstep} width={width} />
+      ) : (
+        <PassageDetailPhraseBackTranslate key={currentstep} width={width} />
+      );
+    case ToolSlug.Transcribe:
+      if (boldClauseTranscription)
+        return (
+          <PassageDetailLwcTranscription key={currentstep} width={width} />
+        );
+      // translation isn't ready on mobile yet.
+      return <DesktopOnlyStep />;
+    case ToolSlug.TeamCheck:
+      return <TeamCheckReferenceMobile width={width} />;
+    case ToolSlug.Prompt:
+      return <PassageDetailPrompt width={width} />;
+    default:
+      return <DesktopOnlyStep />;
+  }
 };
 
 const MobileDetail = () => {
