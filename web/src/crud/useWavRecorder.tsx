@@ -45,6 +45,18 @@ export function parseRecordCaptureAudioProcessing(
   }
 }
 
+/** Record step `saveAsWav` toolSetting (written by RecordStepSettings). */
+export function parseRecordSaveAsWav(toolSettings: string | undefined | null) {
+  if (!toolSettings?.trim()) return false;
+  try {
+    return Boolean(
+      (JSON.parse(toolSettings) as { saveAsWav?: boolean }).saveAsWav
+    );
+  } catch {
+    return false;
+  }
+}
+
 const noop = () => {};
 
 export interface MimeInfo {

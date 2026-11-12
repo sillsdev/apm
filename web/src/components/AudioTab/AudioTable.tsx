@@ -230,6 +230,7 @@ export const AudioTable = (props: IProps) => {
 
   const sheetAttach = Boolean(onAttach && !readonly);
   const showPublishing = shared || hasPublishing;
+  const isOnlyVersion = sortedData.length === 1;
 
   return (
     <Box
@@ -241,7 +242,7 @@ export const AudioTable = (props: IProps) => {
     >
       <Stack spacing={1.5}>
         {sortedData.map((row) => {
-          const canDelete = !readonly && !row.readyToShare;
+          const canDelete = !readonly && !row.readyToShare && !isOnlyVersion;
           return (
             <AudioVersionCard
               key={row.id}

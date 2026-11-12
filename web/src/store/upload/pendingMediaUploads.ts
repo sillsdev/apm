@@ -1,5 +1,8 @@
+import { RecordKeyMap } from '@orbit/records';
 import { UploadType } from '../../components/UploadType';
+import { remoteIdNum } from '../../crud/remoteId';
 import { MediaFileAttributes } from '../../model';
+import { evictMediaCache } from '../../utils/evictMediaCache';
 
 const STORAGE_KEY = 'pendingMediaUploadsV1';
 
@@ -153,6 +156,16 @@ function pendingUploadPassageKey(
   ].join('\0');
 }
 
+/** Plan and passage ids as pending upload rows store them. */
+export const pendingUploadIds = (
+  keyMap: RecordKeyMap,
+  planId: string,
+  passageId: string
+) => ({
+  planId: String(remoteIdNum('plan', planId, keyMap) || planId),
+  passageId: String(remoteIdNum('passage', passageId, keyMap) || passageId),
+});
+
 /** True when a pending upload exists for this plan/passage/artifact (vernacular: null/''/undefined). */
 export function hasPendingUploadForPassage(query: {
   planId: string;
@@ -248,6 +261,29 @@ export function updatePendingMediaUpload(
   next[idx] = updated;
   savePendingMediaUploads(next);
   return updated;
+}
+
+/** Drop the passage's pending vernacular uploads, with optional extra filter. */
+export function clearPendingUploads(
+  keyMap: RecordKeyMap,
+  planId: string,
+  passageId: string,
+  filter?: (record: PendingUploadMediaRecord) => boolean
+): void {
+  const key = pendingUploadPassageKey({
+    ...pendingUploadIds(keyMap, planId, passageId),
+    artifactTypeId: null,
+  });
+  loadPendingMediaUploads()
+    .filter(
+      (p) =>
+        pendingUploadPassageKey(p.record) === key &&
+        (!filter || filter(p.record))
+    )
+    .forEach((p) => {
+      removePendingMediaUpload(p.id);
+      void evictMediaCache(p.localAbsolutePath);
+    });
 }
 
 export function removePendingMediaUpload(id: string): void {

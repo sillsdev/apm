@@ -12,7 +12,7 @@ jest.mock('react-redux', () => ({
 
 const mockShowMessage = jest.fn();
 jest.mock('../hoc/SnackBar', () => ({
-  AlertSeverity: { Error: 'error', Warning: 'warning' },
+  AlertSeverity: jest.requireActual('../hoc/useSnackBar').AlertSeverity,
   useSnackBar: () => ({ showMessage: mockShowMessage }),
 }));
 
@@ -44,6 +44,16 @@ jest.mock('../utils', () => ({
 
 jest.mock('../context/TokenProvider', () => ({
   TokenContext: React.createContext({ state: { accessToken: 'tok' } }),
+}));
+
+jest.mock('../utils/logErrorService', () => ({
+  logError: jest.fn(),
+  Severity: { info: 0, error: 1, retry: 2 },
+}));
+
+jest.mock('./convertToWebM', () => ({
+  DEFAULT_COMPRESSED_MIME: 'audio/ogg;codecs=opus',
+  convertToFormat: (blob: Blob) => Promise.resolve(blob),
 }));
 
 let mockMediaFiles: MediaFileD[] = [];
@@ -108,6 +118,7 @@ const mockState = {
   mediaTab: {
     uploadComplete: '{0} of {1} files uploaded successfully.',
     uploadFailed: 'Upload Failed!',
+    pendingUploadQueuedHint: 'See {0}.',
   },
   shared: {
     mediaAttached: 'Media attached',
@@ -296,6 +307,68 @@ describe('useMediaUpload', () => {
       '0 of 1 files uploaded successfully.'
     );
     expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
+  it('silent success: no snackbar, afterUploadCb still runs', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+
+    await completeUpload(
+      (files) => result.current(files, true),
+      [makeFile()],
+      0,
+      true,
+      { stringId: 'media-1' }
+    );
+
+    expect(mockShowMessage).not.toHaveBeenCalled();
+    expect(afterUploadCb).toHaveBeenCalledWith('media-1');
+  });
+
+  it('silent failure: no snackbar, still rejects', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+
+    await expect(
+      completeUpload(
+        (files) => result.current(files, true),
+        [makeFile()],
+        0,
+        false,
+        undefined
+      )
+    ).rejects.toThrow('Upload Failed!');
+
+    expect(mockShowMessage).not.toHaveBeenCalled();
+    expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
+  it.each([
+    [false, 1],
+    [true, 0],
+  ])('terminal failure with silent=%p: %p warnings', async (silent, count) => {
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb: jest.fn().mockResolvedValue(undefined),
+    });
+
+    void result.current([makeFile()], silent);
+    const nextUpload = await waitForNextUpload();
+    const { onTerminalFailure } = (nextUpload as jest.Mock).mock.calls.at(
+      -1
+    )![0];
+    onTerminalFailure({ cloudRowDeleted: true });
+
+    expect(mockShowMessage).toHaveBeenCalledTimes(count);
   });
 
   it('offline success: createMedia, snackbar, afterUploadCb with created id, no pullTableList', async () => {

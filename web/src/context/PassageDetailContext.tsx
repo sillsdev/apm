@@ -403,11 +403,7 @@ const PassageDetailProvider = (props: IProps) => {
     }
   };
 
-  const passageNavigate = usePassageNavigate(
-    () => {},
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {}, isNavigationBlocked);
 
   const forceRefresh = (rowData?: IRow[]) => {
     refreshRef.current = refreshRef.current + 1;
@@ -982,6 +978,7 @@ const PassageDetailProvider = (props: IProps) => {
               section: s as SectionD,
               sharedResource,
               psgCompleted: [...complete],
+              currentstep: '',
             };
           });
         } else {
@@ -1153,6 +1150,7 @@ const PassageDetailProvider = (props: IProps) => {
     return () => {
       forceClearPending();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

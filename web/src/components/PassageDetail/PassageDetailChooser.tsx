@@ -42,7 +42,6 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
     allBookData,
     chooserSize,
     setChooserSize,
-    setCurrentStep,
     isNavigationBlocked,
   } = usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
@@ -50,13 +49,9 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
 
   const t = useSelector(
     passageChooserSelector,
@@ -145,6 +140,7 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
       width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
       sx={{
         ...sx,
+        px: 1,
         alignItems: 'center',
         gap: 0,
       }}

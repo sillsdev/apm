@@ -27,6 +27,7 @@ import { toError } from '../utils/toError';
 import path from 'path-browserify';
 import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
 import { findRecords } from './tryFindRecord';
+import { convertToFormat, DEFAULT_COMPRESSED_MIME } from './convertToWebM';
 
 /**
  * The values that become the uploaded mediafile (its attributes and
@@ -87,6 +88,11 @@ export interface IMediaUploadProps {
   /** Opt in to passage filename versioning (upload tab); recordings omit it. */
   versionFilenames?: boolean | undefined;
   importList?: File[] | undefined;
+  /**
+   * Target save file type. Omit for normal compression, supply 'audio/wav'
+   * to skip compression, or supply another type to convert to that before saving.
+   */
+  mimeType?: string;
 }
 
 /**
@@ -109,6 +115,7 @@ export const useMediaUpload = ({
   skipImportExportWait,
   versionFilenames,
   importList,
+  mimeType,
 }: IMediaUploadProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -280,13 +287,27 @@ export const useMediaUpload = ({
     return '';
   };
 
+  const compressFile = async (file: File): Promise<File> => {
+    const type = mimeType ?? DEFAULT_COMPRESSED_MIME;
+    if (file.type === type) return file;
+    try {
+      const blob = await convertToFormat(file, mimeType);
+      const ext = type.split(/[/;]/)[1];
+      const name = file.name.replace(/\.[^.]*$/, '') + `.${ext}`;
+      return new File([blob], name, { type });
+    } catch (err) {
+      logError(Severity.info, reporter, err as Error);
+      return file;
+    }
+  };
+
   // TODO cleanup: the snackbar holds one message at a time (showMessage
   // replaces snackMessage), so back-to-back messages overwrite each other.
   // Centralize spacing/queueing in useSnackBar? We should consider if MUI or a
   // standard library has a component for this, and ask the UX designers
   // what the UX should be.
   // Surface a per-file upload error (unsupported type / too big / network).
-  const showUploadError = (raw: string) => {
+  const showUploadError = (raw: string, silent: boolean) => {
     let msg = raw;
     if (raw.indexOf('unsupported') > 0)
       msg = t.unsupported.replace(
@@ -302,7 +323,7 @@ export const useMediaUpload = ({
         )
         .replace('{2}', typeLimit(effectiveType).toString());
     }
-    showMessage(msg, AlertSeverity.Error);
+    if (!silent) showMessage(msg, AlertSeverity.Error);
   };
 
   /** Pull uploaded mediafiles from the server so their remote ids map to
@@ -325,7 +346,8 @@ export const useMediaUpload = ({
     files: File[],
     n: number,
     gate: boolean,
-    pulled: Set<string>
+    pulled: Set<string>,
+    silent: boolean
   ) =>
     new Promise<string>((resolve, reject) => {
       const vndRecord = buildRecord(files[n] as File);
@@ -338,7 +360,7 @@ export const useMediaUpload = ({
         errorReporter: reporter,
         uploadType: effectiveType,
         cb: (idx, upOk, data, errorMessage) => {
-          if (errorMessage) showUploadError(errorMessage);
+          if (errorMessage) showUploadError(errorMessage, silent);
           void (async () => {
             try {
               const id = await itemComplete(idx, upOk, data, files);
@@ -375,18 +397,26 @@ export const useMediaUpload = ({
           ? () => Boolean(getGlobal('importexportBusy'))
           : undefined,
         onTerminalFailure: (info) => {
-          showMessage(
-            formatUploadTerminalFailureMessage(t, info),
-            AlertSeverity.Warning
-          );
+          if (!silent)
+            showMessage(
+              formatUploadTerminalFailureMessage(t, info),
+              AlertSeverity.Warning
+            );
         },
       });
     });
 
-  const run = async (files: File[]): Promise<boolean> => {
+  /** `silent` suppresses the upload's snackbar messages (e.g. autosave). */
+  const run = async (files: File[], silent = false): Promise<boolean> => {
     if (!files || files.length === 0) return false;
     if (beforeUpload) await beforeUpload();
-    const staged = applyVersionSuffix(files);
+
+    const filesToSave =
+      mimeType === 'audio/wav'
+        ? files
+        : await Promise.all(files.map(compressFile));
+
+    const staged = applyVersionSuffix(filesToSave);
     if (!NON_FILE_UPLOAD_TYPES.includes(effectiveType)) uploadFiles(staged);
     const startedBusy = Boolean(getGlobal('importexportBusy'));
     if (!noBusy) setBusy(true);
@@ -401,7 +431,8 @@ export const useMediaUpload = ({
         staged,
         n,
         !skipImportExportWait && n === 0 && startedBusy,
-        pulled
+        pulled,
+        silent
       );
       if (id) ids.push(id);
       setComplete(Math.min(((n + 1) * 100) / staged.length, 100));
@@ -409,11 +440,12 @@ export const useMediaUpload = ({
 
     await pullMedia(ids.filter((id) => !pulled.has(id)));
     uploadComplete();
-    showMessage(
-      t.uploadComplete
-        .replace('{0}', String(ids.length))
-        .replace('{1}', String(staged.length))
-    );
+    if (!silent)
+      showMessage(
+        t.uploadComplete
+          .replace('{0}', String(ids.length))
+          .replace('{1}', String(staged.length))
+      );
     setComplete(0);
     if (!noBusy) setBusy(false);
     if (cancelled) cancelled.current = ids.length <= 0;
