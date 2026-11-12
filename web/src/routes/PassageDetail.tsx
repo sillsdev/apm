@@ -36,7 +36,7 @@ import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDe
 import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldClauseTranscription';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
-import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
+// import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
 
 /**
  * Fallback for steps mobile has no UI for yet. Reads its string here rather
