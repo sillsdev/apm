@@ -453,10 +453,13 @@ export interface IDiscussionListStrings extends Localize.LocalizedStringsMethods
     "categoryList": string;
     "close": string;
     "collapse": string;
+    "confirmClose": string;
+    "confirmCloseTitle": string;
     "discussionFilter": string;
     "filterStatus": string;
     "open": string;
     "saveFirst": string;
+    "stayOpen": string;
     "title": string;
 };
 
@@ -1089,7 +1092,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "confirmClose": string;
     "confirmCloseTitle": string;
     "confirmDeleteTitle": string;
-    "createResources": string;
     "createXResources": string;
     "currentResource": string;
     "deleteAll": string;
@@ -1098,7 +1100,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "deleteJustThisOne": string;
     "description": string;
     "deselectAll": string;
-    "discardAndClose": string;
     "editAudioResource": string;
     "editGeneralResource": string;
     "editResource": string;
@@ -1544,6 +1545,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "consultant": string;
     "delete": string;
     "description": string;
+    "discardAndClose": string;
     "editor": string;
     "expiredParatextToken": string;
     "expiredToken": string;

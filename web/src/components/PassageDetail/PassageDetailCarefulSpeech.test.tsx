@@ -223,12 +223,12 @@ const moveEngineToClause = async (
   ctx._seg = regions[idx];
   ctx.currentSegmentIndex += 1;
   await act(async () => {
-    rerender(<PassageDetailCarefulSpeech width={400} />);
+    rerender(<PassageDetailCarefulSpeech />);
   });
 };
 
 const mountAndSettle = async () => {
-  const utils = render(<PassageDetailCarefulSpeech width={400} />);
+  const utils = render(<PassageDetailCarefulSpeech />);
   // wait for rAF -> player mount -> initial-position effect to position us
   await waitFor(() => expect(controlsProps).toBeDefined());
   await waitFor(() => expect(stubControls.gotoTime).toHaveBeenCalled());

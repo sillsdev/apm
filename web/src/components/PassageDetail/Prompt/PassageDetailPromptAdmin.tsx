@@ -2,7 +2,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -37,14 +36,9 @@ import {
 import { promptSelector, sharedSelector } from '../../../selector';
 import { useMobile } from '../../../utils';
 
-interface IProps {
-  width: number;
-}
-
 const toolId = 'PromptTool';
 
-export default function PassageDetailPromptAdmin(props: Readonly<IProps>) {
-  const { width } = props;
+export default function PassageDetailPromptAdmin() {
   const [memory] = useGlobal('memory');
   const [offline] = useGlobal('offline');
   const [offlineOnly] = useGlobal('offlineOnly');
@@ -212,41 +206,17 @@ export default function PassageDetailPromptAdmin(props: Readonly<IProps>) {
   };
 
   const defaultFilename = useMemo(() => `prompt-${section.id}`, [section.id]);
-  const playerContainerRef = useRef<HTMLDivElement | null>(null);
-  const desktopWidth = Math.max(0, width);
-  const [mobilePlayerWidth, setMobilePlayerWidth] = useState(desktopWidth);
-
-  useLayoutEffect(() => {
-    if (!isMobile) {
-      setMobilePlayerWidth(desktopWidth);
-      return;
-    }
-    const el = playerContainerRef.current;
-    if (!el) return;
-    const updateWidth = () => setMobilePlayerWidth(el.offsetWidth);
-    updateWidth();
-    let observer: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(updateWidth);
-      observer.observe(el);
-    }
-    return () => observer?.disconnect();
-  }, [isMobile, desktopWidth]);
-
-  const playerWidth = isMobile ? mobilePlayerWidth : desktopWidth;
-  const layoutWidth = isMobile ? '100%' : desktopWidth;
 
   return (
     <Stack
       sx={{
-        width: layoutWidth,
-        maxWidth: layoutWidth,
+        width: '100%',
         minWidth: 0,
         alignItems: 'stretch',
         boxSizing: 'border-box',
       }}
     >
-      <Box ref={playerContainerRef} sx={{ width: '100%', minWidth: 0 }}>
+      <Box sx={{ width: '100%', minWidth: 0 }}>
         <MediaRecord
           toolId={toolId}
           artifactId={resourceArtifactId}
@@ -268,7 +238,6 @@ export default function PassageDetailPromptAdmin(props: Readonly<IProps>) {
           handleSave={handleSave}
           isSaveDisabled={!canEdit || promptAddBlocked}
           height={280}
-          width={playerWidth}
           forceMobileView={true}
           dockRecordButton={isMobile}
           onDockedRecordButton={

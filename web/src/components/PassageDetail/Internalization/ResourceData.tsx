@@ -60,10 +60,6 @@ interface IProps {
   onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
   onTextChange?: ((text: string) => void) | undefined;
   allowGeneralResourceOption: boolean;
-  // TODO cleanup in next PR: every caller passes catRequired={false} and
-  // catAllowNew={true}; hard-code them and drop the props.
-  catRequired: boolean;
-  catAllowNew?: boolean | undefined;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
   // category at submission (rather than on blur).
   catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
@@ -77,8 +73,6 @@ export function ResourceData(props: IProps) {
     onCategoryChange,
     onDescriptionChange,
     onPassResChange,
-    catRequired,
-    catAllowNew,
     allowGeneralResourceOption,
     media,
     uploadType,
@@ -161,10 +155,10 @@ export function ResourceData(props: IProps) {
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <SelectArtifactCategory
-            allowNew={catAllowNew}
+            allowNew
             initCategory={initCategory || ''}
             onCategoryChange={onCategoryChange}
-            required={catRequired}
+            required={false}
             scripture={ArtCatScr.highlight}
             type={ArtifactCategoryType.Resource}
             commitRef={catCommitRef}

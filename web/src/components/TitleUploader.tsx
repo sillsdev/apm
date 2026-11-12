@@ -6,30 +6,16 @@ import MediaUploadContent from './MediaUploadContent';
 import { mediaTitleSelector } from '../selector';
 
 interface IProps {
-  defaultFilename?: string;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
   hasRights?: boolean; // required for upload
-  finish?: (files: File[]) => void; // when conversion complete
   cancelled: React.RefObject<boolean>;
-  uploadType?: UploadType;
   uploadMethod: (files: File[]) => Promise<boolean>;
-  metadata?: React.JSX.Element;
-  onSave?: () => void;
   onFiles?: (files: File[]) => void;
 }
 
 export function TitleUploader(props: IProps) {
-  const {
-    isOpen,
-    onOpen,
-    cancelled,
-    uploadType,
-    hasRights,
-    uploadMethod,
-    metadata,
-    onFiles,
-  } = props;
+  const { isOpen, onOpen, cancelled, hasRights, uploadMethod, onFiles } = props;
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
 
   const uploadCancel = () => {
@@ -42,11 +28,10 @@ export function TitleUploader(props: IProps) {
   return isOpen ? (
     <MediaUploadContent
       onVisible={onOpen}
-      uploadType={uploadType || UploadType.Media}
+      uploadType={UploadType.Media}
       ready={Boolean(hasRights)}
       uploadMethod={uploadMethod}
       cancelMethod={uploadCancel}
-      metaData={metadata}
       primaryButtonText={t.upload}
       onFiles={onFiles}
     />

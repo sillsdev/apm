@@ -5623,12 +5623,6 @@
             <target>取消全选</target>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.discardAndClose">
-         <segment>
-            <source>Discard and Close</source>
-            <target>丢弃并关闭</target>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.editAudioResource">
          <segment>
             <source>Edit Audio Resource</source>
@@ -7871,6 +7865,12 @@
          <segment>
             <source>Description</source>
             <target>描述</target>
+         </segment>
+      </unit>
+      <unit id="shared.discardAndClose">
+         <segment>
+            <source>Discard and Close</source>
+            <target>丢弃并关闭</target>
          </segment>
       </unit>
       <unit id="shared.editor">

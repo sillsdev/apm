@@ -5,11 +5,7 @@ import { CAREFUL_SPEECH_CONFIG } from './guidedPhraseRecord/types';
 import { mapCarefulSpeechStrings } from './guidedPhraseRecord/controlStrings';
 import { ICarefulSpeechStrings } from '../../model';
 
-interface IProps {
-  width: number;
-}
-
-export function PassageDetailCarefulSpeech({ width }: IProps) {
+export function PassageDetailCarefulSpeech() {
   const strings: ICarefulSpeechStrings = useSelector(
     carefulSpeechSelector,
     shallowEqual
@@ -17,7 +13,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
 
   return (
     <PassageDetailGuidedPhraseRecord
-      width={width}
       config={CAREFUL_SPEECH_CONFIG}
       controlStrings={mapCarefulSpeechStrings(strings)}
       workflowGateMessage={strings.boldOnly}

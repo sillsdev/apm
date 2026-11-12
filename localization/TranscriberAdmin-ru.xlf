@@ -5623,12 +5623,6 @@
             <target>Отменить выбор всех</target>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.discardAndClose">
-         <segment>
-            <source>Discard and Close</source>
-            <target>Отменить и закрыть</target>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.editAudioResource">
          <segment>
             <source>Edit Audio Resource</source>
@@ -7871,6 +7865,12 @@
          <segment>
             <source>Description</source>
             <target>Описание</target>
+         </segment>
+      </unit>
+      <unit id="shared.discardAndClose">
+         <segment>
+            <source>Discard and Close</source>
+            <target>Отменить и закрыть</target>
          </segment>
       </unit>
       <unit id="shared.editor">

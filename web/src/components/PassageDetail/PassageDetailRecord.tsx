@@ -24,7 +24,6 @@ import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { useStepTool } from '../../crud/useStepTool';
-import { useSnackBar } from '../../hoc/SnackBar';
 import MediaRecord from '../MediaRecord';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import Uploader from '../Uploader';
@@ -56,7 +55,6 @@ import {
 
 interface IProps {
   ready?: () => boolean;
-  width: number;
 }
 
 const SaveWait = 500;
@@ -87,7 +85,6 @@ export function PassageDetailRecord(props: IProps) {
     passage,
     sharedResource,
     mediafileId,
-    chooserSize,
     recording,
     setRecording,
     currentstep,
@@ -95,7 +92,6 @@ export function PassageDetailRecord(props: IProps) {
     setStepComplete,
     gotoNextStep,
   } = usePassageDetailContext();
-  const { showMessage } = useSnackBar();
   const toolId = 'RecordTool';
   const { settings: toolSettings } = useStepTool(currentstep);
   const onSaving = () => {
@@ -375,7 +371,7 @@ export function PassageDetailRecord(props: IProps) {
     !isLinkedNote(passage, sharedResource);
 
   return (
-    <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
+    <Stack sx={{ width: '100%', minWidth: 0 }}>
       <Box sx={{ py: 1 }}>
         <Stack
           direction="row"
@@ -431,8 +427,7 @@ export function PassageDetailRecord(props: IProps) {
         setStatusText={setStatusText}
         doReset={resetMedia}
         setDoReset={setResetMedia}
-        height={300 - chooserSize}
-        width={props.width}
+        height={252}
         allowNoNoise={true}
         allowDeltaVoice={true}
         handleSave={handleSave}
@@ -475,7 +470,6 @@ export function PassageDetailRecord(props: IProps) {
         importList={importList}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
-        showMessage={showMessage}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
