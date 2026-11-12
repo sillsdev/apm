@@ -449,8 +449,8 @@ export function AudioTab() {
         multiple={true}
         finish={afterUpload}
         cancelled={cancelled}
-        performedBy={speaker}
-        onSpeakerChange={handleNameChange}
+        speaker={speaker}
+        onSpeaker={handleNameChange}
       />
     </ContentLayout>
   );

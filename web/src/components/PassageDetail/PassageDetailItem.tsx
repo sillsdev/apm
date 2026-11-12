@@ -592,7 +592,7 @@ export function PassageDetailItem(props: IProps) {
         sourceSegments={JSON.stringify(getCurrentSegment())}
         sourceMediaId={mediafileId}
         artifactState={artifactState}
-        performedBy={speaker}
+        speaker={speaker}
         topic={topic}
       />
     </div>

@@ -338,7 +338,7 @@ export function ProvideRights(props: IProps) {
         finish={afterUpload}
         cancelled={cancelled}
         artifactState={artifactState}
-        performedBy={speaker}
+        speaker={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}
         audioOnly={aiip}

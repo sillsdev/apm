@@ -1507,8 +1507,8 @@ export function ScriptureTable(props: Readonly<IProps>) {
           related(uploadItem.current?.sharedResource, 'passage') ??
           uploadItem.current?.passage?.id
         }
-        performedBy={speaker}
-        onSpeakerChange={handleNameChange}
+        speaker={speaker}
+        onSpeaker={handleNameChange}
       />
       <GraphicPicker
         bookCode={firstBook}

@@ -21,8 +21,8 @@ interface IProps {
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
   sourceSegments?: string | undefined;
-  performedBy?: string | undefined;
-  onSpeakerChange?: ((performedBy: string) => void) | undefined;
+  speaker?: string | undefined;
+  onSpeaker?: ((speaker: string) => void) | undefined;
   topic?: string | undefined;
   uploadType?: UploadType | undefined;
   audioOnly?: boolean | undefined;
@@ -48,8 +48,8 @@ export const Uploader = (props: IProps) => {
     planId,
     sourceMediaId,
     sourceSegments,
-    performedBy,
-    onSpeakerChange,
+    speaker,
+    onSpeaker,
     topic,
     uploadType,
     audioOnly,
@@ -68,10 +68,6 @@ export const Uploader = (props: IProps) => {
     }
     return planId || plan;
   }, [passageId, planId, plan, memory]);
-
-  const handleSpeakerChange = (speaker: string) => {
-    onSpeakerChange && onSpeakerChange(speaker);
-  };
 
   // Close the dialog once the batch is done (even if `finish` throws), as the
   // pre-hook Uploader did; the dialog itself only clears its progress on failure.
@@ -92,7 +88,7 @@ export const Uploader = (props: IProps) => {
       localPlanId: resolvedLocalPlanId,
       sourceMediaId,
       sourceSegments,
-      performedBy,
+      performedBy: speaker,
       topic,
     },
     uploadType,
@@ -127,11 +123,11 @@ export const Uploader = (props: IProps) => {
           multiple={multiple}
           uploadMethod={uploadMedia}
           cancelMethod={uploadCancel}
-          speaker={performedBy}
+          speaker={speaker}
           onSpeaker={
             !artifactState?.id &&
             (uploadType || UploadType.Media) === UploadType.Media
-              ? handleSpeakerChange
+              ? onSpeaker
               : undefined
           }
           audioOnly={audioOnly}
