@@ -190,62 +190,8 @@
   },
   "build": {
     "appId": "sil.lsdev.audio-project-manager",
-    "productName": "Audio Project Manager Train",
-    "copyright": "Copyright © 2020-2026 ${author}",
-    "win": {
-      "icon": "public/icon.png"
-    },
-    "linux": {
-      "icon": "debian/audio-project-manager.png",
-      "desktop": "debian/audio-project-manager.desktop",
-      "target": [
-        "deb"
-      ]
-    },
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "public/icon.png",
-      "hardenedRuntime": true,
-      "entitlements": "env-config/entitlements.mac.plist",
-      "entitlementsInherit": "env-config/entitlements.mac.plist",
-      "gatekeeperAssess": false,
-      "extendInfo": {
-        "NSMicrophoneUsageDescription": "Please give us access to your microphone"
-      }
-    },
-    "dmg": {
-      "sign": false
-    },
-    "afterSign": "env-config/notarize.js",
-    "directories": {
-      "buildResources": "assets"
-    },
-    "extraFiles": [
-      {
-        "from": "public/localization",
-        "to": "localization",
-        "filter": "*.json"
-      },
-      {
-        "from": "public/help",
-        "to": "help",
-        "filter": "*.chm"
-      },
-      {
-        "from": "public/help",
-        "to": "help",
-        "filter": "*.xlsx"
-      },
-      {
-        "from": "public/script",
-        "to": "resources",
-        "filter": [
-          "resetData.*",
-          "*.py",
-          "*.aup3"
-        ]
-      }
-    ]
+    "productName": "Audio Project Manager",
+    "copyright": "Copyright © 2020-2026 ${author}"
   },
   "husky": {
     "hooks": {
