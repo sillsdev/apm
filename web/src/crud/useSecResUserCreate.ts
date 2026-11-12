@@ -1,7 +1,7 @@
 import { useGlobal } from '../context/useGlobal';
 import { SectionResource, SectionResourceUser } from '../model';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
-import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
+import { RecordTransformBuilder } from '@orbit/records';
 
 export const useSecResUserCreate = () => {
   const [memory] = useGlobal('memory');
@@ -17,18 +17,12 @@ export const useSecResUserCreate = () => {
       ...AddRecord(t, secResUser, user, memory),
       ...ReplaceRelatedRecord(
         t,
-        secResUser as RecordIdentity,
+        secResUser,
         'sectionresource',
         'sectionresource',
         resource.id
       ),
-      ...ReplaceRelatedRecord(
-        t,
-        secResUser as RecordIdentity,
-        'user',
-        'user',
-        user
-      ),
+      ...ReplaceRelatedRecord(t, secResUser, 'user', 'user', user),
     ];
     await memory.update(ops);
   };

@@ -10,7 +10,6 @@ import { related } from '../../crud/related';
 import { remoteIdGuid } from '../../crud/remoteId';
 import {
   AddRecord,
-  recordRef,
   ReplaceRelatedRecord,
   UpdateRelatedRecord,
   UpdateLastModifiedBy,
@@ -141,27 +140,17 @@ async function restoreIntellectualProperty({
       notes: restore.notes ?? '{}',
     },
   } as IntellectualProperty & UninitializedRecord;
-  await memory.update((t) => {
-    const added = AddRecord(t, ip, user, memory);
-    const ipIdentity = recordRef('intellectualproperty', ip.id);
-    return [
-      ...added,
-      ...ReplaceRelatedRecord(
-        t,
-        ipIdentity,
-        'releaseMediafile',
-        'mediafile',
-        mediaId
-      ),
-      ...ReplaceRelatedRecord(
-        t,
-        ipIdentity,
-        'organization',
-        'organization',
-        restore.organizationId
-      ),
-    ];
-  });
+  await memory.update((t) => [
+    ...AddRecord(t, ip, user, memory),
+    ...ReplaceRelatedRecord(t, ip, 'releaseMediafile', 'mediafile', mediaId),
+    ...ReplaceRelatedRecord(
+      t,
+      ip,
+      'organization',
+      'organization',
+      restore.organizationId
+    ),
+  ]);
 }
 
 async function restoreComment({
@@ -270,7 +259,6 @@ async function restoreSectionResource({
   memory: Memory;
   user: string;
 }): Promise<void> {
-  const mediaRecId = recordRef('mediafile', mediaId);
   const mediaRec = findRecord(memory, 'mediafile', mediaId) as
     MediaFileD | undefined;
 
@@ -312,22 +300,22 @@ async function restoreSectionResource({
       )
     );
   }
-  if (restore.artifactCategoryId) {
+  if (restore.artifactCategoryId && mediaRec) {
     ops.push(
       ...ReplaceRelatedRecord(
         t,
-        mediaRecId,
+        mediaRec,
         'artifactCategory',
         'artifactcategory',
         restore.artifactCategoryId
       )
     );
   }
-  if (restore.passageId) {
+  if (restore.passageId && mediaRec) {
     ops.push(
       ...ReplaceRelatedRecord(
         t,
-        mediaRecId,
+        mediaRec,
         'passage',
         'passage',
         restore.passageId
@@ -335,26 +323,13 @@ async function restoreSectionResource({
     );
   }
 
-  ops.push(...AddRecord(t, secRes, user, memory));
-  const secResIdentity = recordRef('sectionresource', secRes.id);
   ops.push(
+    ...AddRecord(t, secRes, user, memory),
+    ...ReplaceRelatedRecord(t, secRes, 'section', 'section', restore.sectionId),
+    ...ReplaceRelatedRecord(t, secRes, 'mediafile', 'mediafile', mediaId),
     ...ReplaceRelatedRecord(
       t,
-      secResIdentity,
-      'section',
-      'section',
-      restore.sectionId
-    ),
-    ...ReplaceRelatedRecord(
-      t,
-      secResIdentity,
-      'mediafile',
-      'mediafile',
-      mediaId
-    ),
-    ...ReplaceRelatedRecord(
-      t,
-      secResIdentity,
+      secRes,
       'orgWorkflowStep',
       'orgworkflowstep',
       restore.orgWorkflowStepId
@@ -364,7 +339,7 @@ async function restoreSectionResource({
     ops.push(
       ...ReplaceRelatedRecord(
         t,
-        secResIdentity,
+        secRes,
         'passage',
         'passage',
         restore.passageId
@@ -443,7 +418,7 @@ async function restoreOrgKeytermTarget({
     ...AddRecord(t, termTargetRec, user, memory),
     ...ReplaceRelatedRecord(
       t,
-      recordRef('orgkeytermtarget', termTargetRec.id),
+      termTargetRec,
       'organization',
       'organization',
       restore.organizationId

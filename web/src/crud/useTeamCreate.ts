@@ -31,7 +31,6 @@ import { useTeamApiPull } from './useTeamApiPull';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
 import {
-  RecordIdentity,
   RecordKeyMap,
   RecordOperation,
   RecordTransformBuilder,
@@ -139,13 +138,7 @@ export const useTeamCreate = () => {
     const t = new RecordTransformBuilder();
     const orgOps: RecordOperation[] = [
       ...AddRecord(t, orgRec, user, memory),
-      ...ReplaceRelatedRecord(
-        t,
-        orgRec as RecordIdentity,
-        'owner',
-        'user',
-        user
-      ),
+      ...ReplaceRelatedRecord(t, orgRec, 'owner', 'user', user),
     ];
     await memory.update(orgOps);
     // The all-users group's owner, the memberships, note categories and
