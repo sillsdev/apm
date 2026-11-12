@@ -619,7 +619,7 @@ describe('writeFileLocal disk write (TT-7348)', () => {
   it('awaits ipc.write when saving in-memory recording without path', async () => {
     let writeFinished = false;
     mockIpc.write.mockImplementation(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await Promise.resolve();
       writeFinished = true;
     });
 
@@ -652,13 +652,17 @@ describe('writeFileLocal disk write (TT-7348)', () => {
   it('nextUpload fails gracefully and aborts cloud POST if local disk write rejects', async () => {
     mockIpc.write.mockRejectedValue(new Error('Disk write failed: ENOSPC'));
     const dispatch = jest.fn();
-    const cb = jest.fn();
+    let resolveCb: () => void = () => undefined;
+    const cbDone = new Promise<void>((resolve) => {
+      resolveCb = resolve;
+    });
+    const cb = jest.fn(() => resolveCb());
     const file = new File([new Uint8Array([1, 2, 3])], 'recording.wav', {
       type: 'audio/wav',
     });
 
     const action = actionsModule.nextUpload({
-      record: baseRecord,
+      record: { ...baseRecord },
       files: [file],
       n: 0,
       token: 'token',
@@ -668,7 +672,7 @@ describe('writeFileLocal disk write (TT-7348)', () => {
       cb,
     });
     action(dispatch);
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await cbDone;
 
     expect(mockIpc.write).toHaveBeenCalled();
     expect(dispatch).toHaveBeenCalledWith(
