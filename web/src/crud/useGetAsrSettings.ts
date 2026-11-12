@@ -21,7 +21,7 @@ import { TokenContext } from '../context/TokenProvider';
 import { useGlobal } from '../context/useGlobal';
 import { PassageDetailContext } from '../context/PassageDetailContext';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { JSONParse, isLangSet } from '../utils';
+import { isLangSet } from '../utils';
 import { UpdateRecord } from '../model/baseModel';
 import { needsSisterLanguage } from '../business/asr/asrLanguages';
 import { useArtifactType } from './useArtifactType';
@@ -41,9 +41,20 @@ import {
   withSisterRecommendations,
 } from './transcribeStepAsrSettings';
 import {
+  isStepToolReadable,
+  parseStepTool,
   parseTranscribeStepSettings,
   type TranscribeStepSettings,
 } from './transcribeStepSettings';
+
+/**
+ * A step's settings, plus the parsed `tool` attribute they came from (needed
+ * to write them back). Unreadable data reads as empty.
+ */
+const readStepSettings = (step: OrgWorkflowStepD | undefined) => {
+  const toolAttr = parseStepTool(step?.attributes?.tool);
+  return { toolAttr, settings: parseTranscribeStepSettings(toolAttr.settings) };
+};
 
 export {
   artifactTypeSlugFromSettings,
@@ -141,12 +152,9 @@ export function useGetAsrSettings(team?: OrganizationD) {
       return parseCachedRecommendations(cached, projectLang?.bcp47 ?? 'und');
     }
     const langName = getVernacularLanguage()?.languageName ?? '';
-    const step = orgSteps.find((s) => s.id === currentstep);
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    const settings = parseTranscribeStepSettings(json?.settings);
+    const { settings } = readStepSettings(
+      orgSteps.find((s) => s.id === currentstep)
+    );
     const raw = settings.sisterRecommendations;
     if (typeof raw !== 'string') return undefined;
     try {
@@ -175,20 +183,23 @@ export function useGetAsrSettings(team?: OrganizationD) {
     });
   };
 
-  const stepTool = (stepId: string | undefined) => {
+  const readStepById = (stepId: string | undefined) => {
     const step = stepId
       ? (findRecord(memory, 'orgworkflowstep', stepId) as
           OrgWorkflowStepD | undefined)
       : undefined;
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    return {
-      step,
-      json,
-      settings: parseTranscribeStepSettings(json?.settings),
-    };
+    return { step, ...readStepSettings(step) };
+  };
+
+  /**
+   * The step to save settings on, or undefined when it is missing or its tool
+   * can't be read: rewriting it would erase the tool name and what was stored.
+   */
+  const findWritableStep = (stepId: string | undefined) => {
+    const found = readStepById(stepId);
+    if (!found.step || !isStepToolReadable(found.step.attributes?.tool))
+      return undefined;
+    return { ...found, step: found.step };
   };
 
   /**
@@ -198,7 +209,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const getCachedStepSisterRecommendations = (
     stepId: string | undefined
   ): IAsrLanguageSuggestion[] | undefined => {
-    const { settings } = stepTool(stepId);
+    const { settings } = readStepById(stepId);
     const stored = readSisterRecommendations(
       settings,
       stepSisterRecommendationKey(settings)
@@ -211,14 +222,15 @@ export function useGetAsrSettings(team?: OrganizationD) {
     stepId: string | undefined,
     suggestions: IAsrLanguageSuggestion[]
   ) => {
-    const { step, json, settings } = stepTool(stepId);
-    if (!step) return;
+    const writable = findWritableStep(stepId);
+    if (!writable) return;
+    const { step, toolAttr, settings } = writable;
     const key = stepSisterRecommendationKey(settings);
     if (!key) return;
-    json.settings = JSON.stringify(
+    toolAttr.settings = JSON.stringify(
       withSisterRecommendations(settings, key, suggestions)
     );
-    step.attributes.tool = JSON.stringify(json);
+    step.attributes.tool = JSON.stringify(toolAttr);
     void memory.update((t) => UpdateRecord(t, step, user));
   };
 
@@ -243,12 +255,9 @@ export function useGetAsrSettings(team?: OrganizationD) {
   };
 
   const getAsrSettings = React.useCallback(async () => {
-    const step = orgSteps.find((s) => s.id === currentstep);
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    const settings = parseTranscribeStepSettings(json?.settings);
+    const { toolAttr, settings } = readStepSettings(
+      orgSteps.find((s) => s.id === currentstep)
+    );
     // A project whose language differs from the team's keeps its own ASR
     // choice (saved on Run), since the team default can't describe it.
     const projectOwnsAsr = usesProjectAsr(settings);
@@ -262,7 +271,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
         return projAsr;
     }
     const hasStepLang = hasTranscribeStepLanguageSettings(
-      json.tool,
+      toolAttr.tool,
       settings,
       slugFromId,
       getOrgDefault,
@@ -341,26 +350,21 @@ export function useGetAsrSettings(team?: OrganizationD) {
    * nothing is saved.
    */
   const saveProjectAsrSettings = (asrState: IAsrState) => {
-    const step = orgSteps.find((s) => s.id === currentstep);
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    if (!usesProjectAsr(parseTranscribeStepSettings(json?.settings))) return;
+    const { settings } = readStepSettings(
+      orgSteps.find((s) => s.id === currentstep)
+    );
+    if (!usesProjectAsr(settings)) return;
     const existing = normalizeAsrState(getProjectDefault(orgDefaultAsr));
     if (existing && asrStatesEqual(existing, asrState)) return;
     setProjectDefault(orgDefaultAsr, asrState);
   };
 
   const hasTranscribeStepLanguageSettingsHook = () => {
-    const step = orgSteps.find((s) => s.id === currentstep);
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    const settings = parseTranscribeStepSettings(json?.settings);
+    const { toolAttr, settings } = readStepSettings(
+      orgSteps.find((s) => s.id === currentstep)
+    );
     return hasTranscribeStepLanguageSettings(
-      json.tool,
+      toolAttr.tool,
       settings,
       slugFromId,
       getOrgDefault,
@@ -369,12 +373,9 @@ export function useGetAsrSettings(team?: OrganizationD) {
   };
 
   const transcribeSettingsNeedSisterLanguageHook = () => {
-    const step = orgSteps.find((s) => s.id === currentstep);
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    const settings = parseTranscribeStepSettings(json?.settings);
+    const { settings } = readStepSettings(
+      orgSteps.find((s) => s.id === currentstep)
+    );
     return transcribeSettingsNeedSisterLanguage(
       settings,
       slugFromId,
@@ -391,12 +392,13 @@ export function useGetAsrSettings(team?: OrganizationD) {
     asrState: IAsrState,
     stepId: string | undefined
   ) => {
-    const { step, json, settings } = stepTool(stepId);
-    if (!step) return;
-    json.settings = JSON.stringify(
+    const writable = findWritableStep(stepId);
+    if (!writable) return;
+    const { step, toolAttr, settings } = writable;
+    toolAttr.settings = JSON.stringify(
       stepSettingsFromAsrState(settings, asrState)
     );
-    step.attributes.tool = JSON.stringify(json);
+    step.attributes.tool = JSON.stringify(toolAttr);
     void memory.update((t) => UpdateRecord(t, step, user));
   };
 

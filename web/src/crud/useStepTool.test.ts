@@ -1,4 +1,10 @@
-import { getToolSettings, resolveToolSlug } from './useStepTool';
+jest.mock('../utils/logErrorService', () => ({
+  Severity: { info: 0, error: 1, retry: 2 },
+  logError: jest.fn(),
+}));
+jest.mock('../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
+
+import { getTool, getToolSettings, resolveToolSlug } from './useStepTool';
 import { ToolSlug } from './toolSlug';
 import { BOLD_WORKFLOW_PROCESS } from './useTeamWorkflowProcess';
 
@@ -21,6 +27,21 @@ describe('getToolSettings', () => {
     expect(getToolSettings('{"tool":"transcribe"}')).toBe('');
     expect(getToolSettings('')).toBe('');
     expect(getToolSettings(undefined)).toBe('');
+  });
+
+  it('reads an unreadable tool attribute as empty instead of throwing', () => {
+    expect(getToolSettings('{bad tool')).toBe('');
+  });
+});
+
+describe('getTool', () => {
+  it('reads the tool slug', () => {
+    expect(getTool('{"tool":"discuss","settings":""}')).toBe('discuss');
+    expect(getTool(undefined)).toBe('');
+  });
+
+  it('reads an unreadable tool attribute as empty instead of throwing', () => {
+    expect(getTool('{bad tool')).toBe('');
   });
 });
 

@@ -17,7 +17,7 @@ const filterOrgStepsForPlanType = (
   steps.filter(
     (s) =>
       scripture ||
-      ![ToolSlug.Paratext, ToolSlug.Verses].includes(
+      !([ToolSlug.Paratext, ToolSlug.Verses] as string[]).includes(
         getTool(s.attributes?.tool)
       )
   );

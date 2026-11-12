@@ -1,7 +1,7 @@
 import { IAsrState } from '../business/asr/asrState';
 import { ILanguage } from '../control';
 import { OrgWorkflowStepD } from '../model';
-import { JSONParse, isLangSet } from '../utils';
+import { isLangSet } from '../utils';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import {
@@ -15,7 +15,10 @@ import {
   transcribeSettingsNeedSisterLanguage,
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
-import { parseTranscribeStepSettings } from './transcribeStepSettings';
+import {
+  parseStepTool,
+  parseTranscribeStepSettings,
+} from './transcribeStepSettings';
 
 export function findUpstreamRecordingWorkflowStep(
   orgSteps: OrgWorkflowStepD[],
@@ -24,10 +27,7 @@ export function findUpstreamRecordingWorkflowStep(
   recordingArtifactSlug: string
 ): OrgWorkflowStepD | undefined {
   return orgSteps.find((s) => {
-    const json = JSONParse(s?.attributes?.tool ?? '{}') as {
-      tool?: string;
-      settings?: string | object;
-    };
+    const json = parseStepTool(s?.attributes?.tool);
     if (json.tool !== upstreamTool) return false;
     const settings = parseTranscribeStepSettings(json.settings);
     if (!settings.artifactTypeId) return false;
@@ -49,10 +49,9 @@ export function getUpstreamRecordingStepSettings(
     recordingArtifactSlug
   );
   if (!step) return {};
-  const json = JSONParse(step.attributes?.tool ?? '{}') as {
-    settings?: string | object;
-  };
-  return parseTranscribeStepSettings(json.settings);
+  return parseTranscribeStepSettings(
+    parseStepTool(step.attributes?.tool).settings
+  );
 }
 
 /**

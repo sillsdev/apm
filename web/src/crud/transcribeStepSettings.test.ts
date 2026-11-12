@@ -7,6 +7,7 @@ jest.mock('../utils/logErrorService', () => ({
 jest.mock('../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
 
 import {
+  isStepToolReadable,
   parseStepTool,
   parseTranscribeStepSettings,
   reportReplacedStepSettings,
@@ -167,5 +168,31 @@ describe('parseStepTool', () => {
       {},
       'Unreadable workflow step tool: {bad tool'
     );
+  });
+
+  test('keeps settings as stored and reads an offline object', () => {
+    const tool = { tool: 'transcribe', settings: '{"font":"x"}' };
+    expect(parseStepTool(JSON.stringify(tool))).toEqual(tool);
+    expect(parseStepTool(tool)).toEqual(tool);
+  });
+
+  test('drops a tool name that is not a string and logs it', () => {
+    expect(parseStepTool('{"tool":7,"settings":"{}"}')).toEqual({
+      settings: '{}',
+    });
+    expect(mockLogError).toHaveBeenCalledWith(
+      Severity.error,
+      {},
+      'Workflow step tool field tool has type number'
+    );
+  });
+});
+
+describe('isStepToolReadable', () => {
+  test('missing or JSON-object tools are readable; others are not', () => {
+    expect(isStepToolReadable(undefined)).toBe(true);
+    expect(isStepToolReadable('{"tool":"transcribe"}')).toBe(true);
+    expect(isStepToolReadable('{bad tool')).toBe(false);
+    expect(isStepToolReadable('[1]')).toBe(false);
   });
 });

@@ -15,7 +15,6 @@ import { sharedSelector, transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import TaskList, { TaskTableWidth } from '../TaskList';
 import { ToolSlug, useStepTool } from '../../crud';
-import { JSONParse } from '../../utils';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { useArtifactType } from '../../crud/useArtifactType';
 import {
@@ -26,7 +25,10 @@ import {
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { isLinkedNote } from '../../crud/isLinkedNote';
-import { parseTranscribeStepSettings } from '../../crud/transcribeStepSettings';
+import {
+  parseStepTool,
+  parseTranscribeStepSettings,
+} from '../../crud/transcribeStepSettings';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -118,10 +120,7 @@ export function PassageDetailTranscribe({
           (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
       )
       .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as {
-          tool?: string;
-          settings?: string | object;
-        };
+        const toolData = parseStepTool(s?.attributes?.tool);
         return {
           id: s.id,
           sequencenum: ix,
