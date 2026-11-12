@@ -6521,13 +6521,6 @@
       			<context context-type="sourcefile">GeneralResourceDeleteDialog.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.createResources">
-      		<source>Create Resources</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PassageMedia.tsx</context>
-      		</context-group>
-      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.createXResources">
       		<source>Create {0} resources</source>
       		<target/>

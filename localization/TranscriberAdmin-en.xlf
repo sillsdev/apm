@@ -5590,12 +5590,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.createResources">
-         <segment>
-            <source>Create Resources</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.createXResources">
          <segment>
             <source>Create {0} resources</source>

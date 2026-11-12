@@ -102,14 +102,11 @@ export function AddResourceWizard({
                 metaData={
                   <ResourceData
                     uploadType={w.uploadType}
-                    catAllowNew={true} //if they can upload they can add cat
                     initCategory=""
                     onCategoryChange={w.handleCategory}
                     catCommitRef={w.addCategorySaveRef}
                     initDescription={w.initDescription}
-                    // TODO naming consistency
                     onDescriptionChange={w.handleDescription}
-                    catRequired={false}
                     resourceKind={w.resourceKind}
                     onPassResChange={w.handlePassRes}
                     allowGeneralResourceOption={w.isAddingAudioResource}

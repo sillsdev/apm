@@ -337,7 +337,6 @@ export function ProvideRights(props: IProps) {
         noBusy={false}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
-        showMessage={showMessage}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}

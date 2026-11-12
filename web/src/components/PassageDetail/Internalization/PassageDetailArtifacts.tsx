@@ -792,13 +792,11 @@ export function PassageDetailArtifacts() {
         <ResourceData
           media={mediaRef.current}
           uploadType={uploadType}
-          catAllowNew={true}
           initCategory={catIdRef.current || ''}
           onCategoryChange={handleCategory}
           catCommitRef={editCatCommitRef}
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
-          catRequired={false}
           resourceKind={resourceKind}
           onPassResChange={handlePassRes}
           allowGeneralResourceOption={false}

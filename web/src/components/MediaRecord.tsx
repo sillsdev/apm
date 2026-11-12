@@ -36,9 +36,7 @@ import { useRecordSave } from './useRecordSave';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
-// TODO cleanup in next PR: no caller passes setCanCancel, onLoaded,
-// hideControls, onProgress, onDuration or hasRecording, and cancelMethod is
-// never read. (controlsRef is only passed by the Cypress specs; keep it.)
+// TODO cleanup: controlsRef is only passed by the Cypress specs
 export interface IProps {
   toolId: string;
   artifactId: string | null;
@@ -104,9 +102,7 @@ export interface IProps {
    * path.
    */
   onSaveRejected?: (() => void) | undefined;
-  setCanCancel?: ((canCancel: boolean) => void) | undefined;
   setStatusText: (status: string) => void;
-  cancelMethod?: (() => void) | undefined;
   allowRecord?: boolean | undefined;
   oneTryOnly?: boolean | undefined;
   allowWave?: boolean | undefined;
@@ -115,7 +111,6 @@ export interface IProps {
   doReset?: boolean | undefined;
   setDoReset?: ((r: boolean) => void) | undefined;
   preload?: number | undefined;
-  onLoaded?: (() => void) | undefined;
   autoStart?: boolean | undefined;
   trackState?: ((mediaState: IMediaState) => void) | undefined;
   noNewVoice?: boolean | undefined;
@@ -124,14 +119,10 @@ export interface IProps {
   /** When true, disable drag-to-create-region (the red loop region) on the waveform. */
   disableDragSelection?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
-  hideControls?: boolean;
   /** Forwarded to WSAudioPlayer: when false, this recorder claims no keyboard
    *  shortcuts (so an off-screen instance yields them). Default true. */
   hotkeys?: boolean;
-  onProgress?: (progress: number) => void;
-  onDuration?: (duration: number) => void;
   hideToolbar?: boolean;
-  hasRecording?: boolean;
   isStopLogic?: boolean;
   showSize?: boolean;
   handleUpload?: () => void;
@@ -180,7 +171,6 @@ function MediaRecord(props: IProps) {
     beforeUpload,
     setCanSave,
     setHasTake,
-    setCanCancel,
     setStatusText,
     allowRecord,
     oneTryOnly,
@@ -191,21 +181,16 @@ function MediaRecord(props: IProps) {
     height,
     metaData,
     preload,
-    onLoaded,
     trackState,
     noNewVoice,
     allowNoNoise,
     allowZoom,
     disableDragSelection,
     controlsRef,
-    hideControls,
     hotkeys = true,
-    onProgress,
-    onDuration,
     hideToolbar,
     width,
     keepItSmall,
-    hasRecording,
     isStopLogic,
     showSize = true,
     handleUpload,
@@ -344,21 +329,15 @@ function MediaRecord(props: IProps) {
     processingRecordingRef.current = value;
   };
 
-  const handleWaveformDuration = useCallback(
-    (duration: number) => {
-      setWaveformDuration((prev) => {
-        // Only ignore a spurious zero while finalizing a recording stop (peaks race).
-        if (duration <= 0 && processingRecordingRef.current) {
-          return prev;
-        }
-        return duration;
-      });
-      if (duration > 0 || !processingRecordingRef.current) {
-        onDuration?.(duration);
+  const handleWaveformDuration = useCallback((duration: number) => {
+    setWaveformDuration((prev) => {
+      // Only ignore a spurious zero while finalizing a recording stop (peaks race).
+      if (duration <= 0 && processingRecordingRef.current) {
+        return prev;
       }
-    },
-    [onDuration]
-  );
+      return duration;
+    });
+  }, []);
 
   const getCompressedStatusMessage = useCallback(() => {
     if (allowWave) {
@@ -621,10 +600,6 @@ function MediaRecord(props: IProps) {
     queuedTake,
   ]);
 
-  useEffect(() => {
-    if (setCanCancel) setCanCancel(!inFlight);
-  }, [inFlight, setCanCancel]);
-
   // A usable take is loaded in the waveform — the same readiness canSave
   // requires, but without the (pendingSave || filechanged) dirty gate. A
   // successful upload clears those flags (so canSave drops) yet leaves the take
@@ -640,8 +615,8 @@ function MediaRecord(props: IProps) {
   // parent, which CODING_STANDARDS "Effects" calls a finding. Notify the parent
   // from the handlers that change hasTake's inputs (recording start/stop,
   // waveform load, upload start/finish), or lift those inputs up so the parent
-  // derives hasTake itself. setCanSave/setCanCancel above follow the same
-  // pattern and should move together.
+  // derives hasTake itself. setCanSave follows the same pattern and should
+  // move together.
   useEffect(() => {
     setHasTake?.(hasTake);
   }, [hasTake, setHasTake]);
@@ -684,7 +659,6 @@ function MediaRecord(props: IProps) {
     // Keep loading true until wavesurfer reports ready (setBlobReady(true)).
     // Clearing here left Record looking idle while the waveform decoded.
     setBlobReady(false);
-    onLoaded && onLoaded();
     setAudioBlob(b);
   };
 
@@ -714,7 +688,6 @@ function MediaRecord(props: IProps) {
     loadInFlightRef.current = false;
     setLoadBusy(false);
     setStatusText('');
-    onLoaded && onLoaded();
   };
   const blobError = (urlorError: string) => {
     showMessage(urlorError);
@@ -730,7 +703,7 @@ function MediaRecord(props: IProps) {
       setOriginalBlob(undefined);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ts.mediaError, showMessage, onLoaded]
+    [ts.mediaError, showMessage]
   );
   const getGoodUrl = async () => {
     const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
@@ -877,11 +850,9 @@ function MediaRecord(props: IProps) {
         onPlayStatus={onPlayStatus}
         doReset={doReset}
         autoStart={autoStart}
-        onProgress={onProgress}
         onDuration={handleWaveformDuration}
         controlsRef={controlsRef}
         hideToolbar={hideToolbar}
-        hideControls={hideControls}
         segments={segments}
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
@@ -889,7 +860,6 @@ function MediaRecord(props: IProps) {
         captureEchoCancellation={captureAudioProcessing.echoCancellation}
         captureNoiseSuppression={captureAudioProcessing.noiseSuppression}
         keepItSmall={keepItSmall}
-        hasRecording={hasRecording ?? false}
         isStopLogic={effectiveIsStopLogic}
         hideWaveformEditTools={simplified}
         isRecordingRights={isRecordingRights}

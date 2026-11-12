@@ -24,7 +24,6 @@ import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { useStepTool } from '../../crud/useStepTool';
-import { useSnackBar } from '../../hoc/SnackBar';
 import MediaRecord from '../MediaRecord';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import Uploader from '../Uploader';
@@ -93,7 +92,6 @@ export function PassageDetailRecord(props: IProps) {
     setStepComplete,
     gotoNextStep,
   } = usePassageDetailContext();
-  const { showMessage } = useSnackBar();
   const toolId = 'RecordTool';
   const { settings: toolSettings } = useStepTool(currentstep);
   const onSaving = () => {
@@ -472,7 +470,6 @@ export function PassageDetailRecord(props: IProps) {
         importList={importList}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
-        showMessage={showMessage}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}

@@ -1151,7 +1151,6 @@ const initialState = {
 			"confirmClose": "Do you want to close this dialog? Your changes will be discarded.",
 			"confirmCloseTitle": "Confirm Close",
 			"confirmDeleteTitle": "Confirm Delete",
-			"createResources": "Create Resources",
 			"createXResources": "Create {0} resources",
 			"currentResource": "Current {0}",
 			"deleteAll": "Delete All {0}",

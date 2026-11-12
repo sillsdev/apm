@@ -446,7 +446,6 @@ export function AudioTab() {
       <Uploader
         isOpen={uploadVisible}
         onOpen={setUploadVisible}
-        showMessage={showMessage}
         multiple={true}
         finish={afterUpload}
         cancelled={cancelled}
