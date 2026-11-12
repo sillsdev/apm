@@ -30,6 +30,8 @@ export default function DiscussionDrawer() {
     discussOpen,
     passage,
     currentstep,
+    recording,
+    commentRecording,
     setDiscussOpen,
     setPlaying,
   } = ctx.state;
@@ -94,38 +96,43 @@ export default function DiscussionDrawer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discarding, unsentIds]);
 
+  const fabDisabled = recording || commentRecording;
+
   const discussionFab = (
     <LightTooltip title={t.open}>
-      <Fab
-        aria-label={t.open}
-        sx={{
-          p: 3.5,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          backgroundColor: 'background.paper',
-          color: 'custom.black',
-        }}
-        onClick={openDrawer}
-      >
-        <Badge
-          badgeContent={discussionCount}
-          color="primary"
-          // Make the badge pill smaller than the default size
+      <span>
+        <Fab
+          aria-label={t.open}
+          disabled={fabDisabled}
           sx={{
-            '& .MuiBadge-badge': {
-              fontSize: '0.7rem',
-              height: '1.5em',
-              minWidth: '1.5em',
-              lineHeight: '1.5em',
-              padding: '0 0.35em',
-              borderRadius: '1em',
-            },
+            p: 3.5,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            backgroundColor: 'background.paper',
+            color: 'custom.black',
           }}
+          onClick={openDrawer}
         >
-          <ForumIcon />
-        </Badge>
-      </Fab>
+          <Badge
+            badgeContent={discussionCount}
+            color={fabDisabled ? 'default' : 'primary'}
+            // Make the badge pill smaller than the default size
+            sx={{
+              '& .MuiBadge-badge': {
+                fontSize: '0.7rem',
+                height: '1.5em',
+                minWidth: '1.5em',
+                lineHeight: '1.5em',
+                padding: '0 0.35em',
+                borderRadius: '1em',
+              },
+            }}
+          >
+            <ForumIcon />
+          </Badge>
+        </Fab>
+      </span>
     </LightTooltip>
   );
 
