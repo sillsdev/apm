@@ -3,7 +3,6 @@ import {
   RecordKeyMap,
   RecordOperation,
   RecordTransformBuilder,
-  UninitializedRecord,
 } from '@orbit/records';
 import { findRecords, findRecord } from '../../crud/tryFindRecord';
 import { related } from '../../crud/related';
@@ -139,7 +138,7 @@ async function restoreIntellectualProperty({
       rightsHolder: restore.rightsHolder,
       notes: restore.notes ?? '{}',
     },
-  } as IntellectualProperty & UninitializedRecord;
+  } as IntellectualProperty;
   await memory.update((t) => [
     ...AddRecord(t, ip, user, memory),
     ...ReplaceRelatedRecord(t, ip, 'releaseMediafile', 'mediafile', mediaId),
@@ -281,7 +280,7 @@ async function restoreSectionResource({
       sequenceNum,
       description: restore.description ?? '',
     },
-  } as SectionResource & UninitializedRecord;
+  } as SectionResource;
 
   // One Orbit transform: media metadata + sectionresource + links succeed or
   // fail together (deterministic optimistic updates — TT-7363 / PR #565).
@@ -412,7 +411,7 @@ async function restoreOrgKeytermTarget({
       termIndex: restore.termIndex,
       target: restore.target,
     },
-  } as OrgKeytermTarget & UninitializedRecord;
+  } as OrgKeytermTarget;
 
   const ops: RecordOperation[] = [
     ...AddRecord(t, termTargetRec, user, memory),

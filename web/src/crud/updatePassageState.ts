@@ -10,6 +10,7 @@ import {
 } from '../model';
 import {
   AddRecord,
+  recordRef,
   ReplaceRelatedRecord,
   UpdateLastModifiedBy,
 } from '../model/baseModel';
@@ -90,13 +91,16 @@ export const UpdateMediaStateOps = (
   memory: Memory,
   comment: string
 ): RecordOperation[] => {
-  const mediaRec = findRecord(memory, 'mediafile', mediafile) as MediaFileD;
+  // Identity ops only need the id. Attributes come from the cache when present.
+  const mediaRef = recordRef('mediafile', mediafile);
+  const mediaRec = findRecord(memory, 'mediafile', mediafile) as
+    MediaFileD | undefined;
   if (state)
     ops.push(
-      t.replaceAttribute(mediaRec, 'transcriptionstate', state).toOperation()
+      t.replaceAttribute(mediaRef, 'transcriptionstate', state).toOperation()
     );
   const isVernacular = !related(mediaRec, 'artifactType');
-  ops.push(...UpdateLastModifiedBy(t, mediaRec, userId));
+  ops.push(...UpdateLastModifiedBy(t, mediaRef, userId));
   AddPassageStateChangeToOps(
     t,
     ops,
