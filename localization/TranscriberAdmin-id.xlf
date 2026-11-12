@@ -4867,6 +4867,12 @@
             <target>Nama Berkas</target>
          </segment>
       </unit>
+      <unit id="mediaTab.fileTooBig">
+         <segment>
+            <source>File {0} is too large {1}. File Limit is {2}MB</source>
+            <target>Berkas {0} terlalu besar {1}. Batas maksimal berkas sebesar {2}MB</target>
+         </segment>
+      </unit>
       <unit id="mediaTab.filter">
          <segment>
             <source>Filter</source>
@@ -5053,12 +5059,6 @@
             <target>Ukuran (MB)</target>
          </segment>
       </unit>
-      <unit id="mediaTab.toobig">
-         <segment>
-            <source>File {0} is too large {1}. File Limit is {2}MB</source>
-            <target>Berkas {0} terlalu besar {1}. Batas maksimal berkas sebesar {2}MB</target>
-         </segment>
-      </unit>
       <unit id="mediaTab.unsupported">
          <segment>
             <source>File {0} is an unsupported file type.</source>
@@ -5183,6 +5183,12 @@
          <segment>
             <source>{0} Resource</source>
             <target>Sumber {0}</target>
+         </segment>
+      </unit>
+      <unit id="mediaUpload.fileTooBig">
+         <segment>
+            <source>File is too large: {0}. File Limit is {1}MB</source>
+            <target>Berkas terlalu besar: {0}. Batas maksimal berkas sebesar {1}MB</target>
          </segment>
       </unit>
       <unit id="mediaUpload.githubSupport">
@@ -5321,12 +5327,6 @@
          <segment>
             <source>Upload Audio</source>
             <target>Unggah Audio</target>
-         </segment>
-      </unit>
-      <unit id="mediaUpload.toobig">
-         <segment>
-            <source>Too large: {0}. File Limit is {1}MB</source>
-            <target>Terlalu besar: {0}. Batas maksimal berkas sebesar {1}MB</target>
          </segment>
       </unit>
       <unit id="mediaUpload.upload">
@@ -6039,14 +6039,14 @@
       </unit>
       <unit id="passageRecord.toobig">
          <segment>
-            <source>File is too large. File Limit is {1}MB</source>
-            <target>Berkas terlalu besar. Batas maksimal berkas sebesar {1}MB</target>
+            <source>File is too large ({0}MB). File Limit is {1}MB</source>
+            <target>Berkas terlalu besar ({0}MB). Batas maksimal berkas sebesar {1}MB</target>
          </segment>
       </unit>
       <unit id="passageRecord.toobigwarn">
          <segment>
-            <source>File is near size limit {1}MB</source>
-            <target>File mendekati batas maksimal {1}MB</target>
+            <source>File is near size limit {0}/{1}MB</source>
+            <target>File mendekati batas maksimal {0}/{1}MB</target>
          </segment>
       </unit>
       <unit id="passageRecord.uncompressed">

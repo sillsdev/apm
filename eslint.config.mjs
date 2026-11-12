@@ -10,6 +10,8 @@ export default tseslint.config(
       '**/node_modules',
       '**/dist',
       '**/out',
+      '**/dist-electron',
+      '**/release',
       '**/scripts',
       '**/worker',
       '**/assets',

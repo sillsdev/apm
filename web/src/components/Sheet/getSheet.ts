@@ -1,0 +1,532 @@
+import {
+  ISheet,
+  IwsKind,
+  IMediaShare,
+  OrgWorkflowStep,
+  IWorkflowStepsStrings,
+  SheetLevel,
+  SectionD,
+  PassageD,
+  OrgWorkflowStepD,
+  SharedResourceD,
+  MediaFileD,
+  GroupD,
+  BookSeq,
+  AltBkSeq,
+} from '../../model';
+import Memory from '@orbit/memory';
+import { related } from '../../crud/related';
+import {
+  getVernacularMediaRec,
+  getMediaShared,
+  getAllMediaRecs,
+} from '../../crud/media';
+import { getNextStep } from '../../crud/getNextStep';
+import { getStepComplete } from '../../crud/getStepComplete';
+import { toCamel } from '../../utils/toCamel';
+import { ISTFilterState } from './filterMenu';
+import { PassageTypeEnum } from '../../model/passageType';
+import { passageTypeFromRef } from '../../control/passageTypeFromRef';
+import { isPublishingTitle } from '../../control/passageTypeFromRef';
+import { InitializedRecord, RecordIdentity } from '@orbit/records';
+import { PublishDestinationEnum } from '../../crud';
+import { addPt } from '../../utils/addPt';
+import { noteCategoryOf, noteCategoryRef } from './noteCategoryRef';
+import { currentDateTime } from '../../utils/currentDateTime';
+import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
+
+const shtSectionUpdate = (item: ISheet, rec: ISheet) => {
+  if (item.sectionUpdated && rec.sectionUpdated)
+    if (item?.sectionUpdated > rec?.sectionUpdated) {
+      rec.level = item.level;
+      rec.kind = item.kind;
+      rec.sectionSeq = item.sectionSeq;
+      rec.scheme = item.scheme;
+      rec.title = item.title;
+      rec.deleted = item.deleted;
+      rec.published = item.published;
+      rec.sectionUpdated = item.sectionUpdated;
+      rec.graphicUri = item.graphicUri;
+      rec.graphicRights = item.graphicRights;
+      rec.graphicFullSizeUrl = item.graphicFullSizeUrl;
+    }
+};
+
+const shtSectionAdd = (sheet: ISheet[], item: ISheet) => {
+  let index = sheet.findIndex((w) => w?.sectionId?.id === item?.sectionId?.id);
+  if (index >= 0) {
+    const rec = sheet[index] as ISheet;
+    shtSectionUpdate(item, rec);
+  } else {
+    index = sheet.length;
+    sheet.push(item);
+  }
+  return index;
+};
+
+const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
+  if (!item.passage) return { touched: false, refChanged: false };
+  const touched = Boolean(
+    item.passageUpdated &&
+    rec.passageUpdated &&
+    item.passageUpdated > rec.passageUpdated
+  );
+  //fields derived from other records (mediafile, sharedresource) change without
+  //moving passage.dateUpdated, so refresh them every pass
+  if (touched) {
+    rec.level = item.level;
+    rec.kind = item.kind;
+    rec.passageSeq = item.passageSeq;
+    rec.book = item.book;
+    rec.comment = item.comment;
+    rec.passage = item.passage;
+    rec.deleted = item.deleted;
+    rec.step = item.step;
+    rec.stepId = item.stepId;
+    rec.filtered = item.filtered;
+  }
+  rec.sharedResource = item.sharedResource;
+  rec.mediaId = item.mediaId;
+  rec.mediaShared = item.mediaShared;
+  rec.published = item.published;
+  rec.publishStatus = item.publishStatus;
+  //discussions and scheme step assignments belong to other users' records, so a
+  //data change can alter them while we sit on the sheet with an untouched passage
+  rec.assign = item.assign;
+  rec.discussionCount = item.discussionCount;
+  rec.stepDiscussionCount = item.stepDiscussionCount;
+  //if it's a note with a category and the new reference doesn't have a category, keep the original reference
+  const priorRef = rec.reference;
+  rec.reference =
+    rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
+      ? rec.reference
+      : item.reference;
+  //a note's category lives on the shared resource, so it can change (or be
+  //renamed by a language switch) without moving passage.dateUpdated; the
+  //artwork is chosen from the reference, so it has to be recomputed too
+  const refChanged = rec.reference !== priorRef;
+  if (
+    rec.passage &&
+    rec.reference &&
+    rec.passage.attributes.reference !== rec.reference
+  ) {
+    rec.passage = {
+      ...rec.passage,
+      attributes: { ...rec.passage.attributes, reference: rec.reference },
+    };
+  }
+
+  rec.passageUpdated = item.passageUpdated;
+  return { touched, refChanged };
+};
+
+const shtPassageAdd = (
+  sheet: ISheet[],
+  item: ISheet,
+  sectionIndex?: number
+) => {
+  const index = sheet.findIndex((w) => w?.passage?.id === item?.passage?.id);
+  if (index >= 0) {
+    const rec = sheet[index] as ISheet;
+    if (item.kind === IwsKind.SectionPassage) {
+      shtSectionUpdate(item, rec);
+    }
+    const { touched, refChanged } = shtPassageUpdate(item, rec);
+    return { rec, touched, refChanged };
+  } else if (sectionIndex && sectionIndex >= 0) {
+    let indexAt = sectionIndex + 1;
+    while (indexAt < sheet.length) {
+      if (
+        item.kind !== IwsKind.Passage ||
+        item.passageSeq < (sheet[indexAt] as ISheet).passageSeq
+      )
+        break;
+      indexAt += 1;
+    }
+    const inserted = item;
+    while (indexAt < sheet.length) {
+      const saved = sheet[indexAt] as ISheet;
+      sheet[indexAt] = item;
+      item = saved;
+      indexAt += 1;
+    }
+    sheet.push(item);
+    return { rec: inserted, touched: true, refChanged: false };
+  }
+  sheet.push(item);
+  return { rec: item, touched: true, refChanged: false };
+};
+
+const initItem = {} as ISheet;
+export const isSectionFiltered = (
+  filterState: ISTFilterState,
+  minSection: number,
+  sectionSeq: number,
+  hidePublishing: boolean,
+  ref: string
+) =>
+  (hidePublishing && isPublishingTitle(ref)) ||
+  (!filterState.disabled &&
+    ((filterState.minSection > minSection &&
+      sectionSeq < filterState.minSection) ||
+      (filterState.maxSection > -1 && sectionSeq > filterState.maxSection)));
+
+export const isPassageFiltered = (
+  w: ISheet,
+  filterState: ISTFilterState,
+  minSection: number,
+  hidePublishing: boolean,
+  orgWorkflowSteps: OrgWorkflowStep[],
+  doneStepId: string,
+  sectionScheme: RecordIdentity | undefined,
+  assign: RecordIdentity | undefined,
+  user: string,
+  myGroups: GroupD[]
+) => {
+  const stepIndex = (stepId: string) =>
+    orgWorkflowSteps.findIndex((s) => s.id === stepId);
+  if (hidePublishing && isPublishingTitle(w.reference)) return true;
+  return (
+    !filterState.disabled &&
+    ((filterState.hideDone && w.stepId === doneStepId) ||
+      (filterState.maxStep &&
+        w.stepId &&
+        stepIndex(w.stepId) > stepIndex(filterState.maxStep)) ||
+      (filterState.minStep &&
+        w.stepId &&
+        stepIndex(w.stepId) < stepIndex(filterState.minStep)) ||
+      (filterState.minSection > minSection &&
+        w.sectionSeq < filterState.minSection) ||
+      (filterState.maxSection > -1 && w.sectionSeq > filterState.maxSection) ||
+      (filterState.assignedToMe &&
+        w.discussionCount === 0 &&
+        sectionScheme !== undefined &&
+        !!assign &&
+        assign.id !== user &&
+        myGroups.findIndex((g) => g.id === assign.id) < 0))
+  );
+};
+
+export interface GetSheetProps {
+  plan: string;
+  sections: SectionD[];
+  passages: PassageD[];
+  organizationSchemeSteps: OrganizationSchemeStepD[];
+  flat: boolean;
+  projectShared: boolean;
+  memory: Memory;
+  orgWorkflowSteps: OrgWorkflowStepD[];
+  wfStr: IWorkflowStepsStrings;
+  filterState: ISTFilterState;
+  minSection: number;
+  hasPublishing: boolean;
+  hidePublishing: boolean;
+  doneStepId: string;
+  getDiscussionCount: (
+    passageId: string,
+    stepId?: string,
+    assumeAssigned?: boolean
+  ) => number;
+  graphicFind: (
+    rec: InitializedRecord,
+    ref?: string
+  ) => {
+    uri: string | undefined;
+    rights: string | undefined;
+    url: string | undefined;
+    color: string | undefined;
+  };
+  getPublishTo: (
+    publishTo: string,
+    hasPublishing: boolean,
+    shared: boolean,
+    noDefault?: boolean
+  ) => PublishDestinationEnum[];
+  publishStatus: (destinations: PublishDestinationEnum[]) => string;
+  getSharedResource: (p: PassageD) => SharedResourceD | undefined;
+  noteCategory?: (sr?: SharedResourceD) => string | undefined;
+  current?: ISheet[];
+  user: string;
+  myGroups: GroupD[];
+  isDeveloper?: boolean;
+}
+
+export const getSheet = ({
+  plan,
+  sections,
+  passages,
+  organizationSchemeSteps,
+  flat,
+  projectShared,
+  memory,
+  orgWorkflowSteps,
+  wfStr,
+  filterState,
+  minSection,
+  hasPublishing,
+  hidePublishing,
+  doneStepId,
+  getDiscussionCount,
+  graphicFind,
+  getPublishTo,
+  publishStatus,
+  getSharedResource,
+  noteCategory,
+  current,
+  user,
+  myGroups,
+  isDeveloper = false,
+}: GetSheetProps) => {
+  // Hierarchical current (standalone Section headers) cannot merge into a
+  // flat sheet: leftover Passage kinds and Section rows would stay (TT-7641).
+  const staleHierarchical =
+    Boolean(flat) && Boolean(current?.some((r) => r.kind === IwsKind.Section));
+  const myWork = current && !staleHierarchical ? current : Array<ISheet>();
+  const plansections = sections
+    .filter((s) => related(s, 'plan') === plan)
+    .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum);
+  let sectionfiltered = false;
+  let schemeId: string | undefined = undefined;
+  plansections.forEach((section) => {
+    let item = { ...initItem };
+    let curSection = 1;
+    let curSectionPublished = false;
+    let sectionIndex: number | undefined;
+    let sectionScheme: RecordIdentity | undefined;
+    if (section.attributes) {
+      item.level = section.attributes.level || SheetLevel.Section;
+      item.kind = flat ? IwsKind.SectionPassage : IwsKind.Section;
+      item.sectionId = { type: 'section', id: section.id };
+      item.sectionSeq = section.attributes.sequencenum;
+      item.passageType =
+        item.level === SheetLevel.Movement
+          ? PassageTypeEnum.MOVEMENT
+          : item.level === SheetLevel.Book && item.sectionSeq === BookSeq
+            ? PassageTypeEnum.BOOK
+            : item.level === SheetLevel.Book && item.sectionSeq === AltBkSeq
+              ? PassageTypeEnum.ALTBOOK
+              : PassageTypeEnum.PASSAGE;
+      item.reference =
+        item.passageType === PassageTypeEnum.PASSAGE
+          ? ''
+          : item.level === SheetLevel.Book && isDeveloper
+            ? section.attributes.state
+            : item.passageType;
+      item.title = section?.attributes?.name;
+      schemeId = related(section, 'organizationScheme');
+      item.scheme = schemeId
+        ? { type: 'organizationscheme', id: schemeId }
+        : undefined;
+      sectionScheme = item.scheme;
+      item.sectionUpdated = section.attributes.dateUpdated;
+      item.passageSeq = 0;
+      item.deleted = false;
+      sectionfiltered = isSectionFiltered(
+        filterState,
+        minSection,
+        item.sectionSeq,
+        hidePublishing,
+        item.reference
+      );
+      item.filtered = sectionfiltered;
+      item.published = getPublishTo(
+        section.attributes.publishTo,
+        hasPublishing,
+        projectShared,
+        true
+      );
+      curSectionPublished = section.attributes.published;
+      const existingSec = myWork.find((w) => w.sectionId?.id === section.id);
+      const sectionTouched =
+        !existingSec ||
+        Boolean(
+          item.sectionUpdated &&
+          existingSec.sectionUpdated &&
+          item.sectionUpdated > existingSec.sectionUpdated
+        );
+      if (sectionTouched) {
+        const gr = graphicFind(section);
+        item.graphicUri = gr?.uri;
+        item.graphicRights = gr?.rights;
+        item.graphicFullSizeUrl = gr?.url;
+      }
+      const titleMediaId = related(section, 'titleMediafile');
+      item.titleMediaId = titleMediaId
+        ? { type: 'mediafile', id: titleMediaId }
+        : undefined;
+      curSection = item.sectionSeq;
+    }
+    let first = true;
+    let hasOnePassage = false;
+    if (item.kind === IwsKind.Section) {
+      sectionIndex = shtSectionAdd(myWork, item);
+      item = { ...initItem };
+    }
+    const sectionPassages = passages
+      .filter((p) => related(p, 'section') === section.id)
+      .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum);
+    sectionPassages.forEach((passage) => {
+      const passAttr = passage.attributes;
+      if (passAttr) {
+        if (!flat || !first) {
+          item.level = SheetLevel.Passage;
+          item.kind = IwsKind.Passage;
+        }
+        first = false;
+        item.sectionSeq = curSection;
+        item.passageSeq = passAttr.sequencenum;
+        item.book = passAttr.book;
+        item.reference = passAttr.reference;
+        item.comment = passAttr.title;
+        item.passageUpdated = passage.attributes.dateUpdated;
+        item.passage = passage;
+        item.passageType = passageTypeFromRef(passAttr.reference, flat);
+        item.sharedResource = getSharedResource(passage);
+        //the passage reference only caches NOTE|{category}; the shared resource
+        //knows the real category, so a rebuild cannot lose it (TT-7713)
+        const noteRef = noteCategoryRef(
+          item.reference,
+          noteCategory?.(item.sharedResource)
+        );
+        if (noteRef && noteRef !== item.reference) {
+          //a stored reference carrying no category at all is the TT-7713
+          //corruption, so flag the row and let the next sheet save write the
+          //repair back. A reference that only names the category differently
+          //(a rename, or the reader's language) is left unflagged, or readers
+          //in different languages would rewrite each other's rows.
+          const wasBare = noteCategoryOf(item.reference) === '';
+          item.reference = noteRef;
+          //keep the row's passage snapshot in step, as the merge path does
+          item.passage = {
+            ...passage,
+            attributes: { ...passage.attributes, reference: noteRef },
+          } as PassageD;
+          if (wasBare) item.passageUpdated = currentDateTime();
+        }
+        let mediaRec: MediaFileD | null;
+        if (item.sharedResource) {
+          mediaRec =
+            getVernacularMediaRec(
+              related(item.sharedResource, 'passage'),
+              memory
+            ) || null;
+        } else mediaRec = getVernacularMediaRec(passage.id, memory) || null;
+
+        item.mediaId = mediaRec
+          ? { type: 'mediafile', id: mediaRec.id }
+          : undefined;
+        item.mediaShared =
+          projectShared || (curSectionPublished && !hidePublishing)
+            ? getMediaShared(related(mediaRec, 'passage'), memory)
+            : IMediaShare.NotPublic;
+
+        if (item.mediaShared === IMediaShare.OldVersionOnly) {
+          const all = getAllMediaRecs(
+            related(mediaRec, 'passage'),
+            memory,
+            null
+          );
+          const pub = all.find((m) => m.attributes.readyToShare);
+          const oldpublished = getPublishTo(
+            pub?.attributes?.publishTo || '{}',
+            hasPublishing,
+            projectShared,
+            true
+          );
+          item.published = oldpublished;
+          item.publishStatus = publishStatus(oldpublished);
+        } else {
+          const published = getPublishTo(
+            mediaRec?.attributes?.publishTo || '{}',
+            hasPublishing,
+            projectShared,
+            true
+          );
+          item.published = published;
+          item.publishStatus = publishStatus(published);
+        }
+        const stepId = getNextStep({
+          psgCompleted: getStepComplete(passage),
+          orgWorkflowSteps,
+        });
+        const stepRec = orgWorkflowSteps.find((s) => s.id === stepId);
+        if (stepRec) {
+          const strTag = toCamel(stepRec.attributes.name);
+          item.step = Object.hasOwn(wfStr, strTag)
+            ? addPt(wfStr.getString(strTag) ?? stepRec.attributes.name)
+            : stepRec.attributes.name;
+          item.stepId = stepRec.id;
+          const schemeStep = organizationSchemeSteps.find(
+            (s) =>
+              related(s, 'orgWorkflowStep') === stepId &&
+              related(s, 'organizationscheme') === schemeId
+          );
+          if (schemeStep) {
+            item.assign = (schemeStep.relationships?.user?.data ||
+              schemeStep.relationships?.group?.data) as RecordIdentity;
+          }
+        }
+        item.discussionCount = item.passage.id
+          ? getDiscussionCount(item.passage.id)
+          : 0;
+        item.stepDiscussionCount =
+          item.passage.id && item.stepId
+            ? getDiscussionCount(item.passage.id, item.stepId)
+            : 0;
+        item.deleted = false;
+        item.filtered =
+          sectionfiltered ||
+          isPassageFiltered(
+            item,
+            filterState,
+            minSection,
+            hidePublishing,
+            orgWorkflowSteps,
+            doneStepId,
+            sectionScheme,
+            item.assign,
+            user,
+            myGroups
+          );
+      }
+      const { rec, touched, refChanged } = shtPassageAdd(
+        myWork,
+        item,
+        sectionIndex
+      );
+      if (
+        (touched || refChanged) &&
+        [PassageTypeEnum.NOTE, PassageTypeEnum.CHAPTERNUMBER].includes(
+          rec.passageType
+        ) &&
+        rec.passage
+      ) {
+        const gr = graphicFind(rec.passage, rec.reference);
+        rec.graphicUri = gr?.uri;
+        rec.graphicRights = gr?.rights;
+        rec.graphicFullSizeUrl = gr?.url;
+        rec.color = gr?.color;
+      }
+      if (!item.filtered) hasOnePassage = true;
+      item = { ...initItem };
+    });
+    if (myWork[sectionIndex!]) {
+      const rec = myWork[sectionIndex!];
+      if (rec) {
+        // Book/AltBook headers have no passages by design — keep them visible.
+        if (
+          !hasOnePassage &&
+          filterState.assignedToMe &&
+          rec.level !== SheetLevel.Book
+        ) {
+          rec.filtered = true;
+        }
+      }
+    }
+  });
+  // Late Orbit waves append new sections via shtSectionAdd; restore cold-build
+  // order so Book/AltBook/Movement land by sequencenum (TT-7648).
+  return myWork.sort(
+    (i, j) => i.sectionSeq - j.sectionSeq || i.passageSeq - j.passageSeq
+  );
+};

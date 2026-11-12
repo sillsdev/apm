@@ -1,0 +1,72 @@
+import {
+  filterFilesBySizeLimit,
+  oversizedFileList,
+} from '../utils/filterFilesBySizeLimit';
+import { MB } from '../utils/mb';
+import { typeLimit } from '../utils/typeLimit';
+import { UploadType } from './UploadType';
+
+jest.mock('../../api-variable', () => ({
+  API_CONFIG: { sizeLimit: '30' },
+}));
+
+const bytes = (megabytes: number) => megabytes * MB;
+
+describe('typeLimit', () => {
+  it('uses API size limit for section/passage resource uploads', () => {
+    expect(typeLimit(UploadType.Resource)).toBe(30);
+    expect(typeLimit(UploadType.Media)).toBe(30);
+  });
+
+  it('uses 50 MB for general (project) resource uploads', () => {
+    expect(typeLimit(UploadType.ProjectResource)).toBe(50);
+  });
+});
+
+describe('filterFilesBySizeLimit', () => {
+  const file = (name: string, sizeBytes: number) =>
+    ({ name, size: sizeBytes }) as File;
+
+  it('accepts files at or under the limit', () => {
+    const files = [file('a.mp3', bytes(30)), file('b.mp3', bytes(10))];
+    const { accepted, rejected } = filterFilesBySizeLimit(files, 30);
+    expect(accepted).toHaveLength(2);
+    expect(rejected).toHaveLength(0);
+  });
+
+  it('rejects files over the limit', () => {
+    const files = [file('big.mp3', bytes(31))];
+    const { accepted, rejected } = filterFilesBySizeLimit(files, 30);
+    expect(accepted).toHaveLength(0);
+    expect(rejected).toEqual(files);
+  });
+
+  it('accepts a 31 MB file under the 50 MB general limit', () => {
+    const files = [file('general.mp3', bytes(31))];
+    const { accepted, rejected } = filterFilesBySizeLimit(
+      files,
+      typeLimit(UploadType.ProjectResource)
+    );
+    expect(accepted).toEqual(files);
+    expect(rejected).toHaveLength(0);
+  });
+
+  it('rejects a 31 MB file under the 30 MB section limit', () => {
+    const files = [file('section.mp3', bytes(31))];
+    const { accepted, rejected } = filterFilesBySizeLimit(
+      files,
+      typeLimit(UploadType.Resource)
+    );
+    expect(accepted).toHaveLength(0);
+    expect(rejected).toEqual(files);
+  });
+
+  it('lists each oversized filename with its own size', () => {
+    expect(
+      oversizedFileList([
+        { name: 'take.wav', size: bytes(31) },
+        { name: 'clip.ogg', size: bytes(40.4) },
+      ])
+    ).toBe('take.wav (31.00MB), clip.ogg (40.40MB)');
+  });
+});

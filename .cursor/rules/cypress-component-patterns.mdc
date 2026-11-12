@@ -1,0 +1,30 @@
+---
+description: Cypress component mount patterns. Use when writing or fixing *.cy.tsx specs, cy.mount providers, Orbit mock memory, PlanTabSelect, or WorkflowStepsMobile.
+globs: web/**/*.cy.tsx,web/**/*.cy.ts
+alwaysApply: false
+---
+
+# Cypress component patterns
+
+Run commands and worktree setup: `.cursor/rules/cypress-testing-takeaways.mdc`.
+
+- Build the provider stack: `GlobalProvider`, Redux store, `OrbitContext`, and feature contexts (`PassageDetailContext`, `UnsavedContext`). Prefer that over stubbing ESM imports.
+- `useOrbitData` reads `memory.cache.query((q) => q.findRecords(type))` and uses `cache.liveQuery` only for change notifications. Serve both from one `findRecords`. A live-query mock that returns rows while `cache.query` returns `[]` is a false green.
+- Drive `useStepPermissions` with mock records and relationships.
+- Localization selectors need `LocalizedStrings` in the matching `strings` slice keys.
+- Use stable DOM selectors (ids, `data-cy`). Scope list and table assertions to the region under test. MUI checkboxes and the feature list are both `.MuiListItem-root`; a project name in the checkbox list satisfies an unscoped text query.
+- Navigation that uses `usePassageNavigate` needs `MemoryRouter` + `Routes`, with `UnsavedContext.checkSavedFn` invoking its callback immediately. `PlanTabSelect` and `PlanBar` need that same provider.
+- `nextPasId` / `prevPasId` come from `section.relationships.passages` and memory records. Empty relationships mean no neighbors.
+- `WorkflowStepsMobile` renders SVG stages. Assert `svg` / `svg g` or wrapper labels. Keep `workflow` / `currentstep` defaults when overriding. Set the viewport and dispatch `resize` after mount so the width-driven step list is computed.
+- Busy or recording state: assert `setCurrentStep` calls and snack messages.
+- Pagination needs enough steps and a small viewport to expose `prev` / `next`.
+
+```ts
+const mockStringsReducer = () => ({
+  loaded: true,
+  lang: 'en',
+  passageDetailStepComplete: new LocalizedStrings({
+    en: { title: 'Complete' },
+  }),
+});
+```

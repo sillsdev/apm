@@ -1,0 +1,847 @@
+import React from 'react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { IRegion } from '../../crud/useWavesurferRegions';
+import { CLAUSE_BOUNDARY_THRESHOLD_SEC } from './carefulSpeech/carefulSpeechBoundary';
+import {
+  CAREFUL_SPEECH_COMPLETED_RGBA,
+  CAREFUL_SPEECH_PENDING_RGBA,
+} from '../../utils/carefulSpeechSegmentColors';
+
+/**
+ * Behavioural spec for the Careful Speech orchestration (TT-7360).
+ *
+ * The real player (PassageDetailPlayer -> WSAudioPlayer/MediaRecord) drives the
+ * region events that this component reacts to. We mock the player so we can:
+ *   - hand the component a controllable `controlsRef` (isReady/gotoTime/setPlay),
+ *   - fire `onSegmentPlaybackEnd` to simulate a clause finishing playback,
+ *   - simulate the engine moving the "current segment" (tap or overshoot).
+ *
+ * CarefulSpeechControls is mocked so we can assert the props the parent feeds it
+ * (phase, recordingPassStarted, allowRecord, allClausesComplete).
+ */
+
+// ---- 8 clause regions, 10s each ---------------------------------------------
+const regions: IRegion[] = Array.from({ length: 8 }, (_, i) => ({
+  start: i * 10,
+  end: (i + 1) * 10,
+  label: '',
+}));
+
+// The component seeks to start + threshold (or 0 for the first clause) when
+// positioning/playing a clause — mirror that in expectations.
+const seekFor = (i: number) =>
+  regions[i].start > 0 ? regions[i].start + CLAUSE_BOUNDARY_THRESHOLD_SEC : 0;
+
+// ---- mutable test state shared with the mocks -------------------------------
+let mockCompleted = new Set<number>();
+let controlsProps: Record<string, unknown> | undefined;
+let playerProps: Record<string, unknown> | undefined;
+let mockRecordingRow:
+  | { mediafile: { id: string; attributes?: { sourceSegments?: string } } }
+  | undefined;
+
+const mockSetStepComplete = jest.fn().mockResolvedValue(undefined);
+const mockWaitForSave = jest.fn().mockResolvedValue(undefined);
+const mockStartSave = jest.fn();
+const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
+
+const stubControls = {
+  isReady: jest.fn(() => true),
+  isPlaying: jest.fn(() => false),
+  gotoTime: jest.fn().mockResolvedValue(undefined),
+  setPlay: jest.fn(),
+  applyRegionColors: jest.fn(),
+  loadRegionsJson: jest.fn(),
+};
+
+// The PassageDetailContext value. getCurrentSegment / currentSegmentIndex stand
+// in for the wavesurfer engine's notion of the selected region.
+const ctx: {
+  _seg: IRegion | undefined;
+  currentSegmentIndex: number;
+  [k: string]: unknown;
+} = {
+  _seg: regions[0],
+  currentSegmentIndex: 0,
+  passage: { id: 'p1', type: 'passage' },
+  playerMediafile: { id: 'm1', type: 'mediafile' },
+  mediafileId: 'm1',
+  rowData: [],
+  currentstep: 'step1',
+  section: { id: 's1', type: 'section' },
+  setPlaying: jest.fn(),
+  setRecording: jest.fn(),
+  forceRefresh: jest.fn(),
+  getCurrentSegment: jest.fn(() => ctx._seg),
+  isBoldWorkflow: true,
+  carefulSpeechSegParams: {},
+  setCarefulSpeechSegParams: jest.fn(),
+  setStepComplete: mockSetStepComplete,
+  stepComplete: jest.fn(() => mockStepComplete),
+  // updating the engine segment keeps getCurrentSegment consistent with the
+  // index the component believes it is on.
+  setCurrentSegment: jest.fn((region: IRegion) => {
+    ctx._seg = region;
+    ctx.currentSegmentIndex += 1;
+  }),
+};
+
+// ---- mocks ------------------------------------------------------------------
+jest.mock('../../context/usePassageDetailContext', () => () => ctx);
+
+jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => ({
+  useGuidedPhraseSegments: () => ({
+    phraseSegs: { mediaId: '', segments: '[]' },
+    setPhraseSegsForCurrentMedia: jest.fn(),
+    bootstrapped: true,
+    ensureSegments: jest.fn().mockResolvedValue(true),
+    resetForScope: jest.fn(),
+    resegmentWithParams: jest.fn().mockResolvedValue(false),
+    resetToDefaultSegments: jest.fn().mockResolvedValue(false),
+    persistPhraseSegments: jest.fn().mockResolvedValue(undefined),
+  }),
+}));
+
+jest.mock('../../utils/namedSegments', () => {
+  const actual = jest.requireActual('../../utils/namedSegments');
+  return { ...actual, getSortedRegions: jest.fn(() => regions) };
+});
+
+jest.mock('./carefulSpeech/carefulSpeechCompletion', () => {
+  const actual = jest.requireActual('./carefulSpeech/carefulSpeechCompletion');
+  return {
+    ...actual,
+    getCompletedClauseIndices: jest.fn(() => mockCompleted),
+    getRecordingForClause: jest.fn(() => mockRecordingRow),
+  };
+});
+
+jest.mock('../../crud', () => ({
+  ArtifactTypeSlug: { CarefulSpeech: 'careful-speech' },
+  remoteIdGuid: jest.fn((_t: string, id: string) => id),
+  useArtifactType: () => ({ getTypeId: () => 'art1' }),
+  useStepTool: () => ({ settings: { artifactTypeId: 'art1' } }),
+}));
+jest.mock('../../crud/related', () => ({ related: () => 'p1' }));
+jest.mock('../../utils/useStepPermission', () => ({
+  useStepPermissions: () => ({ canDoSectionStep: () => true }),
+}));
+jest.mock('../../utils/passageDefaultFilename', () => ({
+  passageDefaultFilename: () => 'file.ogg',
+}));
+jest.mock('../../selector', () => ({
+  carefulSpeechSelector: jest.fn(),
+  sharedSelector: jest.fn(),
+  mediaTabSelector: jest.fn(),
+  mediaTitleSelector: jest.fn(),
+}));
+jest.mock('react-redux', () => ({
+  useSelector: () => ({
+    boldOnly: 'BOLD only',
+    allComplete: 'All clauses recorded',
+    clause: 'Clause: {0}',
+    clearRecording: 'Clear',
+    combineWithNextClause: 'Combine',
+    fewerClauses: 'Fewer',
+    moreClauses: 'More',
+    nextClause: 'Next',
+    splitClause: 'Split',
+    speaker: 'Speaker',
+    startRecording: 'Start',
+    undo: 'Undo',
+    // mediaTitle + mediaTab strings the save-failure banner reads
+    uploadFailed: 'Upload Failed!',
+    pendingUploadRetryOne: 'Retry',
+  }),
+  shallowEqual: jest.fn(),
+}));
+jest.mock('../../context/useGlobal', () => ({
+  useGlobal: (key: string) =>
+    key === 'memory'
+      ? [{ keyMap: {}, update: mockMemoryUpdate }, jest.fn()]
+      : [undefined, jest.fn()],
+}));
+jest.mock('../../context/UnsavedContext', () => {
+  const ReactActual = jest.requireActual<typeof import('react')>('react');
+  return {
+    UnsavedContext: ReactActual.createContext({
+      state: { startSave: mockStartSave, waitForSave: mockWaitForSave },
+    }),
+  };
+});
+jest.mock('../../hoc/useOrbitData', () => ({
+  useOrbitData: () => [
+    { id: 'm1', type: 'mediafile', attributes: { versionNumber: 1 } },
+  ],
+}));
+
+jest.mock('./PassageDetailPlayer', () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    playerProps = props;
+    const ref = props.controlsRef as { current: unknown } | undefined;
+    if (ref) ref.current = stubControls;
+    return <div data-testid="player" />;
+  },
+}));
+
+jest.mock('./carefulSpeech/CarefulSpeechControls', () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    controlsProps = props;
+    return <div data-testid="controls" />;
+  },
+}));
+
+let mockStepComplete = false;
+
+// imported after the mocks so the component picks them up
+import { PassageDetailCarefulSpeech } from './PassageDetailCarefulSpeech';
+
+// Fire the player's region-out callback for a given clause.
+const firePlaybackEnd = async (idx: number) => {
+  const cb = playerProps?.onSegmentPlaybackEnd as
+    ((r: IRegion) => void) | undefined;
+  await act(async () => {
+    cb?.(regions[idx]);
+  });
+};
+
+// Simulate the engine selecting a different clause (tap, or overshoot), then
+// let the component's effects react.
+const moveEngineToClause = async (
+  idx: number,
+  rerender: (ui: React.ReactElement) => void
+) => {
+  ctx._seg = regions[idx];
+  ctx.currentSegmentIndex += 1;
+  await act(async () => {
+    rerender(<PassageDetailCarefulSpeech width={400} />);
+  });
+};
+
+const mountAndSettle = async () => {
+  const utils = render(<PassageDetailCarefulSpeech width={400} />);
+  // wait for rAF -> player mount -> initial-position effect to position us
+  await waitFor(() => expect(controlsProps).toBeDefined());
+  await waitFor(() => expect(stubControls.gotoTime).toHaveBeenCalled());
+  return utils;
+};
+
+beforeEach(() => {
+  mockCompleted = new Set<number>();
+  controlsProps = undefined;
+  playerProps = undefined;
+  mockStepComplete = false;
+  mockRecordingRow = undefined;
+  ctx._seg = regions[0];
+  ctx.currentSegmentIndex = 0;
+  jest.clearAllMocks();
+  mockWaitForSave.mockResolvedValue(undefined);
+  mockSetStepComplete.mockResolvedValue(undefined);
+  stubControls.isReady.mockReturnValue(true);
+  stubControls.isPlaying.mockReturnValue(false);
+  stubControls.gotoTime.mockResolvedValue(undefined);
+});
+
+afterEach(() => cleanup());
+
+describe('PassageDetailCarefulSpeech — entry positioning', () => {
+  it('listen pass (no recordings): positions on first clause without auto-playing', async () => {
+    mockCompleted = new Set();
+    await mountAndSettle();
+
+    expect(controlsProps?.recordingPassStarted).toBe(false);
+    // positioned (gotoTime) but not auto-played (no setPlay(true))
+    expect(stubControls.gotoTime).toHaveBeenCalled();
+    expect(stubControls.setPlay).not.toHaveBeenCalledWith(true);
+  });
+
+  it('recording pass (some recordings): auto-plays the first unrecorded clause', async () => {
+    mockCompleted = new Set([0, 1]); // first incomplete is clause 2
+    await mountAndSettle();
+
+    expect(controlsProps?.recordingPassStarted).toBe(true);
+    await waitFor(() =>
+      expect(stubControls.setPlay).toHaveBeenCalledWith(true)
+    );
+    // it positioned on clause 2 before playing
+    expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(2), regions[2]);
+  });
+
+  it('all clauses recorded: enters review mode and marks step complete without advancing', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    await mountAndSettle();
+
+    expect(controlsProps?.recordingPassStarted).toBe(true);
+    expect(controlsProps?.allClausesComplete).toBe(true);
+    await waitFor(() =>
+      expect(mockWaitForSave).toHaveBeenCalledWith(undefined, 200)
+    );
+    await waitFor(() =>
+      expect(mockSetStepComplete).toHaveBeenCalledWith('step1', true)
+    );
+  });
+
+  it('marks step incomplete when any clause recording is missing', async () => {
+    mockCompleted = new Set([0, 1, 2]);
+    mockStepComplete = true;
+    await mountAndSettle();
+
+    await waitFor(() =>
+      expect(mockSetStepComplete).toHaveBeenCalledWith('step1', false)
+    );
+  });
+});
+
+describe('PassageDetailCarefulSpeech — review and clear recording', () => {
+  it('clearing a recording marks a completed step incomplete', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    mockStepComplete = true;
+    mockRecordingRow = { mediafile: { id: 'rec1' } };
+    // Removing the current clause's recording drops it from the completed set
+    // and clears its recording row — mirror that data change so the
+    // completed-clause effect doesn't re-force phase back to 'recorded'.
+    mockMemoryUpdate.mockImplementation(async () => {
+      mockCompleted = new Set([1, 2, 3, 4, 5, 6, 7]);
+      mockRecordingRow = undefined;
+    });
+    await mountAndSettle();
+
+    const onClearRecording = controlsProps?.onClearRecording as
+      (() => void) | undefined;
+    await act(async () => {
+      onClearRecording?.();
+    });
+
+    await waitFor(() => expect(mockMemoryUpdate).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockSetStepComplete).toHaveBeenCalledWith('step1', false)
+    );
+    await waitFor(() => expect(controlsProps?.phase).toBe('recordReady'));
+  });
+
+  it('review mode: tapping a completed clause does not auto-play it', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    const { rerender } = await mountAndSettle();
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    await moveEngineToClause(3, rerender);
+
+    expect(stubControls.setPlay).not.toHaveBeenCalledWith(true);
+    expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(3), regions[3]);
+    expect(controlsProps?.phase).toBe('recorded');
+  });
+});
+
+describe('PassageDetailCarefulSpeech — recording-pass playback', () => {
+  it('parks on the clause after it finishes playing (recordReady, allowRecord)', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    await mountAndSettle();
+
+    await firePlaybackEnd(2);
+
+    await waitFor(() => expect(controlsProps?.phase).toBe('recordReady'));
+    expect(controlsProps?.allowRecord).toBe(true);
+  });
+
+  it('swallows the +1 overshoot after a park (stays on the played clause)', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const { rerender } = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2, arm overshoot swallow
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    // overshoot: engine drifts into clause 3
+    await moveEngineToClause(3, rerender);
+
+    // did not start playing clause 3 ...
+    expect(stubControls.setPlay).not.toHaveBeenCalledWith(true);
+    // ... and re-asserted clause 2's start
+    expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(2), regions[2]);
+  });
+
+  it('plays a non-adjacent tapped clause (not treated as overshoot)', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const { rerender } = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2, arm overshoot swallow
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    // user taps the second-to-last clause (idx 6) — far from clause 2
+    await moveEngineToClause(6, rerender);
+
+    await waitFor(() =>
+      expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(6), regions[6])
+    );
+    expect(stubControls.setPlay).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () => {
+  it('locks the source player while a clause recording is in progress', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(playerProps?.lockSegmentSelection).toBe(true);
+  });
+
+  it('ignores segment changes while recording is in progress', async () => {
+    mockCompleted = new Set([0, 1]);
+    const { rerender } = await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    await moveEngineToClause(6, rerender);
+
+    expect(stubControls.setPlay).not.toHaveBeenCalledWith(true);
+    expect(stubControls.gotoTime).not.toHaveBeenCalledWith(
+      seekFor(6),
+      regions[6]
+    );
+    expect(controlsProps?.phase).toBe('recording');
+  });
+
+  it('sets context recording while a clause recording is in progress', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(ctx.setRecording).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — take belongs to the clause it started on (TT-7437)', () => {
+  // Start recording on clause 2 and return the resulting sourceSegments value.
+  const startTakeOnClause2 = async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const utils = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    return utils;
+  };
+
+  it('keeps the take on its clause when the selection moves mid-record', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('keeps the take on its clause when the selection change lands after stop', async () => {
+    // Even if the tap seek causes a later region-in, the take still belongs to
+    // clause 2 because recording already happened there (TT-7437).
+    const { rerender } = await startTakeOnClause2();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('keeps the take on its clause while the save is in flight', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await moveEngineToClause(6, rerender);
+
+    expect(controlsProps?.sourceSegments).toBe(JSON.stringify(regions[2]));
+  });
+
+  it('greens the clause it recorded, not the one the selection moved to', async () => {
+    const { rerender } = await startTakeOnClause2();
+
+    const colorOf = (index: number) =>
+      (
+        playerProps?.applyRegionColor as
+          ((role: string, index: number, count: number) => string) | undefined
+      )?.('base', index, 8);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await moveEngineToClause(6, rerender);
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(colorOf(2)).toBe(CAREFUL_SPEECH_COMPLETED_RGBA);
+    expect(colorOf(6)).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', () => {
+  it('after saving a take, tapping the next clause advances and resets the recorder', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const { rerender } = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2 (arms overshoot swallow)
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+    mockCompleted = new Set([0, 1, 2]);
+    expect(controlsProps?.resetMedia).toBe(false);
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    // User taps the next clause on the waveform (adjacent — same path as overshoot).
+    await moveEngineToClause(3, rerender);
+
+    await waitFor(() =>
+      expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(3), regions[3])
+    );
+    await waitFor(() => expect(controlsProps?.resetMedia).toBe(true));
+  });
+
+  it('marks the just-saved clause completed for coloring before rowData catches up', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2; rowData still lacks clause 2 after save
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    const applyRegionColor = () =>
+      (
+        playerProps?.applyRegionColor as
+          ((role: string, index: number, count: number) => string) | undefined
+      )?.('base', 2, 8);
+
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    // rowData / mockCompleted intentionally still omit clause 2 — coloring must
+    // still treat it as done so green shows when advancing (TT-7552).
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_COMPLETED_RGBA);
+    expect(stubControls.applyRegionColors).toHaveBeenCalled();
+  });
+
+  it('does not mark the clause completed when the upload returns no media id', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    const applyRegionColor = () =>
+      (
+        playerProps?.applyRegionColor as
+          ((role: string, index: number, count: number) => string) | undefined
+      )?.('base', 2, 8);
+
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )(undefined);
+    });
+
+    // Nothing was stored, so the clause must stay pending rather than showing
+    // the user a green segment for audio that was lost (TT-7583).
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
+  it('disables Next Clause and locks segments once save begins', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+
+    expect(controlsProps?.savingRecording).toBe(true);
+    expect(playerProps?.lockSegmentSelection).toBe(true);
+  });
+
+  it('does not stick saving when recording never started', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+
+    expect(controlsProps?.savingRecording).toBe(false);
+    expect(controlsProps?.phase).toBe('recordReady');
+  });
+
+  it('re-enables Next Clause after upload completes', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(controlsProps?.savingRecording).toBe(false);
+    expect(playerProps?.lockSegmentSelection).toBe(false);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
+  // Record a take and request its auto-save, then have MediaRecord reject it.
+  const recordAndRejectSave = async () => {
+    mockCompleted = new Set([0, 1]);
+    const utils = await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await act(async () => {
+      (controlsProps?.onSaveRejected as () => void)();
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('');
+    });
+    return utils;
+  };
+
+  it('shows the save failure message with a Retry button', async () => {
+    await recordAndRejectSave();
+
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    expect(controlsProps?.savingRecording).toBe(false);
+  });
+
+  it('keeps the take discardable but not re-recordable', async () => {
+    await recordAndRejectSave();
+
+    // 'recorded' is what shows the clear button and hides Record: discarding the
+    // take is the deliberate way back to recording, so a stray tap cannot
+    // silently overwrite audio that is not stored yet.
+    expect(controlsProps?.phase).toBe('recorded');
+    expect(controlsProps?.allowRecord).toBe(false);
+  });
+
+  it('locks the failed take’s clause across every boundary guard (TT-7437)', async () => {
+    await recordAndRejectSave();
+
+    // The upload failed but the take is still playable and latched to clause 2,
+    // so every boundary-editing guard must treat that clause as recorded — if
+    // the user can listen to the take, they must not reshape the segment under
+    // it, or a Retry would file the take against the altered boundaries.
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    expect(isRecorded(2)).toBe(true); // drag / +- guard
+    expect(controlsProps?.canCombineWithNext).toBe(false); // Split/Combine agree
+  });
+
+  it('re-opens the clause for editing once the failed take is cleared (TT-7437)', async () => {
+    mockRecordingRow = undefined; // nothing persisted; clearing drops the take
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    // Take gone: the same guards let clause 2 be edited again, in step.
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    expect(isRecorded(2)).toBe(false);
+    expect(controlsProps?.canCombineWithNext).toBe(true);
+  });
+
+  it('clearing a failed take resets the recorder even with no mediafile', async () => {
+    mockRecordingRow = undefined; // nothing was stored, so nothing to remove
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    await waitFor(() => expect(controlsProps?.resetMedia).toBe(true));
+  });
+
+  it('drops the message when the user moves to another clause', async () => {
+    const { rerender } = await recordAndRejectSave();
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+
+    await moveEngineToClause(3, rerender);
+
+    // The take it referred to is gone, so a Retry here could only fail.
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('Retry requests the save again and clears the message', async () => {
+    await recordAndRejectSave();
+    mockStartSave.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    });
+
+    expect(mockStartSave).toHaveBeenCalledWith('CarefulSpeechTool');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(controlsProps?.savingRecording).toBe(true);
+  });
+
+  it('clears the message when a new take starts', async () => {
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+});
+
+describe('PassageDetailCarefulSpeech — recorded-state consistency across guards (TT-7666)', () => {
+  // Every boundary-editing guard must read the same recorded view: the drag /
+  // +- guards (via isSegmentRecorded on the player) and Split/Combine (via their
+  // can* props) agree, including the optimistic window right after a save, and
+  // all re-enable together when the take is removed.
+  const recordClause2 = async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+  };
+
+  it('treats a just-saved clause as recorded for drag and for Combine alike', async () => {
+    await recordClause2();
+
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    // drag / +- guard sees clause 2 recorded (optimistic, rowData still lagging)
+    expect(isRecorded(2)).toBe(true);
+    // ...and Combine agrees — it is disabled on the same clause.
+    expect(controlsProps?.canCombineWithNext).toBe(false);
+  });
+
+  it('re-enables drag and Combine together when the take is cleared', async () => {
+    await recordClause2();
+    mockRecordingRow = undefined; // nothing persisted; clearing drops the take
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    const isRecorded = playerProps?.isSegmentRecorded as (i: number) => boolean;
+    // Both guards let go of clause 2 at once — no asymmetry (the reported bug).
+    expect(isRecorded(2)).toBe(false);
+    expect(controlsProps?.canCombineWithNext).toBe(true);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — undo history cleared at record start (TT-7666)', () => {
+  it('drops the segment-edit undo once a take is recorded', async () => {
+    mockCompleted = new Set([0, 1]); // clause 2 is the current unrecorded one
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    // Arm undo with a boundary edit (Combine).
+    await act(async () => {
+      await (controlsProps?.onCombineWithNext as () => Promise<void>)();
+    });
+    expect(controlsProps?.showUndoCombine).toBe(true);
+
+    // Recording fixes the boundaries; the undo history must be gone so it can
+    // never restore boundaries the take no longer matches.
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+    expect(controlsProps?.showUndoCombine).toBe(false);
+  });
+});

@@ -5,12 +5,10 @@
       "name": "Debug Main Process",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceRoot}",
-      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite",
-      "windows": {
-        "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite.cmd"
-      },
-      "runtimeArgs": ["--sourcemap"],
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/node_modules/vite/bin/vite.js",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
       "env": {
         "REMOTE_DEBUGGING_PORT": "9222"
       }
@@ -20,7 +18,7 @@
       "port": 9222,
       "request": "attach",
       "type": "chrome",
-      "webRoot": "${workspaceFolder}/src/renderer",
+      "webRoot": "${workspaceFolder}/web",
       "timeout": 60000,
       "presentation": {
         "hidden": true

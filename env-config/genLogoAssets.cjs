@@ -1,9 +1,9 @@
 /**
- * Regenerate every app logo asset from src/renderer/src/assets/apm-logo.svg
+ * Regenerate every app logo asset from web/src/assets/apm-logo.svg
  *
- * Rasterizing needs a Chrome/Chromium. The script uses the one puppeteer
- * downloaded; set PUPPETEER_EXECUTABLE_PATH to point at another (e.g. an
- * installed Google Chrome) when that download is missing or broken.
+ * Rasterizing needs an installed Chrome/Chromium; puppeteer-core never downloads
+ * one. The script looks in the standard install locations, or set
+ * PUPPETEER_EXECUTABLE_PATH to point at the browser executable.
  *
  * Outputs are committed, so this only needs re-running when the logo changes.
  */
@@ -11,10 +11,10 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 const root = path.resolve(__dirname, '..');
-const SOURCE = path.join(root, 'src/renderer/src/assets/apm-logo.svg');
+const SOURCE = path.join(root, 'web/src/assets/apm-logo.svg');
 
 // Measured from the source artwork: the mark is centred in the 1000x1000
 // viewBox and spans 860.34 units, so it carries ~7% padding of its own.
@@ -42,8 +42,8 @@ const cropped = (svg) =>
 // favicon.ico is read from three places: the web root, the Electron auth
 // window, and the packaged resources.
 const FAVICON_ICO = [
-  'src/renderer/public/favicon.ico',
-  'src/renderer/favicon.ico',
+  'web/public/favicon.ico',
+  'web/favicon.ico',
   'resources/favicon.ico',
 ];
 
@@ -64,26 +64,26 @@ const TARGETS = [
   // iOS draws its own rounded-rect mask and never adds padding, and it
   // composites any alpha over black — so this one must be opaque.
   {
-    out: 'src/renderer/public/apple-touch-icon.png',
+    out: 'web/public/apple-touch-icon.png',
     sizes: [180],
     pad: ART.size / VIEWBOX,
     bg: WHITE,
   },
 
   {
-    out: 'src/renderer/public/pwa-192x192.png',
+    out: 'web/public/pwa-192x192.png',
     sizes: [192],
     pad: ART.size / VIEWBOX,
     bg: null,
   },
   {
-    out: 'src/renderer/public/pwa-512x512.png',
+    out: 'web/public/pwa-512x512.png',
     sizes: [512],
     pad: ART.size / VIEWBOX,
     bg: null,
   },
   {
-    out: 'src/renderer/public/pwa-maskable-512x512.png',
+    out: 'web/public/pwa-maskable-512x512.png',
     sizes: [512],
     // Shrink until the outermost ink lands inside the safe circle, and fill
     // the rest with the plate colour so the crop has something to bite on.
@@ -384,15 +384,51 @@ const MAX_SUPERSAMPLE = 32;
 const supersampleFor = (size) =>
   Math.max(1, Math.min(MAX_SUPERSAMPLE, Math.floor(SUPERSAMPLE_TARGET / size)));
 
+// Where Chrome/Chromium usually lands on each platform.
+const CHROME_PATHS = {
+  win32: [
+    process.env.PROGRAMFILES,
+    process.env['PROGRAMFILES(X86)'],
+    process.env.LOCALAPPDATA,
+  ]
+    .filter(Boolean)
+    .map((dir) => path.join(dir, 'Google/Chrome/Application/chrome.exe')),
+  darwin: [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  ],
+  linux: [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ],
+};
+
+/** PUPPETEER_EXECUTABLE_PATH if set, else the first installed Chrome found. */
+function findChrome() {
+  const override = process.env.PUPPETEER_EXECUTABLE_PATH;
+  if (override) {
+    if (fs.existsSync(override)) return override;
+    throw new Error(`PUPPETEER_EXECUTABLE_PATH does not exist: ${override}`);
+  }
+  const found = (CHROME_PATHS[process.platform] || []).find((p) =>
+    fs.existsSync(p)
+  );
+  if (found) return found;
+  throw new Error(
+    'Could not find Chrome. Install Google Chrome, or set ' +
+      'PUPPETEER_EXECUTABLE_PATH to a Chrome/Chromium executable.'
+  );
+}
+
 async function main() {
   const svg = fs.readFileSync(SOURCE, 'utf8');
   const dataUri = `data:image/svg+xml;base64,${Buffer.from(cropped(svg)).toString('base64')}`;
 
   const browser = await puppeteer.launch({
     headless: true,
-    ...(process.env.PUPPETEER_EXECUTABLE_PATH
-      ? { executablePath: process.env.PUPPETEER_EXECUTABLE_PATH }
-      : {}),
+    executablePath: findChrome(),
   });
   const page = await browser.newPage();
 
@@ -457,12 +493,9 @@ async function main() {
 
   // A vector favicon: browsers that support it get a mark that stays sharp at
   // any size and in any pixel density, and never touch the .ico.
-  const faviconSvg = path.join(root, 'src/renderer/public/favicon.svg');
+  const faviconSvg = path.join(root, 'web/public/favicon.svg');
   fs.writeFileSync(faviconSvg, cropped(svg));
-  written.push([
-    'src/renderer/public/favicon.svg',
-    fs.statSync(faviconSvg).size,
-  ]);
+  written.push(['web/public/favicon.svg', fs.statSync(faviconSvg).size]);
 
   await browser.close();
 

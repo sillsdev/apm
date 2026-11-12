@@ -1,0 +1,207 @@
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { useBlocker, useLocation, useParams } from 'react-router-dom';
+import { isElectron } from '../../api-variable';
+import { navigationCancelled } from '../utils/useMyNavigate';
+import AppLayout from '../components/App/AppLayout';
+import {
+  PassageDetailContext,
+  PassageDetailProvider,
+} from '../context/PassageDetailContext';
+import StickyRedirect from '../components/StickyRedirect';
+import {
+  ToolSlug,
+  useProjectType,
+  useStepTool,
+  useUrlContext,
+  useArtifactType,
+  remoteIdGuid,
+} from '../crud';
+import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
+import { useMobile } from '../utils/useMobile';
+import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
+import { IMobileStrings, ISharedStrings } from '@model/index';
+import { shallowEqual, useSelector } from 'react-redux';
+import { mobileSelector, sharedSelector } from '../selector';
+import { Paper, Typography } from '@mui/material';
+import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
+import { usePaneWidth } from '../components/usePaneWidth';
+import { RecordKeyMap } from '@orbit/records';
+import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
+import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
+import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
+import PassageDetailPhraseBackTranslate from '../components/PassageDetail/PassageDetailPhraseBackTranslate';
+import PassageDetailLwcTranslation from '../components/PassageDetail/PassageDetailLwcTranslation';
+import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDetailLwcTranscription';
+import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldClauseTranscription';
+import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
+import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
+import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
+
+/**
+ * Fallback for steps mobile has no UI for yet. Reads its string here rather
+ * than taking it as a prop so it follows a runtime language change (TT-7694).
+ */
+const DesktopOnlyStep = () => {
+  const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
+  return (
+    <Paper sx={{ p: 2, m: 'auto', width: `calc(100% - 40px)` }}>
+      <Typography variant="h6" align="center" data-cy="desktop-only-step">
+        {t.desktopOnlyStep}
+      </Typography>
+    </Paper>
+  );
+};
+
+const LeaveUnsavedGuard = () => {
+  const { prjId, pasId } = useParams();
+  const getGlobal = useGetGlobal();
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const here = `/detail/${prjId}/${pasId}`;
+  const blocker = useBlocker(
+    ({ nextLocation }) =>
+      !isElectron &&
+      !nextLocation.pathname.startsWith(here) &&
+      Boolean(getGlobal('changed'))
+  );
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    if (window.confirm(ts.leaveUnsavedChanges)) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+      navigationCancelled();
+    }
+  }, [blocker, ts.leaveUnsavedChanges]);
+  return null;
+};
+
+const MobileStep = () => {
+  const { currentstep, isBoldWorkflow } = useContext(PassageDetailContext)
+    ?.state ?? {
+    currentstep: '',
+    isBoldWorkflow: false,
+  };
+  const { tool, settings } = useStepTool(currentstep);
+  const [memory] = useGlobal('memory');
+  const { slugFromId } = useArtifactType();
+  const { paneWidth } = usePaneWidth();
+
+  const artifactSlug = useMemo(() => {
+    const parsed =
+      typeof settings === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(settings || '{}') as {
+                artifactTypeId?: string;
+              };
+            } catch {
+              return {} as { artifactTypeId?: string };
+            }
+          })()
+        : ((settings as { artifactTypeId?: string }) ?? {});
+    const id = parsed?.artifactTypeId;
+    if (!id) return null;
+    const resolved =
+      remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
+    return slugFromId(resolved);
+  }, [settings, memory?.keyMap, slugFromId]);
+
+  const boldClauseTranscription = isBoldClauseTranscriptionStep(
+    tool ?? '',
+    isBoldWorkflow,
+    artifactSlug
+  );
+
+  const width = Math.max(0, paneWidth - 40);
+
+  // Steps that can repeat back-to-back share one component, so key on
+  // currentstep to remount and drop the previous step's state. (TT-7503, TT-7643)
+  switch (tool) {
+    case ToolSlug.Record:
+      return <PassageDetailRecord width={width} />;
+    case ToolSlug.Resource:
+      return <PassageDetailsArtifactsMobile />;
+    case ToolSlug.Verses:
+      return <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />;
+    case ToolSlug.CarefulSpeech:
+      return <PassageDetailCarefulSpeech key={currentstep} width={width} />;
+    case ToolSlug.PhraseBackTranslate:
+      return isBoldWorkflow ? (
+        <PassageDetailLwcTranslation key={currentstep} width={width} />
+      ) : (
+        <PassageDetailPhraseBackTranslate key={currentstep} width={width} />
+      );
+    case ToolSlug.Transcribe:
+      if (boldClauseTranscription)
+        return (
+          <PassageDetailLwcTranscription key={currentstep} width={width} />
+        );
+      // translation isn't ready on mobile yet.
+      return <DesktopOnlyStep />;
+    case ToolSlug.TeamCheck:
+      return <TeamCheckReferenceMobile width={width} />;
+    case ToolSlug.Prompt:
+      return <PassageDetailPrompt width={width} />;
+    default:
+      return <DesktopOnlyStep />;
+  }
+};
+
+const MobileDetail = () => {
+  const { isMobileWidth } = useMobile();
+  const { discussOpen } = useContext(PassageDetailContext)?.state ?? {
+    discussOpen: false,
+  };
+
+  const showSideBySide = useMemo(() => !isMobileWidth, [isMobileWidth]);
+  const flushDiscussionLeft = useMemo(
+    () => discussOpen && !showSideBySide,
+    [discussOpen, showSideBySide]
+  );
+
+  return (
+    <PassageDetailMobileDetail
+      showSideBySide={showSideBySide}
+      flushDiscussionLeft={flushDiscussionLeft}
+      // Always mount MobileStep on narrow mobile while discussion is open; unmounting
+      // drops PassageDetailRecord/MediaRecord state and clears an in-progress recording.
+      recordContent={<MobileStep />}
+    />
+  );
+};
+
+export const PassageDetail = () => {
+  const { prjId } = useParams();
+  const { pathname } = useLocation();
+  const setUrlContext = useUrlContext();
+  const [view, setView] = useState('');
+  const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
+  const [user] = useGlobal('user');
+  const { setProjectType } = useProjectType();
+  const { isMobile } = useMobile();
+
+  useEffect(() => {
+    const projectId = setUrlContext(prjId ?? '');
+    if (user) {
+      const tmp = setProjectType(projectId);
+      if (projType === '' && !tmp) {
+        // If user is set but we don't have this project, go to the team screen
+        setView('/team');
+      }
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []);
+
+  if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
+
+  return (
+    <AppLayout appHeadProps={{ drawBottomBorder: false }}>
+      <LeaveUnsavedGuard />
+      <PassageDetailProvider>
+        {isMobile ? <MobileDetail /> : <PassageDetailGrids />}
+      </PassageDetailProvider>
+    </AppLayout>
+  );
+};
+export default PassageDetail;

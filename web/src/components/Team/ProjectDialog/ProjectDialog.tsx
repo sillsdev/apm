@@ -1,0 +1,259 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { IVProjectStrings } from '../../../model';
+import {
+  Box,
+  Dialog,
+  DialogContent,
+  Tabs,
+  Tab,
+  SxProps,
+  Stack,
+  FormLabel,
+} from '@mui/material';
+import {
+  ProjectName,
+  ProjectDescription,
+  ProjectType,
+  ProjectAdvanced,
+  Language,
+  ILanguage,
+} from '.';
+import Mode from '../../../model/dialogMode';
+import { IDialog } from '../../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { vProjectSelector } from '../../../selector';
+import { ProjectStory } from './ProjectStory';
+import { ProjectScripture } from './ProjectScripture';
+import { StyledDialogTitle } from '../../StyledDialogTitle';
+import Tags from '../../../control/Tags';
+import { AltActionBar } from '../../../components/AltActionBar';
+import { initProjectState, IProjectDialog } from './projectDialogTypes';
+import { BOLD_WORKFLOW_PROCESS, useTeamWorkflowProcess } from '../../../crud';
+
+interface IProps extends IDialog<IProjectDialog> {
+  nameInUse?: (newName: string) => boolean;
+  team?: string;
+}
+
+const tabProps = {
+  width: '50%',
+} as SxProps;
+
+export function ProjectDialog(props: IProps) {
+  const { mode, values, isOpen, onOpen, onCommit, onCancel, nameInUse, team } =
+    props;
+  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
+  // respond to changes in the language setting until the dialog is reopened.
+  const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
+  const initState = { ...initProjectState };
+  initState.organizedBy = 'section';
+  initState.vProjectStrings = t;
+  const [state, setState] = React.useState({ ...initState });
+  const [originalState, setOriginalState] = React.useState({ ...initState });
+  const { name, type, bcp47 } = state;
+  const [basicTab, setBasicTab] = useState(true);
+  const addingRef = React.useRef(false);
+  const wasOpenRef = React.useRef(false);
+  const teamWorkflow = useTeamWorkflowProcess(team);
+
+  const initTags = useMemo(
+    () => ({
+      [t.testing]: false,
+      [t.backtranslation]: false,
+      [t.training]: false,
+    }),
+    [t]
+  );
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      setState(!values ? { ...initState } : { ...values });
+      setOriginalState(!values ? { ...initState } : { ...values });
+      addingRef.current = false;
+    }
+    wasOpenRef.current = isOpen;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, values]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== Mode.add || !team) return;
+    if (teamWorkflow !== BOLD_WORKFLOW_PROCESS) return;
+    setState((s) => ({
+      ...s,
+      type: 'other',
+      flat: false,
+      organizedBy: 'story',
+    }));
+  }, [isOpen, mode, team, teamWorkflow]);
+
+  const handleClose = () => {
+    if (onOpen) onOpen(false);
+    if (onCancel) onCancel();
+  };
+
+  const handleAdd = () => {
+    if (!addingRef.current) {
+      addingRef.current = true;
+
+      if (onOpen) onOpen(false);
+      const scripture =
+        state.type === 'scripture'
+          ? {}
+          : // the Scripture fields stay in the draft while hidden, in case the
+            // user switches back, but only a Scripture project saves them
+            { book: originalState.book, referenceTexts: [] };
+      onCommit({ ...state, ...scripture, name: state.name.trim() });
+    }
+  };
+
+  const handleTypeChange = (val: string) => {
+    setState((state) => ({ ...state, type: val || '' }));
+  };
+
+  const handleLanguageChange = (val: ILanguage) => {
+    setState((state) => ({ ...state, ...val }));
+  };
+
+  const [value, setValue] = useState(0);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+    if (newValue === 0) {
+      setBasicTab(true);
+    } else {
+      setBasicTab(false);
+    }
+  };
+
+  return (
+    <Dialog
+      id="projectSettings"
+      open={isOpen}
+      onClose={handleClose}
+      aria-labelledby="projectDlg"
+      scroll={'paper'}
+      disableEnforceFocus
+      maxWidth="md"
+      fullWidth
+    >
+      <StyledDialogTitle id="projectDlg">
+        {t.newProject.replace('{0}', mode === Mode.add ? t.configure : t.edit)}
+      </StyledDialogTitle>
+      <Tabs
+        value={value}
+        onChange={handleTabChange}
+        sx={{
+          maxWidth: '400px',
+          width: '100%',
+          '& .MuiTabs-indicator': {
+            backgroundColor: 'secondary.dark',
+            height: '2px',
+          },
+          '& .Mui-selected': {
+            color: 'secondary.dark',
+          },
+        }}
+      >
+        <Tab label={t.basic} sx={tabProps} />
+        <Tab label={t.advanced} sx={tabProps} />
+      </Tabs>
+      {basicTab ? (
+        <Box>
+          <DialogContent>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: '32px',
+              }}
+            >
+              <ProjectName
+                state={state}
+                setState={setState}
+                inUse={nameInUse}
+              />
+              <ProjectDescription state={state} setState={setState} />
+            </Box>
+            {teamWorkflow !== BOLD_WORKFLOW_PROCESS && (
+              <>
+                <ProjectType
+                  type={type}
+                  onChange={handleTypeChange}
+                  team={team}
+                />
+                <ProjectStory state={state} setState={setState} />
+                {type === 'scripture' && (
+                  <ProjectScripture
+                    state={state}
+                    setState={setState}
+                    team={team}
+                  />
+                )}
+              </>
+            )}
+            <Stack sx={{ pt: 1, pb: 2 }}>
+              <Language
+                {...state}
+                onChange={handleLanguageChange}
+                direction="row"
+                hideSpelling
+                sx={{ pt: 0 }}
+              />
+            </Stack>
+            <FormLabel sx={{ color: 'secondary.light' }}>{t.tags}</FormLabel>
+            <Tags
+              label={t.newTag}
+              tags={
+                Object.keys(state?.tags).length > 0 ? state?.tags : initTags
+              }
+              onChange={(tags) => setState((state) => ({ ...state, tags }))}
+            />
+          </DialogContent>
+        </Box>
+      ) : (
+        <Box>
+          <DialogContent>
+            <ProjectAdvanced
+              state={state}
+              setState={setState}
+              addMode={mode === Mode.add}
+              team={team}
+            />
+          </DialogContent>
+        </Box>
+      )}
+
+      <AltActionBar
+        primaryLabel={mode === Mode.add ? t.add : t.save}
+        primaryOnClick={handleAdd}
+        primaryDisabled={
+          (nameInUse && nameInUse(name.trim())) ||
+          !name.trim() ||
+          bcp47 === 'und' ||
+          type === '' ||
+          (mode !== Mode.add && shallowEqual(state, originalState))
+        }
+        primaryKey={'add'}
+        primaryAria={t.add}
+        altShown={true}
+        altLabel={t.cancel}
+        altOnClick={handleClose}
+        altKey={'cancel'}
+        altAria={t.cancel}
+        sx={{
+          position: 'sticky',
+          bottom: '0px',
+          padding: '10px 0px',
+          paddingLeft: '10px',
+          pointerEvents: 'auto',
+          zIndex: '10',
+          borderTop: '1px solid lightgray',
+          backgroundColor: 'primary.contrastText',
+        }}
+      />
+    </Dialog>
+  );
+}
+
+export default ProjectDialog;

@@ -1,0 +1,6 @@
+{
+  "*.+(js|jsx|ts|tsx)": ["eslint"],
+  "*.{js,jsx,ts,tsx,json,css,md,mdx,html}": [
+    "prettier --config ../.prettierrc.yaml --ignore-path ../.prettierignore --write"
+  ]
+}

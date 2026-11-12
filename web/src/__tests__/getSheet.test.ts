@@ -1,0 +1,1610 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { jest, afterEach, expect, test } from '@jest/globals';
+import { cleanup } from '@testing-library/react';
+import {
+  ISheet,
+  IWorkflowStepsStrings,
+  SectionD,
+  PassageD,
+  OrgWorkflowStepD,
+  SheetLevel,
+  IwsKind,
+  IMediaShare,
+  SharedResourceD,
+} from '../model';
+import Memory from '@orbit/memory';
+import { getSheet } from '../components/Sheet/getSheet';
+import { isPassageUpdated } from '../components/Sheet/isSectionPassageUpdated';
+import { InitializedRecord } from '@orbit/records';
+import { ISTFilterState } from '../components/Sheet/filterMenu';
+import { PassageTypeEnum } from '../model/passageType';
+import { BookSeq, AltBkSeq } from '../model/section';
+import { PublishDestinationEnum } from '../crud/usePublishDestination';
+import { OrganizationSchemeStepD } from '../model/organizationSchemeStep';
+
+const mockMemory = {} as Memory;
+
+jest.mock('../crud/media', () => ({
+  getVernacularMediaRec: jest.fn(),
+  getMediaShared: jest.fn(),
+}));
+
+const wfStr = {
+  internalize: 'Internalize',
+  peerReview: 'Peer Review',
+  record: 'Record',
+  teamCheck: 'Team Check',
+  getString: (v: string) => (wfStr as any)[v],
+} as IWorkflowStepsStrings;
+
+const s1 = {
+  type: 'section',
+  id: 's1',
+  attributes: {
+    sequencenum: 1,
+    name: 'Intro',
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+  },
+  relationships: {
+    plan: { data: { type: 'plan', id: 'pl1' } },
+    transcriber: {},
+    editor: {},
+    passages: { data: [{ type: 'passage', id: 'pa1' }] },
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as SectionD;
+
+const pa1 = {
+  type: 'passage',
+  id: 'pa1',
+  attributes: {
+    sequencenum: 1,
+    book: 'LUK',
+    reference: '1:1-4',
+    state: 'transcribeReady',
+    title: 'salutation',
+    lastComment: '',
+    hold: false,
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+    stepComplete: '',
+  },
+  relationships: {
+    section: { data: { type: 'section', id: 's1' } },
+    users: { data: [{ type: 'user', id: 'u1' }] },
+    media: {},
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as PassageD;
+
+const pa2 = {
+  type: 'passage',
+  id: 'pa2',
+  attributes: {
+    sequencenum: 2,
+    book: 'LUK',
+    reference: '1:5-7',
+    state: 'transcribeReady',
+    title: 'introducing John',
+    lastComment: '',
+    hold: false,
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+    stepComplete: '',
+  },
+  relationships: {
+    section: { data: { type: 'section', id: 's1' } },
+    users: { data: [{ type: 'user', id: 'u1' }] },
+    media: {},
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as PassageD;
+
+const pa3 = {
+  type: 'passage',
+  id: 'pa3',
+  attributes: {
+    sequencenum: 3,
+    book: 'LUK',
+    reference: '1:8-10',
+    state: 'transcribeReady',
+    title: "John's call",
+    lastComment: '',
+    hold: false,
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+    stepComplete: '',
+  },
+  relationships: {
+    section: { data: { type: 'section', id: 's1' } },
+    users: { data: [{ type: 'user', id: 'u1' }] },
+    media: {},
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as PassageD;
+
+const s2 = {
+  type: 'section',
+  id: 's2',
+  attributes: {
+    sequencenum: 2,
+    name: 'Birth of John',
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+  },
+  relationships: {
+    plan: { data: { type: 'plan', id: 'pl1' } },
+    transcriber: {},
+    editor: {},
+    passages: { data: [{ type: 'passage', id: 'pa4' }] },
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as SectionD;
+
+const pa4 = {
+  type: 'passage',
+  id: 'pa4',
+  attributes: {
+    sequencenum: 1,
+    book: 'LUK',
+    reference: '1:11-14',
+    state: 'transcribeReady',
+    title: 'Zechariah at the temple',
+    lastComment: '',
+    hold: false,
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+    stepComplete: '',
+  },
+  relationships: {
+    section: { data: { type: 'section', id: 's2' } },
+    users: { data: [{ type: 'user', id: 'u1' }] },
+    media: {},
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as PassageD;
+
+const s3 = {
+  type: 'section',
+  id: 's3',
+  attributes: {
+    sequencenum: 3,
+    name: 'Birth of Jesus',
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+  },
+  relationships: {
+    plan: { data: { type: 'plan', id: 'pl2' } },
+    transcriber: {},
+    editor: {},
+    passages: { data: [{ type: 'passage', id: 'pa11' }] },
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as SectionD;
+
+const pa11 = {
+  type: 'passage',
+  id: 'pa11',
+  attributes: {
+    sequencenum: 1,
+    book: 'LUK',
+    reference: '2:1-10',
+    state: 'transcribeReady',
+    title: 'Birth of Jesus',
+    lastComment: '',
+    hold: false,
+    dateCreated: '2021-09-14',
+    dateUpdated: '2021-09-15',
+    lastModifiedBy: 1,
+    stepComplete: '',
+  },
+  relationships: {
+    section: { data: { type: 'section', id: 's3' } },
+    users: { data: [{ type: 'user', id: 'u1' }] },
+    media: {},
+    lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+  },
+} as PassageD;
+
+const getDiscussionCount = (psg: string, step: string) => 0;
+
+const owf: OrgWorkflowStepD[] = [
+  {
+    type: 'orgworkflowstep',
+    id: 'owf1',
+    keys: { remoteId: '1' },
+    attributes: {
+      process: 'OBT',
+      name: 'Internalize',
+      sequencenum: 1,
+      tool: '{"tool": "resource"}',
+      permissions: '{}',
+      dateCreated: '2021-09-14',
+      dateUpdated: '2021-09-15',
+      lastModifiedBy: 1,
+    },
+    relationships: {
+      organization: { data: { type: 'organization', id: 'o0' } },
+      lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    },
+  },
+  {
+    type: 'orgworkflowstep',
+    id: 'owf2',
+    keys: { remoteId: '2' },
+    attributes: {
+      process: 'OBT',
+      name: 'Record',
+      sequencenum: 2,
+      tool: '{"tool": "record"}',
+      permissions: '{}',
+      dateCreated: '2021-09-14',
+      dateUpdated: '2021-09-15',
+      lastModifiedBy: 1,
+    },
+    relationships: {
+      organization: { data: { type: 'organization', id: 'o0' } },
+      lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    },
+  },
+  {
+    type: 'orgworkflowstep',
+    id: 'owf3',
+    keys: { remoteId: '3' },
+    attributes: {
+      process: 'OBT',
+      name: 'TeamCheck',
+      sequencenum: 3,
+      tool: '{"tool": "teamCheck"}',
+      permissions: '{}',
+      dateCreated: '2021-09-14',
+      dateUpdated: '2021-09-15',
+      lastModifiedBy: 1,
+    },
+    relationships: {
+      organization: { data: { type: 'organization', id: 'o0' } },
+      lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    },
+  },
+  {
+    type: 'orgworkflowstep',
+    id: 'owf4',
+    keys: { remoteId: '4' },
+    attributes: {
+      process: 'OBT',
+      name: 'PeerReview',
+      sequencenum: 4,
+      tool: '{"tool": "teamCheck"}',
+      permissions: '{}',
+      dateCreated: '2022-01-28T16:43:40.929',
+      dateUpdated: '2022-01-28T16:43:40.929',
+      lastModifiedBy: 1,
+    },
+    relationships: {
+      organization: { data: { type: 'organization', id: 'o0' } },
+      lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    },
+  },
+];
+
+// Declare some default parameters
+const defaultFilterState: ISTFilterState = {
+  minStep: '', //orgworkflow step to show this step or after
+  maxStep: '', //orgworkflow step to show this step or before
+  minSection: -1,
+  maxSection: 99999,
+  assignedToMe: false,
+  hideDone: false,
+  disabled: false,
+  canHideDone: false,
+};
+const getPublishTo = (publishTo: string): PublishDestinationEnum[] =>
+  [] as PublishDestinationEnum[];
+interface FindResult {
+  uri?: string;
+  rights?: string;
+  url?: string;
+  color?: string;
+}
+const graphicFind = (rec: InitializedRecord, ref?: string): FindResult => ({});
+const readSharedResource = (passageId: string) => undefined;
+
+const curSheet: ISheet[] | undefined = undefined;
+
+const publishStatus = (destinations: PublishDestinationEnum[]) => '';
+
+const getSharedResource = (passage: PassageD) => undefined;
+
+const gsDefaults = {
+  plan: '',
+  sections: [] as SectionD[],
+  passages: [] as PassageD[],
+  organizationSchemeSteps: [] as OrganizationSchemeStepD[],
+  flat: false,
+  projectShared: false,
+  memory: mockMemory,
+  orgWorkflowSteps: [] as OrgWorkflowStepD[],
+  wfStr,
+  filterState: defaultFilterState,
+  minSection: -1,
+  hasPublishing: false,
+  hidePublishing: false,
+  doneStepId: 'done-1',
+  getDiscussionCount,
+  graphicFind,
+  getPublishTo,
+  publishStatus,
+  readSharedResource,
+  current: curSheet,
+  getSharedResource,
+  user: 'u0',
+  myGroups: [],
+};
+
+const secResult = {
+  level: SheetLevel.Section,
+  kind: IwsKind.Section,
+  sectionSeq: 1,
+  passageSeq: 0,
+  passageType: PassageTypeEnum.PASSAGE,
+  deleted: false,
+  filtered: false,
+  published: [] as PublishDestinationEnum[],
+  graphicUri: undefined,
+  graphicFullSizeUrl: undefined,
+  graphicRights: undefined,
+  reference: '',
+  titleMediaId: undefined,
+  scheme: undefined,
+} as ISheet;
+
+const pasResult = {
+  level: SheetLevel.Passage,
+  kind: IwsKind.Passage,
+  sectionSeq: 1,
+  passageSeq: 1,
+  passageType: PassageTypeEnum.PASSAGE,
+  deleted: false,
+  filtered: false,
+  mediaShared: IMediaShare.NotPublic,
+  published: [] as PublishDestinationEnum[],
+  mediaId: undefined,
+  publishStatus: '',
+  sharedResource: undefined,
+  discussionCount: 0,
+  stepDiscussionCount: 0,
+};
+
+const flatResult = {
+  level: SheetLevel.Section,
+  kind: IwsKind.SectionPassage,
+  sectionSeq: 1,
+  passageSeq: 1,
+  passageType: PassageTypeEnum.PASSAGE,
+  deleted: false,
+  filtered: false,
+  published: [] as PublishDestinationEnum[],
+  mediaShared: IMediaShare.NotPublic,
+  mediaId: undefined,
+  graphicUri: undefined,
+  graphicFullSizeUrl: undefined,
+  graphicRights: undefined,
+  reference: '',
+  titleMediaId: undefined,
+  scheme: undefined,
+  publishStatus: '',
+  sharedResource: undefined,
+  discussionCount: 0,
+  stepDiscussionCount: 0,
+};
+
+afterEach(cleanup);
+
+test('empty input gives empty output', () => {
+  expect(getSheet({ ...gsDefaults } as any)).toEqual([]);
+});
+
+test('empty flat input gives empty output', () => {
+  expect(getSheet({ ...gsDefaults, flat: true } as any)).toEqual([]);
+});
+
+test('empty input with plan id gives empty output', () => {
+  expect(getSheet({ ...gsDefaults, plan: 'pl1' } as any)).toEqual([]);
+});
+
+test('one section filters output', () => {
+  expect(
+    getSheet({ ...gsDefaults, plan: 'pl1', sections: [s1] } as any)
+  ).toEqual([
+    {
+      ...secResult,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+    },
+  ]);
+});
+
+test('one section and one passage gives output', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1],
+      passages: [pa1],
+    } as any)
+  ).toEqual([
+    {
+      ...secResult,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+    },
+    {
+      ...pasResult,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+  ] as ISheet[]);
+});
+
+test('one section and two passages gives output', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1],
+      passages: [pa1, pa2],
+    } as any)
+  ).toEqual([
+    {
+      ...secResult,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+    },
+    {
+      ...pasResult,
+      level: SheetLevel.Passage,
+      kind: IwsKind.Passage,
+      passageSeq: 1,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+    {
+      ...pasResult,
+      level: SheetLevel.Passage,
+      kind: IwsKind.Passage,
+      passageSeq: 2,
+      book: 'LUK',
+      reference: '1:5-7',
+      comment: 'introducing John',
+      passageUpdated: '2021-09-15',
+      passage: pa2,
+    },
+  ]);
+});
+
+test('one section and two passages with flat output', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1],
+      passages: [pa1, pa2],
+      flat: true,
+    } as any)
+  ).toEqual([
+    {
+      ...flatResult,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      passageSeq: 1,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+    {
+      ...pasResult,
+      passageSeq: 2,
+      book: 'LUK',
+      reference: '1:5-7',
+      comment: 'introducing John',
+      passageUpdated: '2021-09-15',
+      passage: pa2,
+    },
+  ]);
+});
+
+test('one section and three passages out of order', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1],
+      passages: [pa3, pa1, pa2],
+    } as any)
+  ).toEqual([
+    {
+      ...secResult,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+    },
+    {
+      ...pasResult,
+      level: SheetLevel.Passage,
+      kind: IwsKind.Passage,
+      passageSeq: 1,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+    {
+      ...pasResult,
+      level: SheetLevel.Passage,
+      kind: IwsKind.Passage,
+      passageSeq: 2,
+      book: 'LUK',
+      reference: '1:5-7',
+      comment: 'introducing John',
+      passageUpdated: '2021-09-15',
+      passage: pa2,
+    },
+    {
+      ...pasResult,
+      level: SheetLevel.Passage,
+      kind: IwsKind.Passage,
+      passageSeq: 3,
+      book: 'LUK',
+      reference: '1:8-10',
+      comment: "John's call",
+      passageUpdated: '2021-09-15',
+      passage: pa3,
+    },
+  ]);
+});
+
+test('one flat section and with one passage gives output', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1],
+      passages: [pa1],
+      flat: true,
+    } as any)
+  ).toEqual([
+    {
+      ...flatResult,
+      title: 'Intro',
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      passage: pa1,
+      passageUpdated: '2021-09-15',
+    },
+  ]);
+});
+
+test('flat rebuild from hierarchical current does not keep passage rows (TT-7641)', () => {
+  const hierarchical = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: false,
+  } as any);
+  expect(hierarchical.map((r) => r.kind)).toEqual([
+    IwsKind.Section,
+    IwsKind.Passage,
+  ]);
+
+  const rebuilt = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+    current: hierarchical.map((r) => ({ ...r })),
+  } as any);
+
+  expect(rebuilt).toHaveLength(1);
+  expect(rebuilt[0].kind).toBe(IwsKind.SectionPassage);
+  expect(rebuilt.some((r) => r.kind === IwsKind.Passage)).toBe(false);
+});
+
+// Copilot PR#587 suggested not discarding Section-only current on flat
+// (publishing titles). Flat never emits IwsKind.Section; keeping those rows
+// would leave publishing headers stuck. Discarding any Section in current is
+// required — prove with a BOOK title as the only current row (no Passage).
+test('flat rebuild drops publishing-title Section rows from current', () => {
+  const bookRow = {
+    ...secResult,
+    level: SheetLevel.Book,
+    kind: IwsKind.Section,
+    sectionSeq: BookSeq,
+    sectionId: { type: 'section', id: 'bk1' },
+    title: 'Luke',
+    reference: PassageTypeEnum.BOOK,
+    passageType: PassageTypeEnum.BOOK,
+    sectionUpdated: '2021-09-15',
+  } as ISheet;
+  const rebuilt = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+    // Section-only current: Copilot's "require Passage too" check would keep
+    // this BOOK row forever because getSheet never removes current rows.
+    current: [bookRow],
+  } as any);
+
+  expect(rebuilt.some((r) => r.kind === IwsKind.Section)).toBe(false);
+  expect(rebuilt).toHaveLength(1);
+  expect(rebuilt[0].kind).toBe(IwsKind.SectionPassage);
+  expect(rebuilt[0].passage?.id).toBe('pa1');
+});
+
+// Valid flat current must still merge — detection must not treat
+// SectionPassage as stale hierarchical.
+test('flat refresh merges SectionPassage current without discarding it', () => {
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+  } as any);
+  expect(sheet).toHaveLength(1);
+  expect(sheet[0].kind).toBe(IwsKind.SectionPassage);
+  (sheet[0] as ISheet).graphicUri = 'kept.png';
+
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: true,
+    current: sheet.map((r) => ({ ...r })),
+    graphicFind: () => ({}),
+  } as any);
+
+  expect(merged).toHaveLength(1);
+  expect(merged[0].kind).toBe(IwsKind.SectionPassage);
+  expect(merged[0].graphicUri).toBe('kept.png');
+});
+
+test('two flat sections and one from another plan gives output', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1, s2, s3],
+      passages: [pa1, pa4, pa11],
+      flat: true,
+    } as any)
+  ).toEqual([
+    {
+      ...flatResult,
+      title: 'Intro',
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      passage: pa1,
+      passageUpdated: '2021-09-15',
+    },
+    {
+      ...flatResult,
+      sectionSeq: 2,
+      title: 'Birth of John',
+      book: 'LUK',
+      reference: '1:11-14',
+      comment: 'Zechariah at the temple',
+      sectionId: { type: 'section', id: 's2' },
+      sectionUpdated: '2021-09-15',
+      passage: pa4,
+      passageUpdated: '2021-09-15',
+    },
+  ]);
+});
+
+test('two sections and passages with one from another plan', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1, s2, s3],
+      passages: [pa11, pa3, pa1, pa4, pa2],
+    } as any)
+  ).toEqual([
+    {
+      ...secResult,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+    },
+    {
+      ...pasResult,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+    {
+      ...pasResult,
+      passageSeq: 2,
+      book: 'LUK',
+      reference: '1:5-7',
+      comment: 'introducing John',
+      passageUpdated: '2021-09-15',
+      passage: pa2,
+    },
+    {
+      ...pasResult,
+      passageSeq: 3,
+      book: 'LUK',
+      reference: '1:8-10',
+      comment: "John's call",
+      passageUpdated: '2021-09-15',
+      passage: pa3,
+    },
+    {
+      ...secResult,
+      sectionSeq: 2,
+      title: 'Birth of John',
+      sectionId: { type: 'section', id: 's2' },
+      sectionUpdated: '2021-09-15',
+    },
+    {
+      ...pasResult,
+      sectionSeq: 2,
+      book: 'LUK',
+      reference: '1:11-14',
+      comment: 'Zechariah at the temple',
+      passageUpdated: '2021-09-15',
+      passage: pa4,
+    },
+  ]);
+});
+
+test('update one flat section to two flat section ignoring other plan', () => {
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1, s3],
+    passages: [pa1, pa11],
+    flat: true,
+  } as any);
+  expect(sheet).toEqual([
+    {
+      ...flatResult,
+      title: 'Intro',
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      passage: pa1,
+      passageUpdated: '2021-09-15',
+    },
+  ]);
+  const updated = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1, s2, s3],
+    passages: [pa1, pa4, pa11],
+    flat: true,
+    current: sheet,
+  } as any);
+  expect(updated).toEqual([
+    {
+      ...flatResult,
+      title: 'Intro',
+      passageSeq: 1,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      passage: pa1,
+      passageUpdated: '2021-09-15',
+    },
+    {
+      ...flatResult,
+      sectionSeq: 2,
+      title: 'Birth of John',
+      book: 'LUK',
+      reference: '1:11-14',
+      comment: 'Zechariah at the temple',
+      sectionId: { type: 'section', id: 's2' },
+      sectionUpdated: '2021-09-15',
+      passage: pa4,
+      passageUpdated: '2021-09-15',
+    },
+  ]);
+});
+
+test('merge picks up a shared resource added without touching the passage', () => {
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+  } as any);
+  expect((sheet[1] as ISheet).sharedResource).toBeUndefined();
+  const sr = { type: 'sharedresource', id: 'sr1' } as any;
+  const updated = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    current: sheet.map((r) => ({ ...r })),
+    getSharedResource: () => sr,
+  } as any);
+  expect((updated[1] as ISheet).sharedResource).toBe(sr);
+});
+
+test('one section and one passage with step gives output', () => {
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1],
+      passages: [pa1],
+      orgWorkflowSteps: owf,
+    } as any)
+  ).toEqual([
+    {
+      ...secResult,
+      sectionSeq: 1,
+      title: 'Intro',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+    },
+    {
+      ...pasResult,
+      level: SheetLevel.Passage,
+      kind: IwsKind.Passage,
+      step: 'Internalize',
+      passageSeq: 1,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+      discussionCount: 0,
+      stepId: 'owf1',
+    },
+  ]);
+});
+
+test('passage assignee from organizationSchemeStep', () => {
+  const s1WithScheme = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      organizationScheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+    },
+  } as SectionD;
+  const schemeStep = {
+    type: 'organizationschemestep',
+    id: 'oss1',
+    attributes: {
+      dateCreated: '2021-09-14',
+      dateUpdated: '2021-09-15',
+      lastModifiedBy: 1,
+    },
+    relationships: {
+      organizationscheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+      orgWorkflowStep: { data: { type: 'orgworkflowstep', id: 'owf1' } },
+      user: { data: { type: 'user', id: 'u2' } },
+      group: {},
+      lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    },
+  };
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1WithScheme],
+    passages: [pa1],
+    orgWorkflowSteps: owf,
+    organizationSchemeSteps: [schemeStep],
+  } as any);
+  expect(sheet[1].assign).toEqual({ type: 'user', id: 'u2' });
+  expect(sheet[0].scheme).toEqual({
+    type: 'organizationscheme',
+    id: 'scheme1',
+  });
+});
+
+test('two flat sections with steps gives output', () => {
+  const stepStatus =
+    '{"completed": [{"name": "Internalize", "stepid": "1", "complete": true}, {"name": "Record", "stepid": "2", "complete": true}, {"name": "TeamCheck", "stepid": "3", "complete": true}]}';
+  const pa1b = {
+    ...pa1,
+    attributes: {
+      ...pa1.attributes,
+      stepComplete: stepStatus,
+    },
+  } as PassageD;
+  expect(
+    getSheet({
+      ...gsDefaults,
+      plan: 'pl1',
+      sections: [s1, s2],
+      passages: [pa1b, pa4, pa11],
+      orgWorkflowSteps: owf,
+      flat: true,
+    } as any)
+  ).toEqual([
+    {
+      ...flatResult,
+      step: 'Peer Review',
+      title: 'Intro',
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      passage: pa1b,
+      passageUpdated: '2021-09-15',
+      discussionCount: 0,
+      stepId: 'owf4',
+    },
+    {
+      ...flatResult,
+      step: 'Internalize',
+      sectionSeq: 2,
+      title: 'Birth of John',
+      book: 'LUK',
+      reference: '1:11-14',
+      comment: 'Zechariah at the temple',
+      sectionId: { type: 'section', id: 's2' },
+      sectionUpdated: '2021-09-15',
+      passage: pa4,
+      passageUpdated: '2021-09-15',
+      discussionCount: 0,
+      stepId: 'owf1',
+    },
+  ]);
+});
+
+test('merge picks up another user changes to discussions and assignment', () => {
+  const s1WithScheme = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      organizationScheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+    },
+  } as SectionD;
+  const schemeStep = {
+    type: 'organizationschemestep',
+    id: 'oss1',
+    attributes: { dateUpdated: '2021-09-15', lastModifiedBy: 1 },
+    relationships: {
+      organizationscheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+      orgWorkflowStep: { data: { type: 'orgworkflowstep', id: 'owf1' } },
+      user: { data: { type: 'user', id: 'u2' } },
+      group: {},
+    },
+  };
+  const args = {
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1WithScheme],
+    passages: [pa1],
+    orgWorkflowSteps: owf,
+  };
+  const sheet = getSheet({ ...args } as any);
+  expect((sheet[1] as ISheet).discussionCount).toBe(0);
+  expect((sheet[1] as ISheet).assign).toBeUndefined();
+  //passage untouched; only the discussion and scheme step records changed
+  const updated = getSheet({
+    ...args,
+    organizationSchemeSteps: [schemeStep],
+    getDiscussionCount: () => 3,
+    current: sheet.map((r) => ({ ...r })),
+  } as any);
+  expect((updated[1] as ISheet).discussionCount).toBe(3);
+  expect((updated[1] as ISheet).assign).toEqual({ type: 'user', id: 'u2' });
+});
+
+test('merge keeps NOTE|category when orbit snapshot is still bare NOTE', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE',
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});
+
+test('merge insert in the middle attaches graphic to the new note not a later row', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE|Devotional',
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+    relationships: {
+      ...pa1.relationships,
+      section: { data: { type: 'section', id: 's2' } },
+    },
+  } as PassageD;
+  const pa4b = {
+    ...pa4,
+    attributes: { ...pa4.attributes, sequencenum: 2 },
+  } as PassageD;
+  const s2passages = {
+    ...s2,
+    relationships: {
+      ...s2.relationships,
+      passages: {
+        data: [
+          { type: 'passage', id: 'pn1' },
+          { type: 'passage', id: 'pa4' },
+        ],
+      },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+    {
+      ...secResult,
+      sectionSeq: 2,
+      sectionId: { type: 'section', id: 's2' },
+      sectionUpdated: '2021-09-15',
+      title: 'Birth of John',
+    },
+    {
+      ...pasResult,
+      sectionSeq: 2,
+      passageSeq: 2,
+      book: 'LUK',
+      reference: '1:11-14',
+      comment: 'Zechariah at the temple',
+      passageUpdated: '2021-09-15',
+      passage: pa4b,
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1, s2passages],
+    passages: [pa1, paNote, pa4b],
+    current,
+    graphicFind,
+  } as any);
+  const noteRow = merged.find((r) => r.passage?.id === 'pn1');
+  const laterRow = merged.find((r) => r.passage?.id === 'pa4');
+  expect(noteRow?.graphicUri).toBe('cat.png');
+  expect(noteRow?.color).toBe('#ed071d');
+  expect(laterRow?.graphicUri).toBeUndefined();
+});
+
+test('merge does not recompute graphic on an unchanged note row', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE|Devotional',
+      title: 'a note',
+      dateUpdated: '2021-09-15',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+      graphicUri: 'kept.png',
+      color: '#111111',
+    },
+  ];
+  const graphicFind = jest.fn((): FindResult => ({}));
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[1].graphicUri).toBe('kept.png');
+  expect(merged[1].color).toBe('#111111');
+  expect(graphicFind).not.toHaveBeenCalled();
+});
+
+test('new CHNUM row uses graphicFind with the chapter reference', () => {
+  const paCh = {
+    ...pa1,
+    id: 'pc1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'CHNUM 1',
+      title: '',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pc1' }] },
+    },
+  } as SectionD;
+  const graphicFind = jest.fn(
+    (_rec: InitializedRecord, ref?: string): FindResult =>
+      /^CHNUM/.test(ref ?? '') ? { uri: 'chapter-cat.png' } : {}
+  );
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paCh],
+    graphicFind,
+  } as any);
+  expect(graphicFind).toHaveBeenCalledWith(
+    expect.objectContaining({ id: 'pc1' }),
+    'CHNUM 1'
+  );
+  expect(sheet[1].graphicUri).toBe('chapter-cat.png');
+});
+
+test('merge updates section graphic when sectionUpdated is newer', () => {
+  const s1newer = {
+    ...s1,
+    attributes: { ...s1.attributes, dateUpdated: '2021-09-16' },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+      graphicUri: 'old.png',
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord): FindResult =>
+    rec.id === 's1'
+      ? { uri: 'new.png', url: 'new-full.png', rights: 'SIL' }
+      : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1newer],
+    passages: [pa1],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[0].graphicUri).toBe('new.png');
+  expect(merged[0].graphicFullSizeUrl).toBe('new-full.png');
+  expect(merged[0].graphicRights).toBe('SIL');
+  expect(merged[0].sectionUpdated).toBe('2021-09-16');
+});
+
+// TT-7648: after login, Orbit syncs publishing sections in a later wave.
+// Merge via `current` must not leave Book/AltBook appended after S1 (or
+// between S1 and S2) — order must follow sectionSeq like a cold rebuild.
+test('merge late Book/AltBook/S2 into current sorts by sectionSeq (TT-7648)', () => {
+  const wave1 = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    flat: false,
+  } as any);
+  expect(wave1.map((r) => r.sectionId?.id ?? r.passage?.id)).toEqual([
+    's1',
+    'pa1',
+  ]);
+
+  const bookSec = {
+    ...s1,
+    id: 'bk1',
+    attributes: {
+      ...s1.attributes,
+      sequencenum: BookSeq,
+      name: 'Luke',
+      level: SheetLevel.Book,
+    },
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [] },
+    },
+  } as SectionD;
+  const altBookSec = {
+    ...s1,
+    id: 'ab1',
+    attributes: {
+      ...s1.attributes,
+      sequencenum: AltBkSeq,
+      name: 'Luke Alternate Name',
+      level: SheetLevel.Book,
+    },
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [] },
+    },
+  } as SectionD;
+
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    // Arrival order mimics late publishing rows + S2 after S1 was already merged
+    sections: [s1, bookSec, altBookSec, s2],
+    passages: [pa1, pa4],
+    flat: false,
+    current: wave1.map((r) => ({ ...r })),
+  } as any);
+
+  expect(
+    merged.map((r) => ({
+      id: r.sectionId?.id ?? r.passage?.id,
+      sectionSeq: r.sectionSeq,
+      passageType: r.passageType,
+      kind: r.kind,
+    }))
+  ).toEqual([
+    {
+      id: 'bk1',
+      sectionSeq: BookSeq,
+      passageType: PassageTypeEnum.BOOK,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 'ab1',
+      sectionSeq: AltBkSeq,
+      passageType: PassageTypeEnum.ALTBOOK,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 's1',
+      sectionSeq: 1,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 'pa1',
+      sectionSeq: 1,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Passage,
+    },
+    {
+      id: 's2',
+      sectionSeq: 2,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Section,
+    },
+    {
+      id: 'pa4',
+      sectionSeq: 2,
+      passageType: PassageTypeEnum.PASSAGE,
+      kind: IwsKind.Passage,
+    },
+  ]);
+});
+
+// TT-7713: leaving the Sections & Passages page and coming back rebuilds the
+// sheet with no `current` to merge from, so a passage whose stored reference
+// is a bare 'NOTE' loses the category name and image. The shared resource's
+// artifactCategory is the durable source of truth for a note's category.
+const noteSharedRes = {
+  type: 'sharedresource',
+  id: 'sr1',
+  attributes: { title: 'a note', note: true },
+  relationships: {
+    passage: { data: { type: 'passage', id: 'pn1' } },
+    artifactCategory: { data: { type: 'artifactcategory', id: 'ac1' } },
+  },
+} as unknown as SharedResourceD;
+
+const noteSection = {
+  ...s1,
+  relationships: {
+    ...s1.relationships,
+    passages: { data: [{ type: 'passage', id: 'pn1' }] },
+  },
+} as SectionD;
+
+const notePassage = (reference: string) =>
+  ({
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference,
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+  }) as PassageD;
+
+const noteGraphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+  ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+
+test('fresh build names a note from its shared resource category when orbit has a bare NOTE', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE')],
+    current: undefined, // page was remounted: nothing to merge from
+    getSharedResource: () => noteSharedRes,
+    noteCategory: (sr?: SharedResourceD) =>
+      sr?.id === 'sr1' ? 'Devotional' : undefined,
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+  //the row's passage snapshot stays in step with the repaired reference
+  expect(merged[1].passage?.attributes.reference).toBe('NOTE|Devotional');
+});
+
+test('fresh build prefers the shared resource category over a stale note reference', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Hymn')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: (sr?: SharedResourceD) =>
+      sr?.id === 'sr1' ? 'Devotional' : undefined,
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+});
+
+test('fresh build keeps the stored note reference when no category can be resolved', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Devotional')],
+    current: undefined,
+    getSharedResource: () => undefined,
+    noteCategory: () => undefined,
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+});
+
+test('fresh build leaves a non-note reference alone', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('1:1-4')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('1:1-4');
+});
+
+// The category lives on the shared resource, so another user can change it (or
+// a language switch can rename it) without touching passage.dateUpdated. The
+// merge repairs the reference either way, so the artwork must follow it.
+const noteCurrent = (reference: string) =>
+  [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference,
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: notePassage(reference),
+      graphicUri: 'hymn.png',
+      graphicRights: 'Hymnal',
+      color: '#111111',
+    },
+  ] as ISheet[];
+
+test('merge refreshes note artwork when the category changed without a passage update', () => {
+  const paNote = notePassage('NOTE|Hymn');
+  paNote.attributes.dateUpdated = '2021-09-15'; //passage itself never changed
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [paNote],
+    current: noteCurrent('NOTE|Hymn'),
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  //the row must not keep the previous category's artwork
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});
+
+test('merge refreshes note artwork when only the localized category name changes', () => {
+  const paNote = notePassage('NOTE|Devotional');
+  paNote.attributes.dateUpdated = '2021-09-15';
+  const esGraphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devocional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [paNote],
+    current: noteCurrent('NOTE|Devotional'),
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devocional', //same category, language switched
+    graphicFind: esGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devocional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});
+
+// A stored reference with no category at all is the TT-7713 corruption, and the
+// repair should reach the database. A reference that merely names the category
+// differently (a rename, or another reader's language) must NOT be flagged, or
+// readers in different languages would rewrite each other's rows on every save.
+test('a repaired bare NOTE row is flagged so the next save writes it back', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(isPassageUpdated(merged[1], '2021-09-17')).toBe(true);
+});
+
+test('a note whose category name only changed is not flagged for saving', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Hymn')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(isPassageUpdated(merged[1], '2021-09-17')).toBe(false);
+});
+
+test('a note needing no repair is not flagged for saving', () => {
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [noteSection],
+    passages: [notePassage('NOTE|Devotional')],
+    current: undefined,
+    getSharedResource: () => noteSharedRes,
+    noteCategory: () => 'Devotional',
+    graphicFind: noteGraphicFind,
+  } as any);
+  expect(isPassageUpdated(merged[1], '2021-09-17')).toBe(false);
+});

@@ -1,0 +1,135 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`VertListDnd renders with children 1`] = `
+<div>
+  <ul
+    class="MuiList-root MuiList-padding css-1tstq64-MuiList-root"
+    data-rfd-droppable-context-id="_r_a_"
+    data-rfd-droppable-id="droppable"
+  >
+    <li
+      aria-describedby="rfd-hidden-text-_r_a_-hidden-text-_r_b_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_a_"
+      data-rfd-drag-handle-draggable-id="0"
+      data-rfd-draggable-context-id="_r_a_"
+      data-rfd-draggable-id="0"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      <div>
+        child 0
+      </div>
+    </li>
+    <li
+      aria-describedby="rfd-hidden-text-_r_a_-hidden-text-_r_b_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_a_"
+      data-rfd-drag-handle-draggable-id="1"
+      data-rfd-draggable-context-id="_r_a_"
+      data-rfd-draggable-id="1"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      <div>
+        child 1
+      </div>
+    </li>
+    <li
+      aria-describedby="rfd-hidden-text-_r_a_-hidden-text-_r_b_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_a_"
+      data-rfd-drag-handle-draggable-id="2"
+      data-rfd-draggable-context-id="_r_a_"
+      data-rfd-draggable-id="2"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      <div>
+        child 2
+      </div>
+    </li>
+    <li
+      aria-describedby="rfd-hidden-text-_r_a_-hidden-text-_r_b_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_a_"
+      data-rfd-drag-handle-draggable-id="3"
+      data-rfd-draggable-context-id="_r_a_"
+      data-rfd-draggable-id="3"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      <div>
+        child 3
+      </div>
+    </li>
+  </ul>
+</div>
+`;
+
+exports[`VertListDnd renders with data 1`] = `
+<div>
+  <ul
+    class="MuiList-root MuiList-padding css-1tstq64-MuiList-root"
+    data-rfd-droppable-context-id="_r_3_"
+    data-rfd-droppable-id="droppable"
+  >
+    <li
+      aria-describedby="rfd-hidden-text-_r_3_-hidden-text-_r_4_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_3_"
+      data-rfd-drag-handle-draggable-id="0"
+      data-rfd-draggable-context-id="_r_3_"
+      data-rfd-draggable-id="0"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      item 0
+    </li>
+    <li
+      aria-describedby="rfd-hidden-text-_r_3_-hidden-text-_r_4_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_3_"
+      data-rfd-drag-handle-draggable-id="1"
+      data-rfd-draggable-context-id="_r_3_"
+      data-rfd-draggable-id="1"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      item 1
+    </li>
+    <li
+      aria-describedby="rfd-hidden-text-_r_3_-hidden-text-_r_4_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_3_"
+      data-rfd-drag-handle-draggable-id="2"
+      data-rfd-draggable-context-id="_r_3_"
+      data-rfd-draggable-id="2"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      item 2
+    </li>
+    <li
+      aria-describedby="rfd-hidden-text-_r_3_-hidden-text-_r_4_"
+      class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-n7r04w-MuiListItem-root"
+      data-rfd-drag-handle-context-id="_r_3_"
+      data-rfd-drag-handle-draggable-id="3"
+      data-rfd-draggable-context-id="_r_3_"
+      data-rfd-draggable-id="3"
+      draggable="false"
+      role="button"
+      tabindex="0"
+    >
+      item 3
+    </li>
+  </ul>
+</div>
+`;

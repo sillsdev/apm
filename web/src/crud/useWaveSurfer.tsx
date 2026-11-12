@@ -1,0 +1,1321 @@
+import { debounce, throttle } from 'lodash';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useWavesurfer } from '@wavesurfer/react';
+import Timeline from 'wavesurfer.js/dist/plugins/timeline';
+import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions';
+
+import { logError, Severity } from '../utils/logErrorService';
+
+import {
+  ApplyRegionColor,
+  IRegion,
+  IRegions,
+  parseRegions,
+  useWaveSurferRegions,
+} from './useWavesurferRegions';
+import { decodeAudioData } from '../utils/decodeAudioData';
+import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
+import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
+import { waveformPeaks } from './waveformPeaks';
+import { shouldIgnorePeaksReady } from './wavesurferReady';
+import { useGlobal } from '../context/useGlobal';
+import { maxZoom } from '../components/WSAudioPlayerZoom';
+import WaveSurfer from 'wavesurfer.js';
+import { NamedRegions, useMobile } from '../utils';
+import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
+import { pastedSelection, pasteSpan, sliceAudioBuffer } from './audioClipboard';
+
+const noop = () => {};
+
+/** Nudge playhead slightly before true duration so the custom cursor (CSS) stays visible at end. */
+const FINISH_END_EPSILON_SEC = 0.005;
+
+export interface IMarker {
+  time: number;
+  label?: string;
+  color?: string;
+}
+
+export function useWaveSurfer(
+  allowSegment: NamedRegions | undefined, //just used for debug logging
+  container: any,
+  onReady: (duration: number, loadingAnother: boolean) => void,
+  onLoadError: (error: unknown) => void = noop,
+  onProgress: (progress: number) => void = noop,
+  onRegion: (count: number, newRegion: boolean) => void = noop,
+  onCanUndo: (canUndo: boolean) => void = noop,
+  onPlayStatus: (playing: boolean) => void = noop,
+  onInteraction: () => void = noop,
+  onZoom: undefined | ((px: number) => void),
+  onMarkerClick: (time: number) => void = noop,
+  height: number,
+  singleRegionOnly: boolean = false,
+  currentSegmentIndex?: number | undefined,
+  onCurrentRegion?: (
+    currentRegion: IRegion | undefined,
+    index?: number
+  ) => void,
+  onStartRegion?: (start: number) => void,
+  onRegionPlayEnd?: (region: IRegion) => void,
+  verses?: string,
+  hasSegmentUndo?: boolean,
+  applyRegionColor?: ApplyRegionColor,
+  lockSegmentSelection?: boolean,
+  disableDragSelection?: boolean,
+  /** A region was clicked, as opposed to selected by the playhead. */
+  onSegmentClick?: (region: IRegion) => void,
+  /** Whether the segment at a sorted index already has a recording (TT-7666). */
+  isSegmentRecorded?: (sortedIndex: number) => boolean,
+  onCanPaste: (canPaste: boolean) => void = noop
+) {
+  const { isMobile } = useMobile();
+  const [errorReporter] = useGlobal('errorReporter');
+  const progressRef = useRef(0);
+  const [Regions, setRegions] = useState<RegionsPlugin>();
+  const blobToLoad = useRef<Blob | undefined>(undefined);
+  const positionToLoad = useRef<number | undefined>(undefined);
+  const loadRequests = useRef(0);
+  /** Resolvers for wsLoad(blob) calls that hit the queue while another load was in flight; all are flushed when that queued load finishes */
+  const loadQueueWaitersRef = useRef<Array<() => void>>([]);
+  const flushLoadQueueWaiters = () => {
+    const waiters = loadQueueWaitersRef.current;
+    loadQueueWaitersRef.current = [];
+    waiters.forEach((resolve) => resolve());
+  };
+  /** Unblock wsLoad waiters and UI when decode/wavesurfer load fails (no 'ready' event). */
+  const failPendingLoad = (error: unknown) => {
+    loadingRef.current = false;
+    isReadyRef.current = false;
+    if (loadRequests.current > 0) {
+      loadRequests.current--;
+    }
+    flushLoadQueueWaiters();
+    onLoadError(error);
+  };
+  const playingRef = useRef(false);
+  const loopingRef = useRef(false);
+  const durationRef = useRef(0);
+  const isReadyRef = useRef(false);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
+  const isPlayingRef = useRef(false);
+  const [undoBuffer, setUndoBuffer] = useState<AudioBuffer | undefined>();
+  const inputRegionsRef = useRef<IRegions | undefined>(undefined);
+  const regionsLoadedRef = useRef(false);
+
+  const audioContextRef = useRef<AudioContext | undefined>(undefined);
+  const fillpxRef = useRef(0);
+  const [playerUrl, setPlayerUrl] = useState<string | undefined>();
+  const blobRef = useRef<Blob | undefined>(undefined);
+  const blobAudioRef = useRef<AudioBuffer | undefined>(undefined);
+  /** Copied region samples. Independent of the OS clipboard; cleared on unmount. */
+  const clipboardRef = useRef<AudioBuffer | undefined>(undefined);
+  const positionRef = useRef<number | undefined>(undefined);
+  const loadingRef = useRef(false);
+  /** Bumped on wsStopRecord so in-flight preview loads cannot overwrite the final take. */
+  const loadGenerationRef = useRef(0);
+  /** Generation of the blobAudioRef commit in the current/last loadBlob. */
+  const loadBlobGenerationRef = useRef(0);
+  /** Set to loadGeneration immediately before ws.load(blobUrl, peaks); consumed on 'ready'. */
+  const blobLoadTokenRef = useRef<number | undefined>(undefined);
+  const recordingRef = useRef(false);
+  /** Peaks of existing audio before/after the record position (overdub preview). */
+  const recordPrePeaksRef = useRef<Float32Array>(new Float32Array(0));
+  const recordPostPeaksRef = useRef<Float32Array>(new Float32Array(0));
+  const recordPreSecondsRef = useRef(0);
+  const recordPostSecondsRef = useRef(0);
+  /** True while a cheap peaks-only preview load is in flight — its 'ready' must not run handleReady. */
+  const recordPeaksLoadRef = useRef(false);
+  const currentBlobUrlRef = useRef<string | undefined>(undefined);
+  const lastWaveformTapTimeRef = useRef(0);
+  const lastWaveformTapProgressRef = useRef<number | undefined>(undefined);
+
+  const MOBILE_DOUBLE_TAP_MS = 350;
+  const MOBILE_DOUBLE_TAP_POSITION_SLOP = 0.75;
+
+  // Create plugins outside of useMemo to ensure they're stable
+  const regionsPlugin = useMemo(() => {
+    const plugin = RegionsPlugin.create();
+    setRegions(plugin);
+    return plugin;
+  }, []);
+
+  // Timeline defaults to 20px and sits below the wave; skip it in short
+  // players (discussion comments) so the canvas isn't clipped away.
+  const timelinePlugin = useMemo(
+    () => (height >= 60 ? Timeline.create({}) : undefined),
+    [height]
+  );
+  const zoomPlugin = useMemo(() => {
+    if (!onZoom) return undefined;
+    return ZoomPlugin.create({
+      scale: 0.5,
+      maxZoom: maxZoom,
+    });
+  }, [onZoom]);
+
+  const plugins = useMemo(() => {
+    const list: (RegionsPlugin | Timeline | ZoomPlugin)[] = [regionsPlugin];
+    if (zoomPlugin) list.push(zoomPlugin);
+    if (timelinePlugin) list.push(timelinePlugin);
+    return list;
+  }, [timelinePlugin, regionsPlugin, zoomPlugin]);
+
+  // Create a stable configuration object
+  const wavesurferConfig = useMemo(
+    () => ({
+      container: container,
+      progressColor: '#96c1c1', //bluegray
+      waveColor: '#9fc5e8', //kinda blue purple
+      cursorColor: '#1b0707', //mostly black
+      url: playerUrl,
+      height: height,
+      normalize: true,
+      plugins: plugins,
+      fillParent: true,
+    }),
+    [container, height, plugins, playerUrl]
+  );
+
+  //put these all in refs to be used in functions
+  const { wavesurfer, isPlaying, currentTime } =
+    useWavesurfer(wavesurferConfig);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+
+  // Throttle (not debounce) the progress callback: debounce would only fire after
+  // the wait with no new calls, so during playback currentTime never goes quiet
+  // and onProgress would never run. Throttle limits re-renders while still
+  // updating the UI on a steady cadence. Single instance so cancel() and
+  // unmount cleanup clear the trailing invocation.
+  const throttledProgressCallback = useMemo(
+    () =>
+      throttle((value: number) => {
+        onProgressRef.current(value);
+      }, 200),
+    []
+  );
+
+  const setProgress = (value: number) => {
+    progressRef.current = value;
+    throttledProgressCallback(value);
+  };
+
+  /** Bypass throttle so labels match the playhead immediately after load/seek. */
+  const pushProgressImmediate = (value: number) => {
+    throttledProgressCallback.cancel();
+    progressRef.current = value;
+    onProgressRef.current(value);
+  };
+
+  const roundTime = (n: number) => Math.round(n * 100000) / 100000;
+  const clamp = (n: number, min: number, max: number) =>
+    Math.min(Math.max(n, min), max);
+
+  useEffect(() => {
+    // Ignore updates while loading (previous clip). Prefer getCurrentTime() over
+    // the hook's currentTime — it can lag setTime() so labels show the end while
+    // the cursor is at the start.
+    if (loadingRef.current) return;
+
+    const ws = wavesurferRef.current;
+    let t =
+      ws != null ? roundTime(ws.getCurrentTime()) : roundTime(currentTime);
+
+    const duration = durationRef.current || 0;
+    if (duration > 0) t = clamp(t, 0, duration);
+
+    setProgress(t);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTime]);
+
+  const wsDuration = () => durationRef.current || 0;
+  const wsFillPx = () => fillpxRef.current;
+  const isNear = (position: number) => {
+    return Math.abs(position - progressRef.current) < 0.3;
+  };
+
+  const wsGoto = async (
+    position: number,
+    keepPlayRegion: boolean = false,
+    targetRegion?: IRegion
+  ) => {
+    if (!keepPlayRegion) resetPlayingRegion();
+    const duration = wsDuration();
+    const pos =
+      duration > 0 ? clamp(position, 0, duration) : Math.max(position, 0);
+    if (pos === duration && isPlayingRef.current) {
+      //if playing, position messages come in after this one that set it back to previously playing position.  Turn this off first in hopes that all messages are done before we set the position...
+      wavesurferRef.current?.pause();
+    }
+    if (progress() !== pos) {
+      try {
+        wavesurferRef.current?.setTime(pos);
+      } catch {
+        // Peaks+duration ready fires before the media element has metadata;
+        // setting currentTime then throws InvalidStateError in some browsers.
+      }
+    }
+    pushProgressImmediate(pos);
+    applyRegionAtPosition(pos, targetRegion);
+  };
+
+  const progress = () => progressRef.current;
+  const setPlaying = (value: boolean) => setPlayingx(value, singleRegionOnly);
+  const wsIsPlaying = () => playingRef.current;
+  const wsLoopRegion = (loop: boolean) => {
+    loopingRef.current = loop;
+    return regLoopRegion(loop);
+  };
+  const {
+    setupRegions,
+    wsAutoSegment,
+    wsFindClauseSplitPoint,
+    wsAddRegion,
+    wsRemoveSplitRegion,
+    wsPrevRegion,
+    wsNextRegion,
+    loadRegions,
+    clearRegions,
+    wsGetRegions,
+    wsAddMarkers,
+    wsPlayRegion,
+    regLoopRegion,
+    justPlayRegion,
+    resetPlayingRegion,
+    isPlayRegionLocked,
+    applyRegionAtPosition,
+    applyRegionColors,
+    currentRegion,
+    wsSetRegionColor,
+    wsRemoveCurrentRegion,
+    wsSelectSpan,
+    prepareForDestroy,
+  } = useWaveSurferRegions(
+    singleRegionOnly,
+    currentSegmentIndex ?? -1,
+    wavesurferRef.current,
+    container,
+    onRegion,
+    wsDuration,
+    isNear,
+    wsGoto,
+    progress,
+    wsIsPlaying,
+    setPlaying,
+    onCurrentRegion,
+    onStartRegion,
+    onRegionPlayEnd,
+    onMarkerClick,
+    verses,
+    hasSegmentUndo,
+    applyRegionColor,
+    lockSegmentSelection,
+    () => blobAudioRef.current,
+    disableDragSelection,
+    onSegmentClick,
+    isSegmentRecorded
+  );
+
+  // Cypress CT seam (TT-7138): allow tests to overshoot region.end past the
+  // AudioBuffer duration the way media-element duration can in production.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const w = window as Window & {
+      Cypress?: unknown;
+      __wsCt?: {
+        currentRegion: typeof currentRegion;
+        blobDuration: () => number;
+      };
+    };
+    if (!w.Cypress) return;
+    w.__wsCt = {
+      currentRegion,
+      blobDuration: () => blobAudioRef.current?.duration ?? 0,
+    };
+    return () => {
+      delete w.__wsCt;
+    };
+  }, [currentRegion]);
+
+  const setPlayingx = (value: boolean, regionOnly: boolean) => {
+    playingRef.current = value;
+    try {
+      if (value) {
+        if (isReadyRef.current) {
+          // wsPlayRegion may have started bounded playback before this sync runs;
+          // do not clear playRegionRef or start full-file play in that case.
+          if (wavesurferRef.current?.isPlaying() || isPlayRegionLocked()) {
+            if (onPlayStatus) onPlayStatus(true);
+            return;
+          }
+          const playingRegion = regionOnly ? justPlayRegion(progress()) : false;
+          if (!playingRegion) {
+            resetPlayingRegion();
+            wavesurferRef.current?.play();
+          }
+        }
+      } else {
+        try {
+          wavesurferRef.current?.pause();
+        } catch {
+          //ignore
+        }
+      }
+      if (onPlayStatus) onPlayStatus(playingRef.current);
+    } catch (error: any) {
+      logError(Severity.error, errorReporter, error);
+    }
+  };
+
+  const audioContext = () => {
+    audioContextRef.current =
+      audioContextRef.current ?? new window.AudioContext();
+    return audioContextRef.current;
+  };
+
+  const setupZoom = () => {
+    if (durationRef.current > 0 && !recordingRef.current) {
+      const containerWidth = container.current?.clientWidth || 0; // Get the width of the waveform container in pixels.
+      // Calculate the actual pixels per second
+      const pxPerSec = containerWidth / durationRef.current;
+      fillpxRef.current = Math.round(pxPerSec * 10) / 10;
+      onZoom && onZoom(fillpxRef.current);
+    } else {
+      onZoom && onZoom(maxZoom);
+    }
+  };
+  useEffect(() => {
+    const handleReady = () => {
+      // Peaks-only preview loads during recording fire 'ready' too; they carry a
+      // fake buffer and must not run the full ready pipeline (regions/zoom/goto).
+      if (recordingRef.current) {
+        if (recordPeaksLoadRef.current) return;
+        const wsDur = wavesurferRef.current?.getDuration();
+        if (wsDur) setDuration(wsDur);
+        return;
+      }
+      if (
+        shouldIgnorePeaksReady(
+          blobLoadTokenRef.current,
+          loadGenerationRef.current
+        )
+      ) {
+        return;
+      }
+      blobLoadTokenRef.current = undefined;
+      setupRegions(wavesurferRef.current as WaveSurfer);
+      //recording also sends ready
+      if (loadRequests.current > 0) loadRequests.current--;
+      const isStaleLoad =
+        loadBlobGenerationRef.current !== loadGenerationRef.current;
+      if (!isStaleLoad) {
+        isReadyRef.current = true;
+        //do these even if we're going to load another to show progress
+        const wsDur = wavesurferRef.current?.getDuration();
+        const bufDur = blobAudioRef.current?.duration;
+        if (!recordingRef.current && bufDur) {
+          setDuration(Math.max(bufDur, wsDur ?? 0));
+        } else {
+          setDuration(wsDur ?? durationRef.current);
+          if (bufDur && bufDur > (wsDur ?? 0)) {
+            setDuration(bufDur);
+          }
+        }
+        if (positionRef.current !== undefined && positionRef.current >= 0) {
+          wsGoto(positionRef.current);
+        } else {
+          wsGoto(durationRef.current); //this has to be at the end for recording
+        }
+      }
+
+      loadingRef.current = false;
+      if (!loadRequests.current) {
+        if (!isStaleLoad) {
+          if (!regionsLoadedRef.current) {
+            //we need to call this even if undefined to setup regions variables
+            regionsLoadedRef.current = loadRegions(
+              inputRegionsRef.current,
+              false
+            );
+          }
+          setupZoom();
+          if (playingRef.current) setPlaying(true);
+        }
+      } else if (!isStaleLoad) {
+        //requesting load of blob that came in while this one was loading
+        wsLoad();
+      }
+      //do this too even if we're going to go load another
+      if (!isStaleLoad) {
+        onReady(durationRef.current, loadRequests.current > 0);
+      }
+    };
+
+    wavesurferRef.current = wavesurfer;
+    regionsLoadedRef.current = false;
+    if (wavesurfer) {
+      wavesurfer.on('ready', handleReady);
+      //this is received way more times than expected
+      wavesurfer.on('destroy', function () {
+        prepareForDestroy();
+        flushLoadQueueWaiters();
+        //prevent region-removed messages from the destroy
+        Regions?.unAll();
+        wavesurferRef.current = null;
+      });
+
+      wavesurfer.on('finish', async function () {
+        if (playingRef.current && !loopingRef.current) {
+          const duration = durationRef.current || 0;
+          if (duration > 0) {
+            const safeEnd = Math.max(
+              0,
+              roundTime(duration - FINISH_END_EPSILON_SEC)
+            );
+            try {
+              await wsGoto(safeEnd);
+            } catch (error: any) {
+              logError(Severity.error, errorReporter, error);
+            }
+          }
+          setPlaying(false);
+        }
+      });
+      // Report a pause the engine performed itself. onPlayStatus is otherwise
+      // only ever raised from setPlayingx, so anything wavesurfer does on its own
+      // is invisible to the app: `play(start, end)` reaching its stopAtPosition
+      // at the end of a segment, wsGoto pausing on a seek to exactly the
+      // duration, a media element dropping out of playback. The pause icon then
+      // stays up and every consumer reading the playing state is desynchronised
+      // from the audio.
+      //
+      // Only reports - it does not pause anything, so nothing about when
+      // playback stops changes. The playingRef guard keeps it to a falling edge,
+      // so a pause the app asked for (already reported by setPlayingx, which
+      // clears the ref first) does not report twice.
+      wavesurfer.on('pause', function () {
+        if (!playingRef.current) return;
+        playingRef.current = false;
+        onPlayStatus(false);
+      });
+      wavesurfer.on('interaction', function (/*newTime: number*/) {
+        onInteraction();
+      });
+      wavesurfer.on('click', (/*relativeX: number, relativeY: number*/) => {
+        if (singleRegionOnly) {
+          wsRemoveCurrentRegion();
+          return;
+        }
+        if (isMobile) {
+          const now = Date.now();
+          const currentProgress = progress();
+          const isDoubleTap =
+            now - lastWaveformTapTimeRef.current <= MOBILE_DOUBLE_TAP_MS &&
+            lastWaveformTapProgressRef.current !== undefined &&
+            Math.abs(currentProgress - lastWaveformTapProgressRef.current) <=
+              MOBILE_DOUBLE_TAP_POSITION_SLOP;
+
+          if (isDoubleTap) {
+            lastWaveformTapTimeRef.current = 0;
+            lastWaveformTapProgressRef.current = undefined;
+            wsAddRegion();
+            return;
+          }
+
+          lastWaveformTapTimeRef.current = now;
+          lastWaveformTapProgressRef.current = currentProgress;
+        }
+      });
+      wavesurfer.on('dblclick', (/*relativeX: number, relativeY: number*/) => {
+        if (!singleRegionOnly && !isMobile) {
+          wsAddRegion();
+        }
+      });
+
+      if (onZoom) {
+        wavesurfer.on('zoom', function (px: number) {
+          onZoom(px);
+        });
+      }
+      if (blobToLoad.current) {
+        wsLoad();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wavesurfer]);
+
+  useEffect(() => {
+    // Removes events, elements and disconnects Web Audio nodes on component unmount
+    return () => {
+      prepareForDestroy();
+      blobToLoad.current = undefined;
+      flushLoadQueueWaiters();
+
+      if (wavesurferRef.current) {
+        const ws = wavesurferRef.current;
+        if (isPlayingRef.current) ws.stop();
+        isPlayingRef.current = false;
+        ws.unAll();
+        ws.destroy();
+        wavesurferRef.current = null;
+      }
+
+      // Clean up AudioContext
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = undefined;
+      }
+
+      // Clear audio buffer references
+      blobAudioRef.current = undefined;
+      clipboardRef.current = undefined;
+      setUndoBuffer(undefined);
+
+      // Clear blob references and revoke blob URLs
+      revokeCurrentBlobUrl();
+      blobRef.current = undefined;
+      setPlayerUrl(undefined);
+
+      // Cleanup throttled function on unmount
+      throttledProgressCallback.cancel();
+    }; // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setDuration = (value: number) => {
+    durationRef.current = value;
+    // Set data attribute for cursor styling
+    container.current?.setAttribute('data-duration', value.toString());
+  };
+
+  const wsClear = (preventUndo: boolean = false) => {
+    if (loadRequests.current) {
+      //queue this
+      blobToLoad.current = undefined;
+      loadRequests.current = 2; //if there was another, we'll bypass it
+      return;
+    }
+    if (isPlayingRef.current) wavesurferRef.current?.stop();
+    if (!preventUndo) {
+      setUndoBuffer(copyOriginal());
+    } else setUndoBuffer(undefined);
+    onCanUndo(!preventUndo);
+    clearRegions(false, preventUndo);
+    wsGoto(0);
+    loadBlob();
+  };
+
+  const wsTogglePlay = () => {
+    setPlaying(!playingRef.current);
+    return playingRef.current;
+  };
+
+  const wsPlay = () => setPlaying(true);
+
+  const wsPause = () => setPlaying(false);
+
+  const wsPosition = () => progressRef.current;
+
+  const wsSetPlaybackRate = (rate: number) => {
+    if (rate !== wavesurferRef.current?.getPlaybackRate()) {
+      wavesurferRef.current?.setPlaybackRate(rate);
+    }
+  };
+
+  const wsZoom = debounce((zoom: number) => {
+    if (isReadyRef.current && !recordingRef.current)
+      wavesurferRef.current?.zoom(zoom);
+  }, 10);
+
+  // Helper function to revoke current blob URL
+  const revokeCurrentBlobUrl = () => {
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+      currentBlobUrlRef.current = undefined;
+    }
+  };
+
+  /** Revoke a load's blob URL without clobbering a newer concurrent load. */
+  const releaseLoadBlobUrl = (url: string | undefined) => {
+    if (!url) return;
+    URL.revokeObjectURL(url);
+    if (currentBlobUrlRef.current === url) {
+      currentBlobUrlRef.current = undefined;
+    }
+  };
+
+  const loadBlob = async (
+    blob?: Blob,
+    position?: number,
+    decodedBuffer?: AudioBuffer
+  ) => {
+    if (blob) loadGenerationRef.current += 1;
+    const generation = loadGenerationRef.current;
+    positionRef.current = position;
+    const prevBlobUrl = currentBlobUrlRef.current;
+
+    if (!blob) {
+      revokeCurrentBlobUrl();
+      //this is the only way I found to clear the wavesurfer. Toggle the url to "the other empty" to trigger a reload
+      setPlayerUrl(playerUrl === '' ? undefined : '');
+      blobAudioRef.current = undefined;
+      blobRef.current = undefined;
+      setDuration(0);
+      return;
+    }
+    let blobUrl: string | undefined;
+    try {
+      loadingRef.current = true;
+      isReadyRef.current = false;
+      const decoded =
+        decodedBuffer ??
+        (await decodeAudioData(audioContext(), await blob.arrayBuffer()));
+      if (generation !== loadGenerationRef.current) {
+        loadingRef.current = false;
+        return;
+      }
+
+      blobAudioRef.current = decoded;
+      loadBlobGenerationRef.current = generation;
+      blobRef.current = blob;
+
+      const duration =
+        decoded.duration || decoded.length / decoded.sampleRate || 0;
+      setDuration(duration);
+      blobUrl = URL.createObjectURL(blob);
+      currentBlobUrlRef.current = blobUrl;
+      blobLoadTokenRef.current = generation;
+      // Peaks+duration skip WaveSurfer's fetch+decode of the blob URL. That
+      // extra copy of a large file cancels the media element's load (toast +
+      // waveform cleared). Revoke the previous URL only after this load.
+      await wavesurferRef.current?.load(
+        blobUrl,
+        waveformPeaks(decoded),
+        duration
+      );
+      if (generation !== loadGenerationRef.current) {
+        loadingRef.current = false;
+        if (blobLoadTokenRef.current === generation) {
+          blobLoadTokenRef.current = undefined;
+        }
+        releaseLoadBlobUrl(blobUrl);
+        return;
+      }
+      if (prevBlobUrl && prevBlobUrl !== blobUrl) {
+        URL.revokeObjectURL(prevBlobUrl);
+      }
+    } catch (error) {
+      console.error('Error loading blob:', error);
+      loadingRef.current = false;
+      if (blobLoadTokenRef.current === generation) {
+        blobLoadTokenRef.current = undefined;
+      }
+      // Only revoke this load's URL; a concurrent stop load may own currentBlobUrlRef
+      releaseLoadBlobUrl(blobUrl);
+      if (generation !== loadGenerationRef.current && isAudioLoadAbort(error)) {
+        return;
+      }
+      throw error;
+    }
+  };
+  const queueLoad = (blob?: Blob, position?: number) => {
+    blobToLoad.current = blob;
+    positionToLoad.current = position;
+  };
+  const wsLoad = async (blob?: Blob, position?: number) => {
+    regionsLoadedRef.current = false;
+    if (!wavesurferRef.current) {
+      queueLoad(blob, position);
+      loadRequests.current = 1;
+    } else if (blob) {
+      if (loadRequests.current) {
+        //queue this
+        queueLoad(blob, position);
+        loadRequests.current = 2; //if there was another, we'll bypass it
+        await new Promise<void>((resolve) => {
+          loadQueueWaitersRef.current.push(resolve);
+        });
+        return;
+      } else {
+        loadRequests.current = 1;
+        try {
+          await loadBlob(blob, position);
+        } catch (error) {
+          failPendingLoad(error);
+        }
+      }
+    } else if (blobToLoad.current) {
+      try {
+        await loadBlob(blobToLoad.current, positionToLoad.current);
+      } catch (error) {
+        failPendingLoad(error);
+      } finally {
+        blobToLoad.current = undefined;
+        flushLoadQueueWaiters();
+      }
+    } else {
+      loadRequests.current--;
+      //no blob so clear
+      wsClear();
+    }
+  };
+
+  const wsLoadRegions = (regions: string, loop: boolean) => {
+    if (isReadyRef.current) {
+      loadRegions(parseRegions(regions), loop);
+      regionsLoadedRef.current = true;
+    } else {
+      inputRegionsRef.current = parseRegions(regions);
+      regionsLoadedRef.current = false;
+    }
+  };
+  const wsClearRegions = () => {
+    if (isReadyRef.current) {
+      clearRegions();
+    } else {
+      inputRegionsRef.current = undefined;
+    }
+  };
+  const wsBlob = async () => {
+    return blobRef.current;
+  };
+
+  // The slice wsRegionBlob sends, or undefined when it sends the whole blob.
+  const regionSlice = () => {
+    if (!currentRegion() || !blobAudioRef.current) return undefined;
+    const start = trimTo(currentRegion()?.start ?? 0, 3);
+    const end = trimTo(currentRegion()?.end ?? 0, 3);
+    return end - start ? { start, end } : undefined;
+  };
+
+  /** Seconds of audio wsRegionBlob will return. */
+  const wsRegionDuration = () => {
+    const slice = regionSlice();
+    return slice ? slice.end - slice.start : wsDuration();
+  };
+
+  const wsRegionBlob = async () => {
+    if (!wavesurfer) return;
+    const slice = regionSlice();
+    if (!slice) return wsBlob();
+    const { start, end } = slice;
+
+    const originalBuffer = blobAudioRef.current;
+    if (!originalBuffer) return wsBlob();
+    const regionBuffer = sliceAudioBuffer(
+      originalBuffer,
+      start,
+      end,
+      (channels, length, sampleRate) =>
+        audioContext().createBuffer(channels, length, sampleRate)
+    );
+    if (!regionBuffer) return wsBlob();
+    return await audioBufferToWavBlob(regionBuffer);
+  };
+
+  const wsSkip = (amt: number) => {
+    wavesurferRef.current?.skip(amt);
+  };
+
+  const wsSetHeight = (height: number) =>
+    wavesurferRef.current?.setOptions({
+      height: height, // Sets the waveform height
+    });
+
+  const trimTo = (val: number, places: number) => {
+    const dec = places > 0 ? 10 ** places : 1;
+    return ((val * dec) >> 0) / dec;
+  };
+
+  async function loadDecoded(audioBuffer: AudioBuffer, position?: number) {
+    const blob = await audioBufferToWavBlob(audioBuffer);
+    // Final stop/undo inserts must not resolve behind preview loads in the queue
+    // (that left Save/Play with a short preview take — TT-7384 / TT-7276).
+    if (!recordingRef.current) {
+      if (loadRequests.current || blobToLoad.current) {
+        flushLoadQueueWaiters();
+        loadRequests.current = 0;
+        blobToLoad.current = undefined;
+        positionToLoad.current = undefined;
+      }
+      try {
+        await loadBlob(blob, position, audioBuffer);
+      } catch (error) {
+        failPendingLoad(error);
+      }
+      return;
+    }
+    return await wsLoad(blob, position);
+  }
+  const copyOriginal = () => {
+    if (!wavesurferRef.current) return undefined;
+    const originalBuffer = blobAudioRef.current;
+    if (originalBuffer && originalBuffer.length > 1) {
+      const len = originalBuffer.length;
+      let uberSegment: AudioBuffer | undefined = undefined;
+
+      uberSegment = audioContext().createBuffer(
+        originalBuffer.numberOfChannels,
+        len,
+        originalBuffer.sampleRate
+      );
+      for (let ix = 0; ix < originalBuffer.numberOfChannels; ++ix) {
+        const chan_data = originalBuffer.getChannelData(ix);
+        const uber_chan_data = uberSegment.getChannelData(ix);
+
+        uber_chan_data.set(chan_data);
+      }
+      return uberSegment;
+    } else return undefined;
+  };
+
+  const insertAudioData = async (
+    newBuffer: AudioBuffer,
+    startposition: number,
+    endposition: number | undefined
+  ) => {
+    if (!wavesurferRef.current) return 0;
+
+    const originalBuffer = blobAudioRef.current;
+    if (endposition === undefined || !originalBuffer) {
+      await loadDecoded(newBuffer);
+      return newBuffer.length / newBuffer.sampleRate;
+    }
+
+    const start_offset = (startposition * originalBuffer.sampleRate) >> 0;
+    const after_offset = (endposition * originalBuffer.sampleRate) >> 0;
+    let after_len = originalBuffer.length - after_offset;
+    if (after_len < 0) after_len = 0;
+    const new_len = start_offset + newBuffer.length + after_len;
+    let uberSegment = null;
+    uberSegment = audioContext().createBuffer(
+      originalBuffer.numberOfChannels,
+      new_len,
+      originalBuffer.sampleRate
+    );
+    for (let ix = 0; ix < originalBuffer.numberOfChannels; ++ix) {
+      const chan_data = originalBuffer.getChannelData(ix);
+      const new_data = newBuffer.getChannelData(
+        ix < newBuffer.numberOfChannels ? ix : newBuffer.numberOfChannels - 1
+      );
+      const uber_chan_data = uberSegment.getChannelData(ix);
+
+      uber_chan_data.set(chan_data.slice(0, start_offset));
+      uber_chan_data.set(new_data, start_offset);
+      if (after_len)
+        uber_chan_data.set(
+          chan_data.slice(after_offset),
+          start_offset + newBuffer.length
+        );
+    }
+
+    const position = (start_offset + newBuffer.length) / newBuffer.sampleRate;
+    await loadDecoded(uberSegment, position);
+    return position;
+  };
+
+  const wsInsertAudio = async (
+    blob: Blob | undefined,
+    buffer: AudioBuffer | undefined,
+    position: number,
+    overwriteToPosition: number | undefined
+  ) => {
+    if (!wavesurferRef.current) throw new Error('wavesurfer closed'); //closed while we were working on the blob
+
+    try {
+      // If we have a blob (from recording), decode it to AudioBuffer
+      if (blob && !buffer) {
+        buffer = await decodeAudioData(
+          audioContext(),
+          await blob.arrayBuffer()
+        );
+      }
+
+      if (buffer?.length === 0) return position;
+      return await insertAudioData(buffer!, position, overwriteToPosition);
+    } catch (error: any) {
+      logError(Severity.error, errorReporter, error);
+      throw error;
+    }
+  };
+
+  const wsHasClipboard = () => clipboardRef.current !== undefined;
+
+  /** Copy the current region's samples. Leaves the audio and undo stack alone. */
+  const wsCopyRegion = (): boolean => {
+    if (recordingRef.current) return false;
+    const region = currentRegion();
+    const originalBuffer = blobAudioRef.current;
+    if (!region || !originalBuffer) return false;
+    const clip = sliceAudioBuffer(
+      originalBuffer,
+      trimTo(region.start ?? 0, 3),
+      trimTo(region.end ?? 0, 3),
+      (channels, length, sampleRate) =>
+        audioContext().createBuffer(channels, length, sampleRate)
+    );
+    if (!clip) return false;
+    clipboardRef.current = clip;
+    onCanPaste(true);
+    return true;
+  };
+
+  /**
+   * Replace the current region, or insert at the playhead when none overlaps.
+   * Returns true when decoded audio was mutated.
+   */
+  const wsPaste = async (): Promise<boolean> => {
+    const clip = clipboardRef.current;
+    if (!clip || !wavesurferRef.current || recordingRef.current) return false;
+    const region = currentRegion();
+    const originalBuffer = blobAudioRef.current;
+    if (originalBuffer && clip.sampleRate !== originalBuffer.sampleRate)
+      return false;
+    const span = pasteSpan(
+      region
+        ? {
+            start: trimTo(region.start ?? 0, 3),
+            end: trimTo(region.end ?? 0, 3),
+          }
+        : undefined,
+      progress(),
+      originalBuffer
+    );
+    // No snapshot means the waveform was empty. Undo clears the pasted clip.
+    const snapshot = copyOriginal();
+    setUndoBuffer(snapshot);
+    onCanUndo(true);
+    region?.remove();
+    if (span.end === undefined) {
+      await loadDecoded(clip, clip.length / clip.sampleRate);
+    } else {
+      await insertAudioData(clip, span.start, span.end);
+    }
+    const selection = pastedSelection(span, clip.length, clip.sampleRate);
+    if (selection && singleRegionOnly)
+      wsSelectSpan(selection.start, selection.end);
+    return true;
+  };
+
+  const setRecording = (value: boolean) => {
+    recordingRef.current = value;
+  };
+
+  /** Max-abs peaks (RECORD_PEAKS_PER_SECOND) for [startSec, endSec) of a decoded buffer. */
+  const computeBufferPeaks = (
+    buffer: AudioBuffer,
+    startSec: number,
+    endSec: number
+  ) => {
+    const seconds = Math.max(endSec - startSec, 0);
+    const bucketCount = Math.floor(seconds * RECORD_PEAKS_PER_SECOND);
+    const peaks = new Float32Array(bucketCount);
+    if (bucketCount === 0) return peaks;
+    const { sampleRate, numberOfChannels } = buffer;
+    const samplesPerBucket = sampleRate / RECORD_PEAKS_PER_SECOND;
+    const baseSample = Math.floor(startSec * sampleRate);
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const data = buffer.getChannelData(ch);
+      for (let b = 0; b < bucketCount; b++) {
+        const from = baseSample + Math.floor(b * samplesPerBucket);
+        const to = Math.min(
+          baseSample + Math.floor((b + 1) * samplesPerBucket),
+          data.length
+        );
+        let peak = peaks[b];
+        for (let i = from; i < to; i++) {
+          const v = Math.abs(data[i]);
+          if (v > peak) peak = v;
+        }
+        peaks[b] = peak;
+      }
+    }
+    return peaks;
+  };
+
+  /** Precompute peaks around the insert point so live preview is array-splice cheap. */
+  const prepareRecordPeaks = (position: number) => {
+    const buffer = blobAudioRef.current;
+    if (!buffer || buffer.duration <= 0) {
+      recordPrePeaksRef.current = new Float32Array(0);
+      recordPostPeaksRef.current = new Float32Array(0);
+      recordPreSecondsRef.current = 0;
+      recordPostSecondsRef.current = 0;
+      return;
+    }
+    const pos = clamp(position, 0, buffer.duration);
+    recordPrePeaksRef.current = computeBufferPeaks(buffer, 0, pos);
+    recordPostPeaksRef.current = computeBufferPeaks(
+      buffer,
+      pos,
+      buffer.duration
+    );
+    recordPreSecondsRef.current = pos;
+    recordPostSecondsRef.current = buffer.duration - pos;
+  };
+
+  /**
+   * Render live recording peaks: pre + live + post via load('', [peaks], duration).
+   * No fetch/decode — constant cost per refresh (the record plugin's technique).
+   */
+  const wsRecordingPeaks = async (live: Float32Array, liveSeconds: number) => {
+    const ws = wavesurferRef.current;
+    if (!ws || !recordingRef.current || recordPeaksLoadRef.current) return;
+    const pre = recordPrePeaksRef.current;
+    const post = recordPostPeaksRef.current;
+    const combined = new Float32Array(pre.length + live.length + post.length);
+    combined.set(pre, 0);
+    combined.set(live, pre.length);
+    combined.set(post, pre.length + live.length);
+    const total =
+      recordPreSecondsRef.current + liveSeconds + recordPostSecondsRef.current;
+    recordPeaksLoadRef.current = true;
+    try {
+      await ws.load('', [combined], total);
+      if (!recordingRef.current) {
+        return;
+      }
+      setDuration(total);
+      // Keep the cursor at the record position (end of the live section).
+      ws.setTime(recordPreSecondsRef.current + liveSeconds);
+    } catch (error) {
+      // Preview only — losing one frame is harmless; next emit re-renders.
+      console.warn('recording peaks render failed', error);
+    } finally {
+      recordPeaksLoadRef.current = false;
+    }
+  };
+
+  const wsStartRecord = () => {
+    setUndoBuffer(copyOriginal());
+    prepareRecordPeaks(progressRef.current);
+    // Fully unload the media element before peaks preview loads. wavesurfer's
+    // setSrc('') revokes whatever blob: URL is current and removes the src
+    // attribute but never calls media.load(), so the element keeps using the
+    // now-revoked blob — every setTime seek then refetches it
+    // (net::ERR_FILE_NOT_FOUND spam). Unloading first means revokeSrc sees no
+    // blob (our URL stays valid for bookkeeping) and seeks touch no resource.
+    const media = wavesurferRef.current?.getMediaElement();
+    if (media) {
+      try {
+        media.pause();
+      } catch {
+        /* */
+      }
+      media.removeAttribute('src');
+      media.load();
+    }
+    setRecording(true);
+  };
+  const wsStopRecord = () => {
+    loadGenerationRef.current += 1;
+    loadingRef.current = false;
+    onCanUndo(true);
+    setRecording(false);
+    isReadyRef.current = false;
+    recordPrePeaksRef.current = new Float32Array(0);
+    recordPostPeaksRef.current = new Float32Array(0);
+    recordPreSecondsRef.current = 0;
+    recordPostSecondsRef.current = 0;
+  };
+
+  const wsUndo = async () => {
+    // wsGoto clamps the position to the restored duration on load, so no harm if past end.
+    if (undoBuffer) await loadDecoded(undoBuffer, progress());
+    else {
+      wsClear();
+    }
+    //reset any region
+    clearRegions();
+    setUndoBuffer(undefined);
+    onCanUndo(false);
+  };
+
+  // Cut the audio in the current region onto the paste clipboard.
+  // Returns true when decoded audio was mutated (caller should mark changed).
+  const wsRegionDelete = async (): Promise<boolean> => {
+    if (!currentRegion() || !wavesurferRef.current) return false;
+    const start = trimTo(currentRegion()?.start ?? 0, 3);
+    const end = trimTo(currentRegion()?.end ?? 0, 3);
+    const len = end - start;
+    const regionToRemove = currentRegion();
+
+    if (!len) {
+      regionToRemove?.remove();
+      await wsClear();
+      return true;
+    }
+    const originalBuffer = blobAudioRef.current;
+    // Validate buffer before clearing the selection so a failed delete does not
+    // leave the highlight gone with unchanged audio (TT-7138).
+    if (!originalBuffer) return false;
+
+    const { numberOfChannels, sampleRate, length } = originalBuffer;
+    // Clamp like insertAudioData's after_len guard: region.end can exceed the
+    // AudioBuffer when UI/media duration is slightly longer (TT-7138).
+    const startSample = Math.max(0, Math.floor(start * sampleRate));
+    const endSample = Math.min(length, Math.floor(end * sampleRate));
+    // Selection entirely past the decoded buffer (or empty after clamp): dismiss
+    // the highlight without arming undo or marking the take changed.
+    if (endSample <= startSample) {
+      regionToRemove?.remove();
+      onRegion(0, true);
+      return false;
+    }
+    const newLength = length - (endSample - startSample);
+    // Cut: the removed span stays pasteable. A failed slice leaves the old clipboard.
+    const clip = sliceAudioBuffer(
+      originalBuffer,
+      start,
+      end,
+      (channels, frames, rate) =>
+        audioContext().createBuffer(channels, frames, rate)
+    );
+    if (clip) {
+      clipboardRef.current = clip;
+      onCanPaste(true);
+    }
+    if (newLength <= 0) {
+      regionToRemove?.remove();
+      await wsClear();
+      return true;
+    }
+
+    setUndoBuffer(copyOriginal());
+    onCanUndo(true);
+    regionToRemove?.remove();
+
+    const newAudioBuffer = audioContext().createBuffer(
+      numberOfChannels,
+      newLength,
+      sampleRate
+    );
+    for (let ix = 0; ix < numberOfChannels; ++ix) {
+      const oldData = originalBuffer.getChannelData(ix);
+      const newData = newAudioBuffer.getChannelData(ix);
+      // Copy samples before startTime
+      newData.set(oldData.subarray(0, startSample));
+      // Copy samples after endTime
+      newData.set(oldData.subarray(endSample), startSample);
+    }
+
+    let tmp = start - 0.03;
+    if (tmp < 0) tmp = 0;
+    await loadDecoded(newAudioBuffer, tmp);
+    onRegion(0, true);
+    return true;
+  };
+
+  const wsRegionReplace = async (blob: Blob) => {
+    if (!wavesurferRef.current) return;
+    setUndoBuffer(copyOriginal());
+    onCanUndo(true);
+
+    if (!currentRegion()) {
+      await wsLoad(blob);
+      return blob;
+    }
+    const start = trimTo(currentRegion()?.start ?? 0, 3);
+    const end = trimTo(currentRegion()?.end ?? 0, 3);
+    const len = end - start;
+    if (!len || !blobRef.current) {
+      await wsLoad(blob);
+      return blob;
+    }
+
+    const originalBuffer = blobAudioRef.current;
+    if (!originalBuffer) return await wsBlob();
+    const { numberOfChannels, sampleRate, length } = originalBuffer;
+    // Load the new Blob and replace the region
+    const newBuffer = await decodeAudioData(
+      audioContext(),
+      await blob.arrayBuffer()
+    );
+
+    // Create a new buffer with the combined audio data
+    const newLength = length - (end - start) * sampleRate + newBuffer.length;
+    const combinedBuffer = audioContext().createBuffer(
+      numberOfChannels,
+      newLength,
+      sampleRate
+    );
+    // Copy the original audio data up to the start of the region
+    for (let channel = 0; channel < numberOfChannels; channel++) {
+      const originalData = originalBuffer.getChannelData(channel);
+      const combinedData = combinedBuffer.getChannelData(channel);
+
+      combinedData.set(originalData.subarray(0, start * sampleRate));
+
+      // Copy the new audio data
+      if (channel < newBuffer.numberOfChannels)
+        combinedData.set(
+          newBuffer.getChannelData(channel),
+          start * originalBuffer.sampleRate
+        );
+      else
+        combinedData.set(
+          newBuffer.getChannelData(0),
+          start * originalBuffer.sampleRate
+        );
+
+      // Copy the original audio data after the end of the region
+      combinedData.set(
+        originalData.subarray(end * sampleRate),
+        start * sampleRate + newBuffer.length
+      );
+    }
+    await loadDecoded(combinedBuffer, start);
+    return await wsBlob();
+  };
+
+  return {
+    wsLoad,
+    wsBlob,
+    wsRegionBlob,
+    wsRegionDuration,
+    wsClear,
+    wsIsPlaying,
+    wsTogglePlay,
+    wsPlay,
+    wsPlayRegion,
+    wsPause,
+    wsGoto,
+    wsSetPlaybackRate,
+    wsDuration,
+    wsPosition,
+    wsSkip,
+    wsSetHeight,
+    wsLoadRegions,
+    wsClearRegions,
+    wsLoopRegion,
+    wsRegionDelete,
+    wsRegionReplace,
+    wsCopyRegion,
+    wsPaste,
+    wsHasClipboard,
+    wsUndo,
+    wsInsertAudio,
+    wsZoom,
+    wsFillPx,
+    wsGetRegions,
+    wsAutoSegment,
+    wsFindClauseSplitPoint,
+    wsPrevRegion,
+    wsNextRegion,
+    wsAddRegion,
+    wsRemoveSplitRegion,
+    wsStartRecord,
+    wsStopRecord,
+    wsRecordingPeaks,
+    wsAddMarkers,
+    wsSetRegionColor,
+    wsRemoveCurrentRegion,
+    applyRegionColors,
+  };
+}

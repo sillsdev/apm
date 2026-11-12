@@ -394,6 +394,13 @@
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="artifactType.replacement">
+            <source>Replacement</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AlertDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="artifactType.resource">
             <source>Resource</source>
             <target/>
@@ -2293,7 +2300,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="phraseBackTranslationGuided.noStepLanguage">
-            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <source>Configure a language for this Phrase Back Translation step in Edit Workflow dialog box before recording.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
@@ -5540,6 +5547,13 @@
                <context context-type="sourcefile">MediaActions.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaActions.stop">
+            <source>Stop</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPlayButton.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="mediaActions.view">
       		<source>View</source>
       		<target/>
@@ -5675,6 +5689,13 @@
          </trans-unit>
          <trans-unit id="mediaTab.fileName">
             <source>File Name</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaTab.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.fileTooBig">
+            <source>File {0} is too large {1}. File Limit is {2}MB</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaTab.tsx</context>
@@ -5897,13 +5918,6 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="mediaTab.toobig">
-            <source>File {0} is too large {1}. File Limit is {2}MB</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="mediaTab.unsupported">
             <source>File {0} is an unsupported file type.</source>
             <target/>
@@ -6027,203 +6041,203 @@
             <source>Cancel</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.dragDropMultiple">
             <source>Drag and drop files here, or click here to browse for the files.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.dragDropSingle">
             <source>Drag and drop a file here, or click here to browse for the file.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.faithbridgeTitle">
             <source>{0} Resource</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaUpload.fileTooBig">
+            <source>File is too large: {0}. File Limit is {1}MB</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaUploadContent.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.githubSupport">
             <source>Github markdown syntax supported</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.graphicTask">
       		<source>Drag and drop a file here, or click here to browse for the file. Formats accepted are .png, .jpg (or .jpeg) and .webp.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.graphicTitle">
       		<source>Upload Graphic</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.intellectualPropertyAudioTask">
       		<source>Upload a speaker rights release for {0} in audio format. Formats accepted are .mp3, .m4a, .wav or .ogg.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.intellectualPropertyTask">
       		<source>Upload a speaker rights release for {0} in audio or visual format. Audio formats accepted are .mp3, .m4a, .wav or .ogg. Visual formats accepted are .pdf, .png, or .jpg.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.intellectualPropertyTitle">
       		<source>Upload Speaker Rights Release</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.invalidFile">
             <source>Not valid for this operation: {0} </source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.ITFtask">
             <source>Upload an Incremental Transcriber File (itf file) exported from the Desktop app.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.ITFtitle">
             <source>Upload Change Data from Desktop app.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.launchLink">
             <source>Show Link Content</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.linkTask">
             <source>Enter a URI link for a resource.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.linkTitle">
             <source>Link Resource</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.markdownTask">
             <source>Enter text to be used as a resource. (Mark down formatting is allowed.)</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.markdownTitle">
             <source>Enter Text</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.pdfResourceTitle">
             <source>Upload PDF Resource</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.preview">
             <source>Preview</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.projectResourceTask">
       		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
          <trans-unit id="mediaUpload.PTFtask">
             <source>Upload a Portable Transcriber File (PTF).</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.PTFtitle">
             <source>Upload complete Audio Project Data from PTF</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
       	<trans-unit id="mediaUpload.resourceTask">
       		<source>Upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="mediaUpload.resourceTitle">
       		<source>Upload Resources</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">MediaUpload.tsx</context>
+      			<context context-type="sourcefile">MediaUploadDialog.tsx</context>
       		</context-group>
       	</trans-unit>
          <trans-unit id="mediaUpload.task">
             <source>You can upload audio files in .mp3, .m4a, .wav or .ogg format.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.title">
             <source>Upload Audio</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="mediaUpload.toobig">
-            <source>Too large: {0}. File Limit is {1}MB</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mediaUpload.upload">
             <source>Upload</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="mobile.desktopOnlyStep">
@@ -6738,6 +6752,90 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextBookMissing">
+            <source>This Bible does not include this book.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextEmpty">
+            <source>This Bible has no text for these verses.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextFetchFailed">
+            <source>The passage could not be loaded. Check your internet connection.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextForbidden">
+            <source>You do not have access to this Reference Text.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextLoading">
+            <source>Loading passage…</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoRange">
+            <source>This passage has no verse range.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoVoice">
+            <source>No voice for {0} on this device.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextNoVoiceOffline">
+            <source>Voices for {0} on this device need the internet.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextRenewLogin">
+            <source>Renew login</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextRetry">
+            <source>Try again</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextSpeakFailed">
+            <source>The passage could not be spoken.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageDetailArtifacts.referenceTextUnauthorized">
+            <source>Your login has expired. Renew it to load the passage.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextStatus.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageDetailArtifacts.research">
             <source>Research</source>
             <target/>
@@ -6998,6 +7096,13 @@
                <context context-type="sourcefile">passageRecord.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageRecord.compressErrorTooBig">
+            <source>Compression failed but the file is too big to save uncompressed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageRecord.defaultFilename">
             <source>MyRecording</source>
             <target/>
@@ -7048,17 +7153,24 @@
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.toobig">
-            <source>File is too large. File Limit is {1}MB</source>
+            <source>File is too large ({0}MB). File Limit is {1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageRecord.tooBigAfterCompression">
+            <source>Our estimate was incorrect. The file is too large after compression ({0}MB). File Limit is {1}MB</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.toobigwarn">
-            <source>File is near size limit {1}MB</source>
+            <source>File is near size limit {0}/{1}MB</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaTab.tsx</context>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="passageRecord.uncompressed">
@@ -7782,11 +7894,12 @@
                <context context-type="sourcefile">PlanTabs.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="planTabs.sectionsPassages">
-            <source>{0} &amp; Passages</source>
+         <trans-unit id="planTabs.projectOverview">
+            <source>Project Overview</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanTabs.tsx</context>
+               <context context-type="sourcefile">PlanTabSelect.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="planTabs.sectionStatus">
@@ -8203,7 +8316,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="projectDownload.downloadDescription">
-            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the {4} &amp; PASSAGES tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
+            <source>If the estimated time for download is too long for you, use the 'x' in the upper corner to close this dialog box. Then add a minimum and / or maximum {1} to the filter. The filter icon is {0} (a downward pointing dashed triangle) and is located before the {3} button on the Project Overview tab. After setting the {1} filter, choose the filtered option on this dialog box to see how much time will be needed for the filtered {2}.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
@@ -8920,14 +9033,14 @@
             <source>Artifact Type</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="selectRecording.artifactType">
             <source>Type</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MediaUpload.tsx</context>
+               <context context-type="sourcefile">MediaUploadDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="selectRecording.created">
@@ -10086,6 +10199,62 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.asrChooseLanguage">
+            <source>Choose the language of this recording for automatic transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrMethod">
+            <source>Method</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrMethodDefault">
+            <source>{0} (Default)</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrMethodHint">
+            <source>Choose a specific method only if the default method is not working well.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrRequestFailed">
+            <source>Speech recognition settings could not be loaded.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrSaveFailed">
+            <source>Speech recognition settings could not be saved.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useTranscribeStepAsr.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrSaveTeamDefault">
+            <source>Save as team default</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrTeamDefaultSaved">
+            <source>Saved as the team default.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.comment">
             <source>Comment</source>
             <target/>
@@ -10273,13 +10442,6 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="transcriber.invalidSisterLang">
-            <source>This language is not supported for speech recognition. Choose another sister language.</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.sisterLang">
@@ -10665,6 +10827,160 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">treeChart.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.add">
+            <source>Add to ranking</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.explain">
+            <source>Rank the voices used to read Reference Texts aloud. For each language, a device uses the first ranked voice it has.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.filterReferenceTexts">
+            <source>In Project Settings, offer only Reference Texts in languages with a ranked voice</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.linuxNote">
+            <source>Voices on Linux come from speech-dispatcher (for example espeak-ng). Install more voices with your package manager.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.loading">
+            <source>Loading voices&#8230;</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.local">
+            <source>Local</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.macNote">
+            <source>You can add Mac voices for other languages under System Settings &#8594; Accessibility &#8594; Spoken Content &#8594; System voice &#8594; Manage Voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.moveDown">
+            <source>Move down</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.moveUp">
+            <source>Move up</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.noMatch">
+            <source>No languages match.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.noVoices">
+            <source>This device has no text-to-speech voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.notOnDevice">
+            <source>Not on this device</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.online">
+            <source>Online</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.rankedCount">
+            <source>{0} ranked</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceLanguageGroup.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.read">
+            <source>Read</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.remove">
+            <source>Remove from ranking</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceRowItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.sampleDefault">
+            <source>This is how this voice will sound.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.sampleText">
+            <source>Sample text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.search">
+            <source>Search languages</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.showOnline">
+            <source>Show online voices</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.title">
+            <source>Reference Text Voices</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextVoicesDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="ttsVoices.windowsNote">
+            <source>You can add Windows voices for other languages under Settings &#8594; Time &amp; language &#8594; Speech &#8594; Add voices.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">VoiceInstallNote.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="uploadProgress.cancel">
@@ -11243,11 +11559,32 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="vProject.bibleListError">
+            <source>The list of Bibles could not be loaded.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.book">
+            <source>Book</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="vProject.cancel">
             <source>Cancel</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.chooseBookFirst">
+            <source>Choose a book to see reference texts</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.configure">
@@ -11290,6 +11627,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.filteredToVoices">
+            <source>Showing only languages your team has ranked voices for.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.generalBook">
@@ -11360,6 +11704,20 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.licenseNotStated">
+            <source>License not stated</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.loadingBibles">
+            <source>Loading Bibles…</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.movement">
@@ -11446,11 +11804,32 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="vProject.primaryReferenceText">
+            <source>Primary Reference Text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="vProject.projectName">
             <source>Audio Project Name</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.publicDomain">
+            <source>Public Domain</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.referenceTextRemoved">
+            <source>{0} was removed because it does not include {1}.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.renderRecommended">
@@ -11472,6 +11851,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">LastEdit.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.secondaryReferenceText">
+            <source>Secondary Reference Text</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ProjectScripture.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="vProject.sections">
@@ -11535,6 +11921,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="vProject.usedInTeam">
+            <source>Used in this team</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">ReferenceTextPicker.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="welcome.alone">
@@ -12314,11 +12707,32 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiTakingLonger">
+            <source>Taking longer than usual: {0} elapsed</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AiTimeProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.aiTimeRemaining">
+            <source>About {0} remaining</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AiTimeProgress.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.beginVoiceConvert">
             <source>Beginning voice conversion...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.changeFailed">
+            <source>Could not update the recording: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.convertVoice">
@@ -12356,8 +12770,22 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="wsAudioPlayer.deleteRegion">
-            <source>Delete Region</source>
+         <trans-unit id="wsAudioPlayer.copyRegion">
+            <source>Copy [{0}]</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.cutFailed">
+            <source>Cut failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.cutRegion">
+            <source>Cut [{0}]</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -12440,6 +12868,20 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.pasteFailed">
+            <source>Paste failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.pasteRegion">
+            <source>Paste [{0}]</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.pauseTip">
             <source>Pause [{0}]</source>
             <target/>
@@ -12487,6 +12929,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.recordStartFailed">
+            <source>Recording could not start: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.reduceNoise">
@@ -12599,6 +13048,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.undoFailed">
+            <source>Undo failed: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">WSAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.undoTip">

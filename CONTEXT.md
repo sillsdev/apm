@@ -78,16 +78,16 @@ _Avoid_: Hierarchical; calling flat rows "passages"
 Project structure with sections containing numbered passages.
 _Avoid_: Flat
 
-**Sections & Passages**:
+**Project Overview**:
 The project page that lists sections and passages — desktop sheet or mobile cards.
-_Avoid_: PlanSheet; PlanView (implementation names)
+_Avoid_: Sections & Passages (former name); PlanSheet; PlanView (implementation names)
 
 **Passage Card**:
-A mobile card for a passage (or section+passage) on Sections & Passages.
+A mobile card for a passage (or section+passage) on Project Overview.
 _Avoid_: Sheet row; table cell
 
 **Current Passage**:
-The last passage the user opened for work, stored per user in local storage so Sections & Passages can restore focus.
+The last passage the user opened for work, stored per user in local storage so Project Overview can restore focus.
 _Avoid_: Last row (desktop-sheet wording); selected row
 
 ## Publishing & Akuo
@@ -338,7 +338,7 @@ _Avoid_: Tool; calling a step a "mode"; Racetrack (dev name for the navigation U
 
 **Workflow Navigation**:
 The UI control for moving between sections, passages, and workflow steps while working on a passage.
-_Avoid_: Racetrack (internal dev name); Sections & Passages sheet
+_Avoid_: Racetrack (internal dev name); Project Overview sheet
 
 **Tool**:
 The program logic APM provides to help the user accomplish a workflow step. Each step is mapped to exactly one tool from the fixed set the application offers.
@@ -353,7 +353,7 @@ Granting a workflow step on a section or passage to a team member or group — w
 _Avoid_: Workflow step (what work, not who); Sheet editing permission
 
 **Sheet Editing Permission**:
-Who may edit the Sections & Passages sheet for a project — assigned to a user or group separately from workflow step assignments.
+Who may edit the Project Overview sheet for a project — assigned to a user or group separately from workflow step assignments.
 _Avoid_: Assignment; Publish permission
 
 ## Sync & Paratext
@@ -408,6 +408,18 @@ _Avoid_: Artifact; treating transcription as its own recording; mixing French an
 Source material an admin prepares for the team before oral translation work — reference audio, text, links, and similar inputs. Not an output of the transcription process.
 _Avoid_: Artifact (when meaning outputs); General Resource / Shared Resource (qualifiers for scope, not separate concepts in conversation)
 
+**Reference Text**:
+A published Bible text (from the HelloAO Free Use Bible API, bible.helloao.org) chosen at project level for a **Scripture Project** as its **Primary** or **Secondary** Reference Text. Its **rank** — Primary or Secondary — is the order it is listed and offered in, not a preference. Always in a language other than the project's — the team listens to it, then records the passage in their own language. Offered only when it has the **Project Book**, grouped by language named in the UI language where possible. Stored as a snapshot in the project's `defaultParams`, not as resource records; the Internalize step shows it first, as text-to-speech audio of the passage's verse range (see ADR 0014).
+_Avoid_: Resource (Reference Texts are not `sharedresource`/`sectionresource` rows); pinning or defaulting it to the project language; Bible Brain resource; role for its rank (role means admin/member)
+
+**Voice**:
+A text-to-speech voice available on this device for a language, used to **speak** a **Reference Text** passage. Which voices exist differs per device and per backend, so the team can only state a preference (**Voice Ranking**), never guarantee one; when this device has no voice for the Bible's language, the user is told at playback and shown the text instead. Online voices need the internet, so they are skipped while the device is offline, and the notice then says so. Speaking a passage never creates a mediafile, and stopping it means starting over, not resuming.
+_Avoid_: TTS engine; narrator; Reference Text audio or recording (nothing is recorded); pausing speech; Voice for the voice-conversion (`voices` org default) feature
+
+**Voice Ranking**:
+A team admin's ordered choice of **Voices** for each language (primary subtag), kept in the team's org defaults (`ttsVoices`) as voice snapshots. Playback uses the first ranked Voice this device has for the **Reference Text**'s language. Otherwise it silently uses the device's first local Voice for that language, then an online one. Ranking is optional and partial: unranked languages and voices still work. The team may also limit the Reference Texts offered in Project Settings to ranked languages (`ttsFilterRefText`). See ADR 0015.
+_Avoid_: default voice (a device's default is something else); voice settings (sounds per-user); rank (that is Primary/Secondary for a Reference Text)
+
 **Community Testing**:
 A workflow step that collects structured **feedback** (questions and responses) on the current oral translation. Results may inform a new vernacular version.
 _Avoid_: Peer Review; Discussion (unstructured comments)
@@ -461,6 +473,10 @@ _Avoid_: Saying "PBT version 3" when you mean vernacular version 3's PBT; treati
 **Scripture Project**:
 A project whose content is organized around Bible books and verse references.
 _Avoid_: General project; calling it "Bible project" unless that is established user language
+
+**Project Book**:
+The one canonical Bible book a **Scripture Project** covers, stored in `defaultParams.book` as an Akuo publishing slot (`A01`–`A39` OT, `B01`–`B27` NT, from `akuosort.json`) — not a USFM code. Drives project sort, publishing book rows, burrito export, and which **Reference Texts** are offered. The plan sheet re-derives it from the first passage's book. General projects hold a 3-digit general code, or a sort key placing them after a scripture book (e.g. `A0104`), in the same field. Passages keep their own USFM `book`.
+_Avoid_: Treating it as a USFM code; Book (alone, where **Movement** is meant)
 
 **General Project**:
 A project for non-Scripture oral content (stories, training materials, etc.) without canon book structure.

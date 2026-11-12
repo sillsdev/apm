@@ -19,7 +19,7 @@ install:
 	mkdir -p $(DESTDIR)$(prefix)/lib/audio-project-manager
 	cp -r $(bindst)/. $(DESTDIR)$(prefix)/lib/audio-project-manager
 	mkdir -p $(DESTDIR)$(prefix)/bin
-	cp $(binsrc)/src/script/audio-project-manager.sh $(DESTDIR)$(prefix)/bin/audio-project-manager
+	cp $(binsrc)/web/public/script/audio-project-manager.sh $(DESTDIR)$(prefix)/bin/audio-project-manager
 	mkdir -p $(DESTDIR)$(prefix)/share/python-support
 	chmod 777 $(DESTDIR)$(prefix)/share/python-support
 	mkdir -p $(DESTDIR)$(prefix)/share/doc/audio-project-manager

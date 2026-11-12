@@ -1,0 +1,91 @@
+import { useMemo } from 'react';
+import { useGlobal } from '../context/useGlobal';
+import { Organization, OrganizationD, RoleNames } from '../model';
+import { UpdateAttribute } from '../model/baseModel';
+import { findRecord } from './tryFindRecord';
+import { useJsonParams } from '../utils';
+
+export const orgDefaultWorkflowProgression = 'WorkflowProgression';
+/**
+ * Persisted values for {@link orgDefaultWorkflowProgression}. The string values
+ * are stored verbatim in org defaults, so they must not change.
+ */
+export enum WorkflowProgression {
+  Passage = 'passage',
+  Step = 'step',
+}
+export const orgDefaultDiscussionFilter = 'discussionFilter';
+export const orgDefaultConsCheckComp = 'ConsultantCheckCompare';
+export const orgDefaultSortTag = 'ktSort';
+export const orgDefaultKtLang = 'ktLang';
+export const orgDefaultKtExcludeTag = 'ktExcl';
+export const orgDefaultResKw = 'ResKw';
+export const orgDefaultLangProps = 'langProps';
+export const orgDefaultFeatures = 'features';
+export const orgDefaultVoices = 'voices';
+/** Team Voice Ranking for Reference Text speech (ADR 0015); not {@link orgDefaultVoices}, which is voice conversion. */
+export const orgDefaultTtsVoices = 'ttsVoices';
+/** Whether Project Settings offers only Reference Texts in languages with a ranked voice. */
+export const orgDefaultTtsFilterRefText = 'ttsFilterRefText';
+/** Legacy org ASR; read fallback and written from Vernacular transcribe step settings. */
+export const orgDefaultAsr = 'asr';
+export const orgDefaultPermissions = 'permissions';
+export const orgDefaultProjSort = 'projSort';
+
+export const useOrgDefaults = () => {
+  const [organization] = useGlobal('organization');
+  const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
+  const [user] = useGlobal('user');
+  const [memory] = useGlobal('memory');
+  const [offlineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
+  const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const { getParam, setParam } = useJsonParams();
+  // Recreated every render on purpose: org defaults are mutated in place, and
+  // callers memoize on getOrgDefault to pick up changes (e.g. isPermission).
+  const getDefault = (label: string, org: Organization | OrganizationD) => {
+    return getParam(label, org.attributes?.defaultParams);
+  };
+  const getOrgDefault = (label: string, orgIn?: string) => {
+    const org = findRecord(
+      memory,
+      'organization',
+      orgIn ?? organization
+    ) as Organization;
+    return org ? getDefault(label, org) : undefined;
+  };
+  const setDefault = (label: string, value: any, org: Organization) => {
+    const defaultParams =
+      setParam(label, value, org.attributes.defaultParams) ?? '{}';
+    org.attributes = { ...org.attributes, defaultParams };
+  };
+  const setOrgDefault = (label: string, value: any, orgIn?: string) => {
+    const org = findRecord(
+      memory,
+      'organization',
+      orgIn ?? organization
+    ) as OrganizationD;
+    if (!org) return; // no defaults on Personal Team
+    setDefault(label, value, org);
+    void memory.update((t) =>
+      UpdateAttribute(
+        t,
+        org,
+        'defaultParams',
+        org.attributes.defaultParams,
+        user
+      )
+    );
+  };
+  const canSetOrgDefault = useMemo(
+    () => orgRole === RoleNames.Admin && (offlineOnly || !offline),
+    [offline, offlineOnly, orgRole]
+  );
+
+  return {
+    getOrgDefault,
+    setOrgDefault,
+    getDefault,
+    setDefault,
+    canSetOrgDefault,
+  };
+};

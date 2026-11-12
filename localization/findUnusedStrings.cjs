@@ -1,7 +1,7 @@
-// Lists TranscriberAdmin-en-1.2.xliff trans-unit ids whose key is not referenced in src/.
+// Lists TranscriberAdmin-en-1.2.xliff trans-unit ids whose key is not referenced in web/.
 //
 // Usage (from repo root): node localization/findUnusedStrings.cjs [outDir]
-//   Writes <outDir>/none.txt  - key never appears as a word anywhere in src (likely unused)
+//   Writes <outDir>/none.txt  - key never appears as a word anywhere in web (likely unused)
 //          <outDir>/weak.txt  - key appears, but never as `.key` or a quoted 'key' (verify by hand)
 //   Also prints groups (layouts) that no selector reads.
 //
@@ -20,7 +20,7 @@ const out = process.argv[2] ?? '.';
 const x = fs.readFileSync('localization/TranscriberAdmin-en-1.2.xliff', 'utf8');
 const ids = [...x.matchAll(/<trans-unit id="([^"]+)"/g)].map((m) => m[1]);
 const files = cp
-  .execSync('git ls-files src', { encoding: 'utf8' })
+  .execSync('git ls-files web', { encoding: 'utf8' })
   .split('\n')
   .filter(
     (f) => /\.(tsx?|jsx?)$/.test(f) && !f.includes('store/localization/')
