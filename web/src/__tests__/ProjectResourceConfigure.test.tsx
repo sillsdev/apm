@@ -19,6 +19,11 @@ const mockMemory = {
 
 jest.mock('../schema', () => schemaMock(() => mockMemory));
 
+jest.mock('../utils', () => ({
+  logError: jest.fn(),
+  Severity: { info: 0, error: 1, retry: 2 },
+}));
+
 // Mock GlobalContext to avoid context errors
 jest.mock('../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
