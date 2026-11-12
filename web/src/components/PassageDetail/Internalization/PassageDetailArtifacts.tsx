@@ -162,9 +162,9 @@ export function PassageDetailArtifacts() {
   const mediaRef = useRef<MediaFileD | undefined>(undefined);
   const textRef = useRef<string | undefined>(undefined);
   const catIdRef = useRef<string | undefined>(undefined);
-  // commit() handle for the edit dialog's SelectArtifactCategory. Called at save
+  // saveCategory() handle for the edit dialog's SelectArtifactCategory. Called at save
   // to create a new category.
-  const editCatCommitRef = useRef<(() => Promise<string>) | null>(null);
+  const editCategorySaveRef = useRef<(() => Promise<string>) | null>(null);
   const descriptionRef = useRef<string>('');
 
   const [resourceKind, setResourceKindx] = useState(
@@ -413,8 +413,8 @@ export function PassageDetailArtifacts() {
   const handleEditSave = async () => {
     // Create the category now (at save) if the user typed a new one; on blur it
     // was only resolved against existing categories.
-    if (editCatCommitRef.current) {
-      const catId = await editCatCommitRef.current();
+    if (editCategorySaveRef.current) {
+      const catId = await editCategorySaveRef.current();
       catIdRef.current = catId;
     }
     if (editResource) {
@@ -794,7 +794,7 @@ export function PassageDetailArtifacts() {
           uploadType={uploadType}
           initCategory={catIdRef.current || ''}
           onCategoryChange={handleCategory}
-          catCommitRef={editCatCommitRef}
+          categorySaveRef={editCategorySaveRef}
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
           resourceKind={resourceKind}

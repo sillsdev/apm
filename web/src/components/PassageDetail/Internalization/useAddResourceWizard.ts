@@ -175,7 +175,7 @@ export function useAddResourceWizard({
   // The description's single copy (ResourceData's field is uncontrolled). A ref,
   // not state: it's only read at upload time, so typing needn't re-render.
   const descriptionRef = useRef<string>(initDescription);
-  const catCommitRef = useRef<(() => Promise<string>) | null>(null);
+  const categorySaveRef = useRef<(() => Promise<string>) | null>(null);
   const pendingResourceSeqRef = useRef(0);
 
   const [projSelection, setProjSelection] = useState<{
@@ -342,13 +342,13 @@ export function useAddResourceWizard({
     if (!advanced) onClose();
   };
 
-  // Commit the staged new category (if any) right before the real upload.
+  // Save the staged new category (if any) right before the real upload.
   const handleBeforeUpload = async () => {
     pendingResourceSeqRef.current = 0;
-    if (catCommitRef.current) {
-      categoryIdRef.current = await catCommitRef.current();
+    if (categorySaveRef.current) {
+      categoryIdRef.current = await categorySaveRef.current();
       // Cleared so a retry can't create a duplicate category.
-      catCommitRef.current = null;
+      categorySaveRef.current = null;
     }
   };
 
@@ -504,7 +504,7 @@ export function useAddResourceWizard({
     candidateItems: projSelection.candidates,
     cancelled,
     artifactId,
-    catCommitRef,
+    categorySaveRef,
     controlsRef,
     // section-select
     initialItems,

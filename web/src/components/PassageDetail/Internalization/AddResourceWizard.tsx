@@ -107,7 +107,7 @@ export function AddResourceWizard({
                     uploadType={w.uploadType}
                     initCategory=""
                     onCategoryChange={w.handleCategory}
-                    catCommitRef={w.catCommitRef}
+                    categorySaveRef={w.categorySaveRef}
                     initDescription={w.initDescription}
                     onDescriptionChange={w.handleDescription}
                     resourceKind={w.resourceKind}

@@ -74,7 +74,7 @@ interface IProps extends IDialog<IResourceDialog> {
   onLink?: (link: SharedResourceD) => Promise<void>;
   onUnlink?: () => Promise<void> | void;
   contentReadOnly?: boolean;
-  // Paint Saving and hold the sheet rebuild before category commit / orbit write.
+  // Paint Saving and hold the sheet rebuild before category save / orbit write.
   onSaving?: (saving: boolean) => void;
 }
 
@@ -102,9 +102,9 @@ export default function ResourceOverview(props: IProps) {
   // (TT-7732). The ref blocks a click that lands before disabled paints.
   const savingRef = useRef(false);
   const [saving, setSaving] = React.useState(false);
-  // commit() handle for the category field; called at save so a newly typed
+  // saveCategory() handle for the category field; called at save so a newly typed
   // category is created on submission rather than on blur.
-  const catCommitRef = useRef<(() => Promise<string>) | null>(null);
+  const categorySaveRef = useRef<(() => Promise<string>) | null>(null);
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [findNote, setFindNote] = React.useState(false);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -176,14 +176,14 @@ export default function ResourceOverview(props: IProps) {
   const handleAdd = async () => {
     if (savingRef.current) return;
     setAddBusy(true);
-    // Saving has to paint before category commit. A new category used to wait
+    // Saving has to paint before category save. A new category used to wait
     // on the remote queue here, so the snack never appeared (TT-7730).
     onSaving?.(true);
     try {
       // Create the category now (at save) if the user typed a new one; on blur it
       // was only resolved against existing categories.
-      const category = catCommitRef.current
-        ? await catCommitRef.current()
+      const category = categorySaveRef.current
+        ? await categorySaveRef.current()
         : state.category;
       await Promise.resolve(onCommit({ ...state, category }));
     } catch (err) {
@@ -241,7 +241,7 @@ export default function ResourceOverview(props: IProps) {
         <ResourceCategory
           state={{ ...state, note: isNote }}
           setState={updateState}
-          commitRef={catCommitRef}
+          categorySaveRef={categorySaveRef}
         />
         <ResourceKeywords state={state} setState={updateState} />
         {!isNote ? (

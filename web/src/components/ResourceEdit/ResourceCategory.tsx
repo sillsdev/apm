@@ -5,11 +5,11 @@ import { ArtifactCategoryType } from '../../crud/useArtifactCategory';
 
 interface IProps extends IResourceState {
   // Forwarded so the wizard can create a new category at save (not on blur).
-  commitRef?: RefObject<(() => Promise<string>) | null> | undefined;
+  categorySaveRef?: RefObject<(() => Promise<string>) | null> | undefined;
 }
 
 export const ResourceCategory = (props: IProps) => {
-  const { state, setState, commitRef } = props;
+  const { state, setState, categorySaveRef } = props;
   const { category, note } = state;
 
   const handleChange = (category: string) => {
@@ -35,7 +35,7 @@ export const ResourceCategory = (props: IProps) => {
       onNewDraft={setState ? handleNewDraft : undefined}
       required={false}
       allowNew
-      commitRef={commitRef}
+      categorySaveRef={categorySaveRef}
     />
   );
 };

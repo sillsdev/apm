@@ -62,7 +62,7 @@ interface IProps {
   allowGeneralResourceOption: boolean;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
   // category at submission (rather than on blur).
-  catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
+  categorySaveRef?: RefObject<(() => Promise<string>) | null> | undefined;
   wrapPreviewOverflow?: boolean;
 }
 export function ResourceData(props: IProps) {
@@ -78,7 +78,7 @@ export function ResourceData(props: IProps) {
     uploadType,
     onTextChange,
     wrapPreviewOverflow,
-    catCommitRef,
+    categorySaveRef,
   } = props;
   // The TextField is uncontrolled (the parent owns the value via
   // onDescriptionChange); only emptiness is tracked here, for the error state,
@@ -161,7 +161,7 @@ export function ResourceData(props: IProps) {
             required={false}
             scripture={ArtCatScr.highlight}
             type={ArtifactCategoryType.Resource}
-            commitRef={catCommitRef}
+            categorySaveRef={categorySaveRef}
           />
         </Grid>
       </Grid>
