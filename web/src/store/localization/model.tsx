@@ -1101,7 +1101,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "deleteJustThisOne": string;
     "description": string;
     "deselectAll": string;
-    "discardAndClose": string;
     "editAudioResource": string;
     "editGeneralResource": string;
     "editResource": string;
@@ -1548,6 +1547,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "consultant": string;
     "delete": string;
     "description": string;
+    "discardAndClose": string;
     "editor": string;
     "expiredParatextToken": string;
     "expiredToken": string;

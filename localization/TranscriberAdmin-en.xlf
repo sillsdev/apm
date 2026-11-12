@@ -2262,7 +2262,7 @@
       </unit>
       <unit id="discussionList.confirmClose">
          <segment>
-            <source>You have an unsent comment. Are you sure you want to close?</source>
+            <source>You have an unsent comment. If you close, your changes will be discarded.</source>
             <target/>
          </segment>
       </unit>
