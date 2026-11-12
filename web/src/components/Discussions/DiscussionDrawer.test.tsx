@@ -74,6 +74,7 @@ jest.mock('react-redux', () => ({
     open: 'Open discussions',
     close: 'Close',
     stayOpen: 'Stay Open',
+    discardAndClose: 'Discard and close',
   }),
   shallowEqual: jest.fn(),
 }));
@@ -127,7 +128,7 @@ describe('DiscussionDrawer', () => {
 
   it('pauses the step player when opening the drawer', () => {
     renderPanel(false);
-    fireEvent.click(screen.getByLabelText('Open discussions'));
+    fireEvent.click(screen.getByRole('button', { name: 'Open discussions' }));
     expect(setPlaying).toHaveBeenCalledWith(false);
     expect(setDiscussOpen).toHaveBeenCalledWith(true);
   });
@@ -166,7 +167,7 @@ describe('DiscussionDrawer', () => {
     const { rerender } = renderPanel(true, unsent);
     fireEvent.click(screen.getByLabelText('Close'));
     fireEvent.click(
-      within(screen.getByTestId('confirm-close')).getByText('Close')
+      within(screen.getByTestId('confirm-close')).getByText('Discard and close')
     );
     expect(startClear).toHaveBeenCalledWith('d1');
     expect(setDiscussOpen).not.toHaveBeenCalled();
