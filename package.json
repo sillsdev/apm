@@ -1,6 +1,6 @@
 {
   "name": "audio-project-manager",
-  "version": "4.7.0-1",
+  "version": "4.7.0",
   "description": "A flexible audio-text orality solution",
   "main": "dist-electron/main.js",
   "scripts": {
