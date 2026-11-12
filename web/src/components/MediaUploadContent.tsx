@@ -27,7 +27,7 @@ import {
   MarkDownType,
   UriLinkType,
 } from '../utils/contentType';
-import { UploadType } from './UploadType';
+import { NON_FILE_UPLOAD_TYPES, UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
 import { Button } from '../control/Button';
 
@@ -166,38 +166,37 @@ interface IProps {
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
   metaData?: React.JSX.Element | undefined;
-  ready?: (() => boolean) | undefined;
+  ready?: boolean | undefined; // false disables the save/upload button
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   team?: string | undefined; // used to check for speakers when adding a card
   onFiles?: ((files: File[]) => void) | undefined;
   inValue?: string | undefined;
-  onValue?: ((value: string) => void) | undefined;
-  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   audioOnly?: boolean | undefined;
-  saveButtonText?: string | undefined;
+  primaryButtonText?: string | undefined;
   validationMessage?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
   /** When true, render `DialogContent`/`DialogActions` without the wrapping Box
    *  so they are direct children of a shared Dialog paper (MUI flex handles the
    *  scroll region + pinned actions, matching the record body).
-   *  TODO future work: I would like to see if we can get rid of the wrapper altogether,
+   *  TODO cleanup: I would like to see if we can get rid of the wrapper altogether,
    * but don't have time to check all the usages now. */
-
   noWrapper?: boolean | undefined;
   /** Hide the bottom "Cancel" button (cancel is reached via the dialog's X). */
   hideCancel?: boolean | undefined;
-  /** Pre-select these files when the content mounts, so a returning user (e.g.
-   *  after the Add Resource wizard's Back) sees their previous choice and can
-   *  proceed without re-picking. Seeded once on mount; a fresh open passes an
-   *  empty list, so nothing is seeded there. */
-  initialFiles?: File[] | undefined;
   /** Keep the file selection after a successful submit instead of clearing it.
-   *  Used by the deferred general-resource flow: the file is only *staged* on
-   *  submit (uploaded later), so the parent keeps it selected to restore if the
-   *  user steps back to this dialog. */
+   *  Used by the deferred general-resource flow, where the body stays mounted
+   *  across the wizard steps: the selection must survive the upload (fired from
+   *  SelectSections) so it's still shown if the user steps back to this body. */
   keepFilesAfterSubmit?: boolean | undefined;
+  /** When set, the primary action button becomes a "proceed" button that calls
+   *  this instead of uploading; the real upload stays reachable through
+   *  `controlsRef.handleAddOrSave`. Used by the add-resource wizard's deferred
+   *  general-resource flow, where Next only advances and the upload fires later
+   *  from SelectSections, driven off the still-mounted selection. */
+  onNext?: (() => void) | undefined;
+  // TODO cleanup: see if we can consolidate onNext, uploadMethod, and keepFilesAfterSubmit.
 }
 
 function MediaUploadContent(props: IProps) {
@@ -215,17 +214,15 @@ function MediaUploadContent(props: IProps) {
     team,
     onFiles,
     inValue,
-    onValue,
-    onNonAudio,
     audioOnly,
-    saveButtonText,
+    primaryButtonText,
     validationMessage,
     controlsRef,
     onSaveDisabled,
     noWrapper,
     hideCancel,
-    initialFiles,
     keepFilesAfterSubmit,
+    onNext,
   } = props;
   const [name, setName] = useState('');
   const [files, setFilesx] = useState<File[]>([]);
@@ -268,7 +265,14 @@ function MediaUploadContent(props: IProps) {
       // Historical behavior: clear selection after initiating an upload. Skip it
       // when deferring — the file is only staged (uploaded later), so the parent
       // keeps it selected to restore if the user steps back to this dialog.
-      if (!keepFilesAfterSubmit) handleFiles(undefined);
+      if (!keepFilesAfterSubmit) {
+        handleFiles(undefined);
+      } else {
+        // In the Wizard, we only stage the file and defer uploading but stay mounted for the sake of the back button.
+        // So clear the progress state, otherwise it would spin forever and keep
+        // the Next button disabled on return.
+        setProgress(false);
+      }
     } catch {
       setProgress(false);
     }
@@ -282,7 +286,7 @@ function MediaUploadContent(props: IProps) {
   };
   const saveDisabled = useMemo(
     () =>
-      (ready && !ready()) ||
+      ready === false ||
       !files ||
       files.length === 0 ||
       (files[0] as File).name.trim() === '' ||
@@ -347,8 +351,6 @@ function MediaUploadContent(props: IProps) {
           )
         );
       }
-      const nonAudio = goodFiles.some((f) => !f?.type.includes('audio'));
-      if (onNonAudio) onNonAudio(nonAudio);
       goodFiles = checkSizes(goodFiles, typeLimit(uploadType));
       setName(fileName(goodFiles));
       setFiles(goodFiles);
@@ -370,7 +372,6 @@ function MediaUploadContent(props: IProps) {
     const type =
       uploadType !== UploadType.MarkDown ? UriLinkType : MarkDownType;
     setFiles([{ name: newValue, size: newValue.length, type } as File]);
-    onValue && onValue(newValue);
   };
 
   useEffect(() => {
@@ -418,17 +419,6 @@ function MediaUploadContent(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadType, audioOnly]);
 
-  // Seed the selection from a previously-chosen file (e.g. after the Add
-  // Resource wizard's Back). Mount-only: the dialog remounts this content on
-  // each open and a fresh open passes an empty list, so nothing is seeded there.
-  useEffect(() => {
-    if (initialFiles && initialFiles.length > 0) {
-      setName(fileName(initialFiles));
-      setFiles(initialFiles);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const body = (
     <>
       <DialogContent>
@@ -444,11 +434,7 @@ function MediaUploadContent(props: IProps) {
             aiip={false}
           />
         )}
-        {![
-          UploadType.Link,
-          UploadType.MarkDown,
-          UploadType.FaithbridgeLink,
-        ].includes(uploadType) ? (
+        {!NON_FILE_UPLOAD_TYPES.includes(uploadType) ? (
           <Drop>
             {hasRights ? (
               <DropTarget
@@ -473,7 +459,7 @@ function MediaUploadContent(props: IProps) {
         {metaData}
         {progress && <LinearProgress variant="indeterminate" />}
       </DialogContent>
-      {!controlsRef && (
+      {(!controlsRef || onNext) && (
         <DialogActions>
           {!hideCancel && (
             <Button
@@ -496,13 +482,13 @@ function MediaUploadContent(props: IProps) {
           )}
           <Button
             id="uploadSave"
-            onClick={handleAddOrSave}
+            onClick={onNext ?? handleAddOrSave}
             variant="contained"
             color="primary"
             disabled={saveDisabled}
             sx={{ minWidth: '96px' }}
           >
-            {saveButtonText || t.upload}
+            {primaryButtonText || t.upload}
           </Button>
         </DialogActions>
       )}

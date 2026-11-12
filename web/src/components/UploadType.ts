@@ -19,7 +19,7 @@ export enum UploadType {
  * file drop target, UPLOAD_LIST, and versioning. Shared so the hook and the
  * upload/resource UIs stay in agreement.
  */
-export const NO_LIST_TYPES = [
+export const NON_FILE_UPLOAD_TYPES = [
   UploadType.Link,
   UploadType.MarkDown,
   UploadType.FaithbridgeLink,

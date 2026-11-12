@@ -1,6 +1,5 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { restoreScroll } from '../utils';
-import MediaUploadDialog from './MediaUploadDialog';
 import { UploadType } from './UploadType';
 import { sharedSelector } from '../selector';
 import { ISharedStrings } from '../model';
@@ -15,7 +14,6 @@ import { CompressedImages, useCompression } from '../utils/useCompression';
 interface IProps {
   defaultFilename?: string;
   dimension: number[];
-  isOpen?: boolean;
   onOpen: (visible: boolean) => void;
   showMessage: (msg: string | React.JSX.Element) => void;
   hasRights?: boolean; // required for upload
@@ -32,7 +30,6 @@ export function GraphicUploader(props: IProps) {
   const {
     defaultFilename,
     dimension,
-    isOpen,
     onOpen,
     showMessage,
     cancelled,
@@ -59,19 +56,7 @@ export function GraphicUploader(props: IProps) {
     restoreScroll();
   };
 
-  return isOpen ? (
-    <MediaUploadDialog
-      visible={isOpen}
-      onVisible={onOpen}
-      uploadType={uploadType || UploadType.Media}
-      ready={() => Boolean(hasRights)}
-      uploadMethod={uploadMedia}
-      cancelMethod={uploadCancel}
-      cancelLabel={ts.close}
-      metaData={metadata}
-      onFiles={showFile}
-    />
-  ) : (
+  return (
     <MediaUploadContent
       onVisible={onOpen}
       uploadType={uploadType || UploadType.Media}
@@ -79,7 +64,7 @@ export function GraphicUploader(props: IProps) {
       cancelMethod={uploadCancel}
       cancelLabel={ts.close}
       metaData={metadata}
-      ready={() => Boolean(hasRights)}
+      ready={Boolean(hasRights)}
       onFiles={showFile}
       controlsRef={props.mediaUploadControlsRef}
       onSaveDisabled={onSaveDisabled}

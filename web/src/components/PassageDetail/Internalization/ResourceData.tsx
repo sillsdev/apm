@@ -9,21 +9,28 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import React, { useEffect, useState, type RefObject } from 'react';
+import React, { useState, type RefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
-import { IPassageDetailArtifactsStrings, MediaFileD } from '../../../model';
+import {
+  IPassageDetailArtifactsStrings,
+  MediaFileD,
+  SheetLevel,
+} from '../../../model';
+import { PassageTypeEnum } from '../../../model/passageTypeEnum';
+import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { passageDetailArtifactsSelector } from '../../../selector';
 import SelectArtifactCategory from '../../Sheet/SelectArtifactCategory';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import { MarkDownType, UriLinkType } from '../../../utils/contentType';
-import { UploadType } from '../../UploadType';
+import { NON_FILE_UPLOAD_TYPES, UploadType } from '../../UploadType';
 import { LinkEdit } from '../../../control/LinkEdit';
 import { MarkDownEdit } from '../../../control/MarkDownEdit';
 import { mediaContentType } from '../../../utils/contentType';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { ArtCatScr } from '../../../components/Sheet/ArtCatScr';
 import { descriptionRequiredForResource } from './resourceArtifactName';
+import usePassageDetailContext from '../../../context/usePassageDetailContext';
 
 type ResourceKindRadio = 'section' | 'passage' | 'general';
 
@@ -53,13 +60,13 @@ interface IProps {
   onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
   onTextChange?: ((text: string) => void) | undefined;
   allowGeneralResourceOption: boolean;
+  // TODO cleanup in next PR: every caller passes catRequired={false} and
+  // catAllowNew={true}; hard-code them and drop the props.
   catRequired: boolean;
   catAllowNew?: boolean | undefined;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
   // category at submission (rather than on blur).
   catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
-  sectDesc?: string | undefined;
-  passDesc?: string | undefined;
   wrapPreviewOverflow?: boolean;
 }
 export function ResourceData(props: IProps) {
@@ -73,35 +80,52 @@ export function ResourceData(props: IProps) {
     catRequired,
     catAllowNew,
     allowGeneralResourceOption,
-    sectDesc,
-    passDesc,
     media,
     uploadType,
     onTextChange,
     wrapPreviewOverflow,
     catCommitRef,
   } = props;
-  const [description, setDescription] = useState(initDescription);
+  // The TextField is uncontrolled (the parent owns the value via
+  // onDescriptionChange); only emptiness is tracked here, for the error state,
+  // so typing re-renders only when it flips. Callers remount (new dialog open)
+  // to seed a different initDescription.
+  const [hasDescription, setHasDescription] = useState(
+    Boolean(initDescription.trim())
+  );
   const { getOrganizedBy } = useOrganizedBy();
+  const { section, passage } = usePassageDetailContext();
   const [text, setText] = useState(media?.attributes?.originalFile ?? '');
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
   );
+  // Scope radio labels: Book/Movement sections and Note passages get their own wording.
+  const sectionLevel = section?.attributes?.level;
+  const sectionScopeLabel =
+    sectionLevel === SheetLevel.Book
+      ? t.bookResource
+      : sectionLevel === SheetLevel.Movement
+        ? t.movementResource
+        : getOrganizedBy(true);
+  const passageScopeLabel =
+    passageTypeFromRef(passage?.attributes?.reference ?? undefined) ===
+    PassageTypeEnum.NOTE
+      ? t.noteResource
+      : t.passageResource;
   const descriptionRequired = descriptionRequiredForResource(
     mediaContentType(media),
     uploadType,
     media?.attributes?.originalFile
   );
 
-  useEffect(() => setDescription(initDescription), [initDescription]);
-
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onPassResChange?.(radioToResourceKind(event.target.value));
   };
-  const handleChangeDescription = (e: any) => {
-    e.persist();
-    setDescription(e.target.value);
+  const handleChangeDescription = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setHasDescription(Boolean(e.target.value.trim()));
     onDescriptionChange(e.target.value);
   };
 
@@ -128,10 +152,10 @@ export function ResourceData(props: IProps) {
             id="description"
             // Labeled "Title" for users, though it is stored in the description field.
             label={t.title}
-            value={description || ''}
+            defaultValue={initDescription}
             onChange={handleChangeDescription}
             required={descriptionRequired}
-            error={descriptionRequired && !(description || '').trim()}
+            error={descriptionRequired && !hasDescription}
             fullWidth={true}
           />
         </Grid>
@@ -159,24 +183,18 @@ export function ResourceData(props: IProps) {
             <FormControlLabel
               value={'section'}
               control={<Radio />}
-              label={t.currentResource.replace(
-                '{0}',
-                sectDesc ?? getOrganizedBy(true)
-              )}
+              label={t.currentResource.replace('{0}', sectionScopeLabel)}
             />
             <FormControlLabel
               value={'passage'}
               control={<Radio />}
-              label={t.currentResource.replace(
-                '{0}',
-                passDesc ?? t.passageResource
-              )}
+              label={t.currentResource.replace('{0}', passageScopeLabel)}
             />
             {allowGeneralResourceOption &&
               ![
-                UploadType.Link,
-                UploadType.MarkDown,
-                UploadType.FaithbridgeLink,
+                ...NON_FILE_UPLOAD_TYPES,
+                UploadType.PdfResource,
+                UploadType.Graphic,
               ].includes(uploadType ?? UploadType.Resource) && (
                 <FormControlLabel
                   value={'general'}

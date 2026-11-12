@@ -47,9 +47,10 @@ export const useSecResCreate = (
       },
     } as SectionResource;
     const t = new RecordTransformBuilder();
+    // AddRecord assigns secRes.id, so build the identity after it.
+    const ops = [...AddRecord(t, secRes, user, memory)];
     const sectionresourceIdentity = recordRef('sectionresource', secRes.id);
-    const ops = [
-      ...AddRecord(t, secRes, user, memory),
+    ops.push(
       ...ReplaceRelatedRecord(
         t,
         sectionresourceIdentity,
@@ -70,8 +71,8 @@ export const useSecResCreate = (
         'orgWorkflowStep',
         'orgworkflowstep',
         orgWorkflowStepId ?? internalization?.id
-      ),
-    ];
+      )
+    );
     if (passId) {
       ops.push(
         ...ReplaceRelatedRecord(

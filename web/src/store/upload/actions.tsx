@@ -281,6 +281,7 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
+  // TODO cleanup: see if we can consolidate the props above, especially the error handling and end behavior ones
 }
 export const nextUpload =
   ({
@@ -299,15 +300,20 @@ export const nextUpload =
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
+    // We don't put general resources into the retry queue. They are a multi-step job the user must do in one go
+    const queueForRetry =
+      uploadType !== UploadType.ProjectResource ||
+      Boolean(pendingUploadIdToClearOnSuccess);
     // TT-7365: a retried Save (e.g. re-clicked after an offline failure) may
     // not carry pendingUploadIdToClearOnSuccess (that's only wired from the
     // Pending Media Uploads dialog's Retry button). Reuse any pending row
     // already staged for this section/artifact/file so repeated Save clicks
     // update one row instead of appending a new one each time
     // writeFileLocal stages the same recording under a new versioned path.
-    let pendingIdToClear =
-      pendingUploadIdToClearOnSuccess ??
-      findPendingUploadIdForIdentity(record as PendingUploadMediaRecord);
+    let pendingIdToClear = queueForRetry
+      ? (pendingUploadIdToClearOnSuccess ??
+        findPendingUploadIdForIdentity(record as PendingUploadMediaRecord))
+      : undefined;
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -510,7 +516,7 @@ export const nextUpload =
         }
       }
 
-      if (localAbsolutePath) {
+      if (localAbsolutePath && queueForRetry) {
         const queuePatch = {
           localAbsolutePath,
           fileSize: size,
@@ -545,27 +551,29 @@ export const nextUpload =
           );
           if (!cloudRowDeleted) failedRemoteMediaId = remoteId;
         }
-        const pathForQueue =
-          localAbsolutePath ||
-          ((files[n] as File & { path?: string }).path ?? '');
-        const queuePatch = {
-          localAbsolutePath: pathForQueue,
-          fileSize: size,
-          uploadType,
-          record: snapshotForPending(),
-          ...(pendingRestore ? { restore: pendingRestore } : {}),
-        };
-        const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
-            appendPendingMediaUpload(queuePatch))
-          : appendPendingMediaUpload(queuePatch);
-        onTerminalFailure?.({
-          localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
-          originalFileName: name,
-          pendingRecord,
-          cloudRowDeleted,
-          failedRemoteMediaId,
-        });
+        if (queueForRetry) {
+          const pathForQueue =
+            localAbsolutePath ||
+            ((files[n] as File & { path?: string }).path ?? '');
+          const queuePatch = {
+            localAbsolutePath: pathForQueue,
+            fileSize: size,
+            uploadType,
+            record: snapshotForPending(),
+            ...(pendingRestore ? { restore: pendingRestore } : {}),
+          };
+          const pendingRecord = pendingIdToClear
+            ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+              appendPendingMediaUpload(queuePatch))
+            : appendPendingMediaUpload(queuePatch);
+          onTerminalFailure?.({
+            localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
+            originalFileName: name,
+            pendingRecord,
+            cloudRowDeleted,
+            failedRemoteMediaId,
+          });
+        }
         completeCB(false, undefined, statusNum, statusText);
       };
 
