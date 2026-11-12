@@ -5,6 +5,8 @@ import { Box } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { discussSelector } from '../../selector';
 import { MarkDownView } from '../../control/MarkDownView';
+import { parseStepTool } from '../../crud/transcribeStepSettings';
+import { parseJsonObject } from '../../utils/normalData';
 
 interface IProps {
   width: number;
@@ -19,8 +21,10 @@ export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
   useEffect(() => {
     const step = orgSteps?.find((s) => s.id === currentStep);
     if (step) {
-      const json = JSON.parse(step?.attributes?.tool || '{}');
-      setValue(JSON.parse(json?.settings || '{}')?.markDown ?? '');
+      const settings = parseJsonObject(
+        parseStepTool(step.attributes?.tool).settings
+      );
+      setValue(typeof settings?.markDown === 'string' ? settings.markDown : '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgSteps]);

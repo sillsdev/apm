@@ -68,7 +68,10 @@ import {
   type FontData,
 } from '../../../../crud/fontChoice';
 import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
-import { parseTranscribeStepSettings } from '../../../../crud/transcribeStepSettings';
+import {
+  parseStepTool,
+  parseTranscribeStepSettings,
+} from '../../../../crud/transcribeStepSettings';
 import { isStepSpellCheckOn } from '../../../../crud/stepSpellCheck';
 import {
   ArtifactTypeSlug,
@@ -77,7 +80,7 @@ import {
 import { parseMediaLanguageField } from '../../carefulSpeech/matchesGuidedOutputRow';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../../crud/isLinkedNote';
-import { isLangSet, JSONParse, toCamel } from '../../../../utils';
+import { isLangSet, toCamel } from '../../../../utils';
 import { Button } from '../../../../control/Button';
 import TranscriptionLogo from '../../../../control/TranscriptionLogo';
 import { StyledTextAreaAutosize } from '../../../../control/WebFontStyles';
@@ -231,10 +234,7 @@ export function PassageDetailTranscribeMobileContent({
           (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
       )
       .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as {
-          tool?: string;
-          settings?: string | object;
-        };
+        const toolData = parseStepTool(s?.attributes?.tool);
         return {
           id: s.id,
           sequencenum: ix,
@@ -1015,10 +1015,7 @@ export default function PassageDetailTranscribeMobile(props: Readonly<IProps>) {
           (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
       )
       .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as {
-          tool?: string;
-          settings?: string | object;
-        };
+        const toolData = parseStepTool(s?.attributes?.tool);
         return {
           id: s.id,
           sequencenum: ix,

@@ -82,15 +82,34 @@ export function parseTranscribeStepSettings(
   });
 }
 
-/** Parse a workflow step `tool` attribute; unreadable data reads as {}. */
-export function parseStepTool(tool: unknown): Record<string, unknown> {
+/** Workflow step `tool` attribute. `settings` is parsed by the tool's own parser. */
+export interface StepTool extends Record<string, unknown> {
+  tool?: string;
+  settings?: unknown;
+}
+
+/**
+ * Parse a workflow step `tool` attribute. Unreadable data reads as {}, and a
+ * `tool` name that is not a string as unset; both are logged.
+ */
+export function parseStepTool(tool: unknown): StepTool {
   const parsed = parseJsonObject(tool);
   if (!parsed) {
     logOncePerMessage(`Unreadable workflow step tool: ${preview(tool)}`);
     return {};
   }
-  return parsed;
+  return normalizeFields(parsed, { tool: asString }, (key, value) => {
+    if (value !== null) {
+      logOncePerMessage(
+        `Workflow step tool field ${key} has type ${typeName(value)}`
+      );
+    }
+  });
 }
+
+/** Whether a step's `tool` attribute can be read (missing counts as readable). */
+export const isStepToolReadable = (tool: unknown) =>
+  parseJsonObject(tool) !== undefined;
 
 /**
  * Before a save replaces settings we could not read, log where they are (not
