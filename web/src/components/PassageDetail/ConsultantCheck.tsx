@@ -62,11 +62,7 @@ function a11yProps(index: number) {
   };
 }
 
-interface IProps {
-  width: number;
-}
-
-export function ConsultantCheck({ width }: IProps) {
+export function ConsultantCheck() {
   const {
     workflow,
     setStepComplete,
@@ -239,7 +235,7 @@ export function ConsultantCheck({ width }: IProps) {
   }, [workflow]);
 
   return (
-    <Box sx={{ width: width }}>
+    <Box sx={{ width: '100%', minWidth: 0 }}>
       {compare.length <= 1 && (
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs

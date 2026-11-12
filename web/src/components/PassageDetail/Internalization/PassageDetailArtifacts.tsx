@@ -833,7 +833,7 @@ export function PassageDetailArtifacts() {
           text={t.confirmClose}
           no={t.keepOpen}
           primaryButton="no"
-          yes={t.discardAndClose}
+          yes={ts.discardAndClose}
           noResponse={() => setEditCloseConfirmation(false)}
           yesResponse={handleEditDiscard}
         />

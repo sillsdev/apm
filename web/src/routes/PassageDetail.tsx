@@ -26,7 +26,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { mobileSelector, sharedSelector } from '../selector';
 import { Paper, Typography } from '@mui/material';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
-import { usePaneWidth } from '../components/usePaneWidth';
 import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
@@ -88,7 +87,6 @@ const MobileStep = () => {
   const { tool, settings } = useStepTool(currentstep);
   const [memory] = useGlobal('memory');
   const { slugFromId } = useArtifactType();
-  const { paneWidth } = usePaneWidth();
 
   const artifactSlug = useMemo(() => {
     const parsed =
@@ -115,86 +113,68 @@ const MobileStep = () => {
     isBoldWorkflow,
     artifactSlug
   );
-  const width = Math.max(0, paneWidth - 40);
 
   if (tool === ToolSlug.Record) {
-    return <PassageDetailRecord width={width} />;
+    return <PassageDetailRecord />;
   }
   if (tool === ToolSlug.Resource) {
     return <PassageDetailsArtifactsMobile />;
   }
   if (tool === ToolSlug.Verses) {
-    return <PassageDetailMarkVerses width={Math.max(0, paneWidth)} />;
+    return <PassageDetailMarkVerses />;
   }
   if (tool === ToolSlug.CarefulSpeech) {
     // Keyed for the same reason as the transcription steps below: a team can
     // configure several guided-record steps in a row, and they all render the
     // one PassageDetailGuidedPhraseRecord component. (TT-7643)
-    return <PassageDetailCarefulSpeech key={currentstep} width={width} />;
+    return <PassageDetailCarefulSpeech key={currentstep} />;
   }
   if (tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) {
-    return <PassageDetailLwcTranslation key={currentstep} width={width} />;
+    return <PassageDetailLwcTranslation key={currentstep} />;
   }
   if (tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow) {
     // A team can have one Phrase Back Translation step per language. Without a
     // key the reused instance carries the previous step's recording pass -
     // including the take loaded in its recorder - into the next language's
     // step, so the other language's audio plays there. (TT-7643)
-    return <PassageDetailPhraseBackTranslate key={currentstep} width={width} />;
+    return <PassageDetailPhraseBackTranslate key={currentstep} />;
   }
   if (boldClauseTranscription) {
     // Key on currentstep so the shared transcription component remounts when
     // moving between the adjacent Careful- and LWC-Transcription steps. Desktop
-    // gets this for free via <Paper key={currentstep}> in PassageDetailGrids;
+    // gets this for free via the keyed step column in PassageDetailGrids;
     // without it here the reused instance carries state (and flushes the prior
     // step's text onto the new step's artifact), so LWC shows Careful's
     // transcriptions. (TT-7503)
-    return <PassageDetailLwcTranscription key={currentstep} width={width} />;
+    return <PassageDetailLwcTranscription key={currentstep} />;
   }
   if (tool === ToolSlug.TeamCheck) {
-    return <TeamCheckReferenceMobile width={width} />;
+    return <TeamCheckReferenceMobile />;
   }
   if (tool === ToolSlug.Prompt) {
-    return <PassageDetailPrompt width={width} />;
+    return <PassageDetailPrompt />;
   }
   if (tool === ToolSlug.Transcribe) {
-    return <PassageDetailTranscribeMobile width={width} />;
+    return <PassageDetailTranscribeMobile />;
   }
   if (toolShowsStepInstructions(tool)) {
     return (
       <>
         {tool === ToolSlug.Discuss && (
-          <PassageDetailPlayer width={width} allowZoomAndSpeed={true} />
+          <PassageDetailPlayer allowZoomAndSpeed={true} />
         )}
-        <PassageDetailDiscuss width={width} currentStep={currentstep} />
+        <PassageDetailDiscuss currentStep={currentstep} />
       </>
     );
   }
   return <DesktopOnlyStep />;
 };
 
-const MobileDetail = () => {
-  const { isMobileWidth } = useMobile();
-  const { discussOpen } = useContext(PassageDetailContext)?.state ?? {
-    discussOpen: false,
-  };
-
-  const showSideBySide = useMemo(() => !isMobileWidth, [isMobileWidth]);
-  const flushDiscussionLeft = useMemo(
-    () => discussOpen && !showSideBySide,
-    [discussOpen, showSideBySide]
-  );
-
-  return (
-    <PassageDetailMobileDetail
-      showSideBySide={showSideBySide}
-      flushDiscussionLeft={flushDiscussionLeft}
-      // Always mount MobileStep on narrow mobile while discussion is open; unmounting
-      // drops PassageDetailRecord/MediaRecord state and clears an in-progress recording.
-      recordContent={<MobileStep />}
-    />
-  );
-};
+const MobileDetail = () => (
+  // MobileStep stays mounted behind the discussion drawer; unmounting drops
+  // PassageDetailRecord/MediaRecord state and clears an in-progress recording.
+  <PassageDetailMobileDetail recordContent={<MobileStep />} />
+);
 
 export const PassageDetail = () => {
   const { prjId } = useParams();

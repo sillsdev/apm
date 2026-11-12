@@ -2,14 +2,12 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 
-const discussionSize = { width: 450, height: 900 };
 const mockSetDiscussOpen = jest.fn();
 const mockUseStepTool = jest.fn();
 
 jest.mock('../../context/usePassageDetailContext', () => () => ({
   currentstep: 'step-1',
   section: { id: 's1', type: 'section' },
-  discussionSize,
   promptDockedRecordButton: null,
   promptDockedRecordFooterVersion: 0,
   setDiscussOpen: mockSetDiscussOpen,
@@ -47,7 +45,7 @@ jest.mock('./PassageDetailLayout', () => ({
 jest.mock('./mobile/MobileWorkflowSteps', () => () => null);
 jest.mock('./mobile/PassageDetailMobileFooter', () => () => null);
 
-jest.mock('../Discussions/DiscussionPanel', () => ({
+jest.mock('../Discussions/DiscussionDrawer', () => ({
   __esModule: true,
   default: () => <div data-cy="discussion-panel">Discussion</div>,
 }));
@@ -70,38 +68,13 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
     mockUseStepTool.mockReturnValue({ tool: ToolSlug.Record, settings: {} });
   });
 
-  it('uses a fixed discussion column width when side-by-side', () => {
+  it('renders the step content with the discussion panel below it', () => {
     const { container } = render(
       <PassageDetailMobileDetail
-        showSideBySide={true}
         recordContent={<div data-cy="record-content">Waveform</div>}
       />
     );
 
-    expect(
-      container.querySelector('[data-cy="discussion-side-by-side"]')
-    ).toBeTruthy();
-    const column = container.querySelector(
-      '[data-cy="discussion-side-column"]'
-    ) as HTMLElement;
-    expect(column).toBeTruthy();
-    expect(container.querySelector('[data-cy="record-content"]')).toBeTruthy();
-    expect(
-      container.querySelector('[data-cy="discussion-panel"]')
-    ).toBeTruthy();
-  });
-
-  it('stacks discussion below content when not side-by-side', () => {
-    const { container } = render(
-      <PassageDetailMobileDetail
-        showSideBySide={false}
-        recordContent={<div data-cy="record-content">Waveform</div>}
-      />
-    );
-
-    expect(
-      container.querySelector('[data-cy="discussion-side-by-side"]')
-    ).toBeNull();
     expect(container.querySelector('[data-cy="record-content"]')).toBeTruthy();
     expect(
       container.querySelector('[data-cy="discussion-panel"]')
@@ -113,7 +86,6 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
 
     const { container } = render(
       <PassageDetailMobileDetail
-        showSideBySide={false}
         recordContent={<div data-cy="record-content">Artifacts</div>}
       />
     );

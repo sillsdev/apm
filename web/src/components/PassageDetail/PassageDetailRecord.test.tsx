@@ -37,7 +37,6 @@ const passageDetailCtx = {
   passage: { id: 'p1', type: 'passage' },
   sharedResource: undefined as unknown,
   mediafileId: 'mf1',
-  chooserSize: 0,
   recording: false,
   setRecording: jest.fn(),
   currentstep: 'step-record',
@@ -233,7 +232,7 @@ import {
 } from '../../store/upload/pendingMediaUploads';
 import { PassageDetailRecord } from './PassageDetailRecord';
 
-const renderRecord = () => render(<PassageDetailRecord width={400} />);
+const renderRecord = () => render(<PassageDetailRecord />);
 
 const seedPendingForCurrentPassage = () => {
   appendPendingMediaUpload({
