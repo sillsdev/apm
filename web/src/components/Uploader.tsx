@@ -11,7 +11,7 @@ interface IProps {
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
   skipImportExportWait?: boolean | undefined;
   isOpen: boolean;
-  onOpen: (visible: boolean) => void;
+  onClose: () => void;
   finish?: ((mediaRemoteIds?: string[]) => Promise<void>) | undefined; // logic when upload complete
   cancelled: React.RefObject<boolean>;
   multiple?: boolean | undefined;
@@ -39,7 +39,7 @@ export const Uploader = (props: IProps) => {
     noBusy,
     skipImportExportWait,
     isOpen,
-    onOpen,
+    onClose,
     cancelled,
     multiple,
     importList,
@@ -79,7 +79,7 @@ export const Uploader = (props: IProps) => {
     try {
       await finish?.(mediaRemoteIds);
     } finally {
-      onOpen(false);
+      onClose();
     }
   };
 
@@ -110,7 +110,7 @@ export const Uploader = (props: IProps) => {
   });
 
   const uploadCancel = () => {
-    onOpen(false);
+    onClose();
     if (cancelled) cancelled.current = true;
     restoreScroll();
   };
@@ -121,8 +121,8 @@ export const Uploader = (props: IProps) => {
     <Box sx={{ width: '100%' }}>
       {!hasImport && (
         <MediaUploadDialog
-          visible={isOpen}
-          onVisible={onOpen}
+          isOpen={isOpen}
+          onClose={onClose}
           uploadType={uploadType || UploadType.Media}
           multiple={multiple}
           uploadMethod={uploadMedia}

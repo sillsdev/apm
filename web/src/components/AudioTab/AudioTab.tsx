@@ -445,7 +445,7 @@ export function AudioTab() {
       </Box>
       <Uploader
         isOpen={uploadVisible}
-        onOpen={setUploadVisible}
+        onClose={() => setUploadVisible(false)}
         multiple={true}
         finish={afterUpload}
         cancelled={cancelled}

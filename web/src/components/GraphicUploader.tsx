@@ -14,15 +14,15 @@ import { CompressedImages, useCompression } from '../utils/useCompression';
 interface IProps {
   defaultFilename?: string;
   dimension: number[];
-  onOpen: (visible: boolean) => void;
+  onClose: () => void;
   showMessage: (msg: string | React.JSX.Element) => void;
   hasRights?: boolean; // required for upload
   finish?: (images: CompressedImages[]) => void; // when conversion complete
   cancelled: React.RefObject<boolean>;
   uploadType?: UploadType;
-  metadata?: React.JSX.Element;
+  metaData?: React.JSX.Element;
   onFiles?: (files: File[]) => void;
-  mediaUploadControlsRef?: React.RefObject<MediaUploadControlsRef>;
+  controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
 }
 
@@ -30,15 +30,16 @@ export function GraphicUploader(props: IProps) {
   const {
     defaultFilename,
     dimension,
-    onOpen,
+    onClose,
     showMessage,
     cancelled,
     uploadType,
     hasRights,
     finish,
-    metadata,
+    metaData,
     onFiles,
     onSaveDisabled,
+    controlsRef,
   } = props;
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { showFile, uploadMedia } = useCompression({
@@ -47,26 +48,26 @@ export function GraphicUploader(props: IProps) {
     dimension,
     defaultFilename,
     finish,
-    onOpen,
+    onClose,
   });
 
   const uploadCancel = () => {
-    onOpen?.(false);
+    onClose();
     if (cancelled) cancelled.current = true;
     restoreScroll();
   };
 
   return (
     <MediaUploadContent
-      onVisible={onOpen}
+      onClose={onClose}
       uploadType={uploadType || UploadType.Media}
       uploadMethod={uploadMedia}
       cancelMethod={uploadCancel}
       cancelLabel={ts.close}
-      metaData={metadata}
+      metaData={metaData}
       ready={Boolean(hasRights)}
       onFiles={showFile}
-      controlsRef={props.mediaUploadControlsRef}
+      controlsRef={controlsRef}
       onSaveDisabled={onSaveDisabled}
     />
   );

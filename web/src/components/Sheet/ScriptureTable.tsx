@@ -637,10 +637,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     });
   };
 
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
-
   const handleUpload = (i: number) => () => {
     saveIfChanged(() => {
       showUpload(i);
@@ -1503,7 +1499,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
       )}
       <Uploader
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
+        onClose={() => setUploadVisible(false)}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}

@@ -7,7 +7,7 @@ import { mediaTitleSelector } from '../selector';
 
 interface IProps {
   isOpen: boolean;
-  onOpen: (visible: boolean) => void;
+  onClose: () => void;
   hasRights?: boolean; // required for upload
   cancelled: React.RefObject<boolean>;
   uploadMethod: (files: File[]) => Promise<boolean>;
@@ -15,11 +15,12 @@ interface IProps {
 }
 
 export function TitleUploader(props: IProps) {
-  const { isOpen, onOpen, cancelled, hasRights, uploadMethod, onFiles } = props;
+  const { isOpen, onClose, cancelled, hasRights, uploadMethod, onFiles } =
+    props;
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
 
   const uploadCancel = () => {
-    onOpen(false);
+    onClose();
     // eslint-disable-next-line react-hooks/immutability
     if (cancelled) cancelled.current = true;
     restoreScroll();
@@ -27,7 +28,7 @@ export function TitleUploader(props: IProps) {
 
   return isOpen ? (
     <MediaUploadContent
-      onVisible={onOpen}
+      onClose={onClose}
       uploadType={UploadType.Media}
       ready={Boolean(hasRights)}
       uploadMethod={uploadMethod}
