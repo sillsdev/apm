@@ -5644,12 +5644,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.discardAndClose">
-         <segment>
-            <source>Discard and Close</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.editAudioResource">
          <segment>
             <source>Edit Audio Resource</source>
@@ -7891,6 +7885,12 @@
       <unit id="shared.description">
          <segment>
             <source>Description</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.discardAndClose">
+         <segment>
+            <source>Discard and Close</source>
             <target/>
          </segment>
       </unit>

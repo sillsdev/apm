@@ -4669,11 +4669,6 @@
             <source>Deselect All</source>
             <target>Deseleccionar todo</target>
          </segment>
-      </unit><unit id="passageDetailArtifacts.discardAndClose">
-         <segment>
-            <source>Discard and Close</source>
-            <target>Descartar y cerrar</target>
-         </segment>
       </unit><unit id="passageDetailArtifacts.editAudioResource">
          <segment>
             <source>Edit Audio Resource</source>
@@ -6473,6 +6468,11 @@
          <segment>
             <source>Description</source>
             <target>Descripción</target>
+         </segment>
+      </unit><unit id="shared.discardAndClose">
+         <segment>
+            <source>Discard and Close</source>
+            <target>Descartar y cerrar</target>
          </segment>
       </unit><unit id="shared.editor">
          <segment>

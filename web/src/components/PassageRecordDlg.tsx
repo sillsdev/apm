@@ -16,8 +16,13 @@ import { shallowEqual, useSelector } from 'react-redux';
 import {
   IPassageDetailArtifactsStrings,
   IPassageRecordStrings,
+  ISharedStrings,
 } from '../model';
-import { passageRecordSelector, resourceSelector } from '../selector';
+import {
+  passageRecordSelector,
+  resourceSelector,
+  sharedSelector,
+} from '../selector';
 import UploadRecordToggle, {
   AudioAddMode,
 } from './PassageDetail/Internalization/UploadRecordToggle';
@@ -147,6 +152,10 @@ function PassageRecordDlg(props: IProps) {
   );
   const recordStrings: IPassageRecordStrings = useSelector(
     passageRecordSelector,
+    shallowEqual
+  );
+  const sharedStrings: ISharedStrings = useSelector(
+    sharedSelector,
     shallowEqual
   );
   const [reporter] = useGlobal('errorReporter');
@@ -396,7 +405,7 @@ function PassageRecordDlg(props: IProps) {
           text={resourceStrings.confirmClose}
           no={resourceStrings.keepOpen}
           primaryButton="no"
-          yes={resourceStrings.discardAndClose}
+          yes={sharedStrings.discardAndClose}
           noResponse={() => setShowConfirm(false)}
           yesResponse={() => {
             setShowConfirm(false);

@@ -1518,7 +1518,7 @@ export function PassageDetailArtifactsMobile() {
           text={t.confirmClose}
           no={t.keepOpen}
           primaryButton="no"
-          yes={t.discardAndClose}
+          yes={ts.discardAndClose}
           noResponse={() => setDialogPendingCloseConfirmation(null)}
           yesResponse={
             dialogPendingCloseConfirmation === 'passage'

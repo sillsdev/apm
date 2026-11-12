@@ -6584,13 +6584,6 @@
       			<context context-type="sourcefile">SelectSections.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.discardAndClose">
-      		<source>Discard and Close</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PassageMedia.tsx</context>
-      		</context-group>
-      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.editAudioResource">
       		<source>Edit Audio Resource</source>
       		<target/>
@@ -9209,6 +9202,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">ResourceData.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="shared.discardAndClose">
+            <source>Discard and Close</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="shared.editor">
