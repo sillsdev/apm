@@ -193,7 +193,7 @@ export default function DiscussionDrawer() {
             title={t.confirmCloseTitle}
             text={t.confirmClose}
             no={t.stayOpen}
-            yes={ts.close}
+            yes={ts.discardAndClose}
             primaryButton="no"
             noResponse={() => setConfirmClose(false)}
             yesResponse={discardAndClose}

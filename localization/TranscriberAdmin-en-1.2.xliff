@@ -2636,7 +2636,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="discussionList.confirmClose">
-            <source>You have an unsent comment. Are you sure you want to close?</source>
+            <source>You have an unsent comment. If you close, your changes will be discarded.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">DiscussionList.tsx</context>
