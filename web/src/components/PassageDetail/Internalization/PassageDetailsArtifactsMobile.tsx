@@ -632,10 +632,6 @@ export function PassageDetailArtifactsMobile() {
     );
   };
 
-  const handlePassRes = (newValue: ResourceTypeEnum) => {
-    setResourceKind(newValue);
-  };
-
   const handleEnded = () => {
     setPlayItem('');
     handleItemPlayEnd();
@@ -799,7 +795,7 @@ export function PassageDetailArtifactsMobile() {
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
           resourceKind={resourceKind}
-          onPassResChange={handlePassRes}
+          onResourceKindChange={setResourceKind}
           allowGeneralResourceOption={false}
           onTextChange={handleTextChange}
           wrapPreviewOverflow

@@ -409,7 +409,7 @@ export function useAddResourceWizard({
     setHasDescription(Boolean(desc.trim()));
   };
 
-  const handlePassRes = (newValue: ResourceTypeEnum) => {
+  const handleResourceKind = (newValue: ResourceTypeEnum) => {
     setResourceKind(newValue);
     if (newValue === ResourceTypeEnum.projectResource) {
       setUploadType(UploadType.ProjectResource);
@@ -519,7 +519,7 @@ export function useAddResourceWizard({
     setResourceUploadFiles,
     handleDescription,
     handleCategory,
-    handlePassRes,
+    handleResourceKind,
     handleUploadStepNext,
     handleSectionsSelected,
     handleSelectSectionsBack,

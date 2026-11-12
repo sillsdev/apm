@@ -57,7 +57,7 @@ interface IProps {
   resourceKind?: ResourceTypeEnum | undefined;
   onCategoryChange: (artifactCategoryId: string) => void;
   onDescriptionChange: (desc: string) => void;
-  onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
+  onResourceKindChange?: ((value: ResourceTypeEnum) => void) | undefined;
   onTextChange?: ((text: string) => void) | undefined;
   allowGeneralResourceOption: boolean;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
@@ -72,7 +72,7 @@ export function ResourceData(props: IProps) {
     resourceKind = ResourceTypeEnum.sectionResource,
     onCategoryChange,
     onDescriptionChange,
-    onPassResChange,
+    onResourceKindChange,
     allowGeneralResourceOption,
     media,
     uploadType,
@@ -114,7 +114,7 @@ export function ResourceData(props: IProps) {
   );
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onPassResChange?.(radioToResourceKind(event.target.value));
+    onResourceKindChange?.(radioToResourceKind(event.target.value));
   };
   const handleChangeDescription = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -165,7 +165,7 @@ export function ResourceData(props: IProps) {
           />
         </Grid>
       </Grid>
-      {onPassResChange && (
+      {onResourceKindChange && (
         <FormControl>
           <FormLabel id="resourcekind">{t.tip1a}</FormLabel>
           <RadioGroup

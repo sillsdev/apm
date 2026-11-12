@@ -241,10 +241,10 @@ jest.mock('./ResourceData', () => {
     __esModule: true,
     default: ({
       onDescriptionChange,
-      onPassResChange,
+      onResourceKindChange,
     }: {
       onDescriptionChange: (d: string) => void;
-      onPassResChange?: (k: number) => void;
+      onResourceKindChange?: (k: number) => void;
     }) => (
       <div>
         <button type="button" onClick={() => onDescriptionChange('desc')}>
@@ -252,7 +252,9 @@ jest.mock('./ResourceData', () => {
         </button>
         <button
           type="button"
-          onClick={() => onPassResChange?.(ResourceTypeEnum.projectResource)}
+          onClick={() =>
+            onResourceKindChange?.(ResourceTypeEnum.projectResource)
+          }
         >
           set-general
         </button>

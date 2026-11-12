@@ -111,7 +111,7 @@ export function AddResourceWizard({
                     initDescription={w.initDescription}
                     onDescriptionChange={w.handleDescription}
                     resourceKind={w.resourceKind}
-                    onPassResChange={w.handlePassRes}
+                    onResourceKindChange={w.handleResourceKind}
                     allowGeneralResourceOption={w.isAddingAudioResource}
                   />
                 }
