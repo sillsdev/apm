@@ -4,19 +4,15 @@ import { OrgWorkflowStep } from '../model';
 import { findRecord } from './tryFindRecord';
 import { BOLD_WORKFLOW_PROCESS } from './useTeamWorkflowProcess';
 import { ToolSlug } from './toolSlug';
+import { parseStepTool } from './transcribeStepSettings';
 
-export const getTool = (jsonTool?: string) => {
-  if (jsonTool) {
-    const tool = JSON.parse(jsonTool);
-    return tool.tool || '';
-  }
-  return '';
-};
+/** The step's tool slug; an unreadable tool attribute reads as '' (logged). */
+export const getTool = (jsonTool?: string) =>
+  parseStepTool(jsonTool).tool || '';
 
 /** Offline WorkAlone embeds settings as a nested object; online often as a string. */
 export const getToolSettings = (jsonTool?: string) => {
-  if (!jsonTool) return '';
-  const settings = JSON.parse(jsonTool).settings;
+  const settings = parseStepTool(jsonTool).settings;
   if (settings == null || settings === '') return '';
   return typeof settings === 'string' ? settings : JSON.stringify(settings);
 };

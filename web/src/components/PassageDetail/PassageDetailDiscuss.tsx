@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { IDiscussStrings, OrgWorkflowStepD } from '../../model';
 import { Box } from '@mui/material';
@@ -14,20 +14,16 @@ interface IProps {
 }
 
 export const PassageDetailDiscuss = ({ width, currentStep }: IProps) => {
-  const [value, setValue] = useState<string>('');
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const t = useSelector(discussSelector, shallowEqual) as IDiscussStrings;
 
-  useEffect(() => {
+  const value = useMemo(() => {
     const step = orgSteps?.find((s) => s.id === currentStep);
-    if (step) {
-      const settings = parseJsonObject(
-        parseStepTool(step.attributes?.tool).settings
-      );
-      setValue(typeof settings?.markDown === 'string' ? settings.markDown : '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgSteps]);
+    const settings = parseJsonObject(
+      parseStepTool(step?.attributes?.tool).settings
+    );
+    return typeof settings?.markDown === 'string' ? settings.markDown : '';
+  }, [orgSteps, currentStep]);
 
   return (
     <Box sx={{ maxWidth: width, whiteSpace: 'normal', overflow: 'auto' }}>
