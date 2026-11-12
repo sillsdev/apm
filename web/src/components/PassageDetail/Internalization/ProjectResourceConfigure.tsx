@@ -734,7 +734,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
               {t.back}
             </Button>
           )}
-          <Box sx={{ ...rowSx, ml: 'auto' }}>
+          <Box sx={[rowSx, { ml: 'auto' }]}>
             <Button
               id="res-create"
               color="primary"

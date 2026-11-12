@@ -100,6 +100,12 @@ comment explaining why the owner cannot be relied on there.
   correct here, because including it causes excess re-runs or races. The
   finding is a suppression with no reason, which leaves the next reader unable
   to tell a deliberate omission from a stale-value bug.
+- **Combine `sx` with an array, not a spread.** Default a received `sx` to `[]`
+  and pass `sx={[{ ...defaults }, ...[sx].flat()]}` (caller wins) or
+  `sx={[...[sx].flat(), { ...overrides }]}` (component wins), as in
+  [MUI's "Passing the sx prop"](https://mui.com/system/getting-started/the-sx-prop/#passing-the-sx-prop),
+  because `sx` may be an array or a theme function, which a spread silently
+  drops.
 
 ## Types
 

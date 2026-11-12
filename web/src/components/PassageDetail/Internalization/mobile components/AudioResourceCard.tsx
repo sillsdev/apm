@@ -52,7 +52,7 @@ export function AudioResourceCard({
   subtitle = 'Scripture',
   badge,
   limits,
-  sx,
+  sx = [],
 }: IProps) {
   const { isMobileWidth } = useMobile();
 
@@ -70,20 +70,22 @@ export function AudioResourceCard({
   return (
     <Card
       elevation={0}
-      sx={{
-        width: '100%',
-        minHeight: 'clamp(7.5rem, 16vw, 9rem)',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        border: '2px solid',
-        borderColor: statusColor,
-        borderRadius: 2,
-        backgroundColor: 'background.paper',
-        p: 1,
-        ...sx,
-      }}
+      sx={[
+        {
+          width: '100%',
+          minHeight: 'clamp(7.5rem, 16vw, 9rem)',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          border: '2px solid',
+          borderColor: statusColor,
+          borderRadius: 2,
+          backgroundColor: 'background.paper',
+          p: 1,
+        },
+        ...[sx].flat(),
+      ]}
     >
       <Box
         sx={{

@@ -30,7 +30,7 @@ export default function AudioProgressButton(
     onEnded,
     onError,
     doToggle,
-    sx,
+    sx = [],
   } = props;
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -86,7 +86,7 @@ export default function AudioProgressButton(
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', ...sx }}>
+    <Box sx={[{ display: 'flex', alignItems: 'center' }, ...[sx].flat()]}>
       <ProgressPlayButton
         playing={playing}
         progress={progress}

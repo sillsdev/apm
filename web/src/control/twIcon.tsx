@@ -6,10 +6,10 @@ import { TranslatorsWorkplace } from '../assets/brands';
 interface IProps {
   sx?: SxProps;
 }
-export const TwIcon = ({ sx }: IProps) => {
+export const TwIcon = ({ sx = [] }: IProps) => {
   return (
     <LogoImg
-      sx={{ backgroundColor: 'lightgray', ...sx }}
+      sx={[{ backgroundColor: 'lightgray' }, ...[sx].flat()]}
       src={twIcon}
       alt={`${TranslatorsWorkplace} Logo`}
     />

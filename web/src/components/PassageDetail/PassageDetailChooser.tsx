@@ -33,7 +33,7 @@ interface IProps {
   sx?: SxProps;
 }
 
-export const PassageDetailChooser = ({ width, sx }: IProps) => {
+export const PassageDetailChooser = ({ width, sx = [] }: IProps) => {
   const [memory] = useGlobal('memory');
   const {
     passage,
@@ -143,11 +143,7 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   return passageCount > 1 ? (
     <StyledBox
       width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
-      sx={{
-        ...sx,
-        alignItems: 'center',
-        gap: 0,
-      }}
+      sx={[...[sx].flat(), { alignItems: 'center', gap: 0 }]}
     >
       <Typography sx={{ pr: 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
         {t.passages}

@@ -45,7 +45,7 @@ export const RecordButton = ({
   isStopLogic = false,
   oneShotUsed = false,
   active = true,
-  sx,
+  sx = [],
   isMobileView,
   isRecordingRights,
 }: IRecordButtonProps) => {
@@ -223,20 +223,22 @@ export const RecordButton = ({
           aria-disabled={disabled}
           aria-label={disabled ? 'Disabled' : isStopLogic ? 'Stop' : 'Pause'}
           onKeyDown={handleKeyDown}
-          sx={{
-            width: fullWidth ? '100%' : undefined,
-            height: isSmall ? 35 : 44,
-            border: '1px solid',
-            borderColor: theme.palette.grey[400],
-            borderRadius: theme.shape.borderRadius,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'background.paper',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            opacity: disabled ? 0.6 : 1,
-            ...sx,
-          }}
+          sx={[
+            {
+              width: fullWidth ? '100%' : undefined,
+              height: isSmall ? 35 : 44,
+              border: '1px solid',
+              borderColor: theme.palette.grey[400],
+              borderRadius: theme.shape.borderRadius,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'background.paper',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled ? 0.6 : 1,
+            },
+            ...[sx].flat(),
+          ]}
         >
           <RecordSquare
             style={{
@@ -257,16 +259,18 @@ export const RecordButton = ({
         tabIndex={disabled ? -1 : 0}
         aria-disabled={disabled}
         fullWidth={fullWidth}
-        sx={{
-          '&, & .MuiTypography-root': { fontWeight: 700 },
-          color: !active
-            ? theme.palette.grey[400]
-            : hasRecording
-              ? 'error.main'
-              : 'text.primary',
-          borderColor: theme.palette.grey[400],
-          ...sx,
-        }}
+        sx={[
+          {
+            '&, & .MuiTypography-root': { fontWeight: 700 },
+            color: !active
+              ? theme.palette.grey[400]
+              : hasRecording
+                ? 'error.main'
+                : 'text.primary',
+            borderColor: theme.palette.grey[400],
+          },
+          ...[sx].flat(),
+        ]}
       >
         {hasRecording && isStopLogic
           ? t.rerecord
