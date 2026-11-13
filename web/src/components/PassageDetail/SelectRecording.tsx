@@ -14,7 +14,8 @@ import BigDialog from '../../hoc/BigDialog';
 import { useContext, useEffect, useState, useMemo } from 'react';
 import { ISelectRecordingStrings, IState } from '../../model';
 import { IRow, PassageDetailContext } from '../../context/PassageDetailContext';
-import { ArtifactTypeSlug, useArtifactType } from '../../crud';
+import { ArtifactTypeSlug } from '../../crud';
+import { useRowTypeLabel } from './Internalization/useRowTypeLabel';
 import { dateOrTime, prettySegment, removeExtension } from '../../utils';
 import { ItemDescription } from '../../control/MediaDescription';
 import { selectRecordingSelector } from '../../selector';
@@ -57,6 +58,7 @@ const RecordingHeader = ({ showTopic, showType }: IHeaderProps) => {
 
 interface IInfoProps {
   row: IRow;
+  typeLabel: string;
   lang: string;
   onClick: (id: string, latest: boolean) => () => void;
   latestVernacular: number;
@@ -65,7 +67,15 @@ interface IInfoProps {
 }
 
 const RecordingInfo = (iprops: IInfoProps) => {
-  const { row, lang, onClick, latestVernacular, showTopic, showType } = iprops;
+  const {
+    row,
+    typeLabel,
+    lang,
+    onClick,
+    latestVernacular,
+    showTopic,
+    showType,
+  } = iprops;
 
   return (
     <TableRow
@@ -74,7 +84,7 @@ const RecordingInfo = (iprops: IInfoProps) => {
     >
       {showType && (
         <TableCell component="th" scope="row">
-          {row.artifactType}
+          {typeLabel}
         </TableCell>
       )}
       <StyledCell align="right" old={row.sourceVersion !== latestVernacular}>
@@ -114,7 +124,6 @@ export const SelectRecording = (props: IProps) => {
   const { rowData } = ctx.state;
   const [item, setItem] = useState('');
   const [chooser, setChooser] = useState(false);
-  const { localizedArtifactType } = useArtifactType();
   const t: ISelectRecordingStrings = useSelector(
     selectRecordingSelector,
     shallowEqual
@@ -146,9 +155,8 @@ export const SelectRecording = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inItem]);
 
-  const localTags = useMemo(() => {
-    return tags.map((t) => localizedArtifactType(t));
-  }, [tags, localizedArtifactType]);
+  // Localized at render time so the label follows a runtime language change.
+  const typeLabel = useRowTypeLabel();
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -172,7 +180,7 @@ export const SelectRecording = (props: IProps) => {
               </TableHead>
               <TableBody>
                 {rowData
-                  .filter((r) => localTags.includes(r.artifactType))
+                  .filter((r) => tags.includes(r.artifactTypeSlug))
                   .sort((i, j) =>
                     parseFloat(
                       prettySegment(
@@ -196,9 +204,9 @@ export const SelectRecording = (props: IProps) => {
                             )
                           )
                         ? 1
-                        : i.artifactType < j.artifactType
+                        : typeLabel(i) < typeLabel(j)
                           ? -1
-                          : i.artifactType > j.artifactType
+                          : typeLabel(i) > typeLabel(j)
                             ? 1
                             : i.sourceVersion === j.sourceVersion
                               ? i.artifactName <= j.artifactName
@@ -210,6 +218,7 @@ export const SelectRecording = (props: IProps) => {
                     <RecordingInfo
                       key={r.id}
                       row={r}
+                      typeLabel={typeLabel(r)}
                       lang={lang}
                       onClick={handleClick}
                       latestVernacular={latestVernacular}

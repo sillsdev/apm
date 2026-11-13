@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MediaFileD } from '../../model';
 import { mediaFileName } from '../../crud/media';
-import { useArtifactType } from '../../crud/useArtifactType';
 import { related } from '../../crud/related';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import { IRow } from '../../context/PassageDetailContext';
@@ -46,12 +45,12 @@ interface IProps {
 
 function languageOptionsFromRows(
   rows: IRow[],
-  artifactType: string,
+  artifactTypeSlug: string,
   vernacularId: string
 ): { bcp47: string; label: string }[] {
   const map = new Map<string, string>();
   for (const r of rows) {
-    if (r.artifactType !== artifactType) continue;
+    if (r.artifactTypeSlug !== artifactTypeSlug) continue;
     if (related(r.mediafile, 'sourceMedia') !== vernacularId) continue;
     const parsed = parseStepLanguageField(
       r.mediafile.attributes?.languagebcp47
@@ -78,18 +77,16 @@ export default function ConsultantCheckReview({
   const [allMedia, setAllMedia] = useState<MediaFileD[]>([]);
   const [segments, setSegments] = useState('');
   const [selectedLang, setSelectedLang] = useState<string>('');
-  const { localizedArtifactType } = useArtifactType();
   const t = useSelector(consultantSelector, shallowEqual);
 
   const vernacularId = rowData[0]?.mediafile?.id ?? '';
-  const artifactType = localizedArtifactType(item);
 
   const langOptions = useMemo(
     () =>
       item === ArtifactTypeSlug.PhraseBackTranslation
-        ? languageOptionsFromRows(rowData, artifactType, vernacularId)
+        ? languageOptionsFromRows(rowData, item, vernacularId)
         : [],
-    [item, rowData, artifactType, vernacularId]
+    [item, rowData, vernacularId]
   );
 
   useEffect(() => {
@@ -137,7 +134,7 @@ export default function ConsultantCheckReview({
     const mediaId = rowData[0]?.mediafile.id ?? '';
     const media = rowData
       .filter((r) => {
-        if (r.artifactType !== artifactType) return false;
+        if (r.artifactTypeSlug !== item) return false;
         if (related(r.mediafile, 'sourceMedia') !== mediaId) return false;
         if (item === ArtifactTypeSlug.PhraseBackTranslation && selectedLang) {
           const bcp = parseStepLanguageField(
@@ -181,14 +178,7 @@ export default function ConsultantCheckReview({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    item,
-    selectedLang,
-    rowData,
-    mediafileId,
-    artifactType,
-    langOptions.length,
-  ]);
+  }, [item, selectedLang, rowData, mediafileId, langOptions.length]);
 
   const hasTranscription = allMedia.some((m) => m.attributes.transcription);
 

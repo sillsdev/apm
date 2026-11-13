@@ -1,15 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import {
-  IState,
-  IArtifactTypeStrings,
-  ArtifactType,
-  MediaFile,
-  ArtifactTypeD,
-} from '../model';
+import { ArtifactType, MediaFile, ArtifactTypeD } from '../model';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
-import localStrings from '../selector/localize';
-import { useSelector, shallowEqual } from 'react-redux';
+import { useLocalizedArtifactType } from './useLocalizedArtifactType';
 import { findRecords, findRecord } from './tryFindRecord';
 import { related } from './related';
 import { remoteId, remoteIdGuid } from './remoteId';
@@ -18,27 +11,18 @@ import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 
 export const VernacularTag = null; // used to test the relationship
 
-interface ISwitches {
-  [key: string]: any;
-}
 export interface IArtifactType {
   type: string;
   id: string | undefined;
 }
-const stringSelector = (state: IState) =>
-  localStrings(state as IState, { layout: 'artifactType' });
 
 export const useArtifactType = (org?: string) => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [organization] = useGlobal('organization');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
-  const t: IArtifactTypeStrings = useSelector(stringSelector, shallowEqual);
-  const [fromLocal] = useState<ISwitches>({});
+  const localizedArtifactType = useLocalizedArtifactType();
 
-  const localizedArtifactType = (val: string) => {
-    return (t as ISwitches)[val] || val;
-  };
   const localizedArtifactTypeFromId = (id: string | null) => {
     return localizedArtifactType(
       id ? slugFromId(id) : ArtifactTypeSlug.Vernacular
@@ -54,15 +38,6 @@ export const useArtifactType = (org?: string) => {
       (at?.attributes?.typename as ArtifactTypeSlug) ??
       ArtifactTypeSlug.Vernacular
     );
-  };
-
-  const fromLocalizedArtifactType = (val: string) => {
-    if (Object.entries(fromLocal).length === 0) {
-      for (const [key, value] of Object.entries(t)) {
-        fromLocal[value] = key;
-      }
-    }
-    return fromLocal[val] || val;
   };
 
   const getArtifactTypes = (
@@ -156,7 +131,6 @@ export const useArtifactType = (org?: string) => {
     localizedArtifactType,
     slugFromId,
     localizedArtifactTypeFromId,
-    fromLocalizedArtifactType,
     commentId,
     keyTermId,
     getTypeId,
