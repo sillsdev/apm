@@ -1,6 +1,6 @@
 {
   "name": "apm-vite-web",
-  "version": "4.7.1",
+  "version": "4.7.2",
   "license": "MIT",
   "scripts": {
     "start": "vite",
@@ -55,7 +55,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@mui/icons-material": "^7.3.11",
     "@mui/material": "^7.3.11",
-    "@mui/x-data-grid": "^8.29.5",
+    "@mui/x-data-grid": "^8.29.6",
     "@mui/x-tree-view": "^8.29.3",
     "@ncdai/react-wheel-picker": "^1.2.3",
     "@orbit/coordinator": "^0.17.0",
@@ -101,7 +101,7 @@
     "remark-gfm": "^4.0.1",
     "styled-components": "^6.6.0",
     "url-parse": "^1.5.10",
-    "usfm-grammar-web": "^3.2.1",
+    "usfm-grammar-web": "^3.2.3",
     "wavesurfer.js": "^7.12.12",
     "xpath": "^0.0.36"
   },
@@ -142,7 +142,7 @@
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "6.10.0",
     "@testing-library/react": "16.3.3",
-    "@testing-library/user-event": "14.6.9",
+    "@testing-library/user-event": "14.6.10",
     "@types/jest": "30.0.0",
     "@types/jwt-decode": "^2.2.1",
     "@types/lodash": "^4.17.27",
@@ -175,7 +175,7 @@
     "jest-environment-jsdom": "30.5.2",
     "lint-staged": "16.4.0",
     "npm-run-all2": "8.0.4",
-    "prettier": "3.10.0",
+    "prettier": "3.10.1",
     "start-server-and-test": "2.1.5",
     "ts-jest": "29.4.15",
     "ts-node": "10.9.2",

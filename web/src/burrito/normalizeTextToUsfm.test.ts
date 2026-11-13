@@ -1,7 +1,7 @@
 jest.mock('usfm-grammar-web/tree-sitter-usfm.wasm?url', () => 'grammar.wasm', {
   virtual: true,
 });
-jest.mock('usfm-grammar-web/tree-sitter.wasm?url', () => 'parser.wasm', {
+jest.mock('usfm-grammar-web/web-tree-sitter.wasm?url', () => 'parser.wasm', {
   virtual: true,
 });
 
