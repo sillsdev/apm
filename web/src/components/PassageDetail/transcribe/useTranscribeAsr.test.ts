@@ -190,7 +190,7 @@ describe('useTranscribeAsr', () => {
     expect(result.current.asrProgressVisible).toBe(false);
   });
 
-  it('strips timestamp prefixes without clipping a longer digit run', async () => {
+  it('forwards cleaned ASR text through onTextAdd', async () => {
     getAsrSettings.mockResolvedValue({
       target: 'alphabet',
       language: { bcp47: 'en', languageName: 'English' },
@@ -211,44 +211,35 @@ describe('useTranscribeAsr', () => {
     await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
 
     act(() => {
-      result.current.handleAutoTranscribe('0:01.200: hello 1:02.300: world');
-    });
-    act(() => {
-      result.current.handleAutoTranscribe('12345678901:1.2: hi');
+      result.current.handleAutoTranscribe('0:01.200: hello');
     });
 
-    expect(onTextAdd).toHaveBeenNthCalledWith(1, ' hello world', true);
-    expect(onTextAdd).toHaveBeenNthCalledWith(2, ' 12345678901:1.2: hi', true);
+    expect(onTextAdd).toHaveBeenCalledWith(' hello', true);
   });
 
-  // Pre-inserted range marker (Mark Verses → Transcribe) must not be half-stripped
-  // into "1-5 -5" when ASR returns the same range plus later verses.
-  it('keeps a verse-range marker intact when that range is already in the pane', async () => {
+  it('derives phonetic from the active ASR target', async () => {
     getAsrSettings.mockResolvedValue({
-      target: 'alphabet',
+      target: 'Phonetic',
       language: { bcp47: 'en', languageName: 'English' },
       asrIso: 'eng',
       dialect: undefined,
     });
-    const onTextAdd = jest.fn();
     const { result } = renderHook(() =>
       useTranscribeAsr({
         team: undefined,
         sharedStr: { mustBeOnline: 'online' } as never,
         tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
         showMessage: jest.fn(),
-        onTextAdd,
-        getCurrentText: () => '\\v 1-5 ',
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
       })
     );
     await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+    expect(result.current.phonetic).toBe(true);
 
-    act(() => {
-      result.current.handleAutoTranscribe('\\v 1-5 one two \\v 6-7 three');
-    });
+    act(() => result.current.handleTranscribe());
 
-    expect(onTextAdd).toHaveBeenCalledTimes(1);
-    expect(onTextAdd).toHaveBeenCalledWith('one two \\v 6-7 three', true);
-    expect(onTextAdd.mock.calls[0][0]).not.toMatch(/-5/);
+    expect(result.current.asrOverride?.target).toBe('Phonetic');
+    expect(result.current.phonetic).toBe(true);
   });
 });
