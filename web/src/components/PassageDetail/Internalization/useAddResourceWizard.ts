@@ -149,7 +149,7 @@ export function useAddResourceWizard({
     launchSource.kind === WizardLaunchKind.Add &&
     launchSource.action === AddResourceAction.Audio;
   const aiGenerated = launchSource.kind === WizardLaunchKind.FaithBridge;
-  const markdownValue =
+  const inValue =
     launchSource.kind === WizardLaunchKind.FaithBridge
       ? launchSource.audioUrl
         ? `${launchSource.audioUrl}||${launchSource.transcript}`
@@ -175,21 +175,21 @@ export function useAddResourceWizard({
   // The description's single copy (ResourceData's field is uncontrolled). A ref,
   // not state: it's only read at upload time, so typing needn't re-render.
   const descriptionRef = useRef<string>(initDescription);
-  const addCategorySaveRef = useRef<(() => Promise<string>) | null>(null);
+  const categorySaveRef = useRef<(() => Promise<string>) | null>(null);
   const pendingResourceSeqRef = useRef(0);
 
   const [projSelection, setProjSelection] = useState<{
     items: RecordIdentity[];
     candidates: RecordIdentity[];
   }>({ items: [], candidates: [] });
-  const [projMedia, setProjMedia] = useState<MediaFileD | undefined>(
+  const [media, setMedia] = useState<MediaFileD | undefined>(
     launchSource.kind === WizardLaunchKind.EditGeneralResource
       ? launchSource.media
       : undefined
   );
   // Handle to the (hidden, still-mounted) Upload step's active tab;
   // SelectSections' Upload button calls it to upload the held file/take.
-  const submitRef = useRef<MediaUploadControlsRef>({
+  const controlsRef = useRef<MediaUploadControlsRef>({
     handleAddOrSave: null,
     handleCancel: null,
   });
@@ -209,14 +209,14 @@ export function useAddResourceWizard({
       : resourceType) ?? null;
 
   const planRec = plan ? getPlan(plan) : null;
-  const filename = planRec?.attributes?.slug
+  const defaultFilename = planRec?.attributes?.slug
     ? `${planRec.attributes.slug}resource`
     : 'resource';
 
   const isPassageResource = resourceKind === ResourceTypeEnum.passageResource;
   const isProjectResource = resourceKind === ResourceTypeEnum.projectResource;
 
-  const resourcePendingRestore = useCallback(() => {
+  const pendingRestore = useCallback(() => {
     // Project resources should not get staged as pending uploads; they need to be configured in one go.
     if (resourceKind === ResourceTypeEnum.projectResource) {
       return undefined;
@@ -251,10 +251,10 @@ export function useAddResourceWizard({
     resourceUploadFiles,
     resourceKind
   );
-  const resourceUploadValidationMessage = uploadConflict
+  const validationMessage = uploadConflict
     ? t.generalResourcesIndividually
     : '';
-  const resourceReady =
+  const ready =
     (!descriptionRequiredForResource(undefined, uploadType) ||
       hasDescription) &&
     !uploadConflict;
@@ -317,11 +317,11 @@ export function useAddResourceWizard({
       }
       if (projRes.length === 1) {
         if (areSectionsPreselectedRef.current) {
-          const media = projRes[0] as MediaFileD;
-          setProjMedia(media);
+          const created = projRes[0] as MediaFileD;
+          setMedia(created);
           areSectionsPreselectedRef.current = false;
           setUploading(false);
-          setSelected(media.id, PlayInPlayer.yes);
+          setSelected(created.id, PlayInPlayer.yes);
           setStep(WizardStep.Configure);
           advanced = true;
         }
@@ -342,20 +342,20 @@ export function useAddResourceWizard({
     if (!advanced) onClose();
   };
 
-  // Commit the staged new category (if any) right before the real upload.
+  // Save the staged new category (if any) right before the real upload.
   const handleBeforeUpload = async () => {
     pendingResourceSeqRef.current = 0;
-    if (addCategorySaveRef.current) {
-      categoryIdRef.current = await addCategorySaveRef.current();
+    if (categorySaveRef.current) {
+      categoryIdRef.current = await categorySaveRef.current();
       // Cleared so a retry can't create a duplicate category.
-      addCategorySaveRef.current = null;
+      categorySaveRef.current = null;
     }
   };
 
   // Upload step Next (general resource): go to SelectSections without uploading;
-  // the hidden Upload step keeps the file/take until submitRef fires it.
+  // the hidden Upload step keeps the file/take until controlsRef fires it.
   const handleUploadStepNext = () => {
-    setProjMedia(undefined);
+    setMedia(undefined);
     setStep(WizardStep.SelectSections);
   };
 
@@ -364,10 +364,10 @@ export function useAddResourceWizard({
     candidates: RecordIdentity[]
   ) => {
     setProjSelection({ items, candidates });
-    if (isAddingAudioResource && !projMedia) {
+    if (isAddingAudioResource && !media) {
       // Nothing uploaded yet. Fire the held upload now. SelectSections shows a
       // spinner until afterUpload advances or re-enables it.
-      const submit = submitRef.current.handleAddOrSave;
+      const submit = controlsRef.current.handleAddOrSave;
       if (!submit) return;
       cancelled.current = false;
       areSectionsPreselectedRef.current = true;
@@ -396,7 +396,7 @@ export function useAddResourceWizard({
   // SelectSections Back (add flow only): back to Upload to change the audio.
   // Any already-uploaded media is left in place; a replacement creates a new one.
   const handleSelectSectionsBack = () => {
-    setProjMedia(undefined);
+    setMedia(undefined);
     setStep(WizardStep.Upload);
   };
 
@@ -409,7 +409,7 @@ export function useAddResourceWizard({
     setHasDescription(Boolean(desc.trim()));
   };
 
-  const handlePassRes = (newValue: ResourceTypeEnum) => {
+  const handleResourceKind = (newValue: ResourceTypeEnum) => {
     setResourceKind(newValue);
     if (newValue === ResourceTypeEnum.projectResource) {
       setUploadType(UploadType.ProjectResource);
@@ -488,24 +488,24 @@ export function useAddResourceWizard({
     isAddingAudioResource,
     // seeded upload-step values
     uploadType,
-    resourceReady,
+    ready,
     speaker,
     setSpeaker,
-    markdownValue,
+    inValue,
     eafUrl: aiGenerated ? AIGenerated : '',
-    filename,
-    resourceUploadValidationMessage,
+    defaultFilename,
+    validationMessage,
     resourceKind,
     resourceType,
     // Seed only: ResourceData owns the live value (reported via handleDescription).
     initDescription,
-    projMedia,
-    projIdentity: projSelection.items,
-    projCandidate: projSelection.candidates,
+    media,
+    items: projSelection.items,
+    candidateItems: projSelection.candidates,
     cancelled,
     artifactId,
-    addCategorySaveRef,
-    submitRef,
+    categorySaveRef,
+    controlsRef,
     // section-select
     initialItems,
     uploading,
@@ -515,11 +515,11 @@ export function useAddResourceWizard({
     setRecordingStarted,
     afterUpload,
     handleBeforeUpload,
-    resourcePendingRestore,
+    pendingRestore,
     setResourceUploadFiles,
     handleDescription,
     handleCategory,
-    handlePassRes,
+    handleResourceKind,
     handleUploadStepNext,
     handleSectionsSelected,
     handleSelectSectionsBack,

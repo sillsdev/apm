@@ -249,7 +249,7 @@ const TitleTabs = (props: IProps) => {
         <TitleUploader
           hasRights={true}
           isOpen={tab === 1}
-          onOpen={handleClose}
+          onClose={handleClose}
           cancelled={cancelled}
           uploadMethod={uploadMedia}
           onFiles={(files) => setFiles(files)}

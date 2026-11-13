@@ -333,9 +333,6 @@ export function PassageDetailRecord(props: IProps) {
   const handleAudacityClose = () => {
     setAudacityVisible(false);
   };
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
   const handleUpload = () => {
     saveIfChanged(() => {
       void confirmIfPending().then((ok) => {
@@ -469,13 +466,13 @@ export function PassageDetailRecord(props: IProps) {
       <Uploader
         importList={importList}
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
+        onClose={() => setUploadVisible(false)}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
         passageId={passageId}
-        performedBy={speaker}
-        onSpeakerChange={handleNameChange}
+        speaker={speaker}
+        onSpeaker={handleNameChange}
         skipImportExportWait
       />
       <AudacityManager

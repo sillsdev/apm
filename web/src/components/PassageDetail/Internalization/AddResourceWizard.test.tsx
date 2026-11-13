@@ -167,19 +167,19 @@ jest.mock('./ResourceUploadStep', () => {
       ready?: boolean;
       validationMessage?: string;
       onFiles?: (f: File[]) => void;
-      deferred?: { onNext: () => void; submitRef: ControlsRef };
+      deferred?: { onNext: () => void; controlsRef: ControlsRef };
       onStartRecording?: () => void;
       finish?: (ids?: string[]) => void;
       metaData?: React.ReactNode;
     }) => {
       const isProject = uploadType === UploadType.ProjectResource;
       const onNext = deferred?.onNext;
-      const submitRef = deferred?.submitRef;
+      const controlsRef = deferred?.controlsRef;
       // The body stays mounted and holds its own selection; invoking the
       // exposed submit drives a successful upload (finish with one id), as the
       // real upload's `finish` would. The wizard calls this from SelectSections.
-      if (submitRef) {
-        submitRef.current.handleAddOrSave = () => finish?.(['media-1']);
+      if (controlsRef) {
+        controlsRef.current.handleAddOrSave = () => finish?.(['media-1']);
       }
       return (
         <>
@@ -198,7 +198,7 @@ jest.mock('./ResourceUploadStep', () => {
               </button>
               {/* Deferred flow: pick a file, then Next only advances (no upload
                   here) — the retained selection is uploaded later by the wizard
-                  via submitRef. */}
+                  via controlsRef. */}
               <button
                 type="button"
                 onClick={() => {
@@ -241,10 +241,10 @@ jest.mock('./ResourceData', () => {
     __esModule: true,
     default: ({
       onDescriptionChange,
-      onPassResChange,
+      onResourceKindChange,
     }: {
       onDescriptionChange: (d: string) => void;
-      onPassResChange?: (k: number) => void;
+      onResourceKindChange?: (k: number) => void;
     }) => (
       <div>
         <button type="button" onClick={() => onDescriptionChange('desc')}>
@@ -252,7 +252,9 @@ jest.mock('./ResourceData', () => {
         </button>
         <button
           type="button"
-          onClick={() => onPassResChange?.(ResourceTypeEnum.projectResource)}
+          onClick={() =>
+            onResourceKindChange?.(ResourceTypeEnum.projectResource)
+          }
         >
           set-general
         </button>
@@ -305,10 +307,10 @@ jest.mock('./ProjectResourceConfigure', () => ({
   __esModule: true,
   default: ({
     onBack,
-    onOpen,
+    onClose,
   }: {
     onBack?: () => void;
-    onOpen?: (open: boolean) => void;
+    onClose?: () => void;
   }) => (
     <div data-testid="configure">
       <span>Configure</span>
@@ -317,7 +319,7 @@ jest.mock('./ProjectResourceConfigure', () => ({
           configure-back
         </button>
       )}
-      <button type="button" onClick={() => onOpen?.(false)}>
+      <button type="button" onClick={() => onClose?.()}>
         configure-done
       </button>
     </div>
@@ -469,7 +471,7 @@ describe('AddResourceWizard', () => {
     });
     stageToSelectSections();
 
-    // Choose sections → the wizard fires the deferred upload through submitRef,
+    // Choose sections → the wizard fires the deferred upload through controlsRef,
     // which completes → configure step.
     fireEvent.click(screen.getByText('sections-select'));
 

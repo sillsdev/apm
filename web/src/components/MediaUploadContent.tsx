@@ -158,7 +158,7 @@ export interface MediaUploadControlsRef {
 }
 
 interface IProps {
-  onVisible: (v: boolean) => void;
+  onClose?: (() => void) | undefined;
   uploadType: UploadType;
   uploadMethod?:
     ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
@@ -200,7 +200,7 @@ interface IProps {
 
 function MediaUploadContent(props: IProps) {
   const {
-    onVisible,
+    onClose,
     uploadType,
     multiple,
     uploadMethod,
@@ -280,7 +280,7 @@ function MediaUploadContent(props: IProps) {
     if (cancelMethod) {
       cancelMethod();
     }
-    onVisible(false);
+    onClose?.();
   };
   const saveDisabled = useMemo(
     () =>
