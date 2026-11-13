@@ -444,7 +444,7 @@ function MediaRecord(props: IProps) {
   // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
   // as claude thinks, but don't have time to look into it now)
   // MediaRecord runs its own upload pipeline, separate from its
-  // host's (e.g. PassageRecordPanel already holds the upload tab's `uploadMethod`).
+  // host's (e.g. ResourceRecordPanel already holds the upload tab's `uploadMethod`).
   // That's why pendingRestore/beforeUpload/finish/afterUploadCb/uploadType are all
   // threaded through here just to feed this copy, and why the record and upload
   // tabs drifted (this hardcoded Media until the general-resource Retry fix).

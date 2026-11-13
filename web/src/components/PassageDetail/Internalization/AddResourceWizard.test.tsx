@@ -146,32 +146,23 @@ const file = (name: string) => new File([name], name, { type: 'audio/mpeg' });
 
 jest.mock('./ResourceUploadStep', () => {
   const { UploadType } = jest.requireActual('../../UploadType');
-  type ControlsRef = {
-    current: { handleAddOrSave: (() => void) | null; handleCancel: null };
-  };
+  const { useResourceUploadContext } = jest.requireActual(
+    './ResourceUploadContext'
+  ) as typeof import('./ResourceUploadContext');
   return {
     __esModule: true,
-    default: ({
-      active,
-      uploadType,
-      ready,
-      validationMessage,
-      onFiles,
-      deferred,
-      onStartRecording,
-      finish,
-      metaData,
-    }: {
-      active?: boolean;
-      uploadType?: unknown;
-      ready?: boolean;
-      validationMessage?: string;
-      onFiles?: (f: File[]) => void;
-      deferred?: { onNext: () => void; controlsRef: ControlsRef };
-      onStartRecording?: () => void;
-      finish?: (ids?: string[]) => void;
-      metaData?: React.ReactNode;
-    }) => {
+    default: function MockResourceUploadStep() {
+      const {
+        active,
+        uploadType,
+        ready,
+        validationMessage,
+        onFiles,
+        deferred,
+        onStartRecording,
+        finish,
+        metaData,
+      } = useResourceUploadContext();
       const isProject = uploadType === UploadType.ProjectResource;
       const onNext = deferred?.onNext;
       const controlsRef = deferred?.controlsRef;
