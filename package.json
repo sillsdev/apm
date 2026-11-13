@@ -1,6 +1,6 @@
 {
   "name": "audio-project-manager",
-  "version": "4.7.1",
+  "version": "4.7.2",
   "description": "A flexible audio-text orality solution",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -49,7 +49,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@mui/icons-material": "^7.3.11",
     "@mui/material": "^7.3.11",
-    "@mui/x-data-grid": "^8.29.5",
+    "@mui/x-data-grid": "^8.29.6",
     "@mui/x-tree-view": "^8.29.3",
     "@orbit/coordinator": "^0.17.0",
     "@orbit/core": "^0.17.0",
@@ -122,14 +122,14 @@
     "@upstash/context7-mcp": "^2.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "dotenv": "^17.4.2",
-    "electron": "^43.8.8",
+    "electron": "^43.8.10",
     "electron-builder": "^26.18.1",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "json5": "^2.2.3",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "puppeteer-core": "^24.43.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -150,6 +150,7 @@
     "keytar@7.9.0": true,
     "electron-winstaller@5.4.0": true,
     "browser-tabs-lock@1.3.0": true,
-    "electron@43.7.5": true
+    "electron@43.7.5": true,
+    "fsevents@2.3.3": true
   }
 }
