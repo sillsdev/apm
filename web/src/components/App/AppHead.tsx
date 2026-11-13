@@ -19,6 +19,7 @@ import {
   logError,
   Severity,
   relaunchApp,
+  exitApp,
   useMyNavigate,
   useHome,
   useWaitForRemoteQueue,
@@ -137,9 +138,14 @@ export function AppHead({
     // This used to call exitApp(), which just quits with nothing to bring
     // the app back — the user is left staring at a closed app after
     // confirming "Go Offline". relaunchApp() quits and restarts, so it
-    // reopens straight into the newly-offline session.
-    if (localStorage.getItem(LocalKey.userId)) relaunchApp();
-    else setView('Logout');
+    // reopens straight into the newly-offline session. But downDone is also
+    // the end of the window-close path (handleUnload sets doExit), and there
+    // the user asked to quit — relaunching would make the app impossible to
+    // exit, so only relaunch when this is not an exit.
+    if (localStorage.getItem(LocalKey.userId)) {
+      if (doExit) exitApp();
+      else relaunchApp();
+    } else setView('Logout');
   };
 
   const handleUserMenuAction = (

@@ -1,6 +1,6 @@
 import { DOMParser } from '@xmldom/xmldom';
 import grammarWasmUrl from 'usfm-grammar-web/tree-sitter-usfm.wasm?url';
-import parserWasmUrl from 'usfm-grammar-web/tree-sitter.wasm?url';
+import parserWasmUrl from 'usfm-grammar-web/web-tree-sitter.wasm?url';
 
 export type BurritoTextInputFormat = 'usfm' | 'usj' | 'usx';
 
@@ -16,27 +16,23 @@ let parserCtorPromise: Promise<USFMParserCtor> | null = null;
 let parserInitPromise: Promise<void> | null = null;
 
 async function getUSFMParserCtor(): Promise<USFMParserCtor> {
-  if (parserCtorPromise == null) {
-    parserCtorPromise = (async () => {
-      const mod = (await import('usfm-grammar-web/dist/bundle.mjs')) as {
-        USFMParser: USFMParserCtor;
-      };
-      return mod.USFMParser;
-    })();
-  }
+  parserCtorPromise ??= (async () => {
+    const mod = (await import('usfm-grammar-web/dist/bundle.mjs')) as {
+      USFMParser: USFMParserCtor;
+    };
+    return mod.USFMParser;
+  })();
   return await parserCtorPromise;
 }
 
 async function ensureUSFMParserInitialized(USFMParser: USFMParserCtor) {
-  if (parserInitPromise == null) {
-    parserInitPromise = USFMParser.init(grammarWasmUrl, parserWasmUrl).catch(
-      (err: unknown) => {
-        // Allow subsequent calls to retry if initialization fails.
-        parserInitPromise = null;
-        throw err;
-      }
-    );
-  }
+  parserInitPromise ??= USFMParser.init(grammarWasmUrl, parserWasmUrl).catch(
+    (err: unknown) => {
+      // Allow subsequent calls to retry if initialization fails.
+      parserInitPromise = null;
+      throw err;
+    }
+  );
   await parserInitPromise;
 }
 
