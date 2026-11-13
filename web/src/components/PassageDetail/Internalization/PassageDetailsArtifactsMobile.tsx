@@ -181,10 +181,6 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
   const { userIsAdmin } = useRole();
-  // Read here rather than using row.artifactType: rows snapshot their localized
-  // label when they are built, so a badge taken from the row would keep the old
-  // wording after a runtime language change. row.isGeneralResource and
-  // row.artifactTypeSlug carry no language, so they are safe to read from a row.
   const at: IArtifactTypeStrings = useSelector(
     artifactTypeSelector,
     shallowEqual
