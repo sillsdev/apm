@@ -193,7 +193,7 @@ export function PassageDetailItem(props: IProps) {
     const version = mediaRec?.attributes.versionNumber;
     return rowData.some(
       (r) =>
-        (slugs as string[]).includes(r.artifactTypeSlug) &&
+        slugs.some((s) => s === r.artifactTypeSlug) &&
         r.sourceVersion === version
     );
   }, [rowData, mediafileId, mediafiles, slugs]);
