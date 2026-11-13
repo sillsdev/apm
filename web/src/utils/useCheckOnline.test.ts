@@ -102,6 +102,23 @@ describe('useCheckOnline (TT-7720)', () => {
     expect(mockOrbitReset).not.toHaveBeenCalled();
   });
 
+  it('corrects a stale localStorage connected flag when already connected', async () => {
+    localStorage.setItem('connected', 'false');
+    const { useCheckOnline } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('./useCheckOnline') as typeof import('./useCheckOnline');
+
+    const { result } = renderHook(() => useCheckOnline('stale-flag'));
+
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        result.current(() => resolve(), true);
+      });
+    });
+
+    expect(localStorage.getItem('connected')).toBe('true');
+  });
+
   it('runs full orbitReset and sets connected when coming back online', async () => {
     globals.connected = false;
     const { useCheckOnline } =

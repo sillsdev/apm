@@ -79,6 +79,10 @@ export const useCheckOnline = (label: string) => {
             statusChange(result);
           });
         } else {
+          // statusChange only runs on an edge, so a 'false' written at startup
+          // (AmIOnline timed out) or left from an offline session would never
+          // be corrected while `connected` stays true. logErrorService reads it.
+          localStorage.setItem(LocalKey.connected, `${!getGlobal('offline')}`);
           dispatch(resetOrbitError());
           setOrbitRetries(OrbitNetworkErrorRetries);
         }

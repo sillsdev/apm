@@ -38,6 +38,7 @@ import UserMenu from '../UserMenu';
 import DetailTitle from './DetailTitle';
 import { HeadStatus } from './HeadStatus';
 import { OrgHead } from './OrgHead';
+import { useUpdateCheck } from './useUpdateCheck';
 
 type ResetRequests = () => Promise<void>;
 export type DownloadAlertReason = 'cloud';
@@ -88,6 +89,7 @@ export function AppHead({
   const { goHome } = useHome();
 
   const { isMobileWidth } = useMobile();
+  useUpdateCheck();
   const { showMessage } = useSnackBar();
   const isMounted = useMounted('apphead');
   const waitForRemoteQueue = useWaitForRemoteQueue();
