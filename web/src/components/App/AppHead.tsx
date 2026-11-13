@@ -366,6 +366,7 @@ export function AppHead({
             </IconButton>
           ) : (
             <IconButton
+              aria-label={'back'}
               onClick={() => navigate(planUrl || '/team')}
               sx={{ flexShrink: 0 }}
             >
