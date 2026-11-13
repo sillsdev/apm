@@ -124,10 +124,13 @@ export const Uploader = (props: IProps) => {
           uploadMethod={uploadMedia}
           cancelMethod={uploadCancel}
           speaker={speaker}
+          // Always a function on a vernacular media upload, even when the host
+          // passes no onSpeaker: its presence is what makes MediaUploadContent
+          // show the speaker picker and gate the upload on speaker rights.
           onSpeaker={
             !artifactState?.id &&
             (uploadType || UploadType.Media) === UploadType.Media
-              ? onSpeaker
+              ? (onSpeaker ?? (() => {}))
               : undefined
           }
           audioOnly={audioOnly}
