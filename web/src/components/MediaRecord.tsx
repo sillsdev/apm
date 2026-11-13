@@ -79,20 +79,11 @@ export interface IProps {
   /** When false, hide the Download item in the recorder's more menu. Default true if omitted. */
   allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
-  /**
-   * Reports whether a usable take is loaded in the waveform, independent of
-   * whether it counts as an unsaved change. Unlike `setCanSave`, this stays true
-   * after a take has been uploaded (the upload clears the dirty flags but leaves
-   * the take shown). The deferred add-resource wizard uses it to keep its "Next"
-   * button live when the user steps back to the still-mounted Record step after
-   * the take already uploaded once.
-   */
   // TODO cleanup: combine a bunch of these props that describe what stage the recording is in
   // into one lifecycle prop that sets the current stage as e.g. Recording, Saving, Loading, Unsaved, etc. Maybe even HasValidTake or HasInvalidTake?
   // Also, in particular, make the situation around recording and the recorder more readable.
   // At the very least, allowRecord should be renamed to indicate that it controls the total
   // presence or absence of the recorder, unlike recordBlocked.
-  setHasTake?: ((hasTake: boolean) => void) | undefined;
   /**
    * Called when a save attempt is rejected — the upload failed or finished
    * without a mediaId. May fire more than once for a single failed save, so
@@ -170,7 +161,6 @@ function MediaRecord(props: IProps) {
     uploadType = UploadType.Media,
     beforeUpload,
     setCanSave,
-    setHasTake,
     setStatusText,
     allowRecord,
     oneTryOnly,
@@ -578,6 +568,11 @@ function MediaRecord(props: IProps) {
     ]
   );
 
+  // TODO cleanup in next PR: this effect only copies a derived value up to the
+  // parent, which CODING_STANDARDS "Effects" calls a finding. Notify the parent
+  // from the handlers that change canSave's inputs, or lift those inputs up so
+  // the parent derives it itself (as the add-resource panel now does for an
+  // already-uploaded take).
   useEffect(() => {
     const alreadyQueued = audioBlob !== undefined && audioBlob === queuedTake;
     const needsSave =
@@ -599,27 +594,6 @@ function MediaRecord(props: IProps) {
     audioBlob,
     queuedTake,
   ]);
-
-  // A usable take is loaded in the waveform — the same readiness canSave
-  // requires, but without the (pendingSave || filechanged) dirty gate. A
-  // successful upload clears those flags (so canSave drops) yet leaves the take
-  // shown; this stays true so the deferred wizard's Next button survives a Back
-  // to the already-uploaded Record step.
-  const hasTake =
-    waveformDuration > 0 &&
-    blobReady &&
-    !sizeBlocksSave &&
-    !inFlight &&
-    !recording;
-  // TODO cleanup in next PR: this effect only copies a derived value up to the
-  // parent, which CODING_STANDARDS "Effects" calls a finding. Notify the parent
-  // from the handlers that change hasTake's inputs (recording start/stop,
-  // waveform load, upload start/finish), or lift those inputs up so the parent
-  // derives hasTake itself. setCanSave follows the same pattern and should
-  // move together.
-  useEffect(() => {
-    setHasTake?.(hasTake);
-  }, [hasTake, setHasTake]);
 
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
