@@ -78,8 +78,11 @@ export function ResourceRecordPanel({
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
-  // A take is loaded in the waveform (stays true after it has been uploaded).
-  const [hasTake, setHasTake] = useState(false);
+  // The take shown in the recorder has already uploaded. A successful upload
+  // clears canSave but leaves the take in the waveform; the deferred wizard's
+  // Next must still carry it forward when the user steps back here. Cleared
+  // when a new recording starts or the recorder remounts (tab switch).
+  const [hadTake, setHadTake] = useState(false);
   const [hasRights, setHasRights] = useState(false);
   // For blocking switch to Upload tab while
   // recording is in progress
@@ -109,6 +112,7 @@ export function ResourceRecordPanel({
       setBusy(false);
       setStatusText('');
       setCanSave(false);
+      setHadTake(false);
       // Trust a preselected speaker (may have been a rights "Do later")
       setHasRights(Boolean(speaker?.trim()));
       setIsRecording(false);
@@ -153,7 +157,9 @@ export function ResourceRecordPanel({
                 hotkeys={active}
                 artifactId={artifactId}
                 passageId={undefined}
-                afterUploadCb={async () => {}}
+                afterUploadCb={async (uploadedId) => {
+                  if (uploadedId) setHadTake(true);
+                }}
                 finish={finish}
                 mediaId=""
                 onSaving={() => setBusy(true)}
@@ -162,7 +168,6 @@ export function ResourceRecordPanel({
                 allowRecord={hasRights}
                 recordBlocked={!active}
                 setCanSave={setCanSave}
-                setHasTake={setHasTake}
                 setStatusText={setStatusText}
                 width={dialogWidth}
                 height={160}
@@ -171,7 +176,10 @@ export function ResourceRecordPanel({
                 allowDeltaVoice={true}
                 onRecording={(isRecording) => {
                   setIsRecording(isRecording);
-                  if (isRecording) onStartRecording?.();
+                  if (isRecording) {
+                    setHadTake(false);
+                    onStartRecording?.();
+                  }
                 }}
                 pendingRestore={pendingRestore}
                 uploadType={uploadType}
@@ -186,10 +194,14 @@ export function ResourceRecordPanel({
               id="rec-save"
               sx={{ m: 1, minWidth: '96px' }}
               color="primary"
+              // In the deferred wizard flow this button advances (onNext) rather
+              // than saving, so it also allows a take that already uploaded:
+              // that clears canSave, but the take must still be carryable
+              // forward when the user steps back here.
               disabled={
                 busy ||
                 ready === false ||
-                !(onNext ? hasTake : canSave) ||
+                !(canSave || (onNext && hadTake)) ||
                 !hasRights
               }
               onClick={onNext ?? (() => startSave(myToolId))}
