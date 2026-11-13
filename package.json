@@ -150,6 +150,7 @@
     "keytar@7.9.0": true,
     "electron-winstaller@5.4.0": true,
     "browser-tabs-lock@1.3.0": true,
-    "electron@43.7.5": true
+    "electron@43.7.5": true,
+    "fsevents@2.3.3": true
   }
 }
