@@ -1,6 +1,6 @@
 {
   "name": "audio-project-manager",
-  "version": "4.7.0",
+  "version": "4.7.1",
   "description": "A flexible audio-text orality solution",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -128,6 +128,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
+    "json5": "^2.2.3",
     "prettier": "^3.10.0",
     "puppeteer-core": "^24.43.1",
     "react": "^19.3.1",
@@ -142,74 +143,6 @@
     "name": "SIL Global",
     "email": "info@sil.org",
     "url": "http://sil.org"
-  },
-  "build": {
-    "appId": "sil.lsdev.audio-project-manager",
-    "productName": "Audio Project Manager",
-    "copyright": "Copyright © 2020-2026 ${author}",
-    "win": {
-      "icon": "web/public/pwa-512x512.png"
-    },
-    "linux": {
-      "icon": "debian/audio-project-manager.png",
-      "desktop": {
-        "entry": {
-          "Name": "Audio Project Manager",
-          "Name[fr]": "Audio Project Manager",
-          "Comment": "Flexible audio-text orality solution",
-          "Comment[fr]": "Solution flexible d'oralité audio-textuelle",
-          "Categories": "GTK;GNOME;Education;",
-          "Terminal": "false"
-        }
-      },
-      "target": [
-        "deb"
-      ]
-    },
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "web/public/pwa-512x512.png",
-      "hardenedRuntime": true,
-      "entitlements": "env-config/entitlements.mac.plist",
-      "entitlementsInherit": "env-config/entitlements.mac.plist",
-      "gatekeeperAssess": false,
-      "extendInfo": {
-        "NSMicrophoneUsageDescription": "Please give us access to your microphone"
-      }
-    },
-    "dmg": {
-      "sign": false
-    },
-    "afterSign": "env-config/notarize.js",
-    "directories": {
-      "buildResources": "assets"
-    },
-    "extraFiles": [
-      {
-        "from": "web/public/localization",
-        "to": "localization",
-        "filter": "*.json"
-      },
-      {
-        "from": "web/public/help",
-        "to": "help",
-        "filter": "*.chm"
-      },
-      {
-        "from": "web/public/help",
-        "to": "help",
-        "filter": "*.xlsx"
-      },
-      {
-        "from": "web/public/script",
-        "to": "resources",
-        "filter": [
-          "resetData.*",
-          "*.py",
-          "*.aup3"
-        ]
-      }
-    ]
   },
   "allowScripts": {
     "@bugsnag/cli@3.10.7": true,
