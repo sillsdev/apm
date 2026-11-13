@@ -5,7 +5,7 @@ import {
   Organization,
 } from '../model';
 import { SxProps } from '@mui/material/styles';
-import {
+import React, {
   useContext,
   useEffect,
   useMemo,
@@ -35,13 +35,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import IntellectualProperty from '../model/intellectualProperty';
 import { UploadType } from './UploadType';
-import {
-  RecordIdentity,
-  RecordKeyMap,
-  RecordTransformBuilder,
-  UninitializedRecord,
-} from '@orbit/records';
-import React from 'react';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
 
@@ -58,12 +52,12 @@ interface IProps {
   speaker: string;
   aiip: boolean;
   recordType: ArtifactTypeSlug;
-  onRights?: ((hasRights: boolean) => void) | undefined;
-  team?: string | undefined;
-  planId?: string | undefined;
+  onRights?: (hasRights: boolean) => void;
+  team?: string;
+  planId?: string;
 }
 
-export function ProvideRights(props: IProps) {
+export function ProvideRights(props: Readonly<IProps>) {
   const { speaker, recordType, onRights, team, planId, aiip } = props;
   const [user] = useGlobal('user');
   const [organizationId] = useGlobal('organization');
@@ -72,14 +66,14 @@ export function ProvideRights(props: IProps) {
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
   const canSaveRef = useRef(false);
-  const [defaultFilename, setDefaultFileName] = useState('');
+  const [defaultFilename, setDefaultFilename] = useState('');
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
-  const [uploadVisible, setUploadVisiblex] = useState(false);
+  const [uploadVisible, setUploadVisiblex] = useState(false); // NOSONAR typescript:S6754
   const uploadVisibleRef = useRef(false);
   const [resetMedia, setResetMedia] = useState(false);
   const [statement, setStatement] = useState<string>('');
-  const [, setSaving] = useState(false);
+  const [, setSaving] = useState(false); // NOSONAR typescript:S6754
   const [paperWidth, setPaperWidth] = useState<number>(0);
   const paperRef = useRef<HTMLDivElement>(null);
   const getGlobal = useGetGlobal();
@@ -164,7 +158,7 @@ export function ProvideRights(props: IProps) {
   ]);
 
   useEffect(() => {
-    setDefaultFileName(cleanFileName(`${speaker}_ip`));
+    setDefaultFilename(cleanFileName(`${speaker}_ip`));
     const state = getOrgDefault(orgDefaultVoices) as IVoicePerm;
     setState({ ...state, fullName: speaker } as IVoicePerm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,7 +223,7 @@ export function ProvideRights(props: IProps) {
       } else {
         if (statement) {
           const mediaRec = findRecord(memory, 'mediafile', id) as MediaFileD;
-          updateRecord({
+          await updateRecord({
             ...mediaRec,
             attributes: { ...mediaRec.attributes, transcription: statement },
           } as MediaFileD);
@@ -240,25 +234,13 @@ export function ProvideRights(props: IProps) {
             rightsHolder: speaker,
             notes: JSON.stringify(state),
           },
-        } as IntellectualProperty & UninitializedRecord;
+        } as IntellectualProperty;
         await memory.update((t) => [
           ...AddRecord(t, ip, user, memory),
-          ...ReplaceRelatedRecord(
-            t,
-            ip as RecordIdentity,
-            'releaseMediafile',
-            'mediafile',
-            id
-          ),
-          ...ReplaceRelatedRecord(
-            t,
-            ip as RecordIdentity,
-            'organization',
-            'organization',
-            orgId
-          ),
+          ...ReplaceRelatedRecord(t, ip, 'releaseMediafile', 'mediafile', id),
+          ...ReplaceRelatedRecord(t, ip, 'organization', 'organization', orgId),
         ]);
-        onRights && onRights(true);
+        onRights?.(true);
       }
       setStatusText('');
       saveCompleted(toolId);
@@ -271,7 +253,7 @@ export function ProvideRights(props: IProps) {
   };
 
   const afterUpload = async (mediaRemoteIds?: string[]) => {
-    afterUploadCb(
+    await afterUploadCb(
       mediaRemoteIds && mediaRemoteIds.length > 0
         ? mediaRemoteIds[0]
         : undefined
@@ -294,7 +276,7 @@ export function ProvideRights(props: IProps) {
   };
 
   const handleLater = () => {
-    onRights && onRights(true);
+    onRights?.(true);
   };
 
   return (

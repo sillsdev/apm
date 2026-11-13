@@ -36,8 +36,10 @@ export const AddPassageStateChangeToOps = (
       comments: comment,
     },
   } as PassageStateChange;
-  ops.push(...AddRecord(t, psc, userId, memory));
-  ops.push(...ReplaceRelatedRecord(t, psc, 'passage', 'passage', passage));
+  ops.push(
+    ...AddRecord(t, psc, userId, memory),
+    ...ReplaceRelatedRecord(t, psc, 'passage', 'passage', passage)
+  );
 };
 
 export const AddFlatPassage = (
@@ -50,8 +52,10 @@ export const AddFlatPassage = (
 ): RecordOperation[] => {
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
-  ops.push(...AddRecord(t, rec, userId, memory));
-  ops.push(...ReplaceRelatedRecord(t, rec, 'section', 'section', section.id));
+  ops.push(
+    ...AddRecord(t, rec, userId, memory),
+    ...ReplaceRelatedRecord(t, rec, 'section', 'section', section.id)
+  );
   AddPassageStateChangeToOps(
     t,
     ops,
@@ -73,9 +77,9 @@ export const UpdateRelatedPassageOps = (
   ops: RecordOperation[]
 ) => {
   ops.push(
-    ...UpdateLastModifiedBy(t, { type: 'section', id: section }, userId)
+    ...UpdateLastModifiedBy(t, { type: 'section', id: section }, userId),
+    ...UpdateLastModifiedBy(t, { type: 'plan', id: plan }, userId)
   );
-  ops.push(...UpdateLastModifiedBy(t, { type: 'plan', id: plan }, userId));
 };
 export const UpdateMediaStateOps = (
   mediafile: string,
@@ -87,14 +91,16 @@ export const UpdateMediaStateOps = (
   memory: Memory,
   comment: string
 ): RecordOperation[] => {
-  const mediaRecId = recordRef('mediafile', mediafile);
+  // Identity ops only need the id. Attributes come from the cache when present.
+  const mediaRef = recordRef('mediafile', mediafile);
+  const mediaRec = findRecord(memory, 'mediafile', mediafile) as
+    MediaFileD | undefined;
   if (state)
     ops.push(
-      t.replaceAttribute(mediaRecId, 'transcriptionstate', state).toOperation()
+      t.replaceAttribute(mediaRef, 'transcriptionstate', state).toOperation()
     );
-  const mediaRec = findRecord(memory, 'mediafile', mediafile) as MediaFileD;
   const isVernacular = !related(mediaRec, 'artifactType');
-  ops.push(...UpdateLastModifiedBy(t, mediaRecId, userId));
+  ops.push(...UpdateLastModifiedBy(t, mediaRef, userId));
   AddPassageStateChangeToOps(
     t,
     ops,

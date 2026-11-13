@@ -1,9 +1,5 @@
 import { useGlobal } from '../context/useGlobal';
-import {
-  RecordIdentity,
-  RecordOperation,
-  RecordTransformBuilder,
-} from '@orbit/records';
+import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { SharedResourceReference, SharedResource } from '../model';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { BookRef } from '../model';
@@ -58,7 +54,7 @@ export const useShaRefCreate = (sharedResource: SharedResource) => {
         ...AddRecord(t, shaRefRec, user, memory),
         ...ReplaceRelatedRecord(
           t,
-          shaRefRec as RecordIdentity,
+          shaRefRec,
           'sharedResource',
           'sharedresource',
           sharedResource.id

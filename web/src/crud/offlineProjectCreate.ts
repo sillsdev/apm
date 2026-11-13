@@ -1,7 +1,6 @@
 import { Project, OfflineProject, OfflineProjectD } from '../model';
 import Memory from '@orbit/memory';
 import {
-  RecordIdentity,
   RecordOperation,
   RecordTransformBuilder,
   StandardRecordNormalizer,
@@ -32,14 +31,8 @@ export const offlineProjectCreate = (
   } as OfflineProject;
   const rn = new StandardRecordNormalizer({ schema: memory?.schema });
   proj = rn.normalizeRecord(proj) as OfflineProjectD;
-  ops.push(tb.addRecord(proj).toOperation());
   ops.push(
-    ...ReplaceRelatedRecord(
-      tb,
-      proj as RecordIdentity,
-      'project',
-      'project',
-      project.id
-    )
+    tb.addRecord(proj).toOperation(),
+    ...ReplaceRelatedRecord(tb, proj, 'project', 'project', project.id)
   );
 };
