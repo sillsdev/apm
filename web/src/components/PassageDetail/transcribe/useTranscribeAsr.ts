@@ -17,6 +17,7 @@ import { useGlobal } from '../../../context/useGlobal';
 import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
+import { appendAutoTranscription } from './appendAutoTranscription';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
@@ -94,10 +95,10 @@ export function useTranscribeAsr({
 
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
   );
+  const phonetic = (asrOverride ?? asrSettings)?.target === AsrTarget.phonetic;
 
   const asrTip = useMemo(() => {
     return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
@@ -111,15 +112,10 @@ export function useTranscribeAsr({
     );
   }, [tPlayer.recognizeSpeech, asrSettings, getName]);
 
-  const startAsr = useCallback(
-    (asrOverrideState?: IAsrState) => {
-      const asr = asrOverrideState ?? asrSettings;
-      setAsrOverride(asrOverrideState);
-      setPhonetic(asr?.target === AsrTarget.phonetic);
-      setAsrProgressVisible(true);
-    },
-    [asrSettings]
-  );
+  const startAsr = useCallback((asrOverrideState?: IAsrState) => {
+    setAsrOverride(asrOverrideState);
+    setAsrProgressVisible(true);
+  }, []);
 
   const openAsrLanguageSettings = useCallback(() => {
     setAsrLangVisible(true);
@@ -163,17 +159,8 @@ export function useTranscribeAsr({
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
-      // longer digit run from matching at a suffix and leaving a stray digit.
-      const cleanTrans = trans
-        .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
-        .trim();
-      const curTrans = getCurrentText();
-      if (curTrans.includes(cleanTrans)) return;
-      const m = /\\v (\d+)\s?/.exec(cleanTrans);
-      const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
-      const space = /\s$/.test(curTrans) ? '' : ' ';
-      onTextAdd(space + cleanTrans.substring(index), true);
+      const added = appendAutoTranscription(trans, getCurrentText());
+      if (added !== undefined) onTextAdd(added, true);
     },
     [getCurrentText, onTextAdd]
   );
