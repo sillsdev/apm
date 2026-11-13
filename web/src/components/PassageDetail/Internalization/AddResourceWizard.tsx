@@ -1,4 +1,5 @@
 import ResourceUploadStep from './ResourceUploadStep';
+import { ResourceUploadContext } from './ResourceUploadContext';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import SelectSections from './SelectSections';
@@ -66,7 +67,7 @@ export function AddResourceWizard({
       >
         <>
           {/* Step 1: stays mounted across the flow (gets css-hidden on other steps) so a
-                recorded take survives Next→Back (see PassageRecordPanel).*/}
+                recorded take survives Next→Back (see ResourceRecordPanel).*/}
           {launchSource.kind !== WizardLaunchKind.EditGeneralResource && (
             <Box
               sx={{
@@ -76,46 +77,49 @@ export function AddResourceWizard({
                 minHeight: 0,
               }}
             >
-              <ResourceUploadStep
-                onStartRecording={() => w.setRecordingStarted(true)}
-                isAddingAudioResource={w.isAddingAudioResource}
-                active={w.step === WizardStep.Upload}
-                finish={w.afterUpload}
-                beforeUpload={w.handleBeforeUpload}
-                cancelled={w.cancelled}
-                artifactId={w.artifactId}
-                uploadType={w.uploadType}
-                ready={w.ready}
-                speaker={w.speaker}
-                onSpeaker={w.setSpeaker}
-                inValue={w.inValue}
-                eafUrl={w.eafUrl}
-                defaultFilename={w.defaultFilename}
-                pendingRestore={w.pendingRestore}
-                onFiles={w.setResourceUploadFiles}
-                deferred={
-                  w.uploadType === UploadType.ProjectResource
-                    ? {
-                        onNext: w.handleUploadStepNext,
-                        controlsRef: w.controlsRef,
-                      }
-                    : undefined
-                }
-                validationMessage={w.validationMessage}
-                metaData={
-                  <ResourceData
-                    uploadType={w.uploadType}
-                    initCategory=""
-                    onCategoryChange={w.handleCategory}
-                    categorySaveRef={w.categorySaveRef}
-                    initDescription={w.initDescription}
-                    onDescriptionChange={w.handleDescription}
-                    resourceKind={w.resourceKind}
-                    onResourceKindChange={w.handleResourceKind}
-                    allowGeneralResourceOption={w.isAddingAudioResource}
-                  />
-                }
-              />
+              <ResourceUploadContext.Provider
+                value={{
+                  active: w.step === WizardStep.Upload,
+                  isAddingAudioResource: w.isAddingAudioResource,
+                  onStartRecording: () => w.setRecordingStarted(true),
+                  uploadType: w.uploadType,
+                  artifactId: w.artifactId,
+                  defaultFilename: w.defaultFilename,
+                  eafUrl: w.eafUrl,
+                  inValue: w.inValue,
+                  speaker: w.speaker,
+                  onSpeaker: w.setSpeaker,
+                  ready: w.ready,
+                  validationMessage: w.validationMessage,
+                  onFiles: w.setResourceUploadFiles,
+                  metaData: (
+                    <ResourceData
+                      uploadType={w.uploadType}
+                      initCategory=""
+                      onCategoryChange={w.handleCategory}
+                      categorySaveRef={w.categorySaveRef}
+                      initDescription={w.initDescription}
+                      onDescriptionChange={w.handleDescription}
+                      resourceKind={w.resourceKind}
+                      onResourceKindChange={w.handleResourceKind}
+                      allowGeneralResourceOption={w.isAddingAudioResource}
+                    />
+                  ),
+                  finish: w.afterUpload,
+                  beforeUpload: w.handleBeforeUpload,
+                  cancelled: w.cancelled,
+                  pendingRestore: w.pendingRestore,
+                  deferred:
+                    w.uploadType === UploadType.ProjectResource
+                      ? {
+                          onNext: w.handleUploadStepNext,
+                          controlsRef: w.controlsRef,
+                        }
+                      : undefined,
+                }}
+              >
+                <ResourceUploadStep />
+              </ResourceUploadContext.Provider>
             </Box>
           )}
           {/* Step 2: SelectSections stays mounted while the dialog is open
