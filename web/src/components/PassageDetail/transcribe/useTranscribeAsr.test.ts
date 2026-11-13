@@ -220,4 +220,35 @@ describe('useTranscribeAsr', () => {
     expect(onTextAdd).toHaveBeenNthCalledWith(1, ' hello world', true);
     expect(onTextAdd).toHaveBeenNthCalledWith(2, ' 12345678901:1.2: hi', true);
   });
+
+  // Pre-inserted range marker (Mark Verses → Transcribe) must not be half-stripped
+  // into "1-5 -5" when ASR returns the same range plus later verses.
+  it('keeps a verse-range marker intact when that range is already in the pane', async () => {
+    getAsrSettings.mockResolvedValue({
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      dialect: undefined,
+    });
+    const onTextAdd = jest.fn();
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd,
+        getCurrentText: () => '\\v 1-5 ',
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => {
+      result.current.handleAutoTranscribe('\\v 1-5 one two \\v 6-7 three');
+    });
+
+    expect(onTextAdd).toHaveBeenCalledTimes(1);
+    expect(onTextAdd).toHaveBeenCalledWith('one two \\v 6-7 three', true);
+    expect(onTextAdd.mock.calls[0][0]).not.toMatch(/-5/);
+  });
 });

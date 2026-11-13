@@ -170,7 +170,9 @@ export function useTranscribeAsr({
         .trim();
       const curTrans = getCurrentText();
       if (curTrans.includes(cleanTrans)) return;
-      const m = /\\v (\d+)\s?/.exec(cleanTrans);
+      // Match ranges/suffixes (1-5, 1a) so a pre-inserted \v 1-5 is not
+      // treated as \v 1 and left as a stray "-5" in the pane.
+      const m = /\\v ([0-9]+[a-f]?-?[0-9]*[a-f]?)\s?/.exec(cleanTrans);
       const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
       const space = /\s$/.test(curTrans) ? '' : ' ';
       onTextAdd(space + cleanTrans.substring(index), true);
