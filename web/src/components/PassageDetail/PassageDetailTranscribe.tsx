@@ -91,7 +91,7 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
     !isLinkedNote(passage, sharedResource);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
-  const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
+  const { slugFromId } = useArtifactType();
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
   const stepSettings = useMemo(() => {
@@ -321,12 +321,12 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
 
   const hasBtRecordings = useMemo(() => {
     if (!artifactTypeId) return true; // we're not transcribing back translations
-    const btType = localizedArtifactTypeFromId(artifactTypeId);
+    const btType = slugFromId(artifactTypeId);
     // Scope with the same step language the task list uses, so steps exempt from
     // language scoping (vernacular / Q&A / Retell) aren't hidden by a leftover
     // `language` setting.
     return rowData.some((r) => {
-      if (r.artifactType !== btType) return false;
+      if (r.artifactTypeSlug !== btType) return false;
       if (related(r.mediafile, 'sourceMedia') !== mediafileId) return false;
       return mediaMatchesStepLanguage(r.mediafile, stepLanguageBcp47);
     });

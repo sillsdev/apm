@@ -2,7 +2,6 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import logError, { Severity } from '../../../utils/logErrorService';
 import {
-  IArtifactTypeStrings,
   IPassageDetailArtifactsStrings,
   MediaFileD,
   SectionResourceD,
@@ -35,6 +34,7 @@ import {
   ArtifactTypeSlug,
   mediaFileName,
 } from '../../../crud';
+import { useRowTypeLabel } from './useRowTypeLabel';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import MediaDisplay from '../../MediaDisplay';
@@ -55,7 +55,6 @@ import { useOrbitData } from '../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
-  artifactTypeSelector,
   passageDetailArtifactsSelector,
   sharedSelector,
 } from '../../../selector';
@@ -181,21 +180,14 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
   const { userIsAdmin } = useRole();
-  const at: IArtifactTypeStrings = useSelector(
-    artifactTypeSelector,
-    shallowEqual
-  );
+  const rowTypeLabel = useRowTypeLabel();
   // Admins see badges for resources that are linked (shared) or general; other users don't.
   const typeBadge = (row: IRow) =>
-    !userIsAdmin
-      ? undefined
-      : // The badge stays short: "General" where the Type column says
-        // "General Resource".
-        row.isGeneralResource
-        ? t.general
-        : row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
-          ? at.linked
-          : undefined;
+    userIsAdmin &&
+    (row.isGeneralResource ||
+      row.artifactTypeSlug === ArtifactTypeSlug.SharedResource)
+      ? rowTypeLabel(row)
+      : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   const [editCloseConfirmation, setEditCloseConfirmation] = useState(false);
   const handleLink = useHandleLink({ passage, setLink });

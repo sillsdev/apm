@@ -328,12 +328,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="artifactType.projectresource">
-         <segment>
-            <source>General Resource</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="artifactType.qanda">
          <segment>
             <source>Community Test Question and Answer</source>
