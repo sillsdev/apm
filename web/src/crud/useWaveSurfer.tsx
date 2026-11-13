@@ -460,6 +460,7 @@ export function useWaveSurfer(
 
     wavesurferRef.current = wavesurfer;
     regionsLoadedRef.current = false;
+    isReadyRef.current = false;
     if (wavesurfer) {
       wavesurfer.on('ready', handleReady);
       //this is received way more times than expected
