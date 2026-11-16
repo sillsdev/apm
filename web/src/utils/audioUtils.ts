@@ -1,4 +1,4 @@
-// import { Mp3Encoder } from "@breezystack/lamejs";
+import { audioBufferToWavBlob } from './audioBufferToWavBlob';
 
 /**
  * Remove a time range from an audio Blob, returning a new WAV Blob with the
@@ -51,7 +51,7 @@ export async function spliceAudio(
   const rendered = await offlineCtx.startRendering();
   await audioCtx.close();
 
-  return audioBufferToWav(rendered);
+  return audioBufferToWavBlob(rendered);
 }
 
 /**
@@ -107,7 +107,7 @@ export async function clipAudio(
   const rendered = await offlineCtx.startRendering();
   await audioCtx.close();
 
-  return audioBufferToWav(rendered);
+  return audioBufferToWavBlob(rendered);
 }
 
 /**
@@ -161,7 +161,7 @@ export async function insertSilenceAudio(
   const rendered = await offlineCtx.startRendering();
   await audioCtx.close();
 
-  return audioBufferToWav(rendered);
+  return audioBufferToWavBlob(rendered);
 }
 
 /**
@@ -248,7 +248,7 @@ export async function replaceAudioSegment(
   await audioCtx.close();
 
   return {
-    blob: audioBufferToWav(rendered),
+    blob: await audioBufferToWavBlob(rendered),
     replacementDuration: resampled.duration,
   };
 }
@@ -343,58 +343,6 @@ export function mapPreviewTimeToOriginalTime(
   return replacementStart + fraction * (originalSegmentEnd - replacementStart);
 }
 
-/** Encode an AudioBuffer as a WAV Blob. */
-function audioBufferToWav(buffer: AudioBuffer): Blob {
-  const numChannels = buffer.numberOfChannels;
-  const sampleRate = buffer.sampleRate;
-  const length = buffer.length;
-  const bytesPerSample = 2; // 16-bit
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = length * blockAlign;
-  const headerSize = 44;
-  const arrayBuffer = new ArrayBuffer(headerSize + dataSize);
-  const view = new DataView(arrayBuffer);
-
-  // RIFF header
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(view, 8, 'WAVE');
-  // fmt chunk
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true); // chunk size
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, 16, true); // bits per sample
-  // data chunk
-  writeString(view, 36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  // Interleave channel data as 16-bit PCM
-  let offset = 44;
-  for (let i = 0; i < length; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
-      view.setInt16(
-        offset,
-        sample < 0 ? sample * 0x8000 : sample * 0x7fff,
-        true
-      );
-      offset += 2;
-    }
-  }
-
-  return new Blob([arrayBuffer], { type: 'audio/wav' });
-}
-
-function writeString(view: DataView, offset: number, str: string) {
-  for (let i = 0; i < str.length; i++) {
-    view.setUint8(offset + i, str.charCodeAt(i));
-  }
-}
-
 /**
  * Clamp a selection so it stays within a single "free zone" (gap between
  * highlights).  Returns the clamped selection, or null if invalid.
@@ -457,16 +405,6 @@ export function clampSelectionToHighlights(
   }
 
   return start < end ? { start, end } : null;
-}
-
-/** Read a File/Blob as a base-64 data-URL string. */
-export function toBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
 }
 
 /** Decode a base-64 string into a Blob. */

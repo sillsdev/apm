@@ -9,6 +9,10 @@ import {
   MenuItem,
   TextField,
 } from '@mui/material';
+import { shallowEqual, useSelector } from 'react-redux';
+import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
+import { sharedSelector, wsAudioPlayerSelector } from '../selector';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 
 export interface MicrophoneDialogProps {
   microphoneId: string;
@@ -22,6 +26,12 @@ export function MicrophoneDialog({
   onCancel,
   onConfirm,
 }: MicrophoneDialogProps) {
+  const t: IWsAudioPlayerStrings = useSelector(
+    wsAudioPlayerSelector,
+    shallowEqual
+  );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const { showMessage } = useSnackBar();
   const [inputs, setInputs] = useState<MediaDeviceInfo[]>([]);
   const [pickedId, setPickedId] = useState(microphoneId);
   // The pick if present, else the OS default, else the first mic.
@@ -34,7 +44,7 @@ export function MicrophoneDialog({
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then(
       (devices) => setInputs(devices.filter((d) => d.kind === 'audioinput')),
-      () => {}
+      () => showMessage(t.microphoneListFailed, AlertSeverity.Error)
     );
   }, []);
 
@@ -76,7 +86,7 @@ export function MicrophoneDialog({
   if (!chosenId) return null;
   return (
     <Dialog open onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>Select Microphone</DialogTitle>
+      <DialogTitle>{t.selectMicrophoneMenu}</DialogTitle>
       <DialogContent>
         <TextField
           select
@@ -112,9 +122,9 @@ export function MicrophoneDialog({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>Cancel</Button>
+        <Button onClick={onCancel}>{ts.cancel}</Button>
         <Button variant="contained" onClick={() => onConfirm(chosenId)}>
-          OK
+          {ts.ok}
         </Button>
       </DialogActions>
     </Dialog>

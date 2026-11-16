@@ -34,6 +34,7 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
+      waveform: WaveformColors;
     };
   }
   interface PaletteOptions {
@@ -45,6 +46,7 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
+      waveform: WaveformColors;
     };
   }
   interface Theme {
@@ -59,6 +61,14 @@ declare module '@mui/material/styles' {
       p: ResponsiveStyleValue<number>;
     };
   }
+}
+
+export interface WaveformColors {
+  cursor: string;
+  pointSelection: string;
+  marker: string;
+  minimapWave: string;
+  minimapOverlay: string;
 }
 
 export const LAYOUT_GAP = 1.5;
@@ -77,6 +87,13 @@ const colors = {
   racetrackCurrent: '#333333',
   racetrackComplete: '#a8a8a8',
   racetrackIncomplete: '#e0e0e0',
+
+  // Waveform
+  waveformCursor: '#333333',
+  waveformPointSelection: '#303030aa',
+  waveformMarker: '#868686c5',
+  waveformMinimapWave: '#dddddd',
+  waveformMinimapOverlay: '#c4c4c448',
 
   // Light buttons (text / outlined / contained secondary)
   lightBg: '#ffffff',
@@ -135,6 +152,13 @@ export const createAppTheme = (lang: string) =>
           racetrackCurrent: colors.racetrackCurrent,
           racetrackComplete: colors.racetrackComplete,
           racetrackIncomplete: colors.racetrackIncomplete,
+          waveform: {
+            cursor: colors.waveformCursor,
+            pointSelection: colors.waveformPointSelection,
+            marker: colors.waveformMarker,
+            minimapWave: colors.waveformMinimapWave,
+            minimapOverlay: colors.waveformMinimapOverlay,
+          },
         },
       },
       layout: {

@@ -15,6 +15,7 @@ import { IndexedDBSource } from '@orbit/indexeddb';
 import { NON_FILE_UPLOAD_TYPES, UploadType } from '../components/UploadType';
 import { RecordKeyMap } from '@orbit/records';
 import { getContentType } from '../utils/contentType';
+import { extensionFromAudioContentType } from '../utils/mimeTypes';
 import { ISharedStrings, MediaFileAttributes, MediaFileD } from '../model';
 import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { mediaTabSelector, sharedSelector } from '../selector';
@@ -292,7 +293,7 @@ export const useMediaUpload = ({
     if (file.type === type) return file;
     try {
       const blob = await convertToFormat(file, mimeType);
-      const ext = type.split(/[/;]/)[1];
+      const ext = extensionFromAudioContentType(type);
       const name = file.name.replace(/\.[^.]*$/, '') + `.${ext}`;
       return new File([blob], name, { type });
     } catch (err) {

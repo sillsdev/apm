@@ -10,6 +10,7 @@ import {
 import { evictMediaCache } from '../utils/evictMediaCache';
 import { logError, Severity } from '../utils/logErrorService';
 import bugsnagClient from '../auth/bugsnagClient';
+import { toError } from '@utils/toError';
 
 export const AutosaveSuffix = '_autosave';
 
@@ -77,7 +78,7 @@ const removeAutosaves = async ({
       versions.filter((m) => !oldAutosaves.includes(m))
     );
   } catch (err) {
-    logError(Severity.error, reporter, err as Error);
+    logError(Severity.error, reporter, toError(err));
   }
 };
 

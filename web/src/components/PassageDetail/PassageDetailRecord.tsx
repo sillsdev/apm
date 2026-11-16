@@ -41,6 +41,7 @@ import {
   pendingUploadIds,
 } from '../../store/upload/pendingMediaUploads';
 import { IMediaTabStrings, ISharedStrings } from '../../model';
+import { TimeRange } from '../../control/formatTime';
 import { useSnackBar } from '../../hoc/useSnackBar';
 
 const SaveWait = 500;
@@ -88,10 +89,7 @@ export function PassageDetailRecord() {
     'upload' | 'record'
   >();
   const playerRef = useRef<AudioPlayerHandle>(null);
-  const [selection, setSelection] = useState<{
-    start: number;
-    end: number;
-  } | null>(null);
+  const [selection, setSelection] = useState<TimeRange | null>(null);
   // Audio of the passage's latest stored version (autosave or permanent).
   const [savedBlob, setSavedBlob] = useState<Blob>();
   // Audio in the player.
@@ -387,8 +385,8 @@ export function PassageDetailRecord() {
                 boxSizing: 'border-box',
                 borderRadius: '50%',
                 border: recording ? 'none' : '25px solid',
-                borderColor: speaker ? 'alert.main' : '#d0d0d0',
-                bgcolor: recording ? 'alert.main' : 'transparent',
+                borderColor: speaker ? 'error.main' : '#d0d0d0',
+                bgcolor: recording ? 'error.main' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -408,7 +406,7 @@ export function PassageDetailRecord() {
                 height: 64,
                 fontSize: '1.1rem !important',
                 fontWeight: 600,
-                color: selection ? '#9e9e9e' : 'alert.main',
+                color: selection ? '#9e9e9e' : 'error.main',
                 opacity: speaker && !busy ? 1 : 0.6,
                 cursor: speaker && !busy ? 'pointer' : 'default',
 

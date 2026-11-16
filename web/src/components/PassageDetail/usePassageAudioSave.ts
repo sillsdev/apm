@@ -109,7 +109,7 @@ export const usePassageAudioSave = ({
     if (!currentBlob || !edited || !enabled || saving) return;
     if (!offline && !connected) return;
     const timer = setTimeout(
-      () => void track(saveAs(currentBlob, AutosaveSuffix)).catch(() => {}),
+      () => void track(saveAs(currentBlob, AutosaveSuffix)),
       AutosaveIntervalMs
     );
     return () => clearTimeout(timer);

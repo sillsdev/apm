@@ -34,13 +34,8 @@ interface IProps {
 
 export const PassageDetailChooser = ({ sx }: IProps) => {
   const [memory] = useGlobal('memory');
-  const {
-    passage,
-    section,
-    prjId,
-    allBookData,
-    isNavigationBlocked,
-  } = usePassageDetailContext();
+  const { passage, section, prjId, allBookData, isNavigationBlocked } =
+    usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);

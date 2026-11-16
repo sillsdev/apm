@@ -32,7 +32,7 @@ import VoiceOverOffOutlinedIcon from '@mui/icons-material/VoiceOverOffOutlined';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/Mic';
 import DownloadIcon from '@mui/icons-material/GetAppOutlined';
-import { formatTime } from '../utils/formatTime';
+import { formatTime, TimeRange } from '../control/formatTime';
 import { extensionFromAudioContentType } from '../utils/mimeTypes';
 import { localUserKey, LocalKey } from '../utils/localUserKey';
 import {
@@ -41,7 +41,11 @@ import {
   insertSilenceAudio,
 } from '../utils/audioUtils';
 import { useRecorder } from '../utils/useRecorder';
-import { useUserMedia } from '../crud/useUserMedia';
+import {
+  CaptureAcquireSupersededError,
+  useUserMedia,
+} from '../crud/useUserMedia';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { buildCaptureConstraints } from '../crud/captureConstraints';
 import {
   createWaveformRenderer,
@@ -64,10 +68,6 @@ import { audioDownloadSelector, wsAudioPlayerSelector } from '../selector';
 /* ------------------------------------------------------------------ */
 
 export interface AudioPlayerHandle {
-  /** Start playback */
-  play: () => void;
-  /** Pause playback */
-  pause: () => void;
   /** Seek to a specific time */
   setTime: (time: number) => void;
   /** Start recording from the microphone */
@@ -77,7 +77,7 @@ export interface AudioPlayerHandle {
   /** Push current audio + selection onto the undo stack, with an optional payload returned to onAudioChange when this entry is restored */
   pushUndo: (payload?: unknown) => void;
   /** Programmatically set the waveform selection */
-  updateSelection: (sel: { start: number; end: number } | null) => void;
+  updateSelection: (sel: TimeRange | null) => void;
   /** Reset zoom to the default */
   resetZoom: () => void;
 }
@@ -115,7 +115,7 @@ export interface AudioPlayerProps {
 
   /** Called when the drag-selection changes (null when cleared) */
   onSelectionChange?: (
-    selection: { start: number; end: number } | null,
+    selection: TimeRange | null,
     source: 'user' | 'undo'
   ) => void;
 
@@ -139,7 +139,7 @@ export interface AudioPlayerProps {
   showDownload?: boolean;
 
   /** Create an unclearable selection region on the waveform */
-  stickySelection?: { start: number; end: number };
+  stickySelection?: TimeRange;
 
   /** Stop playback at stickySelection end and seek back to start (default: true) */
   shouldStopAfterStickySelection?: boolean;
@@ -151,7 +151,7 @@ export interface AudioPlayerProps {
   enableZoom?: boolean;
 
   /** Colored regions to highlight on the waveform */
-  highlights?: { start: number; end: number; color: string }[];
+  highlights?: (TimeRange & { color: string })[];
 
   /** Children rendered below the waveform (e.g. helper text) */
   children?: React.ReactNode;
@@ -184,7 +184,6 @@ export interface AudioMarker {
 /* ------------------------------------------------------------------ */
 
 const GRACE_PX = 10;
-const DEFAULT_MARKER_COLOR = '#868686c5';
 
 /**
  * Nearest marker drawn within GRACE_PX on-screen pixels of the click, or undefined.
@@ -267,13 +266,14 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     const theme = useTheme();
     const waveColor = waveColorProp ?? theme.palette.primary.extraLight;
     const progressColor = progressColorProp ?? theme.palette.primary.extraLight;
+    const waveformColors = theme.palette.custom.waveform;
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
     const isSelectionSticky = !!stickySelection;
 
     // Undo stack
     interface UndoEntry {
       audio: Blob | null;
-      selection: { start: number; end: number } | null;
+      selection: TimeRange | null;
       payload?: unknown;
     }
     const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
@@ -290,10 +290,9 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       stop: () => wsRef.current?.stop(),
     });
 
-    const [selection, setSelection] = useState<{
-      start: number;
-      end: number;
-    } | null>(stickySelection ?? null);
+    const [selection, setSelection] = useState<TimeRange | null>(
+      stickySelection ?? null
+    );
     const selectionRef = useRef(selection);
     useEffect(() => {
       selectionRef.current = selection;
@@ -330,7 +329,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
 
     // Helper: only fire onSelectionChange when the value actually changed
     const fireSelectionChange = (
-      sel: { start: number; end: number } | null,
+      sel: TimeRange | null,
       source: 'user' | 'undo'
     ) => {
       const prev = selectionRef.current;
@@ -365,6 +364,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       audioDownloadSelector,
       shallowEqual
     );
+    const { showMessage } = useSnackBar();
     const [microphoneId, setMicrophoneId] = useState(
       () => localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
     );
@@ -382,36 +382,51 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       if (allowRecord)
         getMic(true).then(
           ({ stream }) => setMicStream(stream),
-          () => {}
+          (err) => {
+            const error = err instanceof Error ? err : new Error(String(err));
+            showMessage(
+              t.recordStartFailed.replace('{0}', error.message),
+              AlertSeverity.Error
+            );
+          }
         );
     }, [allowRecord, getMic, microphoneId]);
 
     const recorder = useRecorder(micStream);
     const startRecording = async () => {
       if (conversionProcessing) return;
-      await recorder.startRecording(
-        internalAudio,
-        currentTime,
-        wsRef.current,
-        (audio) => {
-          if (internalAudio) {
-            pushUndo();
-            wsRef.current?.once('decode', () =>
-              wsRef.current?.setTime(currentTime)
-            );
+      try {
+        await recorder.startRecording(
+          internalAudio,
+          currentTime,
+          wsRef.current,
+          (audio) => {
+            if (internalAudio) {
+              pushUndo();
+              wsRef.current?.once('decode', () =>
+                wsRef.current?.setTime(currentTime)
+              );
+            }
+            setInternalAudio(audio);
+            setRecording(false);
+            onAudioChangeRef.current?.(audio);
+            onRecordingComplete?.(audio);
           }
-          setInternalAudio(audio);
-          setRecording(false);
-          onAudioChangeRef.current?.(audio);
-          onRecordingComplete?.(audio);
-        }
-      );
+        );
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        showMessage(
+          t.recordStartFailed.replace('{0}', error.message),
+          AlertSeverity.Error
+        );
+        return;
+      }
       setRecording(true);
     };
     const stopRecording = () => recorder.stopRecording();
 
     // Apply or clear the single selection region.
-    const applySelection = (sel: { start: number; end: number } | null) => {
+    const applySelection = (sel: TimeRange | null) => {
       const rp = regionsRef.current;
       if (rp) {
         rp.getRegions().forEach((r) => {
@@ -430,8 +445,6 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
 
     // Imperative handle
     useImperativeHandle(ref, () => ({
-      play: selfHandleRef.current.play,
-      pause: selfHandleRef.current.pause,
       setTime: (t: number) => wsRef.current?.setTime(t),
       get container() {
         return containerRef.current;
@@ -471,7 +484,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
         container: containerRef.current,
         waveColor,
         progressColor,
-        cursorColor: '#333',
+        cursorColor: waveformColors.cursor,
         cursorWidth: 4,
         barWidth: 2,
         height,
@@ -498,10 +511,10 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           MinimapPlugin.create({
             container: minimapContainerRef.current,
             height: 12,
-            waveColor: '#dddddd',
-            progressColor: '#dddddd',
+            waveColor: waveformColors.minimapWave,
+            progressColor: waveformColors.minimapWave,
             cursorWidth: 0,
-            overlayColor: '#c4c4c448',
+            overlayColor: waveformColors.minimapOverlay,
           })
         );
       }
@@ -653,7 +666,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           time >= sel.end &&
           playStartTime < sel.end
         ) {
-          ws.pause();
+          audioManager.pause();
           ws.setTime(sel.start);
           setCurrentTime(sel.start);
         }
@@ -684,7 +697,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
             end: prevSelection.end,
             color:
               prevSelection.start === prevSelection.end
-                ? '#303030aa'
+                ? waveformColors.pointSelection
                 : undefined,
           });
           programmaticRef.current = false;
@@ -697,7 +710,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
             start: m.time,
             drag: false,
             resize: false,
-            color: m.color ?? DEFAULT_MARKER_COLOR,
+            color: m.color ?? waveformColors.marker,
           });
         }
       });
@@ -759,7 +772,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           start: m.time,
           drag: false,
           resize: false,
-          color: m.color ?? DEFAULT_MARKER_COLOR,
+          color: m.color ?? waveformColors.marker,
         });
       }
     }, [markerKey]);
@@ -804,26 +817,20 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     const handleCutClick = async () => {
       if (!internalAudio || !selection) return;
       pushUndo();
-      try {
-        const spliced = await spliceAudio(
-          internalAudio,
-          selection.start,
-          selection.end
-        );
-        // Clear selection and regions before loading new audio
-        setSelection(null);
-        fireSelectionChange(null, 'user');
-        regionsRef.current?.getRegions().forEach((r) => {
-          if (r.start !== r.end) r.remove();
-        });
-        setInternalAudio(spliced);
-        onAudioChangeRef.current?.(spliced);
-        wsRef.current?.once('decode', () =>
-          wsRef.current?.setTime(currentTime)
-        );
-      } catch {
-        // Splice failed — leave audio unchanged
-      }
+      const spliced = await spliceAudio(
+        internalAudio,
+        selection.start,
+        selection.end
+      );
+      // Clear selection and regions before loading new audio
+      setSelection(null);
+      fireSelectionChange(null, 'user');
+      regionsRef.current?.getRegions().forEach((r) => {
+        if (r.start !== r.end) r.remove();
+      });
+      setInternalAudio(spliced);
+      onAudioChangeRef.current?.(spliced);
+      wsRef.current?.once('decode', () => wsRef.current?.setTime(currentTime));
     };
     const handleTrashClick = () => {
       pushUndo();
@@ -862,12 +869,9 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       wsRef.current?.once('decode', () => wsRef.current?.setTime(currentTime));
     };
     const applyAi = async (
-      func: (
-        audio: Blob,
-        range: { start: number; end: number }
-      ) => Promise<Blob | undefined>
+      func: (audio: Blob, range: TimeRange) => Promise<Blob | undefined>
     ) => {
-      wsRef.current?.pause();
+      audioManager.pause();
       onAudioChangeRef.current?.(null);
       const result = await func(
         internalAudio!,
@@ -902,46 +906,53 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
         ? `${formatTime(selection.start)} - ${formatTime(selection.end)}`
         : `${formatTime(currentTime)} / ${formatTime(duration || 0)}`;
 
+    // Record/Stop when showRecordButton and no audio (or actively recording), otherwise Play/Pause
+    let topLeftButton: React.ReactNode;
+    if (showRecordButton && recording) {
+      topLeftButton = (
+        <IconButton
+          onClick={stopRecording}
+          sx={{ p: 0 }}
+          aria-label={`${label} stop recording`}
+        >
+          <StopIcon fontSize="large" sx={{ color: 'error.main' }} />
+        </IconButton>
+      );
+    } else if (showRecordButton && !hasLoadedAudio) {
+      topLeftButton = (
+        <IconButton
+          onClick={startRecording}
+          sx={{ p: 0 }}
+          aria-label={`${label} start recording`}
+        >
+          <FiberManualRecordIcon
+            fontSize="large"
+            sx={{ color: 'error.main' }}
+          />
+        </IconButton>
+      );
+    } else {
+      topLeftButton = (
+        <IconButton
+          onClick={handlePlayToggle}
+          disabled={!hasLoadedAudio}
+          sx={{ p: 0 }}
+          aria-label={playing ? `${label} pause` : `${label} play`}
+        >
+          {playing ? (
+            <PauseIcon fontSize="large" />
+          ) : (
+            <PlayArrowIcon fontSize="large" />
+          )}
+        </IconButton>
+      );
+    }
+
     return (
       <Box>
         <Box sx={{ display: conversionProcessing ? 'none' : undefined }}>
           <Stack direction="row" alignItems="center" spacing={0}>
-            {/* Left button: Record/Stop when showRecordButton and no audio (or actively recording), otherwise Play/Pause */}
-            {showRecordButton && (!hasLoadedAudio || recording) ? (
-              recording ? (
-                <IconButton
-                  onClick={stopRecording}
-                  sx={{ p: 0 }}
-                  aria-label={`${label} stop recording`}
-                >
-                  <StopIcon fontSize="large" sx={{ color: 'error.main' }} />
-                </IconButton>
-              ) : (
-                <IconButton
-                  onClick={startRecording}
-                  sx={{ p: 0 }}
-                  aria-label={`${label} start recording`}
-                >
-                  <FiberManualRecordIcon
-                    fontSize="large"
-                    sx={{ color: 'error.main' }}
-                  />
-                </IconButton>
-              )
-            ) : (
-              <IconButton
-                onClick={handlePlayToggle}
-                disabled={!hasLoadedAudio}
-                sx={{ p: 0 }}
-                aria-label={playing ? `${label} pause` : `${label} play`}
-              >
-                {playing ? (
-                  <PauseIcon fontSize="large" />
-                ) : (
-                  <PlayArrowIcon fontSize="large" />
-                )}
-              </IconButton>
-            )}
+            {topLeftButton}
             <Typography variant="body2" sx={{ ml: '12px !important' }}>
               {timeDisplay}
             </Typography>
@@ -974,7 +985,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                 size="small"
                 aria-label={`${label} insert silence`}
                 sx={{ ml: '12px !important' }}
-                onClick={handleInsertSilenceClick}
+                onClick={void handleInsertSilenceClick}
               >
                 <VoiceOverOffOutlinedIcon fontSize="small" />
               </IconButton>
@@ -1009,7 +1020,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                   <ListItemIcon>
                     <MicIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText>Select Microphone...</ListItemText>
+                  <ListItemText>{t.selectMicrophoneMenu}</ListItemText>
                 </MenuItem>
               )}
               {allowRecord && !isBoldWorkflow && (
@@ -1018,7 +1029,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                   disabled={!hasLoadedAudio}
                   onClick={() => {
                     handleMenuClose();
-                    applyAi(suppressNoise);
+                    void applyAi(suppressNoise);
                   }}
                 >
                   <ListItemIcon>
@@ -1042,7 +1053,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                       sx={{ width: '14pt', height: '14pt' }}
                     />
                   </ListItemIcon>
-                  <ListItemText>{t.convertVoiceAi}...</ListItemText>
+                  <ListItemText>{t.convertVoiceAi}</ListItemText>
                 </MenuItem>
               )}
               {showDownload && (
@@ -1072,7 +1083,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                   <ListItemIcon>
                     <DeleteOutlineIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText>Reset Audio</ListItemText>
+                  <ListItemText>{t.resetAudio}</ListItemText>
                 </MenuItem>
               )}
               {menuItemsProp}
@@ -1094,7 +1105,9 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
               onCancel={() => setVoiceDialogOpen(false)}
               begin={(voice) => {
                 setVoiceDialogOpen(false);
-                applyAi((audio, range) => convertVoice(audio, range, voice));
+                void applyAi((audio, range) =>
+                  convertVoice(audio, range, voice)
+                );
               }}
             />
           )}
