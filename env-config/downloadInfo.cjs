@@ -1,11 +1,16 @@
 var fs = require('fs-extra');
 const { join } = require('path');
 const md5File = require('md5-file');
+const JSON5 = require('json5');
 
 var dist = process.argv.length > 2 ? process.argv[2] : 'dist';
 
 var content = fs.readFileSync(join(__dirname, '/package.json'), 'utf-8');
 var json = JSON.parse(content);
+// productName lives in the electron-builder config, not package.json.
+var builderConfig = JSON5.parse(
+  fs.readFileSync(join(__dirname, '/electron-builder.json5'), 'utf-8')
+);
 
 async function makeInfo(path) {
   const dir = await fs.promises.opendir(path);
@@ -25,7 +30,7 @@ async function makeInfo(path) {
         const hash = await md5File(filePath);
         const isWin = ext === 'exe';
         var info = {
-          name: json.build.productName,
+          name: builderConfig.productName,
           version: json.version,
           date: stat.ctime.toISOString().split('T')[0],
           edition: '',
