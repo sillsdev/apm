@@ -34,26 +34,16 @@ interface IProps {
 
 export const PassageDetailChooser = ({ sx }: IProps) => {
   const [memory] = useGlobal('memory');
-  const {
-    passage,
-    section,
-    prjId,
-    allBookData,
-    setCurrentStep,
-    isNavigationBlocked,
-  } = usePassageDetailContext();
+  const { passage, section, prjId, allBookData, isNavigationBlocked } =
+    usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
 
   const t = useSelector(
     passageChooserSelector,
@@ -138,6 +128,7 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
     <StyledBox
       sx={{
         ...sx,
+        px: 1,
         alignItems: 'center',
         gap: 0,
       }}
