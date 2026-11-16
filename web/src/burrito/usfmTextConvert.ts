@@ -1,6 +1,6 @@
 import { XMLSerializer } from '@xmldom/xmldom';
 import grammarWasmUrl from 'usfm-grammar-web/tree-sitter-usfm.wasm?url';
-import parserWasmUrl from 'usfm-grammar-web/tree-sitter.wasm?url';
+import parserWasmUrl from 'usfm-grammar-web/web-tree-sitter.wasm?url';
 
 export type BurritoTextExportFormat = 'usj' | 'usx';
 
