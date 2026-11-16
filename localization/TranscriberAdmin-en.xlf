@@ -10804,6 +10804,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.upload">
+         <segment>
+            <source>Upload</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.markVerses">
          <segment>
             <source>Mark Verses</source>

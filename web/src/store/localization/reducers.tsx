@@ -2212,6 +2212,7 @@ const initialState = {
 			"transcribe": "Transcribe",
 			"transcribeTip": "Transcribe the recording.",
 			"unsaved": "Unsaved content",
+			"upload": "Upload",
 			"markVerses": "Mark Verses",
 			"markVersesTip": "Listen to the recording and mark where the verse boundaries occur.",
 			"prompt": "Prompt",
