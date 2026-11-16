@@ -10,7 +10,7 @@ import {
 import { evictMediaCache } from '../utils/evictMediaCache';
 import { logError, Severity } from '../utils/logErrorService';
 import bugsnagClient from '../auth/bugsnagClient';
-import { toError } from '@utils/toError';
+import { toError } from '../utils/toError';
 
 export const AutosaveSuffix = '_autosave';
 

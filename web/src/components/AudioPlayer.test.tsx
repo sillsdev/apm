@@ -1,19 +1,23 @@
 import { createRef } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ThemeProvider } from '@mui/material';
+import { createAppTheme } from '../theme';
 
 type Handler = (...args: any[]) => void;
 
 // Wavesurfer needs a real audio stack.
 let mockListeners: Record<string, Handler[]> = {};
+const mockFire = (evt: string) =>
+  (mockListeners[evt] ?? []).forEach((cb) => cb());
 const mockWs = {
   on: jest.fn((evt: string, cb: Handler) => {
     (mockListeners[evt] ||= []).push(cb);
     return () => {};
   }),
   once: jest.fn(),
-  play: jest.fn(),
-  pause: jest.fn(),
+  play: jest.fn(() => mockFire('play')),
+  pause: jest.fn(() => mockFire('pause')),
   stop: jest.fn(),
   setTime: jest.fn(),
   setOptions: jest.fn(),
@@ -128,7 +132,11 @@ const emit = (evt: string, ...args: unknown[]) =>
 
 const renderPlayer = (props: AudioPlayerProps = {}) => {
   const ref = createRef<AudioPlayerHandle>();
-  render(<AudioPlayer ref={ref} {...props} />);
+  render(
+    <ThemeProvider theme={createAppTheme('en')}>
+      <AudioPlayer ref={ref} {...props} />
+    </ThemeProvider>
+  );
   return ref;
 };
 
@@ -178,11 +186,8 @@ describe('AudioPlayer', () => {
       await userEvent.click(button('passage play'));
       expect(mockWs.play).toHaveBeenCalledTimes(1);
 
-      emit('play');
       await userEvent.click(button('passage pause'));
       expect(mockWs.pause).toHaveBeenCalledTimes(1);
-
-      emit('pause');
       expect(button('passage play')).toBeInTheDocument();
     });
 
@@ -196,10 +201,10 @@ describe('AudioPlayer', () => {
       expect(onTimeUpdate).toHaveBeenCalledWith(3);
     });
 
-    it('stops at the end of a sticky selection and seeks back', () => {
+    it('stops at the end of a sticky selection and seeks back', async () => {
       mockWs.isPlaying.mockReturnValueOnce(true);
       renderLoaded({ stickySelection: { start: 2, end: 4 } });
-      emit('play');
+      await userEvent.click(button('passage play'));
 
       emit('timeupdate', 4);
 

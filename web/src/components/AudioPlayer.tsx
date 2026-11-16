@@ -985,7 +985,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                 size="small"
                 aria-label={`${label} insert silence`}
                 sx={{ ml: '12px !important' }}
-                onClick={void handleInsertSilenceClick}
+                onClick={handleInsertSilenceClick}
               >
                 <VoiceOverOffOutlinedIcon fontSize="small" />
               </IconButton>
