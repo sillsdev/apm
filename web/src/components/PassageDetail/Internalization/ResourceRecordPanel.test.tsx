@@ -8,13 +8,9 @@ import {
 } from './ResourceUploadContext';
 import { UploadType } from '../../UploadType';
 
-type MediaRecordProps = {
-  afterUploadCb: (mediaId: string | undefined) => Promise<void>;
-  setCanSave: (canSave: boolean) => void;
-  onRecording?: (isRecording: boolean) => void;
-};
-
-let recorder: MediaRecordProps | undefined;
+// The recorder state the panel reads during render; each test sets it before
+// rendering, standing in for useMediaRecord.
+let recState = { needsSave: false, hasTake: false };
 
 jest.mock('react-redux', () => ({
   useSelector: () => ({ next: 'Next', save: 'Save' }),
@@ -51,12 +47,11 @@ jest.mock('./UploadRecordToggle', () => ({
     </button>
   ),
 }));
+jest.mock('../../useMediaRecord', () => ({
+  useMediaRecord: () => recState,
+}));
 jest.mock('../../MediaRecord', () => ({
-  __esModule: true,
-  default: (props: MediaRecordProps) => {
-    recorder = props;
-    return null;
-  },
+  MediaRecordView: () => null,
 }));
 
 const openRecordTab = (onNext?: () => void) => {
@@ -70,7 +65,12 @@ const openRecordTab = (onNext?: () => void) => {
     speaker: 'Alice',
     cancelled: { current: false },
     deferred: onNext
-      ? { onNext, controlsRef: { current: {} } as never }
+      ? {
+          onNext,
+          controlsRef: {
+            current: { handleAddOrSave: null, handleCancel: null },
+          },
+        }
       : undefined,
   };
   render(
@@ -86,52 +86,38 @@ const openRecordTab = (onNext?: () => void) => {
   });
 };
 
-const button = () => document.getElementById('rec-save') as HTMLButtonElement;
+const button = (): HTMLButtonElement => {
+  const el = document.getElementById('rec-save');
+  if (!(el instanceof HTMLButtonElement)) {
+    throw new Error('record button not rendered');
+  }
+  return el;
+};
 
 describe('ResourceRecordPanel record button', () => {
-  beforeEach(() => {
-    recorder = undefined;
-  });
-
-  it('keeps Next enabled after Back to a take that already uploaded', async () => {
+  it('enables Next (wizard) for a take that already uploaded', () => {
+    // An uploaded take clears needsSave but is still in the waveform.
+    recState = { needsSave: false, hasTake: true };
     openRecordTab(jest.fn());
-    act(() => recorder!.setCanSave(true));
-    expect(button().disabled).toBe(false);
-
-    // SelectSections uploads the take; the upload clears canSave but the take
-    // stays in the waveform, so a Back to this step must still allow Next.
-    await act(async () => {
-      await recorder!.afterUploadCb('media-1');
-      recorder!.setCanSave(false);
-    });
     expect(button().disabled).toBe(false);
   });
 
-  it('disables Next once a new recording starts over the uploaded take', async () => {
+  it('disables Next (wizard) when there is no usable take', () => {
+    // e.g. the take was deleted, or a new recording is in progress.
+    recState = { needsSave: false, hasTake: false };
     openRecordTab(jest.fn());
-    await act(async () => {
-      await recorder!.afterUploadCb('media-1');
-      recorder!.setCanSave(false);
-    });
-    act(() => recorder!.onRecording?.(true));
     expect(button().disabled).toBe(true);
   });
 
-  it('does not count a failed upload as an uploaded take', async () => {
-    openRecordTab(jest.fn());
-    await act(async () => {
-      await recorder!.afterUploadCb(undefined);
-      recorder!.setCanSave(false);
-    });
-    expect(button().disabled).toBe(true);
-  });
-
-  it('gates Save (no wizard) on unsaved changes only', async () => {
+  it('gates Save (no wizard) on unsaved changes, not on a take being shown', () => {
+    recState = { needsSave: false, hasTake: true };
     openRecordTab();
-    await act(async () => {
-      await recorder!.afterUploadCb('media-1');
-      recorder!.setCanSave(false);
-    });
     expect(button().disabled).toBe(true);
+  });
+
+  it('enables Save (no wizard) when there are unsaved changes', () => {
+    recState = { needsSave: true, hasTake: true };
+    openRecordTab();
+    expect(button().disabled).toBe(false);
   });
 });
