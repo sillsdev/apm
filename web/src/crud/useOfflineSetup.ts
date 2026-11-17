@@ -323,11 +323,10 @@ export const useOfflineSetup = () => {
       await makeWorkflowProcessSteps(
         'transcriber',
         [
-          { name: 'Record', tool: 'record' },
+          { name: 'Upload', tool: 'record' },
           { name: 'MarkVerses', tool: 'verses' },
           { name: 'Transcribe', tool: 'transcribe' },
           { name: 'ParatextSync', tool: 'paratext' },
-          { name: 'Export', tool: 'export' },
           { name: 'Done', tool: 'done' },
         ],
         artIds
