@@ -30,13 +30,13 @@ interface IProps {
   scripture?: ArtCatScr | undefined;
   type: ArtifactCategoryType;
   disabled?: boolean | undefined;
-  // When provided, the parent gets a `commit()` here to run at form submission:
+  // When provided, the parent gets a `saveCategory()` here to run at form submission:
   // it resolves the current input to a category id (creating a new category
   // when the typed name matches none) and returns it. New categories are then
-  // created on commit rather than on blur.
-  commitRef?: RefObject<(() => Promise<string>) | null> | undefined;
+  // created on save rather than on blur.
+  categorySaveRef?: RefObject<(() => Promise<string>) | null> | undefined;
   // Fires as the user types in an allowNew field, i.e. whenever the field holds
-  // text that only commit() will resolve to a category id. Parents that gate
+  // text that only saveCategory() will resolve to a category id. Parents that gate
   // their Save button on a "changed" flag would otherwise never enable it for a
   // new-category-only edit; they use this to mark themselves dirty.
   onNewDraft?: (() => void) | undefined;
@@ -67,7 +67,7 @@ export const SelectArtifactCategory = (props: IProps) => {
     scripture,
     type,
     disabled,
-    commitRef,
+    categorySaveRef,
     onNewDraft,
   } = props;
   const artifactCategories =
@@ -87,7 +87,7 @@ export const SelectArtifactCategory = (props: IProps) => {
     IArtifactCategory[]
   >([]);
   const [gettingCategories, setGettingCategories] = useState(true);
-  const committingRef = useRef(false);
+  const savingRef = useRef(false);
   const currentName =
     artifactCategorys.find((c) => c.id === categoryId)?.category ?? '';
   const [inputVal, setInputVal] = useState(currentName);
@@ -135,7 +135,7 @@ export const SelectArtifactCategory = (props: IProps) => {
 
   // Resolve a chosen/typed category name to an existing category id. Called on
   // blur and on change. Deliberately does NOT create new categories — that is
-  // deferred to commit() (form submission) so navigating away without saving
+  // deferred to saveCategory() (form submission) so navigating away without saving
   // never leaves an orphaned category behind.
   const resolveExisting = (raw: string | null) => {
     const name = (raw ?? '').trim();
@@ -158,13 +158,13 @@ export const SelectArtifactCategory = (props: IProps) => {
       setInputVal(currentName);
       return;
     }
-    // allowNew + a new name: keep the typed text as-is and wait for commit().
+    // allowNew + a new name: keep the typed text as-is and wait for saveCategory().
   };
 
   // Resolve the current input to a category id, creating a new category when
   // the typed name matches none. Intended to run at form submission via
-  // commitRef. Returns the resolved id (empty string when the field is blank).
-  const commit = async (): Promise<string> => {
+  // categorySaveRef. Returns the resolved id (empty string when the field is blank).
+  const saveCategory = async (): Promise<string> => {
     const name = inputVal.trim();
     // Field unchanged from the committed category — keep its id as-is rather
     // than re-resolving by name. Re-resolving could silently drop the category
@@ -190,8 +190,8 @@ export const SelectArtifactCategory = (props: IProps) => {
       setInputVal(currentName);
       return categoryId;
     }
-    if (committingRef.current) return categoryId;
-    committingRef.current = true;
+    if (savingRef.current) return categoryId;
+    savingRef.current = true;
     try {
       const newId = await addNewArtifactCategory(name, type);
       const cats = await getCategorys();
@@ -209,18 +209,18 @@ export const SelectArtifactCategory = (props: IProps) => {
       }
       return categoryId;
     } finally {
-      committingRef.current = false;
+      savingRef.current = false;
     }
   };
 
-  // Expose commit() to the parent form. No dependency array: re-assign every
-  // render so the closure stays current; clear on unmount so a stale commit is
+  // Expose saveCategory() to the parent form. No dependency array: re-assign every
+  // render so the closure stays current; clear on unmount so a stale save is
   // never invoked once the field is gone.
   useEffect(() => {
-    if (!commitRef) return;
-    commitRef.current = commit;
+    if (!categorySaveRef) return;
+    categorySaveRef.current = saveCategory;
     return () => {
-      commitRef.current = null;
+      categorySaveRef.current = null;
     };
   });
 
@@ -238,7 +238,7 @@ export const SelectArtifactCategory = (props: IProps) => {
         inputValue={inputVal}
         onInputChange={(_e, v, reason) => {
           setInputVal(v);
-          // A typed name isn't resolved to an id until commit(), so
+          // A typed name isn't resolved to an id until saveCategory(), so
           // onCategoryChange won't fire; tell the parent it's dirty so Save can
           // enable. Only real keystrokes count, not the programmatic 'reset' MUI
           // fires when the committed value changes; and without allowNew a typed

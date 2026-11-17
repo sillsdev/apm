@@ -65,23 +65,23 @@ jest.mock('./GraphicUploader', () => {
   return {
     mockHandleAddOrSave: handleAddOrSave,
     GraphicUploader: (props: {
-      metadata?: React.ReactNode;
+      metaData?: React.ReactNode;
       onFiles?: (files: File[]) => void;
-      mediaUploadControlsRef?: {
+      controlsRef?: {
         current: {
           handleAddOrSave: unknown;
           handleCancel: unknown;
         };
       };
     }) => {
-      if (props.mediaUploadControlsRef) {
-        props.mediaUploadControlsRef.current.handleAddOrSave = handleAddOrSave;
-        props.mediaUploadControlsRef.current.handleCancel = jest.fn();
+      if (props.controlsRef) {
+        props.controlsRef.current.handleAddOrSave = handleAddOrSave;
+        props.controlsRef.current.handleCancel = jest.fn();
       }
       return (
         <div>
           custom-upload
-          {props.metadata}
+          {props.metaData}
           <button
             type="button"
             onClick={() =>

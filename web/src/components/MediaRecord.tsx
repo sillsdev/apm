@@ -36,6 +36,7 @@ import { useRecordSave } from './useRecordSave';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 
+// TODO cleanup: controlsRef is only passed by the Cypress specs
 export interface IProps {
   toolId: string;
   artifactId: string | null;
@@ -67,13 +68,6 @@ export interface IProps {
    * `pendingRestore` can include newly created category ids.
    */
   beforeUpload?: () => Promise<void>;
-  /**
-   * When set, `doUpload` hands the finished (already converted) take here and
-   * returns instead of calling `uploadMedia` — the general-resource flow defers
-   * the upload until the user has chosen passages/sections (SelectSections).
-   * When absent, a saved take uploads immediately as usual.
-   */
-  onStageFile?: ((files: File[]) => void | Promise<void>) | undefined;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -86,6 +80,20 @@ export interface IProps {
   allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
   /**
+   * Reports whether a usable take is loaded in the waveform, independent of
+   * whether it counts as an unsaved change. Unlike `setCanSave`, this stays true
+   * after a take has been uploaded (the upload clears the dirty flags but leaves
+   * the take shown). The deferred add-resource wizard uses it to keep its "Next"
+   * button live when the user steps back to the still-mounted Record step after
+   * the take already uploaded once.
+   */
+  // TODO cleanup: combine a bunch of these props that describe what stage the recording is in
+  // into one lifecycle prop that sets the current stage as e.g. Recording, Saving, Loading, Unsaved, etc. Maybe even HasValidTake or HasInvalidTake?
+  // Also, in particular, make the situation around recording and the recorder more readable.
+  // At the very least, allowRecord should be renamed to indicate that it controls the total
+  // presence or absence of the recorder, unlike recordBlocked.
+  setHasTake?: ((hasTake: boolean) => void) | undefined;
+  /**
    * Called when a save attempt is rejected — the upload failed or finished
    * without a mediaId. May fire more than once for a single failed save, so
    * handlers must be idempotent. Parents that auto-save on the rising edge of
@@ -94,18 +102,15 @@ export interface IProps {
    * path.
    */
   onSaveRejected?: (() => void) | undefined;
-  setCanCancel?: ((canCancel: boolean) => void) | undefined;
   setStatusText: (status: string) => void;
-  cancelMethod?: (() => void) | undefined;
   allowRecord?: boolean | undefined;
   oneTryOnly?: boolean | undefined;
   allowWave?: boolean | undefined;
   height?: number;
-  width: number;
+  width?: number;
   doReset?: boolean | undefined;
   setDoReset?: ((r: boolean) => void) | undefined;
   preload?: number | undefined;
-  onLoaded?: (() => void) | undefined;
   autoStart?: boolean | undefined;
   trackState?: ((mediaState: IMediaState) => void) | undefined;
   noNewVoice?: boolean | undefined;
@@ -114,14 +119,10 @@ export interface IProps {
   /** When true, disable drag-to-create-region (the red loop region) on the waveform. */
   disableDragSelection?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
-  hideControls?: boolean;
   /** Forwarded to WSAudioPlayer: when false, this recorder claims no keyboard
    *  shortcuts (so an off-screen instance yields them). Default true. */
   hotkeys?: boolean;
-  onProgress?: (progress: number) => void;
-  onDuration?: (duration: number) => void;
   hideToolbar?: boolean;
-  hasRecording?: boolean;
   isStopLogic?: boolean;
   showSize?: boolean;
   handleUpload?: () => void;
@@ -168,9 +169,8 @@ function MediaRecord(props: IProps) {
     pendingRestore,
     uploadType = UploadType.Media,
     beforeUpload,
-    onStageFile,
     setCanSave,
-    setCanCancel,
+    setHasTake,
     setStatusText,
     allowRecord,
     oneTryOnly,
@@ -181,21 +181,16 @@ function MediaRecord(props: IProps) {
     height,
     metaData,
     preload,
-    onLoaded,
     trackState,
     noNewVoice,
     allowNoNoise,
     allowZoom,
     disableDragSelection,
     controlsRef,
-    hideControls,
     hotkeys = true,
-    onProgress,
-    onDuration,
     hideToolbar,
     width,
     keepItSmall,
-    hasRecording,
     isStopLogic,
     showSize = true,
     handleUpload,
@@ -334,21 +329,15 @@ function MediaRecord(props: IProps) {
     processingRecordingRef.current = value;
   };
 
-  const handleWaveformDuration = useCallback(
-    (duration: number) => {
-      setWaveformDuration((prev) => {
-        // Only ignore a spurious zero while finalizing a recording stop (peaks race).
-        if (duration <= 0 && processingRecordingRef.current) {
-          return prev;
-        }
-        return duration;
-      });
-      if (duration > 0 || !processingRecordingRef.current) {
-        onDuration?.(duration);
+  const handleWaveformDuration = useCallback((duration: number) => {
+    setWaveformDuration((prev) => {
+      // Only ignore a spurious zero while finalizing a recording stop (peaks race).
+      if (duration <= 0 && processingRecordingRef.current) {
+        return prev;
       }
-    },
-    [onDuration]
-  );
+      return duration;
+    });
+  }, []);
 
   const getCompressedStatusMessage = useCallback(() => {
     if (allowWave) {
@@ -455,7 +444,7 @@ function MediaRecord(props: IProps) {
   // TODO cleanup: (claude thinks we should do this, I'm not sure it will be as simple
   // as claude thinks, but don't have time to look into it now)
   // MediaRecord runs its own upload pipeline, separate from its
-  // host's (e.g. PassageRecordDlg already holds the upload tab's `uploadMethod`).
+  // host's (e.g. PassageRecordPanel already holds the upload tab's `uploadMethod`).
   // That's why pendingRestore/beforeUpload/finish/afterUploadCb/uploadType are all
   // threaded through here just to feed this copy, and why the record and upload
   // tabs drifted (this hardcoded Media until the general-resource Retry fix).
@@ -516,7 +505,6 @@ function MediaRecord(props: IProps) {
     onSaving,
     onReady,
     onSaveRejected,
-    onStageFile,
     onUploaded,
     upload: {
       fields: {
@@ -612,9 +600,26 @@ function MediaRecord(props: IProps) {
     queuedTake,
   ]);
 
+  // A usable take is loaded in the waveform — the same readiness canSave
+  // requires, but without the (pendingSave || filechanged) dirty gate. A
+  // successful upload clears those flags (so canSave drops) yet leaves the take
+  // shown; this stays true so the deferred wizard's Next button survives a Back
+  // to the already-uploaded Record step.
+  const hasTake =
+    waveformDuration > 0 &&
+    blobReady &&
+    !sizeBlocksSave &&
+    !inFlight &&
+    !recording;
+  // TODO cleanup in next PR: this effect only copies a derived value up to the
+  // parent, which CODING_STANDARDS "Effects" calls a finding. Notify the parent
+  // from the handlers that change hasTake's inputs (recording start/stop,
+  // waveform load, upload start/finish), or lift those inputs up so the parent
+  // derives hasTake itself. setCanSave follows the same pattern and should
+  // move together.
   useEffect(() => {
-    if (setCanCancel) setCanCancel(!inFlight);
-  }, [inFlight, setCanCancel]);
+    setHasTake?.(hasTake);
+  }, [hasTake, setHasTake]);
 
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
@@ -654,7 +659,6 @@ function MediaRecord(props: IProps) {
     // Keep loading true until wavesurfer reports ready (setBlobReady(true)).
     // Clearing here left Record looking idle while the waveform decoded.
     setBlobReady(false);
-    onLoaded && onLoaded();
     setAudioBlob(b);
   };
 
@@ -684,7 +688,6 @@ function MediaRecord(props: IProps) {
     loadInFlightRef.current = false;
     setLoadBusy(false);
     setStatusText('');
-    onLoaded && onLoaded();
   };
   const blobError = (urlorError: string) => {
     showMessage(urlorError);
@@ -700,7 +703,7 @@ function MediaRecord(props: IProps) {
       setOriginalBlob(undefined);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ts.mediaError, showMessage, onLoaded]
+    [ts.mediaError, showMessage]
   );
   const getGoodUrl = async () => {
     const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
@@ -847,11 +850,9 @@ function MediaRecord(props: IProps) {
         onPlayStatus={onPlayStatus}
         doReset={doReset}
         autoStart={autoStart}
-        onProgress={onProgress}
         onDuration={handleWaveformDuration}
         controlsRef={controlsRef}
         hideToolbar={hideToolbar}
-        hideControls={hideControls}
         segments={segments}
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
@@ -859,7 +860,6 @@ function MediaRecord(props: IProps) {
         captureEchoCancellation={captureAudioProcessing.echoCancellation}
         captureNoiseSuppression={captureAudioProcessing.noiseSuppression}
         keepItSmall={keepItSmall}
-        hasRecording={hasRecording ?? false}
         isStopLogic={effectiveIsStopLogic}
         hideWaveformEditTools={simplified}
         isRecordingRights={isRecordingRights}
@@ -920,8 +920,8 @@ function MediaRecord(props: IProps) {
     <Paper
       id="mediaRecord"
       sx={{
-        width: width, // isMobileView is false here
-        maxWidth: width,
+        width: width ?? '100%', // isMobileView is false here
+        maxWidth: width ?? '100%',
         minWidth: 0,
       }}
     >

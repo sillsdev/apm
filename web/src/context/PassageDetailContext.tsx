@@ -56,7 +56,6 @@ import {
 } from '../crud/useTeamWorkflowProcess';
 import StickyRedirect from '../components/StickyRedirect';
 import {
-  infoMsg,
   logError,
   needsStepNavigationConfirm,
   prettySegment,
@@ -178,10 +177,6 @@ const initState = {
   stepComplete: (_stepId: string) => {
     return false;
   },
-  discussionSize: { width: 450, height: 900 },
-  setDiscussionSize: (_size: { width: number; height: number }) => {},
-  chooserSize: 48,
-  setChooserSize: (_size: number) => {},
   defaultFilename: '',
   uploadItem: '',
   currentSegment: '',
@@ -201,7 +196,10 @@ const initState = {
    */
   currentSegmentSeq: 0,
   setCurrentSegment: (_segment: IRegion | undefined, index: number) => {}, //replace the above two
-  setupLocate: (cb?: (segments: string) => void) => {},
+  /** Registers the player that answers locate requests and returns a release
+   * function. The most recent registration wins; releasing it restores the
+   * previous one (e.g. the discussion drawer's player over the step player). */
+  setupLocate: (_cb: (segments: string) => void) => (): void => {},
   getCurrentSegment: () => undefined as IRegion | undefined,
   setPlayerSegments: (_segments: string) => {},
   recording: false,
@@ -305,9 +303,7 @@ const PassageDetailProvider = (props: IProps) => {
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
-  const segmentsCb = useRef<((segments: string) => void) | undefined>(
-    undefined
-  );
+  const segmentsCbs = useRef<((segments: string) => void)[]>([]);
   const filteredOrgSteps = useFilteredSteps();
   const { localizedArtifactType, getTypeId } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();
@@ -383,7 +379,7 @@ const PassageDetailProvider = (props: IProps) => {
         setSelected(state.rowData[0].id, PlayInPlayer.yes);
       } else setSelected('', PlayInPlayer.yes);
     }
-    segmentsCb.current = undefined;
+    segmentsCbs.current = [];
   };
 
   const attemptSetCurrentStep = (stepId: string) => {
@@ -404,11 +400,7 @@ const PassageDetailProvider = (props: IProps) => {
     }
   };
 
-  const passageNavigate = usePassageNavigate(
-    () => {},
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {}, isNavigationBlocked);
 
   const forceRefresh = (rowData?: IRow[]) => {
     refreshRef.current = refreshRef.current + 1;
@@ -464,21 +456,6 @@ const PassageDetailProvider = (props: IProps) => {
         finishStepConfirm(target);
       }
     );
-  };
-
-  const setDiscussionSize = (discussionSize: {
-    width: number;
-    height: number;
-  }) => {
-    setState((state: ICtxState) => {
-      return { ...state, discussionSize };
-    });
-  };
-
-  const setChooserSize = (chooserSize: number) => {
-    setState((state: ICtxState) => {
-      return { ...state, chooserSize };
-    });
   };
 
   const setDiscussOpen = useCallback((discussOpen: boolean) => {
@@ -937,12 +914,15 @@ const PassageDetailProvider = (props: IProps) => {
       }));
     }
   };
-  const setupLocate = (cb?: (segments: string) => void) => {
-    segmentsCb.current = cb;
+  const setupLocate = (cb: (segments: string) => void) => {
+    segmentsCbs.current = [...segmentsCbs.current.filter((c) => c !== cb), cb];
+    return () => {
+      segmentsCbs.current = segmentsCbs.current.filter((c) => c !== cb);
+    };
   };
   //set the player segment to the specified segment??
   const setPlayerSegments = (segments: string) => {
-    if (segmentsCb.current) segmentsCb.current(segments);
+    segmentsCbs.current.at(-1)?.(segments);
     settingSegmentRef.current = false;
   };
 
@@ -983,6 +963,7 @@ const PassageDetailProvider = (props: IProps) => {
               section: s as SectionD,
               sharedResource,
               psgCompleted: [...complete],
+              currentstep: '',
             };
           });
         } else {
@@ -1154,6 +1135,7 @@ const PassageDetailProvider = (props: IProps) => {
     return () => {
       forceClearPending();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -1164,7 +1146,7 @@ const PassageDetailProvider = (props: IProps) => {
           next || (state.orgWorkflowSteps[0] as OrgWorkflowStepD).id
         );
       }
-      segmentsCb.current = undefined;
+      segmentsCbs.current = [];
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentstep, state.psgCompleted, state.orgWorkflowSteps]);
@@ -1184,8 +1166,6 @@ const PassageDetailProvider = (props: IProps) => {
           setSelected,
           setCurrentStep,
           setFirstStepIndex,
-          setDiscussionSize,
-          setChooserSize,
           setPlaying,
           setItemPlaying,
           setPlayItem,

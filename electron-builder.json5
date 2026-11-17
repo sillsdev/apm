@@ -6,7 +6,7 @@
   copyright: 'Copyright © 2020-2026 ${author}',
   asar: true,
   directories: {
-    output: 'release/${version}',
+    output: 'release',
     buildResources: 'assets',
   },
   // Only the build output (plus production node_modules, which electron-builder

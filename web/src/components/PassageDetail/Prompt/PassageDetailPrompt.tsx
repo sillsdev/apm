@@ -6,11 +6,7 @@ import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import PassageDetailPromptAdmin from './PassageDetailPromptAdmin';
 import PassageDetailPromptMember from './PassageDetailPromptMember';
 
-interface IProps {
-  width: number;
-}
-
-export default function PassageDetailPrompt(props: IProps) {
+export default function PassageDetailPrompt() {
   const { userIsAdmin } = useRole();
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
   const { section, currentstep, passage, sharedResource } =
@@ -26,7 +22,7 @@ export default function PassageDetailPrompt(props: IProps) {
       (permissionsOn && canDoSectionStep(currentstep, section)));
 
   if (showAdmin) {
-    return <PassageDetailPromptAdmin width={props.width} />;
+    return <PassageDetailPromptAdmin />;
   }
-  return <PassageDetailPromptMember width={props.width} />;
+  return <PassageDetailPromptMember />;
 }

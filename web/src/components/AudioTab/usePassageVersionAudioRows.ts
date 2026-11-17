@@ -20,6 +20,7 @@ import {
 } from '../../crud';
 import { IRow, IGetMedia } from '.';
 import { getMedia } from './getMedia';
+import { isAutosaveMedia } from '../../crud/autosaveMedia';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useSelector } from 'react-redux';
 import {
@@ -28,18 +29,19 @@ import {
 } from '../../crud/useProjectDefaults';
 
 /**
- * Count of vernacular media files for a passage (same filter as VersionDlg rows).
+ * Count of vernacular media files for a passage (same filter as VersionDlg
+ * rows), with all autosaves together counted as one.
  */
 export function usePassageVernacularVersionCount(passId: string): number {
   const mediaFiles = useOrbitData<MediaFileD[]>('mediafile');
   const { IsVernacularMedia } = useArtifactType();
-  return useMemo(
-    () =>
-      mediaFiles.filter(
-        (m) => related(m, 'passage') === passId && IsVernacularMedia(m)
-      ).length,
-    [mediaFiles, passId, IsVernacularMedia]
-  );
+  return useMemo(() => {
+    const vern = mediaFiles.filter(
+      (m) => related(m, 'passage') === passId && IsVernacularMedia(m)
+    );
+    const autosaves = vern.filter(isAutosaveMedia).length;
+    return vern.length - autosaves + Math.min(autosaves, 1);
+  }, [mediaFiles, passId, IsVernacularMedia]);
 }
 
 /**

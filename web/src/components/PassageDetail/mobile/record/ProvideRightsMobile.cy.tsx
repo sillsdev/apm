@@ -233,7 +233,6 @@ describe('ProvideRightsMobile', () => {
       passage,
       sharedResource: {} as any,
       mediafileId: '',
-      chooserSize: 48,
       setRecording: cy.stub(),
       currentstep: '',
     };

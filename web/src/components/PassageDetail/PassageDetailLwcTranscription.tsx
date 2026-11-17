@@ -55,10 +55,6 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   return null;
 }
 
-interface IProps {
-  width: number;
-}
-
 type TranscriptionStrings =
   ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
 
@@ -71,7 +67,7 @@ function useTranscriptionStrings(
   return layout === 'carefulTranscription' ? careful : lwc;
 }
 
-export function PassageDetailBoldClauseTranscription({ width }: IProps) {
+export function PassageDetailBoldClauseTranscription() {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -523,7 +519,6 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
             data-cy={`${idPrefix}-scroll`}
           >
             <BoldClauseTranscriptionEditor
-              width={width}
               mediafile={recordingRow?.mediafile}
               text={text}
               onTextChange={setText}

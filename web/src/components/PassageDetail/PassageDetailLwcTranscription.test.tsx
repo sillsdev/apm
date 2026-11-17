@@ -204,7 +204,7 @@ describe('PassageDetailLwcTranscription', () => {
   });
 
   it('shows prerequisite when LWC translation recordings are incomplete', () => {
-    render(<PassageDetailLwcTranscription width={400} />);
+    render(<PassageDetailLwcTranscription />);
     expect(
       screen.getByText('Complete LWC Translation first')
     ).toBeInTheDocument();
@@ -212,7 +212,7 @@ describe('PassageDetailLwcTranscription', () => {
 
   it('shows the guided UI when LWC translation recordings are complete', async () => {
     mockLwcRecordingComplete = new Set([0]);
-    render(<PassageDetailLwcTranscription width={400} />);
+    render(<PassageDetailLwcTranscription />);
     expect(
       document.querySelector('[data-cy="lwc-transcription-player"]')
     ).toBeTruthy();
@@ -228,7 +228,7 @@ describe('PassageDetailLwcTranscription', () => {
 
   it('auto-plays on first untranscribed clause entry', async () => {
     mockLwcRecordingComplete = new Set([0]);
-    render(<PassageDetailLwcTranscription width={400} />);
+    render(<PassageDetailLwcTranscription />);
     await waitFor(() => {
       const player = document.querySelector(
         '[data-cy="lwc-transcription-player"]'
@@ -240,7 +240,7 @@ describe('PassageDetailLwcTranscription', () => {
   it('enters review mode without auto-play when all transcribed', async () => {
     mockLwcRecordingComplete = new Set([0]);
     mockTranscribed = new Set([0]);
-    render(<PassageDetailLwcTranscription width={400} />);
+    render(<PassageDetailLwcTranscription />);
     await waitFor(() => {
       const player = document.querySelector(
         '[data-cy="lwc-transcription-player"]'
@@ -254,7 +254,7 @@ describe('PassageDetailLwcTranscription', () => {
 
   it('passes editor props for ASR and save integration', async () => {
     mockLwcRecordingComplete = new Set([0]);
-    render(<PassageDetailLwcTranscription width={400} />);
+    render(<PassageDetailLwcTranscription />);
     await waitFor(() => expect(editorProps).toBeDefined());
     expect(editorProps?.artifactTypeId).toBe('pbt-id');
     expect(typeof editorProps?.onAsrActiveChange).toBe('function');
@@ -263,7 +263,7 @@ describe('PassageDetailLwcTranscription', () => {
   it('marks step complete when all clauses are transcribed', async () => {
     mockLwcRecordingComplete = new Set([0]);
     mockTranscribed = new Set([0]);
-    render(<PassageDetailLwcTranscription width={400} />);
+    render(<PassageDetailLwcTranscription />);
     await waitFor(() =>
       expect(mockSetStepComplete).toHaveBeenCalledWith('step1', true)
     );
@@ -287,7 +287,7 @@ describe('PassageDetailLwcTranscription', () => {
       },
     });
 
-    const { rerender } = render(<PassageDetailLwcTranscription width={400} />);
+    const { rerender } = render(<PassageDetailLwcTranscription />);
     await waitFor(() => expect(editorProps).toBeDefined());
     expect(editorProps?.text).toBe('');
 
@@ -299,7 +299,7 @@ describe('PassageDetailLwcTranscription', () => {
         attributes: { transcription: 'existing transcription' },
       },
     });
-    rerender(<PassageDetailLwcTranscription width={400} />);
+    rerender(<PassageDetailLwcTranscription />);
 
     await waitFor(() =>
       expect(editorProps?.text).toBe('existing transcription')
@@ -326,7 +326,7 @@ describe('PassageDetailLwcTranscription', () => {
     mockLwcRecordingComplete = new Set(Array.from({ length: 12 }, (_, i) => i));
     mockTranscribed = new Set(Array.from({ length: 11 }, (_, i) => i));
 
-    const { rerender } = render(<PassageDetailLwcTranscription width={400} />);
+    const { rerender } = render(<PassageDetailLwcTranscription />);
     await waitFor(() => {
       expect(progressProps?.completedCount).toBe(11);
       expect(navProps?.currentIndex).toBe(11);
@@ -335,7 +335,7 @@ describe('PassageDetailLwcTranscription', () => {
     mockStepSettings = JSON.stringify({ artifactTypeId: 'pbt-id' });
     mockCurrentStep = 'lwc-step';
     mockTranscribed = new Set();
-    rerender(<PassageDetailLwcTranscription width={400} />);
+    rerender(<PassageDetailLwcTranscription />);
 
     await waitFor(() => {
       expect(progressProps?.completedCount).toBe(0);

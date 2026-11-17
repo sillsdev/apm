@@ -29,34 +29,21 @@ interface Mark {
 }
 
 interface IProps {
-  width: number;
   sx?: SxProps;
 }
 
-export const PassageDetailChooser = ({ width, sx = [] }: IProps) => {
+export const PassageDetailChooser = ({ sx = [] }: IProps) => {
   const [memory] = useGlobal('memory');
-  const {
-    passage,
-    section,
-    prjId,
-    allBookData,
-    chooserSize,
-    setChooserSize,
-    setCurrentStep,
-    isNavigationBlocked,
-  } = usePassageDetailContext();
+  const { passage, section, prjId, allBookData, isNavigationBlocked } =
+    usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
 
   const t = useSelector(
     passageChooserSelector,
@@ -123,8 +110,6 @@ export const PassageDetailChooser = ({ width, sx = [] }: IProps) => {
         }
       });
     if (newCount !== passageCount) setPassageCount(newCount);
-    const newSize = newCount > 1 ? 48 : 0;
-    if (chooserSize !== newSize) setChooserSize(newSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, allBookData]);
 
@@ -139,12 +124,8 @@ export const PassageDetailChooser = ({ width, sx = [] }: IProps) => {
     passageNavigate(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-  const SCROLL_BUTTONS_WIDTH = 48;
   return passageCount > 1 ? (
-    <StyledBox
-      width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
-      sx={[...[sx].flat(), { alignItems: 'center', gap: 0 }]}
-    >
+    <StyledBox sx={[...[sx].flat(), { px: 1, alignItems: 'center', gap: 0 }]}>
       <Typography sx={{ pr: 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
         {t.passages}
       </Typography>

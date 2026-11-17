@@ -49,7 +49,6 @@ const controlStrings = {
 };
 
 const baseProps: React.ComponentProps<typeof CarefulSpeechControls> = {
-  width: 360,
   phase: 'recorded',
   recordingPassStarted: true,
   currentRegion: { start: 0, end: 10, label: '' },

@@ -104,11 +104,7 @@ interface IEditReferenceDialogState extends EditReferenceValue {
   unrestricted: boolean;
 }
 
-export interface MarkVersesProps {
-  width: number;
-}
-
-export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
+export default function PassageDetailMarkVerses() {
   const {
     mediafileId,
     section,
@@ -1578,14 +1574,13 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         overflow: 'hidden',
         minWidth: 0,
         // Fill the pane so the table and waveform can use leftover space to
-        // the right (TT-7623). The player is maxWidth 100%, so it follows.
+        // the right (TT-7623). The player fills it too.
         width: '100%',
         maxWidth: '100%',
       }}
     >
       <PassageDetailPlayer
         key={`mark-verses-player-${mediafileId}-${playerResetKey}`}
-        width={width}
         docked
         data-testid="player"
         allowSegment={NamedRegions.Verse}

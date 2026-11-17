@@ -52,7 +52,6 @@ jest.mock('react-redux', () => ({
 import LwcTranslationControls from './LwcTranslationControls';
 
 const baseProps: React.ComponentProps<typeof LwcTranslationControls> = {
-  width: 360,
   phase: 'recorded',
   speaker: 'Greg',
   onSpeakerChange: () => {},

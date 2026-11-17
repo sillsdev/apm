@@ -25,11 +25,7 @@ import { Box } from '@mui/material';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { StyledBox } from '../../../control/StyledBox';
 
-interface IProps {
-  width: number;
-}
-
-const KeyTerms = ({ width }: IProps) => {
+const KeyTerms = () => {
   const keyTermTargets = useOrbitData<OrgKeytermTarget[]>('orgkeytermtarget');
   const [org] = useGlobal('organization');
   const [memory] = useGlobal('memory');
@@ -120,7 +116,14 @@ const KeyTerms = ({ width }: IProps) => {
   }, [passage?.id ?? 0]);
 
   return (
-    <>
+    <Box
+      sx={{
+        flex: '1 1 0',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <KeyTermsSort initSort={sortBy} onChange={handleSortBy} />
         <KeyTermExclude
@@ -135,7 +138,7 @@ const KeyTerms = ({ width }: IProps) => {
         />
         <KeyTermSetting curCode={language} onChange={handleLang} />
       </Box>
-      <StyledBox width={width}>
+      <StyledBox sx={{ flex: '1 1 0', minHeight: 0 }}>
         <KeyTermTable
           rows={verseTerms(
             book,
@@ -180,7 +183,7 @@ const KeyTerms = ({ width }: IProps) => {
           getLabel={catLabel}
         />
       </BigDialog>
-    </>
+    </Box>
   );
 };
 

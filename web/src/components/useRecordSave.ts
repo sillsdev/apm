@@ -4,7 +4,6 @@ import { convertToFormat, useMediaUpload } from '../crud';
 import { AlertSeverity, type useSnackBar } from '../hoc/useSnackBar';
 import { infoMsg, logError, Severity } from '../utils';
 import { toError } from '../utils/toError';
-import type { IProps as MediaRecordProps } from './MediaRecord';
 import type { SizeRejection, SizeStatus } from './useRecordSizeLimit';
 
 export type RecordSaveInput = {
@@ -28,7 +27,6 @@ export type RecordSaveInput = {
   onSaving?: () => void;
   onReady?: () => void;
   onSaveRejected?: () => void;
-  onStageFile?: MediaRecordProps['onStageFile'];
   /** Page work after the file is accepted. Called with the take that was sent. */
   onUploaded: (mediaId: string, submitted: Blob | undefined) => Promise<void>;
   upload: Omit<Parameters<typeof useMediaUpload>[0], 'afterUploadCb'>;
@@ -65,7 +63,6 @@ export function useRecordSave(input: RecordSaveInput) {
     onSaving,
     onReady,
     onSaveRejected,
-    onStageFile,
     onUploaded,
     upload,
     saveRequested,
@@ -108,15 +105,6 @@ export function useRecordSave(input: RecordSaveInput) {
 
     const doUpload = async (blob: Blob, type: string, ext: string) => {
       const files = [new File([blob], defaultFilename + '.' + ext, { type })];
-      if (onStageFile) {
-        // Hand the finished take up to be uploaded later, after passages are
-        // chosen. Await it so a failure rejects into the caller instead of
-        // being swallowed while the save is reported complete.
-        await onStageFile(files);
-        saveCompleted(toolId);
-        setStatusText('');
-        return;
-      }
       setStatusText(saving);
       await uploadMedia(files);
     };

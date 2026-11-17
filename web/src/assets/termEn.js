@@ -4131,15 +4131,9 @@ export default [
   [1684, { G: 'Hamran', D: 'son of Dishon; descendant of Seir' }],
   [1685, { G: 'Hammath', D: 'fortified town; territory of Naphtali' }],
   [1686, { G: 'Hammath', D: 'ancestor of Kenites' }],
-  [
-    1687,
-    { G: 'Hamath', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת צוֹבָה' },
-  ],
+  [1687, { G: 'Hamath', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת צוֹבָה' }],
   [1688, { G: 'Hammoth-Dor', D: 'town of refuge; territory of Naphtali' }],
-  [
-    1689,
-    { G: 'Hamath-zobah', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת' },
-  ],
+  [1689, { G: 'Hamath-zobah', D: 'town on Orontes river; חֲמָת רַבָּה and חֲמָת' }],
   [
     1690,
     {
@@ -4993,10 +4987,7 @@ export default [
   [2012, { G: 'Jehucal', D: 'son of Shelemiah; official; time of Zedekiah' }],
   [2013, { G: 'Jehonadab', D: 'son of Shimea, brother of David' }],
   [2014, { G: 'Jehonadab', D: 'son of Rechab; ancestor of Rechabites' }],
-  [
-    2015,
-    { G: 'Jonathan', D: 'son of king Saul; tribe of Benjamin; 1- יוֹנָתָן' },
-  ],
+  [2015, { G: 'Jonathan', D: 'son of king Saul; tribe of Benjamin; 1- יוֹנָתָן' }],
   [2016, { G: 'Jonathan', D: 'son of Abiathar; tribe of Levi; 2- יוֹנָתָן' }],
   [
     2017,
@@ -5034,10 +5025,7 @@ export default [
       D: 'son of Jehoshaphat; king of Judah (848-841); 1- יוֹרָם',
     },
   ],
-  [
-    2026,
-    { G: 'Jehoram', D: 'son of Ahab; king of Israel (852-841); 2- יוֹרָם' },
-  ],
+  [2026, { G: 'Jehoram', D: 'son of Ahab; king of Israel (852-841); 2- יוֹרָם' }],
   [2027, { G: 'Jehoram', D: 'priest; time of Jehoshaphat; 3- יוֹרָם' }],
   [2028, { G: 'Jehosheba', D: 'daughter of Joram' }],
   [2029, { G: 'Jehoshabeath', D: 'daughter of Joram' }],
@@ -5242,10 +5230,7 @@ export default [
       D: 'son of Jehoshaphat; king of Judah (848-841); 1- יְהוֹרָם',
     },
   ],
-  [
-    2132,
-    { G: 'Joram', D: 'son of Ahab; king of Israel (852-841); 2- יְהוֹרָם' },
-  ],
+  [2132, { G: 'Joram', D: 'son of Ahab; king of Israel (852-841); 2- יְהוֹרָם' }],
   [2133, { G: 'Joram', D: 'priest; time of Jehoshaphat; 3- יְהוֹרָם' }],
   [2134, { G: 'Joram', D: 'son of Toi, king of Hamath' }],
   [2135, { G: 'Jushab-Hesed', D: 'son of Zerubbabel; tribe of Judah' }],
@@ -7499,14 +7484,8 @@ export default [
   [3066, { G: 'Merathaim', D: 'region; south of Babylon' }],
   [3067, { G: 'utterance, oracle', D: 'utterance, oracle' }],
   [3068, { G: 'Massa', D: 'son of Ishmael' }],
-  [
-    3069,
-    { G: 'thorn hedge', D: 'hedge of thorns, thistles, briers; מְשֻׂכָה' },
-  ],
-  [
-    3070,
-    { G: 'thorn hedge', D: 'hedge of thorns, thistles, briers; מְשׂוּכָּה' },
-  ],
+  [3069, { G: 'thorn hedge', D: 'hedge of thorns, thistles, briers; מְשֻׂכָה' }],
+  [3070, { G: 'thorn hedge', D: 'hedge of thorns, thistles, briers; מְשׂוּכָּה' }],
   [
     3071,
     {
@@ -7758,14 +7737,8 @@ export default [
   ],
   [3173, { G: 'to vow', D: 'solemnly promise to do something' }],
   [3174, { G: 'a vow', D: 'a solemn promise to do something' }],
-  [
-    3175,
-    { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלֹל' },
-  ],
-  [
-    3176,
-    { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלָל' },
-  ],
+  [3175, { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלֹל' }],
+  [3176, { G: 'Nahalal, Nahalol', D: 'village; territory of Zebulon; נַהֲלָל' }],
   [3177, { G: 'Nod', D: 'location' }],
   [3178, { G: 'Nodab', D: 'people' }],
   [3179, { G: 'Nohah', D: 'son of Benjamin' }],
@@ -10333,16 +10306,10 @@ export default [
   [4286, { G: 'Kiriath-Arba', D: 'town; for Levites; territory of Judah' }],
   [4287, { G: 'Kiriath-Baal', D: 'town; territory of Judah' }],
   [4288, { G: 'Kiriath-Huzoth', D: 'town; Moab' }],
-  [
-    4289,
-    { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת עָרִים' },
-  ],
+  [4289, { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת עָרִים' }],
   [4290, { G: 'Kiriath-Sannah', D: 'town; for priests; territory of Judah' }],
   [4291, { G: 'Kiriath-Sepher', D: 'town; for priests; territory of Judah' }],
-  [
-    4292,
-    { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת יְעָרִים' },
-  ],
+  [4292, { G: 'Kiriath-Jearim', D: 'town; territory of Judah; קִרְיַת יְעָרִים' }],
   [
     4293,
     { G: 'Kiriathaim', D: 'town east of Jordan; territory of Reuben, Moab' },
@@ -10859,10 +10826,7 @@ export default [
   ],
   [4480, { G: 'Seir', D: 'man, people, location' }],
   [4481, { G: 'Seir', D: 'location' }],
-  [
-    4482,
-    { G: 'she-goat', D: 'female goat as sacrificial animal; see שָׂעִיר' },
-  ],
+  [4482, { G: 'she-goat', D: 'female goat as sacrificial animal; see שָׂעִיר' }],
   [4483, { G: 'Seirah', D: 'town; territory of Benjamin' }],
   [
     4484,
@@ -12032,10 +11996,7 @@ export default [
   [4980, { G: 'Taralah', D: 'town; territory of Benjamin' }],
   [4981, { G: 'Tirhakah', D: 'king of Ethiopia' }],
   [4982, { G: 'offering, contribution', D: 'offering, contribution' }],
-  [
-    4983,
-    { G: 'offering, contribution', D: 'offering, contribution תְּרוּמָה' },
-  ],
+  [4983, { G: 'offering, contribution', D: 'offering, contribution תְּרוּמָה' }],
   [
     4984,
     {

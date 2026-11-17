@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
@@ -10,12 +10,7 @@ import { IWorkflowStepsStrings, IPromptStrings } from '../../../model';
 import { usePromptSectionResource } from './usePromptSectionResource';
 import { useOrganizedBy } from '../../../crud/useOrganizedBy';
 
-interface IProps {
-  width: number;
-}
-
-export default function PassageDetailPromptMember(props: IProps) {
-  const { width } = props;
+export default function PassageDetailPromptMember() {
   const {
     rowData,
     section,
@@ -40,8 +35,6 @@ export default function PassageDetailPromptMember(props: IProps) {
   const [playing, setPlaying] = useState(false);
   const durationRef = useRef(0);
   const playbackCompleteRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [playerWidth, setPlayerWidth] = useState(width);
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
 
@@ -61,20 +54,6 @@ export default function PassageDetailPromptMember(props: IProps) {
       fetchBlob(promptMediaId);
     }
   }, [promptMediaId, fetchBlob]);
-
-  useLayoutEffect(() => {
-    if (!containerRef.current) return;
-    const updateWidth = () => {
-      setPlayerWidth(containerRef.current!.offsetWidth);
-    };
-    updateWidth();
-    let observer: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(updateWidth);
-      observer.observe(containerRef.current);
-    }
-    return () => observer?.disconnect();
-  }, []);
 
   useEffect(() => {
     const dur = playerMediafile?.attributes?.duration;
@@ -116,9 +95,8 @@ export default function PassageDetailPromptMember(props: IProps) {
         boxSizing: 'border-box',
       }}
     >
-      <Box ref={containerRef} sx={{ width: '100%', minWidth: 0 }}>
+      <Box sx={{ width: '100%', minWidth: 0 }}>
         <PassageDetailPlayer
-          width={Math.max(0, playerWidth)}
           allowZoom={true}
           allowSpeed={false}
           onDuration={handleDuration}
@@ -131,7 +109,7 @@ export default function PassageDetailPromptMember(props: IProps) {
               blobState.blobStat === BlobStatus.FETCHED
                 ? blobState.blob
                 : undefined,
-            setupLocate: () => {},
+            setupLocate: () => () => {},
             playing,
             setPlaying,
             currentstep,

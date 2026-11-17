@@ -41,7 +41,7 @@ import {
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
-import { Button, GrowingDiv, LightTooltip, rowSx, LastEdit } from '../control';
+import { Button, LightTooltip, rowSx, LastEdit } from '../control';
 import TranscribeReject from './TranscribeReject';
 import { useSnackBar } from '../hoc/SnackBar';
 import { formatTime } from '../control/formatTime';
@@ -111,9 +111,7 @@ import {
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { IRegionParams } from '../crud/useWavesurferRegions';
-import PassageDetailPlayer, {
-  PLAYER_HEIGHT,
-} from './PassageDetail/PassageDetailPlayer';
+import PassageDetailPlayer from './PassageDetail/PassageDetailPlayer';
 import { PlayInPlayer } from '../context/PlayInPlayer';
 import Settings from '@mui/icons-material/Settings';
 import { EditorSettings } from './Team/ProjectDialog';
@@ -148,14 +146,19 @@ import { SuggestedSegments } from '../business/player/usePlayerLogic';
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
 const HISTORY_KEY = 'F7,CTRL+7';
-// Space for player toolbars (~95px), action row (~55px), and spacing (~10px).
-const TRANSCRIBER_EXTRA_HEIGHT = 160;
 // ~3 lines at large/xx-large; prefer this over fitting the action buttons.
 const MIN_TEXT_BOX_HEIGHT = 120;
+/** A flex column that fills its parent's height and lets children shrink. */
+const fillColumn = {
+  flex: '1 1 0',
+  minHeight: 0,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+} as const;
 const ipc = window?.api as MainAPI | undefined;
 
 interface IProps {
-  defaultWidth: number;
   stepSettings?: string;
   hasChecking?: boolean;
   hasPermission?: boolean;
@@ -176,7 +179,6 @@ export function Transcriber(props: Readonly<IProps>) {
     stepSettings,
     hasChecking,
     hasPermission,
-    defaultWidth,
     setComplete,
     onReopen,
     onReject,
@@ -325,11 +327,9 @@ export function Transcriber(props: Readonly<IProps>) {
   const {
     loading,
     playing,
-    chooserSize,
     pdBusy,
     playerMediafile,
     setSelected,
-    discussionSize,
     forceRefresh,
   } = usePassageDetailContext();
   const teams = useOrbitData<OrganizationD[]>('organization');
@@ -347,15 +347,6 @@ export function Transcriber(props: Readonly<IProps>) {
   const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const [boxHeight, setBoxHeight] = useState(() =>
-    Math.max(
-      discussionSize.height -
-        PLAYER_HEIGHT -
-        chooserSize -
-        TRANSCRIBER_EXTRA_HEIGHT,
-      MIN_TEXT_BOX_HEIGHT
-    )
-  );
   const [style, setStyle] = useState({
     cursor: 'default',
   });
@@ -376,7 +367,8 @@ export function Transcriber(props: Readonly<IProps>) {
   const [textAreaStyle, setTextAreaStyle] = useState<CSSProperties>({
     overflow: 'auto !important',
     backgroundColor: '#cfe8fc',
-    height: boxHeight,
+    flex: '1 1 0',
+    minHeight: MIN_TEXT_BOX_HEIGHT,
     fontFamily: projData?.fontFamily,
     fontSize: projData?.fontSize,
     direction: projData?.fontDir as any,
@@ -404,7 +396,6 @@ export function Transcriber(props: Readonly<IProps>) {
       fontStatus,
       transcribing,
       height,
-      boxHeight,
       width,
       textValue,
       lastSaved,
@@ -452,7 +443,6 @@ export function Transcriber(props: Readonly<IProps>) {
     });
     setTextAreaStyle({
       ...textAreaStyle,
-      height: `${boxHeight}px !important`,
       fontFamily: projData?.fontFamily,
       fontSize: projData?.fontSize,
       direction: projData?.fontDir as any,
@@ -466,7 +456,7 @@ export function Transcriber(props: Readonly<IProps>) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdBusy, loading, boxHeight, projData]);
+  }, [pdBusy, loading, projData]);
 
   const handleShowHistory = () => {
     setShowHistory(!showHistoryRef.current);
@@ -541,18 +531,6 @@ export function Transcriber(props: Readonly<IProps>) {
     if (newchanged !== changed) setChanged(newchanged);
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [toolsChanged]);
-
-  useEffect(() => {
-    let newBoxHeight =
-      discussionSize.height -
-      PLAYER_HEIGHT -
-      chooserSize -
-      TRANSCRIBER_EXTRA_HEIGHT;
-    if (defaultWidth < 700) newBoxHeight -= 40;
-    newBoxHeight = Math.max(newBoxHeight, MIN_TEXT_BOX_HEIGHT);
-    if (newBoxHeight !== boxHeight) setBoxHeight(newBoxHeight);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discussionSize, chooserSize, defaultWidth]);
 
   //user changes selected...tell the task table
   useEffect(() => {
@@ -1195,11 +1173,6 @@ export function Transcriber(props: Readonly<IProps>) {
     }, 1000 * 30);
   };
 
-  const paperStyle = useMemo(
-    () => ({ width: defaultWidth - 20 }),
-    [defaultWidth]
-  );
-
   const onInteraction = () => {
     focusOnTranscription();
   };
@@ -1324,16 +1297,21 @@ export function Transcriber(props: Readonly<IProps>) {
   };
 
   return (
-    <GrowingDiv>
-      <Paper sx={{ p: 0, m: 'auto' }} style={paperStyle}>
+    <Box sx={fillColumn}>
+      <Paper sx={{ ...fillColumn, p: 0 }}>
         {allDone ? (
           <AllDone />
         ) : (
-          <Grid container direction="column" style={style}>
+          <Grid
+            container
+            direction="column"
+            style={style}
+            sx={{ ...fillColumn, flexWrap: 'nowrap' }}
+          >
             <Grid
               container
               direction="row"
-              sx={{ alignItems: 'center', whiteSpace: 'nowrap' }}
+              sx={{ alignItems: 'center', whiteSpace: 'nowrap', flexShrink: 0 }}
             >
               <Grid
                 id="transcriberplayer"
@@ -1341,7 +1319,6 @@ export function Transcriber(props: Readonly<IProps>) {
                 sx={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
               >
                 <PassageDetailPlayer
-                  width={paperStyle.width}
                   position={defaultPosition}
                   allowSegmentNav={true}
                   allowAutoSegment={true}
@@ -1433,12 +1410,21 @@ export function Transcriber(props: Readonly<IProps>) {
               </Grid>
             </Grid>
 
-            <Grid size={{ xs: 12 }} container>
+            <Grid
+              size={{ xs: 12 }}
+              container
+              sx={{
+                flex: '1 1 0',
+                minHeight: MIN_TEXT_BOX_HEIGHT,
+                flexWrap: 'nowrap',
+              }}
+            >
               <Grid
                 ref={transcriptionRef}
                 size={{ xs: showHistory ? 6 : 12 }}
                 container
                 direction="column"
+                sx={{ flexWrap: 'nowrap' }}
               >
                 <StyledTextAreaAutosize
                   autoFocus
@@ -1454,7 +1440,12 @@ export function Transcriber(props: Readonly<IProps>) {
                 />
               </Grid>
               {showHistory && (
-                <Grid size={{ xs: 6 }} container direction="column">
+                <Grid
+                  size={{ xs: 6 }}
+                  container
+                  direction="column"
+                  sx={{ flexWrap: 'nowrap', minHeight: 0, overflowY: 'auto' }}
+                >
                   <PassageHistory passageId={passage?.id || ''} />
                 </Grid>
               )}
@@ -1464,6 +1455,7 @@ export function Transcriber(props: Readonly<IProps>) {
               direction="row"
               sx={{
                 pt: '12px',
+                flexShrink: 0,
                 width: '100%',
                 justifyContent: 'space-between',
               }}
@@ -1619,7 +1611,7 @@ export function Transcriber(props: Readonly<IProps>) {
           </BigDialog>
         )}
       </Paper>
-    </GrowingDiv>
+    </Box>
   );
 }
 

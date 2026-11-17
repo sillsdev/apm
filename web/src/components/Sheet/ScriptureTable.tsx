@@ -46,6 +46,7 @@ import * as actions from '../../store';
 import { PlanContext } from '../../context/PlanContext';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import logError, { Severity } from '../../utils/logErrorService';
 import {
   remoteIdNum,
   related,
@@ -187,6 +188,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
   const [width, setWidth] = useState(window.innerWidth);
   const { isMobile } = useMobile();
   const [organization] = useGlobal('organization');
+  const [errorReporter] = useGlobal('errorReporter');
   const [project] = useGlobal('project'); //will be constant here
   const [plan] = useGlobal('plan'); //will be constant here
   const [coordinator] = useGlobal('coordinator');
@@ -398,7 +400,9 @@ export function ScriptureTable(props: Readonly<IProps>) {
     if (minSection !== defaultFilterState.minSection) {
       setDefaultFilterState((fs) => ({ ...fs, minSection }));
     }
-    import('../../assets/eng-vrs').then((module) => {
+    // void: if the chunk fails to load, engVrs stays unset and this
+    // dependency-less effect retries the import on the next render.
+    void import('../../assets/eng-vrs').then((module) => {
       setEngVrs(new Map<string, number[]>(module.default as IVrs[]));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -578,7 +582,8 @@ export function ScriptureTable(props: Readonly<IProps>) {
   const saveIfChanged = (cb: () => void) => {
     if (myChangedRef.current) {
       startSave();
-      waitForSave(cb, SaveWait);
+      // waitForSave rejects with a localized message meant for the user.
+      waitForSave(cb, SaveWait).catch((err: Error) => showMessage(err.message));
     } else cb();
   };
   const waitForPassageId = (i: number, cb: () => void) => {
@@ -589,7 +594,9 @@ export function ScriptureTable(props: Readonly<IProps>) {
       },
       () => false,
       SaveWait
-    ).then(() => cb());
+    )
+      .then(() => cb())
+      .catch((err: Error) => logError(Severity.error, errorReporter, err));
   };
 
   const handlePassageDetail = (i: number) => {
@@ -628,10 +635,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
       }
       setUploadVisible(true);
     });
-  };
-
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
   };
 
   const handleUpload = (i: number) => () => {
@@ -1367,7 +1370,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     if (!cancelled.current) setUploadVisible(false);
     cancelled.current = false;
   };
-  const isReady = () => true;
 
   const handleLookupBook = (book: string) =>
     lookupBook({ book, allBookData, bookMap });
@@ -1393,7 +1395,9 @@ export function ScriptureTable(props: Readonly<IProps>) {
       showMessage(s.refErr);
       return;
     }
-    onPublishing(false);
+    // void: onPublishing(false) only toggles state and never awaits, so it
+    // cannot reject.
+    void onPublishing(false);
   };
 
   return (
@@ -1435,7 +1439,9 @@ export function ScriptureTable(props: Readonly<IProps>) {
                 i: number,
                 destinations: PublishDestinationEnum[]
               ) => {
-                setSectionPublish(i, destinations);
+                setSectionPublish(i, destinations).catch((err: Error) =>
+                  logError(Severity.error, errorReporter, err)
+                );
               }}
               handleGraphic={canPublish && !offline ? handleGraphic : undefined}
             />
@@ -1492,11 +1498,8 @@ export function ScriptureTable(props: Readonly<IProps>) {
         />
       )}
       <Uploader
-        defaultFilename={defaultFilename}
-        mediaId={uploadItem.current?.mediaId?.id || ''}
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
-        showMessage={showMessage}
+        onClose={() => setUploadVisible(false)}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
@@ -1504,9 +1507,8 @@ export function ScriptureTable(props: Readonly<IProps>) {
           related(uploadItem.current?.sharedResource, 'passage') ??
           uploadItem.current?.passage?.id
         }
-        performedBy={speaker}
-        onSpeakerChange={handleNameChange}
-        ready={isReady}
+        speaker={speaker}
+        onSpeaker={handleNameChange}
       />
       <GraphicPicker
         bookCode={firstBook}

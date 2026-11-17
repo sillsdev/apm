@@ -37,9 +37,13 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
       },
     } as any as MediaFile;
     const t = new RecordTransformBuilder();
-    const mediaRecordIdentity = recordRef('mediafile', mediaRec.id);
+    // AddRecord assigns mediaRec.id, so build the identity after it.
+    // TODO cleanup in next PR - guard against wrong ordering in future usages
     const ops = [
       ...AddRecord(t, mediaRec as unknown as UninitializedRecord, user, memory),
+    ];
+    const mediaRecordIdentity = recordRef('mediafile', mediaRec.id);
+    ops.push(
       ...ReplaceRelatedRecord(t, mediaRecordIdentity, 'plan', 'plan', plan),
       ...ReplaceRelatedRecord(
         t,
@@ -47,10 +51,10 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
         'recordedbyUser',
         'user',
         user
-      ),
+      )
       // shared resources are not associated with a single passage
       // ...ReplaceRelatedRecord(t, mediaRec, 'passage', 'passage', passage.id),
-    ];
+    );
     ops.push(
       ...ReplaceRelatedRecord(
         t,

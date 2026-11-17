@@ -6,34 +6,21 @@ import MediaUploadContent from './MediaUploadContent';
 import { mediaTitleSelector } from '../selector';
 
 interface IProps {
-  defaultFilename?: string;
   isOpen: boolean;
-  onOpen: (visible: boolean) => void;
+  onClose: () => void;
   hasRights?: boolean; // required for upload
-  finish?: (files: File[]) => void; // when conversion complete
   cancelled: React.RefObject<boolean>;
-  uploadType?: UploadType;
   uploadMethod: (files: File[]) => Promise<boolean>;
-  metadata?: React.JSX.Element;
-  onSave?: () => void;
   onFiles?: (files: File[]) => void;
 }
 
 export function TitleUploader(props: IProps) {
-  const {
-    isOpen,
-    onOpen,
-    cancelled,
-    uploadType,
-    hasRights,
-    uploadMethod,
-    metadata,
-    onFiles,
-  } = props;
+  const { isOpen, onClose, cancelled, hasRights, uploadMethod, onFiles } =
+    props;
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
 
   const uploadCancel = () => {
-    onOpen(false);
+    onClose();
     // eslint-disable-next-line react-hooks/immutability
     if (cancelled) cancelled.current = true;
     restoreScroll();
@@ -41,13 +28,12 @@ export function TitleUploader(props: IProps) {
 
   return isOpen ? (
     <MediaUploadContent
-      onVisible={onOpen}
-      uploadType={uploadType || UploadType.Media}
-      ready={() => Boolean(hasRights)}
+      onClose={onClose}
+      uploadType={UploadType.Media}
+      ready={Boolean(hasRights)}
       uploadMethod={uploadMethod}
       cancelMethod={uploadCancel}
-      metaData={metadata}
-      saveButtonText={t.upload}
+      primaryButtonText={t.upload}
       onFiles={onFiles}
     />
   ) : (

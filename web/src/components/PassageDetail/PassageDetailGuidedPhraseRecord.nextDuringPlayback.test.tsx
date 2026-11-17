@@ -208,11 +208,7 @@ const strings = {
 };
 
 const ui = () => (
-  <PassageDetailGuidedPhraseRecord
-    width={400}
-    config={config}
-    controlStrings={strings}
-  />
+  <PassageDetailGuidedPhraseRecord config={config} controlStrings={strings} />
 );
 
 const mountAndSettle = async () => {

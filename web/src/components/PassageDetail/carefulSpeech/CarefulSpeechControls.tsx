@@ -25,7 +25,6 @@ export type CarefulSpeechPhase =
   | 'recorded';
 
 interface Props {
-  width: number;
   phase: CarefulSpeechPhase;
   recordingPassStarted: boolean;
   currentRegion: IRegion | undefined;
@@ -81,7 +80,6 @@ interface Props {
 }
 
 export default function CarefulSpeechControls({
-  width,
   phase,
   recordingPassStarted,
   currentRegion,
@@ -292,7 +290,6 @@ export default function CarefulSpeechControls({
                 allowWave={false}
                 disableDragSelection={true}
                 height={160}
-                width={width - 80}
                 afterUploadCb={afterUploadCb}
                 onSaving={onSaving}
                 onReady={onSaveSettled}

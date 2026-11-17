@@ -13,15 +13,13 @@ import { Segments } from '../control/MediaDescription';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { PlayInPlayer } from '../context/PlayInPlayer';
 
-export const TaskTableWidth = 200;
-
 export function TaskList() {
   const { rowData, allDone, refresh, setAllDone } = useTodo();
   const activityStateStr: IActivityStateStrings = useSelector(
     activitySelector,
     shallowEqual
   );
-  const { loading, pdBusy, discussionSize, playerMediafile, setSelected } =
+  const { loading, pdBusy, playerMediafile, setSelected } =
     usePassageDetailContext();
   const uctx = useContext(UnsavedContext);
   const { checkSavedFn } = uctx.state;
@@ -29,11 +27,10 @@ export function TaskList() {
   const [planId] = useGlobal('plan'); //will be constant here
   const isInline = useRef(false);
 
-  const heightAdjust = -60;
-  const widthAdjust = -10;
   const [style, setStyle] = useState<CSSProperties>({
-    width: TaskTableWidth + widthAdjust,
-    height: discussionSize.height + heightAdjust,
+    maxWidth: 200,
+    flex: '1 1 0',
+    minHeight: 0,
     overflowY: 'auto',
     cursor: 'default',
   });
@@ -58,12 +55,9 @@ export function TaskList() {
     busyRef.current = pdBusy || loading;
     setStyle((style) => ({
       ...style,
-      width: TaskTableWidth + widthAdjust,
-      height: discussionSize.height + heightAdjust,
       cursor: busyRef.current ? 'progress' : 'default',
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdBusy, loading, discussionSize]);
+  }, [pdBusy, loading]);
 
   useEffect(() => {
     if (formRef.current && selectedRef.current) {

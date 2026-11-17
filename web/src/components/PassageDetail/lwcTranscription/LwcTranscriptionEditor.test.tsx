@@ -273,7 +273,6 @@ const lwcConfig = {
 };
 
 const baseProps: React.ComponentProps<typeof BoldClauseTranscriptionEditor> = {
-  width: 400,
   mediafile: {
     id: 'mf1',
     type: 'mediafile',

@@ -8,7 +8,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { Box, Grid, IconButton } from '@mui/material';
-import { elemOffset, generateUUID, logError, Severity } from '../../../utils';
+import { generateUUID, logError, Severity } from '../../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { IKeyTermsStrings, ISharedStrings } from '../../../model';
 import { keyTermsSelector, sharedSelector } from '../../../selector';
@@ -80,8 +80,6 @@ export default function KeyTermTable({
   chipClick,
   targetDelete,
 }: IProps) {
-  const bodyRef = React.useRef<HTMLTableSectionElement>(null);
-  const [bodyHeight, setBodyHeight] = React.useState(window.innerHeight);
   const [targetText, setTargetText] = React.useState('');
   const rowRef = React.useRef<IKeyTermRow | undefined>(undefined);
   const [canSaveRecording, setCanSaveRecording] = React.useState(false);
@@ -234,17 +232,8 @@ export default function KeyTermTable({
     if (row) rowRef.current = row;
   };
 
-  React.useEffect(() => {
-    const winHeight = window.innerHeight;
-    if (bodyRef.current) {
-      const { y } = elemOffset(bodyRef.current);
-      const newHeight = winHeight - y;
-      setBodyHeight(newHeight);
-    }
-  }, [rows]);
-
   return (
-    <TableContainer component={Paper} style={{ height: `${bodyHeight}px` }}>
+    <TableContainer component={Paper}>
       <Table stickyHeader sx={{ minWidth: 400 }} aria-label="customized table">
         <TableHead>
           <TableRow key={'head'}>
@@ -252,7 +241,7 @@ export default function KeyTermTable({
             <StyledTableCell>{t.translation}</StyledTableCell>
           </TableRow>
         </TableHead>
-        <TableBody ref={bodyRef}>
+        <TableBody>
           {rows.map((row) => (
             <StyledTableRow key={row.term}>
               <StyledTableCell

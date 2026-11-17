@@ -19,6 +19,11 @@ const mockMemory = {
 
 jest.mock('../schema', () => schemaMock(() => mockMemory));
 
+jest.mock('../utils', () => ({
+  logError: jest.fn(),
+  Severity: { info: 0, error: 1, retry: 2 },
+}));
+
 // Mock GlobalContext to avoid context errors
 jest.mock('../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
@@ -132,7 +137,6 @@ jest.mock('react-redux', () => ({
     pasteError: 'Paste Errors {0}, Updated {1}',
     pasteFormat: 'Paste Format',
     pasteNoChange: 'Paste No Change',
-    projectResourceConfigure: 'Project Resource Configure',
     reference: 'Reference',
     startStop: 'Start/Stop',
     suffix: 'Suffix',

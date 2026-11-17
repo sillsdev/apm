@@ -26773,10 +26773,7 @@ export default [
     3893,
     { G: '普瓦。以薩迦支派的一個人。Puah', D: "man in Issachar's family" },
   ],
-  [
-    3894,
-    { G: '普瓦。以薩迦的兒子；פֻּוָּה。Puah', D: 'son of Issachar; פֻּוָּה' },
-  ],
+  [3894, { G: '普瓦。以薩迦的兒子；פֻּוָּה。Puah', D: 'son of Issachar; פֻּוָּה' }],
   [
     3895,
     {

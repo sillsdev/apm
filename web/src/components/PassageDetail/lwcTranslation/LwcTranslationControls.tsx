@@ -22,7 +22,6 @@ export type LwcTranslationPhase =
   'bootstrapping' | 'playing' | 'recordReady' | 'recording' | 'recorded';
 
 interface Props {
-  width: number;
   phase: LwcTranslationPhase;
   speaker: string;
   onSpeakerChange: (value: string) => void;
@@ -54,7 +53,6 @@ interface Props {
 }
 
 export default function LwcTranslationControls({
-  width,
   phase,
   speaker,
   onSpeakerChange,
@@ -139,7 +137,6 @@ export default function LwcTranslationControls({
             allowRecord={allowRecord}
             allowWave={false}
             height={160}
-            width={width - 80}
             afterUploadCb={afterUploadCb}
             onSaving={onSaving}
             onReady={onSaveSettled}

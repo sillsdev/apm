@@ -135,11 +135,19 @@ export const deleteMediaAfterFailedUploadWithRetries = async (
   return false;
 };
 
-export type UploadFileReject = {
+export class UploadFileReject extends Error {
   statusNum: number;
   statusText: string;
   httpStatus?: number;
-};
+
+  constructor(statusNum: number, statusText: string, httpStatus?: number) {
+    super(statusText);
+    this.name = 'UploadFileReject';
+    this.statusNum = statusNum;
+    this.statusText = statusText;
+    this.httpStatus = httpStatus;
+  }
+}
 
 export const uploadFile = (
   data: MediaFileAttributes,
@@ -170,11 +178,11 @@ export const uploadFile = (
           errorReporter,
           `upload ${file.name}: (${xhr.status}) ${xhr.responseText}`
         );
-        const rej: UploadFileReject = {
-          statusNum: xhr.status,
-          statusText: xhr.responseText || 'upload failed',
-          httpStatus: xhr.status,
-        };
+        const rej = new UploadFileReject(
+          xhr.status,
+          xhr.responseText || 'upload failed',
+          xhr.status
+        );
         // cleanup removes the xhr values loaded into UploadFileReject (above)
         cleanup();
         reject(rej);
@@ -206,30 +214,26 @@ export const uploadFile = (
         `upload ${file.name}: ${statusText}`
       );
       cleanup();
-      const rej: UploadFileReject = {
-        statusNum: httpStatus || 500,
+      const rej = new UploadFileReject(
+        httpStatus || 500,
         statusText,
-        httpStatus: httpStatus || undefined,
-      };
+        httpStatus || undefined
+      );
       reject(rej);
     };
     xhr.onabort = () => {
       cleanup();
-      const rej: UploadFileReject = {
-        statusNum: 499,
-        statusText: 'upload aborted',
-        httpStatus: 499,
-      };
+      const rej = new UploadFileReject(499, 'upload aborted', 499);
       reject(rej);
     };
     xhr.ontimeout = () => {
       const timeoutMs = xhr.timeout;
       cleanup();
-      const rej: UploadFileReject = {
-        statusNum: 408,
-        statusText: `upload timed out after ${timeoutMs}ms`,
-        httpStatus: 408,
-      };
+      const rej = new UploadFileReject(
+        408,
+        `upload timed out after ${timeoutMs}ms`,
+        408
+      );
       reject(rej);
     };
     xhr.send(file.slice());
@@ -277,6 +281,7 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
+  // TODO cleanup: see if we can consolidate the props above, especially the error handling and end behavior ones
 }
 export const nextUpload =
   ({
@@ -295,15 +300,20 @@ export const nextUpload =
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
+    // We don't put general resources into the retry queue. They are a multi-step job the user must do in one go
+    const queueForRetry =
+      uploadType !== UploadType.ProjectResource ||
+      Boolean(pendingUploadIdToClearOnSuccess);
     // TT-7365: a retried Save (e.g. re-clicked after an offline failure) may
     // not carry pendingUploadIdToClearOnSuccess (that's only wired from the
     // Pending Media Uploads dialog's Retry button). Reuse any pending row
     // already staged for this section/artifact/file so repeated Save clicks
     // update one row instead of appending a new one each time
     // writeFileLocal stages the same recording under a new versioned path.
-    let pendingIdToClear =
-      pendingUploadIdToClearOnSuccess ??
-      findPendingUploadIdForIdentity(record as PendingUploadMediaRecord);
+    let pendingIdToClear = queueForRetry
+      ? (pendingUploadIdToClearOnSuccess ??
+        findPendingUploadIdForIdentity(record as PendingUploadMediaRecord))
+      : undefined;
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -506,7 +516,7 @@ export const nextUpload =
         }
       }
 
-      if (localAbsolutePath) {
+      if (localAbsolutePath && queueForRetry) {
         const queuePatch = {
           localAbsolutePath,
           fileSize: size,
@@ -541,27 +551,29 @@ export const nextUpload =
           );
           if (!cloudRowDeleted) failedRemoteMediaId = remoteId;
         }
-        const pathForQueue =
-          localAbsolutePath ||
-          ((files[n] as File & { path?: string }).path ?? '');
-        const queuePatch = {
-          localAbsolutePath: pathForQueue,
-          fileSize: size,
-          uploadType,
-          record: snapshotForPending(),
-          ...(pendingRestore ? { restore: pendingRestore } : {}),
-        };
-        const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
-            appendPendingMediaUpload(queuePatch))
-          : appendPendingMediaUpload(queuePatch);
-        onTerminalFailure?.({
-          localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
-          originalFileName: name,
-          pendingRecord,
-          cloudRowDeleted,
-          failedRemoteMediaId,
-        });
+        if (queueForRetry) {
+          const pathForQueue =
+            localAbsolutePath ||
+            ((files[n] as File & { path?: string }).path ?? '');
+          const queuePatch = {
+            localAbsolutePath: pathForQueue,
+            fileSize: size,
+            uploadType,
+            record: snapshotForPending(),
+            ...(pendingRestore ? { restore: pendingRestore } : {}),
+          };
+          const pendingRecord = pendingIdToClear
+            ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+              appendPendingMediaUpload(queuePatch))
+            : appendPendingMediaUpload(queuePatch);
+          onTerminalFailure?.({
+            localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
+            originalFileName: name,
+            pendingRecord,
+            cloudRowDeleted,
+            failedRemoteMediaId,
+          });
+        }
         completeCB(false, undefined, statusNum, statusText);
       };
 

@@ -443,7 +443,7 @@ describe('PassageDetailTranscribeMobile', () => {
         loading: false,
         pdBusy: false,
         setPDBusy: cy.stub(),
-        setupLocate: cy.stub(),
+        setupLocate: cy.stub().returns(() => {}),
         setCurrentSegment: cy.stub(),
         setPlayerSegments: cy.stub(),
         getCurrentSegment: () => undefined,
@@ -479,7 +479,7 @@ describe('PassageDetailTranscribeMobile', () => {
                       {useRealUnsaved && (
                         <NavigationTrigger onNavigate={onNavigate} />
                       )}
-                      <PassageDetailTranscribeMobile width={360} />
+                      <PassageDetailTranscribeMobile />
                     </>
                   }
                 />

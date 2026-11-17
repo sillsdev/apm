@@ -274,7 +274,6 @@ const fireUndo = async () => {
 const mountAndSettle = async () => {
   const utils = render(
     <PassageDetailGuidedPhraseRecord
-      width={400}
       config={config}
       controlStrings={controlStrings}
     />

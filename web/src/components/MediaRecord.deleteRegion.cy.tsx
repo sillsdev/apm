@@ -359,7 +359,6 @@ const mountMediaRecord = (
     passage: { id: 'pass-1', type: 'passage' },
     sharedResource: undefined,
     mediafileId: '',
-    chooserSize: 48,
     recording: false,
     setRecording: cy.stub(),
     currentstep: 'record',

@@ -54,11 +54,7 @@ function mapPhraseBackGuidedStrings(
   };
 }
 
-interface IProps {
-  width: number;
-}
-
-export function PassageDetailPhraseBackTranslate({ width }: IProps) {
+export function PassageDetailPhraseBackTranslate() {
   useRenderProfiler('PassageDetailPhraseBackTranslate');
   const [memory] = useGlobal('memory');
   const { currentstep } = usePassageDetailContext();
@@ -108,7 +104,6 @@ export function PassageDetailPhraseBackTranslate({ width }: IProps) {
 
   return (
     <PassageDetailGuidedPhraseRecord
-      width={width}
       config={config}
       controlStrings={controlStrings}
     />
