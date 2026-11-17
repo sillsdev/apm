@@ -41,10 +41,7 @@ import {
   insertSilenceAudio,
 } from '../utils/audioUtils';
 import { useRecorder } from '../utils/useRecorder';
-import {
-  CaptureAcquireSupersededError,
-  useUserMedia,
-} from '../crud/useUserMedia';
+import { useUserMedia } from '../crud/useUserMedia';
 import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { buildCaptureConstraints } from '../crud/captureConstraints';
 import {
