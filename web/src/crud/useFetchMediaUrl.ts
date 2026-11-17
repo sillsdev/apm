@@ -6,6 +6,7 @@ import { dataPath, PathType } from '../utils/dataPath';
 import { ISharedStrings, MediaFileD } from '../model';
 import { infoMsg, logError, Severity } from '../utils';
 import { useFetchUrlNow } from './useFetchUrlNow';
+import { findLocalMediaBlob } from './findLocalMediaBlob';
 import { RecordKeyMap } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
@@ -167,6 +168,19 @@ export const useFetchMediaUrl = (reporter?: any) => {
           logError(Severity.error, reporter, infoMsg(e, ''));
           dispatch({ payload: e.message, type: MediaSt.ERROR });
         }
+      } else {
+        // Web local-first read (ADR 0016): play the Local Media Blob when this
+        // device has one, which also saves the cloud download; else fall
+        // through to the cloud url.
+        const blob = await findLocalMediaBlob(state.id, reporter);
+        if (cancelled()) return;
+        if (blob) {
+          dispatch({
+            payload: URL.createObjectURL(blob),
+            type: MediaSt.FETCHED,
+          });
+          return;
+        }
       }
       if (cancelled()) return;
       try {
@@ -206,6 +220,16 @@ export const useFetchMediaUrl = (reporter?: any) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.id]);
+
+  // Only the web local-first branch above puts a blob: url in this state, so
+  // this hook owns releasing it when the url changes or the caller unmounts.
+  // Some consumers (MediaPlayer, LoadAndPlay) also revoke; a second revoke is
+  // a no-op, and the others (e.g. MediaDisplay, usePassagePlayback) don't.
+  useEffect(() => {
+    const url = state.url;
+    if (!url.startsWith('blob:')) return;
+    return () => URL.revokeObjectURL(url);
+  }, [state.url]);
 
   const fetchMediaUrl = (props: IFetchMediaProps) => {
     let { id } = props;
