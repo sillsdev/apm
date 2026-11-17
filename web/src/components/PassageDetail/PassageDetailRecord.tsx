@@ -46,6 +46,13 @@ import {
   pendingUploadIds,
 } from '../../store/upload/pendingMediaUploads';
 import {
+  clearUploadPendingForPassage,
+  hasUploadPendingForPassage,
+} from '../../store/upload/uploadPendingBlobs';
+import { isElectron } from '../../../api-variable';
+import { logError, Severity } from '../../utils/logErrorService';
+import { infoMsg } from '../../utils/infoMsg';
+import {
   IMediaTabStrings,
   ISharedStrings,
   IWsAudioPlayerStrings,
@@ -77,8 +84,10 @@ export function PassageDetailRecord() {
     useContext(HotKeyContext).state;
   const [reporter] = useGlobal('errorReporter');
   const [plan] = useGlobal('plan'); //will be constant here
+  const [project] = useGlobal('project');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const [memory] = useGlobal('memory');
+  // Safe: Orbit keyMap is always a RecordKeyMap when memory is present.
   const keyMap = memory?.keyMap as RecordKeyMap;
   const [, setBigBusy] = useGlobal('importexportBusy');
   const {
@@ -212,14 +221,49 @@ export function PassageDetailRecord() {
       void setStepComplete(currentstep, true);
   };
 
-  const hasPendingUpload = () =>
-    hasPendingUploadForPassage({
-      ...pendingUploadIds(keyMap, plan, passageId),
-      artifactTypeId: null,
-    });
+  const passagePendingQuery = () => ({
+    ...pendingUploadIds(keyMap, plan, passageId),
+    artifactTypeId: null as string | null,
+  });
+
+  /** Desktop: localStorage queue. Web: Local Media Blob Upload Pending (ADR 0016). */
+  const passageHasPendingUpload = async (): Promise<boolean> => {
+    const query = passagePendingQuery();
+    if (isElectron) return hasPendingUploadForPassage(query);
+    try {
+      return await hasUploadPendingForPassage(project, query);
+    } catch (err: unknown) {
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(err as Error, 'check Upload Pending for passage failed')
+      );
+      return false;
+    }
+  };
+
+  const clearPassagePending = (
+    filter?: Parameters<typeof clearPendingUploads>[3]
+  ) => {
+    if (isElectron) {
+      clearPendingUploads(keyMap, plan, passageId, filter);
+      return;
+    }
+    void clearUploadPendingForPassage(
+      project,
+      passagePendingQuery(),
+      filter
+    ).catch((err: unknown) =>
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(err as Error, 'clear Upload Pending for passage failed')
+      )
+    );
+  };
 
   const startRecording = async () => {
-    clearPendingUploads(keyMap, plan, passageId);
+    clearPassagePending();
     try {
       await playerRef.current?.startRecording();
     } catch {
@@ -244,7 +288,7 @@ export function PassageDetailRecord() {
           mediaRemoteIds[0]
         : undefined;
     if (id) {
-      clearPendingUploads(keyMap, plan, passageId);
+      clearPassagePending();
       loadLatest();
       markCompleteForBold();
     }
@@ -252,7 +296,7 @@ export function PassageDetailRecord() {
   };
 
   const handleVersionApplied = () => {
-    clearPendingUploads(keyMap, plan, passageId, isAutosavePending);
+    clearPassagePending(isAutosavePending);
     loadLatest();
   };
 
@@ -263,7 +307,7 @@ export function PassageDetailRecord() {
     } else cb();
   };
 
-  function handleRecordToggle() {
+  async function handleRecordToggle() {
     if (busy || !speaker) return;
 
     if (!recording) {
@@ -273,8 +317,8 @@ export function PassageDetailRecord() {
         );
         return;
       }
-      if (hasPendingUpload()) setPendingUploadWarning('record');
-      else void startRecording();
+      if (await passageHasPendingUpload()) setPendingUploadWarning('record');
+      else await startRecording();
     } else {
       playerRef.current?.stopRecording();
     }
@@ -283,7 +327,7 @@ export function PassageDetailRecord() {
   useEffect(() => {
     if (!canRecord) return;
     subscribe(RECORD_KEY, () => {
-      handleRecordToggle();
+      void handleRecordToggle();
       return true;
     });
     return () => unsubscribe(RECORD_KEY);
@@ -291,8 +335,10 @@ export function PassageDetailRecord() {
 
   const handleUpload = () => {
     saveIfChanged(() => {
-      if (hasPendingUpload()) setPendingUploadWarning('upload');
-      else setUploadVisible(true);
+      void passageHasPendingUpload().then((pending) => {
+        if (pending) setPendingUploadWarning('upload');
+        else setUploadVisible(true);
+      });
     });
   };
 
@@ -300,7 +346,7 @@ export function PassageDetailRecord() {
     setCurrentBlob(audio);
     if (audio) markCompleteForBold();
     else {
-      clearPendingUploads(keyMap, plan, passageId, isAutosavePending);
+      clearPassagePending(isAutosavePending);
       if (isBoldWorkflow) {
         setStepComplete(currentstep, false);
         memory.update((tr: RecordTransformBuilder) =>

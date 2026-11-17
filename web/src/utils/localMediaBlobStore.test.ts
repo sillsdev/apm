@@ -420,6 +420,15 @@ describe('isLocalMediaBlobRecord', () => {
     expect(isLocalMediaBlobRecord(valid)).toBe(true);
   });
 
+  it('accepts an opaque uploadRequest without validating it', () => {
+    expect(
+      isLocalMediaBlobRecord({
+        ...valid,
+        uploadRequest: { anything: true, nested: [1, 'x'] },
+      })
+    ).toBe(true);
+  });
+
   it.each([
     ['null', null],
     ['a string', 'k'],

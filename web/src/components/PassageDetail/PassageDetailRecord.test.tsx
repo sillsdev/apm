@@ -146,6 +146,32 @@ jest.mock('../../control', () => ({
     ) : null,
 }));
 
+// Desktop reads its pending queue from localStorage; web reads Upload Pending
+// from the Local Media Blob store (ADR 0016), stubbed here.
+const mockPlatform = { isElectron: true };
+jest.mock('../../../api-variable', () => ({
+  get isElectron() {
+    return mockPlatform.isElectron;
+  },
+  API_CONFIG: { host: 'https://api.test', sizeLimit: '500' },
+}));
+const mockHasUploadPendingForPassage = jest.fn();
+const mockClearUploadPendingForPassage = jest.fn();
+const mockLogError = jest.fn();
+jest.mock('../../utils/logErrorService', () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+  Severity: { info: 0, error: 1, retry: 2 },
+}));
+jest.mock('../../utils/infoMsg', () => ({
+  infoMsg: (e: Error, msg: string) => msg,
+}));
+jest.mock('../../store/upload/uploadPendingBlobs', () => ({
+  hasUploadPendingForPassage: (...args: unknown[]) =>
+    mockHasUploadPendingForPassage(...args),
+  clearUploadPendingForPassage: (...args: unknown[]) =>
+    mockClearUploadPendingForPassage(...args),
+}));
+
 jest.mock('../../context/useGlobal', () => ({
   useGlobal: (key: string) => {
     if (key === 'memory') {
@@ -155,6 +181,7 @@ jest.mock('../../context/useGlobal', () => ({
       return [{ keyMap, update: mockMemoryUpdate }, jest.fn()];
     }
     if (key === 'plan') return ['plan1', jest.fn()];
+    if (key === 'project') return ['proj1', jest.fn()];
     if (key === 'errorReporter') return [jest.fn(), jest.fn()];
     if (key === 'importexportBusy') return [false, jest.fn()];
     return [undefined, jest.fn()];
@@ -300,6 +327,7 @@ const seedPendingForCurrentPassage = () => {
 const resetState = () => {
   jest.clearAllMocks();
   localStorage.clear();
+  mockPlatform.isElectron = true;
   capturedPlayerProps = null;
   capturedUploaderProps = null;
   mockStepComplete.mockReturnValue(false);
@@ -528,5 +556,105 @@ describe('PassageDetailRecord pending upload warn (TT-7366)', () => {
     expect(mockClearPendingUploads).toHaveBeenCalledWith(...CLEAR_ARGS);
     expect(mockStartRecording).toHaveBeenCalledTimes(1);
     expect(document.querySelector('[data-testid="uploader-open"]')).toBeNull();
+  });
+});
+
+describe('PassageDetailRecord pending upload warn on web', () => {
+  beforeEach(() => {
+    resetState();
+    mockPlatform.isElectron = false;
+  });
+
+  afterAll(() => {
+    mockPlatform.isElectron = true;
+  });
+
+  it('asks the Local Media Blob store, scoped to the project', async () => {
+    mockHasUploadPendingForPassage.mockResolvedValue(false);
+    renderRecord();
+
+    await act(async () => {
+      recordButton()?.click();
+    });
+
+    expect(mockStartRecording).toHaveBeenCalledTimes(1);
+    expect(mockHasUploadPendingForPassage).toHaveBeenCalledWith('proj1', {
+      planId: '101',
+      passageId: '201',
+      artifactTypeId: null,
+    });
+    expect(mockClearPendingUploads).not.toHaveBeenCalled();
+  });
+
+  it('ignores a localStorage pending row', async () => {
+    mockHasUploadPendingForPassage.mockResolvedValue(false);
+    seedPendingForCurrentPassage();
+    renderRecord();
+
+    await act(async () => {
+      recordButton()?.click();
+    });
+
+    expect(mockStartRecording).toHaveBeenCalledTimes(1);
+    expect(
+      document.querySelector('[data-testid="pending-warn-confirm"]')
+    ).toBeNull();
+  });
+
+  it('warns before record start when the passage has an Upload Pending blob', async () => {
+    mockHasUploadPendingForPassage.mockResolvedValue(true);
+    renderRecord();
+
+    await act(async () => {
+      recordButton()?.click();
+    });
+    await waitFor(() => {
+      expect(document.getElementById('alertNo')).not.toBeNull();
+    });
+    expect(document.body.textContent).toContain(PENDING_WARN_TEXT);
+    await act(async () => {
+      document.getElementById('alertNo')?.click();
+    });
+    expect(mockStartRecording).not.toHaveBeenCalled();
+  });
+
+  it('clears Upload Pending blobs when Yes continues recording', async () => {
+    mockHasUploadPendingForPassage.mockResolvedValue(true);
+    mockClearUploadPendingForPassage.mockResolvedValue(undefined);
+    renderRecord();
+
+    await act(async () => {
+      recordButton()?.click();
+    });
+    await waitFor(() => {
+      expect(document.getElementById('alertYes')).not.toBeNull();
+    });
+    await act(async () => {
+      document.getElementById('alertYes')?.click();
+    });
+
+    expect(mockClearUploadPendingForPassage).toHaveBeenCalledWith(
+      'proj1',
+      {
+        planId: '101',
+        passageId: '201',
+        artifactTypeId: null,
+      },
+      undefined
+    );
+    expect(mockClearPendingUploads).not.toHaveBeenCalled();
+    expect(mockStartRecording).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows recording when the store cannot be read', async () => {
+    mockHasUploadPendingForPassage.mockRejectedValue(new Error('blocked'));
+    renderRecord();
+
+    await act(async () => {
+      recordButton()?.click();
+    });
+
+    expect(mockStartRecording).toHaveBeenCalledTimes(1);
+    expect(mockLogError).toHaveBeenCalled();
   });
 });
