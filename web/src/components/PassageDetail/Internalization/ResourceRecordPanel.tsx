@@ -89,8 +89,7 @@ export function ResourceRecordPanel({
     if (controlsRef && mode === AudioAddMode.Record) {
       controlsRef.current.handleAddOrSave = () => startSave(RECORD_TOOL_ID);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, controlsRef]);
+  }, [mode, controlsRef, startSave]);
 
   return (
     <>

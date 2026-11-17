@@ -259,6 +259,9 @@ export function useMediaRecord(props: IMediaRecordStateProps) {
 
   useEffect(() => {
     if (mediaId !== mediaState.id) fetchMediaUrl({ id: mediaId ?? '' });
+    // Keyed on mediaId only: refetch when the take to show changes, not when
+    // mediaState (which this fetch itself updates) or fetchMediaUrl's identity
+    // changes, which would re-request the URL in a loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
 

@@ -1,7 +1,6 @@
 /// <reference types="jest" />
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { ResourceRecordPanel } from './ResourceRecordPanel';
 import {
   ResourceUploadContext,
   type IResourceUploadContext,
@@ -53,6 +52,9 @@ jest.mock('../../useMediaRecord', () => ({
 jest.mock('../../MediaRecord', () => ({
   MediaRecordView: () => null,
 }));
+
+// After the mocks it depends on (jest hoists jest.mock, but this reads in order).
+import { ResourceRecordPanel } from './ResourceRecordPanel';
 
 const openRecordTab = (onNext?: () => void) => {
   const ctx: IResourceUploadContext = {
