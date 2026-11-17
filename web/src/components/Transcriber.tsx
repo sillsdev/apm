@@ -1504,7 +1504,6 @@ export function Transcriber(props: Readonly<IProps>) {
         <TranscribeAsrDialogs
           team={team}
           mediaId={playerMediafile?.id ?? ''}
-          tPlayer={tPlayer}
           asrLangVisible={asrLangVisible}
           asrProgressVisible={asrProgressVisible}
           phonetic={phonetic}

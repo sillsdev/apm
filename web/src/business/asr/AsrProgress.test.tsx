@@ -519,4 +519,126 @@ describe('AsrProgress in-flight task', () => {
       jest.useRealTimers();
     }
   });
+
+  const twoVerseLocalSegments = () => {
+    const verseInfo = JSON.stringify({
+      regions: [
+        { start: 0, end: 10, label: '1:1' },
+        { start: 10, end: 20, label: '1:2' },
+      ],
+    });
+    return JSON.stringify([
+      { name: NamedRegions.Verse, regionInfo: verseInfo },
+    ]);
+  };
+
+  const mockForceClipSuccess = () => {
+    mockAxiosPost.mockResolvedValue({
+      data: {
+        data: {
+          id: 'm1',
+          type: 'mediafile',
+          attributes: {
+            duration: 60,
+            transcription: '',
+            segments: trTaskSegments('task-force-clip'),
+          },
+        },
+      },
+    });
+    mockAxiosGet.mockResolvedValue({
+      state: 'SUCCESS',
+      result: {
+        items: [
+          {
+            clip: 'a.wav',
+            state: 'SUCCESS',
+            segments: [
+              {
+                start: 0,
+                end: 10,
+                transcription: { sister_transcription: 'one-new' },
+              },
+              {
+                start: 10,
+                end: 20,
+                transcription: { sister_transcription: 'two-new' },
+              },
+            ],
+          },
+        ],
+      },
+    });
+  };
+
+  const runClipToTranscription = async (
+    props: Partial<React.ComponentProps<typeof AsrProgress>>
+  ) => {
+    const setTranscription = jest.fn();
+    jest.useFakeTimers();
+    try {
+      render(
+        <AsrProgress
+          mediaId="m1"
+          phonetic={false}
+          setTranscription={setTranscription}
+          onClose={jest.fn()}
+          {...props}
+        />
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+    return setTranscription;
+  };
+
+  it('excludes completed verses when appending (not forced)', async () => {
+    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
+    mockForceClipSuccess();
+
+    const setTranscription = await runClipToTranscription({
+      force: false,
+      contentVerses: ['1'],
+    });
+
+    expect(setTranscription).toHaveBeenCalledWith('\\v 2 two-new');
+    expect(setTranscription).not.toHaveBeenCalledWith(
+      expect.stringContaining('\\v 1 ')
+    );
+  });
+
+  it('keeps completed verses on forced replace of a partial transcription', async () => {
+    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
+    mockForceClipSuccess();
+
+    const setTranscription = await runClipToTranscription({
+      force: true,
+      contentVerses: ['1'],
+    });
+
+    expect(setTranscription).toHaveBeenCalledWith(
+      '\\v 1 one-new \\v 2 two-new'
+    );
+  });
+
+  it('delivers a full result on forced replace when every verse was already transcribed', async () => {
+    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
+    mockForceClipSuccess();
+
+    const setTranscription = await runClipToTranscription({
+      force: true,
+      contentVerses: ['1', '2'],
+    });
+
+    expect(setTranscription).toHaveBeenCalledWith(
+      '\\v 1 one-new \\v 2 two-new'
+    );
+  });
 });

@@ -730,7 +730,6 @@ export function PassageDetailTranscribeMobileContent() {
       <TranscribeAsrDialogs
         team={team}
         mediaId={mediafile?.id ?? ''}
-        tPlayer={tPlayer}
         asrLangVisible={asr.asrLangVisible}
         asrProgressVisible={asr.asrProgressVisible}
         phonetic={asr.phonetic}

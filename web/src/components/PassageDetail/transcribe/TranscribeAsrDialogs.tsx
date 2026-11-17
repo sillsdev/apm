@@ -1,15 +1,15 @@
-import { OrganizationD } from '../../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { IWsAudioPlayerStrings, OrganizationD } from '../../../model';
+import { playerSelector } from '../../../selector';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import type { IAsrState } from '../../../business/asr/asrState';
-import type { IWsAudioPlayerStrings } from '../../../model';
 
 export interface TranscribeAsrDialogsProps {
   team: OrganizationD | undefined;
   mediaId: string;
-  tPlayer: IWsAudioPlayerStrings;
   asrLangVisible: boolean;
   asrProgressVisible: boolean;
   phonetic: boolean;
@@ -29,7 +29,6 @@ export interface TranscribeAsrDialogsProps {
 export function TranscribeAsrDialogs({
   team,
   mediaId,
-  tPlayer,
   asrLangVisible,
   asrProgressVisible,
   phonetic,
@@ -43,6 +42,11 @@ export function TranscribeAsrDialogs({
   bp,
   isMobile = false,
 }: Readonly<TranscribeAsrDialogsProps>) {
+  const tPlayer: IWsAudioPlayerStrings = useSelector(
+    playerSelector,
+    shallowEqual
+  );
+
   return (
     <>
       <BigDialog
