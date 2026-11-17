@@ -25,8 +25,8 @@ A project that lives entirely on the local device and is never synced to the clo
 _Avoid_: Personal Team project; Personal Project; Offline Available project
 
 **Offline Available**:
-A cloud team project marked for download so transcribers and editors can work on it without a connection. Still syncs to the cloud when online — unlike a Work Alone project.
-_Avoid_: Work Alone; calling it simply "offline"
+A cloud team project marked for download so transcribers and editors can work on it without a connection. Still syncs to the cloud when online — unlike a Work Alone project. Offline prep downloads the **Local Media Blobs** needed for that disconnected work; without Offline Available, open-project media is fetched lazily as the user works a passage.
+_Avoid_: Work Alone; calling it simply "offline"; treating lazy per-passage download as Offline Available
 
 **Offline** (connectivity):
 The app has lost network access. A cloud-connected user working on an Offline Available project is offline but not Work Alone.
@@ -398,7 +398,19 @@ _Avoid_: PBT; Vernacular
 
 **Audio File**:
 One stored audio recording and its metadata for a passage (including transcription text, artifact type, and storage location). There is exactly one audio file entity per physical recording.
-_Avoid_: Artifact (type/category vs the file itself); Media (too vague)
+_Avoid_: Artifact (type/category vs the file itself); Media (too vague); Local Media Blob (the on-device bytes, not the Audio File record)
+
+**Local Media Blob**:
+Durable bytes of an **Audio File** kept on the device for local-first playback and offline work. May exist while **Upload Pending** or after the file is **Cloud-backed**. Distinct from the Audio File record/metadata.
+_Avoid_: Cache (unqualified); synced file; Audio File (when meaning only the record); IndexedDB / filesystem path (implementation)
+
+**Upload Pending**:
+A **Local Media Blob** whose Audio File is not yet confirmed in the cloud. At risk of loss if the device copy is cleared or discarded on project switch.
+_Avoid_: Pending (unqualified); Cloud-backed; unsynced; “pending data that has been synced” (that means Cloud-backed)
+
+**Cloud-backed**:
+The cloud has confirmed the **Audio File**; a **Local Media Blob** may still exist on the device as a local copy and may be freed without losing the cloud original.
+_Avoid_: Synced (unqualified); Upload Pending; calling Cloud-backed local copies “pending”
 
 **Transcription**:
 Text representing the spoken content of an audio file. Metadata on that audio file, not a separate audio product. The Transcribe step determines which artifact type's audio is shown for editing. When that artifact is **PBT** and multiple **Phrase Back Translation** languages exist, the Transcribe step’s **primary** language selects which language’s PBTs are in scope — it must match a Phrase BT step language on the process. **Sister language** (when present) is for ASR only and never selects the media set.
