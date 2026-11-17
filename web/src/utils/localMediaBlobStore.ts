@@ -64,6 +64,7 @@ export type PutLocalMediaBlobInput = Pick<
   >;
 
 const isLocalMediaStatus = (value: unknown): value is LocalMediaStatus =>
+  // Safe: STATUSES is the closed LocalMediaStatus union; includes narrows membership.
   STATUSES.includes(value as LocalMediaStatus);
 
 const isOptionalString = (value: unknown) =>
@@ -74,6 +75,7 @@ export const isLocalMediaBlobRecord = (
   value: unknown
 ): value is LocalMediaBlobRecord => {
   if (typeof value !== 'object' || value === null) return false;
+  // Safe: null-checked object; field types are validated on the lines below.
   const r = value as Record<string, unknown>;
   return (
     typeof r.key === 'string' &&
@@ -116,8 +118,14 @@ const toRecords = (rows: unknown[]): LocalMediaBlobRecord[] =>
     .map(checkedRow)
     .filter((row): row is LocalMediaBlobRecord => row !== undefined);
 
-const durabilityFor = (status: LocalMediaStatus): IDBTransactionDurability =>
-  status === 'uploadPending' ? 'strict' : 'relaxed';
+/** Strict when the write creates or ends Upload Pending (ADR 0016). */
+const durabilityFor = (
+  nextStatus: LocalMediaStatus,
+  previousStatus?: LocalMediaStatus
+): IDBTransactionDurability =>
+  nextStatus === 'uploadPending' || previousStatus === 'uploadPending'
+    ? 'strict'
+    : 'relaxed';
 
 let dbPromise: Promise<IDBDatabase> | undefined;
 
@@ -263,9 +271,19 @@ export const putLocalMediaBlob = async (
 ): Promise<LocalMediaBlobRecord> => {
   if (!input.mediafileId && !input.clientTempId)
     throw new Error('putLocalMediaBlob needs mediafileId or clientTempId');
+  // Peek so ending Upload Pending (status → cloudBacked) still gets strict.
+  const peek = await inTransaction('readonly', 'default', async (store) => {
+    const byMedia = input.mediafileId
+      ? await findInStore(store, input.mediafileId)
+      : undefined;
+    if (byMedia) return byMedia;
+    return input.clientTempId
+      ? findInStore(store, input.clientTempId)
+      : undefined;
+  });
   return inTransaction(
     'readwrite',
-    durabilityFor(input.status),
+    durabilityFor(input.status, peek?.status),
     async (store) => {
       // The row may be under either id: still under its clientTempId when
       // the mediafile id arrives with this put, or already re-keyed when this
