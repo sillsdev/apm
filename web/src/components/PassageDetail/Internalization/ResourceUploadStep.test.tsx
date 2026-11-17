@@ -1,8 +1,11 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { UploadType } from '../../UploadType';
+import {
+  ResourceUploadContext,
+  type IResourceUploadContext,
+} from './ResourceUploadContext';
 
 type PanelProps = {
-  artifactId?: string | null;
   finish: (mediaRemoteIds?: string[]) => Promise<void>;
   uploadMethod?: unknown;
 };
@@ -14,7 +17,7 @@ type ContentProps = {
 let capturedPanel: PanelProps | undefined;
 let capturedContent: ContentProps | undefined;
 
-jest.mock('../../PassageRecordPanel', () => ({
+jest.mock('./ResourceRecordPanel', () => ({
   __esModule: true,
   default: (props: PanelProps) => {
     capturedPanel = props;
@@ -36,7 +39,6 @@ const mockUploadMethod = jest.fn();
 const mockUseMediaUpload = jest.fn((_opts: unknown) => mockUploadMethod);
 jest.mock('../../../crud', () => ({
   useMediaUpload: (opts: unknown) => mockUseMediaUpload(opts),
-  VernacularTag: 'vern-tag',
 }));
 
 jest.mock('../../../utils', () => ({
@@ -53,20 +55,23 @@ jest.mock('../../../utils/contentType', () => ({
 
 import ResourceUploadStep from './ResourceUploadStep';
 
-type StepProps = React.ComponentProps<typeof ResourceUploadStep>;
-
-function renderStep(overrides: Partial<StepProps> = {}) {
-  const props: StepProps = {
+function renderStep(overrides: Partial<IResourceUploadContext> = {}) {
+  const value: IResourceUploadContext = {
     active: true,
     isAddingAudioResource: true,
     uploadType: UploadType.Media,
+    artifactId: 'art-1',
     cancelled: { current: false },
     finish: jest.fn(),
     defaultFilename: 'resource',
     ...overrides,
   };
-  render(<ResourceUploadStep {...props} />);
-  return props;
+  render(
+    <ResourceUploadContext.Provider value={value}>
+      <ResourceUploadStep />
+    </ResourceUploadContext.Provider>
+  );
+  return value;
 }
 
 function hookOptions() {
@@ -166,28 +171,23 @@ describe('ResourceUploadStep', () => {
     });
   });
 
-  describe('artifactId', () => {
-    it.each([
-      ['undefined', undefined],
-      ['null', null],
-    ])('defaults to VernacularTag when %s', (_, artifactId) => {
-      renderStep({ artifactId });
+  it('uploads with the context artifactId', () => {
+    renderStep({ artifactId: 'art-2' });
 
-      expect(hookOptions().fields.artifactId).toBe('vern-tag');
-      expect(capturedPanel?.artifactId).toBe('vern-tag');
-    });
+    expect(hookOptions().fields.artifactId).toBe('art-2');
+  });
 
-    it('uses the given artifactId', () => {
-      renderStep({ artifactId: 'art-1' });
-
-      expect(hookOptions().fields.artifactId).toBe('art-1');
-      expect(capturedPanel?.artifactId).toBe('art-1');
-    });
+  it('throws when rendered outside the provider', () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => render(<ResourceUploadStep />)).toThrow(
+      /ResourceUploadContext provider/
+    );
+    spy.mockRestore();
   });
 
   it('configures the upload hook from its props', () => {
     const beforeUpload = jest.fn(async () => {});
-    const pendingRestore = {} as StepProps['pendingRestore'];
+    const pendingRestore = {} as IResourceUploadContext['pendingRestore'];
     const props = renderStep({
       speaker: 'Ann',
       eafUrl: 'eaf-url',
