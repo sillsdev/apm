@@ -149,12 +149,17 @@ jest.mock('../../control', () => ({
 // Desktop reads its pending queue from localStorage; web reads Upload Pending
 // from the Local Media Blob store (ADR 0016), stubbed here.
 const mockPlatform = { isElectron: true };
-jest.mock('../../../api-variable', () => ({
-  get isElectron() {
-    return mockPlatform.isElectron;
-  },
-  API_CONFIG: { host: 'https://api.test', sizeLimit: '500' },
-}));
+jest.mock('../../../api-variable', () => {
+  const actual = jest.requireActual(
+    '../../../api-variable'
+  ) as typeof import('../../../api-variable');
+  return {
+    ...actual,
+    get isElectron() {
+      return mockPlatform.isElectron;
+    },
+  };
+});
 const mockHasUploadPendingForPassage = jest.fn();
 const mockClearUploadPendingForPassage = jest.fn();
 const mockLogError = jest.fn();
