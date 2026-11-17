@@ -78,7 +78,6 @@ const initialState = {
 			"intellectualproperty": "Intellectual Property",
 			"keyterm": "Key Term",
 			"linked": "Linked",
-			"projectresource": "General Resource",
 			"qanda": "Community Test Question and Answer",
 			"replacement": "Replacement",
 			"resource": "Resource",

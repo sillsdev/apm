@@ -68,7 +68,6 @@ export interface IArtifactTypeStrings extends Localize.LocalizedStringsMethods {
     "intellectualproperty": string;
     "keyterm": string;
     "linked": string;
-    "projectresource": string;
     "qanda": string;
     "replacement": string;
     "resource": string;

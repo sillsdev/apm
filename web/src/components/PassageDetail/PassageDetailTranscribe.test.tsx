@@ -87,7 +87,6 @@ jest.mock('../../crud', () => ({
 
 jest.mock('../../crud/useArtifactType', () => ({
   useArtifactType: () => ({
-    localizedArtifactTypeFromId: () => 'bt',
     slugFromId: () => 'vernacular',
   }),
 }));

@@ -16,13 +16,6 @@ import {
 } from './generalResourceMedia';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
-/**
- * Label key for shared resources. Not an {@link ArtifactTypeSlug}: no artifact
- * type is stored under this name, it only names the `artifactType.linked`
- * string.
- */
-const LinkedTypeSlug = 'linked';
-
 const isResource = (typeSlug: string) =>
   ['resource', 'sharedresource', 'airesource'].indexOf(typeSlug) !== -1;
 
@@ -32,7 +25,6 @@ interface DataProps {
   userResources: SectionResourceUser[];
   user: string;
   localizedCategory: (slug: string) => string;
-  localizedType: (slug: string) => string;
 }
 
 interface RowProps extends DataProps {
@@ -55,7 +47,6 @@ export const oneMediaRow = ({
   userResources,
   user,
   localizedCategory,
-  localizedType,
   mediafiles = [],
 }: RowProps) => {
   const mediaAttr = media?.attributes;
@@ -85,16 +76,6 @@ export const oneMediaRow = ({
         projectResourceTypeIds(artifactTypes)
       )
     );
-  // Label key, which is not always the media's own type: a derived copy reads
-  // as its general-resource root, and `sharedresource` reads as "Linked". The
-  // latter is its own string rather than a reworded `artifactType.sharedresource`
-  // so the existing translations of "Shared Resource" stay correct wherever that
-  // key is still shown.
-  const displayTypeSlug = isGeneralResource
-    ? ArtifactTypeSlug.ProjectResource
-    : typeNameSlug === ArtifactTypeSlug.SharedResource
-      ? LinkedTypeSlug
-      : typeNameSlug;
   const catId = related(media, 'artifactCategory');
   const category = categories.find((c) => c.id === catId);
   const catNameSlug = category?.attributes?.categoryname || '';
@@ -115,7 +96,6 @@ export const oneMediaRow = ({
       mediaAttr?.originalFile,
       mediaContentType(media)
     ),
-    artifactType: localizedType(displayTypeSlug),
     artifactTypeSlug: typeNameSlug,
     isGeneralResource,
     artifactCategory: localizedCategory(catNameSlug),

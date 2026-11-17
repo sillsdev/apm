@@ -102,8 +102,6 @@ export interface IRow {
   mediafile: MediaFileD;
   playItem: string;
   artifactName: string;
-  artifactType: string;
-  /** Raw artifact type slug (e.g. 'resource', 'sharedresource') behind artifactType. */
   artifactTypeSlug: string;
   /** Media is (or derives from) a general/project resource -- see generalResourceMedia. */
   isGeneralResource: boolean;
@@ -305,7 +303,7 @@ const PassageDetailProvider = (props: IProps) => {
   const fetching = useRef('');
   const segmentsCbs = useRef<((segments: string) => void)[]>([]);
   const filteredOrgSteps = useFilteredSteps();
-  const { localizedArtifactType, getTypeId } = useArtifactType();
+  const { getTypeId } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStep } = useOrgWorkflowSteps();
   const mediaStart = useRef<number | undefined>(undefined);
@@ -745,7 +743,6 @@ const PassageDetailProvider = (props: IProps) => {
           userResources,
           user,
           localizedCategory: localizedArtifactCategory,
-          localizedType: localizedArtifactType,
         });
         i = newRows.length - 1;
       } else {
@@ -1054,7 +1051,6 @@ const PassageDetailProvider = (props: IProps) => {
     const allMedia = getAllMediaRecs(psgId ?? passageId, memory);
     const localize = {
       localizedCategory: localizedArtifactCategory,
-      localizedType: localizedArtifactType,
     };
     const pres = getProjectResources();
     let newData = mediaRows({
