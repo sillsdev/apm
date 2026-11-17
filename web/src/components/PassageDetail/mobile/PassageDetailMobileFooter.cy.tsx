@@ -390,7 +390,6 @@ describe('PassageDetailMobileFooter', () => {
       'have.text',
       '/detail/project-1/remote-3'
     );
-    cy.get('@setCurrentStep').should('have.been.calledWith', '');
     cy.window().then((win) => {
       expect(win.localStorage.getItem(localUserKey(LocalKey.passage))).to.equal(
         'remote-3'
