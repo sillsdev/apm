@@ -359,6 +359,7 @@ export const useMediaUpload = ({
         token: accessToken || '',
         offline: getGlobal('offline'),
         errorReporter: reporter,
+        projectId: getGlobal('project'),
         uploadType: effectiveType,
         cb: (idx, upOk, data, errorMessage) => {
           if (errorMessage) showUploadError(errorMessage, silent);
