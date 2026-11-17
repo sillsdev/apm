@@ -1573,6 +1573,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "NoSaveWoMedia": string;
     "notSupported": string;
     "observer": string;
+    "ok": string;
     "paratextchapterSpan": string;
     "part": string;
     "passages": string;
@@ -2105,6 +2106,7 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
     "transcribe": string;
     "transcribeTip": string;
     "unsaved": string;
+    "upload": string;
     "markVerses": string;
     "markVersesTip": string;
     "prompt": string;
@@ -2141,6 +2143,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "loopon": string;
     "microphoneDisconnected": string;
     "microphoneDisconnectedFallback": string;
+    "microphoneListFailed": string;
     "moreOptions": string;
     "nextRegion": string;
     "noiseremovalFailed": string;
@@ -2160,6 +2163,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "reduceNoise": string;
     "reduceNoiseAi": string;
     "reset": string;
+    "resetAudio": string;
     "resetSegments": string;
     "resume": string;
     "saveSegments": string;
