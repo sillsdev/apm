@@ -9,7 +9,7 @@ import type { PendingRestoreInput } from '../../../store/upload/pendingMediaUplo
 
 interface IProps {
   active: boolean;
-  isAudioMode: boolean; //shows a Record option as well as upload
+  isAddingAudioResource: boolean; //shows a Record option as well as upload
   uploadType: UploadType;
   artifactId?: string | null | undefined;
   speaker?: string | undefined;
@@ -38,7 +38,7 @@ interface IProps {
 export function ResourceUploadStep(props: IProps) {
   const {
     active,
-    isAudioMode,
+    isAddingAudioResource,
     uploadType,
     artifactId: artifactIdProp,
     speaker,
@@ -103,7 +103,7 @@ export function ResourceUploadStep(props: IProps) {
         '& > .MuiDialogActions-root > .MuiButton-root': { m: 0 },
       }}
     >
-      {isAudioMode ? (
+      {isAddingAudioResource ? (
         <PassageRecordPanel
           active={active}
           onStartRecording={onStartRecording}
@@ -126,7 +126,6 @@ export function ResourceUploadStep(props: IProps) {
         <MediaUploadContent
           noWrapper
           hideCancel
-          onVisible={() => {}}
           uploadType={uploadType}
           multiple
           uploadMethod={uploadMedia}

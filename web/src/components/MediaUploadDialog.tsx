@@ -9,8 +9,8 @@ import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
 interface IProps {
-  visible: boolean;
-  onVisible: (v: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
   uploadType: UploadType;
   uploadMethod?:
     ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
@@ -23,8 +23,8 @@ interface IProps {
 
 function MediaUploadDialog(props: IProps) {
   const {
-    visible,
-    onVisible,
+    isOpen,
+    onClose,
     uploadType,
     multiple,
     uploadMethod,
@@ -54,19 +54,19 @@ function MediaUploadDialog(props: IProps) {
     if (cancelMethod) {
       cancelMethod();
     }
-    onVisible(false);
+    onClose();
   };
 
   return (
     <BigDialog
-      isOpen={visible}
+      isOpen={isOpen}
       onOpen={handleCancel}
       title={title[uploadType] ?? ''}
       bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
     >
       <>
         <MediaUploadContent
-          onVisible={onVisible}
+          onClose={onClose}
           uploadType={uploadType}
           multiple={multiple}
           uploadMethod={uploadMethod}

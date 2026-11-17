@@ -32,28 +32,18 @@ interface IProps {
   sx?: SxProps;
 }
 
-export const PassageDetailChooser = ({ sx }: IProps) => {
+export const PassageDetailChooser = ({ sx = [] }: IProps) => {
   const [memory] = useGlobal('memory');
-  const {
-    passage,
-    section,
-    prjId,
-    allBookData,
-    setCurrentStep,
-    isNavigationBlocked,
-  } = usePassageDetailContext();
+  const { passage, section, prjId, allBookData, isNavigationBlocked } =
+    usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
 
   const t = useSelector(
     passageChooserSelector,
@@ -135,13 +125,7 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
   return passageCount > 1 ? (
-    <StyledBox
-      sx={{
-        ...sx,
-        alignItems: 'center',
-        gap: 0,
-      }}
-    >
+    <StyledBox sx={[...[sx].flat(), { px: 1, alignItems: 'center', gap: 0 }]}>
       <Typography sx={{ pr: 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
         {t.passages}
       </Typography>

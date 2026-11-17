@@ -87,7 +87,7 @@ export function LimitedMediaPlayer(props: IProps) {
     onTogglePlay,
     controls,
     limits,
-    sx,
+    sx = [],
     noRestart,
     noSkipBack,
     playButtonSize = 'small',
@@ -400,13 +400,15 @@ export function LimitedMediaPlayer(props: IProps) {
           return noContainer ? (
             <Stack
               direction="row"
-              sx={{
-                width: '100%',
-                alignItems: 'center',
-                px: 0.5,
-                gap: 1,
-                ...sx,
-              }}
+              sx={[
+                {
+                  width: '100%',
+                  alignItems: 'center',
+                  px: 0.5,
+                  gap: 1,
+                },
+                ...[sx].flat(),
+              ]}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', pb: 0.5 }}>
                 {mediaControls}
@@ -419,7 +421,7 @@ export function LimitedMediaPlayer(props: IProps) {
               icon={mediaControls}
               label={mediaLabel}
               deleteIcon={closeControl}
-              sx={{ ...sx, width: '100%' }}
+              sx={[...[sx].flat(), { width: '100%' }]}
             />
           );
         })()

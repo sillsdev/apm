@@ -350,7 +350,7 @@ export function GraphicPicker({
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [tabValue, setTabValue] = useState(0);
   const userTabRef = useRef(false);
-  const mediaUploadControlsRef = useRef<MediaUploadControlsRef>({
+  const controlsRef = useRef<MediaUploadControlsRef>({
     handleCancel: null,
     handleAddOrSave: null,
   } as MediaUploadControlsRef);
@@ -691,8 +691,8 @@ export function GraphicPicker({
   }, [isOpen, tabValue, search, keywordListSearch, showMessage, t]);
 
   const handleClose = useCallback(() => {
-    if (mediaUploadControlsRef?.current?.handleCancel && tabValue === 1) {
-      mediaUploadControlsRef.current.handleCancel();
+    if (controlsRef?.current?.handleCancel && tabValue === 1) {
+      controlsRef.current.handleCancel();
     }
     onOpen(false);
     onCancel?.();
@@ -708,10 +708,10 @@ export function GraphicPicker({
     userTabRef.current = false;
     if (tabValue === 1) {
       onSelectedRights?.(rightsDraftRef.current);
-      if (mediaUploadControlsRef?.current?.handleAddOrSave) {
-        mediaUploadControlsRef.current.handleAddOrSave();
+      if (controlsRef?.current?.handleAddOrSave) {
+        controlsRef.current.handleAddOrSave();
       }
-      // uploadMedia closes via finish → onOpen after the image save.
+      // uploadMedia closes via finish → onClose after the image save.
       // Closing here races a rights-only save that can clobber it.
       setSelectedId(null);
       return;
@@ -943,7 +943,7 @@ export function GraphicPicker({
           <TabPanel value={tabValue} index={1}>
             <VertScrollBox>
               <GraphicUploader
-                onOpen={onOpen}
+                onClose={() => onOpen(false)}
                 dimension={dimension}
                 defaultFilename={defaultFilename}
                 showMessage={showMessage}
@@ -960,9 +960,9 @@ export function GraphicPicker({
                     setPreviewUrl('');
                   }
                 }}
-                mediaUploadControlsRef={mediaUploadControlsRef}
+                controlsRef={controlsRef}
                 onSaveDisabled={setSaveDisabled}
-                metadata={
+                metaData={
                   <Box>
                     <GraphicRights
                       key={rightsFieldKey}

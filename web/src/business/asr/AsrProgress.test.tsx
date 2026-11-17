@@ -49,8 +49,9 @@ jest.mock('../../context/TokenProvider', () => {
 });
 
 const mockAxiosPost = jest.fn<(url?: string) => Promise<unknown>>();
+const mockAxiosGet = jest.fn<() => Promise<unknown>>();
 jest.mock('../../utils/axios', () => ({
-  axiosGet: jest.fn(),
+  axiosGet: () => mockAxiosGet(),
   axiosPost: (url: string) => mockAxiosPost(url),
 }));
 
@@ -69,8 +70,21 @@ jest.mock('../../crud/remoteId', () => ({
   remoteId: (_table: string, id: string) => id,
 }));
 
+const mockPullTableList = jest.fn<(...args: unknown[]) => Promise<void>>(() =>
+  Promise.resolve()
+);
+jest.mock('../../crud/pullTableList', () => ({
+  pullTableList: (...args: unknown[]) => mockPullTableList(...args),
+}));
+
 jest.mock('../../context/useGlobal', () => ({
-  useGlobal: () => [{ keyMap: {} }, jest.fn()],
+  useGlobal: (key: string) => {
+    if (key === 'coordinator') {
+      return [{ getSource: () => ({}) }, jest.fn()];
+    }
+    if (key === 'errorReporter') return ['reporter', jest.fn()];
+    return [{ keyMap: {} }, jest.fn()];
+  },
 }));
 
 jest.mock('../../control', () => ({
@@ -89,6 +103,13 @@ jest.mock('react-redux', () => ({
     aiTimeRemaining: 'About {0} remaining',
     aiTakingLonger: 'Taking longer than usual: {0} elapsed',
     aiWillContinue: '{0} will continue',
+    aiWillContinueDifferentLanguage:
+      'Use settings on {0} for a different language.',
+    asrQueued: 'QUEUED',
+    asrPending: 'PENDING',
+    asrStarted: 'STARTED',
+    asrSuccess: 'SUCCESS',
+    asrFailure: 'FAILURE',
     recognizeSpeech: 'Recognize speech',
     close: 'Close',
   }),
@@ -115,36 +136,55 @@ jest.mock('../../utils', () => ({
 }));
 
 jest.mock('../../crud/useGetAsrSettings', () => ({
-  useGetAsrSettings: () => ({ getAsrSettings: () => undefined }),
+  useGetAsrSettings: () => ({
+    getAsrSettings: () => undefined,
+    getVernacularLanguage: () => ({ bcp47: 'en' }),
+  }),
 }));
 
+jest.mock('./useNeedsSisterLanguage', () => ({
+  useNeedsSisterLanguage: () => ({ needsSister: false }),
+}));
+
+const mockProjectSegmentSave =
+  jest.fn<(args: { media: MediaFileD; segments: string }) => Promise<void>>();
 jest.mock(
   '../../components/PassageDetail/Internalization/useProjectSegmentSave',
-  () => ({ useProjectSegmentSave: () => jest.fn() })
+  () => ({ useProjectSegmentSave: () => mockProjectSegmentSave })
 );
 
 import AsrProgress from './AsrProgress';
+import { NamedRegions } from '../../utils/namedSegments';
 
-const mediaWith = (duration: number) =>
+const trTaskSegments = (taskId: string) =>
+  JSON.stringify([
+    {
+      name: NamedRegions.TRTask,
+      regionInfo: JSON.stringify({ regions: [{ label: taskId }] }),
+    },
+  ]);
+
+const mediaWith = (duration: number, segments = '{}') =>
   ({
     id: 'm1',
     type: 'mediafile',
-    attributes: { duration, transcription: '', segments: '{}' },
+    attributes: { duration, transcription: '', segments },
   }) as unknown as MediaFileD;
 
 // postTranscribe awaits the saved ASR settings before it starts the run, so
 // let that settle before reading the estimate.
 const renderAsr = async (
   phonetic = false,
-  asrState?: React.ComponentProps<typeof AsrProgress>['asrState']
+  asrState?: React.ComponentProps<typeof AsrProgress>['asrState'],
+  force?: boolean
 ) => {
   const result = render(
     <AsrProgress
       mediaId="m1"
       phonetic={phonetic}
       asrState={asrState}
+      force={force}
       setTranscription={jest.fn()}
-      onPullTasks={jest.fn()}
       onClose={jest.fn()}
     />
   );
@@ -160,8 +200,12 @@ describe('AsrProgress estimated time', () => {
     localStorage.clear();
     // The transcription request stays in flight for the whole test.
     mockAxiosPost.mockReset();
+    mockAxiosGet.mockReset();
+    mockProjectSegmentSave.mockReset();
+    mockProjectSegmentSave.mockResolvedValue(undefined);
     mockCachedMethods = {};
     mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
+    mockAxiosGet.mockImplementation(() => new Promise(() => undefined));
   });
 
   afterEach(() => {
@@ -251,7 +295,11 @@ describe('AsrProgress method on the request', () => {
   beforeEach(() => {
     mockOrbitListeners.clear();
     mockAxiosPost.mockReset();
+    mockAxiosGet.mockReset();
+    mockProjectSegmentSave.mockReset();
+    mockProjectSegmentSave.mockResolvedValue(undefined);
     mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
+    mockAxiosGet.mockImplementation(() => new Promise(() => undefined));
     mockCachedMethods = {};
     orbitMedia = [mediaWith(60)];
   });
@@ -271,5 +319,326 @@ describe('AsrProgress method on the request', () => {
   it('sends the saved method when no list is cached', async () => {
     await renderAsr(false, asrWith('mms'));
     expect(postedUrl()).toMatch(/\/fra\/false\/mms$/);
+  });
+});
+
+describe('AsrProgress in-flight task', () => {
+  beforeEach(() => {
+    mockOrbitListeners.clear();
+    mockAxiosPost.mockReset();
+    mockAxiosGet.mockReset();
+    mockProjectSegmentSave.mockReset();
+    mockProjectSegmentSave.mockResolvedValue(undefined);
+    mockAxiosGet.mockImplementation(() => new Promise(() => undefined));
+    mockCachedMethods = {};
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('pulls the mediafile when the POST returns a task', async () => {
+    orbitMedia = [mediaWith(60)];
+    const forceRefresh = jest.fn();
+    mockPullTableList.mockClear();
+    mockAxiosPost.mockResolvedValue({
+      data: {
+        data: {
+          id: 'm1',
+          type: 'mediafile',
+          attributes: {
+            duration: 60,
+            transcription: '',
+            segments: trTaskSegments('task-from-post'),
+          },
+        },
+      },
+    });
+
+    render(
+      <AsrProgress
+        mediaId="m1"
+        phonetic={false}
+        setTranscription={jest.fn()}
+        forceRefresh={forceRefresh}
+        onClose={jest.fn()}
+      />
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockPullTableList).toHaveBeenCalledWith(
+      'mediafile',
+      ['m1'],
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'reporter'
+    );
+    expect(forceRefresh).toHaveBeenCalled();
+  });
+
+  it('resumes a stored TRTask instead of posting again', async () => {
+    orbitMedia = [mediaWith(60, trTaskSegments('task-resume'))];
+    mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
+
+    await renderAsr(false, undefined, false);
+
+    expect(mockAxiosPost).not.toHaveBeenCalled();
+  });
+
+  it('starts a new task when force is set even if a TRTask is stored', async () => {
+    orbitMedia = [mediaWith(60, trTaskSegments('task-old'))];
+    mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
+
+    await renderAsr(false, undefined, true);
+
+    expect(mockAxiosPost).toHaveBeenCalled();
+  });
+
+  it('re-runs when force is set even if a transcription already exists', async () => {
+    orbitMedia = [
+      {
+        ...mediaWith(60),
+        attributes: {
+          ...mediaWith(60).attributes,
+          transcription: 'already transcribed',
+        },
+      } as MediaFileD,
+    ];
+    mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
+
+    await renderAsr(false, undefined, true);
+
+    expect(mockAxiosPost).toHaveBeenCalled();
+  });
+
+  it('stops with transcription exists when not forced', async () => {
+    const onClose = jest.fn();
+    orbitMedia = [
+      {
+        ...mediaWith(60),
+        attributes: {
+          ...mediaWith(60).attributes,
+          transcription: 'already transcribed',
+        },
+      } as MediaFileD,
+    ];
+    mockAxiosPost.mockImplementation(() => new Promise(() => undefined));
+
+    render(
+      <AsrProgress
+        mediaId="m1"
+        phonetic={false}
+        setTranscription={jest.fn()}
+        onClose={onClose}
+      />
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(mockAxiosPost).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('uses local verse marks when the POST response omits Verse regions', async () => {
+    jest.useFakeTimers();
+    try {
+      const verseInfo = JSON.stringify({
+        regions: [
+          { start: 0, end: 10, label: '1:1-5' },
+          { start: 10, end: 20, label: '1:6-7' },
+        ],
+      });
+      const localSegments = JSON.stringify([
+        { name: NamedRegions.Verse, regionInfo: verseInfo },
+      ]);
+      orbitMedia = [mediaWith(60, localSegments)];
+      const setTranscription = jest.fn();
+      mockAxiosPost.mockResolvedValue({
+        data: {
+          data: {
+            id: 'm1',
+            type: 'mediafile',
+            attributes: {
+              duration: 60,
+              transcription: '',
+              // Server returns the new task only — no Verse regions.
+              segments: trTaskSegments('task-verses'),
+            },
+          },
+        },
+      });
+      mockAxiosGet.mockResolvedValue({
+        state: 'SUCCESS',
+        result: {
+          items: [
+            {
+              clip: 'a.wav',
+              state: 'SUCCESS',
+              segments: [
+                {
+                  start: 0,
+                  end: 10,
+                  transcription: { sister_transcription: 'one' },
+                },
+                {
+                  start: 10,
+                  end: 20,
+                  transcription: { sister_transcription: 'two' },
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      render(
+        <AsrProgress
+          mediaId="m1"
+          phonetic={false}
+          setTranscription={setTranscription}
+          onClose={jest.fn()}
+        />
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+        await Promise.resolve();
+      });
+
+      expect(setTranscription).toHaveBeenCalledWith('\\v 1-5 one \\v 6-7 two');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  const twoVerseLocalSegments = () => {
+    const verseInfo = JSON.stringify({
+      regions: [
+        { start: 0, end: 10, label: '1:1' },
+        { start: 10, end: 20, label: '1:2' },
+      ],
+    });
+    return JSON.stringify([
+      { name: NamedRegions.Verse, regionInfo: verseInfo },
+    ]);
+  };
+
+  const mockForceClipSuccess = () => {
+    mockAxiosPost.mockResolvedValue({
+      data: {
+        data: {
+          id: 'm1',
+          type: 'mediafile',
+          attributes: {
+            duration: 60,
+            transcription: '',
+            segments: trTaskSegments('task-force-clip'),
+          },
+        },
+      },
+    });
+    mockAxiosGet.mockResolvedValue({
+      state: 'SUCCESS',
+      result: {
+        items: [
+          {
+            clip: 'a.wav',
+            state: 'SUCCESS',
+            segments: [
+              {
+                start: 0,
+                end: 10,
+                transcription: { sister_transcription: 'one-new' },
+              },
+              {
+                start: 10,
+                end: 20,
+                transcription: { sister_transcription: 'two-new' },
+              },
+            ],
+          },
+        ],
+      },
+    });
+  };
+
+  const runClipToTranscription = async (
+    props: Partial<React.ComponentProps<typeof AsrProgress>>
+  ) => {
+    const setTranscription = jest.fn();
+    jest.useFakeTimers();
+    try {
+      render(
+        <AsrProgress
+          mediaId="m1"
+          phonetic={false}
+          setTranscription={setTranscription}
+          onClose={jest.fn()}
+          {...props}
+        />
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+    return setTranscription;
+  };
+
+  it('excludes completed verses when appending (not forced)', async () => {
+    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
+    mockForceClipSuccess();
+
+    const setTranscription = await runClipToTranscription({
+      force: false,
+      contentVerses: ['1'],
+    });
+
+    expect(setTranscription).toHaveBeenCalledWith('\\v 2 two-new');
+    expect(setTranscription).not.toHaveBeenCalledWith(
+      expect.stringContaining('\\v 1 ')
+    );
+  });
+
+  it('keeps completed verses on forced replace of a partial transcription', async () => {
+    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
+    mockForceClipSuccess();
+
+    const setTranscription = await runClipToTranscription({
+      force: true,
+      contentVerses: ['1'],
+    });
+
+    expect(setTranscription).toHaveBeenCalledWith(
+      '\\v 1 one-new \\v 2 two-new'
+    );
+  });
+
+  it('delivers a full result on forced replace when every verse was already transcribed', async () => {
+    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
+    mockForceClipSuccess();
+
+    const setTranscription = await runClipToTranscription({
+      force: true,
+      contentVerses: ['1', '2'],
+    });
+
+    expect(setTranscription).toHaveBeenCalledWith(
+      '\\v 1 one-new \\v 2 two-new'
+    );
   });
 });

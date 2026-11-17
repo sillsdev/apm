@@ -1210,8 +1210,8 @@ export function ImportTab(props: IProps) {
 
           {uploadVisible && selectedImportType !== UploadType.Burrito && (
             <MediaUploadDialog
-              visible={uploadVisible}
-              onVisible={setUploadVisible}
+              isOpen={uploadVisible}
+              onClose={() => setUploadVisible(false)}
               uploadType={selectedImportType}
               uploadMethod={
                 selectedImportType === UploadType.PTF

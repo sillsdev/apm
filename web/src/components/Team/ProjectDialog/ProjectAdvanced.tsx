@@ -178,7 +178,6 @@ export function ProjectAdvanced(props: IProjectDialogState) {
   };
 
   const decoration = {
-    [t.sets]: <RenderRecommended />,
     [t.flat]: <RenderRecommended />,
   };
   const handleEditsheetAssignedChange = (e: string) => {

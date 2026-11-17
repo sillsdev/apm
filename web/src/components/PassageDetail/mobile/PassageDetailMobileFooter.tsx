@@ -72,11 +72,7 @@ export default function PassageDetailMobileFooter() {
   const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const { prjId } = useParams();
-  const passageNavigate = usePassageNavigate(
-    () => {},
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {}, isNavigationBlocked);
   const { getOrgDefault } = useOrgDefaults();
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
 

@@ -9386,6 +9386,13 @@
                <context context-type="sourcefile">Access.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="shared.ok">
+            <source>OK</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">MicrophoneDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="shared.paratextchapterSpan">
             <source>Passage {0}.{1} {2}: Passage must not span chapters.</source>
             <target/>
@@ -10207,10 +10214,17 @@
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.aiWillContinue">
-            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
+            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results.</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">Transcriber.tsx</context>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.aiWillContinueDifferentLanguage">
+            <source>Use the settings gear on {0} button to see the transcription using a different language.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrChooseLanguage">
@@ -10218,6 +10232,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrFailure">
+            <source>FAILURE</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrMethod">
@@ -10241,6 +10262,20 @@
                <context context-type="sourcefile">AsrSettings.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.asrPending">
+            <source>PENDING</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrQueued">
+            <source>QUEUED</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.asrRequestFailed">
             <source>Speech recognition settings could not be loaded.</source>
             <target/>
@@ -10260,6 +10295,20 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrStarted">
+            <source>STARTED</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrSuccess">
+            <source>SUCCESS</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrTeamDefaultSaved">
@@ -10512,6 +10561,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.unknownUser">
+            <source>unknown</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.updateByOther2">
@@ -12778,7 +12834,7 @@
           </context-group>
         </trans-unit>
          <trans-unit id="wsAudioPlayer.convertVoiceAi">
-            <source>Convert Voice (AI)</source>
+            <source>Convert Voice (AI)...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -12845,6 +12901,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.microphoneListFailed">
+            <source>Could not get the list of microphones.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">MicrophoneDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.moreOptions">
@@ -12980,6 +13043,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.resetAudio">
+            <source>Reset Audio</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">AudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.resetSegments">
             <source>Reset</source>
             <target/>
@@ -13009,7 +13079,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.selectMicrophoneMenu">
-            <source>Select Microphone</source>
+            <source>Select Microphone...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>

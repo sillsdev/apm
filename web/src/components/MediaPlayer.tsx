@@ -372,7 +372,7 @@ export function MediaPlayer(props: IProps) {
   };
 
   return ready ? (
-    <StyledStack direction="row" sx={{ ...sx }}>
+    <StyledStack direction="row" sx={sx}>
       {controls && (
         <>
           <StyledTip title={t.resourceStart}>

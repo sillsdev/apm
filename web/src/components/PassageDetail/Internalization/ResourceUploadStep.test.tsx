@@ -58,7 +58,7 @@ type StepProps = React.ComponentProps<typeof ResourceUploadStep>;
 function renderStep(overrides: Partial<StepProps> = {}) {
   const props: StepProps = {
     active: true,
-    isAudioMode: true,
+    isAddingAudioResource: true,
     uploadType: UploadType.Media,
     cancelled: { current: false },
     finish: jest.fn(),
@@ -127,14 +127,14 @@ describe('ResourceUploadStep', () => {
 
   describe('mode', () => {
     it('renders the record panel in audio mode, wired to the upload hook', () => {
-      renderStep({ isAudioMode: true });
+      renderStep({ isAddingAudioResource: true });
 
       expect(capturedPanel?.uploadMethod).toBe(mockUploadMethod);
       expect(capturedContent).toBeUndefined();
     });
 
     it('renders the upload content otherwise, wired to the upload hook', () => {
-      renderStep({ isAudioMode: false });
+      renderStep({ isAddingAudioResource: false });
 
       expect(capturedContent?.uploadMethod).toBe(mockUploadMethod);
       expect(capturedPanel).toBeUndefined();
@@ -144,7 +144,7 @@ describe('ResourceUploadStep', () => {
   describe('Faithbridge link value', () => {
     it('shows only the url and sends the transcription to the upload', () => {
       renderStep({
-        isAudioMode: false,
+        isAddingAudioResource: false,
         uploadType: UploadType.FaithbridgeLink,
         inValue: 'https://fb.example/x||hello world',
       });
@@ -155,7 +155,7 @@ describe('ResourceUploadStep', () => {
 
     it('passes inValue through untouched for other upload types', () => {
       renderStep({
-        isAudioMode: false,
+        isAddingAudioResource: false,
         uploadType: UploadType.Link,
         inValue: 'https://example.com/a||b',
       });

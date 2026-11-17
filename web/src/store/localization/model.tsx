@@ -1573,6 +1573,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "NoSaveWoMedia": string;
     "notSupported": string;
     "observer": string;
+    "ok": string;
     "paratextchapterSpan": string;
     "part": string;
     "passages": string;
@@ -1721,13 +1722,19 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "aiAsrFailed": string;
     "aiAutomaticTranscription": string;
     "aiWillContinue": string;
+    "aiWillContinueDifferentLanguage": string;
     "asrChooseLanguage": string;
+    "asrFailure": string;
     "asrMethod": string;
     "asrMethodDefault": string;
     "asrMethodHint": string;
+    "asrPending": string;
+    "asrQueued": string;
     "asrRequestFailed": string;
     "asrSaveFailed": string;
     "asrSaveTeamDefault": string;
+    "asrStarted": string;
+    "asrSuccess": string;
     "asrTeamDefaultSaved": string;
     "comment": string;
     "congratulation": string;
@@ -1764,6 +1771,7 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "transcriptionExists": string;
     "transcriptionType": string;
     "transliterate": string;
+    "unknownUser": string;
     "updateByOther2": string;
 };
 
@@ -2142,6 +2150,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "loopon": string;
     "microphoneDisconnected": string;
     "microphoneDisconnectedFallback": string;
+    "microphoneListFailed": string;
     "moreOptions": string;
     "nextRegion": string;
     "noiseremovalFailed": string;
@@ -2161,6 +2170,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "reduceNoise": string;
     "reduceNoiseAi": string;
     "reset": string;
+    "resetAudio": string;
     "resetSegments": string;
     "resume": string;
     "saveSegments": string;

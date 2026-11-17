@@ -130,7 +130,7 @@ const TranscriberContext = React.createContext({
 interface IProps {
   children: React.ReactElement;
   artifactTypeId?: string | null | undefined;
-  curRole?: string;
+  curRole?: 'transcriber' | 'editor' | 'view';
   /** Step language. When set (and not `und`), only media tagged with it become tasks. */
   stepLanguageBcp47?: string;
 }

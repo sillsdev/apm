@@ -637,10 +637,6 @@ export function ScriptureTable(props: Readonly<IProps>) {
     });
   };
 
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
-
   const handleUpload = (i: number) => () => {
     saveIfChanged(() => {
       showUpload(i);
@@ -1503,7 +1499,7 @@ export function ScriptureTable(props: Readonly<IProps>) {
       )}
       <Uploader
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
+        onClose={() => setUploadVisible(false)}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
@@ -1511,8 +1507,8 @@ export function ScriptureTable(props: Readonly<IProps>) {
           related(uploadItem.current?.sharedResource, 'passage') ??
           uploadItem.current?.passage?.id
         }
-        performedBy={speaker}
-        onSpeakerChange={handleNameChange}
+        speaker={speaker}
+        onSpeaker={handleNameChange}
       />
       <GraphicPicker
         bookCode={firstBook}
