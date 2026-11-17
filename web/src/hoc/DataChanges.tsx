@@ -27,6 +27,7 @@ import { useDispatch } from 'react-redux';
 import { useOrbitData } from './useOrbitData';
 import { doDataChanges } from './doDataChanges';
 import { useRenderProfiler, perfRecordMs } from '../utils/perf';
+import { useUploadPendingRetry } from '../crud/useUploadPendingRetry';
 
 const MS_PER_MINUTE = 60 * 1000;
 
@@ -75,6 +76,7 @@ export function DataChanges(props: PropsWithChildren) {
   const defaultDataDelayInMinutes = 2;
   const [userDataDelay, setUserDataDelay] = useState(defaultDataDelayInMinutes);
   const getGlobal = useGetGlobal();
+  useUploadPendingRetry();
   useEffect(() => {
     const userRec = findRecord(memory, 'user', user) as UserD; //make sure we have the user record in memory
     const hk = JSON.parse(userRec?.attributes?.hotKeys ?? '{}');
