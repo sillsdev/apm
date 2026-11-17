@@ -61,6 +61,7 @@ import {
   logError,
   pad2,
   Severity,
+  useEvictLocalMediaOnProjectSwitch,
   useHome,
 } from '../utils';
 import { useUploadPendingLeave } from './UploadPendingLeaveContext';
@@ -159,6 +160,7 @@ interface IProps {
 
 const TeamProvider = (props: IProps) => {
   useRenderProfiler('TeamProvider');
+  useEvictLocalMediaOnProjectSwitch();
   const projects = useOrbitData<ProjectD[]>('project');
   const plans = useOrbitData<PlanD[]>('plan');
   const planTypes = useOrbitData<PlanTypeD[]>('plantype');
