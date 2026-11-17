@@ -10234,6 +10234,13 @@
                <context context-type="sourcefile">AsrSettings.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.asrFailure">
+            <source>FAILURE</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.asrMethod">
             <source>Method</source>
             <target/>
@@ -10253,6 +10260,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">AsrSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrPending">
+            <source>PENDING</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrQueued">
@@ -10281,6 +10295,20 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrStarted">
+            <source>STARTED</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrSuccess">
+            <source>SUCCESS</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrProgress.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrTeamDefaultSaved">
@@ -10533,6 +10561,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.unknownUser">
+            <source>unknown</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.updateByOther2">

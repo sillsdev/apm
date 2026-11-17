@@ -214,7 +214,45 @@ describe('useTranscribeAsr', () => {
       result.current.handleAutoTranscribe('0:01.200: hello');
     });
 
-    expect(onTextAdd).toHaveBeenCalledWith(' hello', true);
+    expect(onTextAdd).toHaveBeenCalledWith(' hello');
+  });
+
+  it('replaces the existing transcription when the run was forced', async () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      asrMethod: 'mms',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    getAsrSettings.mockResolvedValue(saved);
+    const onTextAdd = jest.fn();
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd,
+        getCurrentText: () => '\\v 1 old transcription',
+        hasActiveTask: true,
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => result.current.openAsrLanguageSettings());
+    act(() =>
+      result.current.handleAsrLanguageClose(false, {
+        ...saved,
+        asrMethod: 'whisper',
+      } as never)
+    );
+    act(() => {
+      result.current.handleAutoTranscribe('\\v 1 new result');
+    });
+
+    expect(onTextAdd).toHaveBeenCalledWith('\\v 1 new result', true);
   });
 
   it('derives phonetic from the active ASR target', async () => {

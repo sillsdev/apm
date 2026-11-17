@@ -12,11 +12,12 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { StyledTextAreaAutosize } from '../../../control/WebFontStyles';
 import { Button, LightTooltip } from '../../../control';
 import AsrButton from '../../../control/ConfButton';
-import TranscriptionLogo from '../../../control/TranscriptionLogo';
+import AsrButtonIcon from '../../../control/AsrButtonIcon';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
-import { asrStatesEqual, type IAsrState } from '../../../business/asr/asrState';
+import type { IAsrState } from '../../../business/asr/asrState';
+import { useAsrForceRun } from '../transcribe/useAsrForceRun';
 import {
   MediaFileD,
   OrganizationD,
@@ -144,7 +145,6 @@ export default function BoldClauseTranscriptionEditor({
   const [asrVisible, setAsrVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>();
-  const [phonetic, setPhonetic] = useState(false);
   const [projData, setProjData] = useState<FontData | null>(null);
   const userEditedRef = useRef(false);
 
@@ -250,23 +250,26 @@ export default function BoldClauseTranscriptionEditor({
   const runAsrDisabled =
     navigationDisabled || hasText || !features?.aiTranscribe || offline;
 
-  const asrAtOpenRef = useRef<IAsrState | undefined>(undefined);
-  const [forceAsr, setForceAsr] = useState(false);
+  const {
+    forceAsr,
+    clearForceAsr,
+    snapshotAsrAtOpen,
+    applyForceFromClosedAsr,
+  } = useAsrForceRun(asrSettings);
+  const phonetic = (asrOverride ?? asrSettings)?.target === AsrTarget.phonetic;
 
   const openAsrLanguageSettings = useCallback(() => {
-    asrAtOpenRef.current = asrSettings;
+    snapshotAsrAtOpen();
     setAsrLangVisible(true);
-  }, [asrSettings]);
+  }, [snapshotAsrAtOpen]);
 
   const startAsr = useCallback(
     (override?: IAsrState) => {
-      const asr = override ?? asrSettings;
       setAsrOverride(override);
-      setPhonetic(asr?.target === AsrTarget.phonetic);
       setAsrVisible(true);
       onAsrActiveChange(true);
     },
-    [asrSettings, onAsrActiveChange]
+    [onAsrActiveChange]
   );
 
   const handleAsrLanguageClose = useCallback(
@@ -275,20 +278,19 @@ export default function BoldClauseTranscriptionEditor({
       if (cancel) return;
       const asr = asrState ?? asrSettings;
       if (!isLangSet(asr?.asrIso)) return;
-      // Model/language change must start a new task even if TRTask is stored.
-      setForceAsr(!asrStatesEqual(asr, asrAtOpenRef.current));
+      applyForceFromClosedAsr(asr);
       rememberStepAsr(asr);
       startAsr(asr);
     },
-    [asrSettings, rememberStepAsr, startAsr]
+    [asrSettings, applyForceFromClosedAsr, rememberStepAsr, startAsr]
   );
 
   const handleAsrClose = useCallback(() => {
     setAsrVisible(false);
     setAsrOverride(undefined);
-    setForceAsr(false);
+    clearForceAsr();
     onAsrActiveChange(false);
-  }, [onAsrActiveChange]);
+  }, [clearForceAsr, onAsrActiveChange]);
 
   const handleAutoTranslation = useCallback(() => {
     checkOnline((online) => {
@@ -297,7 +299,7 @@ export default function BoldClauseTranscriptionEditor({
         return;
       }
       if (hasAiTask) {
-        setForceAsr(false);
+        clearForceAsr();
         startAsr();
         return;
       }
@@ -317,6 +319,7 @@ export default function BoldClauseTranscriptionEditor({
     ts.mustBeOnline,
     hasAiTask,
     startAsr,
+    clearForceAsr,
     needsLanguagePicker,
     asrIsoReady,
     asrLoadFailed,
@@ -362,19 +365,12 @@ export default function BoldClauseTranscriptionEditor({
                   settingsLabel={tPlayer.recognizeSpeechSettings}
                   disabled={runAsrDisabled}
                 >
-                  {hasAiTask && !asrVisible ? (
-                    <Badge variant="dot" color="primary" sx={{ mr: 1 }}>
-                      <TranscriptionLogo
-                        disabled={runAsrDisabled}
-                        sx={{ height: 18, width: 18 }}
-                      />
-                    </Badge>
-                  ) : (
-                    <TranscriptionLogo
-                      disabled={runAsrDisabled}
-                      sx={{ height: 18, width: 18, mr: 1 }}
-                    />
-                  )}
+                  <AsrButtonIcon
+                    active={hasAiTask && !asrVisible}
+                    disabled={runAsrDisabled}
+                    sx={{ mr: 1 }}
+                    logoSx={{ height: 18, width: 18 }}
+                  />
                   {tr.aiAutomaticTranscription}
                 </AsrButton>
               </span>

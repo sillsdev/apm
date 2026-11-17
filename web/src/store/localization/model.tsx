@@ -1724,13 +1724,17 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "aiWillContinue": string;
     "aiWillContinueDifferentLanguage": string;
     "asrChooseLanguage": string;
+    "asrFailure": string;
     "asrMethod": string;
     "asrMethodDefault": string;
     "asrMethodHint": string;
+    "asrPending": string;
     "asrQueued": string;
     "asrRequestFailed": string;
     "asrSaveFailed": string;
     "asrSaveTeamDefault": string;
+    "asrStarted": string;
+    "asrSuccess": string;
     "asrTeamDefaultSaved": string;
     "comment": string;
     "congratulation": string;
@@ -1767,6 +1771,7 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "transcriptionExists": string;
     "transcriptionType": string;
     "transliterate": string;
+    "unknownUser": string;
     "updateByOther2": string;
 };
 

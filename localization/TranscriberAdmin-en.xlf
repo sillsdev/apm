@@ -8770,6 +8770,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.asrFailure">
+         <segment>
+            <source>FAILURE</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.asrMethod">
          <segment>
             <source>Method</source>
@@ -8785,6 +8791,12 @@
       <unit id="transcriber.asrMethodHint">
          <segment>
             <source>Choose a specific method only if the default method is not working well.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrPending">
+         <segment>
+            <source>PENDING</source>
             <target/>
          </segment>
       </unit>
@@ -8809,6 +8821,18 @@
       <unit id="transcriber.asrSaveTeamDefault">
          <segment>
             <source>Save as team default</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrStarted">
+         <segment>
+            <source>STARTED</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSuccess">
+         <segment>
+            <source>SUCCESS</source>
             <target/>
          </segment>
       </unit>
@@ -9025,6 +9049,12 @@
       <unit id="transcriber.transliterate">
          <segment>
             <source>Transliterate to Latin script</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.unknownUser">
+         <segment>
+            <source>unknown</source>
             <target/>
          </segment>
       </unit>

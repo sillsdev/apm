@@ -1,20 +1,24 @@
 import { VERSE_NUMBER_PATTERN } from '../../../utils/verseNumberPattern';
 
 /**
+ * ASR stream text with timestamp prefixes removed (e.g. 0:01.200: / 1:02.300: ).
+ * {1,10} keeps this unanchored replace linear. (?<!\d) stops a longer digit
+ * run from matching at a suffix and leaving a stray digit.
+ */
+export function cleanAsrTranscription(asrTrans: string): string {
+  return asrTrans.replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '').trim();
+}
+
+/**
  * Text to add from an ASR result, or undefined when curTrans already has it.
- * Strips timestamp prefixes and skips a leading verse marker already in the
- * pane (space or newline after the number both count).
+ * Skips a leading verse marker already in the pane (space or newline after
+ * the number both count).
  */
 export function autoTranscriptionToAppend(
   asrTrans: string,
   curTrans: string
 ): string | undefined {
-  // remove timestamp prefixes from the ASR stream, shaped like m:ss.mmm: (e.g. 0:01.200: / 1:02.300: ).
-  // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
-  // longer digit run from matching at a suffix and leaving a stray digit.
-  const cleanTrans = asrTrans
-    .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
-    .trim();
+  const cleanTrans = cleanAsrTranscription(asrTrans);
   if (!cleanTrans) return undefined;
   if (curTrans.includes(cleanTrans)) return undefined;
   // Match ranges/suffixes (1-5, 1a) so a pre-inserted \v 1-5 is not

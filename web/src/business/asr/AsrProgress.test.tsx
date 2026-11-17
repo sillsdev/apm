@@ -106,6 +106,10 @@ jest.mock('react-redux', () => ({
     aiWillContinueDifferentLanguage:
       'Use settings on {0} for a different language.',
     asrQueued: 'QUEUED',
+    asrPending: 'PENDING',
+    asrStarted: 'STARTED',
+    asrSuccess: 'SUCCESS',
+    asrFailure: 'FAILURE',
     recognizeSpeech: 'Recognize speech',
     close: 'Close',
   }),

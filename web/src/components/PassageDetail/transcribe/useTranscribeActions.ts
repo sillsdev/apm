@@ -300,22 +300,27 @@ export function useTranscribeActions({
     async (media: MediaFile, comment: string) => {
       if (!mediafile) return;
       setRejectVisible(false);
-      await memory.update(
-        UpdateMediaStateOps(
-          media.id as string,
-          passage.id as string,
-          media.attributes.transcriptionstate,
-          user,
-          new RecordTransformBuilder(),
-          [],
-          memory,
-          comment
-        )
-      );
-      setLastSaved(currentDateTime());
-      if (onReject) onReject(media.attributes.transcriptionstate);
+      try {
+        await memory.update(
+          UpdateMediaStateOps(
+            media.id as string,
+            passage.id as string,
+            media.attributes.transcriptionstate,
+            user,
+            new RecordTransformBuilder(),
+            [],
+            memory,
+            comment
+          )
+        );
+        setLastSaved(currentDateTime());
+        if (onReject) onReject(media.attributes.transcriptionstate);
+      } catch (err) {
+        logError(Severity.error, errorReporter, err as Error);
+        if (showMessage) showMessage(String(err));
+      }
     },
-    [mediafile, passage.id, user, memory, onReject]
+    [mediafile, passage.id, user, memory, onReject, errorReporter, showMessage]
   );
 
   const handleRejectCancel = useCallback(() => {
@@ -343,9 +348,14 @@ export function useTranscribeActions({
   }, [mediafile, passage, state, user, memory, setComplete]);
 
   const handleReopen = useCallback(async () => {
-    await doReopen();
-    if (onReopen) onReopen();
-  }, [doReopen, onReopen]);
+    try {
+      await doReopen();
+      if (onReopen) onReopen();
+    } catch (err) {
+      logError(Severity.error, errorReporter, err as Error);
+      if (showMessage) showMessage(String(err));
+    }
+  }, [doReopen, onReopen, errorReporter, showMessage]);
 
   return {
     state,

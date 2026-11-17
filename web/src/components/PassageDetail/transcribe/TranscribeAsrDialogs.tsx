@@ -1,0 +1,91 @@
+import { OrganizationD } from '../../../model';
+import BigDialog from '../../../hoc/BigDialog';
+import { BigDialogBp } from '../../../hoc/BigDialogBp';
+import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
+import AsrProgress from '../../../business/asr/AsrProgress';
+import type { IAsrState } from '../../../business/asr/asrState';
+import type { IWsAudioPlayerStrings } from '../../../model';
+
+export interface TranscribeAsrDialogsProps {
+  team: OrganizationD | undefined;
+  mediaId: string;
+  tPlayer: IWsAudioPlayerStrings;
+  asrLangVisible: boolean;
+  asrProgressVisible: boolean;
+  phonetic: boolean;
+  asrOverride: IAsrState | undefined;
+  forceAsr: boolean;
+  contentVerses?: string[];
+  forceRefresh?: () => void;
+  /** Language-dialog close; cancel=true when the shell dismisses. */
+  onLanguageClose: (cancel: boolean, asrState?: IAsrState) => void;
+  onProgressOpen: (open: boolean) => void;
+  setTranscription: (text: string) => void;
+  bp: BigDialogBp;
+  isMobile?: boolean;
+}
+
+/** Progress + language-settings dialogs for transcribe ASR. */
+export function TranscribeAsrDialogs({
+  team,
+  mediaId,
+  tPlayer,
+  asrLangVisible,
+  asrProgressVisible,
+  phonetic,
+  asrOverride,
+  forceAsr,
+  contentVerses = [],
+  forceRefresh,
+  onLanguageClose,
+  onProgressOpen,
+  setTranscription,
+  bp,
+  isMobile = false,
+}: Readonly<TranscribeAsrDialogsProps>) {
+  return (
+    <>
+      <BigDialog
+        title={tPlayer.recognizeSpeechSettings}
+        isOpen={asrLangVisible}
+        onOpen={() => onLanguageClose(true)}
+        bp={bp}
+        mobileNoHorizontalScroll={isMobile}
+        mobilePaperWidth={
+          isMobile ? 'min(356px, calc(100vw - 4px))' : undefined
+        }
+        dialogContentSx={{ minWidth: 0, overflowX: 'hidden' }}
+      >
+        <SelectAsrLanguage
+          key={asrLangVisible ? 'open' : 'closed'}
+          team={team}
+          onClose={onLanguageClose}
+        />
+      </BigDialog>
+      {asrProgressVisible && (
+        <BigDialog
+          title={tPlayer.recognizeProgress}
+          isOpen={asrProgressVisible}
+          onOpen={onProgressOpen}
+          bp={bp}
+          mobileNoHorizontalScroll={isMobile}
+          mobilePaperWidth={
+            isMobile ? 'min(356px, calc(100vw - 4px))' : undefined
+          }
+          dialogContentSx={{ minWidth: 0, overflowX: 'hidden' }}
+        >
+          <AsrProgress
+            mediaId={mediaId}
+            phonetic={phonetic}
+            asrState={asrOverride}
+            force={forceAsr}
+            contentVerses={contentVerses}
+            setTranscription={setTranscription}
+            forceRefresh={forceRefresh}
+            onClose={() => onProgressOpen(false)}
+          />
+        </BigDialog>
+      )}
+    </>
+  );
+}

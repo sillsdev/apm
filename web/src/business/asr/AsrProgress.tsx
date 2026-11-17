@@ -67,6 +67,7 @@ import {
 import AiTimeProgress from '../../components/AiTimeProgress';
 import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
 import { asrShowsLanguagePicker } from './asrShowsLanguagePicker';
+import { asrPollStateLabel } from './asrPollStateLabel';
 
 /** `key` is set only when this session started the request; a task resumed
  * after a restart has no known start, so it gets no estimate or sample. */
@@ -349,18 +350,18 @@ export default function AsrProgress({
   const postTranscribe = async () => {
     const remId =
       remoteId('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ?? mediaId;
-    const asr = asrState ?? (await getAsrSettings());
-    const iso = asr?.asrIso ?? 'eng';
-    const romanize = asr?.selectRoman ?? false;
-    const method = asrRequestMethod(
-      asr?.asrMethod,
-      phonetic,
-      cachedAsrMethods(iso)
-    );
-    const phoneticParam = phonetic ? '?phonetic=true' : '';
-    const methodPath = method ? `/${method}` : '';
-    setRun({ startedAt: Date.now(), key: timingKey(method) });
     try {
+      const asr = asrState ?? (await getAsrSettings());
+      const iso = asr?.asrIso ?? 'eng';
+      const romanize = asr?.selectRoman ?? false;
+      const method = asrRequestMethod(
+        asr?.asrMethod,
+        phonetic,
+        cachedAsrMethods(iso)
+      );
+      const phoneticParam = phonetic ? '?phonetic=true' : '';
+      const methodPath = method ? `/${method}` : '';
+      setRun({ startedAt: Date.now(), key: timingKey(method) });
       const response = (await axiosPost(
         `mediafiles/${remId}/transcription/${iso}/${romanize}${methodPath}${phoneticParam}`,
         undefined,
@@ -497,7 +498,7 @@ export default function AsrProgress({
         )}
         {(pollClip || taskId) && (
           <Box id="asr-clip-0">
-            <Typography>{pollClip?.state || t.asrQueued}</Typography>
+            <Typography>{asrPollStateLabel(pollClip?.state, t)}</Typography>
             {pollClip?.state === 'FAILURE' && (
               <Typography color="error">
                 {aeroErrorMessage(pollClip.error) ?? t.aiAsrFailed}

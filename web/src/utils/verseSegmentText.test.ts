@@ -149,14 +149,9 @@ describe('firstVerseMarker', () => {
     expect(firstVerseMarker('1:1-5a', 1, '1:1-7')).toBe('\\v 1-5a ');
   });
 
-  test('falls back to the whole passage reference when no verse region', () => {
-    expect(firstVerseMarker(undefined, 1, '1:1-7')).toBe('\\v 1-7 ');
-    expect(firstVerseMarker('not-a-ref', 1, '1:1-7')).toBe('\\v 1-7 ');
-  });
-
-  test('returns undefined when neither reference is usable', () => {
-    expect(firstVerseMarker(undefined, 1, undefined)).toBeUndefined();
-    expect(firstVerseMarker('not-a-ref', 1, 'bad')).toBeUndefined();
+  test('leaves the transcription blank when there is no verse region', () => {
+    expect(firstVerseMarker(undefined, 1, '1:1-7')).toBeUndefined();
+    expect(firstVerseMarker('not-a-ref', 1, '1:1-7')).toBeUndefined();
   });
 });
 
@@ -165,9 +160,12 @@ describe('addFirstVerseMarkerIfEmpty', () => {
     expect(
       addFirstVerseMarkerIfEmpty('', [{ label: '1:1-5a' }], 1, '1:1-7')
     ).toBe('\\v 1-5a ');
-    expect(addFirstVerseMarkerIfEmpty('undefined', [], 1, '1:1-7')).toBe(
-      '\\v 1-7 '
-    );
+  });
+
+  test('leaves blank when empty and there are no verse regions', () => {
+    expect(
+      addFirstVerseMarkerIfEmpty('undefined', [], 1, '1:1-7')
+    ).toBeUndefined();
   });
 
   test('does not seed when the transcription already has text', () => {

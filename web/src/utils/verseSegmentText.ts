@@ -100,9 +100,9 @@ export function applyVerseSegment(
 }
 
 /**
- * USFM verse tag for an empty transcription. Prefers the first verse-region
- * label (e.g. "1:1-5a" → "\v 1-5a "); with no regions, uses the passage
- * reference as the whole range. Undefined when neither is a usable reference.
+ * USFM verse tag for an empty transcription from a verse-region label
+ * (e.g. "1:1-5a" → "\v 1-5a "). Undefined when there is no usable region —
+ * the passage reference alone is not seeded.
  */
 function usableVerseReference(
   reference: string | undefined
@@ -127,9 +127,7 @@ export function firstVerseMarker(
   startChapter: number | undefined,
   passageReference: string | undefined
 ): string | undefined {
-  const reference =
-    usableVerseReference(firstReference) ??
-    usableVerseReference(passageReference);
+  const reference = usableVerseReference(firstReference);
   if (!reference) return undefined;
   return applyVerseSegment(
     '',

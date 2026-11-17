@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   OrganizationD,
@@ -17,14 +17,19 @@ import { useGlobal } from '../../../context/useGlobal';
 import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
-import { autoTranscriptionToAppend } from './autoTranscriptionToAppend';
+import {
+  autoTranscriptionToAppend,
+  cleanAsrTranscription,
+} from './autoTranscriptionToAppend';
+import { useAsrForceRun } from './useAsrForceRun';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
   sharedStr: ISharedStrings;
   tPlayer: IWsAudioPlayerStrings;
   showMessage: (msg: string) => void;
-  onTextAdd: (text: string, isAsr?: boolean) => void;
+  /** Second arg true: replace the whole transcription (forced re-run). */
+  onTextAdd: (text: string, replace?: boolean) => void;
   getCurrentText: () => string;
   /** The recording already has a transcription task to resume. */
   hasActiveTask?: boolean;
@@ -98,10 +103,12 @@ export function useTranscribeAsr({
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
   );
-  // Compare dialog result to settings at open — asrSettings may already match
-  // the new choice after save, so equal(override, asrSettings) is always true.
-  const asrAtOpenRef = useRef<IAsrState | undefined>(undefined);
-  const [forceAsr, setForceAsr] = useState(false);
+  const {
+    forceAsr,
+    clearForceAsr,
+    snapshotAsrAtOpen,
+    applyForceFromClosedAsr,
+  } = useAsrForceRun(asrSettings);
   const phonetic = (asrOverride ?? asrSettings)?.target === AsrTarget.phonetic;
 
   const asrTip = useMemo(() => {
@@ -116,10 +123,13 @@ export function useTranscribeAsr({
     );
   }, [tPlayer.recognizeSpeech, asrSettings, getName]);
 
-  const setAsrProgressVisible = useCallback((visible: boolean) => {
-    if (!visible) setForceAsr(false);
-    setProgressVisible(visible);
-  }, []);
+  const setAsrProgressVisible = useCallback(
+    (visible: boolean) => {
+      if (!visible) clearForceAsr();
+      setProgressVisible(visible);
+    },
+    [clearForceAsr]
+  );
 
   const startAsr = useCallback((asrOverrideState?: IAsrState) => {
     setAsrOverride(asrOverrideState);
@@ -127,9 +137,9 @@ export function useTranscribeAsr({
   }, []);
 
   const openAsrLanguageSettings = useCallback(() => {
-    asrAtOpenRef.current = asrSettings;
+    snapshotAsrAtOpen();
     setAsrLangVisible(true);
-  }, [asrSettings]);
+  }, [snapshotAsrAtOpen]);
 
   const handleTranscribe = useCallback(() => {
     checkOnline((online) => {
@@ -138,12 +148,12 @@ export function useTranscribeAsr({
         return;
       }
       if (hasActiveTask) {
-        setForceAsr(false);
+        clearForceAsr();
         startAsr(asrSettings);
         return;
       }
       if (asrSettings && isLangSet(asrSettings.asrIso)) {
-        setForceAsr(false);
+        clearForceAsr();
         startAsr(asrSettings);
         return;
       }
@@ -156,6 +166,7 @@ export function useTranscribeAsr({
     hasActiveTask,
     asrSettings,
     startAsr,
+    clearForceAsr,
     openAsrLanguageSettings,
   ]);
 
@@ -164,19 +175,23 @@ export function useTranscribeAsr({
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
-      // Model/language change must start a new task even if TRTask is stored.
-      setForceAsr(!asrStatesEqual(asr, asrAtOpenRef.current));
+      applyForceFromClosedAsr(asr);
       if (asr && isLangSet(asr.asrIso)) startAsr(asr);
     },
-    [asrSettings, startAsr]
+    [asrSettings, applyForceFromClosedAsr, startAsr]
   );
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
+      if (forceAsr) {
+        const cleaned = cleanAsrTranscription(trans);
+        if (cleaned) onTextAdd(cleaned, true);
+        return;
+      }
       const added = autoTranscriptionToAppend(trans, getCurrentText());
-      if (added !== undefined) onTextAdd(added, true);
+      if (added !== undefined) onTextAdd(added);
     },
-    [getCurrentText, onTextAdd]
+    [forceAsr, getCurrentText, onTextAdd]
   );
 
   return {
