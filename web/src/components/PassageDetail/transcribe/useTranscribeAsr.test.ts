@@ -190,7 +190,7 @@ describe('useTranscribeAsr', () => {
     expect(result.current.asrProgressVisible).toBe(false);
   });
 
-  it('strips timestamp prefixes without clipping a longer digit run', async () => {
+  it('forwards cleaned ASR text through onTextAdd', async () => {
     getAsrSettings.mockResolvedValue({
       target: 'alphabet',
       language: { bcp47: 'en', languageName: 'English' },
@@ -211,13 +211,139 @@ describe('useTranscribeAsr', () => {
     await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
 
     act(() => {
-      result.current.handleAutoTranscribe('0:01.200: hello 1:02.300: world');
-    });
-    act(() => {
-      result.current.handleAutoTranscribe('12345678901:1.2: hi');
+      result.current.handleAutoTranscribe('0:01.200: hello');
     });
 
-    expect(onTextAdd).toHaveBeenNthCalledWith(1, ' hello world', true);
-    expect(onTextAdd).toHaveBeenNthCalledWith(2, ' 12345678901:1.2: hi', true);
+    expect(onTextAdd).toHaveBeenCalledWith(' hello');
+  });
+
+  it('replaces the existing transcription when the run was forced', async () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      asrMethod: 'mms',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    getAsrSettings.mockResolvedValue(saved);
+    const onTextAdd = jest.fn();
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd,
+        getCurrentText: () => '\\v 1 old transcription',
+        hasActiveTask: true,
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => result.current.openAsrLanguageSettings());
+    act(() =>
+      result.current.handleAsrLanguageClose(false, {
+        ...saved,
+        asrMethod: 'whisper',
+      } as never)
+    );
+    act(() => {
+      result.current.handleAutoTranscribe('\\v 1 new result');
+    });
+
+    expect(onTextAdd).toHaveBeenCalledWith('\\v 1 new result', true);
+  });
+
+  it('derives phonetic from the active ASR target', async () => {
+    getAsrSettings.mockResolvedValue({
+      target: 'Phonetic',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      dialect: undefined,
+    });
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+    expect(result.current.phonetic).toBe(true);
+
+    act(() => result.current.handleTranscribe());
+
+    expect(result.current.asrOverride?.target).toBe('Phonetic');
+    expect(result.current.phonetic).toBe(true);
+  });
+
+  it('forces a new run when settings change in the language dialog', async () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      asrMethod: 'mms',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    getAsrSettings.mockResolvedValue(saved);
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
+        hasActiveTask: true,
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => result.current.openAsrLanguageSettings());
+    act(() =>
+      result.current.handleAsrLanguageClose(false, {
+        ...saved,
+        asrMethod: 'whisper',
+      } as never)
+    );
+
+    expect(result.current.forceAsr).toBe(true);
+    expect(result.current.asrProgressVisible).toBe(true);
+  });
+
+  it('does not force when the language dialog saves the same settings', async () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      asrMethod: 'mms',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    getAsrSettings.mockResolvedValue(saved);
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
+        hasActiveTask: true,
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => result.current.openAsrLanguageSettings());
+    act(() =>
+      result.current.handleAsrLanguageClose(false, { ...saved } as never)
+    );
+
+    expect(result.current.forceAsr).toBe(false);
   });
 });

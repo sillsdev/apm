@@ -47,6 +47,7 @@ import { isLangSet } from '../../utils/langTag';
 import scriptNameData from '../../assets/scriptName';
 import { AsrTarget } from './AsrTarget';
 import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
+import { asrShowsLanguagePicker } from './asrShowsLanguagePicker';
 import { IAsrState } from './asrState';
 import { IAsrLanguageSuggestion } from './useRecommendAsrLanguage';
 
@@ -145,7 +146,10 @@ export const AsrSettings = ({
   // No primary language known (e.g. an LWC step without one): the user picks
   // the ASR language itself in the same picker the sister language uses.
   const choosePrimary = !isLangSet(vernacularBcp47);
-  const showLanguagePicker = needsSister || choosePrimary;
+  const showLanguagePicker = asrShowsLanguagePicker(
+    vernacularBcp47,
+    needsSister
+  );
 
   const chosenMethod = explicitAsrMethod(asr.asrMethod);
   // What the method choice really is: a method the service no longer lists,

@@ -31,18 +31,17 @@ export function updateSegments(
       json.push({ name: name, regionInfo: fornamesegs });
     }
     return JSON.stringify(json);
-  } else {
-    //old style
+  } else if (
+    !allsegs ||
+    allsegs.length === 0 ||
+    name === NamedRegions.Transcription
+  )
+    return JSON.stringify([{ name: name, regionInfo: fornamesegs }]);
 
-    if (!allsegs || allsegs.length === 0 || name === NamedRegions.Transcription)
-      return JSON.stringify([{ name: name, regionInfo: fornamesegs }]);
-    else {
-      return JSON.stringify([
-        { name: name, regionInfo: fornamesegs },
-        { name: NamedRegions.Transcription, regionInfo: allsegs },
-      ]);
-    }
-  }
+  return JSON.stringify([
+    { name: name, regionInfo: fornamesegs },
+    { name: NamedRegions.Transcription, regionInfo: allsegs },
+  ]);
 }
 
 export function getSegments(name: string, segments: string): string {

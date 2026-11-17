@@ -19,7 +19,7 @@ import {
   MediaFileD,
   OrganizationD,
   PassageD,
-  Project,
+  ProjectD,
   SectionD,
 } from '../../../../model';
 import {
@@ -37,22 +37,15 @@ import useTodo from '../../../../context/useTodo';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import {
   findRecord,
-  GetUser,
-  pullTableList,
-  related,
-  ToolSlug,
   useArtifactType,
   orgDefaultFeatures,
   useOrgDefaults,
   useProjectType,
-  useStepTool,
 } from '../../../../crud';
 import {
   isNoParatextWorkflow,
   resolvedProjectType,
 } from '../../../../crud/nextTranscriptionState';
-import IndexedDBSource from '@orbit/indexeddb';
-import JSONAPISource from '@orbit/jsonapi';
 import {
   getSegments,
   hasTranscriptionTask,
@@ -62,48 +55,29 @@ import {
 import { logError, Severity } from '../../../../utils/logErrorService';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
 import { useTeamSegParams } from './useTeamSegParams';
-import {
-  getFontData,
-  loadFontData,
-  type FontData,
-} from '../../../../crud/fontChoice';
-import { parseStepLanguageField } from '../../../../crud/transcribeStepAsrSettings';
-import {
-  ArtifactTypeSlug,
-  artifactStampsStepLanguage,
-} from '../../../../crud/artifactTypeSlug';
-import { parseMediaLanguageField } from '../../carefulSpeech/matchesGuidedOutputRow';
-import { useStepPermissions } from '../../../../utils/useStepPermission';
-import { isLinkedNote } from '../../../../crud/isLinkedNote';
-import { isLangSet, JSONParse, toCamel } from '../../../../utils';
+import { ArtifactTypeSlug } from '../../../../crud/artifactTypeSlug';
+import { usePassageStepPermission } from '../../../../utils/usePassageStepPermission';
+import { toCamel } from '../../../../utils';
 import { Button } from '../../../../control/Button';
-import TranscriptionLogo from '../../../../control/TranscriptionLogo';
+import AsrButtonIcon from '../../../../control/AsrButtonIcon';
 import { StyledTextAreaAutosize } from '../../../../control/WebFontStyles';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { SaveSegments } from '../../SaveSegments';
-import BigDialog from '../../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../../hoc/BigDialogBp';
 import Confirm from '../../../AlertDialog';
-import SelectAsrLanguage from '../../../../business/asr/SelectAsrLanguage';
-import AsrProgress from '../../../../business/asr/AsrProgress';
 import TranscribeReject from '../../../TranscribeReject';
-import { asrStatesEqual } from '../../../../business/asr/asrState';
 import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
-import {
-  completeStepAfterSave,
-  trySetStepComplete,
-} from '../../../../context/completeStepAfterSave';
+import { completeStepAfterSave } from '../../../../context/completeStepAfterSave';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
 import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
+import { useTranscribeStepRole } from '../../transcribe/useTranscribeStepRole';
+import { useTranscribeStepNav } from '../../transcribe/useTranscribeStepNav';
+import { useTranscribeProjData } from '../../transcribe/useTranscribeProjData';
+import { TranscribeAsrDialogs } from '../../transcribe/TranscribeAsrDialogs';
+import { useOtherEditorName } from '../../transcribe/useOtherEditorName';
+import { pickTodoMediaRow } from '../../transcribe/pickTodoMediaRow';
 import { IRegionParams } from '../../../../crud/useWavesurferRegions';
-
-interface IStep {
-  id: string;
-  sequencenum: number;
-  tool: string;
-  settings: string;
-}
 
 export function PassageDetailTranscribeMobileContent() {
   const {
@@ -135,10 +109,12 @@ export function PassageDetailTranscribeMobileContent() {
     toolsChanged,
   } = useContext(UnsavedContext).state;
   const projectSegmentSave = useProjectSegmentSave();
-  const { canDoSectionStep } = useStepPermissions();
-  const hasPermission =
-    canDoSectionStep(currentstep, section) &&
-    !isLinkedNote(passage, sharedResource);
+  const hasPermission = usePassageStepPermission(
+    currentstep,
+    section,
+    passage,
+    sharedResource
+  );
 
   const sharedStr: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
@@ -154,10 +130,7 @@ export function PassageDetailTranscribeMobileContent() {
   const [projType] = useGlobal('projType');
   const [organization] = useGlobal('organization');
   const [offline] = useGlobal('offline');
-  const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const { showMessage } = useSnackBar();
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
@@ -172,25 +145,22 @@ export function PassageDetailTranscribeMobileContent() {
     [teams, organization]
   );
 
+  const projects = useOrbitData<ProjectD[]>('project');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
 
-  const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
-  const stepSettings = useMemo(() => {
-    if (!workflowStepSettingsRaw || workflowStepSettingsRaw === '') return '{}';
-    return typeof workflowStepSettingsRaw === 'string'
-      ? workflowStepSettingsRaw
-      : JSON.stringify(workflowStepSettingsRaw);
-  }, [workflowStepSettingsRaw]);
-
-  const parsedSettings = useMemo(() => {
-    try {
-      return JSON.parse(stepSettings || '{}') as { artifactTypeId?: string };
-    } catch {
-      return {} as { artifactTypeId?: string };
-    }
-  }, [stepSettings]);
-
-  const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
+  const {
+    stepSettings,
+    artifactTypeId,
+    parsedSteps,
+    hasChecking,
+    nextStep,
+    prevStep,
+    curRole,
+  } = useTranscribeStepRole({
+    currentstep,
+    orgWorkflowSteps,
+    hasPermission,
+  });
 
   const { rowData, transSelected } = useTodo();
 
@@ -198,16 +168,7 @@ export function PassageDetailTranscribeMobileContent() {
     const targetId = artifactTypeId
       ? transSelected
       : (transSelected ?? mediafileId);
-    if (!targetId) return undefined;
-    const asTranscriber = rowData.find(
-      (r) => r.mediafile?.id === targetId && r.role === 'transcriber'
-    );
-    if (asTranscriber) return asTranscriber;
-    const asEditor = rowData.find(
-      (r) => r.mediafile?.id === targetId && r.role === 'editor'
-    );
-    if (asEditor) return asEditor;
-    return rowData.find((r) => r.mediafile?.id === targetId);
+    return pickTodoMediaRow(rowData, targetId);
   }, [artifactTypeId, rowData, transSelected, mediafileId]);
 
   const mediafile = useMemo(() => {
@@ -221,87 +182,19 @@ export function PassageDetailTranscribeMobileContent() {
     return mediafiles.find((m) => m.id === mediafileId);
   }, [artifactTypeId, selectedMediaRow, mediafiles, mediafileId]);
 
-  const parsedSteps = useMemo(() => {
-    if (!orgWorkflowSteps) return [];
-    return orgWorkflowSteps
-      .slice()
-      .sort(
-        (a, b) =>
-          (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
-      )
-      .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as {
-          tool?: string;
-          settings?: string | object;
-        };
-        return {
-          id: s.id,
-          sequencenum: ix,
-          tool: toolData.tool ?? '',
-          settings:
-            typeof toolData.settings === 'string'
-              ? toolData.settings || '{}'
-              : JSON.stringify(toolData.settings ?? {}),
-        } as IStep;
-      });
-  }, [orgWorkflowSteps]);
-
-  const vernacularSteps = useMemo(() => {
-    return parsedSteps.filter(
-      (s) =>
-        s.tool === ToolSlug.Transcribe && !JSON.parse(s.settings).artifactTypeId
-    );
-  }, [parsedSteps]);
-
-  const hasChecking = useMemo(() => {
-    return (
-      vernacularSteps.length > 1 &&
-      (vernacularSteps[1] as IStep).sequencenum ===
-        (vernacularSteps[0] as IStep).sequencenum + 1
-    );
-  }, [vernacularSteps]);
-
-  const nextStep = useMemo(() => {
-    if (!currentstep || !parsedSteps) return null;
-    let found = false;
-    for (const s of parsedSteps) {
-      if (s.id === currentstep) {
-        found = true;
-        continue;
-      }
-      if (!found) continue;
-      return s.id;
-    }
-    return null;
-  }, [currentstep, parsedSteps]);
-
-  const prevStep = useMemo(() => {
-    if (!currentstep || !parsedSteps) return null;
-    let found = '';
-    for (const s of parsedSteps) {
-      if (s.id === currentstep) {
-        break;
-      } else {
-        found = s.id;
-      }
-    }
-    return found;
-  }, [currentstep, parsedSteps]);
-
-  const curRole = useMemo(() => {
-    if (!currentstep) return undefined;
-    if (!hasPermission) return 'view';
-    if (!hasChecking) return 'transcriber';
-    if (artifactTypeId) return 'transcriber';
-    if ((vernacularSteps[0] as IStep)?.id === currentstep) return 'transcriber';
-    return 'editor';
-  }, [
+  const {
+    handleReopen: handleReopenCallback,
+    handleReject: handleRejectCallback,
+  } = useTranscribeStepNav({
     currentstep,
-    vernacularSteps,
-    artifactTypeId,
+    parsedSteps,
     hasChecking,
-    hasPermission,
-  ]);
+    nextStep,
+    prevStep,
+    curRole,
+    setStepComplete,
+    setCurrentStep,
+  });
 
   const handleComplete = useCallback(
     (complete: boolean) => {
@@ -323,67 +216,6 @@ export function PassageDetailTranscribeMobileContent() {
     [waitForSave, setStepComplete, currentstep, gotoNextStep, showMessage]
   );
 
-  // Resolves false (and stops) if a write failed; setStepComplete showed it.
-  const uncompletedSteps = useCallback(async () => {
-    if (!(await trySetStepComplete(setStepComplete, currentstep, false)))
-      return false;
-    if (
-      hasChecking &&
-      nextStep &&
-      !(await trySetStepComplete(setStepComplete, nextStep, false))
-    )
-      return false;
-    if (curRole === 'editor' && prevStep) setCurrentStep(prevStep || '');
-    return true;
-  }, [
-    setStepComplete,
-    currentstep,
-    hasChecking,
-    nextStep,
-    curRole,
-    prevStep,
-    setCurrentStep,
-  ]);
-
-  const handleReopenCallback = useCallback(() => {
-    // Never rejects: step-write failures are shown by setStepComplete.
-    void uncompletedSteps();
-  }, [uncompletedSteps]);
-
-  const handleRejectCallback = useCallback(
-    async (reason: string) => {
-      if (!(await uncompletedSteps())) return;
-      if (reason === ActivityStates.NeedsNewRecording) {
-        const curStep = parsedSteps.find((s) => s.id === currentstep);
-        if (curStep?.settings === '{}') {
-          const recordStep = parsedSteps.find(
-            (s) => s.tool === ToolSlug.Record
-          );
-          if (recordStep) {
-            if (await trySetStepComplete(setStepComplete, recordStep.id, false))
-              setCurrentStep(recordStep.id);
-            return;
-          }
-        }
-      }
-      if (
-        curRole === 'editor' &&
-        prevStep &&
-        (await trySetStepComplete(setStepComplete, prevStep, false))
-      )
-        setCurrentStep(prevStep);
-    },
-    [
-      uncompletedSteps,
-      parsedSteps,
-      currentstep,
-      curRole,
-      prevStep,
-      setStepComplete,
-      setCurrentStep,
-    ]
-  );
-
   const handleReloadPlayer = useCallback(
     (playerMediafile: MediaFile) => {
       setState((s) => ({ ...s, playerMediafile }));
@@ -392,9 +224,8 @@ export function PassageDetailTranscribeMobileContent() {
   );
 
   const [textValue, setTextValue] = useState(
-    mediafile?.attributes?.transcription ?? ''
+    () => mediafile?.attributes?.transcription ?? ''
   );
-  const [projData, setProjData] = useState<FontData>();
   const [confirm, setConfirm] = useState<string | undefined>(undefined);
   const playedSecsRef = useRef(0);
   const segmentsRef = useRef<string | undefined>(undefined);
@@ -413,11 +244,8 @@ export function PassageDetailTranscribeMobileContent() {
   }, []);
 
   const projRec = useMemo(
-    () =>
-      project
-        ? (findRecord(memory, 'project', project) as Project | undefined)
-        : undefined,
-    [memory, project]
+    () => (project ? projects.find((p) => p.id === project) : undefined),
+    [projects, project]
   );
   const recordType = useMemo(
     () => (projRec && project ? getProjType(project) : ''),
@@ -438,6 +266,14 @@ export function PassageDetailTranscribeMobileContent() {
     () => isNoParatextWorkflow(resolvedType, artifactTypeSlug),
     [resolvedType, artifactTypeSlug]
   );
+
+  const [projData] = useTranscribeProjData({
+    project,
+    memory,
+    stepSettings,
+    artifactTypeSlug,
+    artifactId: artifactTypeId,
+  });
 
   const actions = useTranscribeActions({
     passage: selectedMediaRow?.passage?.id
@@ -477,12 +313,13 @@ export function PassageDetailTranscribeMobileContent() {
   }, [actions.state]);
 
   const effectiveRole = useMemo(() => {
-    if (!hasPermission) return 'view';
-    if (isCompleted || selectedMediaRow?.role === 'view') return 'view';
+    if (!hasPermission) return 'view' as const;
+    if (isCompleted || selectedMediaRow?.role === 'view')
+      return 'view' as const;
     if (selectedMediaRow?.role && selectedMediaRow.role !== 'view') {
       return selectedMediaRow.role;
     }
-    return curRole;
+    return curRole ?? ('view' as const);
   }, [hasPermission, isCompleted, selectedMediaRow?.role, curRole]);
 
   const isReadOnly =
@@ -535,59 +372,11 @@ export function PassageDetailTranscribeMobileContent() {
     actions.savingRef,
   ]);
 
-  // Resolve transcription language and typography from step settings (matching
-  // Transcriber), falling back to project attrs for vernacular or when the step
-  // has no language; then call getFontData with a synthetic project record.
-  useEffect(() => {
-    if (!project) return;
-    const projRec = findRecord(memory, 'project', project) as
-      Project | undefined;
-    if (!projRec) return;
-    let cancelled = false;
-
-    const lgSettings = JSON.parse(stepSettings || '{}') as {
-      font?: string;
-      fontSize?: string;
-      rtl?: boolean;
-      language?: unknown;
-    };
-    const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
-    const hasStepLanguage = isLangSet(stepLang);
-
-    let langTag = hasStepLanguage ? stepLang : undefined;
-    let defaultFont = lgSettings?.font;
-    let rtl = lgSettings?.rtl ?? false;
-    let defaultFontSize = lgSettings?.fontSize;
-    const useProjectLang =
-      artifactTypeSlug === ArtifactTypeSlug.Vernacular || !hasStepLanguage;
-    if (useProjectLang) {
-      langTag = projRec.attributes?.language ?? langTag;
-      defaultFont =
-        (defaultFont ?? projRec.attributes?.defaultFont) || undefined;
-      rtl = projRec.attributes?.rtl ?? rtl;
-      defaultFontSize =
-        (defaultFontSize ?? projRec.attributes?.defaultFontSize) || undefined;
-    }
-
-    const lastFontData = loadFontData(artifactTypeId ?? 'project');
-    defaultFontSize = lastFontData?.fontSize ?? defaultFontSize ?? 'large';
-
-    const rec = {
-      attributes: { language: langTag, defaultFont, defaultFontSize, rtl },
-    } as Project;
-    void getFontData(rec, artifactTypeId ?? 'project').then((data) => {
-      if (!cancelled) setProjData(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [project, memory, artifactTypeId, stepSettings, artifactTypeSlug]);
-
   const handleTextAdd = useCallback(
-    (newText: string) => {
+    (newText: string, replace?: boolean) => {
       if (isReadOnly || !hasPermission || !mediafile) return;
       setTextValue((prev) => {
-        const updated = prev + newText;
+        const updated = replace ? newText : prev + newText;
         toolChanged(currentstep, true);
         return updated;
       });
@@ -704,22 +493,6 @@ export function PassageDetailTranscribeMobileContent() {
     playedSecsRef.current = progress;
   }, []);
 
-  const onPullTasks = useCallback(
-    (remoteId: string) => {
-      pullTableList(
-        'mediafile',
-        Array(remoteId),
-        memory,
-        remote,
-        backup,
-        errorReporter
-      ).then(() => {
-        if (forceRefresh) forceRefresh();
-      });
-    },
-    [memory, remote, backup, errorReporter, forceRefresh]
-  );
-
   const handleUpdateConfirmed = useCallback(() => {
     if (confirm !== undefined) {
       transcriptionInRef.current = confirm;
@@ -731,13 +504,13 @@ export function PassageDetailTranscribeMobileContent() {
 
   const handleUpdateRefused = useCallback(() => {
     // Keep local changes and save them over remote changes
-    actions.handleSave();
+    void actions.handleSave();
     setConfirm(undefined);
   }, [actions]);
 
   useEffect(() => {
     if (saveRequested(currentstep)) {
-      actions.handleSave();
+      void actions.handleSave();
     } else if (clearRequested(currentstep)) {
       clearCompleted(currentstep);
     }
@@ -746,6 +519,12 @@ export function PassageDetailTranscribeMobileContent() {
 
   const stateKey = toCamel(actions.state);
   const localizedState = (ta as any)[stateKey] || actions.state;
+
+  const otherEditorName = useOtherEditorName(
+    mediafile,
+    confirm !== undefined,
+    t.unknownUser
+  );
 
   const fontStyle = useMemo(() => {
     return {
@@ -798,7 +577,7 @@ export function PassageDetailTranscribeMobileContent() {
           <IconButton
             id="asrButton-settings"
             aria-label={tPlayer.recognizeSpeechSettings}
-            onClick={() => asr.setAsrLangVisible(true)}
+            onClick={asr.openAsrLanguageSettings}
             disabled={isReadOnly}
             size="small"
           >
@@ -808,7 +587,9 @@ export function PassageDetailTranscribeMobileContent() {
             id="asrButton"
             variant="outlined"
             onClick={asr.handleTranscribe}
-            startIcon={<TranscriptionLogo />}
+            startIcon={
+              <AsrButtonIcon active={hasAiTask && !asr.asrProgressVisible} />
+            }
             disabled={isReadOnly}
             sx={{
               textTransform: 'none',
@@ -819,7 +600,7 @@ export function PassageDetailTranscribeMobileContent() {
               borderRadius: 1,
             }}
           >
-            {tPlayer.recognizeSpeech || 'Auto Transcription...'}
+            {t.aiAutomaticTranscription}
           </Button>
         </Box>
       )}
@@ -837,7 +618,7 @@ export function PassageDetailTranscribeMobileContent() {
           onFocus={handleFocus}
           onBlur={handleBlur}
           readOnly={isReadOnly}
-          placeholder={t.transcriptionType ?? 'Transcription'}
+          placeholder={t.transcriptionType}
           style={{
             ...fontStyle,
             width: '100%',
@@ -939,52 +720,28 @@ export function PassageDetailTranscribeMobileContent() {
         <Confirm
           isDelete={false}
           text={t.updateByOther2
-            .replace(
-              '{0}',
-              GetUser(memory, related(mediafile, 'lastModifiedByUser'))
-                ?.attributes?.name ?? 'unknown'
-            )
+            .replace('{0}', otherEditorName)
             .replace('{1}', confirm)}
           yesResponse={handleUpdateConfirmed}
           noResponse={handleUpdateRefused}
         />
       )}
 
-      <BigDialog
-        title={tPlayer.recognizeSpeechSettings}
-        isOpen={asr.asrLangVisible}
-        onOpen={() => asr.handleAsrLanguageClose(true)}
+      <TranscribeAsrDialogs
+        team={team}
+        mediaId={mediafile?.id ?? ''}
+        asrLangVisible={asr.asrLangVisible}
+        asrProgressVisible={asr.asrProgressVisible}
+        phonetic={asr.phonetic}
+        asrOverride={asr.asrOverride}
+        forceAsr={asr.forceAsr}
+        forceRefresh={forceRefresh}
+        onLanguageClose={asr.handleAsrLanguageClose}
+        onProgressOpen={asr.setAsrProgressVisible}
+        setTranscription={asr.handleAutoTranscribe}
         bp={BigDialogBp.mobile}
-      >
-        <SelectAsrLanguage
-          key={asr.asrLangVisible ? 'open' : 'closed'}
-          team={team}
-          onClose={asr.handleAsrLanguageClose}
-        />
-      </BigDialog>
-
-      {asr.asrProgressVisible && (
-        <BigDialog
-          title={tPlayer.recognizeProgress}
-          isOpen={asr.asrProgressVisible}
-          onOpen={asr.setAsrProgressVisible}
-          bp={BigDialogBp.mobile}
-          mobileNoHorizontalScroll={true}
-          mobilePaperWidth="min(356px, calc(100vw - 4px))"
-          dialogContentSx={{ minWidth: 0, overflowX: 'hidden' }}
-        >
-          <AsrProgress
-            mediaId={mediafile?.id ?? ''}
-            phonetic={asr.phonetic}
-            asrState={asr.asrOverride}
-            force={!asrStatesEqual(asr.asrOverride, asr.asrSettings)}
-            contentVerses={[]}
-            setTranscription={asr.handleAutoTranscribe}
-            onPullTasks={onPullTasks}
-            onClose={() => asr.setAsrProgressVisible(false)}
-          />
-        </BigDialog>
-      )}
+        isMobile
+      />
     </Box>
   );
 }
@@ -992,109 +749,23 @@ export function PassageDetailTranscribeMobileContent() {
 export default function PassageDetailTranscribeMobile() {
   const { currentstep, orgWorkflowSteps, section, passage, sharedResource } =
     usePassageDetailContext();
-  const { canDoSectionStep } = useStepPermissions();
-  const hasPermission =
-    canDoSectionStep(currentstep, section) &&
-    !isLinkedNote(passage, sharedResource);
-
-  const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
-  const stepSettings = useMemo(() => {
-    if (!workflowStepSettingsRaw || workflowStepSettingsRaw === '') return '{}';
-    return typeof workflowStepSettingsRaw === 'string'
-      ? workflowStepSettingsRaw
-      : JSON.stringify(workflowStepSettingsRaw);
-  }, [workflowStepSettingsRaw]);
-
-  const parsedSettings = useMemo(() => {
-    try {
-      return JSON.parse(stepSettings || '{}') as { artifactTypeId?: string };
-    } catch {
-      return {} as { artifactTypeId?: string };
-    }
-  }, [stepSettings]);
-
-  const artifactTypeId = parsedSettings?.artifactTypeId ?? null;
-  const { slugFromId } = useArtifactType();
-
-  const parsedSteps = useMemo(() => {
-    if (!orgWorkflowSteps) return [];
-    return orgWorkflowSteps
-      .slice()
-      .sort(
-        (a, b) =>
-          (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
-      )
-      .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as {
-          tool?: string;
-          settings?: string | object;
-        };
-        return {
-          id: s.id,
-          sequencenum: ix,
-          tool: toolData.tool ?? '',
-          settings:
-            typeof toolData.settings === 'string'
-              ? toolData.settings || '{}'
-              : JSON.stringify(toolData.settings ?? {}),
-        } as IStep;
-      });
-  }, [orgWorkflowSteps]);
-
-  const vernacularSteps = useMemo(() => {
-    return parsedSteps.filter(
-      (s) =>
-        s.tool === ToolSlug.Transcribe && !JSON.parse(s.settings).artifactTypeId
-    );
-  }, [parsedSteps]);
-
-  const hasChecking = useMemo(() => {
-    return (
-      vernacularSteps.length > 1 &&
-      (vernacularSteps[1] as IStep).sequencenum ===
-        (vernacularSteps[0] as IStep).sequencenum + 1
-    );
-  }, [vernacularSteps]);
-
-  const curRole = useMemo(() => {
-    if (!currentstep) return undefined;
-    if (!hasPermission) return 'view';
-    if (!hasChecking) return 'transcriber';
-    if (artifactTypeId) return 'transcriber';
-    if ((vernacularSteps[0] as IStep)?.id === currentstep) return 'transcriber';
-    return 'editor';
-  }, [
+  const hasPermission = usePassageStepPermission(
     currentstep,
-    vernacularSteps,
-    artifactTypeId,
-    hasChecking,
-    hasPermission,
-  ]);
+    section,
+    passage,
+    sharedResource
+  );
 
-  const stepLanguageBcp47 = useMemo(() => {
-    if (!artifactTypeId) return undefined;
-    if (
-      !artifactStampsStepLanguage(
-        slugFromId(artifactTypeId) as ArtifactTypeSlug
-      )
-    )
-      return undefined;
-    const { bcp47 } = parseMediaLanguageField(
-      (() => {
-        try {
-          return (JSON.parse(stepSettings) as { language?: unknown }).language;
-        } catch {
-          return undefined;
-        }
-      })()
-    );
-    return isLangSet(bcp47) ? bcp47 : undefined;
-  }, [artifactTypeId, slugFromId, stepSettings]);
+  const { artifactTypeId, curRole, stepLanguageBcp47 } = useTranscribeStepRole({
+    currentstep,
+    orgWorkflowSteps,
+    hasPermission,
+  });
 
   return (
     <TranscriberProvider
       artifactTypeId={artifactTypeId}
-      curRole={curRole as string}
+      curRole={curRole}
       stepLanguageBcp47={stepLanguageBcp47}
     >
       <PassageDetailTranscribeMobileContent />
