@@ -199,7 +199,7 @@ interface IProps {
   candidateItems?: RecordIdentity[];
   /** Artifact type id of a derived resource copy (`resource` slug). */
   resourceTypeId?: string | null;
-  onOpen?: (open: boolean) => void;
+  onClose?: (() => void) | undefined;
   /**
    * When set, a "Back" button (the reverse of the selection dialog's Next) is
    * shown. It returns to SelectSections keeping the media, so the caller must
@@ -217,7 +217,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     items,
     candidateItems,
     resourceTypeId,
-    onOpen,
+    onClose,
     onBack,
   } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -384,7 +384,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
           .finally(() => {
             setSaving(false);
             setComplete(0);
-            onOpen && onOpen(false);
+            onClose?.();
           });
       }
     }

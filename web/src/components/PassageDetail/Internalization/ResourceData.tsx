@@ -57,12 +57,12 @@ interface IProps {
   resourceKind?: ResourceTypeEnum | undefined;
   onCategoryChange: (artifactCategoryId: string) => void;
   onDescriptionChange: (desc: string) => void;
-  onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
+  onResourceKindChange?: ((value: ResourceTypeEnum) => void) | undefined;
   onTextChange?: ((text: string) => void) | undefined;
   allowGeneralResourceOption: boolean;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
   // category at submission (rather than on blur).
-  catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
+  categorySaveRef?: RefObject<(() => Promise<string>) | null> | undefined;
   wrapPreviewOverflow?: boolean;
 }
 export function ResourceData(props: IProps) {
@@ -72,13 +72,13 @@ export function ResourceData(props: IProps) {
     resourceKind = ResourceTypeEnum.sectionResource,
     onCategoryChange,
     onDescriptionChange,
-    onPassResChange,
+    onResourceKindChange,
     allowGeneralResourceOption,
     media,
     uploadType,
     onTextChange,
     wrapPreviewOverflow,
-    catCommitRef,
+    categorySaveRef,
   } = props;
   // The TextField is uncontrolled (the parent owns the value via
   // onDescriptionChange); only emptiness is tracked here, for the error state,
@@ -114,7 +114,7 @@ export function ResourceData(props: IProps) {
   );
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onPassResChange?.(radioToResourceKind(event.target.value));
+    onResourceKindChange?.(radioToResourceKind(event.target.value));
   };
   const handleChangeDescription = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -161,11 +161,11 @@ export function ResourceData(props: IProps) {
             required={false}
             scripture={ArtCatScr.highlight}
             type={ArtifactCategoryType.Resource}
-            commitRef={catCommitRef}
+            categorySaveRef={categorySaveRef}
           />
         </Grid>
       </Grid>
-      {onPassResChange && (
+      {onResourceKindChange && (
         <FormControl>
           <FormLabel id="resourcekind">{t.tip1a}</FormLabel>
           <RadioGroup

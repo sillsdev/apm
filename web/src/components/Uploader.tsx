@@ -11,7 +11,7 @@ interface IProps {
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
   skipImportExportWait?: boolean | undefined;
   isOpen: boolean;
-  onOpen: (visible: boolean) => void;
+  onClose: () => void;
   finish?: ((mediaRemoteIds?: string[]) => Promise<void>) | undefined; // logic when upload complete
   cancelled: React.RefObject<boolean>;
   multiple?: boolean | undefined;
@@ -21,8 +21,8 @@ interface IProps {
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
   sourceSegments?: string | undefined;
-  performedBy?: string | undefined;
-  onSpeakerChange?: ((performedBy: string) => void) | undefined;
+  speaker?: string | undefined;
+  onSpeaker?: ((speaker: string) => void) | undefined;
   topic?: string | undefined;
   uploadType?: UploadType | undefined;
   audioOnly?: boolean | undefined;
@@ -39,7 +39,7 @@ export const Uploader = (props: IProps) => {
     noBusy,
     skipImportExportWait,
     isOpen,
-    onOpen,
+    onClose,
     cancelled,
     multiple,
     importList,
@@ -48,8 +48,8 @@ export const Uploader = (props: IProps) => {
     planId,
     sourceMediaId,
     sourceSegments,
-    performedBy,
-    onSpeakerChange,
+    speaker,
+    onSpeaker,
     topic,
     uploadType,
     audioOnly,
@@ -69,17 +69,13 @@ export const Uploader = (props: IProps) => {
     return planId || plan;
   }, [passageId, planId, plan, memory]);
 
-  const handleSpeakerChange = (speaker: string) => {
-    onSpeakerChange && onSpeakerChange(speaker);
-  };
-
   // Close the dialog once the batch is done (even if `finish` throws), as the
   // pre-hook Uploader did; the dialog itself only clears its progress on failure.
   const finishAndClose = async (mediaRemoteIds?: string[]) => {
     try {
       await finish?.(mediaRemoteIds);
     } finally {
-      onOpen(false);
+      onClose();
     }
   };
 
@@ -92,7 +88,7 @@ export const Uploader = (props: IProps) => {
       localPlanId: resolvedLocalPlanId,
       sourceMediaId,
       sourceSegments,
-      performedBy,
+      performedBy: speaker,
       topic,
     },
     uploadType,
@@ -110,7 +106,7 @@ export const Uploader = (props: IProps) => {
   });
 
   const uploadCancel = () => {
-    onOpen(false);
+    onClose();
     if (cancelled) cancelled.current = true;
     restoreScroll();
   };
@@ -121,17 +117,20 @@ export const Uploader = (props: IProps) => {
     <Box sx={{ width: '100%' }}>
       {!hasImport && (
         <MediaUploadDialog
-          visible={isOpen}
-          onVisible={onOpen}
+          isOpen={isOpen}
+          onClose={onClose}
           uploadType={uploadType || UploadType.Media}
           multiple={multiple}
           uploadMethod={uploadMedia}
           cancelMethod={uploadCancel}
-          speaker={performedBy}
+          speaker={speaker}
+          // Always a function on a vernacular media upload, even when the host
+          // passes no onSpeaker: its presence is what makes MediaUploadContent
+          // show the speaker picker and gate the upload on speaker rights.
           onSpeaker={
             !artifactState?.id &&
             (uploadType || UploadType.Media) === UploadType.Media
-              ? handleSpeakerChange
+              ? (onSpeaker ?? (() => {}))
               : undefined
           }
           audioOnly={audioOnly}

@@ -36,7 +36,7 @@ import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDe
 import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldClauseTranscription';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
-import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
+// import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
 import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
 import PassageDetailPlayer from '../components/PassageDetail/PassageDetailPlayer';
 
@@ -114,49 +114,6 @@ const MobileStep = () => {
     artifactSlug
   );
 
-  if (tool === ToolSlug.Record) {
-    return <PassageDetailRecord />;
-  }
-  if (tool === ToolSlug.Resource) {
-    return <PassageDetailsArtifactsMobile />;
-  }
-  if (tool === ToolSlug.Verses) {
-    return <PassageDetailMarkVerses />;
-  }
-  if (tool === ToolSlug.CarefulSpeech) {
-    // Keyed for the same reason as the transcription steps below: a team can
-    // configure several guided-record steps in a row, and they all render the
-    // one PassageDetailGuidedPhraseRecord component. (TT-7643)
-    return <PassageDetailCarefulSpeech key={currentstep} />;
-  }
-  if (tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) {
-    return <PassageDetailLwcTranslation key={currentstep} />;
-  }
-  if (tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow) {
-    // A team can have one Phrase Back Translation step per language. Without a
-    // key the reused instance carries the previous step's recording pass -
-    // including the take loaded in its recorder - into the next language's
-    // step, so the other language's audio plays there. (TT-7643)
-    return <PassageDetailPhraseBackTranslate key={currentstep} />;
-  }
-  if (boldClauseTranscription) {
-    // Key on currentstep so the shared transcription component remounts when
-    // moving between the adjacent Careful- and LWC-Transcription steps. Desktop
-    // gets this for free via the keyed step column in PassageDetailGrids;
-    // without it here the reused instance carries state (and flushes the prior
-    // step's text onto the new step's artifact), so LWC shows Careful's
-    // transcriptions. (TT-7503)
-    return <PassageDetailLwcTranscription key={currentstep} />;
-  }
-  if (tool === ToolSlug.TeamCheck) {
-    return <TeamCheckReferenceMobile />;
-  }
-  if (tool === ToolSlug.Prompt) {
-    return <PassageDetailPrompt />;
-  }
-  if (tool === ToolSlug.Transcribe) {
-    return <PassageDetailTranscribeMobile />;
-  }
   if (toolShowsStepInstructions(tool)) {
     return (
       <>
@@ -167,7 +124,36 @@ const MobileStep = () => {
       </>
     );
   }
-  return <DesktopOnlyStep />;
+
+  // Steps that can repeat back-to-back share one component, so key on
+  // currentstep to remount and drop the previous step's state. (TT-7503, TT-7643)
+  switch (tool) {
+    case ToolSlug.Record:
+      return <PassageDetailRecord />;
+    case ToolSlug.Resource:
+      return <PassageDetailsArtifactsMobile />;
+    case ToolSlug.Verses:
+      return <PassageDetailMarkVerses />;
+    case ToolSlug.CarefulSpeech:
+      return <PassageDetailCarefulSpeech key={currentstep} />;
+    case ToolSlug.PhraseBackTranslate:
+      return isBoldWorkflow ? (
+        <PassageDetailLwcTranslation key={currentstep} />
+      ) : (
+        <PassageDetailPhraseBackTranslate key={currentstep} />
+      );
+    case ToolSlug.Transcribe:
+      if (boldClauseTranscription)
+        return <PassageDetailLwcTranscription key={currentstep} />;
+      // translation isn't ready on mobile yet.
+      return <DesktopOnlyStep />;
+    case ToolSlug.TeamCheck:
+      return <TeamCheckReferenceMobile />;
+    case ToolSlug.Prompt:
+      return <PassageDetailPrompt />;
+    default:
+      return <DesktopOnlyStep />;
+  }
 };
 
 const MobileDetail = () => (

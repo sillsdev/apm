@@ -58,7 +58,7 @@ export interface IPassageRecordPanelProps {
 export interface IDeferredUpload {
   onNext: () => void;
   // for the wizard to trigger the real upload later
-  submitRef: React.RefObject<MediaUploadControlsRef>;
+  controlsRef: React.RefObject<MediaUploadControlsRef>;
 }
 
 export function PassageRecordPanel(props: IPassageRecordPanelProps) {
@@ -81,7 +81,7 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     onStartRecording,
   } = props;
   const onNext = deferred?.onNext;
-  const controlsRef = deferred?.submitRef;
+  const controlsRef = deferred?.controlsRef;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
     shallowEqual
@@ -219,7 +219,6 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
         <MediaUploadContent
           noWrapper
           hideCancel
-          onVisible={() => {}}
           uploadType={uploadType}
           primaryButtonText={primaryButtonText}
           onNext={onNext}

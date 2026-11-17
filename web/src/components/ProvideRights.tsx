@@ -278,9 +278,6 @@ export function ProvideRights(props: IProps) {
     );
   };
 
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
   const handleUpload = () => {
     if (canSave) {
       showMessage(t.saveFirst);
@@ -336,12 +333,12 @@ export function ProvideRights(props: IProps) {
       <Uploader
         noBusy={false}
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
+        onClose={() => setUploadVisible(false)}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
         artifactState={artifactState}
-        performedBy={speaker}
+        speaker={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}
         audioOnly={aiip}

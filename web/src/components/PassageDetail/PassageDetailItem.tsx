@@ -298,9 +298,6 @@ export function PassageDetailItem(props: IProps) {
     setPlayItem('');
   };
 
-  const handleUploadVisible = (v: boolean) => {
-    setUploadVisible(v);
-  };
   const handleUpload = () => {
     if (canSave) {
       showMessage(t.saveFirst);
@@ -588,7 +585,7 @@ export function PassageDetailItem(props: IProps) {
       <Uploader
         noBusy={true}
         isOpen={uploadVisible}
-        onOpen={handleUploadVisible}
+        onClose={() => setUploadVisible(false)}
         multiple={false}
         finish={afterUpload}
         cancelled={cancelled}
@@ -596,7 +593,7 @@ export function PassageDetailItem(props: IProps) {
         sourceSegments={JSON.stringify(getCurrentSegment())}
         sourceMediaId={mediafileId}
         artifactState={artifactState}
-        performedBy={speaker}
+        speaker={speaker}
         topic={topic}
       />
     </div>

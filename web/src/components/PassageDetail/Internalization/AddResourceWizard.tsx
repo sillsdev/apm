@@ -51,7 +51,7 @@ export function AddResourceWizard({
                 ? w.t.selectPassagesSub.replace('{0}', getOrganizedBy(false))
                 : w.t.editingFile.replace(
                     '{0}',
-                    safeFileBasename(w.projMedia?.attributes?.originalFile)
+                    safeFileBasename(w.media?.attributes?.originalFile)
                   )}
             </Typography>
           ) : undefined
@@ -78,37 +78,40 @@ export function AddResourceWizard({
             >
               <ResourceUploadStep
                 onStartRecording={() => w.setRecordingStarted(true)}
-                isAudioMode={w.isAddingAudioResource}
+                isAddingAudioResource={w.isAddingAudioResource}
                 active={w.step === WizardStep.Upload}
                 finish={w.afterUpload}
                 beforeUpload={w.handleBeforeUpload}
                 cancelled={w.cancelled}
                 artifactId={w.artifactId}
                 uploadType={w.uploadType}
-                ready={w.resourceReady}
+                ready={w.ready}
                 speaker={w.speaker}
                 onSpeaker={w.setSpeaker}
-                inValue={w.markdownValue}
+                inValue={w.inValue}
                 eafUrl={w.eafUrl}
-                defaultFilename={w.filename}
-                pendingRestore={w.resourcePendingRestore}
+                defaultFilename={w.defaultFilename}
+                pendingRestore={w.pendingRestore}
                 onFiles={w.setResourceUploadFiles}
                 deferred={
                   w.uploadType === UploadType.ProjectResource
-                    ? { onNext: w.handleUploadStepNext, submitRef: w.submitRef }
+                    ? {
+                        onNext: w.handleUploadStepNext,
+                        controlsRef: w.controlsRef,
+                      }
                     : undefined
                 }
-                validationMessage={w.resourceUploadValidationMessage}
+                validationMessage={w.validationMessage}
                 metaData={
                   <ResourceData
                     uploadType={w.uploadType}
                     initCategory=""
                     onCategoryChange={w.handleCategory}
-                    catCommitRef={w.addCategorySaveRef}
+                    categorySaveRef={w.categorySaveRef}
                     initDescription={w.initDescription}
                     onDescriptionChange={w.handleDescription}
                     resourceKind={w.resourceKind}
-                    onPassResChange={w.handlePassRes}
+                    onResourceKindChange={w.handleResourceKind}
                     allowGeneralResourceOption={w.isAddingAudioResource}
                   />
                 }
@@ -129,7 +132,7 @@ export function AddResourceWizard({
             <SelectSections
               initialItems={w.initialItems}
               // If we went to step 3 and then Back, no need to re-upload the media.
-              uploadsOnNext={w.isAddingAudioResource && !w.projMedia}
+              uploadsOnNext={w.isAddingAudioResource && !w.media}
               uploading={w.uploading}
               onSelect={w.handleSectionsSelected}
               onBack={
@@ -146,11 +149,11 @@ export function AddResourceWizard({
               // maxWidth:100% clamps it to fill, extending the waveform to the
               // dialog's edge.
               width={configureWidth}
-              media={w.projMedia}
-              items={w.projIdentity}
-              candidateItems={w.projCandidate}
+              media={w.media}
+              items={w.items}
+              candidateItems={w.candidateItems}
               resourceTypeId={w.resourceType}
-              onOpen={onClose}
+              onClose={onClose}
               onBack={
                 w.isAddingAudioResource ? w.handleConfigureBack : undefined
               }

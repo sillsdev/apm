@@ -31,7 +31,7 @@ export interface CompressionProps {
   dimension: number[];
   defaultFilename?: string;
   finish?: (images: CompressedImages[]) => void;
-  onOpen?: (visible: boolean) => void;
+  onClose?: (() => void) | undefined;
 }
 
 export const useCompression = ({
@@ -40,7 +40,7 @@ export const useCompression = ({
   dimension,
   defaultFilename,
   finish,
-  onOpen,
+  onClose,
 }: CompressionProps) => {
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const [errorReporter] = useGlobal('errorReporter');
@@ -110,7 +110,7 @@ export const useCompression = ({
       }
     }
     if (finish) finish(results);
-    onOpen?.(false);
+    onClose?.();
   };
 
   return { showFile, uploadMedia };
