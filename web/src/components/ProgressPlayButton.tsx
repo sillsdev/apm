@@ -43,14 +43,17 @@ export default function ProgressPlayButton({
   playingIcon = 'pause',
   size = 20,
   bgColor = PLAY_BUTTON_BG,
-  sx,
+  sx = [],
 }: Readonly<ProgressPlayButtonProps>) {
   const theme = useTheme();
   const color = theme.palette.getContrastText(bgColor);
   const PlayingIcon = playingIcon === 'stop' ? FaStop : FaPause;
 
   return (
-    <StyledBox sx={{ m: 1, position: 'relative', ...sx }} size={size}>
+    <StyledBox
+      sx={[{ m: 1, position: 'relative' }, ...[sx].flat()]}
+      size={size}
+    >
       <Tooltip title={title}>
         <Fab
           aria-label={ariaLabel}

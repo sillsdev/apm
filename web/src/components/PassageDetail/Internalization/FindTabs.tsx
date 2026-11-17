@@ -40,7 +40,14 @@ interface TabPanelProps {
 }
 
 function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, contentSx, fillParent, ...other } = props;
+  const {
+    children,
+    value,
+    index,
+    contentSx = [],
+    fillParent,
+    ...other
+  } = props;
 
   return (
     <div
@@ -63,10 +70,10 @@ function CustomTabPanel(props: TabPanelProps) {
     >
       {value === index && (
         <Box
-          sx={{
-            p: 3,
-            ...contentSx,
-            ...(fillParent
+          sx={[
+            { p: 3 },
+            ...[contentSx].flat(),
+            fillParent
               ? {
                   flex: 1,
                   minHeight: 0,
@@ -74,8 +81,8 @@ function CustomTabPanel(props: TabPanelProps) {
                   flexDirection: 'column',
                   overflow: 'hidden',
                 }
-              : {}),
-          }}
+              : {},
+          ]}
         >
           {children}
         </Box>

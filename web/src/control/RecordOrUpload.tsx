@@ -6,11 +6,14 @@ interface IProps {
   sx?: SxProps;
 }
 
-export const RecordOrUploadIcon = (props: IProps) => {
+export const RecordOrUploadIcon = ({ sx = [] }: IProps) => {
   return (
     <LogoImg
       src={recordOrUpload}
-      sx={{ alignSelf: 'center', width: '20px', height: '20px', ...props.sx }}
+      sx={[
+        { alignSelf: 'center', width: '20px', height: '20px' },
+        ...[sx].flat(),
+      ]}
       alt="Record or Upload Icon"
     />
   );
