@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   OrganizationD,
@@ -17,7 +17,7 @@ import { useGlobal } from '../../../context/useGlobal';
 import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
-import { appendAutoTranscription } from './appendAutoTranscription';
+import { autoTranscriptionToAppend } from './autoTranscriptionToAppend';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
@@ -93,11 +93,15 @@ export function useTranscribeAsr({
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { asrSettings, status: asrStatus } = useAsrSettings(team, showMessage);
 
-  const [asrProgressVisible, setAsrProgressVisible] = useState(false);
+  const [progressVisible, setProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
   );
+  // Compare dialog result to settings at open — asrSettings may already match
+  // the new choice after save, so equal(override, asrSettings) is always true.
+  const asrAtOpenRef = useRef<IAsrState | undefined>(undefined);
+  const [forceAsr, setForceAsr] = useState(false);
   const phonetic = (asrOverride ?? asrSettings)?.target === AsrTarget.phonetic;
 
   const asrTip = useMemo(() => {
@@ -112,14 +116,20 @@ export function useTranscribeAsr({
     );
   }, [tPlayer.recognizeSpeech, asrSettings, getName]);
 
+  const setAsrProgressVisible = useCallback((visible: boolean) => {
+    if (!visible) setForceAsr(false);
+    setProgressVisible(visible);
+  }, []);
+
   const startAsr = useCallback((asrOverrideState?: IAsrState) => {
     setAsrOverride(asrOverrideState);
-    setAsrProgressVisible(true);
+    setProgressVisible(true);
   }, []);
 
   const openAsrLanguageSettings = useCallback(() => {
+    asrAtOpenRef.current = asrSettings;
     setAsrLangVisible(true);
-  }, []);
+  }, [asrSettings]);
 
   const handleTranscribe = useCallback(() => {
     checkOnline((online) => {
@@ -128,10 +138,12 @@ export function useTranscribeAsr({
         return;
       }
       if (hasActiveTask) {
+        setForceAsr(false);
         startAsr(asrSettings);
         return;
       }
       if (asrSettings && isLangSet(asrSettings.asrIso)) {
+        setForceAsr(false);
         startAsr(asrSettings);
         return;
       }
@@ -152,6 +164,8 @@ export function useTranscribeAsr({
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
+      // Model/language change must start a new task even if TRTask is stored.
+      setForceAsr(!asrStatesEqual(asr, asrAtOpenRef.current));
       if (asr && isLangSet(asr.asrIso)) startAsr(asr);
     },
     [asrSettings, startAsr]
@@ -159,7 +173,7 @@ export function useTranscribeAsr({
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      const added = appendAutoTranscription(trans, getCurrentText());
+      const added = autoTranscriptionToAppend(trans, getCurrentText());
       if (added !== undefined) onTextAdd(added, true);
     },
     [getCurrentText, onTextAdd]
@@ -169,11 +183,12 @@ export function useTranscribeAsr({
     asrSettings,
     asrStatus,
     asrTip,
-    asrProgressVisible,
+    asrProgressVisible: progressVisible,
     setAsrProgressVisible,
     asrLangVisible,
-    setAsrLangVisible,
+    openAsrLanguageSettings,
     asrOverride,
+    forceAsr,
     phonetic,
     handleTranscribe,
     handleAsrLanguageClose,

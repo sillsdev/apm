@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, IconButton, Stack } from '@mui/material';
+import { Badge, Box, IconButton, Stack } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -38,7 +38,6 @@ import { UnsavedContext } from '../../../../context/UnsavedContext';
 import {
   findRecord,
   GetUser,
-  pullTableList,
   related,
   ToolSlug,
   useArtifactType,
@@ -51,8 +50,6 @@ import {
   isNoParatextWorkflow,
   resolvedProjectType,
 } from '../../../../crud/nextTranscriptionState';
-import IndexedDBSource from '@orbit/indexeddb';
-import JSONAPISource from '@orbit/jsonapi';
 import {
   getSegments,
   hasTranscriptionTask,
@@ -87,7 +84,6 @@ import Confirm from '../../../AlertDialog';
 import SelectAsrLanguage from '../../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../../business/asr/AsrProgress';
 import TranscribeReject from '../../../TranscribeReject';
-import { asrStatesEqual } from '../../../../business/asr/asrState';
 import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
 import {
@@ -154,10 +150,7 @@ export function PassageDetailTranscribeMobileContent() {
   const [projType] = useGlobal('projType');
   const [organization] = useGlobal('organization');
   const [offline] = useGlobal('offline');
-  const [coordinator] = useGlobal('coordinator');
   const [errorReporter] = useGlobal('errorReporter');
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const { showMessage } = useSnackBar();
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const features = getOrgDefault(orgDefaultFeatures) as
@@ -704,22 +697,6 @@ export function PassageDetailTranscribeMobileContent() {
     playedSecsRef.current = progress;
   }, []);
 
-  const onPullTasks = useCallback(
-    (remoteId: string) => {
-      pullTableList(
-        'mediafile',
-        Array(remoteId),
-        memory,
-        remote,
-        backup,
-        errorReporter
-      ).then(() => {
-        if (forceRefresh) forceRefresh();
-      });
-    },
-    [memory, remote, backup, errorReporter, forceRefresh]
-  );
-
   const handleUpdateConfirmed = useCallback(() => {
     if (confirm !== undefined) {
       transcriptionInRef.current = confirm;
@@ -731,13 +708,13 @@ export function PassageDetailTranscribeMobileContent() {
 
   const handleUpdateRefused = useCallback(() => {
     // Keep local changes and save them over remote changes
-    actions.handleSave();
+    void actions.handleSave();
     setConfirm(undefined);
   }, [actions]);
 
   useEffect(() => {
     if (saveRequested(currentstep)) {
-      actions.handleSave();
+      void actions.handleSave();
     } else if (clearRequested(currentstep)) {
       clearCompleted(currentstep);
     }
@@ -798,7 +775,7 @@ export function PassageDetailTranscribeMobileContent() {
           <IconButton
             id="asrButton-settings"
             aria-label={tPlayer.recognizeSpeechSettings}
-            onClick={() => asr.setAsrLangVisible(true)}
+            onClick={asr.openAsrLanguageSettings}
             disabled={isReadOnly}
             size="small"
           >
@@ -808,7 +785,15 @@ export function PassageDetailTranscribeMobileContent() {
             id="asrButton"
             variant="outlined"
             onClick={asr.handleTranscribe}
-            startIcon={<TranscriptionLogo />}
+            startIcon={
+              hasAiTask && !asr.asrProgressVisible ? (
+                <Badge variant="dot" color="primary">
+                  <TranscriptionLogo />
+                </Badge>
+              ) : (
+                <TranscriptionLogo />
+              )
+            }
             disabled={isReadOnly}
             sx={{
               textTransform: 'none',
@@ -977,10 +962,10 @@ export function PassageDetailTranscribeMobileContent() {
             mediaId={mediafile?.id ?? ''}
             phonetic={asr.phonetic}
             asrState={asr.asrOverride}
-            force={!asrStatesEqual(asr.asrOverride, asr.asrSettings)}
+            force={asr.forceAsr}
             contentVerses={[]}
             setTranscription={asr.handleAutoTranscribe}
-            onPullTasks={onPullTasks}
+            forceRefresh={forceRefresh}
             onClose={() => asr.setAsrProgressVisible(false)}
           />
         </BigDialog>

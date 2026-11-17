@@ -242,4 +242,70 @@ describe('useTranscribeAsr', () => {
     expect(result.current.asrOverride?.target).toBe('Phonetic');
     expect(result.current.phonetic).toBe(true);
   });
+
+  it('forces a new run when settings change in the language dialog', async () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      asrMethod: 'mms',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    getAsrSettings.mockResolvedValue(saved);
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
+        hasActiveTask: true,
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => result.current.openAsrLanguageSettings());
+    act(() =>
+      result.current.handleAsrLanguageClose(false, {
+        ...saved,
+        asrMethod: 'whisper',
+      } as never)
+    );
+
+    expect(result.current.forceAsr).toBe(true);
+    expect(result.current.asrProgressVisible).toBe(true);
+  });
+
+  it('does not force when the language dialog saves the same settings', async () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'en', languageName: 'English' },
+      asrIso: 'eng',
+      asrMethod: 'mms',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    getAsrSettings.mockResolvedValue(saved);
+    const { result } = renderHook(() =>
+      useTranscribeAsr({
+        team: undefined,
+        sharedStr: { mustBeOnline: 'online' } as never,
+        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+        showMessage: jest.fn(),
+        onTextAdd: jest.fn(),
+        getCurrentText: () => '',
+        hasActiveTask: true,
+      })
+    );
+    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
+
+    act(() => result.current.openAsrLanguageSettings());
+    act(() =>
+      result.current.handleAsrLanguageClose(false, { ...saved } as never)
+    );
+
+    expect(result.current.forceAsr).toBe(false);
+  });
 });

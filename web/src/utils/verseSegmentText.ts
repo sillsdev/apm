@@ -23,8 +23,7 @@ export function openingChapter(
 
 function chapterInForce(text: string, cursor: number, opening: string): string {
   const matches = [...text.slice(0, cursor).matchAll(/\\c (\d+)/g)];
-  if (matches.length === 0) return opening;
-  return matches[matches.length - 1][1];
+  return matches.at(-1)?.[1] ?? opening;
 }
 
 /** Text range that belongs to this chapter. The opening chapter is the text before the next chapter marker. */
@@ -98,4 +97,59 @@ export function applyVerseSegment(
   }
   const next = text.slice(0, cursor) + insert + text.slice(selectionEnd);
   return { text: next, caret: cursor + insert.length };
+}
+
+/**
+ * USFM verse tag for an empty transcription. Prefers the first verse-region
+ * label (e.g. "1:1-5a" → "\v 1-5a "); with no regions, uses the passage
+ * reference as the whole range. Undefined when neither is a usable reference.
+ */
+function usableVerseReference(
+  reference: string | undefined
+): string | undefined {
+  if (!reference?.split(':')[1] || !refMatch(reference)) return undefined;
+  return reference;
+}
+
+/** First region label that is a usable chapter:verse reference. */
+export function firstUsableVerseReference(
+  regions: ReadonlyArray<{ label?: string } | undefined>
+): string | undefined {
+  for (const region of regions) {
+    const usable = usableVerseReference(region?.label);
+    if (usable) return usable;
+  }
+  return undefined;
+}
+
+export function firstVerseMarker(
+  firstReference: string | undefined,
+  startChapter: number | undefined,
+  passageReference: string | undefined
+): string | undefined {
+  const reference =
+    usableVerseReference(firstReference) ??
+    usableVerseReference(passageReference);
+  if (!reference) return undefined;
+  return applyVerseSegment(
+    '',
+    reference,
+    0,
+    openingChapter(startChapter, passageReference, reference)
+  ).text.trimStart();
+}
+
+/** Seed marker when the stored/current transcription is empty. */
+export function addFirstVerseMarkerIfEmpty(
+  current: string | undefined,
+  regions: ReadonlyArray<{ label?: string } | undefined>,
+  startChapter: number | undefined,
+  passageReference: string | undefined
+): string | undefined {
+  if (current && current !== 'undefined') return undefined;
+  return firstVerseMarker(
+    firstUsableVerseReference(regions),
+    startChapter,
+    passageReference
+  );
 }

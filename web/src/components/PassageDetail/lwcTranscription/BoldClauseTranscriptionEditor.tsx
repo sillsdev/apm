@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type MutableRefObject,
+  type RefObject,
 } from 'react';
 import { Badge, Box, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -17,7 +17,16 @@ import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import { asrStatesEqual, type IAsrState } from '../../../business/asr/asrState';
-import { MediaFileD, OrganizationD, Project } from '@model/index';
+import {
+  MediaFileD,
+  OrganizationD,
+  Project,
+  ICarefulTranscriptionStrings,
+  ILwcTranscriptionStrings,
+  ISharedStrings,
+  ITranscriberStrings,
+  IWsAudioPlayerStrings,
+} from '@model/index';
 import {
   carefulTranscriptionSelector,
   lwcTranscriptionSelector,
@@ -25,12 +34,6 @@ import {
   transcriberSelector,
   wsAudioPlayerSelector,
 } from '../../../selector';
-import {
-  ICarefulTranscriptionStrings,
-  ILwcTranscriptionStrings,
-  ISharedStrings,
-  ITranscriberStrings,
-} from '@model/index';
 import { useGlobal } from '../../../context/useGlobal';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { useCheckOnline } from '../../../utils/useCheckOnline';
@@ -41,7 +44,6 @@ import {
   getFontData,
   findRecord,
   useStepTool,
-  pullTableList,
 } from '../../../crud';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
@@ -54,10 +56,7 @@ import { parseStepSettings, useBoldClauseAsr } from './useBoldClauseAsr';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
-import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
-import IndexedDBSource from '@orbit/indexeddb';
-import JSONAPISource from '@orbit/jsonapi';
 
 type TranscriptionStrings =
   ILwcTranscriptionStrings | ICarefulTranscriptionStrings;
@@ -74,7 +73,7 @@ interface Props {
   navigationDisabled: boolean;
   onAsrActiveChange: (active: boolean) => void;
   onTranscriptionSaved: (transcription: string) => void;
-  flushSaveRef?: MutableRefObject<(() => Promise<void>) | undefined>;
+  flushSaveRef?: RefObject<(() => Promise<void>) | undefined>;
   artifactTypeId?: string | null;
   transcriptionConfig: BoldClauseTranscriptionConfig;
 }
@@ -102,7 +101,7 @@ export default function BoldClauseTranscriptionEditor({
   flushSaveRef,
   artifactTypeId,
   transcriptionConfig,
-}: Props) {
+}: Readonly<Props>) {
   const t = useTranscriptionStrings(transcriptionConfig.stringsLayout);
   const tr: ITranscriberStrings = useSelector(
     transcriberSelector,
@@ -116,8 +115,6 @@ export default function BoldClauseTranscriptionEditor({
   const [offline] = useGlobal('offline');
   const [project] = useGlobal('project');
   const [organization] = useGlobal('organization');
-  const [coordinator] = useGlobal('coordinator');
-  const [errorReporter] = useGlobal('errorReporter');
   const teams = useOrbitData<OrganizationD[]>('organization');
   const team = useMemo(
     () => teams.find((o) => o.id === organization),
@@ -253,9 +250,13 @@ export default function BoldClauseTranscriptionEditor({
   const runAsrDisabled =
     navigationDisabled || hasText || !features?.aiTranscribe || offline;
 
+  const asrAtOpenRef = useRef<IAsrState | undefined>(undefined);
+  const [forceAsr, setForceAsr] = useState(false);
+
   const openAsrLanguageSettings = useCallback(() => {
+    asrAtOpenRef.current = asrSettings;
     setAsrLangVisible(true);
-  }, []);
+  }, [asrSettings]);
 
   const startAsr = useCallback(
     (override?: IAsrState) => {
@@ -274,6 +275,8 @@ export default function BoldClauseTranscriptionEditor({
       if (cancel) return;
       const asr = asrState ?? asrSettings;
       if (!isLangSet(asr?.asrIso)) return;
+      // Model/language change must start a new task even if TRTask is stored.
+      setForceAsr(!asrStatesEqual(asr, asrAtOpenRef.current));
       rememberStepAsr(asr);
       startAsr(asr);
     },
@@ -283,24 +286,9 @@ export default function BoldClauseTranscriptionEditor({
   const handleAsrClose = useCallback(() => {
     setAsrVisible(false);
     setAsrOverride(undefined);
+    setForceAsr(false);
     onAsrActiveChange(false);
   }, [onAsrActiveChange]);
-
-  // The task id comes back on the media file. Pull it so leaving this step
-  // and returning can resume the same transcription. The coordinator registers
-  // 'remote' and 'backup' as these source types, as Transcriber also assumes.
-  const onPullTasks = useCallback(
-    (remoteMediaId: string) =>
-      void pullTableList(
-        'mediafile',
-        [remoteMediaId],
-        memory,
-        coordinator?.getSource('remote') as JSONAPISource,
-        coordinator?.getSource('backup') as IndexedDBSource,
-        errorReporter
-      ),
-    [memory, coordinator, errorReporter]
-  );
 
   const handleAutoTranslation = useCallback(() => {
     checkOnline((online) => {
@@ -309,6 +297,7 @@ export default function BoldClauseTranscriptionEditor({
         return;
       }
       if (hasAiTask) {
+        setForceAsr(false);
         startAsr();
         return;
       }
@@ -373,10 +362,19 @@ export default function BoldClauseTranscriptionEditor({
                   settingsLabel={tPlayer.recognizeSpeechSettings}
                   disabled={runAsrDisabled}
                 >
-                  <TranscriptionLogo
-                    disabled={runAsrDisabled}
-                    sx={{ height: 18, width: 18, mr: 1 }}
-                  />
+                  {hasAiTask && !asrVisible ? (
+                    <Badge variant="dot" color="primary" sx={{ mr: 1 }}>
+                      <TranscriptionLogo
+                        disabled={runAsrDisabled}
+                        sx={{ height: 18, width: 18 }}
+                      />
+                    </Badge>
+                  ) : (
+                    <TranscriptionLogo
+                      disabled={runAsrDisabled}
+                      sx={{ height: 18, width: 18, mr: 1 }}
+                    />
+                  )}
                   {tr.aiAutomaticTranscription}
                 </AsrButton>
               </span>
@@ -425,13 +423,11 @@ export default function BoldClauseTranscriptionEditor({
             mediaId={mediaId}
             phonetic={phonetic}
             asrState={asrOverride ?? asrSettings}
-            force={
-              asrOverride !== undefined &&
-              !asrStatesEqual(asrOverride, asrSettings)
-            }
+            force={forceAsr}
+            primaryBcp47={stepAsr?.primaryBcp47}
             setTranscription={handleAsrResult}
-            onPullTasks={onPullTasks}
             onClose={handleAsrClose}
+            //note that this doesn't pass in forceRefresh - not sure if that was intentional but the old local onPullTasks did not call it.
           />
         </BigDialog>
       )}

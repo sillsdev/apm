@@ -1,4 +1,10 @@
-import { applyVerseSegment, openingChapter } from './verseSegmentText';
+import {
+  applyVerseSegment,
+  firstUsableVerseReference,
+  openingChapter,
+  firstVerseMarker,
+  addFirstVerseMarkerIfEmpty,
+} from './verseSegmentText';
 
 // The transcription Next Segment produced for Ecclesiastes 1:12–2:26 (TT-6862).
 const missingChapter2Verses12To18 =
@@ -119,5 +125,54 @@ describe('cross-chapter passage whose first segment is in its later chapter', ()
     const edit = applyVerseSegment(text, '2:12', text.length, opening);
     expect(edit.text).toBe('\\v 12 text \\c 2  \\v 12 ');
     expect(edit.caret).toBe(edit.text.length);
+  });
+});
+
+describe('firstUsableVerseReference', () => {
+  test('returns the first usable region label', () => {
+    expect(
+      firstUsableVerseReference([
+        { label: 'skip' },
+        { label: '1:1-5a' },
+        { label: '1:6' },
+      ])
+    ).toBe('1:1-5a');
+  });
+
+  test('returns undefined when no region is usable', () => {
+    expect(firstUsableVerseReference([{ label: 'skip' }, {}])).toBeUndefined();
+  });
+});
+
+describe('firstVerseMarker', () => {
+  test('returns the first verse range for an empty transcription', () => {
+    expect(firstVerseMarker('1:1-5a', 1, '1:1-7')).toBe('\\v 1-5a ');
+  });
+
+  test('falls back to the whole passage reference when no verse region', () => {
+    expect(firstVerseMarker(undefined, 1, '1:1-7')).toBe('\\v 1-7 ');
+    expect(firstVerseMarker('not-a-ref', 1, '1:1-7')).toBe('\\v 1-7 ');
+  });
+
+  test('returns undefined when neither reference is usable', () => {
+    expect(firstVerseMarker(undefined, 1, undefined)).toBeUndefined();
+    expect(firstVerseMarker('not-a-ref', 1, 'bad')).toBeUndefined();
+  });
+});
+
+describe('addFirstVerseMarkerIfEmpty', () => {
+  test('seeds from the first region when the transcription is empty', () => {
+    expect(
+      addFirstVerseMarkerIfEmpty('', [{ label: '1:1-5a' }], 1, '1:1-7')
+    ).toBe('\\v 1-5a ');
+    expect(addFirstVerseMarkerIfEmpty('undefined', [], 1, '1:1-7')).toBe(
+      '\\v 1-7 '
+    );
+  });
+
+  test('does not seed when the transcription already has text', () => {
+    expect(
+      addFirstVerseMarkerIfEmpty('\\v 1 ', [{ label: '1:1-5a' }], 1, '1:1-7')
+    ).toBeUndefined();
   });
 });

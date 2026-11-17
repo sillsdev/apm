@@ -1,11 +1,16 @@
 import { parseRef } from '../../crud/passage';
 import { Passage } from '../../model';
+import { VERSE_NUMBER_PATTERN } from '../../utils/verseNumberPattern';
 
 export const parseTranscription = (
   currentPassage: Passage,
   transcription: string
 ) => {
-  const pattern = /(\\v\s*[0-9]+[a-f]?-?[0-9]*[a-f]?\s)/g;
+  // Trailing \s required here; autoTranscriptionToAppend allows an optional one.
+  const pattern = new RegExp(
+    String.raw`(\\v\s*${VERSE_NUMBER_PATTERN}\s)`,
+    'g'
+  );
   const internalverses = Array.from(transcription.matchAll(pattern));
   // Get all matches
   if (internalverses.length < 1) {
@@ -14,30 +19,34 @@ export const parseTranscription = (
   }
   const ret: Passage[] = [];
   let start = 0;
-  const chapPat = /^\\c\s*([0-9]+)\s/;
+  const chapPat = /^\\c\s*(\d+)\s/;
   internalverses.forEach((match, index) => {
-    const chapIndex = match.input?.slice(0, match.index).lastIndexOf('\\c');
-    const chapMatch = match.input?.slice(chapIndex).match(chapPat);
+    const chapIndex = match.input
+      ?.slice(0, match.index)
+      .lastIndexOf(String.raw`\c`);
+    const chapMatch = chapPat.exec(match.input?.slice(chapIndex) ?? '');
     start = match.index! + match[0].length;
     let t =
       index < internalverses.length - 1
         ? transcription.substring(start, internalverses![index + 1].index!)
         : transcription.substring(start);
-    const newChapIdx = t.indexOf('\\c');
+    const newChapIdx = t.indexOf(String.raw`\c`);
     if (newChapIdx > -1) {
       t = t.slice(0, newChapIdx);
+    }
+    let chapter: string;
+    if (chapMatch) {
+      chapter = chapMatch[1];
+    } else if (chapIndex && chapIndex > 0) {
+      chapter = (currentPassage.attributes.endChapter || 0).toString();
+    } else {
+      chapter = (currentPassage.attributes.startChapter || 0).toString();
     }
     ret.push({
       attributes: {
         book: currentPassage.attributes.book,
         reference:
-          (chapMatch
-            ? chapMatch[1]
-            : chapIndex && chapIndex > 0
-              ? (currentPassage.attributes.endChapter || 0).toString()
-              : (currentPassage.attributes.startChapter || 0).toString()) +
-          ':' +
-          match[0].replace('\\v', '').trim(),
+          chapter + ':' + match[0].replaceAll(String.raw`\v`, '').trim(),
         lastComment: t.trimStart().trimEnd(),
       },
       relationships: currentPassage.relationships,

@@ -6,9 +6,12 @@ import { IAsrState } from './asrState';
 import { axiosGet, axiosPost } from '../../utils/axios';
 import { AxiosError } from 'axios';
 import { findRecord } from '../../crud/tryFindRecord';
+import { pullTableList } from '../../crud/pullTableList';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
+import IndexedDBSource from '@orbit/indexeddb';
+import JSONAPISource from '@orbit/jsonapi';
 import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { Button, ActionRow } from '../../control';
@@ -62,6 +65,8 @@ import {
   recordAiSample,
 } from '../../control/estimateAiTime';
 import AiTimeProgress from '../../components/AiTimeProgress';
+import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
+import { asrShowsLanguagePicker } from './asrShowsLanguagePicker';
 
 /** `key` is set only when this session started the request; a task resumed
  * after a restart has no known start, so it gets no estimate or sample. */
@@ -73,11 +78,15 @@ interface AsrRun {
 interface AsrProgressProps {
   mediaId: string;
   phonetic: boolean;
-  asrState?: IAsrState | undefined;
-  force?: boolean | undefined;
-  contentVerses?: string[] | undefined;
+  asrState?: IAsrState;
+  /** True when ASR settings changed; re-run even if transcription or TRTask exists. */
+  force?: boolean;
+  /** Step/primary language when not the project vernacular (e.g. LWC). */
+  primaryBcp47?: string;
+  contentVerses?: string[];
   setTranscription: (transcription: string) => void;
-  onPullTasks: (mediaId: string) => void;
+  /** Bump passage-detail context after the mediafile pull (optional). */
+  forceRefresh?: () => void;
   onClose: () => void;
 }
 
@@ -86,16 +95,18 @@ export default function AsrProgress({
   phonetic,
   asrState,
   force,
+  primaryBcp47,
   contentVerses,
   setTranscription,
-  onPullTasks,
+  forceRefresh,
   onClose,
-}: AsrProgressProps) {
+}: Readonly<AsrProgressProps>) {
   const addingRef = React.useRef(false);
   const [working, setWorking] = React.useState(false);
-  const { getAsrSettings } = useGetAsrSettings();
+  const { getAsrSettings, getVernacularLanguage } = useGetAsrSettings();
   const projectSegmentSave = useProjectSegmentSave();
   const [memory] = useGlobal('memory');
+  const [coordinator] = useGlobal('coordinator');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
   const { showMessage } = useSnackBar();
@@ -118,6 +129,16 @@ export default function AsrProgress({
   const tc: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [errorReporter] = useGlobal('errorReporter');
+  const remote = coordinator?.getSource('remote') as JSONAPISource | undefined;
+  const backup = coordinator?.getSource('backup') as
+    IndexedDBSource | undefined;
+  const asrPrimaryBcp47 =
+    primaryBcp47 ?? getVernacularLanguage()?.bcp47 ?? 'und';
+  const { needsSister } = useNeedsSisterLanguage(asrPrimaryBcp47);
+  const showDifferentLanguageTip = asrShowsLanguagePicker(
+    asrPrimaryBcp47,
+    needsSister
+  );
 
   const loadVerseTimings = (mediaRec: MediaFileD | undefined) => {
     const segs = getSortedRegions(
@@ -294,8 +315,8 @@ export default function AsrProgress({
       }
       //console.log(`${current} not done`, response);
       setWorking(true);
-    } catch (errResult: unknown) {
-      await showTaskFailure(axiosErrorMessage(errResult));
+    } catch (error_: unknown) {
+      await showTaskFailure(axiosErrorMessage(error_));
     } finally {
       checkingRef.current = false;
     }
@@ -303,7 +324,7 @@ export default function AsrProgress({
 
   const launchTimer = () => {
     taskTimer.current = setInterval(() => {
-      checkTask();
+      void checkTask();
     }, timerDelay);
   };
 
@@ -313,7 +334,7 @@ export default function AsrProgress({
     }
     setTranscribing(false);
     setWorking(false);
-    onClose && onClose();
+    onClose?.();
   };
 
   /**
@@ -346,20 +367,28 @@ export default function AsrProgress({
         token
       )) as { data: { data: MediaFileD } };
       const mediaRec = response?.data.data as MediaFileD;
-      loadVerseTimings(mediaRec);
       appliedKeysRef.current = new Set();
       cleanupErrorShownRef.current = false;
       const nextTaskId = storedTaskId(mediaRec);
       if (nextTaskId) {
-        onPullTasks(remId);
+        if (remote && backup) {
+          void pullTableList(
+            'mediafile',
+            [remId],
+            memory,
+            remote,
+            backup,
+            errorReporter
+          ).then(() => forceRefresh?.());
+        }
         setTaskId(nextTaskId);
       } else {
         status(t.aiAsrFailed);
         closing();
       }
-    } catch (errResult: unknown) {
-      const error = errResult as AxiosError;
-      const message = axiosErrorMessage(errResult);
+    } catch (error_: unknown) {
+      const error = error_ as AxiosError;
+      const message = axiosErrorMessage(error_);
       const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
       logError(
         Severity.error,
@@ -405,6 +434,7 @@ export default function AsrProgress({
     cleanupErrorShownRef.current = false;
     const storedId = storedTaskId(mediaRec);
     if (
+      !force &&
       !storedId &&
       ignoreVs((mediaRec?.attributes?.transcription ?? '').trim())
     ) {
@@ -413,7 +443,7 @@ export default function AsrProgress({
     } else if (storedId && !force) {
       setTaskId(storedId);
     } else {
-      postTranscribe();
+      void postTranscribe();
     }
 
     return () => {
@@ -465,17 +495,15 @@ export default function AsrProgress({
             textId="asr-time-estimate"
           />
         )}
-        {pollClip && (
+        {(pollClip || taskId) && (
           <Box id="asr-clip-0">
-            <Typography>
-              {[pollClip.clip, pollClip.state].filter(Boolean).join(' — ')}
-            </Typography>
-            {pollClip.state === 'FAILURE' && (
+            <Typography>{pollClip?.state || t.asrQueued}</Typography>
+            {pollClip?.state === 'FAILURE' && (
               <Typography color="error">
                 {aeroErrorMessage(pollClip.error) ?? t.aiAsrFailed}
               </Typography>
             )}
-            {pollClip.state === 'SUCCESS' &&
+            {pollClip?.state === 'SUCCESS' &&
               pollClip.segments.map((segment, segIx) => (
                 <Typography
                   key={`${segment.start}-${segIx}`}
@@ -494,7 +522,17 @@ export default function AsrProgress({
               overflowWrap: 'break-word',
             }}
           >
-            {t.aiWillContinue.replace(/\{0\}/g, tc.recognizeSpeech)}
+            {[
+              t.aiWillContinue.replaceAll('{0}', tc.recognizeSpeech),
+              showDifferentLanguageTip
+                ? t.aiWillContinueDifferentLanguage.replaceAll(
+                    '{0}',
+                    tc.recognizeSpeech
+                  )
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           </Typography>
         )}
         <ActionRow>
