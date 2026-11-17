@@ -4,6 +4,12 @@ import { remoteIdNum } from '../../crud/remoteId';
 import { MediaFileAttributes } from '../../model';
 import { evictMediaCache } from '../../utils/evictMediaCache';
 
+/**
+ * Desktop pending-upload queue: localStorage rows pointing at staged files in
+ * the media folder. On web, Upload Pending lives on the Local Media Blob
+ * itself (`uploadPendingBlobs.ts`, ADR 0016); the types and identity keys
+ * here are shared by both.
+ */
 const STORAGE_KEY = 'pendingMediaUploadsV1';
 
 /** Serializable snapshot for POST /api/mediafiles (same shape as nextUpload `record`). */
@@ -90,7 +96,7 @@ export type PendingUploadIdentity = Pick<
   'planId' | 'passageId' | 'artifactTypeId' | 'originalFile'
 >;
 
-const randomId = (): string =>
+export const randomId = (): string =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `pu-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -133,7 +139,9 @@ export function subscribePendingMediaUploads(onChange: () => void): () => void {
   };
 }
 
-function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
+export function pendingUploadIdentityKey(
+  record: PendingUploadIdentity
+): string {
   return [
     record.planId || '',
     record.passageId || '',
@@ -143,7 +151,7 @@ function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
 }
 
 /** Passage-level match (any originalFile) for TT-7366 re-record/upload warn. */
-function pendingUploadPassageKey(
+export function pendingUploadPassageKey(
   record: Pick<
     PendingUploadMediaRecord,
     'planId' | 'passageId' | 'artifactTypeId'

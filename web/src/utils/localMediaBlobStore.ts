@@ -50,6 +50,13 @@ export interface LocalMediaBlobRecord {
   createdAt: number;
   retryCount: number;
   lastAccessedAt?: number;
+  /**
+   * What the upload path needs to send this blob to the cloud (record
+   * snapshot, upload type, restore links). Opaque here: the store keeps it
+   * across re-puts and the owner (`store/upload/uploadPendingBlobs.ts`)
+   * validates it when read back.
+   */
+  uploadRequest?: unknown;
 }
 
 export type PutLocalMediaBlobInput = Pick<
@@ -59,7 +66,11 @@ export type PutLocalMediaBlobInput = Pick<
   Partial<
     Pick<
       LocalMediaBlobRecord,
-      'clientTempId' | 'mediafileId' | 'contentType' | 'createdAt'
+      | 'clientTempId'
+      | 'mediafileId'
+      | 'contentType'
+      | 'createdAt'
+      | 'uploadRequest'
     >
   >;
 
@@ -314,6 +325,7 @@ export const putLocalMediaBlob = async (
         createdAt: existing?.createdAt ?? input.createdAt ?? Date.now(),
         retryCount: existing?.retryCount ?? 0,
         lastAccessedAt: existing?.lastAccessedAt,
+        uploadRequest: input.uploadRequest ?? existing?.uploadRequest,
       };
       await replaceRecord(store, existing, record);
       return record;
