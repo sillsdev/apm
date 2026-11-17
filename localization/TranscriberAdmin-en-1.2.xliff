@@ -9386,6 +9386,13 @@
                <context context-type="sourcefile">Access.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="shared.ok">
+            <source>OK</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">MicrophoneDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="shared.paratextchapterSpan">
             <source>Passage {0}.{1} {2}: Passage must not span chapters.</source>
             <target/>
@@ -12609,6 +12616,13 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.upload">
+            <source>Upload</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.markVerses">
             <source>Mark Verses</source>
             <target/>
@@ -12771,7 +12785,7 @@
           </context-group>
         </trans-unit>
          <trans-unit id="wsAudioPlayer.convertVoiceAi">
-            <source>Convert Voice (AI)</source>
+            <source>Convert Voice (AI)...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -12838,6 +12852,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.microphoneListFailed">
+            <source>Could not get the list of microphones.</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">MicrophoneDialog.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.moreOptions">
@@ -12973,6 +12994,13 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="wsAudioPlayer.resetAudio">
+            <source>Reset Audio</source>
+            <target/>
+            <context-group context-type="sourcefile">
+               <context context-type="sourcefile">AudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="wsAudioPlayer.resetSegments">
             <source>Reset</source>
             <target/>
@@ -13002,7 +13030,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.selectMicrophoneMenu">
-            <source>Select Microphone</source>
+            <source>Select Microphone...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>

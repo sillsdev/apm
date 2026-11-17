@@ -27,7 +27,6 @@ import { RecordKeyMap } from '@orbit/records';
 export const PassageDetailStepComplete = () => {
   const {
     currentstep,
-    setCurrentStep,
     setStepCompleteTo,
     section,
     recording,
@@ -50,13 +49,9 @@ export const PassageDetailStepComplete = () => {
     passageDetailStepCompleteSelector,
     shallowEqual
   );
-  const passageNavigate = usePassageNavigate(
-    () => {
-      setView('');
-    },
-    setCurrentStep,
-    isNavigationBlocked
-  );
+  const passageNavigate = usePassageNavigate(() => {
+    setView('');
+  }, isNavigationBlocked);
   const { isChanged } = useContext(UnsavedContext).state;
   const { complete, toggleComplete } = useToggleStepComplete();
 

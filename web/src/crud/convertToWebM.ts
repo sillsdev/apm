@@ -218,11 +218,13 @@ async function convertToOggWithWorker(
   });
 }
 
+export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
+
 /**
  * Converts any audio Blob to a target format using MediaRecorder API or worker-based conversion.
  * Currently only OGG and WebM are supported output formats.
  * @param audioBlob - The input audio Blob (WAV, MP3, MP4, etc.)
- * @param targetMimeType - The target MIME type. Supported values:
+ * @param targetMimeType - The target MIME type. Defaults to DEFAULT_COMPRESSED_MIME. Supported values:
  *   - 'audio/webm'
  *   - 'audio/webm;codecs=opus'
  *   - 'audio/ogg'
@@ -232,7 +234,7 @@ async function convertToOggWithWorker(
  */
 export async function convertToFormat(
   audioBlob: Blob,
-  targetMimeType: string
+  targetMimeType: string = DEFAULT_COMPRESSED_MIME
 ): Promise<Blob> {
   // Normalize the target MIME type to avoid subtle mismatches
   const normalizedMimeType = targetMimeType.trim().toLowerCase();
