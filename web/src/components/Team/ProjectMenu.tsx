@@ -125,7 +125,7 @@ export function ProjectMenu(props: IProps) {
             <ListItemText primary={t.copyProject} />
           </StyledMenuItem>
         )}
-        {isElectron && !isOffline && !justFilter && isDeveloper && (
+        {!isOffline && !justFilter && (!isElectron || isDeveloper) && (
           <StyledMenuItem id="projMenuOl" onClick={handle('offlineAvail')}>
             <ListItemIcon>
               {offlineProject?.attributes?.offlineAvailable ? (

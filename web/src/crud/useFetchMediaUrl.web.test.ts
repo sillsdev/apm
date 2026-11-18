@@ -67,7 +67,25 @@ describe('useFetchMediaUrl (web)', () => {
     expect(mockFetchUrl).not.toHaveBeenCalled();
   });
 
-  it('falls back to the cloud url when this device has no blob', async () => {
+  it('after a cloud miss, plays the Local Media Blob when fetchUrl saved it', async () => {
+    const blob = new Blob(['from-cloud'], { type: 'audio/mpeg' });
+    mockFindLocalMediaBlob
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(blob);
+    mockFetchUrl.mockResolvedValue(`local-media:${MEDIA_ID}`);
+    const { result } = renderHook(() => useFetchMediaUrl());
+
+    act(() => result.current.fetchMediaUrl({ id: MEDIA_ID }));
+
+    await waitFor(() =>
+      expect(result.current.mediaState.status).toBe(MediaSt.FETCHED)
+    );
+    expect(result.current.mediaState.url).toBe('blob:local-1');
+    expect(mockFetchUrl).toHaveBeenCalled();
+    expect(createObjectURL).toHaveBeenCalledWith(blob);
+  });
+
+  it('falls back to the cloud url when download does not yield a local blob', async () => {
     mockFindLocalMediaBlob.mockResolvedValue(undefined);
     mockFetchUrl.mockResolvedValue('https://s3.example/a.mp3');
     const { result } = renderHook(() => useFetchMediaUrl());

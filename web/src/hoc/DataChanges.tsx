@@ -14,10 +14,13 @@ import { useInterval } from '../utils/useInterval';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { isElectron, OrbitNetworkErrorRetries } from '../../api-variable';
-import { findRecord, useFetchUrlNow } from '../crud';
+import { findRecord, getMediaProjRec, useFetchUrlNow } from '../crud';
+import { remoteIdGuid } from '../crud/remoteId';
+import { IFetchNowProps } from '../crud/useFetchUrlNow';
 import { electronExport } from '../store/importexport/electronExport';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
-import { ExportType, UserD } from '../model';
+import { ExportType, MediaFileD, UserD } from '../model';
+import { RecordKeyMap } from '@orbit/records';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -71,11 +74,39 @@ export function DataChanges(props: PropsWithChildren) {
   const saving = useMemo(() => anySaving(), [toolsChanged]);
   const { checkAllProjects } = useSanityCheck(setLanguage);
   const { getBibleMediaProject, getBibleMediaPlan } = useBibleMedia();
-  const fetchUrl = useFetchUrlNow();
+  const getGlobal = useGetGlobal();
+  const fetchUrlNow = useFetchUrlNow();
+  // Web: only fill Local Media Blobs for the open project (ADR 0017).
+  // Desktop keeps downloading for every mediafile sync as before.
+  const fetchUrl = useCallback(
+    async (props: IFetchNowProps) => {
+      if (isElectron) return fetchUrlNow(props);
+      const mediafileId = !isNaN(Number(props.id))
+        ? (remoteIdGuid(
+            'mediafile',
+            props.id,
+            memory?.keyMap as RecordKeyMap
+          ) as string)
+        : props.id;
+      if (!mediafileId) return '';
+      try {
+        const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
+          MediaFileD | undefined;
+        const projId = getMediaProjRec(mediaRec ?? null, memory)?.id;
+        if (projId && projId === getGlobal('project')) {
+          return fetchUrlNow(props);
+        }
+      } catch {
+        return '';
+      }
+      return '';
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fetchUrlNow, memory]
+  );
   const users = useOrbitData<UserD[]>('user');
   const defaultDataDelayInMinutes = 2;
   const [userDataDelay, setUserDataDelay] = useState(defaultDataDelayInMinutes);
-  const getGlobal = useGetGlobal();
   useUploadPendingRetry();
   useEffect(() => {
     const userRec = findRecord(memory, 'user', user) as UserD; //make sure we have the user record in memory
@@ -164,7 +195,7 @@ export function DataChanges(props: PropsWithChildren) {
           user,
           setLanguage,
           setDataChangeCount,
-          isElectron ? fetchUrl : undefined,
+          fetchUrl,
           undefined,
           setOrbitRetries
         );
