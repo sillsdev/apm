@@ -278,6 +278,30 @@ describe('nextUpload on web saves an Upload Pending Local Media Blob', () => {
     expect(releaseUploadPending).toHaveBeenCalledWith('new-key');
   });
 
+  it('keeps the blob claimed until it is marked Cloud-backed', async () => {
+    // cb runs before settleUploadPending, so a drain sees this upload finish
+    // before the Cloud-backed write commits. The claim stays held until that
+    // write ends, so a second drain pass skips the blob instead of uploading
+    // it again.
+    let finishSettle!: () => void;
+    settleUploadPending.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishSettle = resolve;
+      })
+    );
+    const cb = run({ pendingUploadIdToClearOnSuccess: 'queued-key' });
+    await settle();
+
+    expect(cb).toHaveBeenCalledWith(0, true, expect.anything());
+    expect(settleUploadPending).toHaveBeenCalled();
+    expect(releaseUploadPending).not.toHaveBeenCalled();
+
+    finishSettle();
+    await settle();
+
+    expect(releaseUploadPending).toHaveBeenCalledWith('queued-key');
+  });
+
   it('keeps the blob Upload Pending when the success callback fails', async () => {
     const cb = jest.fn(() => Promise.reject(new Error('restore failed')));
     run({ cb });

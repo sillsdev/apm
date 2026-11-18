@@ -104,7 +104,7 @@ export function DataChanges(props: PropsWithChildren) {
   const users = useOrbitData<UserD[]>('user');
   const defaultDataDelayInMinutes = 2;
   const [userDataDelay, setUserDataDelay] = useState(defaultDataDelayInMinutes);
-  useUploadPendingRetry();
+  const { requestDrain } = useUploadPendingRetry();
   useEffect(() => {
     const userRec = findRecord(memory, 'user', user) as UserD; //make sure we have the user record in memory
     const hk = JSON.parse(userRec?.attributes?.hotKeys ?? '{}');
@@ -199,6 +199,8 @@ export function DataChanges(props: PropsWithChildren) {
         // Cleared only after a successful sync, so a failed first tick keeps
         // firstRun for the next interval. Sanity uses sanityPending separately.
         setFirstRun(false);
+        // Non-blocking: Upload Pending drain must not hold the sync interval.
+        requestDrain();
         if (isFirstRun || sanityPending.current) await runSanityChecks();
         perfRecordMs('DataChanges.updateData', performance.now() - t0);
       } catch (err: unknown) {
