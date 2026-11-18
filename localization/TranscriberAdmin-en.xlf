@@ -7264,6 +7264,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="projectDownload.notEnoughSpace">
+         <segment>
+            <source>Not enough storage space on this device for {0} MB. Free some space and try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="projectDownload.projects">
          <segment>
             <source>Projects</source>

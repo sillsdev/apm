@@ -35,6 +35,7 @@ import { spreadSx, rowSx, flexibleSx, rigidSx } from '../../control';
 import HelpMenu from '../HelpMenu';
 import PolicyDialog from '../PolicyDialog';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
+import WebOfflinePrepAlert from '../WebOfflinePrepAlert';
 import UserMenu from '../UserMenu';
 import DetailTitle from './DetailTitle';
 import { HeadStatus } from './HeadStatus';
@@ -412,9 +413,8 @@ export function AppHead({
           {!isPreAuthPath(pathname) && <UserMenu action={handleUserMenu} />}
         </Box>
       </Box>
-      {(downloadAlert || !isElectron) && (
-        <ProjectDownloadAlert cb={downloadAlert ? downDone : () => undefined} />
-      )}
+      {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
+      {!isElectron && <WebOfflinePrepAlert />}
       <PolicyDialog
         isOpen={Boolean(showTerms)}
         content={showTerms}

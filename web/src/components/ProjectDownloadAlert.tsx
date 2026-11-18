@@ -19,6 +19,8 @@ import {
   shouldCloseMissingFilesDialog,
 } from '../utils/missingDownloadCompletion';
 import { isLocalMediaMissing } from '../utils/isLocalMediaMissing';
+import { hasStorageRoomFor } from '../utils/storageRoom';
+import { logError, Severity } from '../utils/logErrorService';
 import {
   related,
   useProjectPlans,
@@ -88,12 +90,20 @@ interface Limits {
   total: number;
 }
 
+/**
+ * Desktop "project" amount downloads a PTF ZIP, which adds packaging overhead
+ * to the media bytes. Web downloads media blobs only.
+ */
+const PROJECT_PACKAGE_OVERHEAD_BYTES = isElectron ? 580000 : 0;
+
 interface IProps {
   cb: (cancel?: boolean) => void;
+  /** Limit the scan to this project (web keeps one project loaded, ADR 0017). */
+  projectId?: string;
 }
 
 export const ProjectDownloadAlert = (props: IProps) => {
-  const { cb } = props;
+  const { cb, projectId: onlyProjectId } = props;
   const t: IProjectDownloadStrings = useSelector(projectDownloadSelector);
   const ts: ISharedStrings = useSelector(sharedSelector);
   const offlineProjects = useOrbitData<OfflineProject[]>('offlineproject');
@@ -126,6 +136,8 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const [downAmt, setDownAmt] = React.useState('missing');
   const [showMissingFiles, setShowMissingFiles] = React.useState(false);
   const [downloadIncomplete, setDownloadIncomplete] = React.useState(false);
+  const [notEnoughSpace, setNotEnoughSpace] = React.useState(false);
+  const [errorReporter] = useGlobal('errorReporter');
   const projectPlans = useProjectPlans();
   const fetchUrl = useFetchUrlNow();
 
@@ -160,12 +172,40 @@ export const ProjectDownloadAlert = (props: IProps) => {
     m.media.attributes.contentType !== MarkDownType &&
     m.media.attributes.contentType !== UriLinkType;
 
+  /** Desktop: a file under dataPath. Web: a Local Media Blob in IndexedDB. */
+  const checkOnDevice = async (
+    m: IPlanMedia
+  ): Promise<{ fileKey: string; missing: boolean }> => {
+    const mediaKey = m.media.id || m.media?.keys?.remoteId || '';
+    if (!isElectron) {
+      return {
+        fileKey: mediaKey,
+        missing: await isLocalMediaMissing(m.media.id, errorReporter),
+      };
+    }
+    const local = { localname: '' };
+    const path = await dataPath(
+      m.media.attributes?.audioUrl ||
+        m.media.attributes?.s3file ||
+        m.media.attributes?.originalFile ||
+        '',
+      PathType.MEDIA,
+      local
+    );
+    return {
+      fileKey: local.localname || mediaKey,
+      missing: path !== local.localname,
+    };
+  };
+
   const getNeedyRemoteIds = async (opts?: { force?: boolean }) => {
     if (downloadingRef.current && !opts?.force) {
       return { projectIds: [] as string[], missingIds: [] as string[] };
     }
     const ops = offlineProjects.filter(
-      (op) => op?.attributes?.offlineAvailable
+      (op) =>
+        op?.attributes?.offlineAvailable &&
+        (!onlyProjectId || related(op, 'project') === onlyProjectId)
     );
     const planIds = Array<string>();
     const planProject: PlanProject = {};
@@ -195,30 +235,9 @@ export const ProjectDownloadAlert = (props: IProps) => {
         isDownloadable(m) &&
         (related(m.media, 'artifactType') || related(m.media, 'passage'))
       ) {
-        const mediaKey = m.media.id || m.media?.keys?.remoteId || '';
-        const local = { localname: '' };
-        let missingOnDevice = false;
-        if (isElectron) {
-          const path = await dataPath(
-            m.media.attributes?.audioUrl ||
-              m.media.attributes?.s3file ||
-              m.media.attributes?.originalFile ||
-              '',
-            PathType.MEDIA,
-            local
-          );
-          const fileName = local.localname || mediaKey;
-          if (fileNames.has(fileName)) continue;
-          fileNames.add(fileName);
-          missingOnDevice = path !== local.localname;
-          if (missingOnDevice) {
-            console.log('Needing download:', path, local.localname);
-          }
-        } else {
-          if (fileNames.has(mediaKey)) continue;
-          fileNames.add(mediaKey);
-          missingOnDevice = await isLocalMediaMissing(m.media.id);
-        }
+        const { fileKey, missing: missingOnDevice } = await checkOnDevice(m);
+        if (fileNames.has(fileKey)) continue;
+        fileNames.add(fileKey);
         const remoteOrId = m.media?.keys?.remoteId || m.media.id;
         newProjectMediaIds.push(remoteOrId);
         const fileSize = m.media?.attributes?.filesize || 5000;
@@ -312,6 +331,8 @@ export const ProjectDownloadAlert = (props: IProps) => {
     handleClose(true)();
   };
 
+  // A failed file is reported and the loop moves on; the re-scan afterwards
+  // shows the user how many are still missing (TT-6932).
   const downloadIds = async (ids: string[]) => {
     let n = 0;
     for (const id of ids) {
@@ -322,13 +343,38 @@ export const ProjectDownloadAlert = (props: IProps) => {
           cancelled: () => cancelRef.current,
         });
         if (!isSuccessfulMediaFetch(path, ts.expiredToken)) {
-          console.warn('missing file download failed', id, path);
+          logError(
+            Severity.error,
+            errorReporter,
+            `missing file download failed ${id}: ${path}`
+          );
         }
       } catch (e) {
-        console.warn('missing file download error', id, e);
+        logError(
+          Severity.error,
+          errorReporter,
+          `missing file download error ${id}: ${String(e)}`
+        );
       }
       n++;
       setProgress(ids.length > 0 ? (n / ids.length) * 100 : 100);
+    }
+  };
+
+  /** Re-scan disk/IDB; only close when nothing remains missing (TT-6932). */
+  const finishAfterDownload = async () => {
+    if (cancelRef.current) {
+      handleClose(true)();
+      return;
+    }
+    const scan = await getNeedyRemoteIds({ force: true });
+    setNeedyIds(scan.projectIds);
+    setDownloading(false);
+    setProgress(0);
+    if (shouldCloseMissingFilesDialog(scan.missingIds.length)) {
+      handleClose(false)();
+    } else {
+      setDownloadIncomplete(true);
     }
   };
 
@@ -337,49 +383,35 @@ export const ProjectDownloadAlert = (props: IProps) => {
       handleClose(false)();
       return;
     }
+    // A cancel from an earlier pass must not stop this one.
+    cancelRef.current = false;
     setDownloadIncomplete(false);
+    if (downAmt === 'project' && isElectron) {
+      setDownloading(true);
+      setDownloadOpen(true);
+      return;
+    }
+    // Web offline prep writes to IndexedDB; stop before filling the quota.
+    if (
+      !isElectron &&
+      !(await hasStorageRoomFor(downloadSize, errorReporter))
+    ) {
+      setNotEnoughSpace(true);
+      return;
+    }
+    setNotEnoughSpace(false);
     setDownloading(true);
     if (downAmt === 'project') {
-      if (isElectron) {
-        setDownloadOpen(true);
-        return;
-      }
       // Web: full offline prep downloads all downloadable media into IDB
       // (desktop "project" uses a PTF ZIP via ProjectDownload).
       await downloadIds(projectMediaIds);
-      if (cancelRef.current) {
-        handleClose(true)();
-        return;
-      }
-      const scan = await getNeedyRemoteIds({ force: true });
-      setNeedyIds(scan.projectIds);
-      setDownloading(false);
-      setProgress(0);
-      if (shouldCloseMissingFilesDialog(scan.missingIds.length)) {
-        handleClose(false)();
-      } else {
-        setDownloadIncomplete(true);
-      }
+      await finishAfterDownload();
     } else if (downAmt === 'filtered') {
       await downloadIds(filteredIds);
       handleClose()();
     } else if (downAmt === 'missing') {
-      const ids = [...missingIds];
-      await downloadIds(ids);
-      if (cancelRef.current) {
-        handleClose(true)();
-        return;
-      }
-      // Re-scan disk/IDB; only close when nothing remains missing (TT-6932).
-      const scan = await getNeedyRemoteIds({ force: true });
-      setNeedyIds(scan.projectIds);
-      setDownloading(false);
-      setProgress(0);
-      if (shouldCloseMissingFilesDialog(scan.missingIds.length)) {
-        handleClose(false)();
-      } else {
-        setDownloadIncomplete(true);
-      }
+      await downloadIds([...missingIds]);
+      await finishAfterDownload();
     }
   };
 
@@ -406,9 +438,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
     if (value === 'filtered' || value === 'missing')
       return limits.get(proj)?.[value] || 0;
     const total = limits.get(proj)?.total || 0;
-    // Desktop project amount includes PTF packaging overhead; web downloads
-    // media blobs only.
-    return total > 0 ? total + (isElectron ? 580000 : 0) : 0;
+    return total > 0 ? total + PROJECT_PACKAGE_OVERHEAD_BYTES : 0;
   };
 
   const handleChangeAmt = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -446,6 +476,11 @@ export const ProjectDownloadAlert = (props: IProps) => {
         >
           <Box>
             <DialogContent>
+              {notEnoughSpace && (
+                <Typography color="error" sx={{ mb: 1, fontSize: 'small' }}>
+                  {t.notEnoughSpace.replace('{0}', `~${sizeMb}`)}
+                </Typography>
+              )}
               {downloadIncomplete && (
                 <Typography color="error" sx={{ mb: 1, fontSize: 'small' }}>
                   {ts.mediaError} ({missingIds.length})

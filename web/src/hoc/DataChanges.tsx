@@ -14,13 +14,11 @@ import { useInterval } from '../utils/useInterval';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { isElectron, OrbitNetworkErrorRetries } from '../../api-variable';
-import { findRecord, getMediaProjRec, useFetchUrlNow } from '../crud';
-import { remoteIdGuid } from '../crud/remoteId';
+import { findRecord, useFetchUrlNow } from '../crud';
 import { IFetchNowProps } from '../crud/useFetchUrlNow';
 import { electronExport } from '../store/importexport/electronExport';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
-import { ExportType, MediaFileD, UserD } from '../model';
-import { RecordKeyMap } from '@orbit/records';
+import { ExportType, UserD } from '../model';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -76,33 +74,32 @@ export function DataChanges(props: PropsWithChildren) {
   const { getBibleMediaProject, getBibleMediaPlan } = useBibleMedia();
   const getGlobal = useGetGlobal();
   const fetchUrlNow = useFetchUrlNow();
-  // Web: only fill Local Media Blobs for the open project (ADR 0017).
-  // Desktop keeps downloading for every mediafile sync as before.
+  // Web downloads one synced file at a time, after the previous one settles.
+  const backgroundFill = useRef<Promise<void>>(Promise.resolve());
+  // Desktop keeps downloading every synced mediafile as before. Web default
+  // is lazy: media is stored when played (useFetchMediaUrl). Only offline
+  // intent on the open project fills during sync (ADR 0017), and that fill
+  // runs in the background so it never holds up the sync loop.
   const fetchUrl = useCallback(
     async (props: IFetchNowProps) => {
       if (isElectron) return fetchUrlNow(props);
-      const mediafileId = !isNaN(Number(props.id))
-        ? (remoteIdGuid(
-            'mediafile',
-            props.id,
-            memory?.keyMap as RecordKeyMap
-          ) as string)
-        : props.id;
-      if (!mediafileId) return '';
-      try {
-        const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
-          MediaFileD | undefined;
-        const projId = getMediaProjRec(mediaRec ?? null, memory)?.id;
-        if (projId && projId === getGlobal('project')) {
-          return fetchUrlNow(props);
-        }
-      } catch {
+      const project = getGlobal('project');
+      if (!project || !getOfflineProject(project)?.attributes?.offlineAvailable)
         return '';
-      }
+      backgroundFill.current = backgroundFill.current
+        .then(() => fetchUrlNow({ ...props, persistOnly: true }))
+        .then(
+          () => undefined,
+          (err: unknown) =>
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(toError(err), `background media fill ${props.id}`)
+            )
+        );
       return '';
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fetchUrlNow, memory]
+    [fetchUrlNow, getGlobal, getOfflineProject, errorReporter]
   );
   const users = useOrbitData<UserD[]>('user');
   const defaultDataDelayInMinutes = 2;

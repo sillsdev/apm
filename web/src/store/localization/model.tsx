@@ -1410,6 +1410,7 @@ export interface IProjectDownloadStrings extends Localize.LocalizedStringsMethod
     "missing": string;
     "missingFiles": string;
     "missingFileList": string;
+    "notEnoughSpace": string;
     "projects": string;
     "project": string;
     "projectDetails": string;
