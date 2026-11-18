@@ -5,7 +5,7 @@ import {
   UninitializedRecord,
 } from '@orbit/records';
 import { Resource, MediaFile, MediaFileD } from '../model';
-import { AddRecord, recordRef, ReplaceRelatedRecord } from '../model/baseModel';
+import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { ArtifactTypeSlug, useArtifactType } from '.';
 import { getContentType } from '../utils/contentType';
 
@@ -37,38 +37,25 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
       },
     } as any as MediaFile;
     const t = new RecordTransformBuilder();
-    // AddRecord assigns mediaRec.id, so build the identity after it.
-    // TODO cleanup in next PR - guard against wrong ordering in future usages
     const ops = [
       ...AddRecord(t, mediaRec as unknown as UninitializedRecord, user, memory),
-    ];
-    const mediaRecordIdentity = recordRef('mediafile', mediaRec.id);
-    ops.push(
-      ...ReplaceRelatedRecord(t, mediaRecordIdentity, 'plan', 'plan', plan),
-      ...ReplaceRelatedRecord(
-        t,
-        mediaRecordIdentity,
-        'recordedbyUser',
-        'user',
-        user
-      )
+      ...ReplaceRelatedRecord(t, mediaRec, 'plan', 'plan', plan),
+      ...ReplaceRelatedRecord(t, mediaRec, 'recordedbyUser', 'user', user),
       // shared resources are not associated with a single passage
       // ...ReplaceRelatedRecord(t, mediaRec, 'passage', 'passage', passage.id),
-    );
-    ops.push(
       ...ReplaceRelatedRecord(
         t,
-        mediaRecordIdentity,
+        mediaRec,
         'artifactType',
         'artifacttype',
         getTypeId(ArtifactTypeSlug.SharedResource)
-      )
-    );
+      ),
+    ];
     if (artifactCategoryId)
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          mediaRecordIdentity,
+          mediaRec,
           'artifactCategory',
           'artifactcategory',
           artifactCategoryId
@@ -78,7 +65,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          mediaRecordIdentity,
+          mediaRec,
           'orgWorkflowStep',
           'orgworkflowstep',
           stepId

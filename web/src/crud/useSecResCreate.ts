@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { SectionResource } from '../model';
-import { AddRecord, recordRef, ReplaceRelatedRecord } from '../model/baseModel';
+import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { getTool, related, ToolSlug } from '.';
 import { findRecords } from './tryFindRecord';
 
@@ -47,41 +47,33 @@ export const useSecResCreate = (
       },
     } as SectionResource;
     const t = new RecordTransformBuilder();
-    // AddRecord assigns secRes.id, so build the identity after it.
-    const ops = [...AddRecord(t, secRes, user, memory)];
-    const sectionresourceIdentity = recordRef('sectionresource', secRes.id);
-    ops.push(
+    const ops = [
+      ...AddRecord(t, secRes, user, memory),
       ...ReplaceRelatedRecord(
         t,
-        sectionresourceIdentity,
+        secRes,
         'section',
         'section',
         secId || section.id
       ),
       ...ReplaceRelatedRecord(
         t,
-        sectionresourceIdentity,
+        secRes,
         'mediafile',
         'mediafile',
         mediafile.id
       ),
       ...ReplaceRelatedRecord(
         t,
-        sectionresourceIdentity,
+        secRes,
         'orgWorkflowStep',
         'orgworkflowstep',
         orgWorkflowStepId ?? internalization?.id
-      )
-    );
+      ),
+    ];
     if (passId) {
       ops.push(
-        ...ReplaceRelatedRecord(
-          t,
-          sectionresourceIdentity,
-          'passage',
-          'passage',
-          passId
-        )
+        ...ReplaceRelatedRecord(t, secRes, 'passage', 'passage', passId)
       );
     }
     await memory.update(ops);

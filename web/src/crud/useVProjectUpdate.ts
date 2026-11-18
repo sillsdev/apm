@@ -1,11 +1,7 @@
 import { useGlobal } from '../context/useGlobal';
 import { PlanD, ProjectD, VProjectD } from '../model';
 import { related, useTypeId } from '.';
-import {
-  recordRef,
-  ReplaceRelatedRecord,
-  UpdateRecord,
-} from '../model/baseModel';
+import { ReplaceRelatedRecord, UpdateRecord } from '../model/baseModel';
 
 export const useVProjectUpdate = () => {
   const [memory] = useGlobal('memory');
@@ -35,33 +31,29 @@ export const useVProjectUpdate = () => {
       publishUser,
       publishGroup,
     } = vProject.attributes;
-    const projectIdentity = recordRef('project', id);
+    const projectRec = {
+      type: 'project',
+      id,
+      attributes: {
+        name,
+        description,
+        uilanguagebcp47,
+        language,
+        languageName,
+        isPublic,
+        spellCheck,
+        defaultFont,
+        defaultFontSize,
+        rtl,
+        defaultParams,
+      },
+    } as ProjectD;
     await memory.update((t) => [
-      ...UpdateRecord(
-        t,
-        {
-          type: 'project',
-          id,
-          attributes: {
-            name,
-            description,
-            uilanguagebcp47,
-            language,
-            languageName,
-            isPublic,
-            spellCheck,
-            defaultFont,
-            defaultFontSize,
-            rtl,
-            defaultParams,
-          },
-        } as ProjectD,
-        user
-      ),
+      ...UpdateRecord(t, projectRec, user),
       // We use the plan type and not the project type
       ...ReplaceRelatedRecord(
         t,
-        projectIdentity,
+        projectRec,
         'projecttype',
         'projecttype',
         getTypeId(
@@ -71,28 +63,28 @@ export const useVProjectUpdate = () => {
       ),
       ...ReplaceRelatedRecord(
         t,
-        projectIdentity,
+        projectRec,
         'editsheetuser',
         'user',
         sheetUser
       ),
       ...ReplaceRelatedRecord(
         t,
-        projectIdentity,
+        projectRec,
         'editsheetgroup',
         'group',
         sheetGroup
       ),
       ...ReplaceRelatedRecord(
         t,
-        projectIdentity,
+        projectRec,
         'publishuser',
         'user',
         publishUser
       ),
       ...ReplaceRelatedRecord(
         t,
-        projectIdentity,
+        projectRec,
         'publishgroup',
         'group',
         publishGroup
@@ -100,26 +92,23 @@ export const useVProjectUpdate = () => {
       //we aren't allowing them to change group, owner or oraganization currently
     ]);
 
+    const planRec = {
+      type: 'plan',
+      id: vProject.id,
+      attributes: {
+        name,
+        flat,
+        tags: JSON.stringify(tags),
+        organizedBy,
+        sectionCount: vProject.attributes.sectionCount,
+        slug: vProject.attributes.slug,
+      },
+    } as any as PlanD;
     await memory.update((t) => [
-      ...UpdateRecord(
-        t,
-        {
-          type: 'plan',
-          id: vProject.id,
-          attributes: {
-            name,
-            flat,
-            tags: JSON.stringify(tags),
-            organizedBy,
-            sectionCount: vProject.attributes.sectionCount,
-            slug: vProject.attributes.slug,
-          },
-        } as any as PlanD,
-        user
-      ),
+      ...UpdateRecord(t, planRec, user),
       ...ReplaceRelatedRecord(
         t,
-        recordRef('plan', vProject.id),
+        planRec,
         'plantype',
         'plantype',
         getTypeId(type, 'plan')

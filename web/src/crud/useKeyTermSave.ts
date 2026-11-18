@@ -2,7 +2,6 @@ import {
   RecordOperation,
   RecordKeyMap,
   RecordTransformBuilder,
-  RecordIdentity,
 } from '@orbit/records';
 import { useDispatch } from 'react-redux';
 import { useGlobal } from '../context/useGlobal';
@@ -71,7 +70,7 @@ export const useKeyTermSave = ({ cb }: IProps) => {
         ...AddRecord(t, termTargetRec, user, memory),
         ...ReplaceRelatedRecord(
           t,
-          termTargetRec as RecordIdentity,
+          termTargetRec,
           'organization',
           'organization',
           org
