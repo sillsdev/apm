@@ -98,7 +98,12 @@ jest.mock('../utils/useAudioConversion', () => ({
   }),
 }));
 jest.mock('react-redux', () => ({
-  useSelector: () => ({ reduceNoiseAi: 'Reduce', convertVoiceAi: 'Convert' }),
+  useSelector: () => ({
+    reduceNoiseAi: 'Reduce',
+    convertVoiceAi: 'Convert',
+    playTip: 'Play [{0}]',
+    pauseTip: 'Pause [{0}]',
+  }),
   shallowEqual: jest.fn(),
 }));
 jest.mock('../selector', () => ({

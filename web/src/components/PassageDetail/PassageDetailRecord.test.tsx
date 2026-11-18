@@ -247,6 +247,11 @@ jest.mock('../../selector', () => ({
   mediaTabSelector: jest.fn(() => ({
     pendingUploadExistsWarn: PENDING_WARN_TEXT,
   })),
+  wsAudioPlayerSelector: jest.fn(() => ({
+    record: 'Record [{0}]',
+    stopTip: 'Stop [{0}]',
+    pauseTip: 'Pause [{0}]',
+  })),
 }));
 
 jest.mock('react-redux', () => ({

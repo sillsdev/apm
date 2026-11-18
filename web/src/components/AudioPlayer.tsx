@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useContext,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -51,6 +52,7 @@ import {
 } from '../crud/waveformRenderer';
 import { audioManager, type AudioHandle } from '../utils/audioManager';
 import usePassageDetailContext from '../context/usePassageDetailContext';
+import { HotKeyContext } from '../context/HotKeyContext';
 import { MicrophoneDialog } from './MicrophoneDialog';
 import { ConvertVoiceDialog } from './ConvertVoiceDialog';
 import { AiProcessing } from './AiProcessing';
@@ -169,6 +171,9 @@ export interface AudioPlayerProps {
    * Override when a screen shows more than one player, so the labels stay unique.
    */
   label?: string;
+
+  /** Subscribe Ctrl+Space to play/pause (default: true) */
+  hotkeys?: boolean;
 }
 
 export interface AudioMarker {
@@ -246,9 +251,12 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       markers,
       onWaveformClick,
       label = 'passage',
+      hotkeys = true,
     },
     ref
   ) => {
+    const { subscribe, unsubscribe, localizeHotKey } =
+      useContext(HotKeyContext).state;
     const containerRef = useRef<HTMLDivElement>(null);
     const minimapContainerRef = useRef<HTMLDivElement>(null);
     const wsRef = useRef<WaveSurfer | null>(null);
@@ -802,6 +810,15 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       else audioManager.play(selfHandleRef.current);
     };
 
+    useEffect(() => {
+      if (!hotkeys) return;
+      subscribe('CTRL+SPACE', () => {
+        handlePlayToggle();
+        return true;
+      });
+      return () => unsubscribe('CTRL+SPACE');
+    });
+
     const handleUndo = () => {
       const stack = [...undoStack];
       const entry = stack.pop();
@@ -950,6 +967,14 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           onClick={handlePlayToggle}
           disabled={!hasLoadedAudio}
           sx={{ p: 0 }}
+          title={
+            hotkeys
+              ? (playing ? t.pauseTip : t.playTip).replace(
+                  '{0}',
+                  localizeHotKey('CTRL+SPACE')
+                )
+              : undefined
+          }
           aria-label={playing ? `${label} pause` : `${label} play`}
         >
           {playing ? (
