@@ -56,6 +56,13 @@ import {
   saveUploadPendingBlob,
   settleUploadPending,
 } from './uploadPendingBlobs';
+import {
+  isPutBlobBodyReject,
+  putBlobBody,
+  UPLOAD_FAILED_TEXT,
+  type PutBlobBodyReject,
+} from './putBlobBody';
+import { requestUploadPendingBackgroundSync } from './uploadPendingBackgroundSync';
 
 const ipc = window?.api as MainAPI;
 
@@ -159,95 +166,66 @@ export class UploadFileReject extends Error {
   }
 }
 
-export const uploadFile = (
+/** Turns a failed PUT into an UploadFileReject, reporting it the way the inline XHR did. */
+const toUploadFileReject = (
+  rej: PutBlobBodyReject,
+  data: MediaFileAttributes,
+  file: File,
+  errorReporter: typeof bugsnagClient
+): UploadFileReject => {
+  if (rej.failure === 'http') {
+    logError(
+      Severity.error,
+      errorReporter,
+      `upload ${file.name}: (${rej.statusNum}) ${rej.statusText}`
+    );
+  } else if (rej.failure === 'network') {
+    const host = (() => {
+      try {
+        return new URL(data.audioUrl).host;
+      } catch {
+        return 'unknown';
+      }
+    })();
+    const statusText = [
+      UPLOAD_FAILED_TEXT,
+      rej.httpStatus ? `HTTP ${rej.httpStatus}` : 'network error',
+      typeof navigator !== 'undefined' && !navigator.onLine
+        ? 'offline'
+        : undefined,
+      `${file.name} (${file.size} bytes)`,
+      host,
+    ]
+      .filter(Boolean)
+      .join('; ');
+    logError(
+      Severity.error,
+      errorReporter,
+      `upload ${file.name}: ${statusText}`
+    );
+    return new UploadFileReject(rej.statusNum, statusText, rej.httpStatus);
+  }
+  // Aborts and timeouts are retried by the caller without a report.
+  return new UploadFileReject(rej.statusNum, rej.statusText, rej.httpStatus);
+};
+
+export const uploadFile = async (
   data: MediaFileAttributes,
   file: File,
   errorReporter: typeof bugsnagClient
 ): Promise<{ statusNum: number; statusText: string }> => {
-  return new Promise((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    const cleanup = (): void => {
-      xhr.onload = null;
-      xhr.onerror = null;
-      xhr.onabort = null;
-      xhr.ontimeout = null;
-      // @ts-ignore allow memory to be released
-      xhr = null;
-    };
-    xhr.open('PUT', data.audioUrl, true);
-    xhr.setRequestHeader('Content-Type', data.contentType);
-    xhr.timeout = uploadPutTimeoutMs(file.size);
-
-    xhr.onload = () => {
-      if (xhr.status < 300) {
-        cleanup();
-        resolve({ statusNum: 0, statusText: '' });
-      } else {
-        logError(
-          Severity.error,
-          errorReporter,
-          `upload ${file.name}: (${xhr.status}) ${xhr.responseText}`
-        );
-        const rej = new UploadFileReject(
-          xhr.status,
-          xhr.responseText || 'upload failed',
-          xhr.status
-        );
-        // cleanup removes the xhr values loaded into UploadFileReject (above)
-        cleanup();
-        reject(rej);
-      }
-    };
-    xhr.onerror = () => {
-      const httpStatus = xhr.status;
-      const host = (() => {
-        try {
-          return new URL(data.audioUrl).host;
-        } catch {
-          return 'unknown';
-        }
-      })();
-      const statusText = [
-        'upload failed',
-        httpStatus === 0 ? 'network error' : `HTTP ${httpStatus}`,
-        typeof navigator !== 'undefined' && !navigator.onLine
-          ? 'offline'
-          : undefined,
-        `${file.name} (${file.size} bytes)`,
-        host,
-      ]
-        .filter(Boolean)
-        .join('; ');
-      logError(
-        Severity.error,
-        errorReporter,
-        `upload ${file.name}: ${statusText}`
-      );
-      cleanup();
-      const rej = new UploadFileReject(
-        httpStatus || 500,
-        statusText,
-        httpStatus || undefined
-      );
-      reject(rej);
-    };
-    xhr.onabort = () => {
-      cleanup();
-      const rej = new UploadFileReject(499, 'upload aborted', 499);
-      reject(rej);
-    };
-    xhr.ontimeout = () => {
-      const timeoutMs = xhr.timeout;
-      cleanup();
-      const rej = new UploadFileReject(
-        408,
-        `upload timed out after ${timeoutMs}ms`,
-        408
-      );
-      reject(rej);
-    };
-    xhr.send(file.slice());
-  });
+  try {
+    return await putBlobBody({
+      url: data.audioUrl,
+      blob: file,
+      contentType: data.contentType,
+      timeoutMs: uploadPutTimeoutMs(file.size),
+    });
+  } catch (error: unknown) {
+    // putBlobBody only rejects with PutBlobBodyReject; anything else is a bug.
+    if (!isPutBlobBodyReject(error)) throw error;
+    throw toUploadFileReject(error, data, file, errorReporter);
+  }
 };
 
 export interface UploadTerminalFailureInfo {
@@ -564,6 +542,12 @@ export const nextUpload =
             ...(pendingRestore ? { restore: pendingRestore } : {}),
           },
         });
+        if (!navigator.onLine) {
+          // Offline: the browser wakes an open tab to drain once connectivity
+          // returns. Online, registering would fire at once and start a
+          // second drain beside this upload. Never rejects (catches inside).
+          void requestUploadPendingBackgroundSync();
+        }
         return key;
       } catch (err: unknown) {
         if (key) releaseUploadPending(key);

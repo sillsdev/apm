@@ -48,6 +48,10 @@ jest.mock('./uploadPendingBlobs', () => ({
   newUploadPendingKey: () => 'new-key',
 }));
 
+jest.mock('./uploadPendingBackgroundSync', () => ({
+  requestUploadPendingBackgroundSync: jest.fn(async () => undefined),
+}));
+
 jest.mock('../../utils', () => ({
   dataPath: jest.fn(),
   infoMsg: jest.fn((e: Error) => e.message),
