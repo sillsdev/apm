@@ -28,6 +28,7 @@ export enum LocalKey {
   autoaddProject = 'autoaddProject',
   staticTables = 'static-tables', // last static table version
   lastProj = 'lastProj', // most recent project used
+  uploadPendingProject = 'uploadPendingProject', // last project opened on web; the Upload Pending leave gate checks it
   migration = 'migration', // last migration version
   plan = 'selected-plan', // last plan selected
   mode = 'mode', // last mode (online-cloud or online-local)

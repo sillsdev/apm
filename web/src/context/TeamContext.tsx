@@ -63,6 +63,7 @@ import {
   Severity,
   useHome,
 } from '../utils';
+import { useUploadPendingLeave } from './UploadPendingLeaveContext';
 import {
   RecordIdentity,
   RecordKeyMap,
@@ -247,13 +248,27 @@ const TeamProvider = (props: IProps) => {
     setImportOpen(true);
   };
 
-  const loadProject = (
+  const guardLeave = useUploadPendingLeave();
+
+  const loadProjectNow = (
     plan: PlanD,
     cb: (() => void) | undefined = undefined
   ) => {
     const [projectId] = setProjectParams(plan);
     LoadData(projectId, () => {
       if (cb) cb();
+    });
+  };
+
+  /** Web: gate on Upload Pending before switching projects (ADR 0017). */
+  const loadProject = (
+    plan: PlanD,
+    cb: (() => void) | undefined = undefined
+  ) => {
+    guardLeave({
+      enteringProjectId: related(plan, 'project'),
+      reason: 'switch',
+      proceed: () => loadProjectNow(plan, cb),
     });
   };
 

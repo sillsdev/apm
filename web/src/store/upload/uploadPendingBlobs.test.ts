@@ -31,15 +31,20 @@ import type { PendingUploadMediaRecord } from './pendingMediaUploads';
 import {
   claimUploadPending,
   clearUploadPendingForPassage,
+  discardUploadPendingBlob,
+  discardUploadPendingForProject,
   findUploadPendingKeyForIdentity,
   hasUploadPendingForPassage,
   isUploadPendingInFlight,
   isUploadPendingRequest,
+  listUploadPendingEntriesForProjects,
   listUploadPendingEntries,
   recordUploadPendingFailure,
   releaseUploadPending,
   saveUploadPendingBlob,
   settleUploadPending,
+  subscribeUploadPendingBlobs,
+  uploadPendingBlobCountForProjects,
   type UploadPendingRequest,
 } from './uploadPendingBlobs';
 
@@ -310,5 +315,83 @@ describe('isUploadPendingRequest', () => {
     ['a restore without a kind', { ...request(), restore: {} }],
   ])('rejects %s', (_label, value) => {
     expect(isUploadPendingRequest(value)).toBe(false);
+  });
+});
+
+describe('discardUploadPendingForProject (ADR 0017 / step 05)', () => {
+  it('deletes Upload Pending for the project and keeps Cloud-backed', async () => {
+    await save('pending-a');
+    await putLocalMediaBlob({
+      mediafileId: 'cloud-a',
+      projectId: 'proj1',
+      status: 'cloudBacked',
+      blob: file('cloud'),
+      contentType: 'audio/webm',
+    });
+    await saveUploadPendingBlob({
+      key: 'pending-b',
+      projectId: 'proj2',
+      file: file('b'),
+      request: request(),
+    });
+
+    const deleted = await discardUploadPendingForProject('proj1');
+
+    expect(deleted).toBe(1);
+    expect(await listUploadPendingEntries('proj1')).toEqual([]);
+    expect(await getLocalMediaBlob('cloud-a')).toMatchObject({
+      status: 'cloudBacked',
+    });
+    expect(await listUploadPendingEntries('proj2')).toHaveLength(1);
+  });
+
+  it('notifies subscribers when Upload Pending is discarded', async () => {
+    await save('pending-a');
+    const onChange = jest.fn();
+    const unsubscribe = subscribeUploadPendingBlobs(onChange);
+
+    await discardUploadPendingForProject('proj1');
+
+    expect(onChange).toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it('discards a single Upload Pending blob after confirm', async () => {
+    await save('only');
+    expect(await discardUploadPendingBlob('only')).toBe(true);
+    expect(await listUploadPendingEntries('proj1')).toEqual([]);
+  });
+});
+
+describe('listUploadPendingEntriesForProjects', () => {
+  it('lists Upload Pending in the given projects, oldest first', async () => {
+    await saveUploadPendingBlob({
+      key: 'later',
+      projectId: 'proj2',
+      file: file('later'),
+      request: request({ originalFile: 'later.webm' }),
+    });
+    // Force an older createdAt on the second save by writing directly.
+    await putLocalMediaBlob({
+      clientTempId: 'earlier',
+      projectId: 'proj1',
+      status: 'uploadPending',
+      blob: file('earlier'),
+      contentType: 'audio/webm',
+      createdAt: 1,
+      uploadRequest: request({ originalFile: 'earlier.webm' }),
+    });
+
+    await saveUploadPendingBlob({
+      key: 'otherUser',
+      projectId: 'proj3',
+      file: file('otherUser'),
+      request: request({ originalFile: 'otherUser.webm' }),
+    });
+
+    const mine = new Set(['proj1', 'proj2']);
+    const all = await listUploadPendingEntriesForProjects(mine);
+    expect(all.map((e) => e.key)).toEqual(['earlier', 'later']);
+    expect(await uploadPendingBlobCountForProjects(mine)).toBe(2);
   });
 });
