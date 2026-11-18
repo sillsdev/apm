@@ -44,6 +44,10 @@ export default defineConfig({
         // Prompt-to-reload flow: do not take over the page mid-session.
         clientsClaim: false,
         skipWaiting: false,
+        // Upload Pending Background Sync nudge (ADR 0016). Copied from
+        // public/ so the generated SW can import it at the site root. Not in
+        // dev (devOptions.enabled is false): try it with build + serve.
+        importScripts: ['upload-pending-sync.js'],
       },
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {

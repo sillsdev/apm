@@ -56,6 +56,14 @@ jest.mock('../utils/logErrorService', () => ({
   Severity: { error: 1 },
 }));
 
+const mockRequestBackgroundSync = jest.fn(async () => undefined);
+jest.mock('../store/upload/uploadPendingBackgroundSync', () => ({
+  ...jest.requireActual<
+    typeof import('../store/upload/uploadPendingBackgroundSync')
+  >('../store/upload/uploadPendingBackgroundSync'),
+  requestUploadPendingBackgroundSync: () => mockRequestBackgroundSync(),
+}));
+
 import { useUploadPendingRetry } from './useUploadPendingRetry';
 
 type NextUploadProps = {
@@ -121,6 +129,13 @@ describe('useUploadPendingRetry', () => {
     jest.clearAllMocks();
     mockIsElectron = false;
     setOnline(true);
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      },
+    });
     Object.assign(mockGlobals, {
       project: 'proj-1',
       coordinator: { getSource: (name: string) => ({ name }) },
@@ -203,8 +218,10 @@ describe('useUploadPendingRetry', () => {
 
   it('runs one more pass for requests made during a drain', async () => {
     const finishNext = uploadsWaitForTest();
+    // Each pass lists the queue, then lists what is left.
     mockListUploadPendingEntries
       .mockResolvedValueOnce([entry('a')])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([entry('saved-mid-drain')]);
     const { result } = renderHook(() => useUploadPendingRetry());
     await waitFor(() => expect(uploadedKeys()).toEqual(['a']));
@@ -219,7 +236,9 @@ describe('useUploadPendingRetry', () => {
       expect(uploadedKeys()).toEqual(['a', 'saved-mid-drain'])
     );
     await finishNext();
-    expect(mockListUploadPendingEntries).toHaveBeenCalledTimes(2);
+    await waitFor(() =>
+      expect(mockListUploadPendingEntries).toHaveBeenCalledTimes(4)
+    );
   });
 
   it('drains a newly opened project after the previous project’s drain', async () => {
@@ -250,5 +269,97 @@ describe('useUploadPendingRetry', () => {
 
     expect(mockListUploadPendingEntries).not.toHaveBeenCalled();
     expect(mockNextUpload).not.toHaveBeenCalled();
+  });
+
+  /** Captures the hook's service worker message listener. */
+  const captureSwListener = () => {
+    const listeners: Array<(event: MessageEvent) => void> = [];
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        addEventListener: (
+          type: string,
+          listener: (event: MessageEvent) => void
+        ) => {
+          if (type === 'message') listeners.push(listener);
+        },
+        removeEventListener: jest.fn(),
+      },
+    });
+    /** Sends the drain message; resolves with the reply on its port. */
+    return (data: unknown = { type: 'UPLOAD_PENDING_DRAIN' }) =>
+      new Promise<unknown>((resolve) => {
+        const port = { postMessage: resolve };
+        act(() => {
+          listeners.forEach((listener) =>
+            listener({ data, ports: [port] } as unknown as MessageEvent)
+          );
+        });
+      });
+  };
+
+  it('drains when the service worker asks and replies drained', async () => {
+    const sendSwDrain = captureSwListener();
+    renderHook(() => useUploadPendingRetry());
+    await waitFor(() =>
+      expect(mockListUploadPendingEntries).toHaveBeenCalled()
+    );
+    mockListUploadPendingEntries
+      .mockResolvedValueOnce([entry('from-sw')])
+      .mockResolvedValueOnce([]);
+
+    const reply = await sendSwDrain();
+
+    expect(uploadedKeys()).toEqual(['from-sw']);
+    expect(reply).toEqual({ result: 'drained' });
+  });
+
+  it('replies pending when an upload fails, so the sync retries', async () => {
+    uploadsFail();
+    const sendSwDrain = captureSwListener();
+    mockListUploadPendingEntries.mockResolvedValue([entry('a')]);
+    renderHook(() => useUploadPendingRetry());
+
+    await expect(sendSwDrain()).resolves.toEqual({ result: 'pending' });
+  });
+
+  it('replies skipped when no project is open', async () => {
+    mockGlobals.project = '';
+    const sendSwDrain = captureSwListener();
+    renderHook(() => useUploadPendingRetry());
+
+    await expect(sendSwDrain()).resolves.toEqual({ result: 'skipped' });
+    expect(mockListUploadPendingEntries).not.toHaveBeenCalled();
+  });
+
+  it('ignores other service worker messages', async () => {
+    const sendSwDrain = captureSwListener();
+    renderHook(() => useUploadPendingRetry());
+    await waitFor(() =>
+      expect(mockListUploadPendingEntries).toHaveBeenCalled()
+    );
+    mockListUploadPendingEntries.mockClear();
+
+    void sendSwDrain({ type: 'SKIP_WAITING' });
+    await act(async () => {});
+
+    expect(mockListUploadPendingEntries).not.toHaveBeenCalled();
+  });
+
+  it('registers Background Sync only while offline', async () => {
+    setOnline(false);
+    renderHook(() => useUploadPendingRetry());
+    await waitFor(() =>
+      expect(mockRequestBackgroundSync).toHaveBeenCalledTimes(1)
+    );
+
+    setOnline(true);
+    uploadsFail();
+    mockListUploadPendingEntries.mockResolvedValue([entry('a')]);
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+    await waitFor(() => expect(uploadedKeys()).toEqual(['a']));
+    expect(mockRequestBackgroundSync).toHaveBeenCalledTimes(1);
   });
 });

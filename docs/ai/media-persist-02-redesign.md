@@ -69,7 +69,7 @@ flowchart TD
 - Pending UI list / project-switch dialog (step 05).
 - Quota eviction (step 06).
 - Offline Available bulk download (step 07).
-- Service-worker chunked serving (step 08).
+- Service-worker Background Sync nudge + large-upload hygiene (step 08).
 - Local-first *playback* (step 03 — independent read path).
 
 ## Suggested commit order inside step 02
