@@ -1,7 +1,7 @@
 # media-persist step 02 redesign (post-#801 / #808)
 
-Status: design only — do not implement until this note is reviewed.
-Base: `media-persist-01-idb-store` (`780cfab5`) on current develop.
+Status: **implemented** on `media-persist-02-write-pending` (verify with the
+checklist below). Base: `media-persist-01-idb-store` on current develop.
 Archaeology reference: `archive/media-persist-02-write-pending` (`dc255b15`).
 
 ## Goal (unchanged)
@@ -26,11 +26,11 @@ Desktop keeps the localStorage pending queue; web does not use it for bytes
 
 Keep these shapes; re-apply against current files rather than cherry-picking:
 
-1. `web/src/store/upload/uploadPendingBlobs.ts` (+ tests) — save / claim / settle / list / identity lookup.
-2. `web/src/store/upload/drainUploadPending.ts` (+ tests) — sequential drain, stop on first failure.
-3. `web/src/crud/useUploadPendingRetry.ts` — `online` + project-open drain via `nextUpload`.
-4. ADR 0016 closing paragraph about `nextUpload` / online drain / no web localStorage queue.
-5. Intent of `actions.webUploadPending.test.ts` — rewrite against current `nextUpload`.
+1. [x] `web/src/store/upload/uploadPendingBlobs.ts` (+ tests) — save / claim / settle / list / identity lookup.
+2. [x] `web/src/store/upload/drainUploadPending.ts` (+ tests) — sequential drain, stop on first failure.
+3. [x] `web/src/crud/useUploadPendingRetry.ts` — `online` + project-open drain via `nextUpload`.
+4. [x] ADR 0016 closing paragraph about `nextUpload` / online drain / no web localStorage queue.
+5. [x] Intent of `actions.webUploadPending.test.ts` — rewrite against current `nextUpload`.
 
 Do **not** merge the archive hunks for `PassageDetailRecord.tsx` or `Uploader.tsx`; re-wire from current #808/#801 versions.
 
@@ -54,15 +54,15 @@ flowchart TD
   drain -->|"online / project open"| nextUp
 ```
 
-1. **`useMediaUpload`**: always pass `projectId: getGlobal('project')` into `nextUpload` (archive delta was one line; still missing on develop).
-2. **`nextUpload` (web branch)**:
+1. [x] **`useMediaUpload`**: always pass `projectId: getGlobal('project')` into `nextUpload`.
+2. [x] **`nextUpload` (web branch)**:
    - Before cloud: `saveUploadPendingBlob` with record snapshot + restore; claim in-flight key.
    - On success: `settleUploadPending` (re-key to mediafile id, mark Cloud-backed).
    - On terminal failure: `recordUploadPendingFailure` (retry count); do not use desktop path queue for bytes.
    - Skip desktop `writeFileLocal` / localStorage pending for web bytes.
-3. **`DataChanges`**: mount `useUploadPendingRetry()` (same as archive).
-4. **`PassageDetailRecord`**: `hasPendingUploadForPassage` / clear helpers should consult `uploadPendingBlobs` on web so the replace-pending warning stays accurate after local-first saves.
-5. **Tests**: unit-test `uploadPendingBlobs` + `drainUploadPending` first; then a focused `nextUpload` web pending suite; then a Record-step test that a save creates an Upload Pending blob before cloud success.
+3. [x] **`DataChanges`**: mount `useUploadPendingRetry()`.
+4. [x] **`PassageDetailRecord`**: `hasPendingUploadForPassage` / clear helpers consult `uploadPendingBlobs` on web so the replace-pending warning stays accurate after local-first saves.
+5. [x] **Tests**: `uploadPendingBlobs` + `drainUploadPending`; `actions.webUploadPending`; Record web pending warn/clear.
 
 ## Explicit non-goals for step 02
 
@@ -74,7 +74,7 @@ flowchart TD
 
 ## Suggested commit order inside step 02
 
-1. `uploadPendingBlobs` + tests (no call sites).
-2. `drainUploadPending` + `useUploadPendingRetry` + DataChanges mount.
-3. `nextUpload` / `useMediaUpload` protect-settle wiring + web pending tests.
-4. PassageDetailRecord pending-identity helpers on web + Record test.
+1. [x] `uploadPendingBlobs` + tests (no call sites).
+2. [x] `drainUploadPending` + `useUploadPendingRetry` + DataChanges mount.
+3. [x] `nextUpload` / `useMediaUpload` protect-settle wiring + web pending tests.
+4. [x] PassageDetailRecord pending-identity helpers on web + Record test.

@@ -230,13 +230,13 @@ export function PassageDetailRecord() {
     filter?: Parameters<typeof clearPendingUploads>[3]
   ) => {
     if (isElectron) {
-      clearPendingUploads(keyMap, plan, passageId, filter);
+      if (filter) clearPendingUploads(keyMap, plan, passageId, filter);
+      else clearPendingUploads(keyMap, plan, passageId);
       return;
     }
-    void clearUploadPendingForPassage(
-      project,
-      passagePendingQuery(),
-      filter
+    // Promise.resolve: callers/tests may return void from a stub.
+    void Promise.resolve(
+      clearUploadPendingForPassage(project, passagePendingQuery(), filter)
     ).catch((err: unknown) =>
       logError(
         Severity.error,

@@ -328,6 +328,8 @@ const resetState = () => {
   jest.clearAllMocks();
   localStorage.clear();
   mockPlatform.isElectron = true;
+  mockHasUploadPendingForPassage.mockResolvedValue(false);
+  mockClearUploadPendingForPassage.mockResolvedValue(undefined);
   capturedPlayerProps = null;
   capturedUploaderProps = null;
   mockStepComplete.mockReturnValue(false);
