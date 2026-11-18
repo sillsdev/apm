@@ -1,21 +1,12 @@
 import { useContext, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
-import Memory from '@orbit/memory';
-import JSONAPISource from '@orbit/jsonapi';
-import { IndexedDBSource } from '@orbit/indexeddb';
 import { isElectron } from '../../api-variable';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { TokenContext } from '../context/TokenProvider';
-import { MediaFileAttributes } from '../model';
-import * as actions from '../store';
-import { completePendingUploadRetry } from '../store/upload/completePendingUploadRetry';
 import { drainUploadPending } from '../store/upload/drainUploadPending';
-import {
-  listUploadPendingEntries,
-  type UploadPendingEntry,
-} from '../store/upload/uploadPendingBlobs';
+import { listUploadPendingEntries } from '../store/upload/uploadPendingBlobs';
 import { infoMsg } from '../utils/infoMsg';
 import { logError, Severity } from '../utils/logErrorService';
+import { useUploadPendingBlobUpload } from './useUploadPendingBlobUpload';
 
 /**
  * Web: retries the current project's Upload Pending recordings when the
@@ -24,62 +15,14 @@ import { logError, Severity } from '../utils/logErrorService';
  * dialog instead. Background drain through DataChanges is PR4's.
  */
 export function useUploadPendingRetry(): void {
-  const dispatch = useDispatch();
   const getGlobal = useGetGlobal();
   const [project] = useGlobal('project');
   const accessToken = useContext(TokenContext)?.state?.accessToken ?? '';
+  const uploadOne = useUploadPendingBlobUpload();
   const drainingRef = useRef(false);
 
   useEffect(() => {
     if (isElectron || !project || !accessToken) return;
-
-    const uploadOne = (entry: UploadPendingEntry): Promise<boolean> =>
-      new Promise((resolve) => {
-        const coordinator = getGlobal('coordinator');
-        const memory = coordinator?.getSource('memory') as Memory | undefined;
-        const remote = coordinator?.getSource('remote') as
-          JSONAPISource | undefined;
-        const backup = coordinator?.getSource('backup') as
-          IndexedDBSource | undefined;
-        const reporter = getGlobal('errorReporter');
-        dispatch(
-          actions.nextUpload({
-            // The snapshot was taken from a MediaFileAttributes record at
-            // upload time and validated when read back from IndexedDB.
-            record: entry.request.record as unknown as MediaFileAttributes,
-            files: [entry.file],
-            n: 0,
-            token: accessToken,
-            offline: false,
-            errorReporter: reporter,
-            uploadType: entry.request.uploadType,
-            projectId: entry.projectId,
-            pendingUploadIdToClearOnSuccess: entry.key,
-            pendingRestore: entry.request.restore,
-            getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
-            // nextUpload calls cb on every path, so the promise settles.
-            cb: async (_n, success, data) => {
-              try {
-                const stringId = (data as { stringId?: string } | undefined)
-                  ?.stringId;
-                if (success && stringId && memory && remote && backup) {
-                  await completePendingUploadRetry({
-                    stringId,
-                    restore: entry.request.restore,
-                    memory,
-                    remote,
-                    backup,
-                    reporter,
-                    user: getGlobal('user'),
-                  });
-                }
-              } finally {
-                resolve(success);
-              }
-            },
-          }) as never
-        );
-      });
 
     const drain = async () => {
       if (drainingRef.current || !navigator.onLine) return;
@@ -87,7 +30,7 @@ export function useUploadPendingRetry(): void {
       try {
         await drainUploadPending(
           await listUploadPendingEntries(project),
-          uploadOne
+          (entry) => uploadOne(entry)
         );
       } catch (err: unknown) {
         // The blobs stay Upload Pending; the next online event tries again.
@@ -111,5 +54,5 @@ export function useUploadPendingRetry(): void {
     // which would re-run this effect (and a drain) on each DataChanges render.
     // It reads live global state, so the closure never goes stale.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project, accessToken, dispatch]);
+  }, [project, accessToken, uploadOne]);
 }

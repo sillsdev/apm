@@ -16,6 +16,7 @@ import TeamDialog from './TeamDialog';
 import { SharedContentCreatorDialog } from './SharedContentCreatorDialog';
 import { PendingUploadsDialog } from './PendingUploadsDialog';
 import { useTeamActions } from './useTeamActions';
+import { useUploadPendingBlobCount } from './useUploadPendingBlobCount';
 
 export default function TeamActions() {
   const {
@@ -45,10 +46,12 @@ export default function TeamActions() {
 
   const mt = useSelector(mediaTabSelector, shallowEqual);
   const [pendingOpen, setPendingOpen] = useState(false);
-  const pendingCount = useSyncExternalStore(
+  const desktopPendingCount = useSyncExternalStore(
     subscribePendingMediaUploads,
     pendingMediaUploadCount
   );
+  const webPendingCount = useUploadPendingBlobCount();
+  const pendingCount = isElectron ? desktopPendingCount : webPendingCount;
 
   return (
     <Box sx={columnSx}>
@@ -60,7 +63,8 @@ export default function TeamActions() {
       <Button id="teamActImport" onClick={handleImportClick}>
         {t.import}
       </Button>
-      {isElectron && !offline && (
+      {/* Web Upload Pending is "on this device only" while offline: keep it visible. */}
+      {(!isElectron || !offline) && (
         <Badge
           badgeContent={pendingCount}
           color="warning"

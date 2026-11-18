@@ -14,6 +14,7 @@ import { useSelector } from 'react-redux';
 import { profileSelector } from '../selector';
 import { useHasParatext } from '../utils';
 import { useGlobal } from '../context/useGlobal';
+import { useUploadPendingLeave } from '../context/UploadPendingLeaveContext';
 import { addPt } from '../utils/addPt';
 
 interface StyledCaptionProps extends TypographyProps {
@@ -50,8 +51,11 @@ export const ParatextLinked = (props: IProps) => {
     setHowToLink(true);
   };
 
+  const guardLeave = useUploadPendingLeave();
+
   const handleLogout = () => {
-    setView('Logout');
+    // Web: upload-or-discard Upload Pending before logout (ADR 0017).
+    guardLeave({ reason: 'logout', proceed: () => setView('Logout') });
   };
 
   const handleNoLinkSetup = () => {

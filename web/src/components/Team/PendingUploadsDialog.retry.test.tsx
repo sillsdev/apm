@@ -95,8 +95,16 @@ const strings = {
   pendingUploadDismiss: 'Dismiss',
   pendingUploadBatchRetry: 'Retry All',
   pendingUploadRetryLater: 'Retry later',
+  pendingUploadPathLabel: 'File saved at: {0}',
+  pendingUploadOnDeviceOnly: 'Saved on this device only',
+  pendingUploadRiskHint: 'Clearing site data can erase these.',
+  pendingUploadQueuedHint: 'Retry from Team → {0}.',
+  pendingUploadMenu: 'Pending media uploads',
+  pendingUploadLeaveLossWarn: 'This will permanently remove recordings.',
   close: 'Close',
   mustBeOnline: 'Must be online',
+  cancel: 'Cancel',
+  yes: 'Yes',
 };
 
 jest.mock('react-redux', () => ({

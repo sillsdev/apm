@@ -8,6 +8,7 @@ import { isElectron } from '../../../api-variable';
 import { IState, IViewModeStrings } from '../../model';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
+import { useUploadPendingLeave } from '../../context/UploadPendingLeaveContext';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
   resetData,
@@ -87,6 +88,7 @@ export function AppHead({
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
   const { goHome } = useHome();
+  const guardLeave = useUploadPendingLeave();
 
   const { isMobileWidth } = useMobile();
   useUpdateCheck();
@@ -103,6 +105,8 @@ export function AppHead({
   const [showTerms, setShowTerms] = useState('');
   const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
   const doingDone = useRef(false);
+  /** Set when the session expired, so that logout skips the leave gate. */
+  const sessionExpiredRef = useRef(false);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
@@ -187,18 +191,36 @@ export function AppHead({
     }
     if (!/Close/i.test(what)) {
       if (/ClearLogout/i.test(what)) {
-        forceLogin();
-        setView('Logout');
+        // Web: upload-or-discard Upload Pending before logout (ADR 0017).
+        guardLeave({
+          reason: 'logout',
+          proceed: () => {
+            forceLogin();
+            setView('Logout');
+          },
+        });
       } else if (/Clear/i.test(what)) {
         if (resetRequests) resetRequests().then(() => setView(what));
       } else if (/Logout/i.test(what)) {
         checkSavedFn(() => {
-          drainQueuesForLogout(
-            waitForRemoteQueue,
-            waitForDataChangesQueue,
-            coordinator,
-            'logout on web'
-          ).then(() => setView('Logout'));
+          const logout = () => {
+            drainQueuesForLogout(
+              waitForRemoteQueue,
+              waitForDataChangesQueue,
+              coordinator,
+              'logout on web'
+            ).then(() => setView('Logout'));
+          };
+          // An expired session skips the Upload Pending gate: Upload all
+          // cannot succeed without a token, and logout keeps the blobs, which
+          // upload the next time this project is opened.
+          if (sessionExpiredRef.current) {
+            sessionExpiredRef.current = false;
+            logout();
+            return;
+          }
+          // Web: upload-or-discard Upload Pending before logout (ADR 0017).
+          guardLeave({ reason: 'logout', proceed: logout });
         });
       } else checkSavedFn(() => setView(what));
     }
@@ -275,6 +297,7 @@ export function AppHead({
       tokenState.expiresAt === -1 &&
       !tokenState.authSessionCleared
     ) {
+      sessionExpiredRef.current = true;
       handleMenu('Logout');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
