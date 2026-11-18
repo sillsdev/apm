@@ -29,7 +29,7 @@ const pwaRegisterStub = (): Plugin => ({
 });
 
 // Main-process dependencies are loaded from node_modules at runtime (keytar is
-// native; ffmpeg-static/ffprobe-static resolve binaries next to themselves), so
+// native; ffmpeg-static resolves its binary next to itself), so
 // bundle only local files and externalize every package import.
 const externalizePackages = (id: string): boolean =>
   !(id.startsWith('.') || id.startsWith('/') || path.isAbsolute(id));

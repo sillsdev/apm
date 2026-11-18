@@ -39,6 +39,7 @@ import {
   spliceAudio,
   clampSelectionToHighlights,
   insertSilenceAudio,
+  normalizeAudio,
 } from '../utils/audioUtils';
 import { useRecorder } from '../utils/useRecorder';
 import { useUserMedia } from '../crud/useUserMedia';
@@ -55,6 +56,7 @@ import { ConvertVoiceDialog } from './ConvertVoiceDialog';
 import { AiProcessing } from './AiProcessing';
 import NoChickenIcon from '../control/NoChickenIcon';
 import VoiceConversionLogo from '../control/VoiceConversionLogo';
+import NormalizeIcon from '../control/NormalizeIcon';
 import { useAudioConversion } from '../utils/useAudioConversion';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IAudioDownloadStrings, IWsAudioPlayerStrings } from '../model';
@@ -883,6 +885,20 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       onAudioChangeRef.current?.(result);
       wsRef.current?.once('decode', () => wsRef.current?.setTime(currentTime));
     };
+    const normalize = async (audio: Blob, range: TimeRange) => {
+      try {
+        const normalized = await normalizeAudio(audio, range.start, range.end);
+        if (!normalized) throw new Error(t.tooQuiet);
+        return normalized;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        showMessage(
+          t.normalizeFail.replace('{0}', message),
+          AlertSeverity.Error
+        );
+        return undefined;
+      }
+    };
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
       setMenuAnchorEl(event.currentTarget);
@@ -1051,6 +1067,25 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                     />
                   </ListItemIcon>
                   <ListItemText>{t.convertVoiceAi}</ListItemText>
+                </MenuItem>
+              )}
+              {allowRecord && !isBoldWorkflow && (
+                <MenuItem
+                  aria-label={`${label} normalize`}
+                  disabled={!hasLoadedAudio}
+                  onClick={() => {
+                    handleMenuClose();
+                    void applyAi(normalize);
+                  }}
+                >
+                  <ListItemIcon>
+                    <NormalizeIcon
+                      width="14pt"
+                      height="14pt"
+                      disabled={false}
+                    />
+                  </ListItemIcon>
+                  <ListItemText>{t.normalize}</ListItemText>
                 </MenuItem>
               )}
               {showDownload && (
