@@ -1482,6 +1482,7 @@ const initialState = {
 			"missing": "Missing MB",
 			"missingFiles": "Missing Files",
 			"missingFileList": "Show missing file list",
+			"notEnoughSpace": "Not enough storage space on this device for {0} MB. Free some space and try again.",
 			"projects": "Projects",
 			"project": "Project",
 			"projectDetails": "Project Details",

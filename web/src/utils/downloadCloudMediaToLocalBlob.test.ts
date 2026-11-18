@@ -4,8 +4,9 @@
 import 'fake-indexeddb/auto';
 
 jest.mock('../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
+const mockLogError = jest.fn();
 jest.mock('./logErrorService', () => ({
-  logError: jest.fn(),
+  logError: (...args: unknown[]) => mockLogError(...args),
   Severity: { info: 0, error: 1, retry: 2 },
 }));
 
@@ -14,6 +15,7 @@ jest.mock('./loadBlob', () => ({
   loadBlobAsync: (...args: unknown[]) => mockLoadBlobAsync(...args),
 }));
 
+import * as store from './localMediaBlobStore';
 import {
   LOCAL_MEDIA_DB_NAME,
   closeLocalMediaDb,
@@ -35,6 +37,8 @@ const deleteDb = () =>
 
 afterEach(async () => {
   mockLoadBlobAsync.mockReset();
+  mockLogError.mockReset();
+  jest.restoreAllMocks();
   await closeLocalMediaDb();
   await deleteDb();
 });
@@ -43,6 +47,7 @@ describe('downloadCloudMediaToLocalBlob', () => {
   const mediafileId = 'mf-1';
   const projectId = 'proj-1';
   const audioUrl = 'https://cdn.example/a.mp3?sig=1';
+  const reporter = 'test-reporter';
 
   it('saves cloud bytes as a cloudBacked Local Media Blob', async () => {
     const blob = audio();
@@ -52,6 +57,7 @@ describe('downloadCloudMediaToLocalBlob', () => {
       mediafileId,
       projectId,
       audioUrl,
+      reporter,
     });
 
     expect(result).toEqual({ ok: true, path: localMediaPath(mediafileId) });
@@ -68,36 +74,69 @@ describe('downloadCloudMediaToLocalBlob', () => {
     expect(await stored!.blob.text()).toBe('cloud-bytes');
   });
 
-  it('skips the network when this device already has the blob', async () => {
-    await putLocalMediaBlob({
-      mediafileId,
-      projectId,
-      status: 'cloudBacked',
-      blob: audio('already-here'),
+  it('never replaces an Upload Pending recording saved meanwhile', async () => {
+    mockLoadBlobAsync.mockImplementation(async () => {
+      // A recording lands while the cloud bytes are in flight.
+      await putLocalMediaBlob({
+        mediafileId,
+        projectId,
+        status: 'uploadPending',
+        blob: audio('recording'),
+      });
+      return audio();
     });
 
     const result = await downloadCloudMediaToLocalBlob({
       mediafileId,
       projectId,
       audioUrl,
+      reporter,
     });
 
     expect(result.ok).toBe(true);
-    expect(result.path).toBe(localMediaPath(mediafileId));
-    expect(mockLoadBlobAsync).not.toHaveBeenCalled();
+    const stored = await getLocalMediaBlob(mediafileId);
+    expect(stored?.status).toBe('uploadPending');
+    expect(await stored!.blob.text()).toBe('recording');
   });
 
-  it('returns not ok when the cloud fetch fails', async () => {
+  it('reports and returns not ok when the cloud fetch fails', async () => {
     mockLoadBlobAsync.mockRejectedValue(new Error('404'));
 
     const result = await downloadCloudMediaToLocalBlob({
       mediafileId,
       projectId,
       audioUrl,
+      reporter,
     });
 
     expect(result).toEqual({ ok: false, path: audioUrl });
+    expect(mockLogError).toHaveBeenCalledWith(
+      1,
+      reporter,
+      expect.stringContaining('download failed')
+    );
     expect(await getLocalMediaBlob(mediafileId)).toBeUndefined();
+  });
+
+  it('reports and returns not ok when the IndexedDB write fails', async () => {
+    mockLoadBlobAsync.mockResolvedValue(audio());
+    jest
+      .spyOn(store, 'putCloudBackedLocalMediaBlobIfAbsent')
+      .mockRejectedValue(new Error('QuotaExceededError'));
+
+    const result = await downloadCloudMediaToLocalBlob({
+      mediafileId,
+      projectId,
+      audioUrl,
+      reporter,
+    });
+
+    expect(result).toEqual({ ok: false, path: audioUrl });
+    expect(mockLogError).toHaveBeenCalledWith(
+      1,
+      reporter,
+      expect.stringContaining('write failed')
+    );
   });
 
   it('returns not ok when cancelled after the cloud fetch', async () => {
@@ -111,6 +150,7 @@ describe('downloadCloudMediaToLocalBlob', () => {
       mediafileId,
       projectId,
       audioUrl,
+      reporter,
       cancelled: () => cancel,
     });
 

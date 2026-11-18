@@ -185,40 +185,34 @@ export const useFetchMediaUrl = (reporter?: any) => {
       }
       if (cancelled()) return;
       try {
-        fetchUrl({ id: state.remoteId, cancelled }).then(async (url) => {
-          if (url === ts.expiredToken) {
+        const url = await fetchUrl({ id: state.remoteId, cancelled });
+        if (url === ts.expiredToken) {
+          dispatch({
+            payload: ts.expiredToken,
+            type: MediaSt.ERROR,
+          });
+          return;
+        }
+        if (cancelled()) return;
+        if (url && isLocalMediaPath(url) && !isElectron) {
+          const saved = await findLocalMediaBlob(state.id, reporter);
+          if (cancelled()) return;
+          if (saved) {
             dispatch({
-              payload: ts.expiredToken,
-              type: MediaSt.ERROR,
+              payload: URL.createObjectURL(saved),
+              type: MediaSt.FETCHED,
             });
             return;
           }
-          if (cancelled()) return;
-          if (url && isLocalMediaPath(url) && !isElectron) {
-            const saved = await findLocalMediaBlob(state.id, reporter);
-            if (cancelled()) return;
-            if (saved) {
-              dispatch({
-                payload: URL.createObjectURL(saved),
-                type: MediaSt.FETCHED,
-              });
-              return;
-            }
-          }
-          if (url)
-            safeURL(url).then((path) => {
-              dispatch({
-                payload: path,
-                type: MediaSt.FETCHED,
-              });
-            });
-          else if (cancelled()) return;
-          else
-            dispatch({
-              payload: 'no url',
-              type: MediaSt.ERROR,
-            });
-        });
+        }
+        // A local path whose blob vanished (evicted meanwhile) is not a url.
+        if (!url || isLocalMediaPath(url)) {
+          dispatch({ payload: 'no url', type: MediaSt.ERROR });
+          return;
+        }
+        const path = await safeURL(url);
+        if (cancelled()) return;
+        dispatch({ payload: path, type: MediaSt.FETCHED });
       } catch (e: any) {
         if (cancelled()) return;
         logError(Severity.error, reporter, infoMsg(e, 'media fetch failure'));

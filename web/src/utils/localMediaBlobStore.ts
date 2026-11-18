@@ -333,6 +333,39 @@ export const putLocalMediaBlob = async (
   );
 };
 
+/**
+ * Stores downloaded cloud bytes as a Cloud-backed blob only when no row exists
+ * for `mediafileId`. The check and the write share one readwrite transaction,
+ * so a recording saved meanwhile is never replaced by the cloud copy. Resolves
+ * with the stored row: the existing one when present, else the new one.
+ *
+ * A recording still keyed by its clientTempId is not found here; when the
+ * upload confirms, `markLocalMediaBlobCloudBacked` re-keys it over this row,
+ * so the recording's own bytes win.
+ */
+export const putCloudBackedLocalMediaBlobIfAbsent = async (input: {
+  mediafileId: string;
+  projectId: string;
+  blob: Blob;
+}): Promise<LocalMediaBlobRecord> =>
+  inTransaction('readwrite', 'relaxed', async (store) => {
+    const existing = await findInStore(store, input.mediafileId);
+    if (existing) return existing;
+    const record: LocalMediaBlobRecord = {
+      key: input.mediafileId,
+      mediafileId: input.mediafileId,
+      projectId: input.projectId,
+      status: 'cloudBacked',
+      blob: input.blob,
+      contentType: input.blob.type,
+      size: input.blob.size,
+      createdAt: Date.now(),
+      retryCount: 0,
+    };
+    await requestResult(store.put(record));
+    return record;
+  });
+
 /** Finds a blob by mediafile id or by the clientTempId it was saved under. */
 export const getLocalMediaBlob = async (
   id: string

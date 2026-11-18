@@ -8476,6 +8476,13 @@
                <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="projectDownload.notEnoughSpace">
+            <source>Not enough storage space on this device for {0} MB. Free some space and try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="projectDownload.projects">
             <source>Projects</source>
             <target/>
