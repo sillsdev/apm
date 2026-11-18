@@ -412,7 +412,9 @@ export function AppHead({
           {!isPreAuthPath(pathname) && <UserMenu action={handleUserMenu} />}
         </Box>
       </Box>
-      {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
+      {(downloadAlert || !isElectron) && (
+        <ProjectDownloadAlert cb={downloadAlert ? downDone : () => undefined} />
+      )}
       <PolicyDialog
         isOpen={Boolean(showTerms)}
         content={showTerms}

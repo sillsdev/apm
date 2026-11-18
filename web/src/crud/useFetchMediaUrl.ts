@@ -7,6 +7,7 @@ import { ISharedStrings, MediaFileD } from '../model';
 import { infoMsg, logError, Severity } from '../utils';
 import { useFetchUrlNow } from './useFetchUrlNow';
 import { findLocalMediaBlob } from './findLocalMediaBlob';
+import { isLocalMediaPath } from '../utils/localMediaPath';
 import { RecordKeyMap } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
@@ -169,9 +170,9 @@ export const useFetchMediaUrl = (reporter?: any) => {
           dispatch({ payload: e.message, type: MediaSt.ERROR });
         }
       } else {
-        // Web local-first read (ADR 0016): play the Local Media Blob when this
-        // device has one, which also saves the cloud download; else fall
-        // through to the cloud url.
+        // Web local-first read (ADR 0016/0017): play the Local Media Blob when
+        // this device has one; else fetchUrl downloads cloud→IDB (lazy) and we
+        // play that blob, or fall through to the cloud url.
         const blob = await findLocalMediaBlob(state.id, reporter);
         if (cancelled()) return;
         if (blob) {
@@ -184,13 +185,25 @@ export const useFetchMediaUrl = (reporter?: any) => {
       }
       if (cancelled()) return;
       try {
-        fetchUrl({ id: state.remoteId, cancelled }).then((url) => {
+        fetchUrl({ id: state.remoteId, cancelled }).then(async (url) => {
           if (url === ts.expiredToken) {
             dispatch({
               payload: ts.expiredToken,
               type: MediaSt.ERROR,
             });
             return;
+          }
+          if (cancelled()) return;
+          if (url && isLocalMediaPath(url) && !isElectron) {
+            const saved = await findLocalMediaBlob(state.id, reporter);
+            if (cancelled()) return;
+            if (saved) {
+              dispatch({
+                payload: URL.createObjectURL(saved),
+                type: MediaSt.FETCHED,
+              });
+              return;
+            }
           }
           if (url)
             safeURL(url).then((path) => {

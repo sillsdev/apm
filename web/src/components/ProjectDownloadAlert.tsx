@@ -18,6 +18,7 @@ import {
   isSuccessfulMediaFetch,
   shouldCloseMissingFilesDialog,
 } from '../utils/missingDownloadCompletion';
+import { isLocalMediaMissing } from '../utils/isLocalMediaMissing';
 import {
   related,
   useProjectPlans,
@@ -112,6 +113,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const [needyIds, setNeedyIds] = React.useState<string[]>([]);
   const [missingIds, setMissingIds] = React.useState<string[]>([]);
   const [filteredIds, setFilteredIds] = React.useState<string[]>([]);
+  const [projectMediaIds, setProjectMediaIds] = React.useState<string[]>([]);
   const [limits] = React.useState<Map<string, Limits>>(
     new Map<string, Limits>()
   );
@@ -186,24 +188,39 @@ export const ProjectDownloadAlert = (props: IProps) => {
     limits.clear();
     const newMissingIds: string[] = [];
     const newFilteredIds: string[] = [];
+    const newProjectMediaIds: string[] = [];
     let missingSize = 0;
     for (const m of mediaInfo) {
       if (
         isDownloadable(m) &&
         (related(m.media, 'artifactType') || related(m.media, 'passage'))
       ) {
+        const mediaKey = m.media.id || m.media?.keys?.remoteId || '';
         const local = { localname: '' };
-        const path = await dataPath(
-          m.media.attributes?.audioUrl ||
-            m.media.attributes?.s3file ||
-            m.media.attributes?.originalFile ||
-            '',
-          PathType.MEDIA,
-          local
-        );
-        const fileName = local.localname;
-        if (fileNames.has(fileName)) continue;
-        fileNames.add(fileName);
+        let missingOnDevice = false;
+        if (isElectron) {
+          const path = await dataPath(
+            m.media.attributes?.audioUrl ||
+              m.media.attributes?.s3file ||
+              m.media.attributes?.originalFile ||
+              '',
+            PathType.MEDIA,
+            local
+          );
+          const fileName = local.localname || mediaKey;
+          if (fileNames.has(fileName)) continue;
+          fileNames.add(fileName);
+          missingOnDevice = path !== local.localname;
+          if (missingOnDevice) {
+            console.log('Needing download:', path, local.localname);
+          }
+        } else {
+          if (fileNames.has(mediaKey)) continue;
+          fileNames.add(mediaKey);
+          missingOnDevice = await isLocalMediaMissing(m.media.id);
+        }
+        const remoteOrId = m.media?.keys?.remoteId || m.media.id;
+        newProjectMediaIds.push(remoteOrId);
         const fileSize = m.media?.attributes?.filesize || 5000;
         const proj = planProject[m.plan];
         const projRec = projects.find((p) => p.id === proj);
@@ -225,12 +242,11 @@ export const ProjectDownloadAlert = (props: IProps) => {
         }
         const limit = limits.get(proj);
         if (limit) limit.total += fileSize;
-        if (path !== local.localname) {
-          console.log('Needing download:', path, local.localname);
+        if (missingOnDevice) {
           needyProject.add(proj);
           missingSize += fileSize;
           if (limit) limit.missing += fileSize;
-          newMissingIds.push(m.media?.keys?.remoteId || m.media.id);
+          newMissingIds.push(remoteOrId);
           if (!organizedBy) setOrganizedBy(getOrganizedBy(true, m.plan));
           if (!organizedByPl) setOrganizedByPl(getOrganizedBy(false, m.plan));
           const artSlug = slugFromId(
@@ -243,7 +259,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
           ].includes(artSlug);
           if (incSlug) {
             if (limit) limit.filtered += fileSize;
-            newFilteredIds.push(m.media?.keys?.remoteId || m.media.id);
+            newFilteredIds.push(remoteOrId);
           } else {
             const passId = related(m.media, 'passage') as string;
             const passRec = findRecord(memory, 'passage', passId) as
@@ -257,15 +273,20 @@ export const ProjectDownloadAlert = (props: IProps) => {
               (filterState.maxSection === -1 || seq <= filterState.maxSection)
             ) {
               if (limit) limit.filtered += fileSize;
-              newFilteredIds.push(m.media?.keys?.remoteId || m.media.id);
+              newFilteredIds.push(remoteOrId);
             }
           }
+        } else if (!isElectron) {
+          // Web "project" amount still lists offlineAvailable projects even
+          // when every Local Media Blob is already present.
+          needyProject.add(proj);
         }
         if (limit) limits.set(proj, limit);
       }
     }
     setMissingIds(newMissingIds);
     setFilteredIds(newFilteredIds);
+    setProjectMediaIds(newProjectMediaIds);
     // Default radio is "missing"; seed size from missing bytes, not full project.
     if (downloadSize !== missingSize) {
       setDownloadSize(missingSize);
@@ -291,6 +312,26 @@ export const ProjectDownloadAlert = (props: IProps) => {
     handleClose(true)();
   };
 
+  const downloadIds = async (ids: string[]) => {
+    let n = 0;
+    for (const id of ids) {
+      if (cancelRef.current) break;
+      try {
+        const path = await fetchUrl({
+          id,
+          cancelled: () => cancelRef.current,
+        });
+        if (!isSuccessfulMediaFetch(path, ts.expiredToken)) {
+          console.warn('missing file download failed', id, path);
+        }
+      } catch (e) {
+        console.warn('missing file download error', id, e);
+      }
+      n++;
+      setProgress(ids.length > 0 ? (n / ids.length) * 100 : 100);
+    }
+  };
+
   const handleDownload = async () => {
     if (sizeMb <= 0) {
       handleClose(false)();
@@ -299,40 +340,37 @@ export const ProjectDownloadAlert = (props: IProps) => {
     setDownloadIncomplete(false);
     setDownloading(true);
     if (downAmt === 'project') {
-      setDownloadOpen(true);
-    } else if (downAmt === 'filtered') {
-      let n = 0;
-      for (const id of filteredIds) {
-        if (cancelRef.current) break;
-        await fetchUrl({ id, cancelled: () => false });
-        n++;
-        setProgress((n / filteredIds.length) * 100);
+      if (isElectron) {
+        setDownloadOpen(true);
+        return;
       }
-      handleClose()();
-    } else if (downAmt === 'missing') {
-      const ids = [...missingIds];
-      let n = 0;
-      for (const id of ids) {
-        if (cancelRef.current) break;
-        try {
-          const path = await fetchUrl({
-            id,
-            cancelled: () => cancelRef.current,
-          });
-          if (!isSuccessfulMediaFetch(path, ts.expiredToken)) {
-            console.warn('missing file download failed', id, path);
-          }
-        } catch (e) {
-          console.warn('missing file download error', id, e);
-        }
-        n++;
-        setProgress(ids.length > 0 ? (n / ids.length) * 100 : 100);
-      }
+      // Web: full offline prep downloads all downloadable media into IDB
+      // (desktop "project" uses a PTF ZIP via ProjectDownload).
+      await downloadIds(projectMediaIds);
       if (cancelRef.current) {
         handleClose(true)();
         return;
       }
-      // Re-scan disk; only close when nothing remains missing (TT-6932).
+      const scan = await getNeedyRemoteIds({ force: true });
+      setNeedyIds(scan.projectIds);
+      setDownloading(false);
+      setProgress(0);
+      if (shouldCloseMissingFilesDialog(scan.missingIds.length)) {
+        handleClose(false)();
+      } else {
+        setDownloadIncomplete(true);
+      }
+    } else if (downAmt === 'filtered') {
+      await downloadIds(filteredIds);
+      handleClose()();
+    } else if (downAmt === 'missing') {
+      const ids = [...missingIds];
+      await downloadIds(ids);
+      if (cancelRef.current) {
+        handleClose(true)();
+        return;
+      }
+      // Re-scan disk/IDB; only close when nothing remains missing (TT-6932).
       const scan = await getNeedyRemoteIds({ force: true });
       setNeedyIds(scan.projectIds);
       setDownloading(false);
@@ -346,7 +384,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
   };
 
   React.useEffect(() => {
-    if (isElectron && tokenCtx?.state?.accessToken && !downloadingRef.current) {
+    if (tokenCtx?.state?.accessToken && !downloadingRef.current) {
       getNeedyRemoteIds().then((scan) => {
         if (sizeRef.current === 0) {
           handleClose(false)();
@@ -368,7 +406,9 @@ export const ProjectDownloadAlert = (props: IProps) => {
     if (value === 'filtered' || value === 'missing')
       return limits.get(proj)?.[value] || 0;
     const total = limits.get(proj)?.total || 0;
-    return total > 0 ? total + 580000 : 0;
+    // Desktop project amount includes PTF packaging overhead; web downloads
+    // media blobs only.
+    return total > 0 ? total + (isElectron ? 580000 : 0) : 0;
   };
 
   const handleChangeAmt = (e: React.ChangeEvent<HTMLInputElement>) => {
