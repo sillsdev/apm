@@ -1,7 +1,9 @@
 import { audioBufferToWavBlob } from './audioBufferToWavBlob';
 import {
   clipAudio,
+  insertAudio,
   insertSilenceAudio,
+  normalizeAudio,
   replaceAudioSegment,
   spliceAudio,
 } from './audioUtils';
@@ -232,5 +234,105 @@ describe('replaceAudioSegment', () => {
       s(1, 2, 3, 11, 12, 8, 9, 10),
       s(-1, -2, -3, 11, 12, -8, -9, -10),
     ]);
+  });
+});
+
+describe('insertAudio', () => {
+  it('inserts the clip at the given time and shifts the rest later', async () => {
+    const out = await insertAudio(
+      await wav([ONE_SECOND]),
+      0.3,
+      await wav([s(11, 12)])
+    );
+    expect((await read(out)).channels).toEqual([
+      s(1, 2, 3, 11, 12, 4, 5, 6, 7, 8, 9, 10),
+    ]);
+  });
+
+  it('returns the clip itself when there is no audio', async () => {
+    const clip = await wav([s(11, 12)]);
+    expect(await insertAudio(null, 0, clip)).toBe(clip);
+  });
+
+  it('returns the clip itself when the audio is empty', async () => {
+    const clip = await wav([s(11, 12)]);
+    expect(await insertAudio(new Blob([]), 0, clip)).toBe(clip);
+  });
+});
+
+const LOUD_RATE = 48000;
+
+// ITU BS.1770 reads a full-scale 1 kHz sine in one channel as -3.01 LUFS, so
+// normalized to -23 LUFS its peak is -19.99 dB.
+const SINE_PEAK_DB = -23 + 3.01;
+
+/** A 1 kHz sine for `seconds`, then `silence` seconds of zeros. */
+function sine(amplitude: number, seconds: number, silence = 0): number[] {
+  const tone = Math.round(seconds * LOUD_RATE);
+  const length = tone + Math.round(silence * LOUD_RATE);
+  return Array.from({ length }, (_, i) =>
+    i < tone ? amplitude * Math.sin((2 * Math.PI * 1000 * i) / LOUD_RATE) : 0
+  );
+}
+
+const peakDb = (samples: number[]) =>
+  20 * Math.log10(samples.reduce((a, b) => Math.max(a, Math.abs(b)), 0));
+
+/** The channels normalizeAudio returns, or undefined if it returns none. */
+async function normalized(
+  channels: number[][],
+  startSec?: number,
+  endSec?: number
+) {
+  const out = await normalizeAudio(
+    await wav(channels, LOUD_RATE),
+    startSec,
+    endSec
+  );
+  return out && (await read(out)).channels;
+}
+
+describe('normalizeAudio', () => {
+  it('brings a quiet sine to -23 LUFS', async () => {
+    const [ch] = (await normalized([sine(0.001, 3)]))!;
+    expect(peakDb(ch)).toBeCloseTo(SINE_PEAK_DB, 1);
+  });
+
+  it('adds the loudness of both stereo channels', async () => {
+    const tone = sine(0.001, 3);
+    const [left, right] = (await normalized([tone, tone]))!;
+    // Two channels measure 3.01 dB louder than one, so each ends 3.01 dB lower.
+    expect(peakDb(left)).toBeCloseTo(SINE_PEAK_DB - 3.01, 1);
+    expect(peakDb(right)).toBeCloseTo(SINE_PEAK_DB - 3.01, 1);
+  });
+
+  it('ignores silence when measuring', async () => {
+    const [short] = (await normalized([sine(0.001, 2, 1)]))!;
+    const [long] = (await normalized([sine(0.001, 2, 5)]))!;
+    expect(peakDb(long)).toBeCloseTo(peakDb(short), 5);
+  });
+
+  it('measures audio shorter than 400 ms as one block', async () => {
+    const [ch] = (await normalized([sine(0.001, 0.2)]))!;
+    expect(peakDb(ch)).toBeCloseTo(SINE_PEAK_DB, 0);
+  });
+
+  it('changes only the given range', async () => {
+    const [ch] = (await normalized([sine(0.001, 2)], 1, 2))!;
+    expect(ch.slice(0, LOUD_RATE)).toEqual(sine(0.001, 1).map(Math.fround));
+    expect(peakDb(ch.slice(LOUD_RATE))).toBeCloseTo(SINE_PEAK_DB, 1);
+  });
+
+  it('lowers the gain to keep peaks at -2 dB', async () => {
+    // One click in a second of silence measures far below -23 LUFS, so
+    // reaching -23 would push the click past 0 dB.
+    const click = new Array(LOUD_RATE).fill(0);
+    click[LOUD_RATE / 2] = 0.5;
+    const [ch] = (await normalized([click]))!;
+    expect(peakDb(ch)).toBeCloseTo(-2, 3);
+  });
+
+  it('is undefined for silence', async () => {
+    expect(await normalized([new Array(LOUD_RATE).fill(0)])).toBeUndefined();
   });
 });

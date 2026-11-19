@@ -119,7 +119,6 @@ export interface MainAPI {
   downloadLaunch: (url: string, localFile: string) => Promise<string>;
   downloadStat: (token: string) => Promise<string>;
   downloadClose: (token: string) => Promise<void>;
-  normalize: (input: string, output?: string) => Promise<unknown>;
   convertToMp3: (input: string, output: string) => Promise<unknown>;
   /** Runs `migration/05-burrito-to-ptf.js` to build a Scripture Burrito wrapper (audio) into a PTF. */
   burritoToPtf: (payload: BurritoToPtfPayload) => Promise<BurritoToPtfResult>;
