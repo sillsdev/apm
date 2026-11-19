@@ -9,14 +9,14 @@ Surface **Upload Pending** on web the way desktop already does for its media-fol
 
 ## Seams
 
-| Seam | Responsibility |
-|---|---|
-| `uploadPendingBlobs` | Discard Upload Pending (one blob / one project); list/count for a set of project ids; same-window change notify |
-| `uploadPendingLeaveGate` | Pure “must we gate?” decision (leaving project id, entering id, pending count) |
-| `useUploadPendingBlobUpload` | One web dispatcher for an Upload Pending blob: online retry, leave gate, and Pending Uploads dialog all use it |
+| Seam                                      | Responsibility                                                                                                                |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `uploadPendingBlobs`                      | Discard Upload Pending (one blob / one project); list/count for a set of project ids; same-window change notify               |
+| `uploadPendingLeaveGate`                  | Pure “must we gate?” decision (leaving project id, entering id, pending count)                                                |
+| `useUploadPendingBlobUpload`              | One web dispatcher for an Upload Pending blob: online retry, leave gate, and Pending Uploads dialog all use it                |
 | `UploadPendingLeaveProvider` (`context/`) | The only leave gate: mounted in `App` above the routes, renders `UploadPendingLeaveDialog`, exposes `useUploadPendingLeave()` |
-| `PendingUploadsDialog` / `TeamActions` | Web badge + dialog over the signed-in user's Upload Pending (desktop unchanged) |
-| `formatUploadTerminalFailureMessage` | Web-only “on this device only” + risk copy |
+| `PendingUploadsDialog` / `TeamActions`    | Web badge + dialog over the signed-in user's Upload Pending (desktop unchanged)                                               |
+| `formatUploadTerminalFailureMessage`      | Web-only “on this device only” + risk copy                                                                                    |
 
 ## Which project is being left
 
@@ -38,15 +38,15 @@ Team home clears `project` before the next card is clicked, and each route mount
 
 Logout never deletes Local Media Blobs, so an ungated logout keeps Upload Pending; it is not data loss.
 
-| Exit | Gated | Why |
-|---|---|---|
-| Project card (`TeamContext.loadProject`) | Yes | Switch |
-| User menu Logout / Clear and logout, Paratext “log out” | Yes | User-initiated logout in a session |
-| Deep link / reload into another project | After the fact | Detected by the provider on `project` change |
-| Session expired → Logout | No | Upload all cannot succeed without a token |
-| Error page Logout | No | The app may be in a broken state |
-| Delete my account | No | The account is gone; uploads cannot succeed |
-| Access screen / Email unverified logout | No | Before a project is open |
+| Exit                                                    | Gated          | Why                                          |
+| ------------------------------------------------------- | -------------- | -------------------------------------------- |
+| Project card (`TeamContext.loadProject`)                | Yes            | Switch                                       |
+| User menu Logout / Clear and logout, Paratext “log out” | Yes            | User-initiated logout in a session           |
+| Deep link / reload into another project                 | After the fact | Detected by the provider on `project` change |
+| Session expired → Logout                                | No             | Upload all cannot succeed without a token    |
+| Error page Logout                                       | No             | The app may be in a broken state             |
+| Delete my account                                       | No             | The account is gone; uploads cannot succeed  |
+| Access screen / Email unverified logout                 | No             | Before a project is open                     |
 
 ## Scope of the badge and dialog
 

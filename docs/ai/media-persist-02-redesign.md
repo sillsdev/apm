@@ -7,7 +7,7 @@ Archaeology reference: `archive/media-persist-02-write-pending` (`dc255b15`).
 ## Goal (unchanged)
 
 On web, every new recording is saved as an **Upload Pending** Local Media Blob
-*before* the first cloud attempt. Failure leaves it Upload Pending; success
+_before_ the first cloud attempt. Failure leaves it Upload Pending; success
 marks it **Cloud-backed** under the server mediafile id. Opening a project and
 the browser `online` event drain the current project's Upload Pending blobs.
 Desktop keeps the localStorage pending queue; web does not use it for bytes
@@ -15,12 +15,12 @@ Desktop keeps the localStorage pending queue; web does not use it for bytes
 
 ## What moved on develop
 
-| Seam | Then (archive tip) | Now (develop) | Implication |
-|---|---|---|---|
-| Upload orchestration | Split across `Uploader` + `actions.nextUpload` | Pipeline merged into [`useMediaUpload`](../../web/src/crud/useMediaUpload.ts) (#801); `Uploader` is a thin shell | Hook `projectId` / protect-on-device through `useMediaUpload` → `nextUpload`, not by patching `Uploader` |
-| Record step | Pre-overhaul `PassageDetailRecord` | Rewritten (#808); still uses `Uploader` + `pendingMediaUploads` localStorage helpers for duplicate-pending warn | Keep the warn UX; swap the *source of truth* for “has pending for this passage” to the Local Media Blob store when web |
-| Pending queue | Desktop path + early web localStorage | Still [`pendingMediaUploads.ts`](../../web/src/store/upload/pendingMediaUploads.ts) (path + restore metadata) | Web Upload Pending metadata rides on the blob store (`uploadPendingBlobs`); desktop queue stays |
-| `nextUpload` | Direct protect-on-device inside actions | Same `NextUploadProps` shape, including `pendingUploadIdToClearOnSuccess` / `pendingRestore` | Re-introduce web `protectOnDevice` + `settleUploadPending` / `recordUploadPendingFailure` inside `nextUpload`; pass `projectId` from `useMediaUpload` |
+| Seam                 | Then (archive tip)                             | Now (develop)                                                                                                    | Implication                                                                                                                                           |
+| -------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upload orchestration | Split across `Uploader` + `actions.nextUpload` | Pipeline merged into [`useMediaUpload`](../../web/src/crud/useMediaUpload.ts) (#801); `Uploader` is a thin shell | Hook `projectId` / protect-on-device through `useMediaUpload` → `nextUpload`, not by patching `Uploader`                                              |
+| Record step          | Pre-overhaul `PassageDetailRecord`             | Rewritten (#808); still uses `Uploader` + `pendingMediaUploads` localStorage helpers for duplicate-pending warn  | Keep the warn UX; swap the _source of truth_ for “has pending for this passage” to the Local Media Blob store when web                                |
+| Pending queue        | Desktop path + early web localStorage          | Still [`pendingMediaUploads.ts`](../../web/src/store/upload/pendingMediaUploads.ts) (path + restore metadata)    | Web Upload Pending metadata rides on the blob store (`uploadPendingBlobs`); desktop queue stays                                                       |
+| `nextUpload`         | Direct protect-on-device inside actions        | Same `NextUploadProps` shape, including `pendingUploadIdToClearOnSuccess` / `pendingRestore`                     | Re-introduce web `protectOnDevice` + `settleUploadPending` / `recordUploadPendingFailure` inside `nextUpload`; pass `projectId` from `useMediaUpload` |
 
 ## Port from archaeology (reuse as modules, not hunks)
 
@@ -70,7 +70,7 @@ flowchart TD
 - Quota eviction (step 06).
 - Offline Available bulk download (step 07).
 - Service-worker Background Sync nudge + large-upload hygiene (step 08).
-- Local-first *playback* (step 03 — independent read path).
+- Local-first _playback_ (step 03 — independent read path).
 
 ## Suggested commit order inside step 02
 
