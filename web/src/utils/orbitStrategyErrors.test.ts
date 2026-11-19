@@ -173,3 +173,66 @@ describe('updateError — non-network failures are unchanged', () => {
     expect(showMessage).toHaveBeenCalledWith('Entity has been deleted already');
   });
 });
+
+/**
+ * Web offline: Orbit edits made while the browser is offline (including
+ * DevTools "Offline") are held at the head of the remote queue, not undone.
+ * useCheckOnline's offline→online edge calls orbitReset → queue.retry(), which
+ * sends them in order.
+ */
+describe('updateError — held while the browser is offline', () => {
+  let onLine: jest.SpyInstance<boolean, []>;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    onLine = jest
+      .spyOn(window.navigator, 'onLine', 'get')
+      .mockReturnValue(false);
+  });
+  afterEach(() => {
+    onLine.mockRestore();
+    jest.useRealTimers();
+  });
+
+  it('never rolls back, skips, or raises a fatal error while offline', () => {
+    const { skip, memory, orbitError, failTimes } = setup();
+
+    failTimes(makeTransform('tx-offline'), OrbitNetworkErrorRetries * 3);
+
+    expect(skip).not.toHaveBeenCalled();
+    expect(memory.rollback).not.toHaveBeenCalled();
+    const fatal = orbitError.mock.calls.filter(
+      (c) => (c[0] as IApiError)?.response?.status !== Severity.retry
+    );
+    expect(fatal).toHaveLength(0);
+  });
+
+  it('does not schedule retries while offline (the online edge resumes)', () => {
+    const { retry, failTimes } = setup();
+
+    failTimes(makeTransform('tx-offline'), 3);
+
+    expect(retry).not.toHaveBeenCalled();
+  });
+
+  it('tells the user once that changes are waiting', () => {
+    const { retryToasts, failTimes } = setup();
+
+    failTimes(makeTransform('tx-offline'), 4);
+
+    expect(retryToasts()).toHaveLength(1);
+  });
+
+  it('gives the full retry budget once back online', () => {
+    const { retry, skip, handler, failTimes } = setup();
+    const tx = makeTransform('tx-offline');
+
+    failTimes(tx, OrbitNetworkErrorRetries * 2);
+    onLine.mockReturnValue(true);
+    // Fails once online (flaky link): normal bounded retry resumes.
+    handler(tx, new Error('Failed to fetch'));
+    jest.runOnlyPendingTimers();
+
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(skip).not.toHaveBeenCalled();
+  });
+});

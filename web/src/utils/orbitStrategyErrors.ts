@@ -45,7 +45,17 @@ const MAX_TRACKED_TRANSFORMS = 100;
 interface TransformAttempts {
   count: number;
   gaveUp: boolean;
+  /** The "waiting to send" message was shown for this offline hold. */
+  heldNotified: boolean;
 }
+
+/**
+ * The browser says it has no network (also true under DevTools "Offline").
+ * A captive portal or dead Wi-Fi can still report online; those fall through
+ * to the bounded retry below.
+ */
+const isBrowserOffline = () =>
+  typeof navigator !== 'undefined' && navigator.onLine === false;
 
 export interface QueryStratErrProps {
   tokenCtx: ITokenContext;
@@ -131,11 +141,31 @@ export const updateError = ({
       const oldest = attempts.keys().next();
       if (!oldest.done) attempts.delete(oldest.value);
     }
-    const fresh = { count: 0, gaveUp: false };
+    const fresh = { count: 0, gaveUp: false, heldNotified: false };
     attempts.set(id, fresh);
     return fresh;
   };
   const strings = () => getStrings?.() ?? fallbackStrings;
+
+  /**
+   * Offline: leave the task failed at the head of the queue, so it and every
+   * later edit wait in order, and keep the change in memory. Each edit pushed
+   * meanwhile re-attempts the head and lands here again. useCheckOnline's
+   * offline→online edge runs orbitReset → requestQueue.retry(), which sends
+   * the queue in order. No timer here: a second retry() would reset an
+   * in-flight request and could send it twice. Online, the retry budget
+   * starts fresh.
+   */
+  const holdWhileOffline = (attempt: TransformAttempts): boolean => {
+    if (!isBrowserOffline()) return false;
+    attempt.count = 0;
+    setOrbitRetries(OrbitNetworkErrorRetries - 1);
+    if (!attempt.heldNotified) {
+      attempt.heldNotified = true;
+      orbitError(orbitRetry(null, strings().networkRetrySoon));
+    }
+    return true;
+  };
 
   return (transform: RecordTransform, ex: unknown) => {
     const remote = coordinator?.getSource('remote') as JSONAPISource;
@@ -150,7 +180,7 @@ export const updateError = ({
     } else if (isFetchNetworkError(ex)) {
       const attempt = trackAttempts(transform.id);
       // Already skipped: the task is gone from the queue, nothing to retry.
-      if (attempt.gaveUp) return;
+      if (attempt.gaveUp || holdWhileOffline(attempt)) return;
       attempt.count += 1;
       if (attempt.count <= OrbitNetworkErrorRetries) {
         //signal to datachanges that we've had a network error

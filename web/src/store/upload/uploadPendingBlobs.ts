@@ -74,8 +74,13 @@ export const isUploadPendingRequest = (
   if (!UPLOAD_TYPES.has(v.uploadType)) return false;
   if (typeof v.record !== 'object' || v.record === null) return false;
   const record = v.record as Record<string, unknown>;
+  // useMediaUpload sends the remote plan id as a number (remoteIdNum) once the
+  // plan has one, and the local UUID string before that.
+  const planIdOk =
+    (typeof record.planId === 'string' && record.planId !== '') ||
+    (typeof record.planId === 'number' && Number.isFinite(record.planId));
   if (
-    typeof record.planId !== 'string' ||
+    !planIdOk ||
     typeof record.originalFile !== 'string' ||
     typeof record.contentType !== 'string'
   )

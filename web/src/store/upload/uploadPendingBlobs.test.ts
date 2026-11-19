@@ -307,6 +307,17 @@ describe('isUploadPendingRequest', () => {
     ).toBe(true);
   });
 
+  // useMediaUpload builds planId with remoteIdNum (parseInt), so a recording
+  // made online carries a numeric plan id; offline it is the local UUID.
+  it('accepts a numeric remote plan id', () => {
+    expect(
+      isUploadPendingRequest({
+        ...request(),
+        record: { ...record(), planId: 4576 as unknown as string },
+      })
+    ).toBe(true);
+  });
+
   it.each([
     ['nothing', undefined],
     ['an unknown upload type', { ...request(), uploadType: 99 }],

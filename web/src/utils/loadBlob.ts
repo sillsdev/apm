@@ -44,7 +44,10 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
   let lastErr = '';
   while (iTries) {
     try {
-      if (url.startsWith('http')) {
+      // blob:/data: urls (web Local Media Blob playback) are fetchable; only
+      // file paths go through Electron ipc. Sending a blob: url to ipc on web
+      // yields an empty Blob and "EncodingError: Unable to decode audio data".
+      if (/^(https?|blob|data):/.test(url)) {
         const r = await fetch(url);
         if (!r.ok) {
           const safeUrl = url.split('?')[0];

@@ -10,6 +10,11 @@ import * as actions from '../store';
 import { completePendingUploadRetry } from '../store/upload/completePendingUploadRetry';
 import type { UploadTerminalFailureInfo } from '../store/upload/actions';
 import type { UploadPendingEntry } from '../store/upload/uploadPendingBlobs';
+import {
+  isLocalOnlyMediafile,
+  linkLocalOnlyMediafile,
+  resolveMediafileIdForServer,
+} from './localOnlyMedia';
 
 export interface UploadPendingBlobOptions {
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
@@ -40,11 +45,30 @@ export function useUploadPendingBlobUpload(): (
         const backup = coordinator?.getSource('backup') as
           IndexedDBSource | undefined;
         const reporter = getGlobal('errorReporter');
+        // A take recorded offline against another offline take (e.g. LWC
+        // translation of a Careful Speech take) names it by local id. The
+        // drain runs oldest first, so that take is normally on the server by
+        // now; if not, wait for a later pass.
+        const record = { ...entry.request.record };
+        if (memory && record.sourceMediaId) {
+          const sourceMediaId = resolveMediafileIdForServer(
+            memory,
+            String(record.sourceMediaId)
+          );
+          if (sourceMediaId === undefined) {
+            resolve(false);
+            return;
+          }
+          record.sourceMediaId = sourceMediaId;
+        }
+        // The Orbit record of a take saved offline has the blob key as id.
+        const localOnly =
+          memory !== undefined && isLocalOnlyMediafile(memory, entry.key);
         dispatch(
           actions.nextUpload({
             // The snapshot was taken from a MediaFileAttributes record at
             // upload time and validated when read back from IndexedDB.
-            record: entry.request.record as unknown as MediaFileAttributes,
+            record: record as unknown as MediaFileAttributes,
             files: [entry.file],
             n: 0,
             token: accessToken,
@@ -61,6 +85,11 @@ export function useUploadPendingBlobUpload(): (
                 const stringId = (data as { stringId?: string } | undefined)
                   ?.stringId;
                 if (success && stringId && memory && remote && backup) {
+                  // Link before the pull so it updates the local record
+                  // instead of adding a second one.
+                  if (localOnly) {
+                    await linkLocalOnlyMediafile(memory, entry.key, stringId);
+                  }
                   await completePendingUploadRetry({
                     stringId,
                     restore: entry.request.restore,
