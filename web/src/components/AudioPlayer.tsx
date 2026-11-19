@@ -40,7 +40,6 @@ import {
   spliceAudio,
   clampSelectionToHighlights,
   insertSilenceAudio,
-  normalizeAudio,
 } from '../utils/audioUtils';
 import { useRecorder } from '../utils/useRecorder';
 import { useUserMedia } from '../crud/useUserMedia';
@@ -63,6 +62,8 @@ import { useAudioConversion } from '../utils/useAudioConversion';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IAudioDownloadStrings, IWsAudioPlayerStrings } from '../model';
 import { audioDownloadSelector, wsAudioPlayerSelector } from '../selector';
+
+const PLAY_PAUSE_KEY = 'CTRL+SPACE';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -361,6 +362,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       progress: conversionProcessing,
       suppressNoise,
       convertVoice,
+      normalize,
       cancel,
     } = useAudioConversion();
     const t: IWsAudioPlayerStrings = useSelector(
@@ -812,11 +814,11 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
 
     useEffect(() => {
       if (!hotkeys) return;
-      subscribe('CTRL+SPACE', () => {
+      subscribe(PLAY_PAUSE_KEY, () => {
         handlePlayToggle();
         return true;
       });
-      return () => unsubscribe('CTRL+SPACE');
+      return () => unsubscribe(PLAY_PAUSE_KEY);
     });
 
     const handleUndo = () => {
@@ -884,7 +886,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       onAudioChangeRef.current?.(withSilence);
       wsRef.current?.once('decode', () => wsRef.current?.setTime(currentTime));
     };
-    const applyAi = async (
+    const apply = async (
       func: (audio: Blob, range: TimeRange) => Promise<Blob | undefined>
     ) => {
       audioManager.pause();
@@ -901,20 +903,6 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       setInternalAudio(result);
       onAudioChangeRef.current?.(result);
       wsRef.current?.once('decode', () => wsRef.current?.setTime(currentTime));
-    };
-    const normalize = async (audio: Blob, range: TimeRange) => {
-      try {
-        const normalized = await normalizeAudio(audio, range.start, range.end);
-        if (!normalized) throw new Error(t.tooQuiet);
-        return normalized;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        showMessage(
-          t.normalizeFail.replace('{0}', message),
-          AlertSeverity.Error
-        );
-        return undefined;
-      }
     };
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -971,7 +959,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
             hotkeys
               ? (playing ? t.pauseTip : t.playTip).replace(
                   '{0}',
-                  localizeHotKey('CTRL+SPACE')
+                  localizeHotKey(PLAY_PAUSE_KEY)
                 )
               : undefined
           }
@@ -1067,7 +1055,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                   disabled={!hasLoadedAudio}
                   onClick={() => {
                     handleMenuClose();
-                    void applyAi(suppressNoise);
+                    void apply(suppressNoise);
                   }}
                 >
                   <ListItemIcon>
@@ -1100,7 +1088,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                   disabled={!hasLoadedAudio}
                   onClick={() => {
                     handleMenuClose();
-                    void applyAi(normalize);
+                    void apply(normalize);
                   }}
                 >
                   <ListItemIcon>
@@ -1162,9 +1150,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
               onCancel={() => setVoiceDialogOpen(false)}
               begin={(voice) => {
                 setVoiceDialogOpen(false);
-                void applyAi((audio, range) =>
-                  convertVoice(audio, range, voice)
-                );
+                void apply((audio, range) => convertVoice(audio, range, voice));
               }}
             />
           )}

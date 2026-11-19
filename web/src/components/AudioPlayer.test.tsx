@@ -94,6 +94,7 @@ jest.mock('../utils/useAudioConversion', () => ({
     progress: undefined,
     suppressNoise: jest.fn(),
     convertVoice: jest.fn(),
+    normalize: jest.fn(),
     cancel: jest.fn(),
   }),
 }));

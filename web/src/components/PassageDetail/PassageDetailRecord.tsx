@@ -54,6 +54,7 @@ import { TimeRange } from '../../control/formatTime';
 import { useSnackBar } from '../../hoc/useSnackBar';
 
 const SaveWait = 500;
+const RECORD_KEY = 'F9';
 
 export function PassageDetailRecord() {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -262,7 +263,7 @@ export function PassageDetailRecord() {
     } else cb();
   };
 
-  async function handleRecordToggle() {
+  function handleRecordToggle() {
     if (busy || !speaker) return;
 
     if (!recording) {
@@ -273,7 +274,7 @@ export function PassageDetailRecord() {
         return;
       }
       if (hasPendingUpload()) setPendingUploadWarning('record');
-      else await startRecording();
+      else void startRecording();
     } else {
       playerRef.current?.stopRecording();
     }
@@ -281,11 +282,11 @@ export function PassageDetailRecord() {
 
   useEffect(() => {
     if (!canRecord) return;
-    subscribe('F9', () => {
-      void handleRecordToggle();
+    subscribe(RECORD_KEY, () => {
+      handleRecordToggle();
       return true;
     });
-    return () => unsubscribe('F9');
+    return () => unsubscribe(RECORD_KEY);
   });
 
   const handleUpload = () => {
@@ -402,7 +403,7 @@ export function PassageDetailRecord() {
             <Box
               role="button"
               aria-label="record"
-              title={wt.record.replace('{0}', localizeHotKey('F9'))}
+              title={wt.record.replace('{0}', localizeHotKey(RECORD_KEY))}
               onClick={handleRecordToggle}
               sx={{
                 width: 80,
@@ -426,7 +427,7 @@ export function PassageDetailRecord() {
           ) : (
             <Button
               onClick={handleRecordToggle}
-              title={wt.stopTip.replace('{0}', localizeHotKey('F9'))}
+              title={wt.stopTip.replace('{0}', localizeHotKey(RECORD_KEY))}
               sx={{
                 width: 120,
                 height: 64,
