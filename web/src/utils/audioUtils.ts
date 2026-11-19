@@ -253,6 +253,17 @@ export async function replaceAudioSegment(
   };
 }
 
+/** Insert `insert` into `audio` at `atSec`; with no audio, `insert` becomes the audio. */
+export async function insertAudio(
+  audio: Blob | null,
+  atSec: number,
+  insert: Blob
+): Promise<Blob> {
+  return audio?.size
+    ? (await replaceAudioSegment(audio, atSec, atSec, insert)).blob
+    : insert;
+}
+
 /**
  * Compose multiple replacements into a source audio blob in chronological order.
  * Returns the composed audio blob, replacement highlights, and cumulative offset map.

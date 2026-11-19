@@ -1,6 +1,7 @@
 import { audioBufferToWavBlob } from './audioBufferToWavBlob';
 import {
   clipAudio,
+  insertAudio,
   insertSilenceAudio,
   normalizeAudio,
   replaceAudioSegment,
@@ -233,6 +234,29 @@ describe('replaceAudioSegment', () => {
       s(1, 2, 3, 11, 12, 8, 9, 10),
       s(-1, -2, -3, 11, 12, -8, -9, -10),
     ]);
+  });
+});
+
+describe('insertAudio', () => {
+  it('inserts the clip at the given time and shifts the rest later', async () => {
+    const out = await insertAudio(
+      await wav([ONE_SECOND]),
+      0.3,
+      await wav([s(11, 12)])
+    );
+    expect((await read(out)).channels).toEqual([
+      s(1, 2, 3, 11, 12, 4, 5, 6, 7, 8, 9, 10),
+    ]);
+  });
+
+  it('returns the clip itself when there is no audio', async () => {
+    const clip = await wav([s(11, 12)]);
+    expect(await insertAudio(null, 0, clip)).toBe(clip);
+  });
+
+  it('returns the clip itself when the audio is empty', async () => {
+    const clip = await wav([s(11, 12)]);
+    expect(await insertAudio(new Blob([]), 0, clip)).toBe(clip);
   });
 });
 

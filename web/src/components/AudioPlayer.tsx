@@ -39,6 +39,7 @@ import { localUserKey, LocalKey } from '../utils/localUserKey';
 import {
   spliceAudio,
   clampSelectionToHighlights,
+  clipAudio,
   insertSilenceAudio,
 } from '../utils/audioUtils';
 import { useRecorder } from '../utils/useRecorder';
@@ -51,10 +52,12 @@ import {
 } from '../crud/waveformRenderer';
 import { audioManager, type AudioHandle } from '../utils/audioManager';
 import usePassageDetailContext from '../context/usePassageDetailContext';
+import { useGlobal } from '../context/useGlobal';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { MicrophoneDialog } from './MicrophoneDialog';
 import { ConvertVoiceDialog } from './ConvertVoiceDialog';
 import { AiProcessing } from './AiProcessing';
+import { AudioCopyPaste, setClip } from './AudioCopyPaste';
 import NoChickenIcon from '../control/NoChickenIcon';
 import VoiceConversionLogo from '../control/VoiceConversionLogo';
 import NormalizeIcon from '../control/NormalizeIcon';
@@ -358,6 +361,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
 
     const { recording, setRecording, isBoldWorkflow } =
       usePassageDetailContext();
+    const [offline] = useGlobal('offline');
     const {
       progress: conversionProcessing,
       suppressNoise,
@@ -401,6 +405,18 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
         );
     }, [allowRecord, getMic, microphoneId]);
 
+    // Recording and paste both insert audio at the cursor (or it becomes the audio when there is none).
+    const handleInsert = (audio: Blob) => {
+      if (internalAudio) {
+        pushUndo();
+        wsRef.current?.once('decode', () =>
+          wsRef.current?.setTime(currentTime)
+        );
+      }
+      setInternalAudio(audio);
+      onAudioChangeRef.current?.(audio);
+    };
+
     const recorder = useRecorder(micStream);
     const startRecording = async () => {
       if (conversionProcessing) return;
@@ -410,15 +426,8 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           currentTime,
           wsRef.current,
           (audio) => {
-            if (internalAudio) {
-              pushUndo();
-              wsRef.current?.once('decode', () =>
-                wsRef.current?.setTime(currentTime)
-              );
-            }
-            setInternalAudio(audio);
+            handleInsert(audio);
             setRecording(false);
-            onAudioChangeRef.current?.(audio);
             onRecordingComplete?.(audio);
           }
         );
@@ -835,6 +844,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     const handleCutClick = async () => {
       if (!internalAudio || !selection) return;
       pushUndo();
+      setClip(await clipAudio(internalAudio, selection.start, selection.end));
       const spliced = await spliceAudio(
         internalAudio,
         selection.start,
@@ -1004,6 +1014,14 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
               >
                 <ContentCutIcon fontSize="small" />
               </IconButton>
+            )}
+            {offline && allowRecord && !showRecordButton && !isBoldWorkflow && (
+              <AudioCopyPaste
+                audio={internalAudio}
+                selection={selection}
+                at={currentTime}
+                onPaste={handleInsert}
+              />
             )}
             {showSilence && (
               <IconButton
