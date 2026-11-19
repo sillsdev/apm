@@ -1,5 +1,5 @@
 import Axios, { AxiosError } from 'axios';
-import { API_CONFIG } from '../../../api-variable';
+import { API_CONFIG, isElectron } from '../../../api-variable';
 import {
   UPLOAD_LIST,
   UPLOAD_ITEM_PENDING,
@@ -39,6 +39,7 @@ import {
 import {
   appendPendingMediaUpload,
   findPendingUploadIdForIdentity,
+  PendingUploadIdentity,
   PendingUploadRecord,
   PendingUploadMediaRecord,
   PendingUploadRestore,
@@ -46,6 +47,23 @@ import {
   removePendingMediaUpload,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
+import {
+  claimUploadPending,
+  findUploadPendingKeyForIdentity,
+  newUploadPendingKey,
+  recordUploadPendingFailure,
+  releaseUploadPending,
+  saveUploadPendingBlob,
+  settleUploadPending,
+} from './uploadPendingBlobs';
+import {
+  isPutBlobBodyReject,
+  putBlobBody,
+  UPLOAD_FAILED_TEXT,
+  type PutBlobBodyReject,
+} from './putBlobBody';
+import { requestUploadPendingBackgroundSync } from './uploadPendingBackgroundSync';
+import { localMediaPath } from '../../utils/localMediaPath';
 
 const ipc = window?.api as MainAPI;
 
@@ -149,95 +167,66 @@ export class UploadFileReject extends Error {
   }
 }
 
-export const uploadFile = (
+/** Turns a failed PUT into an UploadFileReject, reporting it the way the inline XHR did. */
+const toUploadFileReject = (
+  rej: PutBlobBodyReject,
+  data: MediaFileAttributes,
+  file: File,
+  errorReporter: typeof bugsnagClient
+): UploadFileReject => {
+  if (rej.failure === 'http') {
+    logError(
+      Severity.error,
+      errorReporter,
+      `upload ${file.name}: (${rej.statusNum}) ${rej.statusText}`
+    );
+  } else if (rej.failure === 'network') {
+    const host = (() => {
+      try {
+        return new URL(data.audioUrl).host;
+      } catch {
+        return 'unknown';
+      }
+    })();
+    const statusText = [
+      UPLOAD_FAILED_TEXT,
+      rej.httpStatus ? `HTTP ${rej.httpStatus}` : 'network error',
+      typeof navigator !== 'undefined' && !navigator.onLine
+        ? 'offline'
+        : undefined,
+      `${file.name} (${file.size} bytes)`,
+      host,
+    ]
+      .filter(Boolean)
+      .join('; ');
+    logError(
+      Severity.error,
+      errorReporter,
+      `upload ${file.name}: ${statusText}`
+    );
+    return new UploadFileReject(rej.statusNum, statusText, rej.httpStatus);
+  }
+  // Aborts and timeouts are retried by the caller without a report.
+  return new UploadFileReject(rej.statusNum, rej.statusText, rej.httpStatus);
+};
+
+export const uploadFile = async (
   data: MediaFileAttributes,
   file: File,
   errorReporter: typeof bugsnagClient
 ): Promise<{ statusNum: number; statusText: string }> => {
-  return new Promise((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    const cleanup = (): void => {
-      xhr.onload = null;
-      xhr.onerror = null;
-      xhr.onabort = null;
-      xhr.ontimeout = null;
-      // @ts-ignore allow memory to be released
-      xhr = null;
-    };
-    xhr.open('PUT', data.audioUrl, true);
-    xhr.setRequestHeader('Content-Type', data.contentType);
-    xhr.timeout = uploadPutTimeoutMs(file.size);
-
-    xhr.onload = () => {
-      if (xhr.status < 300) {
-        cleanup();
-        resolve({ statusNum: 0, statusText: '' });
-      } else {
-        logError(
-          Severity.error,
-          errorReporter,
-          `upload ${file.name}: (${xhr.status}) ${xhr.responseText}`
-        );
-        const rej = new UploadFileReject(
-          xhr.status,
-          xhr.responseText || 'upload failed',
-          xhr.status
-        );
-        // cleanup removes the xhr values loaded into UploadFileReject (above)
-        cleanup();
-        reject(rej);
-      }
-    };
-    xhr.onerror = () => {
-      const httpStatus = xhr.status;
-      const host = (() => {
-        try {
-          return new URL(data.audioUrl).host;
-        } catch {
-          return 'unknown';
-        }
-      })();
-      const statusText = [
-        'upload failed',
-        httpStatus === 0 ? 'network error' : `HTTP ${httpStatus}`,
-        typeof navigator !== 'undefined' && !navigator.onLine
-          ? 'offline'
-          : undefined,
-        `${file.name} (${file.size} bytes)`,
-        host,
-      ]
-        .filter(Boolean)
-        .join('; ');
-      logError(
-        Severity.error,
-        errorReporter,
-        `upload ${file.name}: ${statusText}`
-      );
-      cleanup();
-      const rej = new UploadFileReject(
-        httpStatus || 500,
-        statusText,
-        httpStatus || undefined
-      );
-      reject(rej);
-    };
-    xhr.onabort = () => {
-      cleanup();
-      const rej = new UploadFileReject(499, 'upload aborted', 499);
-      reject(rej);
-    };
-    xhr.ontimeout = () => {
-      const timeoutMs = xhr.timeout;
-      cleanup();
-      const rej = new UploadFileReject(
-        408,
-        `upload timed out after ${timeoutMs}ms`,
-        408
-      );
-      reject(rej);
-    };
-    xhr.send(file.slice());
-  });
+  try {
+    return await putBlobBody({
+      url: data.audioUrl,
+      blob: file,
+      contentType: data.contentType,
+      timeoutMs: uploadPutTimeoutMs(file.size),
+    });
+  } catch (error: unknown) {
+    // putBlobBody only rejects with PutBlobBodyReject; anything else is a bug.
+    if (!isPutBlobBodyReject(error)) throw error;
+    throw toUploadFileReject(error, data, file, errorReporter);
+  }
 };
 
 export interface UploadTerminalFailureInfo {
@@ -281,6 +270,11 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
+  /**
+   * Project the media belongs to. On web it scopes the Upload Pending Local
+   * Media Blob saved before the cloud attempt (ADR 0017 eviction / switch).
+   */
+  projectId?: string;
   // TODO cleanup: see if we can consolidate the props above, especially the error handling and end behavior ones
 }
 export const nextUpload =
@@ -297,6 +291,7 @@ export const nextUpload =
     pendingUploadIdToClearOnSuccess,
     pendingRestore,
     getImportExportBusy,
+    projectId = '',
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
@@ -310,10 +305,15 @@ export const nextUpload =
     // already staged for this section/artifact/file so repeated Save clicks
     // update one row instead of appending a new one each time
     // writeFileLocal stages the same recording under a new versioned path.
-    let pendingIdToClear = queueForRetry
-      ? (pendingUploadIdToClearOnSuccess ??
-        findPendingUploadIdForIdentity(record as PendingUploadMediaRecord))
-      : undefined;
+    // Desktop only: on web the Upload Pending queue is the Local Media Blob
+    // store, and pendingUploadIdToClearOnSuccess is a blob key (ADR 0016).
+    let pendingIdToClear =
+      isElectron && queueForRetry
+        ? (pendingUploadIdToClearOnSuccess ??
+          findPendingUploadIdForIdentity(record as PendingUploadMediaRecord))
+        : undefined;
+    // Web: key of this recording's Upload Pending Local Media Blob, once saved.
+    let uploadPendingKey: string | undefined;
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -361,43 +361,65 @@ export const nextUpload =
       }
       return;
     }
-    const completeCB = (
+    const pendingIdentity = (): PendingUploadIdentity => {
+      const pendingRec = record as PendingUploadMediaRecord;
+      return {
+        planId: pendingRec.planId,
+        passageId: pendingRec.passageId,
+        artifactTypeId: pendingRec.artifactTypeId,
+        originalFile: pendingRec.originalFile,
+      };
+    };
+
+    const completeCB = async (
       success: boolean,
       data: MediaFileAttributes | undefined,
       statusNum: number | undefined,
       statusText: string
-    ): void => {
-      void (async () => {
-        if (success) {
-          dispatch({ payload: n, type: UPLOAD_ITEM_SUCCEEDED });
-          // Await secondary restore / afterUpload before dropping the pending
-          // row so a restore failure leaves Retry available (TT-7363 / PR #565).
-          try {
-            if (cb) await Promise.resolve(cb(n, true, data));
-          } catch {
-            return;
-          }
+    ): Promise<void> => {
+      if (success) {
+        dispatch({ payload: n, type: UPLOAD_ITEM_SUCCEEDED });
+        // Await secondary restore / afterUpload before dropping the pending
+        // row so a restore failure leaves Retry available (TT-7363 / PR #565).
+        try {
+          if (cb) await Promise.resolve(cb(n, true, data));
+        } catch {
+          return;
+        }
+        if (isElectron) {
           if (pendingIdToClear) {
             removePendingMediaUpload(pendingIdToClear);
           }
-          const pendingRec = record as PendingUploadMediaRecord;
-          removeMatchingPendingUploads({
-            planId: pendingRec.planId,
-            passageId: pendingRec.passageId,
-            artifactTypeId: pendingRec.artifactTypeId,
-            originalFile: pendingRec.originalFile,
-          });
-        } else {
-          // statusNum is undefined when the request never reached the server,
-          // so don't render a literal "(undefined)" at the user (TT-7583).
-          const message = `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`;
-          dispatch({
-            payload: { current: n, error: message },
-            type: UPLOAD_ITEM_FAILED,
-          });
-          if (cb) cb(n, false, data, message);
+          removeMatchingPendingUploads(pendingIdentity());
+        } else if (uploadPendingKey) {
+          try {
+            await settleUploadPending({
+              key: uploadPendingKey,
+              mediafileId: (data as { stringId?: string } | undefined)
+                ?.stringId,
+              projectId,
+              identity: pendingIdentity(),
+            });
+          } catch (err: unknown) {
+            // The blob stays Upload Pending, so a later retry uploads it
+            // again: a duplicate in the cloud, but no lost audio.
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(err as Error, `mark Cloud-backed failed: ${name}`)
+            );
+          }
         }
-      })();
+      } else {
+        // statusNum is undefined when the request never reached the server,
+        // so don't render a literal "(undefined)" at the user (TT-7583).
+        const message = `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`;
+        dispatch({
+          payload: { current: n, error: message },
+          type: UPLOAD_ITEM_FAILED,
+        });
+        if (cb) cb(n, false, data, message);
+      }
     };
 
     const toVnd = (record: unknown): MediaUpload => {
@@ -492,9 +514,70 @@ export const nextUpload =
       };
     };
 
+    /**
+     * Web: save the recording as an Upload Pending Local Media Blob before the
+     * cloud attempt, so a failed or interrupted upload never loses it
+     * (ADR 0016). Returns the claimed blob key, or undefined when the device
+     * save failed; the upload still proceeds since the cloud may yet succeed.
+     */
+    const protectOnDevice = async (): Promise<string | undefined> => {
+      let key: string | undefined;
+      try {
+        const existing =
+          pendingUploadIdToClearOnSuccess ??
+          (await findUploadPendingKeyForIdentity(projectId, pendingIdentity()));
+        // When an upload of that blob is already running in this tab, this
+        // attempt saves its own copy rather than racing on one row.
+        key =
+          existing && claimUploadPending(existing)
+            ? existing
+            : newUploadPendingKey();
+        if (key !== existing) claimUploadPending(key);
+        await saveUploadPendingBlob({
+          key,
+          projectId,
+          file: files[n] as File,
+          request: {
+            uploadType,
+            record: snapshotForPending(),
+            ...(pendingRestore ? { restore: pendingRestore } : {}),
+          },
+        });
+        if (!navigator.onLine) {
+          // Offline: the browser wakes an open tab to drain once connectivity
+          // returns. Online, registering would fire at once and start a
+          // second drain beside this upload. Never rejects (catches inside).
+          void requestUploadPendingBackgroundSync();
+        }
+        return key;
+      } catch (err: unknown) {
+        if (key) releaseUploadPending(key);
+        logError(
+          Severity.error,
+          errorReporter,
+          infoMsg(err as Error, `save on this device failed: ${name}`)
+        );
+        return undefined;
+      }
+    };
+
+    // Every failure inside reports through sendError / completeCB, so the
+    // promise is not awaited by the thunk's caller.
     void (async () => {
+      try {
+        await uploadWithLocalCopy();
+      } finally {
+        if (uploadPendingKey) releaseUploadPending(uploadPendingKey);
+      }
+    })();
+
+    async function uploadWithLocalCopy(): Promise<void> {
       if (getImportExportBusy) {
         await waitForImportExportIdle(getImportExportBusy);
+      }
+
+      if (!isElectron && !skipUpload && isDownloadable) {
+        uploadPendingKey = await protectOnDevice();
       }
 
       let localAbsolutePath = '';
@@ -516,20 +599,50 @@ export const nextUpload =
         }
       }
 
+      const queueOnDesktop = (
+        patch: Omit<PendingUploadRecord, 'id' | 'failedAt'>
+      ): PendingUploadRecord =>
+        pendingIdToClear
+          ? (updatePendingMediaUpload(pendingIdToClear, patch) ??
+            appendPendingMediaUpload(patch))
+          : appendPendingMediaUpload(patch);
+
       if (localAbsolutePath && queueForRetry) {
-        const queuePatch = {
+        const pendingRecord = queueOnDesktop({
           localAbsolutePath,
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
           ...(pendingRestore ? { restore: pendingRestore } : {}),
-        };
-        const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
-            appendPendingMediaUpload(queuePatch))
-          : appendPendingMediaUpload(queuePatch);
+        });
         pendingIdToClear = pendingRecord.id;
       }
+
+      /**
+       * Web: the blob stays Upload Pending for the online retry. The returned
+       * record only feeds the failure message; no localStorage row is kept.
+       */
+      const webTerminalFailure = async (
+        patch: Omit<PendingUploadRecord, 'id' | 'failedAt'>
+      ): Promise<PendingUploadRecord> => {
+        if (uploadPendingKey) {
+          try {
+            await recordUploadPendingFailure(uploadPendingKey);
+          } catch (err: unknown) {
+            // Only the retry count is lost; the blob is still Upload Pending.
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(err as Error, `count upload retry failed: ${name}`)
+            );
+          }
+        }
+        return {
+          ...patch,
+          id: uploadPendingKey ?? '',
+          failedAt: new Date().toISOString(),
+        };
+      };
 
       const finalizeTerminalFailure = async (
         remoteId: number | undefined,
@@ -562,10 +675,9 @@ export const nextUpload =
             record: snapshotForPending(),
             ...(pendingRestore ? { restore: pendingRestore } : {}),
           };
-          const pendingRecord = pendingIdToClear
-            ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
-              appendPendingMediaUpload(queuePatch))
-            : appendPendingMediaUpload(queuePatch);
+          const pendingRecord = isElectron
+            ? queueOnDesktop(queuePatch)
+            : await webTerminalFailure(queuePatch);
           onTerminalFailure?.({
             localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
             originalFileName: name,
@@ -574,7 +686,22 @@ export const nextUpload =
             failedRemoteMediaId,
           });
         }
-        completeCB(false, undefined, statusNum, statusText);
+        // Web: the server was never reached and the take is safe as an Upload
+        // Pending blob, so hand its key back. useMediaUpload creates a
+        // local-only mediafile from it (localOnlyMedia), letting later steps
+        // use the take offline.
+        const savedOnDevice =
+          !isElectron &&
+          uploadPendingKey &&
+          statusNum === undefined &&
+          cloudRowDeleted
+            ? {
+                ...(record as MediaFileAttributes),
+                audioUrl: localMediaPath(uploadPendingKey),
+                uploadPendingKey,
+              }
+            : undefined;
+        await completeCB(false, savedOnDevice, statusNum, statusText);
       };
 
       let json: unknown;
@@ -605,7 +732,9 @@ export const nextUpload =
             );
             return;
           }
-          if (attempt < UPLOAD_MAX_ATTEMPTS - 1) {
+          // Offline the retries can't succeed; the Upload Pending drain sends
+          // it when connectivity returns, so don't keep the user waiting.
+          if (attempt < UPLOAD_MAX_ATTEMPTS - 1 && navigator.onLine !== false) {
             await sleepMs(uploadRetryDelayMs(attempt));
             continue;
           }
@@ -637,7 +766,7 @@ export const nextUpload =
       const mediaId = (json as { id?: number }).id;
 
       if (skipUpload) {
-        completeCB(true, mediaA, 0, '');
+        await completeCB(true, mediaA, 0, '');
         return;
       }
 
@@ -647,7 +776,7 @@ export const nextUpload =
         try {
           const status = await uploadFile(mediaA, fileForPut, errorReporter);
           if (status.statusNum === 0) {
-            completeCB(true, mediaA, 0, '');
+            await completeCB(true, mediaA, 0, '');
             return;
           }
           lastNum = status.statusNum;
@@ -670,7 +799,7 @@ export const nextUpload =
         }
       }
       await finalizeTerminalFailure(mediaId, true, lastNum, lastTxt);
-    })();
+    }
   };
 export const uploadComplete = (): UploadMsgs => {
   return { type: UPLOAD_COMPLETE };

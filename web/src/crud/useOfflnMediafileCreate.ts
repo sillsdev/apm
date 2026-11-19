@@ -20,9 +20,17 @@ export const useOfflnMediafileCreate = () => {
     passageId: string,
     artifactTypeId: string | null,
     sourceMediaId: string,
-    recordedbyUserId: string
+    recordedbyUserId: string,
+    /** Web offline take: use the Upload Pending blob key (localOnlyMedia). */
+    id?: string
   ) => {
+    if (id) {
+      // A re-saved take reuses its blob key; the record already exists.
+      const existing = memory.cache.getRecordSync({ type: 'mediafile', id });
+      if (existing) return existing as MediaFileD;
+    }
     const newMediaRec: MediaFile = {
+      ...(id ? { id } : {}),
       type: 'mediafile',
       attributes: {
         versionNumber: version,

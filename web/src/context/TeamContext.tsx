@@ -61,8 +61,10 @@ import {
   logError,
   pad2,
   Severity,
+  useEvictLocalMediaOnProjectSwitch,
   useHome,
 } from '../utils';
+import { useUploadPendingLeave } from './UploadPendingLeaveContext';
 import {
   RecordIdentity,
   RecordKeyMap,
@@ -158,6 +160,7 @@ interface IProps {
 
 const TeamProvider = (props: IProps) => {
   useRenderProfiler('TeamProvider');
+  useEvictLocalMediaOnProjectSwitch();
   const projects = useOrbitData<ProjectD[]>('project');
   const plans = useOrbitData<PlanD[]>('plan');
   const planTypes = useOrbitData<PlanTypeD[]>('plantype');
@@ -247,13 +250,27 @@ const TeamProvider = (props: IProps) => {
     setImportOpen(true);
   };
 
-  const loadProject = (
+  const guardLeave = useUploadPendingLeave();
+
+  const loadProjectNow = (
     plan: PlanD,
     cb: (() => void) | undefined = undefined
   ) => {
     const [projectId] = setProjectParams(plan);
     LoadData(projectId, () => {
       if (cb) cb();
+    });
+  };
+
+  /** Web: gate on Upload Pending before switching projects (ADR 0017). */
+  const loadProject = (
+    plan: PlanD,
+    cb: (() => void) | undefined = undefined
+  ) => {
+    guardLeave({
+      enteringProjectId: related(plan, 'project'),
+      reason: 'switch',
+      proceed: () => loadProjectNow(plan, cb),
     });
   };
 

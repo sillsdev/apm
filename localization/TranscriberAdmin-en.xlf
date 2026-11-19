@@ -4978,9 +4978,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaTab.pendingUploadDiscardFailed">
+         <segment>
+            <source>The recording could not be removed from this device. Please try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaTab.pendingUploadDismiss">
          <segment>
             <source>Remove from list</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDismissWarn">
+         <segment>
+            <source>This recording has not been uploaded and is saved only on this device. Removing it from the list will permanently delete it. This cannot be undone.</source>
             <target/>
          </segment>
       </unit>
@@ -4996,9 +5008,57 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaTab.pendingUploadLeaveAfterSwitchPrompt">
+         <segment>
+            <source>Your previous project has recordings saved only on this device that have not been uploaded. Upload them now?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadLeaveContinue">
+         <segment>
+            <source>Continue without uploading</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadLeaveLogoutPrompt">
+         <segment>
+            <source>This project has recordings saved only on this device that have not been uploaded. Upload them before logging out?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadLeaveLossWarn">
+         <segment>
+            <source>Continuing will permanently remove those recordings from this device. They are not in the cloud. This cannot be undone.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadLeavePrompt">
+         <segment>
+            <source>This project has recordings saved only on this device that have not been uploaded. Upload them before switching projects?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadLeaveUpload">
+         <segment>
+            <source>Upload all</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadLeaveUploadFailed">
+         <segment>
+            <source>Some recordings could not be uploaded. Check your connection and try again, or continue without uploading.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaTab.pendingUploadMenu">
          <segment>
             <source>Pending media uploads</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadOnDeviceOnly">
+         <segment>
+            <source>Saved on this device only until the cloud confirms the upload.</source>
             <target/>
          </segment>
       </unit>
@@ -5023,6 +5083,12 @@
       <unit id="mediaTab.pendingUploadRetryOne">
          <segment>
             <source>Retry</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRiskHint">
+         <segment>
+            <source>Clearing site data, using a private/incognito window, or some Safari settings can erase these recordings before they upload.</source>
             <target/>
          </segment>
       </unit>
@@ -7195,6 +7261,12 @@
       <unit id="projectDownload.missingFileList">
          <segment>
             <source>Show missing file list</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="projectDownload.notEnoughSpace">
+         <segment>
+            <source>Not enough storage space on this device for {0} MB. Free some space and try again.</source>
             <target/>
          </segment>
       </unit>
