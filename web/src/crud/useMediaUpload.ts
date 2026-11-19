@@ -29,6 +29,7 @@ import path from 'path-browserify';
 import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
 import { findRecords } from './tryFindRecord';
 import { convertToFormat, DEFAULT_COMPRESSED_MIME } from './convertToWebM';
+import { savedOnDeviceKey } from './localOnlyMedia';
 
 /**
  * The values that become the uploaded mediafile (its attributes and
@@ -267,6 +268,22 @@ export const useMediaUpload = ({
     files: File[]
   ): Promise<string> => {
     if (!success) {
+      const localKey = savedOnDeviceKey(data);
+      if (localKey) {
+        // Web offline: the take is an Upload Pending blob. Give it a
+        // local-only mediafile so later steps can use it (localOnlyMedia).
+        const created = await createMedia(
+          data,
+          getLatestVersion(),
+          (files[n] as File).size,
+          fields.passageId ?? '',
+          fields.artifactId,
+          fields.sourceMediaId ?? '',
+          user,
+          localKey
+        );
+        return created.id;
+      }
       setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
       return '';
     }
@@ -362,16 +379,21 @@ export const useMediaUpload = ({
         projectId: getGlobal('project'),
         uploadType: effectiveType,
         cb: (idx, upOk, data, errorMessage) => {
-          if (errorMessage) showUploadError(errorMessage, silent);
+          const localOnly = Boolean(savedOnDeviceKey(data));
+          // A take saved on this device already got the onTerminalFailure
+          // "saved on this device" notice; the raw error would overwrite it.
+          if (errorMessage && !localOnly) showUploadError(errorMessage, silent);
           void (async () => {
             try {
               const id = await itemComplete(idx, upOk, data, files);
+              // The server has no row for a local-only take yet.
+              if (localOnly && id) pulled.add(id);
               // Runs before nextUpload clears the pending row (TT-7363).
               if (afterUploadCb) {
                 // Pull first so the callback gets a keyMap-resolvable id
                 // (e.g. ProvideRights links the new mediafile as the IP's
                 // releaseMediafile; an unmapped remote id serializes with no id).
-                if (id && !getGlobal('offline')) {
+                if (id && !getGlobal('offline') && !localOnly) {
                   await pullMedia([id]);
                   pulled.add(id);
                 }

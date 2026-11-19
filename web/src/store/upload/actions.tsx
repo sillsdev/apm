@@ -63,6 +63,7 @@ import {
   type PutBlobBodyReject,
 } from './putBlobBody';
 import { requestUploadPendingBackgroundSync } from './uploadPendingBackgroundSync';
+import { localMediaPath } from '../../utils/localMediaPath';
 
 const ipc = window?.api as MainAPI;
 
@@ -685,7 +686,22 @@ export const nextUpload =
             failedRemoteMediaId,
           });
         }
-        await completeCB(false, undefined, statusNum, statusText);
+        // Web: the server was never reached and the take is safe as an Upload
+        // Pending blob, so hand its key back. useMediaUpload creates a
+        // local-only mediafile from it (localOnlyMedia), letting later steps
+        // use the take offline.
+        const savedOnDevice =
+          !isElectron &&
+          uploadPendingKey &&
+          statusNum === undefined &&
+          cloudRowDeleted
+            ? {
+                ...(record as MediaFileAttributes),
+                audioUrl: localMediaPath(uploadPendingKey),
+                uploadPendingKey,
+              }
+            : undefined;
+        await completeCB(false, savedOnDevice, statusNum, statusText);
       };
 
       let json: unknown;
@@ -716,7 +732,9 @@ export const nextUpload =
             );
             return;
           }
-          if (attempt < UPLOAD_MAX_ATTEMPTS - 1) {
+          // Offline the retries can't succeed; the Upload Pending drain sends
+          // it when connectivity returns, so don't keep the user waiting.
+          if (attempt < UPLOAD_MAX_ATTEMPTS - 1 && navigator.onLine !== false) {
             await sleepMs(uploadRetryDelayMs(attempt));
             continue;
           }

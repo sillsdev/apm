@@ -235,6 +235,52 @@ describe('nextUpload on web saves an Upload Pending Local Media Blob', () => {
     expect(releaseUploadPending).toHaveBeenCalledWith('new-key');
   });
 
+  describe('offline (localOnlyMedia)', () => {
+    let onLine: jest.SpyInstance<boolean, []>;
+    beforeEach(() => {
+      onLine = jest
+        .spyOn(window.navigator, 'onLine', 'get')
+        .mockReturnValue(false);
+      mockedAxios.post.mockImplementation(async () => {
+        events.push('post');
+        throw Object.assign(new Error('Network Error'), {
+          isAxiosError: true,
+        });
+      });
+    });
+    afterEach(() => onLine.mockRestore());
+
+    it('hands back the Upload Pending key without retrying', async () => {
+      const cb = run();
+      await settle();
+
+      expect(events.filter((e) => e === 'post')).toHaveLength(1);
+      expect(cb).toHaveBeenCalledWith(
+        0,
+        false,
+        expect.objectContaining({
+          uploadPendingKey: 'new-key',
+          audioUrl: 'local-media:new-key',
+          originalFile: 'test.mp3',
+        }),
+        expect.any(String)
+      );
+    });
+
+    it('does not hand back a key when the server rejected the upload', async () => {
+      mockedAxios.post.mockImplementation(async () => {
+        throw Object.assign(new Error('Bad Request'), {
+          isAxiosError: true,
+          response: { status: 400 },
+        });
+      });
+      const cb = run();
+      await settle();
+
+      expect(cb).toHaveBeenCalledWith(0, false, undefined, expect.any(String));
+    });
+  });
+
   it('reuses the blob already saved for this recording (TT-7365)', async () => {
     findUploadPendingKeyForIdentity.mockResolvedValue('earlier-key');
     run();
