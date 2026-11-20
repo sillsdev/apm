@@ -163,7 +163,6 @@ function buildState(overrides: Record<string, unknown> = {}) {
     // Speaking a Reference Text stops other passage playback
     setItemPlaying: jest.fn(),
     setCommentPlaying: jest.fn(),
-    handleOldVernacularPlayEnd: jest.fn(),
     section: { id: 'section-1' },
     passage: { id: 'passage-1' },
     currentstep: 'compare-step',

@@ -9,7 +9,6 @@ import {
   ISharedStrings,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
-import { PlayInPlayer } from '../../../context/PlayInPlayer';
 import AddResource from './AddResource';
 import SortableHeader from './SortableHeader';
 import { IRow } from '../../../context/PassageDetailContext';
@@ -42,7 +41,9 @@ import {
   UriLinkType,
   mediaContentType,
 } from '../../../utils/contentType';
-import LimitedMediaPlayer from '../../LimitedMediaPlayer';
+import MiniAudioPlayer, { MiniAudioPlayerHandle } from '../../MiniAudioPlayer';
+import type { TimeRange } from '../../../control/formatTime';
+import { resourceClip } from './resourceClip';
 import { canSaveResourceEdit } from './resourceArtifactName';
 import {
   Badge,
@@ -57,7 +58,7 @@ import {
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import { PassageResourceButton } from './PassageResourceButton';
 import Confirm from '../../AlertDialog';
-import { getSegments, NamedRegions, isUrl } from '../../../utils';
+import { isUrl } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -116,17 +117,9 @@ export function PassageDetailArtifacts() {
     rowData,
     section,
     passage,
-    setSelected,
-    playItem,
-    setPlayItem,
-    setMediaSelected,
-    itemPlaying,
-    setItemPlaying,
     currentstep,
     toggleDone,
     forceRefresh,
-    handleItemPlayEnd,
-    handleItemTogglePlay,
     sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
@@ -178,8 +171,10 @@ export function PassageDetailArtifacts() {
 
   const [allResources, setAllResources] = useState(false);
   const [confirm, setConfirm] = useState('');
-  const [mediaStart, setMediaStart] = useState<number | undefined>();
-  const [mediaEnd, setMediaEnd] = useState<number | undefined>();
+  const [playId, setPlayId] = useState('');
+  const [playClip, setPlayClip] = useState<TimeRange>();
+  const [playing, setPlaying] = useState(false);
+  const playerRef = useRef<MiniAudioPlayerHandle>(null);
   const { removeKey } = storedCompareKey(passage, section);
   const [plan] = useGlobal('plan'); //will be constant here
   const planType = usePlanType();
@@ -216,29 +211,13 @@ export function PassageDetailArtifacts() {
   const { projResourceTypeIds } = useResourceArtifactTypes();
 
   const handlePlay = (id: string) => {
-    if (id === playItem) {
-      setItemPlaying(!itemPlaying);
-    } else {
-      const row = rowData.find((r) => r.id === id);
-      if (row) {
-        const segs = getSegments(
-          NamedRegions.ProjectResource,
-          row.mediafile.attributes.segments
-        );
-        const regions = JSON.parse(segs);
-        if (regions.length > 0) {
-          const { start, end } = regions[0];
-          setMediaStart(start);
-          setMediaEnd(end);
-          setMediaSelected(id, start, end);
-          return;
-        } else {
-          setMediaStart(undefined);
-          setMediaEnd(undefined);
-        }
-      }
-      setSelected(id, PlayInPlayer.no);
+    if (id === playId) {
+      playerRef.current?.toggle();
+      return;
     }
+    const row = rowData.find((r) => r.id === id);
+    setPlayClip(resourceClip(row?.mediafile));
+    setPlayId(id);
   };
 
   const handleDisplayId = (id: string) => {
@@ -632,15 +611,15 @@ export function PassageDetailArtifacts() {
     );
   };
 
-  const handleEnded = () => {
-    setPlayItem('');
-    handleItemPlayEnd();
-  };
+  // Start the resource just loaded into the toolbar player. The player has
+  // already taken the new id: child effects run before this one.
+  useEffect(() => {
+    if (playId) playerRef.current?.play();
+  }, [playId]);
 
-  const handleLoaded = () => {
-    if (playItem !== '' && !itemPlaying) {
-      setTimeout(() => handleItemTogglePlay(), 1000);
-    }
+  const handlePlayerFinish = () => {
+    setPlaying(false);
+    setPlayId('');
   };
 
   const isScripture = useMemo(
@@ -679,7 +658,7 @@ export function PassageDetailArtifacts() {
               </Grid>
             </>
           )}
-          {playItem !== '' && (
+          {playId !== '' && (
             <Grid
               sx={{
                 width: '50%',
@@ -689,14 +668,12 @@ export function PassageDetailArtifacts() {
               }}
             >
               <MediaContainer>
-                <LimitedMediaPlayer
-                  srcMediaId={playItem}
-                  requestPlay={itemPlaying}
-                  onEnded={handleEnded}
-                  onLoaded={handleLoaded}
-                  onTogglePlay={handleItemTogglePlay}
-                  controls={playItem !== ''}
-                  limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
+                <MiniAudioPlayer
+                  ref={playerRef}
+                  srcMediaId={playId}
+                  clip={playClip}
+                  onFinish={handlePlayerFinish}
+                  onPlayingChange={setPlaying}
                 />
               </MediaContainer>
             </Grid>
@@ -725,7 +702,7 @@ export function PassageDetailArtifacts() {
             key={`item-${index}`}
             value={value as any}
             contentType={mediaContentType(value.mediafile)}
-            isPlaying={playItem === value.id && itemPlaying}
+            isPlaying={playId === value.id && playing}
             onPlay={handlePlay}
             onView={handleDisplayId}
             onLink={handleLinkId}

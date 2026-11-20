@@ -33,6 +33,17 @@ export const audioManager = {
     emit();
   },
 
+  /**
+   * Plays `to` in place of `from`, only if `from` is still the active handle;
+   * returns false and plays nothing otherwise (it was paused, stopped or
+   * preempted meanwhile).
+   */
+  replace(from: AudioHandle, to: AudioHandle) {
+    if (active !== from) return false;
+    audioManager.play(to);
+    return true;
+  },
+
   release(handle: AudioHandle) {
     if (active === handle) {
       active = null;

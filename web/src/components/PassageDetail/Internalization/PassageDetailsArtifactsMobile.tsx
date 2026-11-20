@@ -9,7 +9,6 @@ import {
   ISharedStrings,
 } from '../../../model';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
-import { PlayInPlayer } from '../../../context/PlayInPlayer';
 import AddResource from './AddResource';
 import { IRow } from '../../../context/PassageDetailContext';
 import { Button, GrowingSpacer } from '../../../control';
@@ -49,7 +48,7 @@ import { Box, Stack, Typography, MenuItem, MenuList } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import Confirm from '../../AlertDialog';
-import { getSegments, NamedRegions, isUrl, useMobile } from '../../../utils';
+import { isUrl, useMobile } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -98,16 +97,9 @@ export function PassageDetailArtifactsMobile() {
     rowData,
     section,
     passage,
-    setSelected,
-    playItem,
-    setPlayItem,
-    setMediaSelected,
-    itemPlaying,
-    setItemPlaying,
     currentstep,
     toggleDone,
     forceRefresh,
-    handleItemPlayEnd,
     sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
@@ -160,8 +152,6 @@ export function PassageDetailArtifactsMobile() {
 
   const [allResources, setAllResources] = useState(false);
   const [confirm, setConfirm] = useState('');
-  const [mediaStart, setMediaStart] = useState<number | undefined>();
-  const [mediaEnd, setMediaEnd] = useState<number | undefined>();
   const { removeKey } = storedCompareKey(passage, section);
   const [plan] = useGlobal('plan'); //will be constant here
   const planType = usePlanType();
@@ -212,32 +202,6 @@ export function PassageDetailArtifactsMobile() {
   // [[generalResourceMedia]]). Shared with the add wizard via this hook so the
   // two resolve the same records (see useResourceArtifactTypes).
   const { projResourceTypeIds } = useResourceArtifactTypes();
-
-  const handlePlay = (id: string) => {
-    if (id === playItem) {
-      setItemPlaying(!itemPlaying);
-    } else {
-      const row = rowData.find((r) => r.id === id);
-      if (row) {
-        const segs = getSegments(
-          NamedRegions.ProjectResource,
-          row.mediafile.attributes.segments
-        );
-        const regions = JSON.parse(segs);
-        if (regions.length > 0) {
-          const { start, end } = regions[0];
-          setMediaStart(start);
-          setMediaEnd(end);
-          setMediaSelected(id, start, end);
-          return;
-        } else {
-          setMediaStart(undefined);
-          setMediaEnd(undefined);
-        }
-      }
-      setSelected(id, PlayInPlayer.no);
-    }
-  };
 
   const handleDisplayId = (id: string) => {
     setDisplayId(id);
@@ -632,11 +596,6 @@ export function PassageDetailArtifactsMobile() {
     );
   };
 
-  const handleEnded = () => {
-    setPlayItem('');
-    handleItemPlayEnd();
-  };
-
   const isScripture = useMemo(
     () => planType(plan)?.scripture,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -690,15 +649,11 @@ export function PassageDetailArtifactsMobile() {
                   row={value}
                   subtitle={value.artifactCategory || undefined}
                   badge={typeBadge(value)}
-                  isPlaying={playItem === value.id && itemPlaying}
-                  onPlay={handlePlay}
                   expandedId={expandedArtifactNameId}
                   setExpandedId={setExpandedArtifactNameId}
                   onDone={handleDone}
                   onEdit={modifiable ? handleEdit : undefined}
                   onDelete={modifiable ? handleDelete : undefined}
-                  onEnded={handleEnded}
-                  limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
                 />
               ) : (
                 <TextResourceCard

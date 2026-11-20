@@ -144,7 +144,6 @@ const mount = () => {
     setPlaying: cy.stub(),
     setItemPlaying: cy.stub(),
     setCommentPlaying: cy.stub(),
-    handleOldVernacularPlayEnd: cy.stub(),
   } as unknown as ICtxState; // only what Compare reads
 
   cy.mount(

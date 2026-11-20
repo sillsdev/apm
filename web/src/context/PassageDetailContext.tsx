@@ -66,7 +66,7 @@ import { useSnackBar } from '../hoc/SnackBar';
 import { completeStepAfterSave } from './completeStepAfterSave';
 import { useStepCompleteWriter } from './useStepCompleteWriter';
 import * as actions from '../store';
-import LimitedMediaPlayer from '../components/LimitedMediaPlayer';
+import { audioManager, useIsAudioPlaying } from '../utils/audioManager';
 import {
   getResources,
   mediaRows,
@@ -155,10 +155,6 @@ const initState = {
   setCommentPlaying: (_playing: boolean, _ended?: boolean) => {},
   commentPlayId: '',
   setCommentPlayId: (_mediaId: string) => {},
-  oldVernacularPlayItem: '',
-  oldVernacularStart: 0,
-  oldVernacularPlaying: false,
-  handleOldVernacularPlayEnd: () => {},
   rowData: Array<IRow>(),
 
   loading: false,
@@ -361,10 +357,8 @@ const PassageDetailProvider = (props: IProps) => {
         playing: false,
         itemPlaying: false,
         commentPlaying: false,
-        oldVernacularPlaying: false,
         playItem: '',
         commentPlayId: '',
-        oldVernacularPlayItem: '',
         highlightDiscussion: undefined,
       };
     });
@@ -502,26 +496,28 @@ const PassageDetailProvider = (props: IProps) => {
 
   const setRecording = (recording: boolean) => {
     recordingRef.current = recording;
+    // audioManager bridge: recording also stops any audioManager player.
+    if (recording) audioManager.pause();
     setState((state: ICtxState) => {
       return {
         ...state,
         playing: false, //stop the vernacular
         itemPlaying: false,
         commentPlaying: false,
-        oldVernacularPlaying: false,
         recording,
       };
     });
   };
   const setCommentRecording = (commentRecording: boolean) => {
     commentRecordingRef.current = commentRecording;
+    // audioManager bridge: recording also stops any audioManager player.
+    if (commentRecording) audioManager.pause();
     setState((state: ICtxState) => {
       return {
         ...state,
         playing: false, //stop the vernacular
         itemPlaying: false,
         commentPlaying: false,
-        oldVernacularPlaying: false,
         commentRecording,
       };
     });
@@ -531,19 +527,19 @@ const PassageDetailProvider = (props: IProps) => {
   const setPlaying = (playing: boolean) => {
     //if this is called from a callback, we don't know the state
     //if (playing !== state.playing) {
-    if (playing)
+    if (playing) {
+      // audioManager bridge: this player starting pauses any audioManager
+      // player (the reverse is the useIsAudioPlaying effect below).
+      audioManager.pause();
       setState((state: ICtxState) => {
         return {
           ...state,
           playing,
           itemPlaying: false,
           commentPlaying: false,
-          oldVernacularPlaying: false,
-          oldVernacularPlayItem: '',
-          oldVernacularStart: 0,
         };
       });
-    else
+    } else
       setState((state: ICtxState) => {
         if (!state.playing) return state;
         return {
@@ -554,17 +550,15 @@ const PassageDetailProvider = (props: IProps) => {
   };
   const setItemPlaying = (itemPlaying: boolean) => {
     if (itemPlaying !== state.itemPlaying) {
+      // audioManager bridge: this player starting pauses any audioManager
+      // player (the reverse is the useIsAudioPlaying effect below).
+      if (itemPlaying) audioManager.pause();
       setState((state: ICtxState) => {
         return {
           ...state,
           itemPlaying,
           playing: itemPlaying ? false : state.playing,
           commentPlaying: itemPlaying ? false : state.commentPlaying,
-          oldVernacularPlaying: itemPlaying
-            ? false
-            : state.oldVernacularPlaying,
-          oldVernacularPlayItem: itemPlaying ? '' : state.oldVernacularPlayItem,
-          oldVernacularStart: itemPlaying ? 0 : state.oldVernacularStart,
         };
       });
     }
@@ -574,6 +568,9 @@ const PassageDetailProvider = (props: IProps) => {
     ended: boolean = false
   ) => {
     if (commentPlaying !== state.commentPlaying) {
+      // audioManager bridge: this player starting pauses any audioManager
+      // player (the reverse is the useIsAudioPlaying effect below).
+      if (commentPlaying) audioManager.pause();
       setState((state: ICtxState) => {
         return {
           ...state,
@@ -581,12 +578,6 @@ const PassageDetailProvider = (props: IProps) => {
           commentPlayId: ended ? '' : state.commentPlayId,
           playing: commentPlaying ? false : state.playing,
           itemPlaying: commentPlaying ? false : state.itemPlaying,
-          oldVernacularPlaying: commentPlaying
-            ? false
-            : state.oldVernacularPlaying,
-          oldVernacularPlayItem: commentPlaying
-            ? ''
-            : state.oldVernacularPlayItem,
         };
       });
     }
@@ -606,18 +597,6 @@ const PassageDetailProvider = (props: IProps) => {
 
   const handleCommentTogglePlay = () => {
     setCommentPlaying(!state.commentPlaying);
-  };
-  const handleOldVernacularPlayEnd = () => {
-    mediaStart.current = undefined;
-    mediaEnd.current = undefined;
-    setState((state: ICtxState) => {
-      return {
-        ...state,
-        oldVernacularPlaying: false,
-        oldVernacularPlayItem: '',
-        oldVernacularStart: 0,
-      };
-    });
   };
   const setPDBusy = (busy: boolean) => {
     setState((state: ICtxState) => {
@@ -800,21 +779,6 @@ const PassageDetailProvider = (props: IProps) => {
           currentSegmentIndex: resetBlob ? 0 : state.currentSegmentIndex,
         };
       });
-    } else if (mediaStart.current !== undefined && !r.isResource) {
-      //play just the segment of an old one
-      setState((state: ICtxState) => {
-        return {
-          ...state,
-          index: i,
-          selected,
-          playing: false,
-          commentPlaying: false,
-          itemPlaying: false,
-          oldVernacularPlayItem: r.mediafile.id,
-          oldVernacularStart: mediaStart.current || 0,
-          rowData: newRows.length > 0 ? newRows : rowData,
-        };
-      });
     } else if (r.isComment || r.isKeyTerm) {
       setState((state: ICtxState) => {
         return {
@@ -866,22 +830,12 @@ const PassageDetailProvider = (props: IProps) => {
     mediaStart.current = undefined;
     mediaEnd.current = undefined;
     mediaPosition.current = undefined;
-    handleOldVernacularPlayEnd();
   };
 
   const setMediaSelected = (id: string, start: number, end: number) => {
     mediaStart.current = start;
     mediaEnd.current = end;
     setSelected(id, PlayInPlayer.no, state.rowData);
-  };
-
-  const handleLoaded = () => {
-    setState((state: ICtxState) => {
-      return {
-        ...state,
-        oldVernacularPlaying: true,
-      };
-    });
   };
 
   const setCurrentSegment = (
@@ -1101,6 +1055,24 @@ const PassageDetailProvider = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionResources, mediafiles, pasId, userResources]);
 
+  // Bridge to audioManager until the players driven by these flags move onto
+  // it: when one of its players starts, stop ours. (Ours starting pauses its
+  // player; see setPlaying, setItemPlaying and setCommentPlaying.)
+  const managedAudioPlaying = useIsAudioPlaying();
+  useEffect(() => {
+    if (!managedAudioPlaying) return;
+    setState((state: ICtxState) =>
+      state.playing || state.itemPlaying || state.commentPlaying
+        ? {
+            ...state,
+            playing: false,
+            itemPlaying: false,
+            commentPlaying: false,
+          }
+        : state
+    );
+  }, [managedAudioPlaying]);
+
   useEffect(() => {
     let delayedPlay: NodeJS.Timeout | undefined = undefined;
     //if I set playing when I set the mediaId, it plays a bit of the old
@@ -1189,7 +1161,6 @@ const PassageDetailProvider = (props: IProps) => {
           handleItemTogglePlay,
           handleCommentPlayEnd,
           handleCommentTogglePlay,
-          handleOldVernacularPlayEnd,
           setDiscussionMarkers,
           handleHighlightDiscussion,
           forceRefresh,
@@ -1209,14 +1180,6 @@ const PassageDetailProvider = (props: IProps) => {
       }}
     >
       {props.children}
-      {/*this is only used to play old vernacular file segments*/}
-      <LimitedMediaPlayer
-        srcMediaId={state.oldVernacularPlayItem}
-        requestPlay={state.oldVernacularPlaying}
-        onEnded={handleOldVernacularPlayEnd}
-        onLoaded={handleLoaded}
-        limits={{ start: mediaStart.current, end: mediaEnd.current }}
-      />
       {confirm !== '' && (
         <Confirm
           title={wfStr.unsaved}

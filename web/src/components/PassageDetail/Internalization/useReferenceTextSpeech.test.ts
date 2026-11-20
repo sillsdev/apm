@@ -6,11 +6,9 @@ const mockCtx = {
   playing: false,
   itemPlaying: false,
   commentPlaying: false,
-  oldVernacularPlaying: false,
   setPlaying: jest.fn(),
   setItemPlaying: jest.fn(),
   setCommentPlaying: jest.fn(),
-  handleOldVernacularPlayEnd: jest.fn(),
 };
 jest.mock('../../../context/usePassageDetailContext', () => ({
   __esModule: true,
@@ -45,6 +43,7 @@ jest.mock('../../../business/referenceText/speakReferenceText', () => ({
 }));
 
 import { useReferenceTextSpeech } from './useReferenceTextSpeech';
+import { audioManager } from '../../../utils/audioManager';
 import { speakReferenceText } from '../../../business/referenceText/speakReferenceText';
 
 const bsb = { id: 'BSB', language: 'eng' } as ReferenceText;
@@ -55,9 +54,9 @@ beforeEach(() => {
     playing: false,
     itemPlaying: false,
     commentPlaying: false,
-    oldVernacularPlaying: false,
   });
 });
+afterEach(() => audioManager.stop());
 
 describe('useReferenceTextSpeech', () => {
   it('speaks a rank, shows its progress, and resolves how it ended', async () => {
@@ -85,7 +84,8 @@ describe('useReferenceTextSpeech', () => {
 
   it('stops the passage playback in progress when speaking starts', () => {
     mockCtx.itemPlaying = true;
-    mockCtx.oldVernacularPlaying = true;
+    const player = { play: jest.fn(), pause: jest.fn(), stop: jest.fn() };
+    act(() => audioManager.play(player));
     const { result } = renderHook(() => useReferenceTextSpeech());
     act(() => {
       void result.current.toggle('primary', bsb, 'text');
@@ -93,7 +93,7 @@ describe('useReferenceTextSpeech', () => {
     expect(mockCtx.setItemPlaying).toHaveBeenCalledWith(false);
     expect(mockCtx.setPlaying).toHaveBeenCalledWith(false);
     expect(mockCtx.setCommentPlaying).toHaveBeenCalledWith(false);
-    expect(mockCtx.handleOldVernacularPlayEnd).toHaveBeenCalled();
+    expect(player.pause).toHaveBeenCalled();
   });
 
   it('stops when the speaking rank is toggled again', async () => {
@@ -116,6 +116,17 @@ describe('useReferenceTextSpeech', () => {
     });
     mockCtx.itemPlaying = true;
     rerender();
+    expect(mockStop).toHaveBeenCalled();
+  });
+
+  it('stops when an audioManager player starts', () => {
+    const { result } = renderHook(() => useReferenceTextSpeech());
+    act(() => {
+      void result.current.toggle('primary', bsb, 'text');
+    });
+    act(() =>
+      audioManager.play({ play: jest.fn(), pause: jest.fn(), stop: jest.fn() })
+    );
     expect(mockStop).toHaveBeenCalled();
   });
 
