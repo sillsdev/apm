@@ -27,6 +27,7 @@ export interface HiddenPlayerProps {
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
 }
 
+// TODO cleanup: Can we delete this component, or at least get it off of using WSAudioPlayer
 export function HiddenPlayer(props: HiddenPlayerProps) {
   const {
     allowSegment,

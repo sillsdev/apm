@@ -12,6 +12,7 @@ import {
   useOrgDefaults,
 } from '../../../crud/useOrgDefaults';
 import { parseVoiceRanking } from '../../../business/referenceText/voiceRanking';
+import { audioManager, useIsAudioPlaying } from '../../../utils/audioManager';
 
 /**
  * Speaks one Reference Text at a time, sharing the passage's playback: speaking
@@ -23,18 +24,17 @@ export const useReferenceTextSpeech = () => {
     playing,
     itemPlaying,
     commentPlaying,
-    oldVernacularPlaying,
     setPlaying,
     setItemPlaying,
     setCommentPlaying,
-    handleOldVernacularPlayEnd,
   } = usePassageDetailContext();
   const { getOrgDefault } = useOrgDefaults();
   const [speaking, setSpeaking] = useState<ReferenceTextRank>();
   const [progress, setProgress] = useState(0);
   const current = useRef<Speaking>(undefined);
+  const managedAudioPlaying = useIsAudioPlaying();
   const otherPlaying =
-    playing || itemPlaying || commentPlaying || oldVernacularPlaying;
+    playing || itemPlaying || commentPlaying || managedAudioPlaying;
 
   useEffect(() => {
     if (otherPlaying) current.current?.stop();
@@ -55,7 +55,7 @@ export const useReferenceTextSpeech = () => {
     setItemPlaying(false);
     setPlaying(false);
     setCommentPlaying(false);
-    if (oldVernacularPlaying) handleOldVernacularPlayEnd();
+    audioManager.pause();
     const started = speakReferenceText(
       referenceText,
       text,

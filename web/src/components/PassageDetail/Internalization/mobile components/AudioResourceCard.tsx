@@ -10,10 +10,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
-import LimitedMediaPlayer from '../../../LimitedMediaPlayer';
+import MiniAudioPlayer from '../../../MiniAudioPlayer';
 import { useMobile } from '../../../../utils/useMobile';
 import { useMemo } from 'react';
 import { WrapTitle } from '../../../../control/WrapTitle';
+import { resourceClip } from '../resourceClip';
 
 // This card is used for audio resources in the mobile list.
 // It is selected when the media content type starts with "audio/"
@@ -21,40 +22,35 @@ import { WrapTitle } from '../../../../control/WrapTitle';
 
 interface IProps {
   row: IRow;
-  isPlaying: boolean;
-  onPlay: (id: string) => void;
   expandedId?: string | null;
   setExpandedId: (id: string | null) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onEnded?: () => void;
   subtitle?: string;
   /** Admin-only type tag shown beside the subtitle (e.g. "Linked"). */
   badge?: string;
-  limits?: {
-    start?: number;
-    end?: number;
-  };
   sx?: SxProps;
 }
 
 export function AudioResourceCard({
   row,
-  isPlaying,
-  onPlay,
   expandedId,
   setExpandedId,
   onDone,
   onEdit,
   onDelete,
-  onEnded,
   subtitle = 'Scripture',
   badge,
-  limits,
   sx = [],
 }: IProps) {
   const { isMobileWidth } = useMobile();
+  const segments = row.mediafile?.attributes?.segments;
+  const clip = useMemo(
+    () => resourceClip(row.mediafile),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [segments]
+  );
 
   const handleDoneToggle = () => {
     if (onDone) {
@@ -159,18 +155,10 @@ export function AudioResourceCard({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Audio playback UI for audio/* resource files. */}
           <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>
-            <LimitedMediaPlayer
+            <MiniAudioPlayer
               srcMediaId={row.id}
-              requestPlay={isPlaying}
-              onEnded={onEnded ?? (() => {})}
-              onTogglePlay={() => onPlay(row.id)}
-              controls
-              limits={limits ?? {}}
-              noClose
-              noRestart
-              noSkipBack
+              clip={clip}
               playButtonSize="large"
-              noContainer
             />
           </Box>
           {onEdit && !isMobileWidth && (

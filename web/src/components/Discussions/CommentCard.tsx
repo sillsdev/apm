@@ -4,13 +4,9 @@ import {
   Checkbox,
   FormControlLabel,
   FormLabel,
-  IconButton,
-  Slider,
-  Stack,
   styled,
   TextField,
   TextFieldProps,
-  Tooltip,
 } from '@mui/material';
 import { shallowEqual } from 'react-redux';
 import {
@@ -18,7 +14,6 @@ import {
   DiscussionD,
   ICommentCardStrings,
   MediaFileD,
-  IMediaActionsStrings,
   IState,
   UserD,
 } from '../../model';
@@ -33,23 +28,20 @@ import {
 import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
 import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
-import PlayIcon from '@mui/icons-material/PlayArrow';
 import UserAvatar from '../UserAvatar';
 import { dateOrTime } from '../../utils';
 import { useGlobal } from '../../context/useGlobal';
 import { CommentEditor } from './CommentEditor';
 import DiscussionMenu from './DiscussionMenu';
 import { useRecordComment } from './useRecordComment';
-import { PassageDetailContext } from '../../context/PassageDetailContext';
-import { PlayInPlayer } from '../../context/PlayInPlayer';
 import { useSaveComment } from '../../crud/useSaveComment';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { OldVernVersion } from '../../control/OldVernVersion';
 import { useArtifactType } from '../../crud';
 import { useSelector } from 'react-redux';
-import { commentCardSelector, mediaActionsSelector } from '../../selector';
+import { commentCardSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import LimitedMediaPlayer from '../LimitedMediaPlayer';
+import MiniAudioPlayer from '../MiniAudioPlayer';
 
 const StyledWrapper = styled(Box)<BoxProps>(() => ({
   display: 'flex',
@@ -126,14 +118,6 @@ export const CommentCard = (props: IProps) => {
   const [memory] = useGlobal('memory');
   const savingRef = useRef(false);
   const {
-    setSelected,
-    commentPlaying,
-    setCommentPlaying,
-    commentPlayId,
-    handleCommentPlayEnd,
-    handleCommentTogglePlay,
-  } = useContext(PassageDetailContext).state;
-  const {
     toolChanged,
     toolsChanged,
     saveCompleted,
@@ -153,10 +137,6 @@ export const CommentCard = (props: IProps) => {
     approvedRef.current = value;
   };
   const { getMentorAuthor, hasPermission } = usePermissions();
-  const tm: IMediaActionsStrings = useSelector(
-    mediaActionsSelector,
-    shallowEqual
-  );
 
   const CommentAuthor = (comment: CommentD) =>
     getMentorAuthor(comment.attributes.visible) ??
@@ -301,11 +281,6 @@ export const CommentCard = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comment, mediaId]);
 
-  const handlePlayComment = () => {
-    if (mediaId === commentPlayId) setCommentPlaying(!commentPlaying);
-    else setSelected(mediaId, PlayInPlayer.no);
-  };
-
   useEffect(() => {
     if (users) {
       const u = users.filter((u) => u.id === CommentAuthor(comment));
@@ -319,7 +294,6 @@ export const CommentCard = (props: IProps) => {
   // Looking up `author` via the users table can drift after Paratext sync
   // when comment attribution lands on a linked identity (TT-7478).
   const canManageComment =
-    mediaId !== commentPlayId &&
     !oldVernVer &&
     (related(comment, 'creatorUser') === user ||
       related(comment, 'lastModifiedByUser') === user ||
@@ -382,48 +356,12 @@ export const CommentCard = (props: IProps) => {
             )}
           </BoxSpread>
           <BoxRow>
-            {commentPlayId && mediaId === commentPlayId ? (
+            {/* TODO when we open the PR, test that editing or deleting a comment while it is playing doesn't do anything bad */}
+            {media && !oldVernVer && (
+              // Nothing is downloaded until the play button is pressed.
               <MediaCol id="commentplayer">
-                <LimitedMediaPlayer
-                  srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
-                  requestPlay={commentPlaying}
-                  onEnded={handleCommentPlayEnd}
-                  onTogglePlay={handleCommentTogglePlay}
-                  controls={mediaId === commentPlayId}
-                  limits={{ start: 0, end: media?.attributes?.duration }}
-                  noRestart={true}
-                  noSkipBack={true}
-                  noClose={true}
-                />
+                <MiniAudioPlayer srcMediaId={mediaId} playButtonSize="small" />
               </MediaCol>
-            ) : media && (!oldVernVer || oldVernVer === 0) ? (
-              <Stack
-                direction="row"
-                sx={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                }}
-              >
-                <Tooltip title={tm.play}>
-                  <IconButton
-                    id="playcomment"
-                    onClick={handlePlayComment}
-                    sx={{ p: 0 }}
-                  >
-                    <PlayIcon fontSize="small" sx={{ color: 'text.primary' }} />
-                  </IconButton>
-                </Tooltip>
-                <Stack direction="row" sx={{ width: '100%', pr: 2, pl: 1 }}>
-                  <Slider
-                    sx={{ color: 'text.secondary' }}
-                    size="small"
-                    onClick={handlePlayComment}
-                  />
-                </Stack>
-              </Stack>
-            ) : (
-              <></>
             )}
           </BoxRow>
           <Box>
