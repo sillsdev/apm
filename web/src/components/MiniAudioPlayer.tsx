@@ -15,17 +15,17 @@ import { IMediaActionsStrings } from '../model';
 import { mediaActionsSelector } from '../selector';
 import { LightTooltip } from '../control/LightTooltip';
 import { Duration } from '../control/Duration';
-import { useMiniAudio } from '../utils/useMiniAudio';
+import { MiniAudio, useMiniAudio } from '../utils/useMiniAudio';
+import { MiniAudioPlayerStatus } from '../utils/miniAudioPlayerStatus';
 import type { TimeRange } from '../control/formatTime';
 
 // TODO cleanup after we switch PassageDetailArtifacts to the new design: its
 // toolbar player is the only user of this ref handle; remove it along with
 // forwardRef and useImperativeHandle below.
-export interface MiniAudioPlayerHandle {
-  play: () => void;
-  pause: () => void;
-  toggle: () => void;
-}
+export type MiniAudioPlayerHandle = Pick<
+  MiniAudio,
+  'play' | 'pause' | 'toggle'
+>;
 
 interface IProps {
   srcMediaId: string;
@@ -62,6 +62,7 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
       clip,
       onFinish,
     });
+    const playing = player.status === MiniAudioPlayerStatus.Playing;
     const tm: IMediaActionsStrings = useSelector(
       mediaActionsSelector,
       shallowEqual
@@ -76,9 +77,9 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
 
     // TODO cleanup after we switch PassageDetailArtifacts to the new design
     useEffect(() => {
-      onPlayingChange?.(player.playing);
+      onPlayingChange?.(playing);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [player.playing]);
+    }, [playing]);
 
     const handleSeek = (_: Event, value: number | number[]) =>
       player.seek(Array.isArray(value) ? value[0] : value);
@@ -91,19 +92,19 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}
       >
-        <LightTooltip title={player.playing ? tm.pause : tm.play}>
+        <LightTooltip title={playing ? tm.pause : tm.play}>
           <IconButton
             data-testid="play-pause"
-            aria-label={player.playing ? tm.pause : tm.play}
+            aria-label={playing ? tm.pause : tm.play}
             onClick={player.toggle}
             sx={{ p: 0.5 }}
           >
-            {player.loading ? (
+            {player.status === MiniAudioPlayerStatus.Loading ? (
               <CircularProgress
                 data-testid="loading"
                 size={playButtonSize === 'large' ? 30 : 20}
               />
-            ) : player.playing ? (
+            ) : playing ? (
               <Pause fontSize={playButtonSize} />
             ) : (
               <PlayArrow fontSize={playButtonSize} />

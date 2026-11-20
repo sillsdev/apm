@@ -2,6 +2,7 @@ import { createRef } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MiniAudioPlayer, MiniAudioPlayerHandle } from './MiniAudioPlayer';
 import type { MiniAudio, UseMiniAudioProps } from '../utils/useMiniAudio';
+import { MiniAudioPlayerStatus } from '../utils/miniAudioPlayerStatus';
 
 // Playback itself is useMiniAudio's job (see useMiniAudio.test.ts); these tests
 // cover what the player shows and wires up.
@@ -23,8 +24,7 @@ jest.mock('react-redux', () => ({
 }));
 
 const player = (overrides: Partial<MiniAudio> = {}): MiniAudio => ({
-  playing: false,
-  loading: false,
+  status: MiniAudioPlayerStatus.Idle,
   position: 0,
   length: 0,
   play: jest.fn(),
@@ -70,13 +70,17 @@ describe('<MiniAudioPlayer />', () => {
   });
 
   it('shows a spinner in place of the play icon while loading', () => {
-    mockPlayer = player({ loading: true });
+    mockPlayer = player({ status: MiniAudioPlayerStatus.Loading });
     render(<MiniAudioPlayer srcMediaId="m1" />);
     expect(screen.getByTestId('loading')).toBeInTheDocument();
   });
 
   it('shows pause while playing, and the clip position and length', () => {
-    mockPlayer = player({ playing: true, position: 65, length: 125 });
+    mockPlayer = player({
+      status: MiniAudioPlayerStatus.Playing,
+      position: 65,
+      length: 125,
+    });
     render(<MiniAudioPlayer srcMediaId="m1" />);
 
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
@@ -100,7 +104,7 @@ describe('<MiniAudioPlayer />', () => {
     const { rerender } = render(
       <MiniAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
     );
-    mockPlayer = player({ playing: true });
+    mockPlayer = player({ status: MiniAudioPlayerStatus.Playing });
     rerender(
       <MiniAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
     );

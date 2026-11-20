@@ -22,6 +22,58 @@ describe('audioManager', () => {
     audioManager.stop();
   });
 
+  describe('replace', () => {
+    it('plays the new handle in place of the active one', () => {
+      const pending = pausable();
+      const ready = pausable();
+      audioManager.play(pending);
+
+      expect(audioManager.replace(pending, ready)).toBe(true);
+      expect(ready.play).toHaveBeenCalledTimes(1);
+
+      // `ready` is now the active one: pausing reaches it.
+      audioManager.pause();
+      expect(ready.pause).toHaveBeenCalledTimes(1);
+    });
+
+    // A caller passing a handle that is really playing must not end up with
+    // two sources playing, one of them no longer tracked.
+    it('preempts the old handle like any other play', () => {
+      const playing = pausable();
+      const next = pausable();
+      audioManager.play(playing);
+
+      audioManager.replace(playing, next);
+
+      expect(playing.pause).toHaveBeenCalledTimes(1);
+      expect(next.play).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['paused', () => audioManager.pause()],
+      ['stopped', () => audioManager.stop()],
+      ['preempted', () => audioManager.play(pausable())],
+    ])('does nothing once the old handle was %s', (_how, interrupt) => {
+      const pending = pausable();
+      const ready = pausable();
+      audioManager.play(pending);
+      interrupt();
+
+      expect(audioManager.replace(pending, ready)).toBe(false);
+      expect(ready.play).not.toHaveBeenCalled();
+    });
+
+    it('keeps reporting playing across the hand-over', () => {
+      const { result } = renderHook(() => useIsAudioPlaying());
+      const pending = pausable();
+      act(() => audioManager.play(pending));
+      act(() => {
+        audioManager.replace(pending, pausable());
+      });
+      expect(result.current).toBe(true);
+    });
+  });
+
   describe('play', () => {
     it('plays the audio', () => {
       const a = pausable();

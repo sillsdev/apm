@@ -5,6 +5,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import { useMemo } from 'react';
 import { startEnd } from '../utils';
 import { useMiniAudio } from '../utils/useMiniAudio';
+import { MiniAudioPlayerStatus } from '../utils/miniAudioPlayerStatus';
 import { commentCardSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ICommentCardStrings } from '../model';
@@ -32,7 +33,7 @@ export function OldVernVersion({ id, oldVernVer, mediaId, text }: IProps) {
   });
   // Stop, not pause: the next play starts the clip over.
   const handleClick = () => {
-    if (player.playing || player.loading) {
+    if (player.status !== MiniAudioPlayerStatus.Idle) {
       player.pause();
       player.seek(0);
     } else player.play();
@@ -50,9 +51,9 @@ export function OldVernVersion({ id, oldVernVer, mediaId, text }: IProps) {
           onClick={handleClick}
           sx={{ p: '3px', m: '5px' }}
         >
-          {player.loading ? (
+          {player.status === MiniAudioPlayerStatus.Loading ? (
             <CircularProgress size={16} />
-          ) : player.playing ? (
+          ) : player.status === MiniAudioPlayerStatus.Playing ? (
             <StopIcon fontSize="small" />
           ) : (
             <PlayIcon fontSize="small" />
