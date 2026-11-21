@@ -14,12 +14,13 @@ export const usePeerGroups = (team?: string) => {
   const groups = useOrbitData<GroupD[]>('group');
   const memberships = useOrbitData<GroupMembership[]>('groupmembership');
   const [organization] = useGlobal('organization');
-  const [org] = useState(team ?? organization);
+  // Follow the current team; a value frozen at mount goes stale when the
+  // team changes while the consumer stays mounted (TT-7888).
+  const org = team ?? organization;
   const allUsersGroup = useAllUserGroup();
   const { getUserRec } = useUser();
   const [userNames, setUserNames] = useState<IUserName[]>([]);
   const [peerGroups, setPeerGroups] = useState<GroupD[]>([]);
-  const [myGroups, setMyGroups] = useState<GroupD[]>([]);
   const [check, setCheck] = useState<string[]>();
   const [user] = useGlobal('user');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
@@ -58,22 +59,25 @@ export const usePeerGroups = (team?: string) => {
       })
     );
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberships, org, users]);
+
+  // Derived during render so permissions are known on the first render and
+  // follow later group changes (e.g. a group loading or its permission being
+  // edited after mount). TT-7888: this used to be effect state that ignored
+  // `groups`, so a group arriving or changing after mount was never seen.
+  const myGroups = useMemo(() => {
     const groupIds = memberships
       .filter((m) => related(m, 'user') === user)
       .map((om) => related(om, 'group'));
-
-    setMyGroups(
-      groups.filter(
-        (g) =>
-          g?.attributes &&
-          !g.attributes?.allUsers &&
-          groupIds.includes(g.id) &&
-          related(g, 'owner') === org
-      )
+    return groups.filter(
+      (g) =>
+        g?.attributes &&
+        !g.attributes?.allUsers &&
+        groupIds.includes(g.id) &&
+        related(g, 'owner') === org
     );
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberships, org, users]);
+  }, [memberships, groups, org, user]);
 
   useEffect(() => {
     setPeerGroups(
@@ -84,7 +88,6 @@ export const usePeerGroups = (team?: string) => {
           related(g, 'owner') === org
       )
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups, org]);
 
   useEffect(() => {
