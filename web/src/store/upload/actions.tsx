@@ -551,10 +551,14 @@ export const nextUpload =
           );
           if (!cloudRowDeleted) failedRemoteMediaId = remoteId;
         }
-        if (queueForRetry) {
-          const pathForQueue =
-            localAbsolutePath ||
-            ((files[n] as File & { path?: string }).path ?? '');
+        const pathForQueue =
+          localAbsolutePath ||
+          ((files[n] as File & { path?: string }).path ?? '');
+        // TT-6424: only a copy on disk can be retried later. The web stages
+        // nothing, so a row here would point Retry (Team → Pending uploads,
+        // desktop only) at no file and tell the user the recording is safe
+        // when it only lives in the page.
+        if (queueForRetry && pathForQueue) {
           const queuePatch = {
             localAbsolutePath: pathForQueue,
             fileSize: size,
@@ -567,7 +571,7 @@ export const nextUpload =
               appendPendingMediaUpload(queuePatch))
             : appendPendingMediaUpload(queuePatch);
           onTerminalFailure?.({
-            localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
+            localAbsolutePath: pathForQueue,
             originalFileName: name,
             pendingRecord,
             cloudRowDeleted,

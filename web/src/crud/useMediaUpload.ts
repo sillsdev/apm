@@ -441,7 +441,11 @@ export const useMediaUpload = ({
 
     await pullMedia(ids.filter((id) => !pulled.has(id)));
     uploadComplete();
-    if (!silent)
+    // TT-6424: a lone file that failed has already shown its own error, and
+    // the recorder follows it with what to do next ("…stay on this page").
+    // A neutral "0 of 1 files uploaded successfully." would replace both.
+    const loneFileFailed = ids.length === 0 && staged.length === 1;
+    if (!silent && !loneFileFailed)
       showMessage(
         t.uploadComplete
           .replace('{0}', String(ids.length))
