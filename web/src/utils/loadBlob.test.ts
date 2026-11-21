@@ -25,6 +25,22 @@ describe('loadBlobAsync', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('fetches blob: urls (web Local Media Blob) instead of reading via ipc', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['ogg-bytes'], { type: 'audio/ogg' }),
+    });
+    global.fetch = fetchMock as typeof fetch;
+
+    const blob = await loadBlobAsync(
+      'blob:http://localhost:3000/349d386c-44ac-446b-b72e-034bd7104dd8'
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(blob?.size).toBe('ogg-bytes'.length);
+    expect(blob?.type).toBe('audio/ogg');
+  });
+
   it('returns empty HTTP downloads without retrying', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

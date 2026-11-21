@@ -15,6 +15,7 @@ import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { isElectron, OrbitNetworkErrorRetries } from '../../api-variable';
 import { findRecord, useFetchUrlNow } from '../crud';
+import { IFetchNowProps } from '../crud/useFetchUrlNow';
 import { electronExport } from '../store/importexport/electronExport';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import { ExportType, UserD } from '../model';
@@ -27,6 +28,7 @@ import { useDispatch } from 'react-redux';
 import { useOrbitData } from './useOrbitData';
 import { doDataChanges } from './doDataChanges';
 import { useRenderProfiler, perfRecordMs } from '../utils/perf';
+import { useUploadPendingRetry } from '../crud/useUploadPendingRetry';
 
 const MS_PER_MINUTE = 60 * 1000;
 
@@ -70,11 +72,39 @@ export function DataChanges(props: PropsWithChildren) {
   const saving = useMemo(() => anySaving(), [toolsChanged]);
   const { checkAllProjects } = useSanityCheck(setLanguage);
   const { getBibleMediaProject, getBibleMediaPlan } = useBibleMedia();
-  const fetchUrl = useFetchUrlNow();
+  const getGlobal = useGetGlobal();
+  const fetchUrlNow = useFetchUrlNow();
+  // Web downloads one synced file at a time, after the previous one settles.
+  const backgroundFill = useRef<Promise<void>>(Promise.resolve());
+  // Desktop keeps downloading every synced mediafile as before. Web default
+  // is lazy: media is stored when played (useFetchMediaUrl). Only offline
+  // intent on the open project fills during sync (ADR 0017), and that fill
+  // runs in the background so it never holds up the sync loop.
+  const fetchUrl = useCallback(
+    async (props: IFetchNowProps) => {
+      if (isElectron) return fetchUrlNow(props);
+      const project = getGlobal('project');
+      if (!project || !getOfflineProject(project)?.attributes?.offlineAvailable)
+        return '';
+      backgroundFill.current = backgroundFill.current
+        .then(() => fetchUrlNow({ ...props, persistOnly: true }))
+        .then(
+          () => undefined,
+          (err: unknown) =>
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(toError(err), `background media fill ${props.id}`)
+            )
+        );
+      return '';
+    },
+    [fetchUrlNow, getGlobal, getOfflineProject, errorReporter]
+  );
   const users = useOrbitData<UserD[]>('user');
   const defaultDataDelayInMinutes = 2;
   const [userDataDelay, setUserDataDelay] = useState(defaultDataDelayInMinutes);
-  const getGlobal = useGetGlobal();
+  const { requestDrain } = useUploadPendingRetry();
   useEffect(() => {
     const userRec = findRecord(memory, 'user', user) as UserD; //make sure we have the user record in memory
     const hk = JSON.parse(userRec?.attributes?.hotKeys ?? '{}');
@@ -162,13 +192,15 @@ export function DataChanges(props: PropsWithChildren) {
           user,
           setLanguage,
           setDataChangeCount,
-          isElectron ? fetchUrl : undefined,
+          fetchUrl,
           undefined,
           setOrbitRetries
         );
         // Cleared only after a successful sync, so a failed first tick keeps
         // firstRun for the next interval. Sanity uses sanityPending separately.
         setFirstRun(false);
+        // Non-blocking: Upload Pending drain must not hold the sync interval.
+        requestDrain();
         if (isFirstRun || sanityPending.current) await runSanityChecks();
         perfRecordMs('DataChanges.updateData', performance.now() - t0);
       } catch (err: unknown) {

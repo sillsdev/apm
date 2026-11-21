@@ -6,6 +6,8 @@ import { dataPath, PathType } from '../utils/dataPath';
 import { ISharedStrings, MediaFileD } from '../model';
 import { infoMsg, logError, Severity } from '../utils';
 import { useFetchUrlNow } from './useFetchUrlNow';
+import { findLocalMediaBlob } from './findLocalMediaBlob';
+import { isLocalMediaPath } from '../utils/localMediaPath';
 import { RecordKeyMap } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
@@ -167,31 +169,50 @@ export const useFetchMediaUrl = (reporter?: any) => {
           logError(Severity.error, reporter, infoMsg(e, ''));
           dispatch({ payload: e.message, type: MediaSt.ERROR });
         }
+      } else {
+        // Web local-first read (ADR 0016/0017): play the Local Media Blob when
+        // this device has one; else fetchUrl downloads cloud→IDB (lazy) and we
+        // play that blob, or fall through to the cloud url.
+        const blob = await findLocalMediaBlob(state.id, reporter);
+        if (cancelled()) return;
+        if (blob) {
+          dispatch({
+            payload: URL.createObjectURL(blob),
+            type: MediaSt.FETCHED,
+          });
+          return;
+        }
       }
       if (cancelled()) return;
       try {
-        fetchUrl({ id: state.remoteId, cancelled }).then((url) => {
-          if (url === ts.expiredToken) {
+        const url = await fetchUrl({ id: state.remoteId, cancelled });
+        if (url === ts.expiredToken) {
+          dispatch({
+            payload: ts.expiredToken,
+            type: MediaSt.ERROR,
+          });
+          return;
+        }
+        if (cancelled()) return;
+        if (url && isLocalMediaPath(url) && !isElectron) {
+          const saved = await findLocalMediaBlob(state.id, reporter);
+          if (cancelled()) return;
+          if (saved) {
             dispatch({
-              payload: ts.expiredToken,
-              type: MediaSt.ERROR,
+              payload: URL.createObjectURL(saved),
+              type: MediaSt.FETCHED,
             });
             return;
           }
-          if (url)
-            safeURL(url).then((path) => {
-              dispatch({
-                payload: path,
-                type: MediaSt.FETCHED,
-              });
-            });
-          else if (cancelled()) return;
-          else
-            dispatch({
-              payload: 'no url',
-              type: MediaSt.ERROR,
-            });
-        });
+        }
+        // A local path whose blob vanished (evicted meanwhile) is not a url.
+        if (!url || isLocalMediaPath(url)) {
+          dispatch({ payload: 'no url', type: MediaSt.ERROR });
+          return;
+        }
+        const path = await safeURL(url);
+        if (cancelled()) return;
+        dispatch({ payload: path, type: MediaSt.FETCHED });
       } catch (e: any) {
         if (cancelled()) return;
         logError(Severity.error, reporter, infoMsg(e, 'media fetch failure'));
@@ -206,6 +227,16 @@ export const useFetchMediaUrl = (reporter?: any) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.id]);
+
+  // Only the web local-first branch above puts a blob: url in this state, so
+  // this hook owns releasing it when the url changes or the caller unmounts.
+  // Some consumers (MediaPlayer, LoadAndPlay) also revoke; a second revoke is
+  // a no-op, and the others (e.g. MediaDisplay, usePassagePlayback) don't.
+  useEffect(() => {
+    const url = state.url;
+    if (!url.startsWith('blob:')) return;
+    return () => URL.revokeObjectURL(url);
+  }, [state.url]);
 
   const fetchMediaUrl = (props: IFetchMediaProps) => {
     let { id } = props;

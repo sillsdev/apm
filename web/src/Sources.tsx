@@ -52,6 +52,9 @@ import { AlertSeverity } from './hoc/SnackBar';
 import { updateBackTranslationType } from './crud/updateBackTranslationType';
 import { updateConsultantWorkflowStep } from './crud/updateConsultantWorkflowStep';
 import { serializersSettings } from './serializers/serializersFor';
+import { splitLocalOnlyOps } from './crud/localOnlyMedia';
+import { discardUploadPendingBlob } from './store/upload/uploadPendingBlobs';
+import bugsnagClient from './auth/bugsnagClient';
 import { requestedSchema } from './schema';
 import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
@@ -79,7 +82,34 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
         source: 'memory',
         on: 'beforeUpdate',
         target: 'remote',
-        action: 'update',
+        // Web offline recordings: local-only mediafiles stay on this device
+        // until the Upload Pending drain creates them (see localOnlyMedia).
+        action: function (this: RequestStrategy, ...args: unknown[]) {
+          const [transform, ...rest] = args as [RecordTransform, ...unknown[]];
+          const { toSend, removedLocalOnly, droppedLinks } = splitLocalOnlyOps(
+            this.source as Memory,
+            transform
+          );
+          for (const key of removedLocalOnly) {
+            // The take was cleared before it ever reached the server.
+            void discardUploadPendingBlob(key).catch((err: unknown) =>
+              logError(
+                Severity.error,
+                bugsnagClient,
+                infoMsg(err as Error, `discard local-only take ${key}`)
+              )
+            );
+          }
+          if (droppedLinks.length > 0) {
+            logError(
+              Severity.info,
+              bugsnagClient,
+              `${droppedLinks.length} link(s) to an offline recording kept on this device`
+            );
+          }
+          if (!toSend) return;
+          return (this.target as JSONAPISource).update(toSend, ...(rest as []));
+        } as unknown as 'update',
         blocking: false,
       })
     );
@@ -221,7 +251,9 @@ const sourcesImpl = async (
       remote = new JSONAPISource({
         schema: memory?.schema,
         keyMap: memory?.keyMap,
-        ...(isElectron ? { bucket } : {}),
+        // Persist the request queue on web too, so edits held while offline
+        // survive a reload and are sent in order when back online.
+        bucket,
         name: 'remote',
         namespace: 'api',
         host: API_CONFIG.host,
@@ -429,7 +461,10 @@ const sourcesImpl = async (
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */
   if (!offline) {
     console.log(`Activating remote for user: ${tokData.sub}`);
-    await skipRemoteQueue(remote);
+    // Web: the saved queue holds edits made offline (they must be sent, in
+    // order); remote-update-fail is already attached and skips a task the
+    // server rejects. Desktop keeps its old behaviour.
+    if (isElectron) await skipRemoteQueue(remote);
     await remote.activated;
     console.log(`Activated remote for user: ${tokData.sub}`);
     let uRecs = (await remote.query((q) =>

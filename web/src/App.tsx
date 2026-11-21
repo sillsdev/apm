@@ -3,6 +3,7 @@ import DataChanges from './hoc/DataChanges';
 import { UnsavedProvider } from './context/UnsavedContext';
 import SnackBarProvider from './hoc/SnackBar';
 import { HotKeyProvider } from './context/HotKeyContext';
+import { UploadPendingLeaveProvider } from './context/UploadPendingLeaveContext';
 import routes from './routes/NavRoutes';
 import { useSelector, shallowEqual } from 'react-redux';
 import { IState } from './model';
@@ -22,7 +23,9 @@ function App(): React.JSX.Element {
       <DataChanges>
         <SnackBarProvider>
           <HotKeyProvider>
-            <ThemeProvider theme={theme}>{routes}</ThemeProvider>
+            <ThemeProvider theme={theme}>
+              <UploadPendingLeaveProvider>{routes}</UploadPendingLeaveProvider>
+            </ThemeProvider>
           </HotKeyProvider>
         </SnackBarProvider>
       </DataChanges>

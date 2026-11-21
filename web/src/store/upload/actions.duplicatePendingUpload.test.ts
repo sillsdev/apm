@@ -17,6 +17,7 @@ import { type MediaFileAttributes } from '../../model';
 
 jest.mock('../../../api-variable', () => ({
   API_CONFIG: { host: 'https://api.test', sizeLimit: '500' },
+  isElectron: true,
 }));
 jest.mock('../../utils/typeLimit', () => ({
   typeLimit: () => 500,

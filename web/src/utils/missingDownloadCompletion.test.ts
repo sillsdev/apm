@@ -28,6 +28,10 @@ describe('missingDownloadCompletion', () => {
         true
       );
     });
+
+    it('accepts Local Media Blob success paths', () => {
+      expect(isSuccessfulMediaFetch('local-media:mf-1', expired)).toBe(true);
+    });
   });
 
   describe('shouldCloseMissingFilesDialog', () => {
