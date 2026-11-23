@@ -47,9 +47,6 @@ const StyledWrapper = styled(Box)<BoxProps>(() => ({
   display: 'flex',
   flexGrow: 1,
   width: '100%',
-  '&:hover button': {
-    color: 'primary',
-  },
   '& .MuiTypography-root': {
     cursor: 'default ',
   },
@@ -67,12 +64,14 @@ const BoxRow = styled(Box)<BoxProps>(() => ({
   flexGrow: 1,
   width: '100%',
 }));
-const BoxBorderRow = styled(Box)<BoxProps>(() => ({
+const BoxBorderRow = styled(Box)<BoxProps>(({ theme }) => ({
   display: 'flex',
   flexDirection: 'row',
   width: '100%',
   flexGrow: 1,
   borderTop: '1px solid #dfdfdf',
+  marginTop: theme.spacing(1),
+  paddingTop: theme.spacing(1),
 }));
 const MediaCol = styled(Box)<BoxProps>(({ theme }) => ({
   display: 'flex',
@@ -358,7 +357,7 @@ export const CommentCard = (props: IProps) => {
           <BoxRow>
             {media && !oldVernVer && (
               // Nothing is downloaded until the play button is pressed.
-              <MediaCol id="commentplayer">
+              <MediaCol id="commentplayer" sx={{ pr: 2.5 }}>
                 <MiniAudioPlayer srcMediaId={mediaId} playButtonSize="small" />
               </MediaCol>
             )}

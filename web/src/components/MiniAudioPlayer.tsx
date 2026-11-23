@@ -88,7 +88,7 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
       <Stack
         direction="row"
         sx={[
-          { alignItems: 'center', width: '100%', gap: 0.5 },
+          { alignItems: 'center', width: '100%', gap: 1.5 },
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}
       >
@@ -97,6 +97,7 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
             data-testid="play-pause"
             aria-label={playing ? tm.pause : tm.play}
             onClick={player.toggle}
+            // sx={{ p: 0.5, position: 'relative', zIndex: 1 }}
             sx={{ p: 0.5 }}
           >
             {player.status === MiniAudioPlayerStatus.Loading ? (
@@ -111,10 +112,16 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
             )}
           </IconButton>
         </LightTooltip>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <Typography
             component="div"
-            sx={{ fontSize: '0.7rem', lineHeight: 1, textAlign: 'right' }}
+            sx={{
+              position: 'absolute',
+              right: 0,
+              bottom: '100%',
+              fontSize: '0.7rem',
+              lineHeight: 1,
+            }}
           >
             <Duration seconds={player.position} />
             {' / '}
@@ -128,7 +135,13 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
             step={0.01}
             disabled={player.length <= 0}
             onChange={handleSeek}
-            sx={{ color: 'text.secondary', py: 0.5, touchAction: 'pan-y' }}
+            sx={{
+              display: 'block',
+              color: 'text.secondary',
+              py: 0.5,
+              touchAction: 'pan-y',
+              '&.Mui-disabled': { color: 'custom.disabledText', opacity: 0.6 },
+            }}
           />
         </Box>
       </Stack>

@@ -47,6 +47,8 @@ export default function DiscussionDrawer() {
 
   // The drawer's player keeps its own play state so it doesn't also start the
   // step's player underneath, which reads the shared context `playing`.
+  // TODO investigate when we switch this over to AudioPlayer or otherwise move to the new audio system.
+  // Playing should be tracked by the AudioManager to stop one audio when the user plays another.
   const [miniPlaying, setMiniPlaying] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [discarding, setDiscarding] = useState(false);
