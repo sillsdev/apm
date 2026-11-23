@@ -45,8 +45,11 @@ export interface LaunchedApp {
  * path or the interactive Auth0 path depends on the keychain, and the caller
  * must handle both.
  */
-export async function launchApp(): Promise<LaunchedApp> {
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apm-e2e-'));
+export async function launchApp(
+  // Pass an existing profile to simulate restarting the same install
+  // (localStorage, IndexedDB and the persisted Orbit queue carry over).
+  profileDir: string = fs.mkdtempSync(path.join(os.tmpdir(), 'apm-e2e-'))
+): Promise<LaunchedApp> {
   const app = await electron.launch({
     args: [MAIN_JS, `--user-data-dir=${profileDir}`],
     env: launchEnv(),
@@ -78,11 +81,12 @@ function killProcessesUsingProfile(profileDir: string): void {
   }
 }
 
-export async function closeApp({
-  app,
-  profileDir,
-}: LaunchedApp): Promise<void> {
+export async function closeApp(
+  { app, profileDir }: LaunchedApp,
+  { keepProfile = false }: { keepProfile?: boolean } = {}
+): Promise<void> {
   await app.close().catch(() => {});
+  if (keepProfile) return;
   // A relaunch can take a few seconds to actually start (loading the whole
   // bundle again), so a single kill attempt right after exit can miss it —
   // it grabs the profile dir's lockfile sometime after this runs. Re-kill on
