@@ -26,7 +26,15 @@ export function DiscussionScrollArea({
     const container = scrollRef.current;
     const card = highlightedRef?.current;
     if (container && card) {
-      container.scrollTo(0, Math.max(0, card.offsetTop - 80));
+      // TT-7887: measure from this scroll area, not card.offsetTop. The
+      // offsetParent is the drawer, so offsetTop also counted the header
+      // and player above the list and scrolled the card's header out of view.
+      const cardTop =
+        card.getBoundingClientRect().top -
+        container.getBoundingClientRect().top +
+        container.scrollTop;
+      const margin = parseFloat(getComputedStyle(card).marginTop) || 0;
+      container.scrollTo(0, Math.max(0, cardTop - margin));
     }
   }, [highlightedRef]);
 
