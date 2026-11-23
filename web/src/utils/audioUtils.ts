@@ -253,6 +253,17 @@ export async function replaceAudioSegment(
   };
 }
 
+/** Insert `insert` into `audio` at `atSec`; with no audio, `insert` becomes the audio. */
+export async function insertAudio(
+  audio: Blob | null,
+  atSec: number,
+  insert: Blob
+): Promise<Blob> {
+  return audio?.size
+    ? (await replaceAudioSegment(audio, atSec, atSec, insert)).blob
+    : insert;
+}
+
 /**
  * Compose multiple replacements into a source audio blob in chronological order.
  * Returns the composed audio blob, replacement highlights, and cumulative offset map.
@@ -406,6 +417,137 @@ export function clampSelectionToHighlights(
 
   return start < end ? { start, end } : null;
 }
+
+/**
+ * Normalize the range `startSec`–`endSec` of an audio Blob (all of it by
+ * default) to -23 LUFS with one gain, lowered if needed to keep every sample
+ * at or below -2 dB, and return the whole audio as WAV. Resolves undefined
+ * when the range is too quiet to measure.
+ */
+export async function normalizeAudio(
+  blob: Blob,
+  startSec = 0,
+  endSec = Infinity
+): Promise<Blob | undefined> {
+  const audioCtx = new AudioContext();
+  const decoded = await audioCtx.decodeAudioData(await blob.arrayBuffer());
+  await audioCtx.close();
+
+  const { length, sampleRate } = decoded;
+  const start = Math.min(length, Math.round(startSec * sampleRate));
+  const end = Math.min(length, Math.round(endSec * sampleRate));
+  // Views into `decoded`, so scaling them below changes the decoded audio.
+  const channels = Array.from({ length: decoded.numberOfChannels }, (_, ch) =>
+    decoded.getChannelData(ch).subarray(start, end)
+  );
+  const loudness = integratedLoudness(channels, sampleRate);
+  if (loudness === undefined) return undefined;
+
+  let peak = 0;
+  for (const ch of channels) {
+    for (const sample of ch) peak = Math.max(peak, Math.abs(sample));
+  }
+  const gainDb = Math.min(
+    TARGET_LUFS - loudness,
+    PEAK_CEILING_DB - 20 * Math.log10(peak)
+  );
+  const gain = 10 ** (gainDb / 20);
+  for (const ch of channels) {
+    for (let i = 0; i < ch.length; i++) ch[i] *= gain;
+  }
+  return audioBufferToWavBlob(decoded);
+}
+
+/** b0, b1, b2, a1, a2 of a biquad filter (a0 normalized to 1). */
+type Biquad = [number, number, number, number, number];
+
+function biquad(
+  x: ArrayLike<number>,
+  [b0, b1, b2, a1, a2]: Biquad
+): Float64Array {
+  const y = new Float64Array(x.length);
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  for (let i = 0; i < x.length; i++) {
+    y[i] = b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    x2 = x1;
+    x1 = x[i];
+    y2 = y1;
+    y1 = y[i];
+  }
+  return y;
+}
+
+/**
+ * ITU BS.1770 K-weighting: a +4 dB high shelf above about 1.5 kHz (the head's
+ * effect on sound), then a high pass that cuts bass below about 40 Hz. The
+ * standard lists 48 kHz coefficients; these formulas (from libebur128) give
+ * them for any rate.
+ */
+function kWeight(samples: Float32Array, sampleRate: number): Float64Array {
+  const sK = Math.tan((Math.PI * 1681.974450955533) / sampleRate);
+  const sQ = 0.7071752369554196;
+  const vh = 10 ** (3.999843853973347 / 20);
+  const vb = vh ** 0.4996667741545416;
+  const sA0 = 1 + sK / sQ + sK * sK;
+  const shelf: Biquad = [
+    (vh + (vb * sK) / sQ + sK * sK) / sA0,
+    (2 * (sK * sK - vh)) / sA0,
+    (vh - (vb * sK) / sQ + sK * sK) / sA0,
+    (2 * (sK * sK - 1)) / sA0,
+    (1 - sK / sQ + sK * sK) / sA0,
+  ];
+  const hK = Math.tan((Math.PI * 38.13547087602444) / sampleRate);
+  const hQ = 0.5003270373238773;
+  const hA0 = 1 + hK / hQ + hK * hK;
+  const highPass: Biquad = [
+    1,
+    -2,
+    1,
+    (2 * (hK * hK - 1)) / hA0,
+    (1 - hK / hQ + hK * hK) / hA0,
+  ];
+  return biquad(biquad(samples, shelf), highPass);
+}
+
+/**
+ * Integrated loudness in LUFS (ITU BS.1770 / EBU R128): K-weighted energy of
+ * 400 ms blocks taken every 100 ms, skipping blocks below -70 LUFS (silence)
+ * and blocks more than 10 LU below the average of the rest (pauses). Audio
+ * shorter than 400 ms is measured as one block. Undefined when all is silent.
+ */
+function integratedLoudness(
+  channels: Float32Array[],
+  sampleRate: number
+): number | undefined {
+  const length = channels[0].length;
+  const blockLen = Math.min(length, Math.round(0.4 * sampleRate));
+  if (!blockLen) return undefined;
+  const step = Math.round(0.1 * sampleRate);
+  const weighted = channels.map((ch) => kWeight(ch, sampleRate));
+  const energies: number[] = [];
+  for (let start = 0; start + blockLen <= length; start += step) {
+    let sum = 0;
+    for (const ch of weighted) {
+      for (let i = start; i < start + blockLen; i++) sum += ch[i] * ch[i];
+    }
+    energies.push(sum / blockLen);
+  }
+  const lufs = (energy: number) => -0.691 + 10 * Math.log10(energy);
+  const mean = (values: number[]) =>
+    values.reduce((a, b) => a + b, 0) / values.length;
+  const audible = energies.filter((e) => lufs(e) > -70);
+  if (!audible.length) return undefined;
+  const relativeGate = lufs(mean(audible)) - 10;
+  return lufs(mean(audible.filter((e) => lufs(e) > relativeGate)));
+}
+
+/** EBU R128 loudness target. */
+const TARGET_LUFS = -23;
+/** Highest sample allowed after normalizing, in dB below full scale. */
+const PEAK_CEILING_DB = -2;
 
 /** Decode a base-64 string into a Blob. */
 export function fromBase64(base64: string, type = 'audio/wav'): Blob {

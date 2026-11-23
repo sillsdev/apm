@@ -55,9 +55,7 @@ import { estimateAiSeconds, recordAiSample } from '../control/estimateAiTime';
 import AiTimeProgress from './AiTimeProgress';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
-  dataPath,
   logError,
-  PathType,
   Severity,
   useCheckOnline,
   LocalKey,
@@ -114,14 +112,12 @@ import VoiceConversionLogo from '../control/VoiceConversionLogo';
 import BigDialog from '../hoc/BigDialog';
 import { useVoiceUrl } from '../crud/useVoiceUrl';
 import SelectVoice from '../business/voice/SelectVoice';
-import { isElectron } from '../../api-variable';
 import WSAudioPlayerRate from './WSAudioPlayerRate';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
-import { MainAPI } from '@model/main-api';
 import { AudioDownloadView } from './AudioDownload';
 import { useAudioDownload } from './useAudioDownload';
-const ipc = window?.api as MainAPI;
+import { normalizeAudio } from '../utils/audioUtils';
 
 const VertDivider = (prop: DividerProps) => (
   <Divider orientation="vertical" flexItem sx={{ ml: '5px' }} {...prop} />
@@ -2121,29 +2117,13 @@ function WSAudioPlayer(props: IProps) {
 
     try {
       doingProcess(true, t.normalizeInProgress);
-      const fileBeg = await dataPath(`${Date.now()}b-norm.wav`, PathType.MEDIA);
-      const fileEnd = await dataPath(`${Date.now()}e-norm.wav`, PathType.MEDIA);
       const blob = await wsRegionBlob();
       if (blob) {
-        // write to local file system
-        const arrayBuffer = await blob.arrayBuffer();
-        const absMax = new Uint8Array(arrayBuffer).reduce(
-          (a, b) => Math.max(a, Math.abs(b)),
-          0
-        );
-
-        if (absMax < 255) throw new Exception(t.tooQuiet);
-        await ipc?.writeBuffer(fileBeg, arrayBuffer);
-        await ipc?.normalize(fileBeg, fileEnd);
-        const result = (await ipc?.read(fileEnd)) as Uint8Array;
-        const regionblob = new Blob([new Uint8Array(result)], {
-          type: blob.type,
-        });
-        const newblob = await wsRegionReplace(regionblob);
+        const normalized = await normalizeAudio(blob);
+        if (!normalized) throw new Exception(t.tooQuiet);
+        const newblob = await wsRegionReplace(normalized);
         if (newblob) reload(newblob);
         publishChanged();
-        await ipc?.delete(fileBeg);
-        await ipc?.delete(fileEnd);
       }
     } catch (error: any) {
       const msg = t.normalizeFail.replace('{0}', error.message);
@@ -2240,7 +2220,7 @@ function WSAudioPlayer(props: IProps) {
             </Stack>
           </MenuItem>
         ),
-      allowRecord === true && features?.normalize && isElectron && (
+      allowRecord === true && features?.normalize && (
         <MenuItem
           key="normalize"
           id="normalize"
