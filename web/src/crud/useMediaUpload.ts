@@ -467,7 +467,9 @@ export const useMediaUpload = ({
         );
       }
     }
-    if (ids.length === 0) throw new Error(t.uploadFailed);
+    // TT-6424: mediaTab has no uploadFailed (that key is in mediaTitle), so
+    // this used to reject with no text and the page showed "Save failed;".
+    if (ids.length === 0) throw new Error(ts.NoSaveWoMedia);
     return true;
   };
 

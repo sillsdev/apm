@@ -97,10 +97,12 @@ jest.mock('../context/useGlobal', () => ({
   useGetGlobal: () => (key: string) => (key === 'offline' ? false : undefined),
 }));
 
+// Real strings: mediaTab has no uploadFailed (that key is in mediaTitle).
+const SAVE_FAILED =
+  'Save Failed. Please check your internet connection and try again.';
 const mockState = {
   mediaTab: {
     uploadComplete: '{0} of {1} files uploaded successfully.',
-    uploadFailed: 'Upload Failed!',
     unsupported: '{0} unsupported',
     fileTooBig: '{0} too big',
     pendingUploadPathLabel: 'Saved at {0}',
@@ -109,7 +111,10 @@ const mockState = {
     pendingUploadMenu: 'Pending uploads',
     pendingUploadDeleteFailed: 'Delete failed {0}',
   },
-  shared: { mediaAttached: 'Media attached' },
+  shared: {
+    mediaAttached: 'Media attached',
+    NoSaveWoMedia: SAVE_FAILED,
+  },
 };
 
 const mockedAxios = Axios as jest.Mocked<typeof Axios>;
@@ -200,6 +205,8 @@ describe('useMediaUpload on a flaky network (TT-6424)', () => {
       outcome = await save([take]).catch((e: unknown) => e);
     });
     expect(outcome).toBeInstanceOf(Error);
+    // A rejection with no text surfaced as the bare fallback "Save failed;".
+    expect((outcome as Error).message).toBe(SAVE_FAILED);
     // The user is told the save failed, as an error, and the last word is
     // not a neutral "0 of 1 files uploaded successfully." that replaces it.
     expect(lastMessage()?.[1]).toBe(AlertSeverity.Error);

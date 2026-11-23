@@ -29,9 +29,8 @@ jest.mock('../store', () => ({
 }));
 
 jest.mock('../selector', () => ({
-  mediaTabSelector: (state: {
-    mediaTab: { uploadComplete: string; uploadFailed: string };
-  }) => state.mediaTab,
+  mediaTabSelector: (state: { mediaTab: { uploadComplete: string } }) =>
+    state.mediaTab,
   sharedSelector: (state: { shared: { mediaAttached: string } }) =>
     state.shared,
 }));
@@ -117,11 +116,11 @@ jest.mock('../context/useGlobal', () => ({
 const mockState = {
   mediaTab: {
     uploadComplete: '{0} of {1} files uploaded successfully.',
-    uploadFailed: 'Upload Failed!',
     pendingUploadQueuedHint: 'See {0}.',
   },
   shared: {
     mediaAttached: 'Media attached',
+    NoSaveWoMedia: 'Save Failed. Check your connection.',
   },
 };
 
@@ -299,7 +298,7 @@ describe('useMediaUpload', () => {
 
     await expect(
       completeUpload(upload, [makeFile()], 0, false, undefined)
-    ).rejects.toThrow('Upload Failed!');
+    ).rejects.toThrow('Save Failed. Check your connection.');
 
     expect(mockSetOrbitRetries).toHaveBeenCalledWith(
       OrbitNetworkErrorRetries - 1
@@ -322,7 +321,9 @@ describe('useMediaUpload', () => {
     const { nextUpload } = require('../store');
 
     const uploadPromise = upload([makeFile('a.webm'), makeFile('b.webm')]);
-    const assertion = expect(uploadPromise).rejects.toThrow('Upload Failed!');
+    const assertion = expect(uploadPromise).rejects.toThrow(
+      'Save Failed. Check your connection.'
+    );
     for (let n = 0; n < 2; n++) {
       for (let i = 0; i < 50; i++) {
         if ((nextUpload as jest.Mock).mock.calls.length > n) break;
@@ -374,7 +375,7 @@ describe('useMediaUpload', () => {
         false,
         undefined
       )
-    ).rejects.toThrow('Upload Failed!');
+    ).rejects.toThrow('Save Failed. Check your connection.');
 
     expect(mockShowMessage).not.toHaveBeenCalled();
     expect(afterUploadCb).toHaveBeenCalledWith('');
@@ -661,7 +662,9 @@ describe('useMediaUpload', () => {
       data?: unknown
     ) => void | Promise<void>;
     await cb(0, false, undefined);
-    await expect(uploadPromise).rejects.toThrow('Upload Failed!');
+    await expect(uploadPromise).rejects.toThrow(
+      'Save Failed. Check your connection.'
+    );
     expect(afterUploadCb).toHaveBeenCalledWith('');
   });
 
