@@ -1158,6 +1158,7 @@ export function Transcriber(props: Readonly<IProps>) {
     openAsrLanguageSettings,
     asrOverride,
     forceAsr,
+    replaceAsr,
     phonetic,
     handleTranscribe,
     handleAsrLanguageClose,
@@ -1509,6 +1510,7 @@ export function Transcriber(props: Readonly<IProps>) {
           phonetic={phonetic}
           asrOverride={asrOverride}
           forceAsr={forceAsr}
+          replaceAsr={replaceAsr}
           contentVerses={contentVerses}
           forceRefresh={forceRefresh}
           onLanguageClose={handleAsrLanguageClose}
