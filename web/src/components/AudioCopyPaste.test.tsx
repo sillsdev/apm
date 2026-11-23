@@ -27,7 +27,6 @@ const renderButtons = (props: Partial<AudioCopyPasteProps> = {}) => {
     audio: AUDIO,
     selection: null,
     at: 3,
-    label: 'record',
     onPaste: jest.fn(),
     ...props,
   };
@@ -48,25 +47,25 @@ describe('AudioCopyPaste', () => {
 
   it('shows no paste before anything is copied', () => {
     renderButtons();
-    expect(query('record paste')).not.toBeInTheDocument();
+    expect(query('paste')).not.toBeInTheDocument();
   });
 
   it('copies the selection, then offers paste once there is no selection', async () => {
     const { rerender, props } = renderButtons({ selection: SELECTION });
-    expect(query('record paste')).not.toBeInTheDocument();
+    expect(query('paste')).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'record copy' }));
+    await userEvent.click(screen.getByRole('button', { name: 'copy' }));
     expect(mockClipAudio).toHaveBeenCalledWith(AUDIO, 2, 4);
 
     rerender(<AudioCopyPaste {...props} selection={null} />);
-    expect(query('record copy')).not.toBeInTheDocument();
-    expect(query('record paste')).toBeInTheDocument();
+    expect(query('copy')).not.toBeInTheDocument();
+    expect(query('paste')).toBeInTheDocument();
   });
 
   it('pastes the copied clip at the cursor', async () => {
     const { props } = renderButtons();
 
-    await userEvent.click(screen.getByRole('button', { name: 'record paste' }));
+    await userEvent.click(screen.getByRole('button', { name: 'paste' }));
 
     expect(mockInsertAudio).toHaveBeenCalledWith(AUDIO, 3, CLIP);
     expect(props.onPaste).toHaveBeenCalledWith(INSERTED);
@@ -75,7 +74,7 @@ describe('AudioCopyPaste', () => {
   it('pastes into a player with no audio', async () => {
     const { props } = renderButtons({ audio: null, at: 0 });
 
-    await userEvent.click(screen.getByRole('button', { name: 'record paste' }));
+    await userEvent.click(screen.getByRole('button', { name: 'paste' }));
 
     expect(mockInsertAudio).toHaveBeenCalledWith(null, 0, CLIP);
     expect(props.onPaste).toHaveBeenCalledWith(INSERTED);
@@ -84,9 +83,9 @@ describe('AudioCopyPaste', () => {
   it('disables copy and paste while recording', () => {
     mockPassage.recording = true;
     const { rerender, props } = renderButtons({ selection: SELECTION });
-    expect(query('record copy')).toBeDisabled();
+    expect(query('copy')).toBeDisabled();
 
     rerender(<AudioCopyPaste {...props} selection={null} />);
-    expect(query('record paste')).toBeDisabled();
+    expect(query('paste')).toBeDisabled();
   });
 });
