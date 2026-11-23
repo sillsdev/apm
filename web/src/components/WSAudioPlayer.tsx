@@ -52,7 +52,7 @@ import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { Button } from '../control';
 import { estimateAiSeconds, recordAiSample } from '../control/estimateAiTime';
-import AiTimeProgress from './AiTimeProgress';
+import { AiProcessing } from './AiProcessing';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   logError,
@@ -1843,98 +1843,66 @@ function WSAudioPlayer(props: IProps) {
     setBlobReady && setBlobReady(!inprogress);
   };
   const showAiProgressOverlay = waitingForAI;
+  const waveformBoxHeight = allowZoom
+    ? calculatedHeight + WAVEFORM_BOTTOM_RESERVE_PX
+    : undefined;
 
   const waveformNode = (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: '100%',
-        minWidth: 0,
-        boxSizing: 'border-box',
-        position: 'relative',
-        minHeight: calculatedHeight,
-        height: allowZoom
-          ? calculatedHeight + WAVEFORM_BOTTOM_RESERVE_PX
-          : undefined,
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        id="wsAudioWaveform"
-        ref={waveformRef}
-        style={{
+    <>
+      <Box
+        sx={{
           width: '100%',
           maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
+          position: 'relative',
+          // TT-7791: collapse while AI runs so AiProcessing below takes the
+          // space; the waveform stays mounted (and sized) for the result.
+          minHeight: showAiProgressOverlay ? 0 : calculatedHeight,
+          height: showAiProgressOverlay ? 0 : waveformBoxHeight,
           overflow: 'hidden',
-          visibility:
-            waveformLoading || showAiProgressOverlay ? 'hidden' : 'visible',
         }}
-      />
-      {waveformLoading && (
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <Typography>{ts.loading}</Typography>
-        </Box>
-      )}
-      {showAiProgressOverlay && (
-        <Box
-          sx={{
-            // In-flow so short Media Titles heights (e.g. 80px slot) can grow
-            // and do not clip #ai-cancel under overflow:hidden (TT-7537).
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 1,
+      >
+        <div
+          id="wsAudioWaveform"
+          ref={waveformRef}
+          style={{
             width: '100%',
             maxWidth: '100%',
-            minWidth: 0,
-            boxSizing: 'border-box',
-            px: 2,
-            py: 1,
-            pointerEvents: 'auto',
+            overflow: 'hidden',
+            visibility:
+              waveformLoading || showAiProgressOverlay ? 'hidden' : 'visible',
           }}
-        >
-          <Typography
+        />
+        {waveformLoading && (
+          <Box
             sx={{
-              textAlign: 'center',
-              whiteSpace: 'normal',
-              width: '100%',
-              maxWidth: '100%',
-              boxSizing: 'border-box',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
             }}
           >
-            {processMsg}
-          </Typography>
-          {aiRun && (
-            <AiTimeProgress
-              estimateSec={aiRun.estimateSec}
-              startedAt={aiRun.startedAt}
-              textId="ai-time-estimate"
-            />
-          )}
-          <Button
-            id="ai-cancel"
-            onClick={() => {
-              cancelAIRef.current = true;
-              doingProcess(false);
-            }}
-          >
-            {ts.cancel}
-          </Button>
-        </Box>
+            <Typography>{ts.loading}</Typography>
+          </Box>
+        )}
+      </Box>
+      {/* TT-7791: outside the fixed-height overflow:hidden box above, which
+          clipped Cancel once the message wrapped on a narrow screen. */}
+      {showAiProgressOverlay && (
+        <AiProcessing
+          message={processMsg}
+          startedAt={aiRun?.startedAt}
+          estimateSec={aiRun?.estimateSec}
+          onCancel={() => {
+            cancelAIRef.current = true;
+            doingProcess(false);
+          }}
+        />
       )}
-    </Box>
+    </>
   );
 
   const audioAiError = (
