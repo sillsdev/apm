@@ -2,11 +2,16 @@ import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import * as actions from '../store';
 import Axios from 'axios';
 import JSONAPISource from '@orbit/jsonapi';
-import { API_CONFIG, OrbitNetworkErrorRetries } from '../../api-variable';
+import {
+  API_CONFIG,
+  isElectron,
+  OrbitNetworkErrorRetries,
+} from '../../api-variable';
 import { useDispatch } from 'react-redux';
 import { LocalKey } from '../utils';
 import Bugsnag from '@bugsnag/js';
 import { orbitReset } from '../crud/orbitReset';
+import { markNeedItfSyncOnDisconnect } from './needItfSync';
 
 export function Online(doCheck: boolean, cb: (result: boolean) => void): void {
   const opts = {
@@ -87,6 +92,13 @@ export const useCheckOnline = (label: string) => {
           setOrbitRetries(OrbitNetworkErrorRetries);
         }
       } else if (getGlobal('connected') !== result) {
+        // TT-7905: queued edits made after this drop must reach the server
+        // through an ITF on the next online start.
+        markNeedItfSyncOnDisconnect({
+          isElectron,
+          offline: Boolean(getGlobal('offline')),
+          remote,
+        });
         statusChange(result);
       }
       cb(result);

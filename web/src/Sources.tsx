@@ -32,6 +32,7 @@ import {
   needItfSync,
   shouldRunItfSync,
   clearNeedItfSync,
+  prepareRemoteQueueForStartup,
   recoverBackupSyncFail,
 } from './utils';
 import { isUnauthorized } from './utils/httpError';
@@ -463,8 +464,13 @@ const sourcesImpl = async (
     console.log(`Activating remote for user: ${tokData.sub}`);
     // Web: the saved queue holds edits made offline (they must be sent, in
     // order); remote-update-fail is already attached and skips a task the
-    // server rejects. Desktop keeps its old behaviour.
-    if (isElectron) await skipRemoteQueue(remote);
+    // server rejects.
+    // Desktop (TT-7905): this used to skip unconditionally, which dropped the
+    // oldest queued offline edit on every online start. Clear the queue only
+    // when the ITF being sent already holds those edits; otherwise keep it so
+    // orbitReset replays all of it.
+    if (isElectron)
+      await prepareRemoteQueueForStartup(remote, syncBuffer !== undefined);
     await remote.activated;
     console.log(`Activated remote for user: ${tokData.sub}`);
     let uRecs = (await remote.query((q) =>

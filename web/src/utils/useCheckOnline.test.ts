@@ -13,6 +13,7 @@ jest.mock('axios');
 jest.mock('../../api-variable', () => ({
   API_CONFIG: { host: 'https://api.test', snagId: '' },
   OrbitNetworkErrorRetries: 5,
+  isElectron: true,
 }));
 
 jest.mock('@bugsnag/js', () => ({
@@ -142,5 +143,28 @@ describe('useCheckOnline (TT-7720)', () => {
     ).toBeGreaterThanOrEqual(2);
     expect(mockOrbitReset).toHaveBeenCalled();
     expect(setConnected).toHaveBeenCalledWith(true);
+  });
+
+  it('marks ITF sync when the network drops with queued edits (TT-7905)', async () => {
+    const savedCoordinator = globals.coordinator;
+    globals.coordinator = {
+      getSource: () => ({ requestQueue: { empty: false, length: 2 } }),
+    };
+    mockedAxios.get.mockRejectedValue({ response: undefined } as never);
+    const { useCheckOnline } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('./useCheckOnline') as typeof import('./useCheckOnline');
+
+    const { result } = renderHook(() => useCheckOnline('TT-7905'));
+
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        result.current(() => resolve(), true);
+      });
+    });
+
+    expect(setConnected).toHaveBeenCalledWith(false);
+    expect(localStorage.getItem('needItfSync')).toBe('true');
+    globals.coordinator = savedCoordinator;
   });
 });
