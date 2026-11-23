@@ -356,7 +356,6 @@ export const CommentCard = (props: IProps) => {
             )}
           </BoxSpread>
           <BoxRow>
-            {/* TODO when we open the PR, test that editing or deleting a comment while it is playing doesn't do anything bad */}
             {media && !oldVernVer && (
               // Nothing is downloaded until the play button is pressed.
               <MediaCol id="commentplayer">

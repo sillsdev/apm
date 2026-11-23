@@ -157,36 +157,18 @@ export function useMiniAudio({
     };
     handleRef.current = handle;
 
-    // WebM from MediaRecorder reports an Infinity duration until the whole
-    // file has been read; seeking far past the end makes the browser work it
-    // out, after which the playhead is put back. The seek can fire timeupdate
-    // and ended, which are not the clip finishing.
-    let probingDuration = false;
+    // WebM isn't supported right now (see TT-7899): MediaRecorder WebM reports an
+    // Infinity duration, which is ignored here.
     const onDuration = () => {
-      if (el.duration === Infinity) {
-        if (!probingDuration) {
-          probingDuration = true;
-          el.currentTime = Number.MAX_SAFE_INTEGER;
-        }
-        return;
-      }
-      if (Number.isFinite(el.duration)) {
-        setDuration(el.duration);
-        if (probingDuration) {
-          probingDuration = false;
-          rewind();
-        }
-      }
+      if (Number.isFinite(el.duration)) setDuration(el.duration);
     };
     const finish = () => {
-      if (probingDuration) return;
       el.pause();
       rewind();
       audioManager.release(handle);
       notifyFinish();
     };
     const onTime = () => {
-      if (probingDuration) return;
       const t = el.currentTime;
       if (end > 0 && t >= end) finish();
       else setTime(t);

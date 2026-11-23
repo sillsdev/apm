@@ -343,20 +343,17 @@ describe('useMiniAudio', () => {
     expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
   });
 
-  // Devin (PR #887): WebM's duration probe seeks past the end, which can fire
-  // ended; that is not the clip finishing.
-  it('ignores ended while probing a WebM duration', () => {
-    const onFinish = jest.fn();
-    const { result } = renderPlaying({ mediaId: 'm1' }, onFinish);
+  // WebM isn't supported (TT-7899); an unknown duration just leaves the length
+  // unknown rather than breaking playback.
+  it('ignores a non-finite duration', () => {
+    const { result } = renderPlaying({ mediaId: 'm1' });
     const el = audios[0];
 
     setDuration(el, Infinity);
-    fire(el, 'ended');
-    expect(onFinish).not.toHaveBeenCalled();
+    expect(result.current.length).toBe(0);
     expect(result.current.status).toBe(MiniAudioPlayerStatus.Playing);
 
     setDuration(el, 42);
     expect(result.current.length).toBe(42);
-    expect(el.currentTime).toBe(0);
   });
 });
