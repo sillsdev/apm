@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ComponentProps } from 'react';
 import {
   jest,
   describe,
@@ -976,7 +976,8 @@ describe('WSAudioPlayer record hotkeys', () => {
 
   async function startNoiseRemoval(
     setBusy: (busy: boolean) => void,
-    recordingSeconds = 10
+    recordingSeconds = 10,
+    props: Partial<ComponentProps<typeof WSAudioPlayer>> = {}
   ) {
     mockGlobals.organization = 'org';
     mockGetOrgDefault.mockReturnValue({ noNoise: true });
@@ -992,6 +993,7 @@ describe('WSAudioPlayer record hotkeys', () => {
         allowNoNoise
         reload={jest.fn()}
         setBusy={setBusy}
+        {...props}
       />
     );
     act(() => {
@@ -1003,6 +1005,25 @@ describe('WSAudioPlayer record hotkeys', () => {
       await Promise.resolve();
     });
   }
+
+  // TT-7791: the waveform box has a fixed height and overflow:hidden when
+  // zoom is allowed. Progress inside it was clipped once its text wrapped on
+  // a narrow (mobile) screen, hiding Cancel.
+  it('keeps AI Cancel out of the fixed-height clipped waveform box', async () => {
+    mockRequestAudioAi.mockImplementation(() => Promise.resolve());
+    await startNoiseRemoval(jest.fn(), 10, { allowZoom: true });
+    const cancel = document.getElementById('ai-cancel');
+    expect(cancel).toBeTruthy();
+    const clipper = (el: HTMLElement | null) => {
+      for (let p = el?.parentElement; p; p = p.parentElement) {
+        const style = getComputedStyle(p);
+        const clips = [style.overflow, style.overflowY].includes('hidden');
+        if (clips && /^\d+(\.\d+)?px$/.test(style.height)) return p;
+      }
+      return null;
+    };
+    expect(clipper(cancel)).toBeNull();
+  });
 
   it('keeps AI busy until the region replace finishes', async () => {
     let aiCallback: ((file: File | Error) => void) | undefined;
