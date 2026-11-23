@@ -2,15 +2,20 @@ import {
   Box,
   Grid,
   IconButton,
-  Paper,
-  PaperProps,
   styled,
   SxProps,
   Typography,
   TypographyProps,
   useTheme,
 } from '@mui/material';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type RefObject,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useMobile } from '../../utils/useMobile';
 import { shallowEqual, useSelector } from 'react-redux';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
@@ -48,14 +53,7 @@ import { discussionListSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import ForumIcon from '@mui/icons-material/Forum';
 import { LightTooltip } from '../../control/LightTooltip';
-
-const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
-  backgroundColor: theme.palette.background.paper,
-  '& .MuiPaper-rounded': {
-    borderRadius: '8px',
-  },
-  overflow: 'auto',
-}));
+import { DiscussionScrollArea, StyledPaper } from './DiscussionScrollArea';
 
 const Title = styled(Typography)<TypographyProps>(({ theme }) => ({
   display: 'flex',
@@ -160,8 +158,8 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
     sort = 'sort',
     changePassage = 'leave passage',
   }
-  const formRef = useRef<any>(undefined);
-  const [highlightedRef, setHighlightedRef] = useState<any>();
+  const [highlightedRef, setHighlightedRef] =
+    useState<RefObject<HTMLElement | null>>();
   const [highlightNew, setHighlightNew] = useState('');
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
 
@@ -332,15 +330,6 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
     catFilter,
     passage,
   ]);
-
-  useEffect(() => {
-    if (formRef.current && highlightedRef?.current) {
-      formRef.current.scrollTo(
-        0,
-        Math.max(0, highlightedRef.current.offsetTop - 80)
-      );
-    }
-  }, [highlightedRef]);
 
   useEffect(() => {
     if (adding) return;
@@ -582,13 +571,7 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
           </Box>
         </Box>
         {player}
-        <StyledPaper
-          ref={formRef}
-          id="DiscussionList"
-          elevation={0}
-          square
-          sx={{ flex: '1 1 auto', minHeight: 0, width: '100%' }}
-        >
+        <DiscussionScrollArea highlightedRef={highlightedRef}>
           <Grid container>
             {displayDiscussions.map((i, j) => (
               <DiscussionCard
@@ -605,7 +588,7 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
               />
             ))}
           </Grid>
-        </StyledPaper>
+        </DiscussionScrollArea>
         <BigDialog
           title={t.categoryList}
           isOpen={categoryOpen}
