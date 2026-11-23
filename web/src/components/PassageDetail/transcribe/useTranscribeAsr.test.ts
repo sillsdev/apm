@@ -346,4 +346,75 @@ describe('useTranscribeAsr', () => {
 
     expect(result.current.forceAsr).toBe(false);
   });
+
+  // TT-7856: the progress box says the AI keeps working after Close and to
+  // reopen it with the Auto Transcription button. Reopening resumes the task
+  // (not forced), but its result is still the new method's, so it replaces.
+  describe('a changed-method run reopened after closing its progress box', () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'ta', languageName: 'Tamil' },
+      asrIso: 'tam',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    const whisperText = 'whisper result';
+    const renderAsr = (hasActiveTask: boolean) => {
+      const onTextAdd = jest.fn();
+      const hook = renderHook(
+        ({ active }: { active: boolean }) =>
+          useTranscribeAsr({
+            team: undefined,
+            sharedStr: { mustBeOnline: 'online' } as never,
+            tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+            showMessage: jest.fn(),
+            onTextAdd,
+            getCurrentText: () => whisperText,
+            hasActiveTask: active,
+          }),
+        { initialProps: { active: hasActiveTask } }
+      );
+      return { ...hook, onTextAdd };
+    };
+    const runMmsThenClose = async (
+      result: ReturnType<typeof renderAsr>['result']
+    ) => {
+      await waitFor(() =>
+        expect(result.current.asrSettings?.asrIso).toBe('tam')
+      );
+      act(() => result.current.openAsrLanguageSettings());
+      act(() =>
+        result.current.handleAsrLanguageClose(false, {
+          ...saved,
+          asrMethod: 'mms',
+        } as never)
+      );
+      act(() => result.current.setAsrProgressVisible(false));
+    };
+
+    it('replaces the earlier result instead of appending to it', async () => {
+      getAsrSettings.mockResolvedValue(saved);
+      const { result, onTextAdd } = renderAsr(true);
+      await runMmsThenClose(result);
+
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.handleAutoTranscribe('mms result'));
+
+      expect(result.current.forceAsr).toBe(false);
+      expect(onTextAdd).toHaveBeenCalledTimes(1);
+      expect(onTextAdd).toHaveBeenCalledWith('mms result', true);
+    });
+
+    it('appends again once that task is gone', async () => {
+      getAsrSettings.mockResolvedValue(saved);
+      const { result, rerender, onTextAdd } = renderAsr(true);
+      await runMmsThenClose(result);
+
+      rerender({ active: false });
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.handleAutoTranscribe('more'));
+
+      expect(onTextAdd).toHaveBeenCalledWith(' more');
+    });
+  });
 });

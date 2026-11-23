@@ -35,4 +35,26 @@ describe('useAsrForceRun', () => {
 
     expect(result.current.forceAsr).toBe(false);
   });
+
+  // TT-7856: closing the progress dialog clears force, but the running
+  // task's result must still replace the earlier transcription.
+  it('keeps replacing after force clears, until replace is cleared', () => {
+    const { result } = renderHook(() => useAsrForceRun(base));
+
+    act(() => result.current.snapshotAsrAtOpen());
+    act(() =>
+      result.current.applyForceFromClosedAsr({ ...base, asrMethod: 'whisper' })
+    );
+    act(() => result.current.clearForceAsr());
+
+    expect(result.current.forceAsr).toBe(false);
+    expect(result.current.replaceAsr).toBe(true);
+
+    act(() => result.current.snapshotAsrAtOpen());
+    act(() => result.current.applyForceFromClosedAsr({ ...base }));
+    expect(result.current.replaceAsr).toBe(true);
+
+    act(() => result.current.clearReplaceAsr());
+    expect(result.current.replaceAsr).toBe(false);
+  });
 });
