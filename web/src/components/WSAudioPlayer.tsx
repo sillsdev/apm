@@ -594,7 +594,9 @@ function WSAudioPlayer(props: IProps) {
   const { isMobile: isMobileView, isMobileWidth } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
 
-  const cancelAIRef = useRef(false);
+  // The active AI run's cancel flag. Each run gets its own, so canceling one
+  // run and starting another never revives the first run's result (TT-7791).
+  const cancelAIRef = useRef<{ current: boolean }>({ current: false });
 
   useEffect(() => {
     onProcessingRecordingChange?.(processingRecording);
@@ -1897,7 +1899,7 @@ function WSAudioPlayer(props: IProps) {
           startedAt={aiRun?.startedAt}
           estimateSec={aiRun?.estimateSec}
           onCancel={() => {
-            cancelAIRef.current = true;
+            cancelAIRef.current.current = true;
             doingProcess(false);
           }}
         />
@@ -1936,8 +1938,10 @@ function WSAudioPlayer(props: IProps) {
         return;
       }
       if (!reload) throw new Exception('need reload defined.');
-      cancelAIRef.current = false;
+      const run = { current: false };
+      cancelAIRef.current = run;
       const failAi = (error: any) => {
+        if (run.current) return;
         const { display, logText } = audioAiError(func, targetVoice, error);
         logError(Severity.error, errorReporter, logText);
         showMessage(display, AlertSeverity.Error);
@@ -1947,7 +1951,7 @@ function WSAudioPlayer(props: IProps) {
       const durationSec = wsRegionDuration();
       // TT-6276: timed from the click to the result, so upload is included.
       const recordTiming = () => {
-        if (cancelAIRef.current) return;
+        if (run.current) return;
         recordAiSample(func, {
           durationSec,
           totalMs: Date.now() - startedAt,
@@ -1970,13 +1974,16 @@ function WSAudioPlayer(props: IProps) {
             if (blob) {
               requestAudioAi({
                 func,
-                cancelRef: cancelAIRef,
+                cancelRef: run,
                 file: new File([blob], filename, { type: 'audio/wav' }),
                 targetVoice,
                 cb: (file: File | Error) => {
+                  // TT-7791: Cancel already restored the player.
+                  if (run.current) return;
                   if (file instanceof File) {
                     wsRegionReplace(new Blob([file], { type: file.type }))
                       .then((newblob) => {
+                        if (run.current) return;
                         recordTiming();
                         if (newblob) reload(newblob);
                         publishChanged();

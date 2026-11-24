@@ -136,7 +136,8 @@ export const useAudioAi = (): AudioAIResult => {
         if (!filetask.cancelRef.current) {
           const file = await checkAsS3(func, filetask);
           if (file) {
-            filetask.cb(file);
+            // Cancel may land while the result downloads (TT-7791).
+            filetask.cb(filetask.cancelRef.current ? cancelled : file);
           }
         } else {
           filetask.cb(cancelled);
