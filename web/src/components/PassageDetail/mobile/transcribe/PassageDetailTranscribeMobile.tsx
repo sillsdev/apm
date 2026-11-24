@@ -397,7 +397,6 @@ export function PassageDetailTranscribeMobileContent() {
     onTextAdd: handleTextAdd,
     getCurrentText: getTextValue,
     hasActiveTask: hasAiTask,
-    mediaId: mediafile?.id,
   });
 
   const handleTextChange = useCallback(
