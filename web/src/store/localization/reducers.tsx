@@ -1127,7 +1127,6 @@ const initialState = {
 	"passageDetailArtifacts": new LocalizedStrings({
 		"en": {
 			"accept": "Accept",
-			"action": "Action",
 			"activity": "Add Activity",
 			"add": "Add",
 			"addAudio": "Audio...",
@@ -1146,7 +1145,6 @@ const initialState = {
 			"category": "Category",
 			"chapterLevel": "{0} for the Chapter",
 			"clipboard": "clipboard",
-			"completed": "Completed",
 			"configure": "Configure General",
 			"confirmClose": "Do you want to close this dialog? Your changes will be discarded.",
 			"confirmCloseTitle": "Confirm Close",
@@ -1198,7 +1196,6 @@ const initialState = {
 			"referenceTextSpeakFailed": "The passage could not be spoken.",
 			"referenceTextUnauthorized": "Your login has expired. Renew it to load the passage.",
 			"research": "Research",
-			"resource": "Resource",
 			"resources": "Resources",
 			"selectAll": "Select All",
 			"selectBook": "Select Book",
@@ -1216,7 +1213,6 @@ const initialState = {
 			"title": "Title",
 			"titleDesc": "for {0}",
 			"transcription": "AI Audio Resource Transcript",
-			"type": "Type",
 			"tip1a": "Available for:",
 			"tip1b": "Link to a shared resource.",
 			"unusedSegment": "Unused segment: only segments with References will create resources",

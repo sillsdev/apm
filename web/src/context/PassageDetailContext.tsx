@@ -97,16 +97,13 @@ import { isPassageNavigationBlocked } from './passageDetailNavigationBlocked';
 export interface IRow {
   id: string;
   sequenceNum: number;
-  version: number;
   mediafile: MediaFileD;
-  playItem: string;
   artifactName: string;
   artifactTypeSlug: string;
   /** Media is (or derives from) a general/project resource -- see generalResourceMedia. */
   isGeneralResource: boolean;
   artifactCategorySlug: string;
   done: boolean;
-  editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;
   passageId: string;
   isVernacular: boolean;

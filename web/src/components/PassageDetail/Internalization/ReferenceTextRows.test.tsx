@@ -102,8 +102,6 @@ jest.mock('react-redux', () => ({
   useSelector: (sel: (s: unknown) => unknown) =>
     sel({ strings: { lang: 'en' } }),
 }));
-// TableRow takes DragHandle from this barrel, which would load the store
-jest.mock('.', () => ({ DragHandle: () => <span /> }));
 jest.mock('../../../crud', () => ({
   useOrganizedBy: () => ({ getOrganizedBy: () => 'Section' }),
 }));
@@ -177,14 +175,14 @@ beforeEach(() => {
 
 describe('ReferenceTextRows', () => {
   it('renders nothing when the project has no Reference Text', () => {
-    const { container } = render(<ReferenceTextRows variant="table" />);
+    const { container } = render(<ReferenceTextRows />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it('lists Primary then Secondary with rank and language', () => {
     mockPassages.primary = ready(bible());
     mockPassages.secondary = ready(arabic);
-    const { container } = render(<ReferenceTextRows variant="table" />);
+    const { container } = render(<ReferenceTextRows />);
     const rows = container.querySelectorAll('[data-cy^="reference-text-"]');
     expect([...rows].map((r) => r.getAttribute('data-cy'))).toEqual([
       'reference-text-primary',
@@ -198,20 +196,23 @@ describe('ReferenceTextRows', () => {
 
   it('shows only the Reference Texts the project has', () => {
     mockPassages.secondary = ready(arabic);
-    render(<ReferenceTextRows variant="table" />);
-    expect(screen.queryByText('Primary Reference Text')).toBeNull();
-    expect(screen.getByText('Secondary Reference Text')).toBeInTheDocument();
+    render(<ReferenceTextRows />);
+    expect(screen.queryByText(/Primary Reference Text/)).toBeNull();
+    expect(screen.getByText(/Secondary Reference Text/)).toBeInTheDocument();
   });
 
   it('sets the Bible name in its own text direction', () => {
     mockPassages.primary = ready(arabic);
-    render(<ReferenceTextRows variant="table" />);
-    expect(screen.getByText(/الكتاب المقدس/)).toHaveAttribute('dir', 'rtl');
+    render(<ReferenceTextRows />);
+    expect(screen.getByText(/الكتاب المقدس/).closest('[dir]')).toHaveAttribute(
+      'dir',
+      'rtl'
+    );
   });
 
   it('shows loading without play or view', () => {
     mockPassages.primary = { status: 'loading', referenceText: bible() };
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     expect(screen.getByRole('status')).toHaveTextContent('Loading passage…');
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -223,7 +224,7 @@ describe('ReferenceTextRows', () => {
     ['forbidden', 'You do not have access to this Reference Text.'],
   ])('explains %s without a retry', (error, message) => {
     mockPassages.primary = { status: 'error', referenceText: bible(), error };
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     expect(screen.getByText(message)).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -236,7 +237,7 @@ describe('ReferenceTextRows', () => {
       error: 'fetchFailed',
       retry,
     };
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     expect(
       screen.getByText('The passage could not be loaded.')
     ).toBeInTheDocument();
@@ -250,7 +251,7 @@ describe('ReferenceTextRows', () => {
       referenceText: bible(),
       error: 'unauthorized',
     };
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     expect(
       screen.getByText('Your login has expired. Renew it to load the passage.')
     ).toBeInTheDocument();
@@ -264,7 +265,7 @@ describe('ReferenceTextRows', () => {
   it('shows the text with a notice when play finds no voice', async () => {
     setSpeechPlatform('Win32');
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getByLabelText('Play'));
     expect(mockSpeak).toHaveBeenCalledWith(
       bible(),
@@ -288,7 +289,7 @@ describe('ReferenceTextRows', () => {
   it('tells a Mac how to add a voice when this device has none', async () => {
     setSpeechPlatform('MacIntel');
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getByLabelText('Play'));
     act(() => finishSpeaking('noVoice'));
     const dialog = await screen.findByRole('dialog');
@@ -301,7 +302,7 @@ describe('ReferenceTextRows', () => {
   it('shows the text with a notice when the only voices need the internet', async () => {
     setSpeechPlatform('Win32');
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getByLabelText('Play'));
     act(() => finishSpeaking('noVoiceOffline'));
     const dialog = await screen.findByRole('dialog');
@@ -314,7 +315,7 @@ describe('ReferenceTextRows', () => {
 
   it('shows the text with a notice when speaking fails', async () => {
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getByLabelText('Play'));
     act(() => finishSpeaking('error'));
     expect(await screen.findByRole('dialog')).toHaveTextContent(
@@ -324,7 +325,7 @@ describe('ReferenceTextRows', () => {
 
   it('offers Stop while speaking, then Play again once stopped', async () => {
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="card" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getByLabelText('Play'));
     fireEvent.click(await screen.findByLabelText('Stop'));
     expect(stopSpeaking).toHaveBeenCalled();
@@ -334,7 +335,7 @@ describe('ReferenceTextRows', () => {
 
   it('does not show the text when the passage is spoken', async () => {
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getByLabelText('Play'));
     act(() => finishSpeaking('ended'));
     await waitFor(() =>
@@ -346,7 +347,7 @@ describe('ReferenceTextRows', () => {
   it('views the text with its license link, then closes', () => {
     mockPassages.primary = ready(bible());
     mockPassages.secondary = ready(arabic, 'لأنه هكذا أحب الله');
-    render(<ReferenceTextRows variant="table" />);
+    render(<ReferenceTextRows />);
     fireEvent.click(screen.getAllByLabelText('View')[1]);
     const dialog = screen.getByRole('dialog');
     expect(screen.getByText('لأنه هكذا أحب الله')).toHaveAttribute(
@@ -360,9 +361,9 @@ describe('ReferenceTextRows', () => {
     expect(dialog).not.toBeInTheDocument();
   });
 
-  it('renders cards on mobile', () => {
+  it('renders each Reference Text as a card', () => {
     mockPassages.primary = ready(bible());
-    render(<ReferenceTextRows variant="card" />);
+    render(<ReferenceTextRows />);
     expect(
       screen.getByRole('heading', { name: 'Berean Standard Bible' })
     ).toBeInTheDocument();

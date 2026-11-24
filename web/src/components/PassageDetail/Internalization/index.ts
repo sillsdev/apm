@@ -1,12 +1,6 @@
 export * from './getResources';
 export * from './resourceRows';
 export * from '../../../control';
-export * from './TableRow';
-export * from './SortableItem';
-export * from './PlayButton';
-export * from './DoneButton';
-export * from './ResourceEditAction';
 export * from './ViewButton';
-export * from './PassageResourceButton';
 export * from './useFullReference';
 export * from './mobile components/AudioResourceCard';

@@ -7,12 +7,11 @@ import {
   Typography,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 import { WrapTitle } from '../../../../control/WrapTitle';
 import { useMemo } from 'react';
+import { ResourceCardEditActions } from './ResourceCardEditActions';
 
 // This card is used for non-audio resources in the mobile list.
 // It covers markdown text, URI links, PDFs, images, and other file types
@@ -27,7 +26,7 @@ interface IProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   subtitle?: string;
-  /** Admin-only type tag shown beside the subtitle (e.g. "Linked"). */
+  /** Type tag shown beside the subtitle (e.g. "Linked"). */
   badge?: string;
   sx?: SxProps;
 }
@@ -40,6 +39,8 @@ export function TextResourceCard({
   onDone,
   onEdit,
   onDelete,
+  // TODO cleanup: hard-coded English default, shown when a resource has no
+  // category; localize it or show nothing.
   subtitle = 'Translation Resource',
   badge,
   sx = [],
@@ -116,6 +117,7 @@ export function TextResourceCard({
             size="medium"
             sx={{ mt: -0.5, mr: -0.5 }}
             slotProps={{
+              // TODO cleanup: hard-coded English; localize
               input: { 'aria-label': `Mark ${row.artifactName} complete` },
             }}
           />
@@ -160,32 +162,18 @@ export function TextResourceCard({
             // - markdown opens the text dialog
             // - pdf/images/other files open the media/file viewer
             onClick={() => onView(row.id)}
+            // TODO cleanup: hard-coded English; localize
             aria-label={`View ${row.artifactName}`}
             sx={{ p: 0.25 }}
           >
             <VisibilityIcon fontSize="medium" />
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {onEdit && (
-              <IconButton
-                size="small"
-                onClick={() => onEdit(row.id)}
-                aria-label={`Edit ${row.artifactName}`}
-                sx={{ p: 0.25 }}
-              >
-                <EditIcon fontSize="medium" />
-              </IconButton>
-            )}
-            {onDelete && (
-              <IconButton
-                size="small"
-                onClick={() => onDelete(row.id)}
-                aria-label={`Delete ${row.artifactName}`}
-                sx={{ p: 0.25 }}
-              >
-                <DeleteOutlineIcon fontSize="medium" />
-              </IconButton>
-            )}
+            <ResourceCardEditActions
+              row={row}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
           </Box>
         </Box>
       </Box>

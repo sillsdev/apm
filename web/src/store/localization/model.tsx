@@ -1068,7 +1068,6 @@ export interface IPassageChooserStrings extends Localize.LocalizedStringsMethods
 
 export interface IPassageDetailArtifactsStrings extends Localize.LocalizedStringsMethods {
     "accept": string;
-    "action": string;
     "activity": string;
     "add": string;
     "addAudio": string;
@@ -1087,7 +1086,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "category": string;
     "chapterLevel": string;
     "clipboard": string;
-    "completed": string;
     "configure": string;
     "confirmClose": string;
     "confirmCloseTitle": string;
@@ -1139,7 +1137,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "referenceTextSpeakFailed": string;
     "referenceTextUnauthorized": string;
     "research": string;
-    "resource": string;
     "resources": string;
     "selectAll": string;
     "selectBook": string;
@@ -1157,7 +1154,6 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "title": string;
     "titleDesc": string;
     "transcription": string;
-    "type": string;
     "tip1a": string;
     "tip1b": string;
     "unusedSegment": string;

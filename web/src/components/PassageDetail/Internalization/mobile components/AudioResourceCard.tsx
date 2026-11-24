@@ -1,20 +1,11 @@
-import {
-  Box,
-  Card,
-  Checkbox,
-  IconButton,
-  SxProps,
-  Typography,
-} from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import EditIcon from '@mui/icons-material/Edit';
+import { Box, Card, Checkbox, SxProps, Typography } from '@mui/material';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 import MinimalAudioPlayer from '../../../MinimalAudioPlayer';
-import { useMobile } from '../../../../utils/useMobile';
 import { useMemo } from 'react';
 import { WrapTitle } from '../../../../control/WrapTitle';
 import { resourceClip } from '../resourceClip';
+import { ResourceCardEditActions } from './ResourceCardEditActions';
 
 // This card is used for audio resources in the mobile list.
 // It is selected when the media content type starts with "audio/"
@@ -28,7 +19,7 @@ interface IProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   subtitle?: string;
-  /** Admin-only type tag shown beside the subtitle (e.g. "Linked"). */
+  /** Type tag shown beside the subtitle (e.g. "Linked"). */
   badge?: string;
   sx?: SxProps;
 }
@@ -40,11 +31,12 @@ export function AudioResourceCard({
   onDone,
   onEdit,
   onDelete,
+  // TODO cleanup: hard-coded English default, shown when a resource has no
+  // category; localize it or show nothing.
   subtitle = 'Scripture',
   badge,
   sx = [],
 }: IProps) {
-  const { isMobileWidth } = useMobile();
   const segments = row.mediafile?.attributes?.segments;
   const clip = useMemo(
     () => resourceClip(row.mediafile),
@@ -123,6 +115,7 @@ export function AudioResourceCard({
             sx={{ mt: -0.5, mr: -0.5 }}
             slotProps={{
               input: {
+                // TODO cleanup: hard-coded English; localize
                 'aria-label': `Mark ${row.artifactName} complete`,
               },
             }}
@@ -161,26 +154,11 @@ export function AudioResourceCard({
               playButtonSize="large"
             />
           </Box>
-          {onEdit && !isMobileWidth && (
-            <IconButton
-              size="small"
-              onClick={() => onEdit(row.id)}
-              aria-label={`Edit ${row.artifactName}`}
-              sx={{ p: 0.25 }}
-            >
-              <EditIcon fontSize="medium" />
-            </IconButton>
-          )}
-          {onDelete && !isMobileWidth && (
-            <IconButton
-              size="small"
-              onClick={() => onDelete(row.id)}
-              aria-label={`Delete ${row.artifactName}`}
-              sx={{ p: 0.25 }}
-            >
-              <DeleteOutlineIcon fontSize="medium" />
-            </IconButton>
-          )}
+          <ResourceCardEditActions
+            row={row}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </Box>
       </Box>
     </Card>

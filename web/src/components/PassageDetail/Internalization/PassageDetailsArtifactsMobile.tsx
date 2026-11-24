@@ -30,7 +30,6 @@ import {
   IArtifactCategory,
   ArtifactCategoryType,
   usePlanType,
-  useRole,
   ArtifactTypeSlug,
   mediaFileName,
 } from '../../../crud';
@@ -46,7 +45,14 @@ import {
   mediaContentType,
 } from '../../../utils/contentType';
 import { canSaveResourceEdit } from './resourceArtifactName';
-import { Box, Stack, Typography, MenuItem, MenuList } from '@mui/material';
+import {
+  Badge,
+  Box,
+  Stack,
+  Typography,
+  MenuItem,
+  MenuList,
+} from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import Confirm from '../../AlertDialog';
@@ -170,14 +176,12 @@ export function PassageDetailArtifactsMobile() {
     () => hasPermission && (!offline || offlineOnly),
     [hasPermission, offline, offlineOnly]
   );
-  const { userIsAdmin } = useRole();
   const rowTypeLabel = useRowTypeLabel();
   const localizedArtifactCategory = useLocalizedArtifactCategory();
-  // Admins see badges for resources that are linked (shared) or general; other users don't.
+  // Resources that are linked (shared) or general carry a type badge.
   const typeBadge = (row: IRow) =>
-    userIsAdmin &&
-    (row.isGeneralResource ||
-      row.artifactTypeSlug === ArtifactTypeSlug.SharedResource)
+    row.isGeneralResource ||
+    row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
       ? rowTypeLabel(row)
       : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
@@ -607,8 +611,8 @@ export function PassageDetailArtifactsMobile() {
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
         {isScripture && (
           <Box>
-            <Button onClick={() => handleFindVisible(true)}>
-              {t.research}
+            <Button disableTypography onClick={() => handleFindVisible(true)}>
+              <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
             </Button>
           </Box>
         )}
@@ -626,7 +630,6 @@ export function PassageDetailArtifactsMobile() {
       </Stack>
       <Box sx={{ width: '100%' }}>
         <ReferenceTextRows
-          variant="card"
           showDragHandle={modifiable}
           expandedId={expandedArtifactNameId}
           setExpandedId={setExpandedArtifactNameId}
@@ -692,7 +695,7 @@ export function PassageDetailArtifactsMobile() {
         />
       )}
       <BigDialog
-        title={`Research - ${passageRef(passage) || ''}`.trim()}
+        title={t.findResource.replace('{0}', passageRef(passage) || '')}
         titleVariant="h6"
         description={
           <Typography sx={{ color: 'text.secondary' }}>
@@ -746,6 +749,7 @@ export function PassageDetailArtifactsMobile() {
         onCancel={handleEditCancel}
         bp={BigDialogBp.mobile}
         showBottomCancelButton={false}
+        disableBackdropClose
       >
         <ResourceData
           media={mediaRef.current}
