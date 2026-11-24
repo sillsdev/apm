@@ -183,7 +183,6 @@ interface IProps {
   showStep: boolean;
   showReference: boolean;
   onAddComplete?: (id: string) => void;
-  setRef: (ref: any) => void;
   requestHighlight: string;
   refreshList: () => void;
 }
@@ -200,7 +199,6 @@ export const DiscussionCard = (props: IProps) => {
     showStep,
     showReference,
     onAddComplete,
-    setRef,
     requestHighlight,
     refreshList,
   } = props;
@@ -284,7 +282,7 @@ export const DiscussionCard = (props: IProps) => {
   const [editCard, setEditCard] = useState(false);
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
-  const cardRef = useRef<any>(undefined);
+  const cardRef = useRef<HTMLDivElement>(null);
   const commentText = useRef('');
   const [comment, setComment] = useState('');
   const commentMediaId = useRef<string | undefined>(undefined);
@@ -899,13 +897,19 @@ export const DiscussionCard = (props: IProps) => {
     return DiscussionRegion(discussion);
   }, [discussion]);
 
+  // TT-7887: scroll on every locate, including a repeat locate of the same
+  // region (which only bumps refresh), so the card's header comes back into
+  // view even after the user scrolled the list away.
+  const scrollCardIntoView = () =>
+    cardRef.current?.scrollIntoView({ block: 'start' });
+
   useEffect(() => {
     //locate my region
     if (highlightDiscussion === undefined) {
-      if (discussion.id === requestHighlight) setRef(cardRef);
+      if (discussion.id === requestHighlight) scrollCardIntoView();
     } else if (myRegion?.start === highlightDiscussion) {
       handleLocate();
-      setRef(cardRef);
+      scrollCardIntoView();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightDiscussion, myRegion?.start, refresh, requestHighlight]);

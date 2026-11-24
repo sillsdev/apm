@@ -1,7 +1,6 @@
-import { createRef, type RefObject, useState } from 'react';
-import { Box, Card, Drawer, Grid } from '@mui/material';
+import { createRef } from 'react';
+import { Box, Card, Drawer, Grid, Paper } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { DiscussionScrollArea } from './DiscussionScrollArea';
 
 const cardCount = 7;
 const cardRefs = Array.from({ length: cardCount }, () =>
@@ -9,21 +8,19 @@ const cardRefs = Array.from({ length: cardCount }, () =>
 );
 
 /**
- * Lays the scroll area out as DiscussionDrawer and DiscussionList do: a
- * right-anchored drawer whose header and mini player sit above the cards.
- * The buttons stand in for selecting a waveform region, which makes
- * DiscussionCard hand its ref to the list.
+ * Lays the list out as DiscussionDrawer and DiscussionList do: a
+ * right-anchored drawer (overflow hidden) whose header and mini player sit
+ * above a scrolling Paper of cards. Each button makes the same call
+ * DiscussionCard makes when its region is located.
  */
 function DrawerHarness() {
-  const [highlightedRef, setHighlightedRef] =
-    useState<RefObject<HTMLElement | null>>();
   return (
     <>
       {cardRefs.map((ref, i) => (
         <button
           key={i}
           data-cy={`select-${i}`}
-          onClick={() => setHighlightedRef(ref)}
+          onClick={() => ref.current?.scrollIntoView({ block: 'start' })}
         >
           {i}
         </button>
@@ -33,6 +30,7 @@ function DrawerHarness() {
         open
         slotProps={{
           paper: {
+            id: 'drawer-paper',
             sx: {
               width: 450,
               display: 'flex',
@@ -42,9 +40,21 @@ function DrawerHarness() {
           },
         }}
       >
-        <Box sx={{ height: 70, flex: '0 0 auto' }}>Discussions</Box>
+        <Box data-cy="drawer-header" sx={{ height: 70, flex: '0 0 auto' }}>
+          Discussions
+        </Box>
         <Box sx={{ height: 150, flex: '0 0 auto' }}>Player</Box>
-        <DiscussionScrollArea highlightedRef={highlightedRef}>
+        <Paper
+          id="DiscussionList"
+          elevation={0}
+          square
+          sx={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            width: '100%',
+            overflow: 'auto',
+          }}
+        >
           <Grid container>
             {cardRefs.map((ref, i) => (
               <Card
@@ -60,7 +70,7 @@ function DrawerHarness() {
               </Card>
             ))}
           </Grid>
-        </DiscussionScrollArea>
+        </Paper>
       </Drawer>
     </>
   );
@@ -77,7 +87,20 @@ const expectHeaderVisible = (index: number) => {
   });
 };
 
-describe('DiscussionScrollArea', () => {
+// scrollIntoView also scrolls overflow:hidden ancestors; the drawer's
+// title bar and player must stay put.
+const expectDrawerChromeInPlace = () => {
+  cy.get('#drawer-paper').should(($paper) => {
+    expect($paper[0].scrollTop, 'drawer scrollTop').to.equal(0);
+    const paperTop = $paper[0].getBoundingClientRect().top;
+    const headerTop = $paper
+      .find('[data-cy="drawer-header"]')[0]
+      .getBoundingClientRect().top;
+    expect(headerTop, 'drawer header top').to.equal(paperTop);
+  });
+};
+
+describe('DiscussionList locate scroll (TT-7887)', () => {
   beforeEach(() => {
     cy.viewport(1280, 800);
     cy.mount(
@@ -87,18 +110,19 @@ describe('DiscussionScrollArea', () => {
     );
   });
 
-  // TT-7887: selecting a middle waveform segment hid the card's header.
   it('shows the full header of a middle card on the first selection', () => {
     cy.get('[data-cy="select-3"]').click({ force: true });
     expectHeaderVisible(3);
+    expectDrawerChromeInPlace();
   });
 
   it('shows the full header on each later selection', () => {
     cy.get('[data-cy="select-2"]').click({ force: true });
     expectHeaderVisible(2);
-    cy.get('[data-cy="select-4"]').click({ force: true });
-    expectHeaderVisible(4);
+    cy.get('[data-cy="select-6"]').click({ force: true });
+    expectHeaderVisible(6);
     cy.get('[data-cy="select-1"]').click({ force: true });
     expectHeaderVisible(1);
+    expectDrawerChromeInPlace();
   });
 });
