@@ -514,7 +514,10 @@ describe('AsrProgress in-flight task', () => {
         await Promise.resolve();
       });
 
-      expect(setTranscription).toHaveBeenCalledWith('\\v 1-5 one \\v 6-7 two');
+      expect(setTranscription).toHaveBeenCalledWith(
+        '\\v 1-5 one \\v 6-7 two',
+        '\\v 1-5 one \\v 6-7 two'
+      );
     } finally {
       jest.useRealTimers();
     }
@@ -599,7 +602,9 @@ describe('AsrProgress in-flight task', () => {
     return setTranscription;
   };
 
-  it('excludes completed verses when appending (not forced)', async () => {
+  // The full result is for Replace; the one without verses that already have
+  // text is for Insert (TT-7856). The user picks at apply time.
+  it('sends the full result and one without verses that have text', async () => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
@@ -608,13 +613,13 @@ describe('AsrProgress in-flight task', () => {
       contentVerses: ['1'],
     });
 
-    expect(setTranscription).toHaveBeenCalledWith('\\v 2 two-new');
-    expect(setTranscription).not.toHaveBeenCalledWith(
-      expect.stringContaining('\\v 1 ')
+    expect(setTranscription).toHaveBeenCalledWith(
+      '\\v 1 one-new \\v 2 two-new',
+      '\\v 2 two-new'
     );
   });
 
-  it('keeps completed verses on forced replace of a partial transcription', async () => {
+  it('sends the same pair on a forced run', async () => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
@@ -624,11 +629,12 @@ describe('AsrProgress in-flight task', () => {
     });
 
     expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new'
+      '\\v 1 one-new \\v 2 two-new',
+      '\\v 2 two-new'
     );
   });
 
-  it('delivers a full result on forced replace when every verse was already transcribed', async () => {
+  it('still sends the full result when every verse already has text', async () => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
@@ -638,7 +644,8 @@ describe('AsrProgress in-flight task', () => {
     });
 
     expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new'
+      '\\v 1 one-new \\v 2 two-new',
+      ''
     );
   });
 });

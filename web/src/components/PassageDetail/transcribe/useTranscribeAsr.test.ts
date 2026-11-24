@@ -214,10 +214,12 @@ describe('useTranscribeAsr', () => {
       result.current.handleAutoTranscribe('0:01.200: hello');
     });
 
-    expect(onTextAdd).toHaveBeenCalledWith(' hello');
+    expect(onTextAdd).toHaveBeenCalledWith(' hello', 'end');
   });
 
-  it('replaces the existing transcription when the run was forced', async () => {
+  // TT-7856: a result applied onto text the user already has asks first, so a
+  // second run (e.g. with another method) never silently duplicates or wipes.
+  describe('applying a result onto existing text', () => {
     const saved = {
       target: 'alphabet',
       language: { bcp47: 'en', languageName: 'English' },
@@ -226,33 +228,107 @@ describe('useTranscribeAsr', () => {
       dialect: undefined,
       selectRoman: false,
     };
-    getAsrSettings.mockResolvedValue(saved);
-    const onTextAdd = jest.fn();
-    const { result } = renderHook(() =>
-      useTranscribeAsr({
-        team: undefined,
-        sharedStr: { mustBeOnline: 'online' } as never,
-        tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
-        showMessage: jest.fn(),
-        onTextAdd,
-        getCurrentText: () => '\\v 1 old transcription',
-        hasActiveTask: true,
-      })
-    );
-    await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
 
-    act(() => result.current.openAsrLanguageSettings());
-    act(() =>
-      result.current.handleAsrLanguageClose(false, {
-        ...saved,
-        asrMethod: 'whisper',
-      } as never)
-    );
-    act(() => {
-      result.current.handleAutoTranscribe('\\v 1 new result');
+    const renderWith = async (current: string, hasActiveTask = false) => {
+      getAsrSettings.mockResolvedValue(saved);
+      const onTextAdd = jest.fn();
+      const hook = renderHook(() =>
+        useTranscribeAsr({
+          team: undefined,
+          sharedStr: { mustBeOnline: 'online' } as never,
+          tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+          showMessage: jest.fn(),
+          onTextAdd,
+          getCurrentText: () => current,
+          hasActiveTask,
+        })
+      );
+      await waitFor(() =>
+        expect(hook.result.current.asrSettings?.asrIso).toBe('eng')
+      );
+      return { ...hook, onTextAdd };
+    };
+
+    it('adds without asking when the pane has only a verse marker', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1 ');
+
+      act(() => result.current.handleAutoTranscribe('\\v 1 new result'));
+
+      expect(result.current.pendingAsr).toBeUndefined();
+      expect(onTextAdd).toHaveBeenCalledWith('new result', 'end');
     });
 
-    expect(onTextAdd).toHaveBeenCalledWith('\\v 1 new result', true);
+    it('asks before adding when the pane has text', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1 old words');
+
+      act(() => result.current.handleAutoTranscribe('\\v 1 new result'));
+
+      expect(result.current.pendingAsr).toBeDefined();
+      expect(onTextAdd).not.toHaveBeenCalled();
+    });
+
+    it('replaces with the whole result when the user picks Replace', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1 old words');
+
+      act(() =>
+        result.current.handleAutoTranscribe('\\v 1 one \\v 2 two', '\\v 2 two')
+      );
+      act(() => result.current.confirmAsrReplace());
+
+      expect(onTextAdd).toHaveBeenCalledWith('\\v 1 one \\v 2 two', 'replace');
+      expect(result.current.pendingAsr).toBeUndefined();
+    });
+
+    it('inserts only unfilled verses at the caret when the user picks Insert', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1 old words');
+
+      act(() =>
+        result.current.handleAutoTranscribe('\\v 1 one \\v 2 two', '\\v 2 two')
+      );
+      act(() => result.current.confirmAsrInsert());
+
+      expect(onTextAdd).toHaveBeenCalledWith('\\v 2 two', 'cursor');
+      expect(result.current.pendingAsr).toBeUndefined();
+    });
+
+    it('adds nothing on Insert when every verse already has text', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1 old words');
+
+      act(() => result.current.handleAutoTranscribe('\\v 1 one', ''));
+      act(() => result.current.confirmAsrInsert());
+
+      expect(onTextAdd).not.toHaveBeenCalled();
+    });
+
+    it('does not ask when the result is already in the pane', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1 same words');
+
+      act(() => result.current.handleAutoTranscribe('\\v 1 same words'));
+
+      expect(result.current.pendingAsr).toBeUndefined();
+      expect(onTextAdd).not.toHaveBeenCalled();
+    });
+
+    it('asks for a changed-method run resumed after its progress box closed', async () => {
+      const { result, onTextAdd } = await renderWith(
+        '\\v 1 whisper words',
+        true
+      );
+
+      act(() => result.current.openAsrLanguageSettings());
+      act(() =>
+        result.current.handleAsrLanguageClose(false, {
+          ...saved,
+          asrMethod: 'whisper',
+        } as never)
+      );
+      act(() => result.current.setAsrProgressVisible(false));
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.handleAutoTranscribe('\\v 1 mms words'));
+
+      expect(result.current.pendingAsr).toBeDefined();
+      expect(onTextAdd).not.toHaveBeenCalled();
+    });
   });
 
   it('derives phonetic from the active ASR target', async () => {
