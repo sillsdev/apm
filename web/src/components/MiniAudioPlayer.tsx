@@ -97,7 +97,6 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
             data-testid="play-pause"
             aria-label={playing ? tm.pause : tm.play}
             onClick={player.toggle}
-            // sx={{ p: 0.5, position: 'relative', zIndex: 1 }}
             sx={{ p: 0.5 }}
           >
             {player.status === MiniAudioPlayerStatus.Loading ? (
