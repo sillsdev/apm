@@ -183,6 +183,7 @@ jest.mock('react-redux', () => ({
     save: 'Save',
     clearRecording: 'Clear',
     aiInProgress: 'AI in progress',
+    normalizeInProgress: 'Normalizing',
     aiTimeRemaining: 'About {0} remaining',
     aiTakingLonger: 'Taking longer than usual: {0} elapsed',
     loading: 'Loading',
@@ -263,6 +264,12 @@ jest.mock('../utils/useAudioAi', () => ({
     requestAudioAi: (request: { cb: (file: File | Error) => void }) =>
       mockRequestAudioAi(request),
   }),
+}));
+
+const mockNormalizeAudio = jest.fn<(blob: Blob) => Promise<Blob | undefined>>();
+jest.mock('../utils/audioUtils', () => ({
+  ...jest.requireActual<object>('../utils/audioUtils'),
+  normalizeAudio: (blob: Blob) => mockNormalizeAudio(blob),
 }));
 
 const mockLogError = jest.fn();
@@ -987,7 +994,7 @@ describe('WSAudioPlayer record hotkeys', () => {
     (waveSurferMock.wsRegionBlob as jest.Mock).mockImplementation(
       async () => new Blob([new Uint8Array([1])], { type: 'audio/wav' })
     );
-    render(
+    const view = render(
       <WSAudioPlayer
         {...defaultProps}
         allowNoNoise
@@ -1004,6 +1011,31 @@ describe('WSAudioPlayer record hotkeys', () => {
     await act(async () => {
       await Promise.resolve();
     });
+    return view;
+  }
+
+  /** Collects each AI request's result callback, in request order. */
+  function captureAiCallbacks() {
+    const aiCallbacks: ((file: File | Error) => void)[] = [];
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallbacks.push(request.cb);
+        return Promise.resolve();
+      }
+    );
+    return aiCallbacks;
+  }
+
+  /** wsRegionReplace stays pending until the returned function is called. */
+  function deferRegionReplace() {
+    let finishReplace: (blob: Blob) => void = () => undefined;
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(
+      () =>
+        new Promise<Blob>((resolve) => {
+          finishReplace = resolve;
+        })
+    );
+    return (blob: Blob) => finishReplace(blob);
   }
 
   // TT-7791: the waveform box has a fixed height and overflow:hidden when
@@ -1178,13 +1210,7 @@ describe('WSAudioPlayer record hotkeys', () => {
   // TT-7791: Cancel restores the player at once; a result that still arrives
   // afterwards must not replace the recording the user kept.
   it('keeps the recording when the AI result arrives after Cancel', async () => {
-    const aiCallbacks: ((file: File | Error) => void)[] = [];
-    mockRequestAudioAi.mockImplementation(
-      (request: { cb: (file: File | Error) => void }) => {
-        aiCallbacks.push(request.cb);
-        return Promise.resolve();
-      }
-    );
+    const aiCallbacks = captureAiCallbacks();
     (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
       Promise.resolve(new Blob([new Uint8Array([2])], { type: 'audio/wav' }))
     );
@@ -1203,13 +1229,7 @@ describe('WSAudioPlayer record hotkeys', () => {
   });
 
   it("ignores a canceled run's result after a new run starts", async () => {
-    const aiCallbacks: ((file: File | Error) => void)[] = [];
-    mockRequestAudioAi.mockImplementation(
-      (request: { cb: (file: File | Error) => void }) => {
-        aiCallbacks.push(request.cb);
-        return Promise.resolve();
-      }
-    );
+    const aiCallbacks = captureAiCallbacks();
     (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
       Promise.resolve(new Blob([new Uint8Array([2])], { type: 'audio/wav' }))
     );
@@ -1242,20 +1262,8 @@ describe('WSAudioPlayer record hotkeys', () => {
   // TT-7791: wsRegionReplace changes the player before it resolves. Cancel
   // then would leave the processed audio playing while Save kept the original.
   it('keeps Cancel disabled while the AI result replaces the audio, then plays and saves the same blob', async () => {
-    const aiCallbacks: ((file: File | Error) => void)[] = [];
-    mockRequestAudioAi.mockImplementation(
-      (request: { cb: (file: File | Error) => void }) => {
-        aiCallbacks.push(request.cb);
-        return Promise.resolve();
-      }
-    );
-    let finishReplace: (blob: Blob) => void = () => undefined;
-    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(
-      () =>
-        new Promise<Blob>((resolve) => {
-          finishReplace = resolve;
-        })
-    );
+    const aiCallbacks = captureAiCallbacks();
+    const finishReplace = deferRegionReplace();
     const processed = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
     (waveSurferMock.wsBlob as jest.Mock).mockImplementation(
       async () => processed
@@ -1281,6 +1289,162 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(reload).toHaveBeenCalledWith(processed);
     expect(onBlobReady).toHaveBeenCalledWith(processed);
     expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  // A Cancel click already queued when the result arrives runs before React
+  // re-renders the button as disabled. It must still not undo the apply.
+  it('ignores a Cancel click that lands before the disabled state renders', async () => {
+    const aiCallbacks = captureAiCallbacks();
+    const finishReplace = deferRegionReplace();
+    const processed = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
+    const reload = jest.fn();
+    await startNoiseRemoval(jest.fn(), 10, { reload });
+    const cancel = document.getElementById('ai-cancel') as HTMLButtonElement;
+
+    act(() => {
+      aiCallbacks[0](new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+      expect(cancel).not.toBeDisabled();
+      fireEvent.click(cancel);
+    });
+
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+    await act(async () => {
+      finishReplace(processed);
+    });
+    expect(reload).toHaveBeenCalledWith(processed);
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  it('does not apply an AI result that arrives after the player unmounts', async () => {
+    const aiCallbacks = captureAiCallbacks();
+    const reload = jest.fn();
+    const { unmount } = await startNoiseRemoval(jest.fn(), 10, { reload });
+    unmount();
+
+    await act(async () => {
+      aiCallbacks[0](new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+
+    expect(waveSurferMock.wsRegionReplace).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('does not reload or publish when the player unmounts while applying', async () => {
+    const aiCallbacks = captureAiCallbacks();
+    const finishReplace = deferRegionReplace();
+    const reload = jest.fn();
+    const onBlobReady = jest.fn();
+    const { unmount } = await startNoiseRemoval(jest.fn(), 10, {
+      reload,
+      onBlobReady,
+    });
+    await act(async () => {
+      aiCallbacks[0](new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+    onBlobReady.mockClear();
+    unmount();
+
+    await act(async () => {
+      finishReplace(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
+    });
+
+    expect(reload).not.toHaveBeenCalled();
+    expect(onBlobReady).not.toHaveBeenCalled();
+  });
+});
+
+describe('WSAudioPlayer normalize cancel', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    capturedOnWSReady = undefined;
+    mockCheckOnline.mockReset();
+    mockCheckOnline.mockImplementation((cb: (online: boolean) => void) => {
+      cb(true);
+    });
+    mockRequestAudioAi.mockReset();
+    mockRequestAudioAi.mockImplementation(() => Promise.resolve());
+    mockGlobals.organization = 'org';
+    mockGetOrgDefault.mockReset();
+    mockGetOrgDefault.mockReturnValue({ noNoise: true, normalize: true });
+    (waveSurferMock.wsRegionBlob as jest.Mock).mockImplementation(
+      async () => new Blob([new Uint8Array([1])], { type: 'audio/wav' })
+    );
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
+      Promise.resolve(new Blob([new Uint8Array([3])], { type: 'audio/wav' }))
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    mockGlobals.organization = undefined;
+  });
+
+  /** normalizeAudio stays pending until the returned function is called. */
+  function deferNormalize() {
+    let finish: (blob: Blob | undefined) => void = () => undefined;
+    mockNormalizeAudio.mockImplementation(
+      () =>
+        new Promise<Blob | undefined>((resolve) => {
+          finish = resolve;
+        })
+    );
+    return (blob: Blob | undefined) => finish(blob);
+  }
+
+  async function chooseFromMore(id: string) {
+    fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
+    fireEvent.click(document.getElementById(id) as HTMLElement);
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  async function startNormalize(reload = jest.fn()) {
+    render(
+      <WSAudioPlayer
+        {...defaultProps}
+        allowNoNoise
+        reload={reload}
+        setBusy={jest.fn()}
+      />
+    );
+    act(() => {
+      capturedOnWSReady?.(10, false);
+    });
+    await chooseFromMore('normalize');
+  }
+
+  it('keeps the recording when normalize finishes after Cancel', async () => {
+    const finishNormalize = deferNormalize();
+    const reload = jest.fn();
+    await startNormalize(reload);
+    expect(screen.getByText('Normalizing')).toBeTruthy();
+
+    fireEvent.click(document.getElementById('ai-cancel') as HTMLElement);
+    expect(screen.queryByText('Normalizing')).toBeNull();
+
+    await act(async () => {
+      finishNormalize(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
+    });
+
+    expect(waveSurferMock.wsRegionReplace).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    expect(mockShowMessage).not.toHaveBeenCalled();
+  });
+
+  it('does not end a newer AI run when a canceled normalize finishes', async () => {
+    const finishNormalize = deferNormalize();
+    await startNormalize();
+    fireEvent.click(document.getElementById('ai-cancel') as HTMLElement);
+    await chooseFromMore('noiseRemoval');
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    await act(async () => {
+      finishNormalize(new Blob([new Uint8Array([2])], { type: 'audio/wav' }));
+    });
+
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+    expect(waveSurferMock.wsRegionReplace).not.toHaveBeenCalled();
   });
 });
 

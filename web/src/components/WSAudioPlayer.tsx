@@ -19,6 +19,7 @@ import {
   useMemo,
   useCallback,
   MouseEvent,
+  type MutableRefObject,
 } from 'react';
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -53,6 +54,7 @@ import { HotKeyContext } from '../context/HotKeyContext';
 import { Button } from '../control';
 import { estimateAiSeconds, recordAiSample } from '../control/estimateAiTime';
 import { AiProcessing } from './AiProcessing';
+import type { AiProgress } from '../utils/useAudioConversion';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   logError,
@@ -512,12 +514,11 @@ function WSAudioPlayer(props: IProps) {
   const [recording, setRecordingx] = useState(false);
   const [waitingForAI, setWaitingForAI] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | undefined>(undefined);
-  const [aiRun, setAiRun] = useState<{
-    startedAt: number;
-    estimateSec: number;
-    /** The result is replacing the audio; Cancel can no longer undo it. */
-    applying?: boolean;
-  }>();
+  const [aiRun, setAiRun] = useState<AiProgress>();
+  /** The result is replacing the audio; Cancel can no longer undo it. The
+   * ref gates Cancel synchronously; the state disables the button. */
+  const [applying, setApplying] = useState(false);
+  const applyingRef = useRef(false);
   const readyRef = useRef(false);
   const [ready, setReadyx] = useState(false);
   const [progress, setProgressx] = useState(0);
@@ -596,9 +597,18 @@ function WSAudioPlayer(props: IProps) {
   const { isMobile: isMobileView, isMobileWidth } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
 
-  // The active AI run's cancel flag. Each run gets its own, so canceling one
-  // run and starting another never revives the first run's result (TT-7791).
-  const cancelAIRef = useRef<{ current: boolean }>({ current: false });
+  // The active run's cancel flag (AI or normalize). Each run gets its own, so
+  // canceling one run and starting another never revives the first run's
+  // result (TT-7791).
+  const cancelRunRef = useRef<MutableRefObject<boolean>>({ current: false });
+  // Unmounting cancels the active run, so its late callbacks don't touch the
+  // player or reload/publish for a parent that no longer shows it.
+  useEffect(
+    () => () => {
+      cancelRunRef.current.current = true;
+    },
+    []
+  );
 
   useEffect(() => {
     onProcessingRecordingChange?.(processingRecording);
@@ -1842,9 +1852,27 @@ function WSAudioPlayer(props: IProps) {
   const doingProcess = (inprogress: boolean, msg?: string) => {
     setProcessMsg(msg ?? t.aiInProgress);
     if (!inprogress) setAiRun(undefined);
+    applyingRef.current = false;
+    setApplying(false);
     setWaitingForAI(inprogress);
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
+  };
+  /** Begins a cancelable run and returns its cancel flag. */
+  const startCancelableRun = () => {
+    const runCanceled = { current: false };
+    cancelRunRef.current = runCanceled;
+    return runCanceled;
+  };
+  /** The run's result is now changing the player; Cancel can't undo that. */
+  const markApplying = () => {
+    applyingRef.current = true;
+    setApplying(true);
+  };
+  const cancelActiveRun = () => {
+    if (applyingRef.current) return;
+    cancelRunRef.current.current = true;
+    doingProcess(false);
   };
   const showAiProgressOverlay = waitingForAI;
   const waveformBoxHeight = allowZoom
@@ -1900,11 +1928,8 @@ function WSAudioPlayer(props: IProps) {
           message={processMsg}
           startedAt={aiRun?.startedAt}
           estimateSec={aiRun?.estimateSec}
-          cancelDisabled={aiRun?.applying}
-          onCancel={() => {
-            cancelAIRef.current.current = true;
-            doingProcess(false);
-          }}
+          cancelDisabled={applying}
+          onCancel={cancelActiveRun}
         />
       )}
     </>
@@ -1941,10 +1966,9 @@ function WSAudioPlayer(props: IProps) {
         return;
       }
       if (!reload) throw new Exception('need reload defined.');
-      const run = { current: false };
-      cancelAIRef.current = run;
+      const runCanceled = startCancelableRun();
       const failAi = (error: any) => {
-        if (run.current) return;
+        if (runCanceled.current) return;
         const { display, logText } = audioAiError(func, targetVoice, error);
         logError(Severity.error, errorReporter, logText);
         showMessage(display, AlertSeverity.Error);
@@ -1954,7 +1978,7 @@ function WSAudioPlayer(props: IProps) {
       const durationSec = wsRegionDuration();
       // TT-6276: timed from the click to the result, so upload is included.
       const recordTiming = () => {
-        if (run.current) return;
+        if (runCanceled.current) return;
         recordAiSample(func, {
           durationSec,
           totalMs: Date.now() - startedAt,
@@ -1977,20 +2001,23 @@ function WSAudioPlayer(props: IProps) {
             if (blob) {
               requestAudioAi({
                 func,
-                cancelRef: run,
+                cancelRef: runCanceled,
                 file: new File([blob], filename, { type: 'audio/wav' }),
                 targetVoice,
                 cb: (file: File | Error) => {
                   // TT-7791: Cancel already restored the player.
-                  if (run.current) return;
+                  if (runCanceled.current) return;
                   if (file instanceof File) {
                     // TT-7791: wsRegionReplace changes the player before it
                     // resolves, so this is the commit point. Cancel is
                     // disabled from here until the new audio is published,
                     // keeping playback and Save on the same blob.
-                    setAiRun((r) => r && { ...r, applying: true });
+                    markApplying();
                     wsRegionReplace(new Blob([file], { type: file.type }))
                       .then((newblob) => {
+                        // Cancel is blocked while applying; only unmount
+                        // sets the flag here.
+                        if (runCanceled.current) return;
                         recordTiming();
                         if (newblob) reload(newblob);
                         publishChanged();
@@ -2097,22 +2124,28 @@ function WSAudioPlayer(props: IProps) {
   const handleNormal = async () => {
     if (!reload) throw new Exception('need reload defined.');
 
+    const runCanceled = startCancelableRun();
     try {
       doingProcess(true, t.normalizeInProgress);
       const blob = await wsRegionBlob();
-      if (blob) {
-        const normalized = await normalizeAudio(blob);
-        if (!normalized) throw new Exception(t.tooQuiet);
-        const newblob = await wsRegionReplace(normalized);
-        if (newblob) reload(newblob);
-        publishChanged();
-      }
+      if (!blob || runCanceled.current) return;
+      const normalized = await normalizeAudio(blob);
+      if (runCanceled.current) return;
+      if (!normalized) throw new Exception(t.tooQuiet);
+      markApplying();
+      const newblob = await wsRegionReplace(normalized);
+      // Cancel is blocked while applying; only unmount sets the flag here.
+      if (runCanceled.current) return;
+      if (newblob) reload(newblob);
+      publishChanged();
     } catch (error: any) {
+      if (runCanceled.current) return;
       const msg = t.normalizeFail.replace('{0}', error.message);
       if (errorReporter) logError(Severity.error, errorReporter, msg);
       showMessage(msg);
     } finally {
-      doingProcess(false);
+      // After Cancel a newer run may own the overlay; leave it alone.
+      if (!runCanceled.current) doingProcess(false);
     }
   };
 
