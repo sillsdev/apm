@@ -106,8 +106,6 @@ export function useTranscribeAsr({
   const {
     forceAsr,
     clearForceAsr,
-    replaceAsr,
-    clearReplaceAsr,
     snapshotAsrAtOpen,
     applyForceFromClosedAsr,
   } = useAsrForceRun(asrSettings);
@@ -154,8 +152,6 @@ export function useTranscribeAsr({
         startAsr(asrSettings);
         return;
       }
-      // No task to resume, so no forced result is still to come.
-      clearReplaceAsr();
       if (asrSettings && isLangSet(asrSettings.asrIso)) {
         clearForceAsr();
         startAsr(asrSettings);
@@ -171,7 +167,6 @@ export function useTranscribeAsr({
     asrSettings,
     startAsr,
     clearForceAsr,
-    clearReplaceAsr,
     openAsrLanguageSettings,
   ]);
 
@@ -180,24 +175,15 @@ export function useTranscribeAsr({
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
-      if (!hasActiveTask) clearReplaceAsr();
       applyForceFromClosedAsr(asr);
       if (asr && isLangSet(asr.asrIso)) startAsr(asr);
     },
-    [
-      asrSettings,
-      hasActiveTask,
-      clearReplaceAsr,
-      applyForceFromClosedAsr,
-      startAsr,
-    ]
+    [asrSettings, applyForceFromClosedAsr, startAsr]
   );
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      // Settings changed for this task (TT-7856): its result replaces the
-      // earlier one, even when resumed after the progress dialog was closed.
-      if (replaceAsr) {
+      if (forceAsr) {
         const cleaned = cleanAsrTranscription(trans);
         if (cleaned) onTextAdd(cleaned, true);
         return;
@@ -205,7 +191,7 @@ export function useTranscribeAsr({
       const added = autoTranscriptionToAppend(trans, getCurrentText());
       if (added !== undefined) onTextAdd(added);
     },
-    [replaceAsr, getCurrentText, onTextAdd]
+    [forceAsr, getCurrentText, onTextAdd]
   );
 
   return {
@@ -218,7 +204,6 @@ export function useTranscribeAsr({
     openAsrLanguageSettings,
     asrOverride,
     forceAsr,
-    replaceAsr,
     phonetic,
     handleTranscribe,
     handleAsrLanguageClose,

@@ -15,8 +15,6 @@ export interface TranscribeAsrDialogsProps {
   phonetic: boolean;
   asrOverride: IAsrState | undefined;
   forceAsr: boolean;
-  /** The result replaces the transcription, so no verse is skipped. */
-  replaceAsr?: boolean;
   contentVerses?: string[];
   forceRefresh?: () => void;
   /** Language-dialog close; cancel=true when the shell dismisses. */
@@ -36,7 +34,6 @@ export function TranscribeAsrDialogs({
   phonetic,
   asrOverride,
   forceAsr,
-  replaceAsr = false,
   contentVerses = [],
   forceRefresh,
   onLanguageClose,
@@ -86,7 +83,7 @@ export function TranscribeAsrDialogs({
             phonetic={phonetic}
             asrState={asrOverride}
             force={forceAsr}
-            contentVerses={replaceAsr ? [] : contentVerses}
+            contentVerses={contentVerses}
             setTranscription={setTranscription}
             forceRefresh={forceRefresh}
             onClose={() => onProgressOpen(false)}
