@@ -17,10 +17,12 @@ import { sharedSelector } from '../../selector';
 interface IProps {
   discussion: DiscussionD;
   commentNumber: number;
+  /** Runs after the reply saves, e.g. to hand the discussion off. */
+  onCommentSaved?: () => void | Promise<void>;
 }
 
 export const ReplyCard = (props: IProps) => {
-  const { discussion, commentNumber } = props;
+  const { discussion, commentNumber, onCommentSaved } = props;
   const [refresh, setRefresh] = useState(0);
   const isMounted = useMounted('replycard');
   const [user] = useGlobal('user');
@@ -59,6 +61,7 @@ export const ReplyCard = (props: IProps) => {
       mediaId,
       undefined
     );
+    await onCommentSaved?.();
     reset();
   };
   const afterUploadCb = async (mediaId: string | undefined) => {

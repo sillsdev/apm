@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
 import { useGlobal } from '../context/useGlobal';
 import { usePeerGroups } from '../components/Peers/usePeerGroups';
@@ -20,25 +20,24 @@ export enum PermissionName {
 export const usePermissions = () => {
   const [user] = useGlobal('user');
   const [memory] = useGlobal('memory');
-  const [permissions, setPermissions] = useState('');
   const t = useSelector(
     permissionsSelector,
     shallowEqual
   ) as IPermissionStrings;
   const { myGroups } = usePeerGroups();
 
-  useEffect(() => {
+  // Derived during render (not effect state) so a CIT's comment is saved as
+  // needing approval and a mentor sees Approve as soon as the card renders,
+  // and both follow peer group changes (TT-7888).
+  const permissions = useMemo(() => {
     const perms: string[] = [];
-
     myGroups.forEach((g) => {
       if (g.attributes?.permissions) {
         const p = JSON.parse(g.attributes.permissions);
-        perms.push(p.permissions.split());
+        if (p.permissions) perms.push(p.permissions);
       }
     });
-    const newValue = perms.filter(onlyUnique).sort().join();
-    if (permissions !== newValue) setPermissions(newValue);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return perms.filter(onlyUnique).sort().join();
   }, [myGroups]);
 
   const getPermissionFromJson = (jsonstr: string) => {

@@ -113,11 +113,19 @@ interface IProps {
   commentNumber: number;
   onEditing: (val: boolean) => void;
   approvalStatus: boolean | undefined;
+  /** Runs after an edit or approval saves, e.g. to hand the discussion off. */
+  onCommentSaved?: () => void | Promise<void>;
 }
 
 export const CommentCard = (props: IProps) => {
-  const { comment, discussion, commentNumber, onEditing, approvalStatus } =
-    props;
+  const {
+    comment,
+    discussion,
+    commentNumber,
+    onEditing,
+    approvalStatus,
+    onCommentSaved,
+  } = props;
   const users = useOrbitData<UserD[]>('user');
   const t: ICommentCardStrings = useSelector(commentCardSelector, shallowEqual);
   const [author, setAuthor] = useState<UserD>();
@@ -191,6 +199,7 @@ export const CommentCard = (props: IProps) => {
       approvedRef.current,
       comment.attributes?.visible
     );
+    await onCommentSaved?.();
     reset();
   };
   const afterUploadCb = async (mediaId: string | undefined) => {
