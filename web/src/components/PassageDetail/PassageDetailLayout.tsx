@@ -19,15 +19,15 @@ export default function PassageDetailLayout({
   children,
   footer,
   footerAbove,
-  headerSx,
-  contentSx,
-  footerSx,
-  footerAboveSx,
+  headerSx = [],
+  contentSx = [],
+  footerSx = [],
+  footerAboveSx = [],
   fill = false,
 }: PassageDetailLayoutProps) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ flexShrink: 0, ...headerSx }}>{header}</Box>
+      <Box sx={[{ flexShrink: 0 }, ...[headerSx].flat()]}>{header}</Box>
       <Box
         sx={{
           position: 'relative',
@@ -39,18 +39,20 @@ export default function PassageDetailLayout({
       >
         <Box
           data-cy="layout-content"
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            overflowX: 'hidden',
-            overflowY: 'auto',
-            // Reserve the scrollbar's space so content doesn't shift sideways
-            // when it starts or stops scrolling.
-            scrollbarGutter: 'stable',
-            display: 'flex',
-            flexDirection: 'column',
-            ...contentSx,
-          }}
+          sx={[
+            {
+              flex: 1,
+              minHeight: 0,
+              overflowX: 'hidden',
+              overflowY: 'auto',
+              // Reserve the scrollbar's space so content doesn't shift sideways
+              // when it starts or stops scrolling.
+              scrollbarGutter: 'stable',
+              display: 'flex',
+              flexDirection: 'column',
+            },
+            ...[contentSx].flat(),
+          ]}
         >
           <Box
             sx={{
@@ -68,9 +70,13 @@ export default function PassageDetailLayout({
         </Box>
       </Box>
       {footerAbove && (
-        <Box sx={{ flexShrink: 0, ...footerAboveSx }}>{footerAbove}</Box>
+        <Box sx={[{ flexShrink: 0 }, ...[footerAboveSx].flat()]}>
+          {footerAbove}
+        </Box>
       )}
-      {footer && <Box sx={{ flexShrink: 0, ...footerSx }}>{footer}</Box>}
+      {footer && (
+        <Box sx={[{ flexShrink: 0 }, ...[footerSx].flat()]}>{footer}</Box>
+      )}
     </Box>
   );
 }

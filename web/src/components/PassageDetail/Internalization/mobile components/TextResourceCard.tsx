@@ -42,7 +42,7 @@ export function TextResourceCard({
   onDelete,
   subtitle = 'Translation Resource',
   badge,
-  sx,
+  sx = [],
 }: IProps) {
   const statusColor = useMemo(
     () => (row.done ? 'grey.400' : 'grey.700'),
@@ -58,21 +58,23 @@ export function TextResourceCard({
   return (
     <Card
       elevation={0}
-      sx={{
-        width: '100%',
-        minHeight: 'clamp(7.5rem, 16vw, 9rem)',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        border: '2px solid',
-        borderColor: statusColor,
-        borderRadius: 2,
-        backgroundColor: 'background.paper',
-        px: 0.5,
-        py: 1,
-        ...sx,
-      }}
+      sx={[
+        {
+          width: '100%',
+          minHeight: 'clamp(7.5rem, 16vw, 9rem)',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          border: '2px solid',
+          borderColor: statusColor,
+          borderRadius: 2,
+          backgroundColor: 'background.paper',
+          px: 0.5,
+          py: 1,
+        },
+        ...[sx].flat(),
+      ]}
     >
       <Box
         sx={{

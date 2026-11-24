@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
-import { replaceAudioSegment } from './audioUtils';
+import { insertAudio } from './audioUtils';
 import { createWavRecorder } from '../crud/WavRecorder';
 import {
   createRecordPeaksCapture,
@@ -41,11 +41,7 @@ export function useRecorder(stream: MediaStream | undefined): {
           stop = () => {};
           stopDrawing();
           const take = await stopTake();
-          onRecorded(
-            audio?.size
-              ? (await replaceAudioSegment(audio, at, at, take)).blob
-              : take
-          );
+          onRecorded(await insertAudio(audio, at, take));
         };
       },
       stopRecording: () => stop(),

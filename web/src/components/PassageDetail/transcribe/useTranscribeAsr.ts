@@ -17,13 +17,19 @@ import { useGlobal } from '../../../context/useGlobal';
 import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
+import {
+  autoTranscriptionToAppend,
+  cleanAsrTranscription,
+} from './autoTranscriptionToAppend';
+import { useAsrForceRun } from './useAsrForceRun';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
   sharedStr: ISharedStrings;
   tPlayer: IWsAudioPlayerStrings;
   showMessage: (msg: string) => void;
-  onTextAdd: (text: string, isAsr?: boolean) => void;
+  /** Second arg true: replace the whole transcription (forced re-run). */
+  onTextAdd: (text: string, replace?: boolean) => void;
   getCurrentText: () => string;
   /** The recording already has a transcription task to resume. */
   hasActiveTask?: boolean;
@@ -92,12 +98,18 @@ export function useTranscribeAsr({
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
   const { asrSettings, status: asrStatus } = useAsrSettings(team, showMessage);
 
-  const [asrProgressVisible, setAsrProgressVisible] = useState(false);
+  const [progressVisible, setProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
   );
+  const {
+    forceAsr,
+    clearForceAsr,
+    snapshotAsrAtOpen,
+    applyForceFromClosedAsr,
+  } = useAsrForceRun(asrSettings);
+  const phonetic = (asrOverride ?? asrSettings)?.target === AsrTarget.phonetic;
 
   const asrTip = useMemo(() => {
     return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
@@ -111,19 +123,23 @@ export function useTranscribeAsr({
     );
   }, [tPlayer.recognizeSpeech, asrSettings, getName]);
 
-  const startAsr = useCallback(
-    (asrOverrideState?: IAsrState) => {
-      const asr = asrOverrideState ?? asrSettings;
-      setAsrOverride(asrOverrideState);
-      setPhonetic(asr?.target === AsrTarget.phonetic);
-      setAsrProgressVisible(true);
+  const setAsrProgressVisible = useCallback(
+    (visible: boolean) => {
+      if (!visible) clearForceAsr();
+      setProgressVisible(visible);
     },
-    [asrSettings]
+    [clearForceAsr]
   );
 
-  const openAsrLanguageSettings = useCallback(() => {
-    setAsrLangVisible(true);
+  const startAsr = useCallback((asrOverrideState?: IAsrState) => {
+    setAsrOverride(asrOverrideState);
+    setProgressVisible(true);
   }, []);
+
+  const openAsrLanguageSettings = useCallback(() => {
+    snapshotAsrAtOpen();
+    setAsrLangVisible(true);
+  }, [snapshotAsrAtOpen]);
 
   const handleTranscribe = useCallback(() => {
     checkOnline((online) => {
@@ -132,10 +148,12 @@ export function useTranscribeAsr({
         return;
       }
       if (hasActiveTask) {
+        clearForceAsr();
         startAsr(asrSettings);
         return;
       }
       if (asrSettings && isLangSet(asrSettings.asrIso)) {
+        clearForceAsr();
         startAsr(asrSettings);
         return;
       }
@@ -148,6 +166,7 @@ export function useTranscribeAsr({
     hasActiveTask,
     asrSettings,
     startAsr,
+    clearForceAsr,
     openAsrLanguageSettings,
   ]);
 
@@ -156,37 +175,35 @@ export function useTranscribeAsr({
       setAsrLangVisible(false);
       if (cancel) return;
       const asr = asrState ?? asrSettings;
+      applyForceFromClosedAsr(asr);
       if (asr && isLangSet(asr.asrIso)) startAsr(asr);
     },
-    [asrSettings, startAsr]
+    [asrSettings, applyForceFromClosedAsr, startAsr]
   );
 
   const handleAutoTranscribe = useCallback(
     (trans: string) => {
-      // {1,10} keeps this unanchored replace linear. (?<!\d) stops a
-      // longer digit run from matching at a suffix and leaving a stray digit.
-      const cleanTrans = trans
-        .replace(/(?<!\d)\d{1,10}:\d{1,10}\.\d{1,10}: /g, '')
-        .trim();
-      const curTrans = getCurrentText();
-      if (curTrans.includes(cleanTrans)) return;
-      const m = /\\v (\d+)\s?/.exec(cleanTrans);
-      const index = m && curTrans.includes(m[0]) ? m[0].length : 0;
-      const space = /\s$/.test(curTrans) ? '' : ' ';
-      onTextAdd(space + cleanTrans.substring(index), true);
+      if (forceAsr) {
+        const cleaned = cleanAsrTranscription(trans);
+        if (cleaned) onTextAdd(cleaned, true);
+        return;
+      }
+      const added = autoTranscriptionToAppend(trans, getCurrentText());
+      if (added !== undefined) onTextAdd(added);
     },
-    [getCurrentText, onTextAdd]
+    [forceAsr, getCurrentText, onTextAdd]
   );
 
   return {
     asrSettings,
     asrStatus,
     asrTip,
-    asrProgressVisible,
+    asrProgressVisible: progressVisible,
     setAsrProgressVisible,
     asrLangVisible,
-    setAsrLangVisible,
+    openAsrLanguageSettings,
     asrOverride,
+    forceAsr,
     phonetic,
     handleTranscribe,
     handleAsrLanguageClose,

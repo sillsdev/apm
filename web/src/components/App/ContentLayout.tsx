@@ -1,8 +1,5 @@
 import { Box, SxProps, Theme } from '@mui/material';
 
-// Normalize sx (object | callback | array | undefined) to an array so it can be spread after base styles
-const asSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : [sx]);
-
 interface ContentLayoutProps {
   header: React.ReactNode;
   children: React.ReactNode;
@@ -21,11 +18,11 @@ export default function ContentLayout({
   children,
   footer,
   footerAbove,
-  headerSx,
+  headerSx = [],
   drawBottomBorder = false,
-  contentSx,
-  footerSx,
-  footerAboveSx,
+  contentSx = [],
+  footerSx = [],
+  footerAboveSx = [],
   contentRef,
 }: ContentLayoutProps) {
   return (
@@ -55,7 +52,7 @@ export default function ContentLayout({
               borderColor: 'divider',
             }),
           }),
-          ...asSxArray(headerSx),
+          ...[headerSx].flat(),
         ]}
       >
         {header}
@@ -72,18 +69,18 @@ export default function ContentLayout({
             overflowX: 'hidden',
             overflowY: 'auto',
           },
-          ...asSxArray(contentSx),
+          ...[contentSx].flat(),
         ]}
       >
         {children}
       </Box>
       {footerAbove && (
-        <Box sx={[{ flexShrink: 0, minWidth: 0 }, ...asSxArray(footerAboveSx)]}>
+        <Box sx={[{ flexShrink: 0, minWidth: 0 }, ...[footerAboveSx].flat()]}>
           {footerAbove}
         </Box>
       )}
       {footer && (
-        <Box sx={[{ flexShrink: 0, minWidth: 0 }, ...asSxArray(footerSx)]}>
+        <Box sx={[{ flexShrink: 0, minWidth: 0 }, ...[footerSx].flat()]}>
           {footer}
         </Box>
       )}

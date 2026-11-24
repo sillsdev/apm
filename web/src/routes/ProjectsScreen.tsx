@@ -10,6 +10,11 @@ import { StepEditor } from '../components/StepEditor';
 import { CardSizeProvider } from '../components/CardSize/CardSize';
 import { ProjectCard } from '../components/Team/ProjectCard';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
+import {
+  initProjectState,
+  IProjectDialog,
+} from '../components/Team/ProjectDialog/projectDialogTypes';
+import { useNewProjectLanguage } from '../components/Team/useNewProjectLanguage';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
@@ -83,7 +88,19 @@ export const ProjectsScreenInner = () => {
 
   // New project dialog state
   const [addOpen, setAddOpen] = useState(false);
-  const handleAddProject = () => setAddOpen(true);
+  const [addValues, setAddValues] = useState<IProjectDialog>();
+  const { teamLanguage, rememberLanguage } = useNewProjectLanguage(
+    thisTeam?.id
+  );
+  const handleAddProject = () => {
+    // TT-7802: start from the team language, as the desktop Add card does
+    setAddValues({
+      ...initProjectState,
+      organizedBy: 'section',
+      ...teamLanguage(),
+    });
+    setAddOpen(true);
+  };
 
   // Edit workflow dialog state
   const [showWorkflow, setShowWorkflow] = useState(false);
@@ -111,7 +128,7 @@ export const ProjectsScreenInner = () => {
   const { setParam } = useJsonParams();
   const setReferenceTexts = useReferenceTextsParam();
 
-  const handleProjectCommit = async (values: any) => {
+  const handleProjectCommit = async (values: IProjectDialog) => {
     const {
       name,
       description,
@@ -141,6 +158,7 @@ export const ProjectsScreenInner = () => {
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
     defaultParams = setReferenceTexts(referenceTexts, defaultParams);
+    rememberLanguage({ bcp47, languageName, font, rtl, spellCheck });
     const vproj: VProject = {
       attributes: {
         name,
@@ -286,7 +304,7 @@ export const ProjectsScreenInner = () => {
           mode={DialogMode.add}
           isOpen={addOpen}
           onOpen={setAddOpen}
-          values={undefined as any}
+          values={addValues}
           onCommit={handleProjectCommit}
           nameInUse={nameInUse}
           team={isPersonal ? undefined : thisTeam?.id}

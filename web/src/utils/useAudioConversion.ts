@@ -5,7 +5,7 @@ import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
 import { sharedSelector, wsAudioPlayerSelector } from '../selector';
 import { estimateAiSeconds, recordAiSample } from '../control/estimateAiTime';
 import { useVoiceUrl } from '../crud/useVoiceUrl';
-import { clipAudio, replaceAudioSegment } from './audioUtils';
+import { clipAudio, normalizeAudio, replaceAudioSegment } from './audioUtils';
 import { AudioAiFunc, S3_POLL_MAX_WAIT_MS, useAudioAi } from './useAudioAi';
 import { useCheckOnline } from './useCheckOnline';
 
@@ -123,7 +123,23 @@ export const useAudioConversion = () => {
       voice
     );
 
+  /** Resolves the audio with `range` normalized, or undefined if failed. */
+  const normalize = async (
+    audio: Blob,
+    range: { start: number; end: number }
+  ) => {
+    try {
+      const normalized = await normalizeAudio(audio, range.start, range.end);
+      if (!normalized) throw new Error(t.tooQuiet);
+      return normalized;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      showMessage(t.normalizeFail.replace('{0}', message), AlertSeverity.Error);
+      return undefined;
+    }
+  };
+
   const cancel = () => runRef.current?.stop();
 
-  return { progress, suppressNoise, convertVoice, cancel };
+  return { progress, suppressNoise, convertVoice, normalize, cancel };
 };

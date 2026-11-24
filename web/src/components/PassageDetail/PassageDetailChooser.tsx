@@ -32,7 +32,7 @@ interface IProps {
   sx?: SxProps;
 }
 
-export const PassageDetailChooser = ({ sx }: IProps) => {
+export const PassageDetailChooser = ({ sx = [] }: IProps) => {
   const [memory] = useGlobal('memory');
   const { passage, section, prjId, allBookData, isNavigationBlocked } =
     usePassageDetailContext();
@@ -125,14 +125,7 @@ export const PassageDetailChooser = ({ sx }: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
   return passageCount > 1 ? (
-    <StyledBox
-      sx={{
-        ...sx,
-        px: 1,
-        alignItems: 'center',
-        gap: 0,
-      }}
-    >
+    <StyledBox sx={[...[sx].flat(), { px: 1, alignItems: 'center', gap: 0 }]}>
       <Typography sx={{ pr: 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
         {t.passages}
       </Typography>

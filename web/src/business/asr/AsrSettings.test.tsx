@@ -11,6 +11,8 @@ jest.mock('./asrLanguages', () => {
   ) as typeof import('./asrLanguages');
   return {
     ...actual,
+    // Don't read the shared session cache other suites fill via requireActual.
+    cachedNeedsSisterLanguage: () => false,
     needsSisterLanguage: jest.fn(async () => false),
     getMethodsForAsr: (...args: unknown[]) => getMethodsForAsr(...args),
   };
@@ -108,6 +110,7 @@ function Harness({
 describe('AsrSettings method list', () => {
   beforeEach(() => {
     getMethodsForAsr.mockReset();
+    jest.useRealTimers();
   });
 
   it('shows the method list when the service offers only one method', async () => {

@@ -23,7 +23,7 @@ export function ReferenceTextCard({
   onView,
   expandedId,
   setExpandedId,
-  sx,
+  sx = [],
 }: Readonly<IProps>) {
   const { referenceText } = passage;
   const labels = useReferenceTextLabels(referenceText, rank);
@@ -32,20 +32,22 @@ export function ReferenceTextCard({
     <Card
       elevation={0}
       data-cy={`reference-text-${rank}`}
-      sx={{
-        width: '100%',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0.5,
-        border: '2px solid',
-        borderColor: 'grey.700',
-        borderRadius: 2,
-        backgroundColor: 'background.paper',
-        px: 0.5,
-        py: 1,
-        ...sx,
-      }}
+      sx={[
+        {
+          width: '100%',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.5,
+          border: '2px solid',
+          borderColor: 'grey.700',
+          borderRadius: 2,
+          backgroundColor: 'background.paper',
+          px: 0.5,
+          py: 1,
+        },
+        ...[sx].flat(),
+      ]}
     >
       <Box dir={referenceText.textDirection} sx={{ minWidth: 0 }}>
         <WrapTitle

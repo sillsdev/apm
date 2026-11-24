@@ -33,3 +33,4 @@ tsconfig.tsbuildinfo
 playwright-results
 playwright-report
 .scannerwork/
+*.local.md

@@ -436,36 +436,6 @@ export function ipcMethods(): void {
     return;
   });
 
-  ipcMain.handle('normalize', async (_event, input, output) => {
-    if (process.platform === 'win32') {
-      input = input.replace(/\//g, '\\');
-      output = output.replace(/\//g, '\\');
-    }
-    const { normalize } = await import('./normalizer');
-    try {
-      // see: https://github.com/peterforgacs/ffmpeg-normalize/blob/master/src/normalizer.ts
-      // see: https://www.electronjs.org/docs/latest/tutorial/asar-archives#executing-binaries-inside-asar-archive
-      // we modified the code from ffmpeg-normalize to our style requirements
-      await normalize({
-        input,
-        output,
-        loudness: {
-          normalization: 'ebuR128',
-          target: {
-            input_i: -23,
-            input_lra: 7.0,
-            input_tp: -2.0,
-          },
-        },
-        verbose: true,
-      });
-      return;
-    } catch (error) {
-      console.error(error);
-      return JSON.stringify(error);
-    }
-  });
-
   ipcMain.handle('burritoToPtf', async (_event, payload) => {
     try {
       const scriptPath = getBurritoToPtfScriptPath();

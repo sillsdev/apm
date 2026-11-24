@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useContext,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -38,13 +39,11 @@ import { localUserKey, LocalKey } from '../utils/localUserKey';
 import {
   spliceAudio,
   clampSelectionToHighlights,
+  clipAudio,
   insertSilenceAudio,
 } from '../utils/audioUtils';
 import { useRecorder } from '../utils/useRecorder';
-import {
-  CaptureAcquireSupersededError,
-  useUserMedia,
-} from '../crud/useUserMedia';
+import { useUserMedia } from '../crud/useUserMedia';
 import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { buildCaptureConstraints } from '../crud/captureConstraints';
 import {
@@ -53,15 +52,21 @@ import {
 } from '../crud/waveformRenderer';
 import { audioManager, type AudioHandle } from '../utils/audioManager';
 import usePassageDetailContext from '../context/usePassageDetailContext';
+import { useGlobal } from '../context/useGlobal';
+import { HotKeyContext } from '../context/HotKeyContext';
 import { MicrophoneDialog } from './MicrophoneDialog';
 import { ConvertVoiceDialog } from './ConvertVoiceDialog';
 import { AiProcessing } from './AiProcessing';
+import { AudioCopyPaste, setClip } from './AudioCopyPaste';
 import NoChickenIcon from '../control/NoChickenIcon';
 import VoiceConversionLogo from '../control/VoiceConversionLogo';
+import NormalizeIcon from '../control/NormalizeIcon';
 import { useAudioConversion } from '../utils/useAudioConversion';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IAudioDownloadStrings, IWsAudioPlayerStrings } from '../model';
 import { audioDownloadSelector, wsAudioPlayerSelector } from '../selector';
+
+const PLAY_PAUSE_KEY = 'CTRL+SPACE';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -170,6 +175,9 @@ export interface AudioPlayerProps {
    * Override when a screen shows more than one player, so the labels stay unique.
    */
   label?: string;
+
+  /** Subscribe Ctrl+Space to play/pause (default: true) */
+  hotkeys?: boolean;
 }
 
 export interface AudioMarker {
@@ -247,9 +255,12 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       markers,
       onWaveformClick,
       label = 'passage',
+      hotkeys = true,
     },
     ref
   ) => {
+    const { subscribe, unsubscribe, localizeHotKey } =
+      useContext(HotKeyContext).state;
     const containerRef = useRef<HTMLDivElement>(null);
     const minimapContainerRef = useRef<HTMLDivElement>(null);
     const wsRef = useRef<WaveSurfer | null>(null);
@@ -350,10 +361,12 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
 
     const { recording, setRecording, isBoldWorkflow } =
       usePassageDetailContext();
+    const [offline] = useGlobal('offline');
     const {
       progress: conversionProcessing,
       suppressNoise,
       convertVoice,
+      normalize,
       cancel,
     } = useAudioConversion();
     const t: IWsAudioPlayerStrings = useSelector(
@@ -392,6 +405,18 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
         );
     }, [allowRecord, getMic, microphoneId]);
 
+    // Recording and paste both insert audio at the cursor (or it becomes the audio when there is none).
+    const handleInsert = (audio: Blob) => {
+      if (internalAudio) {
+        pushUndo();
+        wsRef.current?.once('decode', () =>
+          wsRef.current?.setTime(currentTime)
+        );
+      }
+      setInternalAudio(audio);
+      onAudioChangeRef.current?.(audio);
+    };
+
     const recorder = useRecorder(micStream);
     const startRecording = async () => {
       if (conversionProcessing) return;
@@ -401,15 +426,8 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           currentTime,
           wsRef.current,
           (audio) => {
-            if (internalAudio) {
-              pushUndo();
-              wsRef.current?.once('decode', () =>
-                wsRef.current?.setTime(currentTime)
-              );
-            }
-            setInternalAudio(audio);
+            handleInsert(audio);
             setRecording(false);
-            onAudioChangeRef.current?.(audio);
             onRecordingComplete?.(audio);
           }
         );
@@ -803,6 +821,15 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       else audioManager.play(selfHandleRef.current);
     };
 
+    useEffect(() => {
+      if (!hotkeys) return;
+      subscribe(PLAY_PAUSE_KEY, () => {
+        handlePlayToggle();
+        return true;
+      });
+      return () => unsubscribe(PLAY_PAUSE_KEY);
+    });
+
     const handleUndo = () => {
       const stack = [...undoStack];
       const entry = stack.pop();
@@ -817,6 +844,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
     const handleCutClick = async () => {
       if (!internalAudio || !selection) return;
       pushUndo();
+      setClip(await clipAudio(internalAudio, selection.start, selection.end));
       const spliced = await spliceAudio(
         internalAudio,
         selection.start,
@@ -868,7 +896,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       onAudioChangeRef.current?.(withSilence);
       wsRef.current?.once('decode', () => wsRef.current?.setTime(currentTime));
     };
-    const applyAi = async (
+    const apply = async (
       func: (audio: Blob, range: TimeRange) => Promise<Blob | undefined>
     ) => {
       audioManager.pause();
@@ -937,6 +965,14 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
           onClick={handlePlayToggle}
           disabled={!hasLoadedAudio}
           sx={{ p: 0 }}
+          title={
+            hotkeys
+              ? (playing ? t.pauseTip : t.playTip).replace(
+                  '{0}',
+                  localizeHotKey(PLAY_PAUSE_KEY)
+                )
+              : undefined
+          }
           aria-label={playing ? `${label} pause` : `${label} play`}
         >
           {playing ? (
@@ -978,6 +1014,14 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
               >
                 <ContentCutIcon fontSize="small" />
               </IconButton>
+            )}
+            {offline && allowRecord && !showRecordButton && !isBoldWorkflow && (
+              <AudioCopyPaste
+                audio={internalAudio}
+                selection={selection}
+                at={currentTime}
+                onPaste={handleInsert}
+              />
             )}
             {showSilence && (
               <IconButton
@@ -1029,7 +1073,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                   disabled={!hasLoadedAudio}
                   onClick={() => {
                     handleMenuClose();
-                    void applyAi(suppressNoise);
+                    void apply(suppressNoise);
                   }}
                 >
                   <ListItemIcon>
@@ -1054,6 +1098,25 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
                     />
                   </ListItemIcon>
                   <ListItemText>{t.convertVoiceAi}</ListItemText>
+                </MenuItem>
+              )}
+              {allowRecord && !isBoldWorkflow && (
+                <MenuItem
+                  aria-label={`${label} normalize`}
+                  disabled={!hasLoadedAudio}
+                  onClick={() => {
+                    handleMenuClose();
+                    void apply(normalize);
+                  }}
+                >
+                  <ListItemIcon>
+                    <NormalizeIcon
+                      width="14pt"
+                      height="14pt"
+                      disabled={false}
+                    />
+                  </ListItemIcon>
+                  <ListItemText>{t.normalize}</ListItemText>
                 </MenuItem>
               )}
               {showDownload && (
@@ -1105,9 +1168,7 @@ export const AudioPlayer = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
               onCancel={() => setVoiceDialogOpen(false)}
               begin={(voice) => {
                 setVoiceDialogOpen(false);
-                void applyAi((audio, range) =>
-                  convertVoice(audio, range, voice)
-                );
+                void apply((audio, range) => convertVoice(audio, range, voice));
               }}
             />
           )}

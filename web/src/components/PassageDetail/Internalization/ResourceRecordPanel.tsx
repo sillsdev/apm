@@ -7,25 +7,22 @@ import {
   Typography,
   TypographyProps,
 } from '@mui/material';
-import MediaUploadContent, {
-  MediaUploadControlsRef,
-} from './MediaUploadContent';
+import MediaUploadContent from '../../MediaUploadContent';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   IPassageDetailArtifactsStrings,
   IPassageRecordStrings,
-} from '../model';
-import { passageRecordSelector, resourceSelector } from '../selector';
-import UploadRecordToggle, {
-  AudioAddMode,
-} from './PassageDetail/Internalization/UploadRecordToggle';
-import { UploadType } from './UploadType';
-import { getRefWidth } from '../utils/getRefWidth';
-import MediaRecord from './MediaRecord';
-import { UnsavedContext } from '../context/UnsavedContext';
-import SpeakerName from './SpeakerName';
-import { Button } from '../control';
-import Busy from './Busy';
+} from '../../../model';
+import { passageRecordSelector, resourceSelector } from '../../../selector';
+import UploadRecordToggle, { AudioAddMode } from './UploadRecordToggle';
+import { UploadType } from '../../UploadType';
+import { getRefWidth } from '../../../utils/getRefWidth';
+import MediaRecord from '../../MediaRecord';
+import { UnsavedContext } from '../../../context/UnsavedContext';
+import SpeakerName from '../../SpeakerName';
+import { Button } from '../../../control';
+import Busy from '../../Busy';
+import { useResourceUploadContext } from './ResourceUploadContext';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -35,37 +32,24 @@ const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginBottom: '0.35em',
 }));
 
-export interface IPassageRecordPanelProps {
-  active: boolean;
-  artifactId: string | null;
-  finish?: ((mediaRemoteIds?: string[]) => void | Promise<void>) | undefined;
-  metaData?: React.JSX.Element | undefined;
-  defaultFilename: string;
-  ready?: boolean | undefined; // false disables the save/upload button
-  speaker?: string | undefined;
-  onSpeaker?: ((speaker: string) => void) | undefined;
-  onFiles?: ((files: File[]) => void) | undefined;
-  uploadType: UploadType;
+// Everything else comes from ResourceUploadContext; these two are built by
+// ResourceUploadStep itself.
+export interface IResourceRecordPanelProps {
+  // The Upload tab's useMediaUpload instance (owned by ResourceUploadStep).
   uploadMethod:
     ((files: File[]) => void | boolean | Promise<void | boolean>) | undefined;
-  validationMessage?: string | undefined;
-  pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
-  beforeUpload?: (() => Promise<void>) | undefined;
-  deferred?: IDeferredUpload | undefined;
-  onStartRecording?: (() => void) | undefined;
+  // The recorder's finish: the wizard's finish, wrapped to set `cancelled`.
+  finish: (mediaRemoteIds?: string[]) => Promise<void>;
 }
 
-export interface IDeferredUpload {
-  onNext: () => void;
-  // for the wizard to trigger the real upload later
-  controlsRef: React.RefObject<MediaUploadControlsRef>;
-}
-
-export function PassageRecordPanel(props: IPassageRecordPanelProps) {
+/** The add-resource wizard's Upload | Record body for audio resources. */
+export function ResourceRecordPanel({
+  uploadMethod,
+  finish,
+}: IResourceRecordPanelProps) {
   const {
     active,
     artifactId,
-    finish,
     defaultFilename,
     ready,
     metaData,
@@ -73,13 +57,12 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
     onSpeaker,
     onFiles,
     uploadType,
-    uploadMethod,
     validationMessage,
     pendingRestore,
     beforeUpload,
     deferred,
     onStartRecording,
-  } = props;
+  } = useResourceUploadContext();
   const onNext = deferred?.onNext;
   const controlsRef = deferred?.controlsRef;
   const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
@@ -238,4 +221,4 @@ export function PassageRecordPanel(props: IPassageRecordPanelProps) {
   );
 }
 
-export default PassageRecordPanel;
+export default ResourceRecordPanel;

@@ -8748,13 +8748,25 @@
       </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
-            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
+            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.aiWillContinueDifferentLanguage">
+         <segment>
+            <source>Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target/>
          </segment>
       </unit>
       <unit id="transcriber.asrChooseLanguage">
          <segment>
             <source>Choose the language of this recording for automatic transcription.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrFailure">
+         <segment>
+            <source>FAILURE</source>
             <target/>
          </segment>
       </unit>
@@ -8776,6 +8788,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.asrPending">
+         <segment>
+            <source>PENDING</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrQueued">
+         <segment>
+            <source>QUEUED</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.asrRequestFailed">
          <segment>
             <source>Speech recognition settings could not be loaded.</source>
@@ -8791,6 +8815,18 @@
       <unit id="transcriber.asrSaveTeamDefault">
          <segment>
             <source>Save as team default</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrStarted">
+         <segment>
+            <source>STARTED</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrSuccess">
+         <segment>
+            <source>SUCCESS</source>
             <target/>
          </segment>
       </unit>
@@ -9007,6 +9043,12 @@
       <unit id="transcriber.transliterate">
          <segment>
             <source>Transliterate to Latin script</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.unknownUser">
+         <segment>
+            <source>unknown</source>
             <target/>
          </segment>
       </unit>

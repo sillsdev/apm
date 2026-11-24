@@ -108,8 +108,6 @@ const api = {
     await ipcRenderer.invoke('downloadStat', token),
   downloadClose: async (token) =>
     await ipcRenderer.invoke('downloadClose', token),
-  normalize: async (input, output) =>
-    await ipcRenderer.invoke('normalize', input, output),
   burritoToPtf: async (payload) =>
     await ipcRenderer.invoke('burritoToPtf', payload),
   convertToMp3: async (input, output) =>

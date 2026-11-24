@@ -1,6 +1,5 @@
 import { useContext, useMemo } from 'react';
 import {
-  ActivityStates,
   ISharedStrings,
   ITranscriberStrings,
   MediaFile,
@@ -14,25 +13,17 @@ import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import TaskList from '../TaskList';
-import { ToolSlug, useStepTool } from '../../crud';
-import { JSONParse } from '../../utils';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { useArtifactType } from '../../crud/useArtifactType';
 import {
   ArtifactTypeSlug,
-  artifactStampsStepLanguage,
   isPhraseSegmentArtifact,
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { useStepPermissions } from '../../utils/useStepPermission';
-import { isLinkedNote } from '../../crud/isLinkedNote';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useSnackBar } from '../../hoc/SnackBar';
-import {
-  completeStepAfterSave,
-  trySetStepComplete,
-} from '../../context/completeStepAfterSave';
+import { completeStepAfterSave } from '../../context/completeStepAfterSave';
 import {
   getSegments,
   getSortedRegions,
@@ -41,11 +32,13 @@ import {
 import { hasPhraseRegions } from './carefulSpeech/carefulSpeechBoundary';
 import {
   mediaMatchesStepLanguage,
-  parseMediaLanguageField,
   phraseBtBoundaryRegionName,
 } from './carefulSpeech/matchesGuidedOutputRow';
 import { hasIncompletePhraseSegmentRecordings } from './phraseSegmentRecordingComplete';
 import StepMessage from './boldClause/StepMessage';
+import { useTranscribeStepRole } from './transcribe/useTranscribeStepRole';
+import { useTranscribeStepNav } from './transcribe/useTranscribeStepNav';
+import { usePassageStepPermission } from '../../utils/usePassageStepPermission';
 
 const TranscriberContainer = styled(Box)<BoxProps>(() => ({
   flex: '1 1 0',
@@ -85,103 +78,40 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
   const { waitForSave } = useContext(UnsavedContext).state;
   const { showMessage } = useSnackBar();
   const { setState } = useContext(PassageDetailContext);
-  const { canDoSectionStep } = useStepPermissions();
-  const hasPermission =
-    canDoSectionStep(currentstep, section) &&
-    !isLinkedNote(passage, sharedResource);
+  const hasPermission = usePassageStepPermission(
+    currentstep,
+    section,
+    passage,
+    sharedResource
+  );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const { slugFromId } = useArtifactType();
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
-  const stepSettings = useMemo(() => {
-    if (!workflowStepSettingsRaw || workflowStepSettingsRaw === '') return '{}';
-    return typeof workflowStepSettingsRaw === 'string'
-      ? workflowStepSettingsRaw
-      : JSON.stringify(workflowStepSettingsRaw);
-  }, [workflowStepSettingsRaw]);
-
-  interface IStep {
-    id: string;
-    sequencenum: number;
-    tool: string;
-    settings: string;
-  }
-
-  const parsedSteps = useMemo(() => {
-    if (!orgWorkflowSteps) return [];
-    return orgWorkflowSteps
-      .sort(
-        (a, b) =>
-          (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
-      )
-      .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as {
-          tool?: string;
-          settings?: string | object;
-        };
-        return {
-          id: s.id,
-          sequencenum: ix,
-          tool: toolData.tool ?? '',
-          settings:
-            typeof toolData.settings === 'string'
-              ? toolData.settings || '{}'
-              : JSON.stringify(toolData.settings ?? {}),
-        } as IStep;
-      });
-  }, [orgWorkflowSteps]);
-
-  const vernacularSteps = useMemo(() => {
-    return parsedSteps.filter(
-      (s) =>
-        s.tool === ToolSlug.Transcribe && !JSON.parse(s.settings).artifactTypeId
-    );
-  }, [parsedSteps]);
-
-  const hasChecking = useMemo(() => {
-    return (
-      vernacularSteps.length > 1 &&
-      (vernacularSteps[1] as IStep).sequencenum ===
-        (vernacularSteps[0] as IStep).sequencenum + 1
-    );
-  }, [vernacularSteps]);
-
-  const nextStep = useMemo(() => {
-    if (!currentstep || !parsedSteps) return null;
-    let found = false;
-    for (const s of parsedSteps) {
-      if (s.id === currentstep) {
-        found = true;
-        continue;
-      }
-      if (!found) continue;
-      return s.id;
-    }
-    return null;
-  }, [currentstep, parsedSteps]);
-
-  const prevStep = useMemo(() => {
-    if (!currentstep || !parsedSteps) return null;
-    let found = '';
-    for (const s of parsedSteps) {
-      if (s.id === currentstep) {
-        break;
-      } else {
-        found = s.id;
-      }
-    }
-    return found;
-  }, [currentstep, parsedSteps]);
-
-  const curRole = useMemo(() => {
-    if (!currentstep) return undefined;
-    if (!hasPermission) return 'view';
-    if (!hasChecking) return 'transcriber';
-    if (JSON.parse(stepSettings || '{}')?.artifactTypeId) return 'transcriber';
-    if ((vernacularSteps[0] as IStep)?.id === currentstep) return 'transcriber';
-    return 'editor';
-  }, [currentstep, vernacularSteps, stepSettings, hasChecking, hasPermission]);
+  const {
+    stepSettings,
+    parsedSteps,
+    hasChecking,
+    nextStep,
+    prevStep,
+    curRole,
+    stepLanguageBcp47,
+  } = useTranscribeStepRole({
+    currentstep,
+    orgWorkflowSteps,
+    hasPermission,
+    artifactTypeId,
+  });
+  const { handleReopen, handleReject } = useTranscribeStepNav({
+    currentstep,
+    parsedSteps,
+    hasChecking,
+    nextStep,
+    prevStep,
+    curRole,
+    setStepComplete,
+    setCurrentStep,
+  });
 
   const handleComplete = (complete: boolean) => {
     // Save and step-write failures are shown inside; only an onDone bug rejects, and it should surface.
@@ -196,76 +126,9 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
     });
   };
 
-  /**
-   * Unmark this step and, with checking, the step after it; then an editor
-   * goes back a step. Resolves false (and stops) if a write failed — that
-   * failure was already shown by setStepComplete.
-   */
-  const uncompletedSteps = async () => {
-    if (!(await trySetStepComplete(setStepComplete, currentstep, false)))
-      return false;
-    if (
-      hasChecking &&
-      nextStep &&
-      !(await trySetStepComplete(setStepComplete, nextStep, false))
-    )
-      return false;
-    if (curRole === 'editor' && prevStep) setCurrentStep(prevStep || '');
-    return true;
-  };
-
-  const handleReopen = () => {
-    // Never rejects: step-write failures are shown by setStepComplete.
-    void uncompletedSteps();
-  };
-
-  const handleReject = async (reason: string) => {
-    if (!(await uncompletedSteps())) return;
-    if (reason === ActivityStates.NeedsNewRecording) {
-      const curStep = parsedSteps.find((s) => s.id === currentstep);
-      if (curStep?.settings === '{}') {
-        // only for vernacular
-        const recordStep = parsedSteps.find((s) => s.tool === ToolSlug.Record);
-        if (recordStep) {
-          if (await trySetStepComplete(setStepComplete, recordStep.id, false))
-            setCurrentStep(recordStep.id);
-          return;
-        }
-      }
-    }
-    if (
-      curRole === 'editor' &&
-      prevStep &&
-      (await trySetStepComplete(setStepComplete, prevStep, false))
-    )
-      setCurrentStep(prevStep);
-  };
-
   const handleReloadPlayer = (playerMediafile: MediaFile) => {
     setState((s) => ({ ...s, playerMediafile }));
   };
-
-  const stepLanguageBcp47 = useMemo(() => {
-    if (!artifactTypeId) return undefined;
-    // Only artifacts that stamp `languagebcp47` on their takes may be scoped by
-    // step language — notably not Careful Speech, whose takes are untagged.
-    if (
-      !artifactStampsStepLanguage(
-        slugFromId(artifactTypeId) as ArtifactTypeSlug
-      )
-    )
-      return undefined;
-    const { bcp47 } = parseMediaLanguageField(
-      (() => {
-        try {
-          return (JSON.parse(stepSettings) as { language?: unknown }).language;
-        } catch {
-          return undefined;
-        }
-      })()
-    );
-    return bcp47 !== 'und' ? bcp47 : undefined;
-  }, [stepSettings, artifactTypeId, slugFromId]);
 
   const phraseArtifactSlug = useMemo(() => {
     if (!artifactTypeId) return null;
@@ -340,7 +203,7 @@ export function PassageDetailTranscribe({ artifactTypeId }: IProps) {
   return Boolean(mediafileId) && hasBtRecordings ? (
     <TranscriberProvider
       artifactTypeId={artifactTypeId}
-      curRole={curRole as string}
+      curRole={curRole}
       stepLanguageBcp47={stepLanguageBcp47}
     >
       <Grid

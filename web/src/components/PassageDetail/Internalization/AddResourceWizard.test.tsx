@@ -146,12 +146,11 @@ const file = (name: string) => new File([name], name, { type: 'audio/mpeg' });
 
 jest.mock('./ResourceUploadStep', () => {
   const { UploadType } = jest.requireActual('../../UploadType');
-  type ControlsRef = {
-    current: { handleAddOrSave: (() => void) | null; handleCancel: null };
-  };
-  return {
-    __esModule: true,
-    default: ({
+  const { useResourceUploadContext } = jest.requireActual<
+    typeof import('./ResourceUploadContext')
+  >('./ResourceUploadContext');
+  const MockResourceUploadStep = () => {
+    const {
       active,
       uploadType,
       ready,
@@ -161,78 +160,69 @@ jest.mock('./ResourceUploadStep', () => {
       onStartRecording,
       finish,
       metaData,
-    }: {
-      active?: boolean;
-      uploadType?: unknown;
-      ready?: boolean;
-      validationMessage?: string;
-      onFiles?: (f: File[]) => void;
-      deferred?: { onNext: () => void; controlsRef: ControlsRef };
-      onStartRecording?: () => void;
-      finish?: (ids?: string[]) => void;
-      metaData?: React.ReactNode;
-    }) => {
-      const isProject = uploadType === UploadType.ProjectResource;
-      const onNext = deferred?.onNext;
-      const controlsRef = deferred?.controlsRef;
-      // The body stays mounted and holds its own selection; invoking the
-      // exposed submit drives a successful upload (finish with one id), as the
-      // real upload's `finish` would. The wizard calls this from SelectSections.
-      if (controlsRef) {
-        controlsRef.current.handleAddOrSave = () => finish?.(['media-1']);
-      }
-      return (
-        <>
-          {active && (
-            <div data-testid="uploader">
-              <span>uploader-open</span>
-              {metaData}
-              <button
-                type="button"
-                onClick={() => onFiles?.([file('a'), file('b')])}
-              >
-                select-two-files
-              </button>
-              <button type="button" onClick={() => onFiles?.([file('a')])}>
-                select-one-file
-              </button>
-              {/* Deferred flow: pick a file, then Next only advances (no upload
+    } = useResourceUploadContext();
+    const isProject = uploadType === UploadType.ProjectResource;
+    const onNext = deferred?.onNext;
+    const controlsRef = deferred?.controlsRef;
+    // The body stays mounted and holds its own selection; invoking the
+    // exposed submit drives a successful upload (finish with one id), as the
+    // real upload's `finish` would. The wizard calls this from SelectSections.
+    if (controlsRef) {
+      controlsRef.current.handleAddOrSave = () => finish?.(['media-1']);
+    }
+    return (
+      <>
+        {active && (
+          <div data-testid="uploader">
+            <span>uploader-open</span>
+            {metaData}
+            <button
+              type="button"
+              onClick={() => onFiles?.([file('a'), file('b')])}
+            >
+              select-two-files
+            </button>
+            <button type="button" onClick={() => onFiles?.([file('a')])}>
+              select-one-file
+            </button>
+            {/* Deferred flow: pick a file, then Next only advances (no upload
                   here) — the retained selection is uploaded later by the wizard
                   via controlsRef. */}
-              <button
-                type="button"
-                onClick={() => {
-                  onFiles?.([file('a')]);
-                  onNext?.();
-                }}
-              >
-                stage-one-file
-              </button>
-              {/* A real recording reports recording-start (onStartRecording)
+            <button
+              type="button"
+              onClick={() => {
+                onFiles?.([file('a')]);
+                onNext?.();
+              }}
+            >
+              stage-one-file
+            </button>
+            {/* A real recording reports recording-start (onStartRecording)
                   when it begins, before Next advances. */}
-              <button
-                type="button"
-                onClick={() => {
-                  onStartRecording?.();
-                  onFiles?.([file('a')]);
-                  onNext?.();
-                }}
-              >
-                stage-one-recording
-              </button>
-              <button type="button" onClick={() => finish?.(['media-1'])}>
-                finish-upload
-              </button>
-              {validationMessage && <div>{validationMessage}</div>}
-              <button type="button" disabled={ready === false}>
-                {isProject ? 'Next' : 'Upload'}
-              </button>
-            </div>
-          )}
-        </>
-      );
-    },
+            <button
+              type="button"
+              onClick={() => {
+                onStartRecording?.();
+                onFiles?.([file('a')]);
+                onNext?.();
+              }}
+            >
+              stage-one-recording
+            </button>
+            <button type="button" onClick={() => finish?.(['media-1'])}>
+              finish-upload
+            </button>
+            {validationMessage && <div>{validationMessage}</div>}
+            <button type="button" disabled={ready === false}>
+              {isProject ? 'Next' : 'Upload'}
+            </button>
+          </div>
+        )}
+      </>
+    );
   };
+  MockResourceUploadStep.displayName = 'MockResourceUploadStep';
+  return { __esModule: true, default: MockResourceUploadStep };
 });
 
 jest.mock('./ResourceData', () => {
