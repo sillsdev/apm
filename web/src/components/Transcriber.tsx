@@ -1181,6 +1181,7 @@ export function Transcriber(props: Readonly<IProps>) {
     },
     getCurrentText: () => transcriptionRef.current?.firstChild?.value ?? '',
     hasActiveTask: hasAiTasks,
+    mediaId: playerMediafile?.id,
   });
 
   const handleAsrProgressVisible = (v: boolean) => {

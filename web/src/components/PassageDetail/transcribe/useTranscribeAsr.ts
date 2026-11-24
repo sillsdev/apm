@@ -33,6 +33,8 @@ export interface UseTranscribeAsrProps {
   getCurrentText: () => string;
   /** The recording already has a transcription task to resume. */
   hasActiveTask?: boolean;
+  /** The selected recording; a forced run's replace applies only to it. */
+  mediaId?: string;
 }
 
 export type AsrSettingsStatus = 'loading' | 'ready' | 'failed';
@@ -93,6 +95,7 @@ export function useTranscribeAsr({
   onTextAdd,
   getCurrentText,
   hasActiveTask = false,
+  mediaId,
 }: UseTranscribeAsrProps) {
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
@@ -110,7 +113,7 @@ export function useTranscribeAsr({
     clearReplaceAsr,
     snapshotAsrAtOpen,
     applyForceFromClosedAsr,
-  } = useAsrForceRun(asrSettings);
+  } = useAsrForceRun(asrSettings, mediaId);
   const phonetic = (asrOverride ?? asrSettings)?.target === AsrTarget.phonetic;
 
   const asrTip = useMemo(() => {

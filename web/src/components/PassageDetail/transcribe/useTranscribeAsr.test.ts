@@ -417,4 +417,81 @@ describe('useTranscribeAsr', () => {
       expect(onTextAdd).toHaveBeenCalledWith(' more');
     });
   });
+
+  // The transcriber stays mounted while the selected recording changes, so a
+  // changed-method run on one recording must not decide how another's
+  // result is applied.
+  describe('switching recordings', () => {
+    const saved = {
+      target: 'alphabet',
+      language: { bcp47: 'ta', languageName: 'Tamil' },
+      asrIso: 'tam',
+      dialect: undefined,
+      selectRoman: false,
+    };
+    const renderOn = (mediaId: string, active: boolean) => {
+      const onTextAdd = jest.fn();
+      const hook = renderHook(
+        (props: { mediaId: string; active: boolean }) =>
+          useTranscribeAsr({
+            team: undefined,
+            sharedStr: { mustBeOnline: 'online' } as never,
+            tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+            showMessage: jest.fn(),
+            onTextAdd,
+            getCurrentText: () => 'saved correction',
+            hasActiveTask: props.active,
+            mediaId: props.mediaId,
+          }),
+        { initialProps: { mediaId, active } }
+      );
+      return { ...hook, onTextAdd };
+    };
+    const changeMethodThenClose = async (
+      result: ReturnType<typeof renderOn>['result']
+    ) => {
+      await waitFor(() =>
+        expect(result.current.asrSettings?.asrIso).toBe('tam')
+      );
+      act(() => result.current.openAsrLanguageSettings());
+      act(() =>
+        result.current.handleAsrLanguageClose(false, {
+          ...saved,
+          asrMethod: 'mms',
+        } as never)
+      );
+      act(() => result.current.setAsrProgressVisible(false));
+    };
+
+    it("keeps another recording's pending result appending", async () => {
+      getAsrSettings.mockResolvedValue(saved);
+      const { result, rerender, onTextAdd } = renderOn('A', true);
+      await changeMethodThenClose(result);
+
+      rerender({ mediaId: 'B', active: true });
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.handleAutoTranscribe('b result'));
+      expect(onTextAdd).toHaveBeenLastCalledWith(' b result');
+
+      rerender({ mediaId: 'A', active: true });
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.handleAutoTranscribe('a result'));
+      expect(onTextAdd).toHaveBeenLastCalledWith('a result', true);
+    });
+
+    it('keeps replacing after a new run on a recording with no task', async () => {
+      getAsrSettings.mockResolvedValue(saved);
+      const { result, rerender, onTextAdd } = renderOn('A', true);
+      await changeMethodThenClose(result);
+
+      rerender({ mediaId: 'C', active: false });
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.setAsrProgressVisible(false));
+
+      rerender({ mediaId: 'A', active: true });
+      act(() => result.current.handleTranscribe());
+      act(() => result.current.handleAutoTranscribe('a result'));
+      expect(onTextAdd).toHaveBeenLastCalledWith('a result', true);
+    });
+  });
 });
