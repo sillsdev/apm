@@ -22,20 +22,31 @@ import {
   cleanAsrTranscription,
 } from './autoTranscriptionToAppend';
 import { useAsrForceRun } from './useAsrForceRun';
+import { ignoreVs } from '../../../utils/ignoreVs';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
   sharedStr: ISharedStrings;
   tPlayer: IWsAudioPlayerStrings;
   showMessage: (msg: string) => void;
-  /** Second arg true: replace the whole transcription (forced re-run). */
-  onTextAdd: (text: string, replace?: boolean) => void;
+  /** Put ASR text in the pane: replace it all, add at the end, or at the caret. */
+  onTextAdd: (text: string, mode: AsrTextMode) => void;
   getCurrentText: () => string;
   /** The recording already has a transcription task to resume. */
   hasActiveTask?: boolean;
 }
 
 export type AsrSettingsStatus = 'loading' | 'ready' | 'failed';
+
+export type AsrTextMode = 'replace' | 'end' | 'cursor';
+
+/** A result waiting for the user to choose Replace or Insert. */
+export interface PendingAsr {
+  /** The whole result, used by Replace. */
+  full: string;
+  /** Without verses the pane already has text for, used by Insert. */
+  withoutFilled: string;
+}
 
 /**
  * Loaded team/step ASR settings, and whether they are still loading, loaded
@@ -181,18 +192,42 @@ export function useTranscribeAsr({
     [asrSettings, applyForceFromClosedAsr, startAsr]
   );
 
+  const [pendingAsr, setPendingAsr] = useState<PendingAsr>();
+
+  /**
+   * Apply an ASR result. Onto an empty pane (verse markers alone don't count)
+   * it is added; onto text the user already has, ask Replace or Insert
+   * (TT-7856) instead of silently duplicating or overwriting it.
+   */
   const handleAutoTranscribe = useCallback(
-    (trans: string) => {
-      if (forceAsr) {
-        const cleaned = cleanAsrTranscription(trans);
-        if (cleaned) onTextAdd(cleaned, true);
+    (trans: string, withoutFilled: string = trans) => {
+      const full = cleanAsrTranscription(trans);
+      if (!full) return;
+      const current = getCurrentText();
+      if (current.includes(full)) return;
+      if (!ignoreVs(current)?.trim()) {
+        const added = autoTranscriptionToAppend(full, current);
+        if (added !== undefined) onTextAdd(added, 'end');
         return;
       }
-      const added = autoTranscriptionToAppend(trans, getCurrentText());
-      if (added !== undefined) onTextAdd(added);
+      setPendingAsr({
+        full,
+        withoutFilled: cleanAsrTranscription(withoutFilled),
+      });
     },
-    [forceAsr, getCurrentText, onTextAdd]
+    [getCurrentText, onTextAdd]
   );
+
+  const confirmAsrReplace = useCallback(() => {
+    if (pendingAsr) onTextAdd(pendingAsr.full, 'replace');
+    setPendingAsr(undefined);
+  }, [pendingAsr, onTextAdd]);
+
+  const confirmAsrInsert = useCallback(() => {
+    if (pendingAsr?.withoutFilled)
+      onTextAdd(pendingAsr.withoutFilled, 'cursor');
+    setPendingAsr(undefined);
+  }, [pendingAsr, onTextAdd]);
 
   return {
     asrSettings,
@@ -208,5 +243,8 @@ export function useTranscribeAsr({
     handleTranscribe,
     handleAsrLanguageClose,
     handleAutoTranscribe,
+    pendingAsr,
+    confirmAsrReplace,
+    confirmAsrInsert,
   };
 }

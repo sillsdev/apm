@@ -95,7 +95,8 @@ export function useAsrTaskLifecycle({
   asrState?: IAsrState;
   force?: boolean;
   contentVerses?: string[];
-  setTranscription: (transcription: string) => void;
+  /** Full result, then the result without verses that already have text. */
+  setTranscription: (transcription: string, withoutFilled?: string) => void;
   forceRefresh?: () => void;
   onClose: () => void;
 }) {
@@ -225,17 +226,18 @@ export function useAsrTaskLifecycle({
     if (clip?.state !== 'SUCCESS') return;
     const key = clip.clip || 'clip';
     if (appliedKeysRef.current.has(key)) return;
-    // Forced replace overwrites the whole transcription; skipping completed
-    // verses would drop them (partial) or empty the result (fully transcribed).
-    const text = clipTranscription(
+    // The caller picks at apply time (TT-7856): Replace takes the whole
+    // result; Insert takes it without verses the pane already has text for.
+    const full = clipTranscription(clip, phonetic, verseTimingsRef.current);
+    if (!full) return;
+    const withoutFilled = clipTranscription(
       clip,
       phonetic,
       verseTimingsRef.current,
-      force ? undefined : contentVerses
+      contentVerses
     );
-    if (!text) return;
     appliedKeysRef.current.add(key);
-    setTranscription(text);
+    setTranscription(full, withoutFilled);
   };
 
   const closing = () => {

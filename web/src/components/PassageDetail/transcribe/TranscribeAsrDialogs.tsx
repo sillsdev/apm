@@ -1,11 +1,17 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { IWsAudioPlayerStrings, OrganizationD } from '../../../model';
-import { playerSelector } from '../../../selector';
+import {
+  ITranscriberStrings,
+  IWsAudioPlayerStrings,
+  OrganizationD,
+} from '../../../model';
+import { playerSelector, transcriberSelector } from '../../../selector';
+import Confirm from '../../AlertDialog';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import type { IAsrState } from '../../../business/asr/asrState';
+import type { PendingAsr } from './useTranscribeAsr';
 
 export interface TranscribeAsrDialogsProps {
   team: OrganizationD | undefined;
@@ -20,7 +26,11 @@ export interface TranscribeAsrDialogsProps {
   /** Language-dialog close; cancel=true when the shell dismisses. */
   onLanguageClose: (cancel: boolean, asrState?: IAsrState) => void;
   onProgressOpen: (open: boolean) => void;
-  setTranscription: (text: string) => void;
+  setTranscription: (text: string, withoutFilled?: string) => void;
+  /** A result waiting for Replace or Insert; shows the prompt. */
+  pendingAsr?: PendingAsr;
+  onAsrReplace?: () => void;
+  onAsrInsert?: () => void;
   bp: BigDialogBp;
   isMobile?: boolean;
 }
@@ -39,9 +49,13 @@ export function TranscribeAsrDialogs({
   onLanguageClose,
   onProgressOpen,
   setTranscription,
+  pendingAsr,
+  onAsrReplace,
+  onAsrInsert,
   bp,
   isMobile = false,
 }: Readonly<TranscribeAsrDialogsProps>) {
+  const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
     shallowEqual
@@ -89,6 +103,17 @@ export function TranscribeAsrDialogs({
             onClose={() => onProgressOpen(false)}
           />
         </BigDialog>
+      )}
+      {pendingAsr && (
+        // Dismissing inserts: it never discards the user's text (TT-7856).
+        <Confirm
+          text={t.asrReplaceExisting}
+          yes={t.asrReplace}
+          no={t.asrInsert}
+          yesResponse={() => onAsrReplace?.()}
+          noResponse={() => onAsrInsert?.()}
+          primaryButton="no"
+        />
       )}
     </>
   );

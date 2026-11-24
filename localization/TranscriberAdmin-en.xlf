@@ -8776,6 +8776,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.asrInsert">
+         <segment>
+            <source>Insert</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.asrMethod">
          <segment>
             <source>Method</source>
@@ -8803,6 +8809,18 @@
       <unit id="transcriber.asrQueued">
          <segment>
             <source>QUEUED</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrReplace">
+         <segment>
+            <source>Replace</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.asrReplaceExisting">
+         <segment>
+            <source>Replace the existing transcription with the new auto transcription, or insert it at the cursor?</source>
             <target/>
          </segment>
       </unit>

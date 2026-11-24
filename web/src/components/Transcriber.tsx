@@ -69,6 +69,7 @@ import { useTranscribeProjData } from './PassageDetail/transcribe/useTranscribeP
 import { TranscribeAsrDialogs } from './PassageDetail/transcribe/TranscribeAsrDialogs';
 import { useOtherEditorName } from './PassageDetail/transcribe/useOtherEditorName';
 import { pickTodoMediaRow } from './PassageDetail/transcribe/pickTodoMediaRow';
+import { insertAsrText } from './PassageDetail/transcribe/insertAsrText';
 import {
   insertAtCursor,
   logError,
@@ -1148,8 +1149,8 @@ export function Transcriber(props: Readonly<IProps>) {
     return hasTranscriptionTask(mediaRec?.attributes?.segments);
   }, [playerMediafile, mediarecs]);
 
-  // The same ASR flow as mobile transcribe; ASR text goes at the end and
-  // marks the tool changed.
+  // The same ASR flow as mobile transcribe; ASR text replaces the pane, goes
+  // at the end, or at the caret (the user's choice), and marks the tool changed.
   const {
     asrTip,
     asrProgressVisible,
@@ -1162,19 +1163,33 @@ export function Transcriber(props: Readonly<IProps>) {
     handleTranscribe,
     handleAsrLanguageClose,
     handleAutoTranscribe,
+    pendingAsr,
+    confirmAsrReplace,
+    confirmAsrInsert,
   } = useTranscribeAsr({
     team,
     sharedStr,
     tPlayer,
     showMessage,
-    onTextAdd: (text, replace) => {
-      if (replace && transcriptionRef.current) {
-        const textArea = transcriptionRef.current
-          .firstChild as HTMLTextAreaElement;
+    onTextAdd: (text, mode) => {
+      const textArea = transcriptionRef.current?.firstChild as
+        HTMLTextAreaElement | undefined;
+      if (mode === 'end' || !textArea) {
+        addText(text, true);
+      } else if (mode === 'replace') {
         textArea.value = text;
         setTextValue(text);
       } else {
-        addText(text, true);
+        const { value, caret } = insertAsrText(
+          textArea.value ?? '',
+          text,
+          textArea.selectionStart ?? 0,
+          textArea.selectionEnd ?? 0
+        );
+        textArea.value = value;
+        setTextValue(value);
+        focusOnTranscription();
+        textArea.setSelectionRange(caret, caret);
       }
       toolChanged(toolId, true);
     },
@@ -1514,6 +1529,9 @@ export function Transcriber(props: Readonly<IProps>) {
           onLanguageClose={handleAsrLanguageClose}
           onProgressOpen={handleAsrProgressVisible}
           setTranscription={handleAutoTranscribe}
+          pendingAsr={pendingAsr}
+          onAsrReplace={confirmAsrReplace}
+          onAsrInsert={confirmAsrInsert}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
           isMobile={isMobile}
         />

@@ -70,7 +70,11 @@ import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
 import { completeStepAfterSave } from '../../../../context/completeStepAfterSave';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
-import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
+import {
+  useTranscribeAsr,
+  type AsrTextMode,
+} from '../../transcribe/useTranscribeAsr';
+import { insertAsrText } from '../../transcribe/insertAsrText';
 import { useTranscribeStepRole } from '../../transcribe/useTranscribeStepRole';
 import { useTranscribeStepNav } from '../../transcribe/useTranscribeStepNav';
 import { useTranscribeProjData } from '../../transcribe/useTranscribeProjData';
@@ -373,10 +377,16 @@ export function PassageDetailTranscribeMobileContent() {
   ]);
 
   const handleTextAdd = useCallback(
-    (newText: string, replace?: boolean) => {
+    (newText: string, mode: AsrTextMode) => {
       if (isReadOnly || !hasPermission || !mediafile) return;
+      // Read the caret now; the textarea keeps it while the prompt is open.
+      const start = textareaRef.current?.selectionStart ?? 0;
+      const end = textareaRef.current?.selectionEnd ?? 0;
       setTextValue((prev) => {
-        const updated = replace ? newText : prev + newText;
+        let updated = prev + newText;
+        if (mode === 'replace') updated = newText;
+        else if (mode === 'cursor')
+          updated = insertAsrText(prev, newText, start, end).value;
         toolChanged(currentstep, true);
         return updated;
       });
@@ -739,6 +749,9 @@ export function PassageDetailTranscribeMobileContent() {
         onLanguageClose={asr.handleAsrLanguageClose}
         onProgressOpen={asr.setAsrProgressVisible}
         setTranscription={asr.handleAutoTranscribe}
+        pendingAsr={asr.pendingAsr}
+        onAsrReplace={asr.confirmAsrReplace}
+        onAsrInsert={asr.confirmAsrInsert}
         bp={BigDialogBp.mobile}
         isMobile
       />

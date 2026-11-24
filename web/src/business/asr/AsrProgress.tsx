@@ -39,7 +39,8 @@ interface AsrProgressProps {
   /** Step/primary language when not the project vernacular (e.g. LWC). */
   primaryBcp47?: string;
   contentVerses?: string[];
-  setTranscription: (transcription: string) => void;
+  /** Full result, then the result without verses that already have text. */
+  setTranscription: (transcription: string, withoutFilled?: string) => void;
   /** Bump passage-detail context after the mediafile pull (optional). */
   forceRefresh?: () => void;
   onClose: () => void;
