@@ -1174,6 +1174,70 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(mockShowMessage).not.toHaveBeenCalled();
     expect(screen.queryByText('AI in progress')).toBeNull();
   });
+
+  // TT-7791: Cancel restores the player at once; a result that still arrives
+  // afterwards must not replace the recording the user kept.
+  it('keeps the recording when the AI result arrives after Cancel', async () => {
+    const aiCallbacks: ((file: File | Error) => void)[] = [];
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallbacks.push(request.cb);
+        return Promise.resolve();
+      }
+    );
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
+      Promise.resolve(new Blob([new Uint8Array([2])], { type: 'audio/wav' }))
+    );
+    const reload = jest.fn();
+    await startNoiseRemoval(jest.fn(), 10, { reload });
+    fireEvent.click(document.getElementById('ai-cancel') as HTMLElement);
+    expect(screen.queryByText('AI in progress')).toBeNull();
+
+    await act(async () => {
+      aiCallbacks[0]?.(new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+
+    expect(waveSurferMock.wsRegionReplace).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
+
+  it("ignores a canceled run's result after a new run starts", async () => {
+    const aiCallbacks: ((file: File | Error) => void)[] = [];
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallbacks.push(request.cb);
+        return Promise.resolve();
+      }
+    );
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(() =>
+      Promise.resolve(new Blob([new Uint8Array([2])], { type: 'audio/wav' }))
+    );
+    const reload = jest.fn();
+    await startNoiseRemoval(jest.fn(), 10, { reload });
+    fireEvent.click(document.getElementById('ai-cancel') as HTMLElement);
+    fireEvent.click(document.getElementById('wsAudioMore') as HTMLElement);
+    fireEvent.click(document.getElementById('noiseRemoval') as HTMLElement);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(aiCallbacks).toHaveLength(2);
+
+    await act(async () => {
+      aiCallbacks[0](new File(['old'], 'old.wav', { type: 'audio/wav' }));
+    });
+
+    expect(waveSurferMock.wsRegionReplace).not.toHaveBeenCalled();
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    await act(async () => {
+      aiCallbacks[1](new File(['new'], 'new.wav', { type: 'audio/wav' }));
+    });
+
+    expect(waveSurferMock.wsRegionReplace).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
 });
 
 describe('WSAudioPlayer microphone disconnect fallback', () => {
