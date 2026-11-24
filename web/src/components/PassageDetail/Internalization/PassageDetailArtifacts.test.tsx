@@ -85,7 +85,10 @@ jest.mock('../../../crud', () => ({
 }));
 
 jest.mock('./useRowTypeLabel', () => ({
-  useRowTypeLabel: () => () => 'Linked',
+  useRowTypeLabel:
+    () =>
+    ({ isGeneralResource }: { isGeneralResource: boolean }) =>
+      isGeneralResource ? 'General' : 'Linked',
 }));
 
 const mockArtifactTypesResult = [
@@ -234,7 +237,6 @@ describe('PassageDetailArtifacts', () => {
     expect(launch).toHaveTextContent('"action":"audio"');
   });
 
-  // No role is mocked: the badge does not depend on being an admin.
   it('shows the type badge on a linked resource', () => {
     mockUsePassageDetailContext.mockReturnValue({
       ...mockUsePassageDetailContext(),
@@ -261,5 +263,23 @@ describe('PassageDetailArtifacts', () => {
     const [linked, plain] = screen.getAllByTestId('text-card');
     expect(linked).toHaveTextContent('Linked');
     expect(plain).toBeEmptyDOMElement();
+  });
+
+  it('shows the type badge on a chunk from a general resource', () => {
+    mockUsePassageDetailContext.mockReturnValue({
+      ...mockUsePassageDetailContext(),
+      rowData: [
+        {
+          id: 'general-1',
+          isResource: true,
+          passageId: '',
+          artifactTypeSlug: 'resource',
+          isGeneralResource: true,
+          mediafile: { attributes: { contentType: 'text/markdown' } },
+        },
+      ],
+    } as never);
+    renderComponent();
+    expect(screen.getByTestId('text-card')).toHaveTextContent('General');
   });
 });

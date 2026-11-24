@@ -30,8 +30,7 @@ export function ResourceCardEditActions({ row, onEdit, onDelete }: IProps) {
           <IconButton
             size="small"
             onClick={() => onEdit(row.id)}
-            // TODO cleanup: hard-coded English; localize (could reuse t.edit)
-            aria-label={`Edit ${row.artifactName}`}
+            aria-label={t.edit}
             sx={{ p: 0.25 }}
           >
             <EditIcon fontSize="medium" />
@@ -43,8 +42,7 @@ export function ResourceCardEditActions({ row, onEdit, onDelete }: IProps) {
           <IconButton
             size="small"
             onClick={() => onDelete(row.id)}
-            // TODO cleanup: hard-coded English; localize (could reuse t.delete)
-            aria-label={`Delete ${row.artifactName}`}
+            aria-label={t.delete}
             sx={{ p: 0.25 }}
           >
             <DeleteOutlineIcon fontSize="medium" />

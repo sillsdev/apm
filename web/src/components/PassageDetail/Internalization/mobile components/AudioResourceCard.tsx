@@ -115,7 +115,7 @@ export function AudioResourceCard({
             sx={{ mt: -0.5, mr: -0.5 }}
             slotProps={{
               input: {
-                // TODO cleanup: hard-coded English; localize
+                // TODO cleanup: hard-coded English; localize or change to a localized string we already have?
                 'aria-label': `Mark ${row.artifactName} complete`,
               },
             }}

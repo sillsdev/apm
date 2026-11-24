@@ -40,7 +40,7 @@ export function TextResourceCard({
   onEdit,
   onDelete,
   // TODO cleanup: hard-coded English default, shown when a resource has no
-  // category; localize it or show nothing.
+  // category; localize it or show nothing?
   subtitle = 'Translation Resource',
   badge,
   sx = [],
@@ -117,7 +117,7 @@ export function TextResourceCard({
             size="medium"
             sx={{ mt: -0.5, mr: -0.5 }}
             slotProps={{
-              // TODO cleanup: hard-coded English; localize
+              // TODO cleanup: hard-coded English; localize?
               input: { 'aria-label': `Mark ${row.artifactName} complete` },
             }}
           />
@@ -162,7 +162,7 @@ export function TextResourceCard({
             // - markdown opens the text dialog
             // - pdf/images/other files open the media/file viewer
             onClick={() => onView(row.id)}
-            // TODO cleanup: hard-coded English; localize
+            // TODO cleanup: hard-coded English; localize?
             aria-label={`View ${row.artifactName}`}
             sx={{ p: 0.25 }}
           >

@@ -695,7 +695,8 @@ export function PassageDetailArtifactsMobile() {
         />
       )}
       <BigDialog
-        title={t.findResource.replace('{0}', passageRef(passage) || '')}
+        // TODO cleanup: hard-coded English; localize. Maybe when we switch over this dialog to its new design.
+        title={`Research - ${passageRef(passage) || ''}`.trim()}
         titleVariant="h6"
         description={
           <Typography sx={{ color: 'text.secondary' }}>
