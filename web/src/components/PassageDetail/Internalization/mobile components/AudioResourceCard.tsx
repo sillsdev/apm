@@ -70,7 +70,8 @@ export function AudioResourceCard({
           borderColor: statusColor,
           borderRadius: 2,
           backgroundColor: 'background.paper',
-          p: 1,
+          px: 2,
+          py: 1.5,
         },
         ...[sx].flat(),
       ]}

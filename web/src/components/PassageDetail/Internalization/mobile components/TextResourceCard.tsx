@@ -71,8 +71,8 @@ export function TextResourceCard({
           borderColor: statusColor,
           borderRadius: 2,
           backgroundColor: 'background.paper',
-          px: 0.5,
-          py: 1,
+          px: 2,
+          py: 2,
         },
         ...[sx].flat(),
       ]}
@@ -164,7 +164,7 @@ export function TextResourceCard({
             onClick={() => onView(row.id)}
             // TODO cleanup: hard-coded English; localize?
             aria-label={`View ${row.artifactName}`}
-            sx={{ p: 0.25 }}
+            sx={{ px: 1.5 }}
           >
             <VisibilityIcon fontSize="medium" />
           </IconButton>

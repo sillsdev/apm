@@ -43,8 +43,8 @@ export function ReferenceTextCard({
           borderColor: 'grey.700',
           borderRadius: 2,
           backgroundColor: 'background.paper',
-          px: 0.5,
-          py: 1,
+          px: 2,
+          py: 1.5,
         },
         ...[sx].flat(),
       ]}

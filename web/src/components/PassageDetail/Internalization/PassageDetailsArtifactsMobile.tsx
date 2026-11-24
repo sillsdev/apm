@@ -45,14 +45,7 @@ import {
   mediaContentType,
 } from '../../../utils/contentType';
 import { canSaveResourceEdit } from './resourceArtifactName';
-import {
-  Badge,
-  Box,
-  Stack,
-  Typography,
-  MenuItem,
-  MenuList,
-} from '@mui/material';
+import { Box, Stack, Typography, MenuItem, MenuList } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import Confirm from '../../AlertDialog';
@@ -607,12 +600,12 @@ export function PassageDetailArtifactsMobile() {
   );
 
   return (
-    <Box sx={{ maxWidth: '800px', margin: '0 auto' }}>
-      <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
+    <Box sx={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+      <Stack sx={{ width: '100%', pt: 2 }} direction="row" spacing={1}>
         {isScripture && (
           <Box>
-            <Button disableTypography onClick={() => handleFindVisible(true)}>
-              <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
+            <Button onClick={() => handleFindVisible(true)}>
+              {t.research}
             </Button>
           </Box>
         )}
