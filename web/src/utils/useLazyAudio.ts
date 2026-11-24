@@ -14,9 +14,9 @@ import { sharedSelector } from '../selector';
 import { audioManager, type AudioHandle } from './audioManager';
 import logError, { Severity } from './logErrorService';
 import type { TimeRange } from '../control/formatTime';
-import { MiniAudioPlayerStatus } from './miniAudioPlayerStatus';
+import { LazyAudioStatus } from './lazyAudioStatus';
 
-export interface UseMiniAudioProps {
+export interface UseLazyAudioProps {
   /** Media file to play. Changing it stops playback and resets the clip. */
   mediaId: string;
   /** Play only this part of the media; an `end` of 0 plays to the end. */
@@ -24,8 +24,8 @@ export interface UseMiniAudioProps {
   onFinish?: () => void;
 }
 
-export interface MiniAudio {
-  status: MiniAudioPlayerStatus;
+export interface LazyAudio {
+  status: LazyAudioStatus;
   /** Playhead, in seconds from the clip start. */
   position: number;
   /** Clip length in seconds, or 0 while it is not known yet. */
@@ -46,18 +46,18 @@ export interface MiniAudio {
  * decoded, so an unplayed clip costs no network and no memory. Playback state is
  * owned here; callers only ask to play or pause.
  */
-export function useMiniAudio({
+export function useLazyAudio({
   mediaId,
   clip,
   onFinish,
-}: UseMiniAudioProps): MiniAudio {
+}: UseLazyAudioProps): LazyAudio {
   const [blobState, fetchBlob] = useFetchMediaBlob();
 
   const [errorReporter] = useGlobal('errorReporter');
   const { showMessage } = useSnackBar();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
-  const [status, setStatus] = useState(MiniAudioPlayerStatus.Idle);
+  const [status, setStatus] = useState(LazyAudioStatus.Idle);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
   // For a play that is waiting for the download
@@ -69,7 +69,7 @@ export function useMiniAudio({
   const [prevMediaId, setPrevMediaId] = useState(mediaId);
   if (prevMediaId !== mediaId) {
     setPrevMediaId(mediaId);
-    setStatus(MiniAudioPlayerStatus.Idle);
+    setStatus(LazyAudioStatus.Idle);
     setTime(0);
     setDuration(0);
   }
@@ -99,7 +99,7 @@ export function useMiniAudio({
     // register with audioManager right away so other audio stops, and anything
     // that pauses it during loading will cancel the play
     audioManager.play(placeholderAudioHandle);
-    setStatus(MiniAudioPlayerStatus.Loading);
+    setStatus(LazyAudioStatus.Loading);
     fetchBlob(mediaId);
   }, [mediaId, fetchBlob]);
 
@@ -119,7 +119,7 @@ export function useMiniAudio({
     if (blobState.id !== mediaId) return;
     if (blobState.blobStat === BlobStatus.ERROR) {
       cancelPlaceholder();
-      setStatus(MiniAudioPlayerStatus.Idle);
+      setStatus(LazyAudioStatus.Idle);
       reportError(blobState.error || 'media fetch failed');
       return;
     }
@@ -140,7 +140,7 @@ export function useMiniAudio({
         const stopAt = end > 0 ? end : el.duration || 0;
         if (t < start || (stopAt > 0 && t >= stopAt)) rewind();
         Promise.resolve(el.play()).catch((err: unknown) => {
-          setStatus(MiniAudioPlayerStatus.Idle);
+          setStatus(LazyAudioStatus.Idle);
           audioManager.release(handle);
           // Note if we get a DOMException 'NotAllowedError' here on safari,
           // it may be because safari requires a user interaction to start playback
@@ -173,9 +173,9 @@ export function useMiniAudio({
       if (end > 0 && t >= end) finish();
       else setTime(t);
     };
-    const onPlay = () => setStatus(MiniAudioPlayerStatus.Playing);
+    const onPlay = () => setStatus(LazyAudioStatus.Playing);
     const onPause = () => {
-      setStatus(MiniAudioPlayerStatus.Idle);
+      setStatus(LazyAudioStatus.Idle);
       audioManager.release(handle);
     };
     el.addEventListener('loadedmetadata', onDuration);
@@ -186,7 +186,7 @@ export function useMiniAudio({
     el.addEventListener('ended', finish);
 
     rewind();
-    setStatus(MiniAudioPlayerStatus.Idle);
+    setStatus(LazyAudioStatus.Idle);
     // Plays only if the placeholder for the audio the user requested is still active.
     if (placeholderAudioHandleRef.current)
       audioManager.replace(placeholderAudioHandleRef.current, handle);
@@ -205,7 +205,7 @@ export function useMiniAudio({
       URL.revokeObjectURL(url);
       if (elRef.current === el) elRef.current = null;
       if (handleRef.current === handle) handleRef.current = null;
-      setStatus(MiniAudioPlayerStatus.Idle);
+      setStatus(LazyAudioStatus.Idle);
     };
   }, [blobState, mediaId, start, end, cancelPlaceholder]);
 
@@ -216,10 +216,7 @@ export function useMiniAudio({
   }, [cancelPlaceholder]);
 
   const toggle = useCallback(() => {
-    if (
-      status === MiniAudioPlayerStatus.Playing ||
-      placeholderAudioHandleRef.current
-    )
+    if (status === LazyAudioStatus.Playing || placeholderAudioHandleRef.current)
       pause();
     else requestPlay();
   }, [status, pause, requestPlay]);
@@ -246,4 +243,4 @@ export function useMiniAudio({
   };
 }
 
-export default useMiniAudio;
+export default useLazyAudio;

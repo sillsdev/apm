@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react';
 import { AudioResourceCard } from './AudioResourceCard';
 import { IRow } from '../../../../context/PassageDetailContext';
-import MiniAudioPlayer from '../../../MiniAudioPlayer';
+import MinimalAudioPlayer from '../../../MinimalAudioPlayer';
 
-jest.mock('../../../MiniAudioPlayer', () => ({
+jest.mock('../../../MinimalAudioPlayer', () => ({
   __esModule: true,
   default: jest.fn(() => null),
 }));
@@ -16,7 +16,7 @@ jest.mock('../../../../control/WrapTitle', () => ({
   ),
 }));
 
-const PlayerMock = MiniAudioPlayer as unknown as jest.Mock;
+const PlayerMock = MinimalAudioPlayer as unknown as jest.Mock;
 
 const row = (id: string, segments?: string) =>
   ({

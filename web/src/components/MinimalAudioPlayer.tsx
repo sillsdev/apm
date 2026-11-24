@@ -15,15 +15,15 @@ import { IMediaActionsStrings } from '../model';
 import { mediaActionsSelector } from '../selector';
 import { LightTooltip } from '../control/LightTooltip';
 import { Duration } from '../control/Duration';
-import { MiniAudio, useMiniAudio } from '../utils/useMiniAudio';
-import { MiniAudioPlayerStatus } from '../utils/miniAudioPlayerStatus';
+import { LazyAudio, useLazyAudio } from '../utils/useLazyAudio';
+import { LazyAudioStatus } from '../utils/lazyAudioStatus';
 import type { TimeRange } from '../control/formatTime';
 
 // TODO cleanup after we switch PassageDetailArtifacts to the new design: its
 // toolbar player is the only user of this ref handle; remove it along with
 // forwardRef and useImperativeHandle below.
-export type MiniAudioPlayerHandle = Pick<
-  MiniAudio,
+export type MinimalAudioPlayerHandle = Pick<
+  LazyAudio,
   'play' | 'pause' | 'toggle'
 >;
 
@@ -45,8 +45,8 @@ interface IProps {
  */
 // TODO cleanup after we switch PassageDetailArtifacts to the new design: make
 // this a plain function component once the ref handle is gone.
-export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
-  function MiniAudioPlayer(
+export const MinimalAudioPlayer = forwardRef<MinimalAudioPlayerHandle, IProps>(
+  function MinimalAudioPlayer(
     {
       srcMediaId,
       clip,
@@ -57,12 +57,12 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
     },
     ref
   ) {
-    const player = useMiniAudio({
+    const player = useLazyAudio({
       mediaId: srcMediaId,
       clip,
       onFinish,
     });
-    const playing = player.status === MiniAudioPlayerStatus.Playing;
+    const playing = player.status === LazyAudioStatus.Playing;
     const tm: IMediaActionsStrings = useSelector(
       mediaActionsSelector,
       shallowEqual
@@ -99,7 +99,7 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
             onClick={player.toggle}
             sx={{ p: 0.5 }}
           >
-            {player.status === MiniAudioPlayerStatus.Loading ? (
+            {player.status === LazyAudioStatus.Loading ? (
               <CircularProgress
                 data-testid="loading"
                 size={playButtonSize === 'large' ? 30 : 20}
@@ -148,4 +148,4 @@ export const MiniAudioPlayer = forwardRef<MiniAudioPlayerHandle, IProps>(
   }
 );
 
-export default MiniAudioPlayer;
+export default MinimalAudioPlayer;

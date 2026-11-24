@@ -178,7 +178,7 @@ jest.mock('./ResourceData', () => () => null);
 jest.mock('../../AlertDialog', () => () => null);
 jest.mock('./FindTabs', () => () => null);
 jest.mock('./FindBibleBrain', () => () => null);
-jest.mock('../../MiniAudioPlayer', () => () => null);
+jest.mock('../../MinimalAudioPlayer', () => () => null);
 jest.mock('./PassageResourceButton', () => ({
   PassageResourceButton: () => null,
 }));

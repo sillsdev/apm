@@ -4,8 +4,8 @@ import PlayIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import { useMemo } from 'react';
 import { startEnd } from '../utils';
-import { useMiniAudio } from '../utils/useMiniAudio';
-import { MiniAudioPlayerStatus } from '../utils/miniAudioPlayerStatus';
+import { useLazyAudio } from '../utils/useLazyAudio';
+import { LazyAudioStatus } from '../utils/lazyAudioStatus';
 import { commentCardSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ICommentCardStrings } from '../model';
@@ -22,18 +22,18 @@ interface IProps {
  * recording: shows that version number and plays/stops the part of the old
  * recording the discussion is about.
  */
-// TODO cleanup: Should we move this to use the MiniAudioPlayer component?
+// TODO cleanup: Should we move this to use the MinimalAudioPlayer component?
 export function OldVernVersion({ id, oldVernVer, mediaId, text }: IProps) {
   const t: ICommentCardStrings = useSelector(commentCardSelector, shallowEqual);
 
   const myRegion = useMemo(() => startEnd(text), [text]);
-  const player = useMiniAudio({
+  const player = useLazyAudio({
     mediaId: oldVernVer ? mediaId : '',
     clip: { start: myRegion?.start ?? 0, end: myRegion?.end ?? 0 },
   });
   // Stop, not pause: the next play starts the clip over.
   const handleClick = () => {
-    if (player.status !== MiniAudioPlayerStatus.Idle) {
+    if (player.status !== LazyAudioStatus.Idle) {
       player.pause();
       player.seek(0);
     } else player.play();
@@ -51,9 +51,9 @@ export function OldVernVersion({ id, oldVernVer, mediaId, text }: IProps) {
           onClick={handleClick}
           sx={{ p: '3px', m: '5px' }}
         >
-          {player.status === MiniAudioPlayerStatus.Loading ? (
+          {player.status === LazyAudioStatus.Loading ? (
             <CircularProgress size={16} />
-          ) : player.status === MiniAudioPlayerStatus.Playing ? (
+          ) : player.status === LazyAudioStatus.Playing ? (
             <StopIcon fontSize="small" />
           ) : (
             <PlayIcon fontSize="small" />

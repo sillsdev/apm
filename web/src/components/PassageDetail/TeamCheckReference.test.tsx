@@ -15,8 +15,8 @@ jest.mock('./Internalization/SelectMyResource', () => ({
   default: jest.fn(() => <div data-testid="select-resource" />),
 }));
 
-jest.mock('../MiniAudioPlayer', () => ({
-  MiniAudioPlayer: jest.fn(() => <div data-testid="mini-audio-player" />),
+jest.mock('../MinimalAudioPlayer', () => ({
+  MinimalAudioPlayer: jest.fn(() => <div data-testid="minimal-audio-player" />),
 }));
 
 jest.mock('../../crud/useOrgDefaults', () => ({
@@ -96,7 +96,7 @@ import React, { act } from 'react';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { TeamCheckReference } from './TeamCheckReference';
 import SelectMyResource from './Internalization/SelectMyResource';
-import { MiniAudioPlayer } from '../MiniAudioPlayer';
+import { MinimalAudioPlayer } from '../MinimalAudioPlayer';
 import { speakReferenceText } from '../../business/referenceText/speakReferenceText';
 
 const mockSpeak = speakReferenceText as jest.Mock;
@@ -112,7 +112,7 @@ const bsb = {
 const PRIMARY_ID = 'referenceText:primary';
 
 const SelectMyResourceMock = SelectMyResource as unknown as jest.Mock;
-const MiniAudioPlayerMock = MiniAudioPlayer as unknown as jest.Mock;
+const MinimalAudioPlayerMock = MinimalAudioPlayer as unknown as jest.Mock;
 
 const storedRow = {
   id: 'res-1',
@@ -158,7 +158,7 @@ function renderWithContext(stateOverrides?: Record<string, unknown>) {
 describe('TeamCheckReference', () => {
   beforeEach(() => {
     SelectMyResourceMock.mockClear();
-    MiniAudioPlayerMock.mockClear();
+    MinimalAudioPlayerMock.mockClear();
     localStorage.clear();
     delete mockPassages.primary;
     delete mockPassages.secondary;
@@ -199,7 +199,7 @@ describe('TeamCheckReference', () => {
 
     renderWithContext({ rowData: [storedRow] });
     // the stored choice was restored on mount
-    const props = MiniAudioPlayerMock.mock.calls.at(-1)[0];
+    const props = MinimalAudioPlayerMock.mock.calls.at(-1)[0];
     expect(props.srcMediaId).toBe('res-1');
     expect(props.onFinish).toBeUndefined();
 
@@ -207,7 +207,9 @@ describe('TeamCheckReference', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    expect(MiniAudioPlayerMock.mock.calls.at(-1)[0].srcMediaId).toBe('res-1');
+    expect(MinimalAudioPlayerMock.mock.calls.at(-1)[0].srcMediaId).toBe(
+      'res-1'
+    );
   });
 
   it('plays just the chosen clip of a longer recording', () => {
@@ -229,7 +231,7 @@ describe('TeamCheckReference', () => {
 
     act(() => SelectMyResourceMock.mock.calls.at(-1)[0].onChange('res-2'));
 
-    const props = MiniAudioPlayerMock.mock.calls.at(-1)[0];
+    const props = MinimalAudioPlayerMock.mock.calls.at(-1)[0];
     expect(props.srcMediaId).toBe('res-2');
     expect(props.clip).toEqual({ start: 4, end: 9 });
   });
@@ -248,7 +250,7 @@ describe('TeamCheckReference', () => {
       SelectMyResourceMock.mock.calls.at(-1)[0].onChange(PRIMARY_ID);
     });
 
-    expect(screen.queryByTestId('mini-audio-player')).toBeNull();
+    expect(screen.queryByTestId('minimal-audio-player')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Play' }));
     expect(mockSpeak).toHaveBeenCalledWith(
       bsb,
@@ -269,7 +271,7 @@ describe('TeamCheckReference', () => {
 
     renderWithContext();
 
-    expect(screen.queryByTestId('mini-audio-player')).toBeNull();
+    expect(screen.queryByTestId('minimal-audio-player')).toBeNull();
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
   });
 
@@ -285,8 +287,10 @@ describe('TeamCheckReference', () => {
     act(() => onChange(PRIMARY_ID));
     act(() => onChange('res-1'));
 
-    expect(MiniAudioPlayerMock.mock.calls.at(-1)[0].srcMediaId).toBe('res-1');
-    expect(screen.getByTestId('mini-audio-player')).toBeInTheDocument();
+    expect(MinimalAudioPlayerMock.mock.calls.at(-1)[0].srcMediaId).toBe(
+      'res-1'
+    );
+    expect(screen.getByTestId('minimal-audio-player')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
   });
 });

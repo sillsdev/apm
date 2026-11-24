@@ -1,15 +1,18 @@
 import { createRef } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MiniAudioPlayer, MiniAudioPlayerHandle } from './MiniAudioPlayer';
-import type { MiniAudio, UseMiniAudioProps } from '../utils/useMiniAudio';
-import { MiniAudioPlayerStatus } from '../utils/miniAudioPlayerStatus';
+import {
+  MinimalAudioPlayer,
+  MinimalAudioPlayerHandle,
+} from './MinimalAudioPlayer';
+import type { LazyAudio, UseLazyAudioProps } from '../utils/useLazyAudio';
+import { LazyAudioStatus } from '../utils/lazyAudioStatus';
 
-// Playback itself is useMiniAudio's job (see useMiniAudio.test.ts); these tests
+// Playback itself is useLazyAudio's job (see useLazyAudio.test.ts); these tests
 // cover what the player shows and wires up.
-let mockPlayer: MiniAudio;
-let mockPlayerProps: UseMiniAudioProps | undefined;
-jest.mock('../utils/useMiniAudio', () => ({
-  useMiniAudio: (props: UseMiniAudioProps) => {
+let mockPlayer: LazyAudio;
+let mockPlayerProps: UseLazyAudioProps | undefined;
+jest.mock('../utils/useLazyAudio', () => ({
+  useLazyAudio: (props: UseLazyAudioProps) => {
     mockPlayerProps = props;
     return mockPlayer;
   },
@@ -23,8 +26,8 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 
-const player = (overrides: Partial<MiniAudio> = {}): MiniAudio => ({
-  status: MiniAudioPlayerStatus.Idle,
+const player = (overrides: Partial<LazyAudio> = {}): LazyAudio => ({
+  status: LazyAudioStatus.Idle,
   position: 0,
   length: 0,
   play: jest.fn(),
@@ -34,7 +37,7 @@ const player = (overrides: Partial<MiniAudio> = {}): MiniAudio => ({
   ...overrides,
 });
 
-describe('<MiniAudioPlayer />', () => {
+describe('<MinimalAudioPlayer />', () => {
   beforeEach(() => {
     mockPlayer = player();
     mockPlayerProps = undefined;
@@ -43,7 +46,7 @@ describe('<MiniAudioPlayer />', () => {
   it('passes the media, clip and onFinish to the hook', () => {
     const onFinish = jest.fn();
     render(
-      <MiniAudioPlayer
+      <MinimalAudioPlayer
         srcMediaId="m1"
         clip={{ start: 2, end: 9 }}
         onFinish={onFinish}
@@ -57,31 +60,31 @@ describe('<MiniAudioPlayer />', () => {
   });
 
   it('shows a play button and a disabled slider before anything loads', () => {
-    render(<MiniAudioPlayer srcMediaId="m1" />);
+    render(<MinimalAudioPlayer srcMediaId="m1" />);
 
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
     expect(screen.getByRole('slider')).toBeDisabled();
   });
 
   it('the play button toggles playback', () => {
-    render(<MiniAudioPlayer srcMediaId="m1" />);
+    render(<MinimalAudioPlayer srcMediaId="m1" />);
     fireEvent.click(screen.getByTestId('play-pause'));
     expect(mockPlayer.toggle).toHaveBeenCalled();
   });
 
   it('shows a spinner in place of the play icon while loading', () => {
-    mockPlayer = player({ status: MiniAudioPlayerStatus.Loading });
-    render(<MiniAudioPlayer srcMediaId="m1" />);
+    mockPlayer = player({ status: LazyAudioStatus.Loading });
+    render(<MinimalAudioPlayer srcMediaId="m1" />);
     expect(screen.getByTestId('loading')).toBeInTheDocument();
   });
 
   it('shows pause while playing, and the clip position and length', () => {
     mockPlayer = player({
-      status: MiniAudioPlayerStatus.Playing,
+      status: LazyAudioStatus.Playing,
       position: 65,
       length: 125,
     });
-    render(<MiniAudioPlayer srcMediaId="m1" />);
+    render(<MinimalAudioPlayer srcMediaId="m1" />);
 
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
     expect(screen.getByRole('slider')).not.toBeDisabled();
@@ -91,7 +94,7 @@ describe('<MiniAudioPlayer />', () => {
 
   it('moving the slider seeks within the clip', () => {
     mockPlayer = player({ position: 10, length: 30 });
-    render(<MiniAudioPlayer srcMediaId="m1" />);
+    render(<MinimalAudioPlayer srcMediaId="m1" />);
 
     fireEvent.change(screen.getByRole('slider'), { target: { value: 12 } });
 
@@ -102,19 +105,19 @@ describe('<MiniAudioPlayer />', () => {
   it('reports playing changes', () => {
     const onPlayingChange = jest.fn();
     const { rerender } = render(
-      <MiniAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
+      <MinimalAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
     );
-    mockPlayer = player({ status: MiniAudioPlayerStatus.Playing });
+    mockPlayer = player({ status: LazyAudioStatus.Playing });
     rerender(
-      <MiniAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
+      <MinimalAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
     );
     expect(onPlayingChange).toHaveBeenLastCalledWith(true);
   });
 
   // TODO cleanup after we switch PassageDetailArtifacts to the new design
   it('exposes play, pause and toggle through its ref', () => {
-    const ref = createRef<MiniAudioPlayerHandle>();
-    render(<MiniAudioPlayer ref={ref} srcMediaId="m1" />);
+    const ref = createRef<MinimalAudioPlayerHandle>();
+    render(<MinimalAudioPlayer ref={ref} srcMediaId="m1" />);
 
     act(() => ref.current?.toggle());
     act(() => ref.current?.pause());

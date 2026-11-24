@@ -41,7 +41,7 @@ import { useArtifactType } from '../../crud';
 import { useSelector } from 'react-redux';
 import { commentCardSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import MiniAudioPlayer from '../MiniAudioPlayer';
+import MinimalAudioPlayer from '../MinimalAudioPlayer';
 
 const StyledWrapper = styled(Box)<BoxProps>(() => ({
   display: 'flex',
@@ -358,7 +358,10 @@ export const CommentCard = (props: IProps) => {
             {media && !oldVernVer && (
               // Nothing is downloaded until the play button is pressed.
               <MediaCol id="commentplayer" sx={{ pr: 2.5 }}>
-                <MiniAudioPlayer srcMediaId={mediaId} playButtonSize="small" />
+                <MinimalAudioPlayer
+                  srcMediaId={mediaId}
+                  playButtonSize="small"
+                />
               </MediaCol>
             )}
           </BoxRow>

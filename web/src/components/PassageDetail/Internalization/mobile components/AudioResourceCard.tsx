@@ -10,7 +10,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
-import MiniAudioPlayer from '../../../MiniAudioPlayer';
+import MinimalAudioPlayer from '../../../MinimalAudioPlayer';
 import { useMobile } from '../../../../utils/useMobile';
 import { useMemo } from 'react';
 import { WrapTitle } from '../../../../control/WrapTitle';
@@ -155,7 +155,7 @@ export function AudioResourceCard({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Audio playback UI for audio/* resource files. */}
           <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>
-            <MiniAudioPlayer
+            <MinimalAudioPlayer
               srcMediaId={row.id}
               clip={clip}
               playButtonSize="large"

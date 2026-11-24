@@ -41,7 +41,9 @@ import {
   UriLinkType,
   mediaContentType,
 } from '../../../utils/contentType';
-import MiniAudioPlayer, { MiniAudioPlayerHandle } from '../../MiniAudioPlayer';
+import MinimalAudioPlayer, {
+  MinimalAudioPlayerHandle,
+} from '../../MinimalAudioPlayer';
 import type { TimeRange } from '../../../control/formatTime';
 import { resourceClip } from './resourceClip';
 import { canSaveResourceEdit } from './resourceArtifactName';
@@ -174,7 +176,7 @@ export function PassageDetailArtifacts() {
   const [playId, setPlayId] = useState('');
   const [playClip, setPlayClip] = useState<TimeRange>();
   const [playing, setPlaying] = useState(false);
-  const playerRef = useRef<MiniAudioPlayerHandle>(null);
+  const playerRef = useRef<MinimalAudioPlayerHandle>(null);
   const { removeKey } = storedCompareKey(passage, section);
   const [plan] = useGlobal('plan'); //will be constant here
   const planType = usePlanType();
@@ -668,7 +670,7 @@ export function PassageDetailArtifacts() {
               }}
             >
               <MediaContainer>
-                <MiniAudioPlayer
+                <MinimalAudioPlayer
                   ref={playerRef}
                   srcMediaId={playId}
                   clip={playClip}

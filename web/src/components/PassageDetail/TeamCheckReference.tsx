@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { Grid, GridProps, styled } from '@mui/material';
 import SelectMyResource from './Internalization/SelectMyResource';
-import { MiniAudioPlayer } from '../MiniAudioPlayer';
+import { MinimalAudioPlayer } from '../MinimalAudioPlayer';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import type { TimeRange } from '../../control/formatTime';
 import { resourceClip } from './Internalization/resourceClip';
@@ -69,7 +69,7 @@ export function TeamCheckReference() {
         {referenceRank ? (
           <CompareReferenceText key={passage.id} rank={referenceRank} />
         ) : (
-          playId && <MiniAudioPlayer srcMediaId={playId} clip={clip} />
+          playId && <MinimalAudioPlayer srcMediaId={playId} clip={clip} />
         )}
       </StyledGrid>
     </Grid>

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { audioManager, useIsAudioPlaying } from './audioManager';
-import { useMiniAudio } from './useMiniAudio';
-import { MiniAudioPlayerStatus } from './miniAudioPlayerStatus';
+import { useLazyAudio } from './useLazyAudio';
+import { LazyAudioStatus } from './lazyAudioStatus';
 import type { TimeRange } from '../control/formatTime';
 
 // The blob fetch is the network boundary: tests decide when (and whether) it
@@ -91,7 +91,7 @@ afterEach(() => {
 
 type Props = { mediaId: string; clip?: TimeRange };
 const renderPlayer = (props: Props, onFinish = jest.fn()) =>
-  renderHook((p: Props) => useMiniAudio({ ...p, onFinish }), {
+  renderHook((p: Props) => useLazyAudio({ ...p, onFinish }), {
     initialProps: props,
   });
 
@@ -113,7 +113,7 @@ const renderPlaying = (props: Props, onFinish = jest.fn()) => {
   return player;
 };
 
-describe('useMiniAudio', () => {
+describe('useLazyAudio', () => {
   it('fetches nothing until play is requested', () => {
     renderPlayer({ mediaId: 'm1' });
 
@@ -127,26 +127,26 @@ describe('useMiniAudio', () => {
 
     act(() => result.current.play());
     expect(mockFetchBlob).toHaveBeenCalledWith('m1');
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Loading);
+    expect(result.current.status).toBe(LazyAudioStatus.Loading);
 
     deliver(rerender, props);
 
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Loading);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Loading);
     expect(audios).toHaveLength(1);
     expect(audios[0].play).toHaveBeenCalled();
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).toBe(LazyAudioStatus.Playing);
   });
 
   it('starting one clip pauses another (audioManager)', () => {
     const a = renderPlaying({ mediaId: 'a' });
     const elA = audios[0];
-    expect(a.result.current.status).toBe(MiniAudioPlayerStatus.Playing);
+    expect(a.result.current.status).toBe(LazyAudioStatus.Playing);
 
     const b = renderPlaying({ mediaId: 'b' });
 
     expect(elA.pause).toHaveBeenCalled();
-    expect(a.result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
-    expect(b.result.current.status).toBe(MiniAudioPlayerStatus.Playing);
+    expect(a.result.current.status).not.toBe(LazyAudioStatus.Playing);
+    expect(b.result.current.status).toBe(LazyAudioStatus.Playing);
   });
 
   it('starts at the clip start and stops (rewinding) at its end', () => {
@@ -165,7 +165,7 @@ describe('useMiniAudio', () => {
 
     playTo(el, 20.1);
     expect(onFinish).toHaveBeenCalledTimes(1);
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Playing);
     expect(el.currentTime).toBe(10);
   });
 
@@ -178,13 +178,13 @@ describe('useMiniAudio', () => {
     deliver(rerender, props);
     setDuration(audios[0], 300);
     expect(result.current.length).toBe(300);
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).toBe(LazyAudioStatus.Playing);
 
     rerender({ mediaId: 'm1', clip: { start: 10, end: 20 } });
     expect(audios).toHaveLength(2);
     expect(mockFetchBlob).toHaveBeenCalledTimes(1);
     expect(audios[0].pause).toHaveBeenCalled();
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Playing);
     expect(result.current.length).toBe(10);
     const el = audios[1];
     expect(el.currentTime).toBe(10);
@@ -202,10 +202,10 @@ describe('useMiniAudio', () => {
     playTo(el, 12);
 
     act(() => result.current.toggle());
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Playing);
     act(() => result.current.toggle());
 
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).toBe(LazyAudioStatus.Playing);
     expect(el.currentTime).toBe(12);
   });
 
@@ -230,7 +230,7 @@ describe('useMiniAudio', () => {
 
     expect(old.pause).toHaveBeenCalled();
     expect(URL.revokeObjectURL).toHaveBeenCalled();
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Idle);
+    expect(result.current.status).toBe(LazyAudioStatus.Idle);
     // Nothing is fetched for the new media until it is played.
     expect(mockFetchBlob).not.toHaveBeenCalled();
     act(() => result.current.play());
@@ -256,7 +256,7 @@ describe('useMiniAudio', () => {
     deliver(rerender, props);
 
     expect(audios[0].play).not.toHaveBeenCalled();
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Idle);
+    expect(result.current.status).toBe(LazyAudioStatus.Idle);
   });
 
   it('stops other audio on the tap, before the download finishes', () => {
@@ -267,7 +267,7 @@ describe('useMiniAudio', () => {
     act(() => result.current.play());
 
     expect(other.pause).toHaveBeenCalled();
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Loading);
+    expect(result.current.status).toBe(LazyAudioStatus.Loading);
   });
 
   it('does not start a pending clip once another player has started', () => {
@@ -291,7 +291,7 @@ describe('useMiniAudio', () => {
     deliver(rerender, props);
 
     expect(audios[0].play).not.toHaveBeenCalled();
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Playing);
   });
 
   it('releases a pending tap when the download fails', () => {
@@ -314,13 +314,13 @@ describe('useMiniAudio', () => {
     mockBlobState = { id: 'm1', blobStat: ERROR, blob: new Blob() };
     rerender({ ...props });
 
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Loading);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Loading);
     expect(mockLogError).toHaveBeenCalled();
     expect(mockShowMessage).toHaveBeenCalledWith('Media error');
 
     act(() => result.current.play());
     expect(mockFetchBlob).toHaveBeenCalledTimes(2);
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Loading);
+    expect(result.current.status).toBe(LazyAudioStatus.Loading);
   });
 
   it('reports media the browser cannot play', async () => {
@@ -340,7 +340,7 @@ describe('useMiniAudio', () => {
 
     expect(mockLogError).toHaveBeenCalled();
     expect(mockShowMessage).toHaveBeenCalledWith('Media error');
-    expect(result.current.status).not.toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).not.toBe(LazyAudioStatus.Playing);
   });
 
   // WebM isn't supported (TT-7899); an unknown duration just leaves the length
@@ -351,7 +351,7 @@ describe('useMiniAudio', () => {
 
     setDuration(el, Infinity);
     expect(result.current.length).toBe(0);
-    expect(result.current.status).toBe(MiniAudioPlayerStatus.Playing);
+    expect(result.current.status).toBe(LazyAudioStatus.Playing);
 
     setDuration(el, 42);
     expect(result.current.length).toBe(42);
