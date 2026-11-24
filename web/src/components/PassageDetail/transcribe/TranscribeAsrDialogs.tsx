@@ -102,13 +102,15 @@ export function TranscribeAsrDialogs({
         </BigDialog>
       )}
       {asrPrompt && (
-        // Dismissing inserts: it never discards the user's text (TT-7856).
+        // Dismissing leaves the pane as it was; the result is offered again on
+        // the next run with the same method (TT-7856).
         <Confirm
           text={t.asrReplaceExisting}
           yes={t.asrReplace}
           no={t.asrInsert}
           yesResponse={asrPrompt.onReplace}
           noResponse={asrPrompt.onInsert}
+          onDismiss={asrPrompt.onDismiss}
           primaryButton="no"
         />
       )}

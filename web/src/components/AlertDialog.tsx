@@ -35,6 +35,8 @@ interface IProps {
   yes?: string;
   noResponse: () => void;
   yesResponse: () => void;
+  /** Escape or a click outside the box. Defaults to noResponse. */
+  onDismiss?: () => void;
   noOnLeft?: boolean;
   isDelete?: boolean;
   /** Which action button is styled as primary (emphasized). Defaults to neither. */
@@ -50,6 +52,7 @@ function AlertDialog(props: IProps) {
     yes,
     yesResponse,
     noResponse,
+    onDismiss,
     noOnLeft,
     isDelete,
     primaryButton,
@@ -60,7 +63,9 @@ function AlertDialog(props: IProps) {
   const theme = useTheme();
 
   const handleClose = () => {
-    if (noResponse !== null) {
+    if (onDismiss) {
+      onDismiss();
+    } else if (noResponse !== null) {
       noResponse();
     }
     setOpen(false);

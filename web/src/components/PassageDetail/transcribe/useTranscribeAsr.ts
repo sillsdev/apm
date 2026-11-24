@@ -36,6 +36,8 @@ export interface UseTranscribeAsrProps {
   getCurrentText: () => string;
   /** The recording already has a transcription task to resume. */
   hasActiveTask?: boolean;
+  /** The recording being transcribed; a dismissed result is kept for it. */
+  mediaId?: string;
 }
 
 export type AsrSettingsStatus = 'loading' | 'ready' | 'failed';
@@ -45,6 +47,14 @@ export interface AsrPrompt {
   result: AsrResult;
   onReplace: () => void;
   onInsert: () => void;
+  /** Escape or a click outside: leave the pane, keep the result to offer again. */
+  onDismiss: () => void;
+}
+
+/** A result and the ASR settings of the run that made it. */
+interface HeldAsr {
+  result: AsrResult;
+  asr: IAsrState | undefined;
 }
 
 /**
@@ -103,6 +113,7 @@ export function useTranscribeAsr({
   onTextAdd,
   getCurrentText,
   hasActiveTask = false,
+  mediaId,
 }: UseTranscribeAsrProps) {
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
@@ -141,10 +152,53 @@ export function useTranscribeAsr({
     [clearForceAsr]
   );
 
-  const startAsr = useCallback((asrOverrideState?: IAsrState) => {
-    setAsrOverride(asrOverrideState);
-    setProgressVisible(true);
-  }, []);
+  const [pendingAsr, setPendingAsr] = useState<HeldAsr>();
+  /** A dismissed result, offered again instead of a run with the same settings. */
+  const [keptAsr, setKeptAsr] = useState<HeldAsr & { mediaId?: string }>();
+
+  /**
+   * Apply an ASR result. Onto an empty pane (verse markers alone don't count)
+   * it is added; onto text the user already has, ask Replace or Insert
+   * (TT-7856) instead of silently duplicating or overwriting it.
+   */
+  const applyAsrResult = useCallback(
+    (result: AsrResult, asr: IAsrState | undefined) => {
+      const full = cleanAsrTranscription(result.full);
+      if (!full) return;
+      const current = getCurrentText();
+      if (current.includes(full)) return;
+      if (!ignoreVs(current)?.trim()) {
+        const added = autoTranscriptionToAppend(full, current);
+        if (added !== undefined) onTextAdd(added, 'end');
+        return;
+      }
+      setPendingAsr({
+        result: {
+          full,
+          withoutFilled: cleanAsrTranscription(result.withoutFilled),
+        },
+        asr,
+      });
+    },
+    [getCurrentText, onTextAdd]
+  );
+
+  const startAsr = useCallback(
+    (asrOverrideState?: IAsrState) => {
+      setKeptAsr(undefined);
+      if (
+        keptAsr &&
+        keptAsr.mediaId === mediaId &&
+        asrStatesEqual(keptAsr.asr, asrOverrideState)
+      ) {
+        applyAsrResult(keptAsr.result, keptAsr.asr);
+        return;
+      }
+      setAsrOverride(asrOverrideState);
+      setProgressVisible(true);
+    },
+    [keptAsr, mediaId, applyAsrResult]
+  );
 
   const openAsrLanguageSettings = useCallback(() => {
     snapshotAsrAtOpen();
@@ -191,48 +245,31 @@ export function useTranscribeAsr({
     [asrSettings, applyForceFromClosedAsr, startAsr]
   );
 
-  const [pendingAsr, setPendingAsr] = useState<AsrResult>();
-
-  /**
-   * Apply an ASR result. Onto an empty pane (verse markers alone don't count)
-   * it is added; onto text the user already has, ask Replace or Insert
-   * (TT-7856) instead of silently duplicating or overwriting it.
-   */
+  /** A result from the run that just finished. */
   const handleAutoTranscribe = useCallback(
-    (result: AsrResult) => {
-      const full = cleanAsrTranscription(result.full);
-      if (!full) return;
-      const current = getCurrentText();
-      if (current.includes(full)) return;
-      if (!ignoreVs(current)?.trim()) {
-        const added = autoTranscriptionToAppend(full, current);
-        if (added !== undefined) onTextAdd(added, 'end');
-        return;
-      }
-      setPendingAsr({
-        full,
-        withoutFilled: cleanAsrTranscription(result.withoutFilled),
-      });
-    },
-    [getCurrentText, onTextAdd]
+    (result: AsrResult) => applyAsrResult(result, asrOverride ?? asrSettings),
+    [applyAsrResult, asrOverride, asrSettings]
   );
 
-  const asrPrompt = useMemo<AsrPrompt | undefined>(
-    () =>
-      pendingAsr && {
-        result: pendingAsr,
-        onReplace: () => {
-          onTextAdd(pendingAsr.full, 'replace');
-          setPendingAsr(undefined);
-        },
-        onInsert: () => {
-          if (pendingAsr.withoutFilled)
-            onTextAdd(pendingAsr.withoutFilled, 'cursor');
-          setPendingAsr(undefined);
-        },
+  const asrPrompt = useMemo<AsrPrompt | undefined>(() => {
+    if (!pendingAsr) return undefined;
+    const { result } = pendingAsr;
+    return {
+      result,
+      onReplace: () => {
+        onTextAdd(result.full, 'replace');
+        setPendingAsr(undefined);
       },
-    [pendingAsr, onTextAdd]
-  );
+      onInsert: () => {
+        if (result.withoutFilled) onTextAdd(result.withoutFilled, 'cursor');
+        setPendingAsr(undefined);
+      },
+      onDismiss: () => {
+        setKeptAsr({ ...pendingAsr, mediaId });
+        setPendingAsr(undefined);
+      },
+    };
+  }, [pendingAsr, onTextAdd, mediaId]);
 
   return {
     asrSettings,

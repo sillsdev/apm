@@ -237,16 +237,19 @@ describe('useTranscribeAsr', () => {
     const renderWith = async (current: string, hasActiveTask = false) => {
       getAsrSettings.mockResolvedValue(saved);
       const onTextAdd = jest.fn();
-      const hook = renderHook(() =>
-        useTranscribeAsr({
-          team: undefined,
-          sharedStr: { mustBeOnline: 'online' } as never,
-          tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
-          showMessage: jest.fn(),
-          onTextAdd,
-          getCurrentText: () => current,
-          hasActiveTask,
-        })
+      const hook = renderHook(
+        ({ mediaId }: { mediaId: string }) =>
+          useTranscribeAsr({
+            team: undefined,
+            sharedStr: { mustBeOnline: 'online' } as never,
+            tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+            showMessage: jest.fn(),
+            onTextAdd,
+            getCurrentText: () => current,
+            hasActiveTask,
+            mediaId,
+          }),
+        { initialProps: { mediaId: 'm1' } }
       );
       await waitFor(() =>
         expect(hook.result.current.asrSettings?.asrIso).toBe('eng')
@@ -263,6 +266,83 @@ describe('useTranscribeAsr', () => {
 
       expect(result.current.asrPrompt).toBeUndefined();
       expect(onTextAdd).toHaveBeenCalledWith('new result', 'end');
+    });
+
+    it('adds without asking when the pane has only a suffixed verse marker', async () => {
+      const { result, onTextAdd } = await renderWith('\\v 1-5a ');
+
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1-5a New words'))
+      );
+
+      expect(result.current.asrPrompt).toBeUndefined();
+      expect(onTextAdd).toHaveBeenCalledWith('New words', 'end');
+    });
+
+    describe('dismissing the prompt', () => {
+      const dismissed = async (current = '\\v 1 old words') => {
+        const hook = await renderWith(current);
+        act(() =>
+          hook.result.current.handleAutoTranscribe(
+            asrResult('\\v 1 new result')
+          )
+        );
+        act(() => hook.result.current.asrPrompt?.onDismiss());
+        return hook;
+      };
+
+      it('leaves the pane as it was', async () => {
+        const { result, onTextAdd } = await dismissed();
+
+        expect(onTextAdd).not.toHaveBeenCalled();
+        expect(result.current.asrPrompt).toBeUndefined();
+      });
+
+      it('offers the same result again without a new run', async () => {
+        const { result } = await dismissed();
+
+        act(() => result.current.handleTranscribe());
+
+        expect(result.current.asrProgressVisible).toBe(false);
+        expect(result.current.asrPrompt?.result.full).toBe('\\v 1 new result');
+      });
+
+      it('offers it only once it is chosen', async () => {
+        const { result, onTextAdd } = await dismissed();
+
+        act(() => result.current.handleTranscribe());
+        act(() => result.current.asrPrompt?.onReplace());
+        act(() => result.current.handleTranscribe());
+
+        expect(onTextAdd).toHaveBeenCalledTimes(1);
+        expect(result.current.asrProgressVisible).toBe(true);
+      });
+
+      it('runs again on another recording', async () => {
+        const { result, rerender } = await dismissed();
+
+        rerender({ mediaId: 'm2' });
+        act(() => result.current.handleTranscribe());
+
+        expect(result.current.asrProgressVisible).toBe(true);
+        expect(result.current.asrPrompt).toBeUndefined();
+      });
+
+      it('runs again when the method is changed', async () => {
+        const { result } = await dismissed();
+
+        act(() => result.current.openAsrLanguageSettings());
+        act(() =>
+          result.current.handleAsrLanguageClose(false, {
+            ...saved,
+            asrMethod: 'whisper',
+          } as never)
+        );
+
+        expect(result.current.forceAsr).toBe(true);
+        expect(result.current.asrProgressVisible).toBe(true);
+        expect(result.current.asrPrompt).toBeUndefined();
+      });
     });
 
     it('asks before adding when the pane has text', async () => {

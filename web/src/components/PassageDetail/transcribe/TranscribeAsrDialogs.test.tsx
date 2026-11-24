@@ -38,6 +38,7 @@ import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
 const renderDialogs = (result?: AsrResult) => {
   const onAsrReplace = jest.fn();
   const onAsrInsert = jest.fn();
+  const onAsrDismiss = jest.fn();
   render(
     <TranscribeAsrDialogs
       team={undefined}
@@ -51,12 +52,17 @@ const renderDialogs = (result?: AsrResult) => {
       onProgressOpen={jest.fn()}
       onAsrResult={jest.fn()}
       asrPrompt={
-        result && { result, onReplace: onAsrReplace, onInsert: onAsrInsert }
+        result && {
+          result,
+          onReplace: onAsrReplace,
+          onInsert: onAsrInsert,
+          onDismiss: onAsrDismiss,
+        }
       }
       bp={BigDialogBp.sm}
     />
   );
-  return { onAsrReplace, onAsrInsert };
+  return { onAsrReplace, onAsrInsert, onAsrDismiss };
 };
 
 const pending: AsrResult = { full: '\\v 1 new', withoutFilled: '' };
@@ -90,10 +96,11 @@ describe('TranscribeAsrDialogs replace prompt', () => {
     expect(onAsrReplace).not.toHaveBeenCalled();
   });
 
-  it('inserts, never replaces, when the prompt is dismissed', () => {
-    const { onAsrReplace, onAsrInsert } = renderDialogs(pending);
+  it('neither inserts nor replaces when the prompt is dismissed', () => {
+    const { onAsrReplace, onAsrInsert, onAsrDismiss } = renderDialogs(pending);
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-    expect(onAsrInsert).toHaveBeenCalled();
+    expect(onAsrDismiss).toHaveBeenCalled();
+    expect(onAsrInsert).not.toHaveBeenCalled();
     expect(onAsrReplace).not.toHaveBeenCalled();
   });
 });
