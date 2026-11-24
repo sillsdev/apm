@@ -10,6 +10,8 @@ interface AiProcessingProps extends Partial<AiProgress> {
   /** Defaults to the AI-in-progress notice. */
   message?: string;
   onCancel: () => void;
+  /** True once the result is being applied; Cancel can no longer undo it. */
+  cancelDisabled?: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ export function AiProcessing({
   estimateSec,
   message,
   onCancel,
+  cancelDisabled,
 }: AiProcessingProps) {
   const t: IWsAudioPlayerStrings = useSelector(
     wsAudioPlayerSelector,
@@ -60,7 +63,7 @@ export function AiProcessing({
           textId="ai-time-estimate"
         />
       )}
-      <Button id="ai-cancel" onClick={onCancel}>
+      <Button id="ai-cancel" onClick={onCancel} disabled={cancelDisabled}>
         {ts.cancel}
       </Button>
     </Box>

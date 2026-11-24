@@ -1238,6 +1238,50 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(reload).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('AI in progress')).toBeNull();
   });
+
+  // TT-7791: wsRegionReplace changes the player before it resolves. Cancel
+  // then would leave the processed audio playing while Save kept the original.
+  it('keeps Cancel disabled while the AI result replaces the audio, then plays and saves the same blob', async () => {
+    const aiCallbacks: ((file: File | Error) => void)[] = [];
+    mockRequestAudioAi.mockImplementation(
+      (request: { cb: (file: File | Error) => void }) => {
+        aiCallbacks.push(request.cb);
+        return Promise.resolve();
+      }
+    );
+    let finishReplace: (blob: Blob) => void = () => undefined;
+    (waveSurferMock.wsRegionReplace as jest.Mock).mockImplementation(
+      () =>
+        new Promise<Blob>((resolve) => {
+          finishReplace = resolve;
+        })
+    );
+    const processed = new Blob([new Uint8Array([2])], { type: 'audio/wav' });
+    (waveSurferMock.wsBlob as jest.Mock).mockImplementation(
+      async () => processed
+    );
+    (waveSurferMock.wsDuration as jest.Mock).mockReturnValue(10);
+    const reload = jest.fn();
+    const onBlobReady = jest.fn();
+    await startNoiseRemoval(jest.fn(), 10, { reload, onBlobReady });
+
+    await act(async () => {
+      aiCallbacks[0](new File(['ai'], 'ai.wav', { type: 'audio/wav' }));
+    });
+
+    const cancel = document.getElementById('ai-cancel') as HTMLButtonElement;
+    expect(cancel).toBeDisabled();
+    fireEvent.click(cancel);
+    expect(screen.getByText('AI in progress')).toBeTruthy();
+
+    await act(async () => {
+      finishReplace(processed);
+    });
+
+    expect(reload).toHaveBeenCalledWith(processed);
+    expect(onBlobReady).toHaveBeenCalledWith(processed);
+    expect(screen.queryByText('AI in progress')).toBeNull();
+  });
 });
 
 describe('WSAudioPlayer microphone disconnect fallback', () => {

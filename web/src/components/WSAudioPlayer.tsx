@@ -515,6 +515,8 @@ function WSAudioPlayer(props: IProps) {
   const [aiRun, setAiRun] = useState<{
     startedAt: number;
     estimateSec: number;
+    /** The result is replacing the audio; Cancel can no longer undo it. */
+    applying?: boolean;
   }>();
   const readyRef = useRef(false);
   const [ready, setReadyx] = useState(false);
@@ -1898,6 +1900,7 @@ function WSAudioPlayer(props: IProps) {
           message={processMsg}
           startedAt={aiRun?.startedAt}
           estimateSec={aiRun?.estimateSec}
+          cancelDisabled={aiRun?.applying}
           onCancel={() => {
             cancelAIRef.current.current = true;
             doingProcess(false);
@@ -1981,9 +1984,13 @@ function WSAudioPlayer(props: IProps) {
                   // TT-7791: Cancel already restored the player.
                   if (run.current) return;
                   if (file instanceof File) {
+                    // TT-7791: wsRegionReplace changes the player before it
+                    // resolves, so this is the commit point. Cancel is
+                    // disabled from here until the new audio is published,
+                    // keeping playback and Save on the same blob.
+                    setAiRun((r) => r && { ...r, applying: true });
                     wsRegionReplace(new Blob([file], { type: file.type }))
                       .then((newblob) => {
-                        if (run.current) return;
                         recordTiming();
                         if (newblob) reload(newblob);
                         publishChanged();
