@@ -77,6 +77,15 @@ function loadVerseTimings(mediaRec: MediaFileD | undefined): AeroVerseTiming[] {
 }
 
 /**
+ * One finished ASR run's text. Replace uses `full`; Insert uses
+ * `withoutFilled`, which leaves out verses the pane already has text for.
+ */
+export interface AsrResult {
+  full: string;
+  withoutFilled: string;
+}
+
+/**
  * Submit, poll, apply clips, and clean up an Aero transcription task.
  * Presentation stays in AsrProgress.
  */
@@ -86,7 +95,7 @@ export function useAsrTaskLifecycle({
   asrState,
   force,
   contentVerses,
-  setTranscription,
+  onAsrResult,
   forceRefresh,
   onClose,
 }: {
@@ -95,8 +104,7 @@ export function useAsrTaskLifecycle({
   asrState?: IAsrState;
   force?: boolean;
   contentVerses?: string[];
-  /** Full result, then the result without verses that already have text. */
-  setTranscription: (transcription: string, withoutFilled?: string) => void;
+  onAsrResult: (result: AsrResult) => void;
   forceRefresh?: () => void;
   onClose: () => void;
 }) {
@@ -237,7 +245,7 @@ export function useAsrTaskLifecycle({
       contentVerses
     );
     appliedKeysRef.current.add(key);
-    setTranscription(full, withoutFilled);
+    onAsrResult({ full, withoutFilled });
   };
 
   const closing = () => {

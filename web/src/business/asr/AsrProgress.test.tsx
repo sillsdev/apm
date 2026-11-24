@@ -184,7 +184,7 @@ const renderAsr = async (
       phonetic={phonetic}
       asrState={asrState}
       force={force}
-      setTranscription={jest.fn()}
+      onAsrResult={jest.fn()}
       onClose={jest.fn()}
     />
   );
@@ -359,7 +359,7 @@ describe('AsrProgress in-flight task', () => {
       <AsrProgress
         mediaId="m1"
         phonetic={false}
-        setTranscription={jest.fn()}
+        onAsrResult={jest.fn()}
         forceRefresh={forceRefresh}
         onClose={jest.fn()}
       />
@@ -434,7 +434,7 @@ describe('AsrProgress in-flight task', () => {
       <AsrProgress
         mediaId="m1"
         phonetic={false}
-        setTranscription={jest.fn()}
+        onAsrResult={jest.fn()}
         onClose={onClose}
       />
     );
@@ -459,7 +459,7 @@ describe('AsrProgress in-flight task', () => {
         { name: NamedRegions.Verse, regionInfo: verseInfo },
       ]);
       orbitMedia = [mediaWith(60, localSegments)];
-      const setTranscription = jest.fn();
+      const onAsrResult = jest.fn();
       mockAxiosPost.mockResolvedValue({
         data: {
           data: {
@@ -502,7 +502,7 @@ describe('AsrProgress in-flight task', () => {
         <AsrProgress
           mediaId="m1"
           phonetic={false}
-          setTranscription={setTranscription}
+          onAsrResult={onAsrResult}
           onClose={jest.fn()}
         />
       );
@@ -514,10 +514,10 @@ describe('AsrProgress in-flight task', () => {
         await Promise.resolve();
       });
 
-      expect(setTranscription).toHaveBeenCalledWith(
-        '\\v 1-5 one \\v 6-7 two',
-        '\\v 1-5 one \\v 6-7 two'
-      );
+      expect(onAsrResult).toHaveBeenCalledWith({
+        full: '\\v 1-5 one \\v 6-7 two',
+        withoutFilled: '\\v 1-5 one \\v 6-7 two',
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -577,14 +577,14 @@ describe('AsrProgress in-flight task', () => {
   const runClipToTranscription = async (
     props: Partial<React.ComponentProps<typeof AsrProgress>>
   ) => {
-    const setTranscription = jest.fn();
+    const onAsrResult = jest.fn();
     jest.useFakeTimers();
     try {
       render(
         <AsrProgress
           mediaId="m1"
           phonetic={false}
-          setTranscription={setTranscription}
+          onAsrResult={onAsrResult}
           onClose={jest.fn()}
           {...props}
         />
@@ -599,7 +599,7 @@ describe('AsrProgress in-flight task', () => {
     } finally {
       jest.useRealTimers();
     }
-    return setTranscription;
+    return onAsrResult;
   };
 
   // The full result is for Replace; the one without verses that already have
@@ -608,44 +608,44 @@ describe('AsrProgress in-flight task', () => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
-    const setTranscription = await runClipToTranscription({
+    const onAsrResult = await runClipToTranscription({
       force: false,
       contentVerses: ['1'],
     });
 
-    expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new',
-      '\\v 2 two-new'
-    );
+    expect(onAsrResult).toHaveBeenCalledWith({
+      full: '\\v 1 one-new \\v 2 two-new',
+      withoutFilled: '\\v 2 two-new',
+    });
   });
 
   it('sends the same pair on a forced run', async () => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
-    const setTranscription = await runClipToTranscription({
+    const onAsrResult = await runClipToTranscription({
       force: true,
       contentVerses: ['1'],
     });
 
-    expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new',
-      '\\v 2 two-new'
-    );
+    expect(onAsrResult).toHaveBeenCalledWith({
+      full: '\\v 1 one-new \\v 2 two-new',
+      withoutFilled: '\\v 2 two-new',
+    });
   });
 
   it('still sends the full result when every verse already has text', async () => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
-    const setTranscription = await runClipToTranscription({
+    const onAsrResult = await runClipToTranscription({
       force: true,
       contentVerses: ['1', '2'],
     });
 
-    expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new',
-      ''
-    );
+    expect(onAsrResult).toHaveBeenCalledWith({
+      full: '\\v 1 one-new \\v 2 two-new',
+      withoutFilled: '',
+    });
   });
 });

@@ -69,9 +69,10 @@ import { useTranscribeProjData } from './PassageDetail/transcribe/useTranscribeP
 import { TranscribeAsrDialogs } from './PassageDetail/transcribe/TranscribeAsrDialogs';
 import { useOtherEditorName } from './PassageDetail/transcribe/useOtherEditorName';
 import { pickTodoMediaRow } from './PassageDetail/transcribe/pickTodoMediaRow';
-import { insertAsrText } from './PassageDetail/transcribe/insertAsrText';
+import { applyAsrText } from './PassageDetail/transcribe/insertAsrText';
 import {
   insertAtCursor,
+  resolveSelection,
   logError,
   Severity,
   currentDateTime,
@@ -1128,17 +1129,11 @@ export function Transcriber(props: Readonly<IProps>) {
     if (teamDefault) setOrgDefault(NamedRegions.Transcription, params);
   };
 
-  const addText = (text: string, atEnd?: boolean) => {
+  const addText = (text: string) => {
     if (transcriptionRef.current) {
       focusOnTranscription();
       const textArea = transcriptionRef.current
         .firstChild as HTMLTextAreaElement;
-      if (atEnd) {
-        // ASR append must not insert at a caret left at 0 after focus,
-        // or a pre-seeded \v 1-5a ends up after the new text.
-        const end = textArea.value?.length ?? 0;
-        textArea.setSelectionRange(end, end);
-      }
       insertAtCursor(textArea, text);
       setTextValue(textArea.value ?? '');
     }
@@ -1163,9 +1158,7 @@ export function Transcriber(props: Readonly<IProps>) {
     handleTranscribe,
     handleAsrLanguageClose,
     handleAutoTranscribe,
-    pendingAsr,
-    confirmAsrReplace,
-    confirmAsrInsert,
+    asrPrompt,
   } = useTranscribeAsr({
     team,
     sharedStr,
@@ -1174,23 +1167,15 @@ export function Transcriber(props: Readonly<IProps>) {
     onTextAdd: (text, mode) => {
       const textArea = transcriptionRef.current?.firstChild as
         HTMLTextAreaElement | undefined;
-      if (mode === 'end' || !textArea) {
-        addText(text, true);
-      } else if (mode === 'replace') {
-        textArea.value = text;
-        setTextValue(text);
-      } else {
-        const { value, caret } = insertAsrText(
-          textArea.value ?? '',
-          text,
-          textArea.selectionStart ?? 0,
-          textArea.selectionEnd ?? 0
-        );
-        textArea.value = value;
-        setTextValue(value);
-        focusOnTranscription();
-        textArea.setSelectionRange(caret, caret);
-      }
+      if (!textArea) return;
+      const { value, caret } = applyAsrText(textArea.value ?? '', text, mode, {
+        start: textArea.selectionStart ?? 0,
+        end: textArea.selectionEnd ?? 0,
+      });
+      textArea.value = value;
+      setTextValue(value);
+      focusOnTranscription();
+      textArea.setSelectionRange(caret, caret);
       toolChanged(toolId, true);
     },
     getCurrentText: () => transcriptionRef.current?.firstChild?.value ?? '',
@@ -1225,21 +1210,21 @@ export function Transcriber(props: Readonly<IProps>) {
     if (!ref || !refMatch(ref)) return;
     const textArea = transcriptionRef.current.firstChild as HTMLTextAreaElement;
     const value = textArea.value ?? '';
-    // Same cursor rule as insertAtCursor: a caret at 0 with no range means append.
     const start = textArea.selectionStart ?? 0;
-    const end = textArea.selectionEnd ?? start;
-    const collapsedAtZero = !start && start === end;
-    const cursor = collapsedAtZero ? value.length : start;
+    const sel = resolveSelection(value.length, {
+      start,
+      end: textArea.selectionEnd ?? start,
+    });
     const edit = applyVerseSegment(
       value,
       ref,
-      cursor,
+      sel.start,
       openingChapter(
         passage?.attributes?.startChapter,
         passage?.attributes?.reference,
         firstUsableVerseReference(segs)
       ),
-      collapsedAtZero ? value.length : end
+      sel.end
     );
     if (edit.text !== value) {
       textArea.value = edit.text;
@@ -1528,10 +1513,8 @@ export function Transcriber(props: Readonly<IProps>) {
           forceRefresh={forceRefresh}
           onLanguageClose={handleAsrLanguageClose}
           onProgressOpen={handleAsrProgressVisible}
-          setTranscription={handleAutoTranscribe}
-          pendingAsr={pendingAsr}
-          onAsrReplace={confirmAsrReplace}
-          onAsrInsert={confirmAsrInsert}
+          onAsrResult={handleAutoTranscribe}
+          asrPrompt={asrPrompt}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
           isMobile={isMobile}
         />

@@ -17,6 +17,7 @@ import AsrProgress from '../../../business/asr/AsrProgress';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import type { IAsrState } from '../../../business/asr/asrState';
+import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
 import { useAsrForceRun } from '../transcribe/useAsrForceRun';
 import {
   MediaFileD,
@@ -329,9 +330,9 @@ export default function BoldClauseTranscriptionEditor({
   ]);
 
   const handleAsrResult = useCallback(
-    (transcription: string) => {
+    ({ full }: AsrResult) => {
       userEditedRef.current = true;
-      onTextChange(transcription);
+      onTextChange(full);
     },
     [onTextChange]
   );
@@ -421,7 +422,7 @@ export default function BoldClauseTranscriptionEditor({
             asrState={asrOverride ?? asrSettings}
             force={forceAsr}
             primaryBcp47={stepAsr?.primaryBcp47}
-            setTranscription={handleAsrResult}
+            onAsrResult={handleAsrResult}
             onClose={handleAsrClose}
             //note that this doesn't pass in forceRefresh - not sure if that was intentional but the old local onPullTasks did not call it.
           />

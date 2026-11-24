@@ -33,9 +33,9 @@ jest.mock('../../../business/asr/AsrProgress', () => ({
 
 import { TranscribeAsrDialogs } from './TranscribeAsrDialogs';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
-import type { PendingAsr } from './useTranscribeAsr';
+import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
 
-const renderDialogs = (pendingAsr?: PendingAsr) => {
+const renderDialogs = (result?: AsrResult) => {
   const onAsrReplace = jest.fn();
   const onAsrInsert = jest.fn();
   render(
@@ -49,17 +49,17 @@ const renderDialogs = (pendingAsr?: PendingAsr) => {
       forceAsr={false}
       onLanguageClose={jest.fn()}
       onProgressOpen={jest.fn()}
-      setTranscription={jest.fn()}
-      pendingAsr={pendingAsr}
-      onAsrReplace={onAsrReplace}
-      onAsrInsert={onAsrInsert}
+      onAsrResult={jest.fn()}
+      asrPrompt={
+        result && { result, onReplace: onAsrReplace, onInsert: onAsrInsert }
+      }
       bp={BigDialogBp.sm}
     />
   );
   return { onAsrReplace, onAsrInsert };
 };
 
-const pending: PendingAsr = { full: '\\v 1 new', withoutFilled: '' };
+const pending: AsrResult = { full: '\\v 1 new', withoutFilled: '' };
 
 describe('TranscribeAsrDialogs replace prompt', () => {
   it('does not ask when no result is waiting', () => {

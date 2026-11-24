@@ -23,6 +23,8 @@ import {
 } from './autoTranscriptionToAppend';
 import { useAsrForceRun } from './useAsrForceRun';
 import { ignoreVs } from '../../../utils/ignoreVs';
+import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
+import type { AsrTextMode } from './insertAsrText';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
@@ -38,14 +40,11 @@ export interface UseTranscribeAsrProps {
 
 export type AsrSettingsStatus = 'loading' | 'ready' | 'failed';
 
-export type AsrTextMode = 'replace' | 'end' | 'cursor';
-
 /** A result waiting for the user to choose Replace or Insert. */
-export interface PendingAsr {
-  /** The whole result, used by Replace. */
-  full: string;
-  /** Without verses the pane already has text for, used by Insert. */
-  withoutFilled: string;
+export interface AsrPrompt {
+  result: AsrResult;
+  onReplace: () => void;
+  onInsert: () => void;
 }
 
 /**
@@ -192,7 +191,7 @@ export function useTranscribeAsr({
     [asrSettings, applyForceFromClosedAsr, startAsr]
   );
 
-  const [pendingAsr, setPendingAsr] = useState<PendingAsr>();
+  const [pendingAsr, setPendingAsr] = useState<AsrResult>();
 
   /**
    * Apply an ASR result. Onto an empty pane (verse markers alone don't count)
@@ -200,8 +199,8 @@ export function useTranscribeAsr({
    * (TT-7856) instead of silently duplicating or overwriting it.
    */
   const handleAutoTranscribe = useCallback(
-    (trans: string, withoutFilled: string = trans) => {
-      const full = cleanAsrTranscription(trans);
+    (result: AsrResult) => {
+      const full = cleanAsrTranscription(result.full);
       if (!full) return;
       const current = getCurrentText();
       if (current.includes(full)) return;
@@ -212,22 +211,28 @@ export function useTranscribeAsr({
       }
       setPendingAsr({
         full,
-        withoutFilled: cleanAsrTranscription(withoutFilled),
+        withoutFilled: cleanAsrTranscription(result.withoutFilled),
       });
     },
     [getCurrentText, onTextAdd]
   );
 
-  const confirmAsrReplace = useCallback(() => {
-    if (pendingAsr) onTextAdd(pendingAsr.full, 'replace');
-    setPendingAsr(undefined);
-  }, [pendingAsr, onTextAdd]);
-
-  const confirmAsrInsert = useCallback(() => {
-    if (pendingAsr?.withoutFilled)
-      onTextAdd(pendingAsr.withoutFilled, 'cursor');
-    setPendingAsr(undefined);
-  }, [pendingAsr, onTextAdd]);
+  const asrPrompt = useMemo<AsrPrompt | undefined>(
+    () =>
+      pendingAsr && {
+        result: pendingAsr,
+        onReplace: () => {
+          onTextAdd(pendingAsr.full, 'replace');
+          setPendingAsr(undefined);
+        },
+        onInsert: () => {
+          if (pendingAsr.withoutFilled)
+            onTextAdd(pendingAsr.withoutFilled, 'cursor');
+          setPendingAsr(undefined);
+        },
+      },
+    [pendingAsr, onTextAdd]
+  );
 
   return {
     asrSettings,
@@ -243,8 +248,6 @@ export function useTranscribeAsr({
     handleTranscribe,
     handleAsrLanguageClose,
     handleAutoTranscribe,
-    pendingAsr,
-    confirmAsrReplace,
-    confirmAsrInsert,
+    asrPrompt,
   };
 }

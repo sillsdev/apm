@@ -70,11 +70,8 @@ import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useSnackBar } from '../../../../hoc/SnackBar';
 import { completeStepAfterSave } from '../../../../context/completeStepAfterSave';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
-import {
-  useTranscribeAsr,
-  type AsrTextMode,
-} from '../../transcribe/useTranscribeAsr';
-import { insertAsrText } from '../../transcribe/insertAsrText';
+import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
+import { applyAsrText, type AsrTextMode } from '../../transcribe/insertAsrText';
 import { useTranscribeStepRole } from '../../transcribe/useTranscribeStepRole';
 import { useTranscribeStepNav } from '../../transcribe/useTranscribeStepNav';
 import { useTranscribeProjData } from '../../transcribe/useTranscribeProjData';
@@ -380,15 +377,13 @@ export function PassageDetailTranscribeMobileContent() {
     (newText: string, mode: AsrTextMode) => {
       if (isReadOnly || !hasPermission || !mediafile) return;
       // Read the caret now; the textarea keeps it while the prompt is open.
-      const start = textareaRef.current?.selectionStart ?? 0;
-      const end = textareaRef.current?.selectionEnd ?? 0;
+      const selection = {
+        start: textareaRef.current?.selectionStart ?? 0,
+        end: textareaRef.current?.selectionEnd ?? 0,
+      };
       setTextValue((prev) => {
-        let updated = prev + newText;
-        if (mode === 'replace') updated = newText;
-        else if (mode === 'cursor')
-          updated = insertAsrText(prev, newText, start, end).value;
         toolChanged(currentstep, true);
-        return updated;
+        return applyAsrText(prev, newText, mode, selection).value;
       });
     },
     [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
@@ -748,10 +743,8 @@ export function PassageDetailTranscribeMobileContent() {
         forceRefresh={forceRefresh}
         onLanguageClose={asr.handleAsrLanguageClose}
         onProgressOpen={asr.setAsrProgressVisible}
-        setTranscription={asr.handleAutoTranscribe}
-        pendingAsr={asr.pendingAsr}
-        onAsrReplace={asr.confirmAsrReplace}
-        onAsrInsert={asr.confirmAsrInsert}
+        onAsrResult={asr.handleAutoTranscribe}
+        asrPrompt={asr.asrPrompt}
         bp={BigDialogBp.mobile}
         isMobile
       />

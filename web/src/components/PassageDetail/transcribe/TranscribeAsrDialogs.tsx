@@ -11,7 +11,8 @@ import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import type { IAsrState } from '../../../business/asr/asrState';
-import type { PendingAsr } from './useTranscribeAsr';
+import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
+import type { AsrPrompt } from './useTranscribeAsr';
 
 export interface TranscribeAsrDialogsProps {
   team: OrganizationD | undefined;
@@ -26,11 +27,9 @@ export interface TranscribeAsrDialogsProps {
   /** Language-dialog close; cancel=true when the shell dismisses. */
   onLanguageClose: (cancel: boolean, asrState?: IAsrState) => void;
   onProgressOpen: (open: boolean) => void;
-  setTranscription: (text: string, withoutFilled?: string) => void;
+  onAsrResult: (result: AsrResult) => void;
   /** A result waiting for Replace or Insert; shows the prompt. */
-  pendingAsr?: PendingAsr;
-  onAsrReplace?: () => void;
-  onAsrInsert?: () => void;
+  asrPrompt?: AsrPrompt;
   bp: BigDialogBp;
   isMobile?: boolean;
 }
@@ -48,10 +47,8 @@ export function TranscribeAsrDialogs({
   forceRefresh,
   onLanguageClose,
   onProgressOpen,
-  setTranscription,
-  pendingAsr,
-  onAsrReplace,
-  onAsrInsert,
+  onAsrResult,
+  asrPrompt,
   bp,
   isMobile = false,
 }: Readonly<TranscribeAsrDialogsProps>) {
@@ -98,20 +95,20 @@ export function TranscribeAsrDialogs({
             asrState={asrOverride}
             force={forceAsr}
             contentVerses={contentVerses}
-            setTranscription={setTranscription}
+            onAsrResult={onAsrResult}
             forceRefresh={forceRefresh}
             onClose={() => onProgressOpen(false)}
           />
         </BigDialog>
       )}
-      {pendingAsr && (
+      {asrPrompt && (
         // Dismissing inserts: it never discards the user's text (TT-7856).
         <Confirm
           text={t.asrReplaceExisting}
           yes={t.asrReplace}
           no={t.asrInsert}
-          yesResponse={() => onAsrReplace?.()}
-          noResponse={() => onAsrInsert?.()}
+          yesResponse={asrPrompt.onReplace}
+          noResponse={asrPrompt.onInsert}
           primaryButton="no"
         />
       )}

@@ -116,7 +116,7 @@ export function formatSegmentTranscription(
   return String.raw`\v ${verse} ${text}`;
 }
 
-/** One string for `setTranscription` so replace-style callers keep every segment. */
+/** One string for an ASR result so replace-style callers keep every segment. */
 export function clipTranscription(
   clip: AeroPollClip | undefined,
   phonetic: boolean,

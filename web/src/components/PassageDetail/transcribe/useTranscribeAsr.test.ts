@@ -42,6 +42,11 @@ jest.mock('react-redux', () => ({
 import { useTranscribeAsr } from './useTranscribeAsr';
 import { Severity } from '../../../utils/logErrorService';
 
+const asrResult = (full: string, withoutFilled = full) => ({
+  full,
+  withoutFilled,
+});
+
 describe('useTranscribeAsr', () => {
   beforeEach(() => {
     getAsrSettings.mockReset();
@@ -211,7 +216,7 @@ describe('useTranscribeAsr', () => {
     await waitFor(() => expect(result.current.asrSettings?.asrIso).toBe('eng'));
 
     act(() => {
-      result.current.handleAutoTranscribe('0:01.200: hello');
+      result.current.handleAutoTranscribe(asrResult('0:01.200: hello'));
     });
 
     expect(onTextAdd).toHaveBeenCalledWith(' hello', 'end');
@@ -252,18 +257,22 @@ describe('useTranscribeAsr', () => {
     it('adds without asking when the pane has only a verse marker', async () => {
       const { result, onTextAdd } = await renderWith('\\v 1 ');
 
-      act(() => result.current.handleAutoTranscribe('\\v 1 new result'));
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1 new result'))
+      );
 
-      expect(result.current.pendingAsr).toBeUndefined();
+      expect(result.current.asrPrompt).toBeUndefined();
       expect(onTextAdd).toHaveBeenCalledWith('new result', 'end');
     });
 
     it('asks before adding when the pane has text', async () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
-      act(() => result.current.handleAutoTranscribe('\\v 1 new result'));
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1 new result'))
+      );
 
-      expect(result.current.pendingAsr).toBeDefined();
+      expect(result.current.asrPrompt).toBeDefined();
       expect(onTextAdd).not.toHaveBeenCalled();
     });
 
@@ -271,31 +280,37 @@ describe('useTranscribeAsr', () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
       act(() =>
-        result.current.handleAutoTranscribe('\\v 1 one \\v 2 two', '\\v 2 two')
+        result.current.handleAutoTranscribe(
+          asrResult('\\v 1 one \\v 2 two', '\\v 2 two')
+        )
       );
-      act(() => result.current.confirmAsrReplace());
+      act(() => result.current.asrPrompt?.onReplace());
 
       expect(onTextAdd).toHaveBeenCalledWith('\\v 1 one \\v 2 two', 'replace');
-      expect(result.current.pendingAsr).toBeUndefined();
+      expect(result.current.asrPrompt).toBeUndefined();
     });
 
     it('inserts only unfilled verses at the caret when the user picks Insert', async () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
       act(() =>
-        result.current.handleAutoTranscribe('\\v 1 one \\v 2 two', '\\v 2 two')
+        result.current.handleAutoTranscribe(
+          asrResult('\\v 1 one \\v 2 two', '\\v 2 two')
+        )
       );
-      act(() => result.current.confirmAsrInsert());
+      act(() => result.current.asrPrompt?.onInsert());
 
       expect(onTextAdd).toHaveBeenCalledWith('\\v 2 two', 'cursor');
-      expect(result.current.pendingAsr).toBeUndefined();
+      expect(result.current.asrPrompt).toBeUndefined();
     });
 
     it('adds nothing on Insert when every verse already has text', async () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
-      act(() => result.current.handleAutoTranscribe('\\v 1 one', ''));
-      act(() => result.current.confirmAsrInsert());
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1 one', ''))
+      );
+      act(() => result.current.asrPrompt?.onInsert());
 
       expect(onTextAdd).not.toHaveBeenCalled();
     });
@@ -303,9 +318,11 @@ describe('useTranscribeAsr', () => {
     it('does not ask when the result is already in the pane', async () => {
       const { result, onTextAdd } = await renderWith('\\v 1 same words');
 
-      act(() => result.current.handleAutoTranscribe('\\v 1 same words'));
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1 same words'))
+      );
 
-      expect(result.current.pendingAsr).toBeUndefined();
+      expect(result.current.asrPrompt).toBeUndefined();
       expect(onTextAdd).not.toHaveBeenCalled();
     });
 
@@ -324,9 +341,11 @@ describe('useTranscribeAsr', () => {
       );
       act(() => result.current.setAsrProgressVisible(false));
       act(() => result.current.handleTranscribe());
-      act(() => result.current.handleAutoTranscribe('\\v 1 mms words'));
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1 mms words'))
+      );
 
-      expect(result.current.pendingAsr).toBeDefined();
+      expect(result.current.asrPrompt).toBeDefined();
       expect(onTextAdd).not.toHaveBeenCalled();
     });
   });
