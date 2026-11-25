@@ -81,6 +81,7 @@ jest.mock('../../../crud', () => ({
   ArtifactCategoryType: { Resource: 'resource' },
   usePlanType: () => () => ({ scripture: false, flat: false }),
   mediaFileName: jest.fn(() => ''),
+  useLocalizedArtifactCategory: () => (slug: string) => slug,
   ArtifactTypeSlug: { SharedResource: 'sharedresource' },
 }));
 
