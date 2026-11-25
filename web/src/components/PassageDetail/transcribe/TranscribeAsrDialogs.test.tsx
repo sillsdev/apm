@@ -65,7 +65,7 @@ const renderDialogs = (result?: AsrResult) => {
   return { onAsrReplace, onAsrInsert, onAsrDismiss };
 };
 
-const pending: AsrResult = { full: '\\v 1 new', withoutFilled: '' };
+const pending: AsrResult = { full: '\\v 1 new' };
 
 describe('TranscribeAsrDialogs replace prompt', () => {
   it('does not ask when no result is waiting', () => {

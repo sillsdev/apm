@@ -120,8 +120,7 @@ export function formatSegmentTranscription(
 export function clipTranscription(
   clip: AeroPollClip | undefined,
   phonetic: boolean,
-  verses: AeroVerseTiming[],
-  skipVerses?: string[]
+  verses: AeroVerseTiming[]
 ): string {
   if (clip?.state !== 'SUCCESS') return '';
   const parts: string[] = [];
@@ -129,7 +128,6 @@ export function clipTranscription(
     const text = transcriptionText(segment.transcription, phonetic);
     if (!text?.trim()) return;
     const verse = verseForSegment(segment.start, segIx, verses);
-    if (verse && skipVerses?.includes(verse)) return;
     parts.push(formatSegmentTranscription(text.trim(), verse));
   });
   return parts.join(' ');

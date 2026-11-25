@@ -516,7 +516,6 @@ describe('AsrProgress in-flight task', () => {
 
       expect(onAsrResult).toHaveBeenCalledWith({
         full: '\\v 1-5 one \\v 6-7 two',
-        withoutFilled: '\\v 1-5 one \\v 6-7 two',
       });
     } finally {
       jest.useRealTimers();
@@ -602,50 +601,16 @@ describe('AsrProgress in-flight task', () => {
     return onAsrResult;
   };
 
-  // The full result is for Replace; the one without verses that already have
-  // text is for Insert (TT-7856). The user picks at apply time.
-  it('sends the full result and one without verses that have text', async () => {
+  // The whole result goes to the caller; Replace or Insert decides what to
+  // keep against the pane when it is applied (TT-7856).
+  it.each([false, true])('sends the whole result (force %s)', async (force) => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
-    const onAsrResult = await runClipToTranscription({
-      force: false,
-      contentVerses: ['1'],
-    });
+    const onAsrResult = await runClipToTranscription({ force });
 
     expect(onAsrResult).toHaveBeenCalledWith({
       full: '\\v 1 one-new \\v 2 two-new',
-      withoutFilled: '\\v 2 two-new',
-    });
-  });
-
-  it('sends the same pair on a forced run', async () => {
-    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
-    mockForceClipSuccess();
-
-    const onAsrResult = await runClipToTranscription({
-      force: true,
-      contentVerses: ['1'],
-    });
-
-    expect(onAsrResult).toHaveBeenCalledWith({
-      full: '\\v 1 one-new \\v 2 two-new',
-      withoutFilled: '\\v 2 two-new',
-    });
-  });
-
-  it('still sends the full result when every verse already has text', async () => {
-    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
-    mockForceClipSuccess();
-
-    const onAsrResult = await runClipToTranscription({
-      force: true,
-      contentVerses: ['1', '2'],
-    });
-
-    expect(onAsrResult).toHaveBeenCalledWith({
-      full: '\\v 1 one-new \\v 2 two-new',
-      withoutFilled: '',
     });
   });
 });

@@ -77,12 +77,11 @@ function loadVerseTimings(mediaRec: MediaFileD | undefined): AeroVerseTiming[] {
 }
 
 /**
- * One finished ASR run's text. Replace uses `full`; Insert uses
- * `withoutFilled`, which leaves out verses the pane already has text for.
+ * One finished ASR run's text. Replace uses it all; Insert leaves out verses
+ * the pane has words for when it is chosen (see withoutFilledVerses).
  */
 export interface AsrResult {
   full: string;
-  withoutFilled: string;
 }
 
 /**
@@ -94,7 +93,6 @@ export function useAsrTaskLifecycle({
   phonetic,
   asrState,
   force,
-  contentVerses,
   onAsrResult,
   forceRefresh,
   onClose,
@@ -103,7 +101,6 @@ export function useAsrTaskLifecycle({
   phonetic: boolean;
   asrState?: IAsrState;
   force?: boolean;
-  contentVerses?: string[];
   onAsrResult: (result: AsrResult) => void;
   forceRefresh?: () => void;
   onClose: () => void;
@@ -234,18 +231,11 @@ export function useAsrTaskLifecycle({
     if (clip?.state !== 'SUCCESS') return;
     const key = clip.clip || 'clip';
     if (appliedKeysRef.current.has(key)) return;
-    // The caller picks at apply time (TT-7856): Replace takes the whole
-    // result; Insert takes it without verses the pane already has text for.
+    // The caller picks Replace or Insert at apply time (TT-7856).
     const full = clipTranscription(clip, phonetic, verseTimingsRef.current);
     if (!full) return;
-    const withoutFilled = clipTranscription(
-      clip,
-      phonetic,
-      verseTimingsRef.current,
-      contentVerses
-    );
     appliedKeysRef.current.add(key);
-    onAsrResult({ full, withoutFilled });
+    onAsrResult({ full });
   };
 
   const closing = () => {

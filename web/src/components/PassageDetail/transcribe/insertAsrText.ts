@@ -4,7 +4,10 @@ import {
 } from '../../../utils/insertAtCursor';
 import { VERSE_NUMBER_PATTERN } from '../../../utils/verseNumberPattern';
 
-/** Where ASR text goes: replace the pane, add at the end, or at the caret. */
+/**
+ * Where ASR text goes: replace the pane, add at the end, or at the caret.
+ * End and caret both fill an empty `\v N` marker in the pane first.
+ */
 export type AsrTextMode = 'replace' | 'end' | 'cursor';
 
 /** The pane's new value and the caret after the change. */
@@ -59,21 +62,52 @@ function verseParts(text: string): {
   return { lead: text.slice(0, hits[0]?.index ?? text.length).trim(), verses };
 }
 
-/**
- * Where words for this verse go: just after an empty `\v verse` marker in the
- * pane (only whitespace before the next marker or the end), or -1.
- */
-function emptyMarkerEnd(value: string, verse: string): number {
+/** Each `\v verse` marker in the pane: where it ends and the text up to the next marker. */
+function* verseMarkers(
+  value: string,
+  verse: string
+): Generator<{ end: number; gap: string }> {
   // verse is only digits / a-f / hyphen from VERSE_NUMBER_PATTERN.
   const marker = new RegExp(String.raw`\\v ?${verse}(?![\w-])`, 'g');
   for (const hit of value.matchAll(marker)) {
     const end = hit.index + hit[0].length;
     const rest = value.slice(end);
     const next = rest.search(/\\[vc]\s*\d/);
-    const gap = next === -1 ? rest : rest.slice(0, next);
+    yield { end, gap: next === -1 ? rest : rest.slice(0, next) };
+  }
+}
+
+/**
+ * Where words for this verse go: just after an empty `\v verse` marker in the
+ * pane (only whitespace before the next marker or the end), or -1.
+ */
+function emptyMarkerEnd(value: string, verse: string): number {
+  for (const { end, gap } of verseMarkers(value, verse)) {
     if (!gap.trim()) return end;
   }
   return -1;
+}
+
+/** The pane has words after a `\v verse` marker. */
+function verseHasWords(value: string, verse: string): boolean {
+  for (const { gap } of verseMarkers(value, verse)) {
+    if (gap.trim()) return true;
+  }
+  return false;
+}
+
+/**
+ * ASR text without the verses the pane already has words for, so Insert does
+ * not add a second copy of them (TT-7856). Judged against the pane as it is
+ * now, since a dismissed result can be offered again after the user edits.
+ * Text before the first marker is kept.
+ */
+export function withoutFilledVerses(text: string, pane: string): string {
+  const { lead, verses } = verseParts(text);
+  const parts = verses
+    .filter(({ verse }) => !verseHasWords(pane, verse))
+    .map(({ part }) => part);
+  return (lead ? [lead, ...parts] : parts).join(' ');
 }
 
 /**
@@ -118,8 +152,12 @@ export function applyAsrText(
   switch (mode) {
     case 'replace':
       return { value: text, caret: text.length };
-    case 'end':
-      return { value: current + text, caret: current.length + text.length };
+    case 'end': {
+      // Verse-aware like Insert, so a pane of empty markers gets each verse's
+      // words after its own marker (TT-7856).
+      const atEnd = { start: current.length, end: current.length };
+      return insertAsrVerses(current, text, atEnd);
+    }
     case 'cursor':
       return insertAsrVerses(current, text, selection);
   }

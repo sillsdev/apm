@@ -41,11 +41,9 @@ jest.mock('react-redux', () => ({
 
 import { useTranscribeAsr } from './useTranscribeAsr';
 import { Severity } from '../../../utils/logErrorService';
+import { applyAsrText, type AsrTextMode } from './insertAsrText';
 
-const asrResult = (full: string, withoutFilled = full) => ({
-  full,
-  withoutFilled,
-});
+const asrResult = (full: string) => ({ full });
 
 describe('useTranscribeAsr', () => {
   beforeEach(() => {
@@ -219,7 +217,7 @@ describe('useTranscribeAsr', () => {
       result.current.handleAutoTranscribe(asrResult('0:01.200: hello'));
     });
 
-    expect(onTextAdd).toHaveBeenCalledWith(' hello', 'end');
+    expect(onTextAdd).toHaveBeenCalledWith('hello', 'end');
   });
 
   // TT-7856: a result applied onto text the user already has asks first, so a
@@ -265,7 +263,7 @@ describe('useTranscribeAsr', () => {
       );
 
       expect(result.current.asrPrompt).toBeUndefined();
-      expect(onTextAdd).toHaveBeenCalledWith('new result', 'end');
+      expect(onTextAdd).toHaveBeenCalledWith('\\v 1 new result', 'end');
     });
 
     it('adds without asking when the pane has only a suffixed verse marker', async () => {
@@ -276,7 +274,80 @@ describe('useTranscribeAsr', () => {
       );
 
       expect(result.current.asrPrompt).toBeUndefined();
-      expect(onTextAdd).toHaveBeenCalledWith('New words', 'end');
+      expect(onTextAdd).toHaveBeenCalledWith('\\v 1-5a New words', 'end');
+    });
+
+    // The pane as the editor holds it: onTextAdd edits it the way the desktop
+    // and mobile editors do, with the caret at the end.
+    const renderPane = async (start: string) => {
+      getAsrSettings.mockResolvedValue(saved);
+      const pane = { text: start };
+      const onTextAdd = jest.fn((text: string, mode: AsrTextMode) => {
+        const at = pane.text.length;
+        pane.text = applyAsrText(pane.text, text, mode, {
+          start: at,
+          end: at,
+        }).value;
+      });
+      const hook = renderHook(() =>
+        useTranscribeAsr({
+          team: undefined,
+          sharedStr: { mustBeOnline: 'online' } as never,
+          tPlayer: { recognizeSpeech: 'Recognize {0}' } as never,
+          showMessage: jest.fn(),
+          onTextAdd,
+          getCurrentText: () => pane.text,
+          mediaId: 'm1',
+        })
+      );
+      await waitFor(() =>
+        expect(hook.result.current.asrSettings?.asrIso).toBe('eng')
+      );
+      return { ...hook, pane };
+    };
+
+    it('puts each verse after its own marker in a pane of empty markers', async () => {
+      const { result, pane } = await renderPane('\\v 1a\n\\v 2');
+
+      act(() =>
+        result.current.handleAutoTranscribe(asrResult('\\v 1a one \\v 2 two'))
+      );
+
+      expect(result.current.asrPrompt).toBeUndefined();
+      expect(pane.text).toBe('\\v 1a one\n\\v 2 two');
+    });
+
+    describe('Insert on a result offered again after a dismiss', () => {
+      const dismissedOn = async (start: string) => {
+        const hook = await renderPane(start);
+        act(() =>
+          hook.result.current.handleAutoTranscribe(
+            asrResult('\\v 1 one \\v 2 two')
+          )
+        );
+        act(() => hook.result.current.asrPrompt?.onDismiss());
+        return hook;
+      };
+
+      it('leaves out a verse filled by hand after the dismiss', async () => {
+        const { result, pane } = await dismissedOn('\\v 1 old \\v 2 ');
+
+        pane.text = '\\v 1 old \\v 2 typed';
+        act(() => result.current.handleTranscribe());
+        act(() => result.current.asrPrompt?.onInsert());
+
+        expect(pane.text).toBe('\\v 1 old \\v 2 typed');
+      });
+
+      it('adds a verse emptied by hand after the dismiss', async () => {
+        const { result, pane } = await dismissedOn('\\v 1 old \\v 2 ');
+
+        pane.text = '\\v 1 \\v 2 kept';
+        act(() => result.current.handleTranscribe());
+        act(() => result.current.asrPrompt?.onInsert());
+
+        expect(pane.text).toBe('\\v 1 one \\v 2 kept');
+      });
     });
 
     describe('dismissing the prompt', () => {
@@ -360,9 +431,7 @@ describe('useTranscribeAsr', () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
       act(() =>
-        result.current.handleAutoTranscribe(
-          asrResult('\\v 1 one \\v 2 two', '\\v 2 two')
-        )
+        result.current.handleAutoTranscribe(asrResult('\\v 1 one \\v 2 two'))
       );
       act(() => result.current.asrPrompt?.onReplace());
 
@@ -374,9 +443,7 @@ describe('useTranscribeAsr', () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
       act(() =>
-        result.current.handleAutoTranscribe(
-          asrResult('\\v 1 one \\v 2 two', '\\v 2 two')
-        )
+        result.current.handleAutoTranscribe(asrResult('\\v 1 one \\v 2 two'))
       );
       act(() => result.current.asrPrompt?.onInsert());
 
@@ -387,9 +454,7 @@ describe('useTranscribeAsr', () => {
     it('adds nothing on Insert when every verse already has text', async () => {
       const { result, onTextAdd } = await renderWith('\\v 1 old words');
 
-      act(() =>
-        result.current.handleAutoTranscribe(asrResult('\\v 1 one', ''))
-      );
+      act(() => result.current.handleAutoTranscribe(asrResult('\\v 1 one')));
       act(() => result.current.asrPrompt?.onInsert());
 
       expect(onTextAdd).not.toHaveBeenCalled();

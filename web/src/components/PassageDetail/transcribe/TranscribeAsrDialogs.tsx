@@ -22,7 +22,6 @@ export interface TranscribeAsrDialogsProps {
   phonetic: boolean;
   asrOverride: IAsrState | undefined;
   forceAsr: boolean;
-  contentVerses?: string[];
   forceRefresh?: () => void;
   /** Language-dialog close; cancel=true when the shell dismisses. */
   onLanguageClose: (cancel: boolean, asrState?: IAsrState) => void;
@@ -43,7 +42,6 @@ export function TranscribeAsrDialogs({
   phonetic,
   asrOverride,
   forceAsr,
-  contentVerses = [],
   forceRefresh,
   onLanguageClose,
   onProgressOpen,
@@ -94,7 +92,6 @@ export function TranscribeAsrDialogs({
             phonetic={phonetic}
             asrState={asrOverride}
             force={forceAsr}
-            contentVerses={contentVerses}
             onAsrResult={onAsrResult}
             forceRefresh={forceRefresh}
             onClose={() => onProgressOpen(false)}

@@ -17,14 +17,11 @@ import { useGlobal } from '../../../context/useGlobal';
 import { transcriberSelector } from '../../../selector';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { IAsrState, asrStatesEqual } from '../../../business/asr/asrState';
-import {
-  autoTranscriptionToAppend,
-  cleanAsrTranscription,
-} from './autoTranscriptionToAppend';
+import { cleanAsrTranscription } from './cleanAsrTranscription';
 import { useAsrForceRun } from './useAsrForceRun';
 import { ignoreVs } from '../../../utils/ignoreVs';
 import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
-import type { AsrTextMode } from './insertAsrText';
+import { withoutFilledVerses, type AsrTextMode } from './insertAsrText';
 
 export interface UseTranscribeAsrProps {
   team: OrganizationD | undefined;
@@ -168,17 +165,11 @@ export function useTranscribeAsr({
       const current = getCurrentText();
       if (current.includes(full)) return;
       if (!ignoreVs(current)?.trim()) {
-        const added = autoTranscriptionToAppend(full, current);
-        if (added !== undefined) onTextAdd(added, 'end');
+        // 'end' fills each empty marker with its own verse's words.
+        onTextAdd(full, 'end');
         return;
       }
-      setPendingAsr({
-        result: {
-          full,
-          withoutFilled: cleanAsrTranscription(result.withoutFilled),
-        },
-        asr,
-      });
+      setPendingAsr({ result: { full }, asr });
     },
     [getCurrentText, onTextAdd]
   );
@@ -261,7 +252,9 @@ export function useTranscribeAsr({
         setPendingAsr(undefined);
       },
       onInsert: () => {
-        if (result.withoutFilled) onTextAdd(result.withoutFilled, 'cursor');
+        // Against the pane now: it may have changed since a dismiss.
+        const text = withoutFilledVerses(result.full, getCurrentText());
+        if (text) onTextAdd(text, 'cursor');
         setPendingAsr(undefined);
       },
       onDismiss: () => {
@@ -269,7 +262,7 @@ export function useTranscribeAsr({
         setPendingAsr(undefined);
       },
     };
-  }, [pendingAsr, onTextAdd, mediaId]);
+  }, [pendingAsr, onTextAdd, getCurrentText, mediaId]);
 
   return {
     asrSettings,

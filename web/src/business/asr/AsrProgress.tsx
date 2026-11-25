@@ -38,7 +38,6 @@ interface AsrProgressProps {
   force?: boolean;
   /** Step/primary language when not the project vernacular (e.g. LWC). */
   primaryBcp47?: string;
-  contentVerses?: string[];
   onAsrResult: (result: AsrResult) => void;
   /** Bump passage-detail context after the mediafile pull (optional). */
   forceRefresh?: () => void;
@@ -51,7 +50,6 @@ export default function AsrProgress({
   asrState,
   force,
   primaryBcp47,
-  contentVerses,
   onAsrResult,
   forceRefresh,
   onClose,
@@ -76,7 +74,6 @@ export default function AsrProgress({
       phonetic,
       asrState,
       force,
-      contentVerses,
       onAsrResult,
       forceRefresh,
       onClose,

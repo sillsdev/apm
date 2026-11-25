@@ -272,8 +272,6 @@ export function Transcriber(props: Readonly<IProps>) {
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const [suggestedSegs, setSuggestedSegs] = useState<SuggestedSegments>();
   const verseSegs = useRef<string | undefined>(undefined);
-  const [verseLabels, setVerseLabels] = useState<string[]>([]);
-  const [contentVerses, setContentVerses] = useState<string[]>([]);
   const playedSecsRef = useRef<number>(0);
   const segmentsRef = useRef<string | undefined>(undefined);
   const stateRef = useRef<string>(state);
@@ -587,12 +585,6 @@ export function Transcriber(props: Readonly<IProps>) {
       const defaultSegments = mediafile?.attributes?.segments;
       if (defaultSegments) {
         const segs = verseRegionsFromSegments(defaultSegments);
-        const verseLabels: string[] = [];
-        segs.forEach((region) => {
-          const vnum = region?.label?.split(':')[1];
-          if (vnum) verseLabels.push(vnum);
-        });
-        setVerseLabels(verseLabels);
         verseSegs.current = JSON.stringify({ regions: JSON.stringify(segs) });
         setSuggestedSegs({
           mediaId: mediafile.id,
@@ -1050,27 +1042,6 @@ export function Transcriber(props: Readonly<IProps>) {
     };
   };
 
-  useEffect(() => {
-    const transcription = textValue;
-    if (!transcription) return;
-    const newContentVerses: string[] = [];
-    verseLabels.forEach((label) => {
-      const pat = new RegExp(String.raw`\\v\s+${label}\s+[^\\]`);
-      if (pat.test(transcription as string)) {
-        newContentVerses.push(label);
-      }
-    });
-    if (newContentVerses.length === 0) {
-      if (!/\\v/.test(transcription as string)) {
-        newContentVerses.push('no-verses');
-      }
-    }
-    if (JSON.stringify(contentVerses) !== JSON.stringify(newContentVerses)) {
-      setContentVerses(newContentVerses);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textValue, verseLabels, playerMediafile]);
-
   const showTranscription = (val: ITrans) => {
     transcriptionIn.current = val.transcription;
     // Single seed site: row selection always loads through here, so an empty
@@ -1510,7 +1481,6 @@ export function Transcriber(props: Readonly<IProps>) {
           phonetic={phonetic}
           asrOverride={asrOverride}
           forceAsr={forceAsr}
-          contentVerses={contentVerses}
           forceRefresh={forceRefresh}
           onLanguageClose={handleAsrLanguageClose}
           onProgressOpen={handleAsrProgressVisible}

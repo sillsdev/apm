@@ -1,5 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
-import { applyAsrText, insertAsrText } from './insertAsrText';
+import {
+  applyAsrText,
+  insertAsrText,
+  withoutFilledVerses,
+} from './insertAsrText';
 
 describe('insertAsrText', () => {
   it('inserts at the caret with a space on each side', () => {
@@ -56,9 +60,52 @@ describe('applyAsrText', () => {
   });
 
   it('adds at the end, ignoring the caret', () => {
-    expect(applyAsrText('one', ' two', 'end', { start: 1, end: 1 })).toEqual({
+    expect(applyAsrText('one', 'two', 'end', { start: 1, end: 1 })).toEqual({
       value: 'one two',
       caret: 7,
+    });
+  });
+
+  // TT-7856: a pane of empty markers gets each verse's words after its own
+  // marker, not all of them after the last marker.
+  describe('end onto empty verse markers', () => {
+    const end = (pane: string, text: string) =>
+      applyAsrText(pane, text, 'end', { start: 0, end: 0 }).value;
+    const markers = (value: string, verse: string) =>
+      value.match(new RegExp(String.raw`\\v ${verse}(?![\w-])`, 'g'))?.length ??
+      0;
+
+    it('fills each marker, one with a suffix', () => {
+      const value = end('\\v 1a\n\\v 2', '\\v 1a one \\v 2 two');
+      expect(value).toBe('\\v 1a one\n\\v 2 two');
+      expect(markers(value, '1a')).toBe(1);
+      expect(markers(value, '2')).toBe(1);
+    });
+
+    it('fills a lone marker', () => {
+      expect(end('\\v 3 ', '\\v 3 hello')).toBe('\\v 3 hello ');
+    });
+
+    it('fills a range marker and adds later verses after it', () => {
+      expect(end('\\v 1-5 ', '\\v 1-5 one two \\v 6-7 three')).toBe(
+        '\\v 1-5 one two \\v 6-7 three'
+      );
+    });
+
+    it('fills a range marker followed by a newline', () => {
+      expect(end('\\v 1-5\n', '\\v 1-5 one two \\v 6-7 three')).toBe(
+        '\\v 1-5 one two\n\\v 6-7 three'
+      );
+    });
+
+    it('fills a range ending in a letter suffix', () => {
+      expect(end('\\v 1-5a ', '\\v 1-5a hello world')).toBe(
+        '\\v 1-5a hello world '
+      );
+    });
+
+    it('adds text with no marker into an empty pane as is', () => {
+      expect(end('', 'hello')).toBe('hello');
     });
   });
 
@@ -168,5 +215,45 @@ describe('applyAsrText', () => {
       });
       expect(value).toBe('\\v 1 old \\v 1 new');
     });
+  });
+});
+
+// TT-7856: Insert leaves out verses the pane already has words for, judged
+// against the pane when Insert is chosen.
+describe('withoutFilledVerses', () => {
+  it('leaves out a verse with words in the pane', () => {
+    expect(withoutFilledVerses('\\v 1 one \\v 2 two', '\\v 1 old')).toBe(
+      '\\v 2 two'
+    );
+  });
+
+  it('keeps a verse whose marker in the pane is empty', () => {
+    expect(withoutFilledVerses('\\v 1 one \\v 2 two', '\\v 1 old \\v 2 ')).toBe(
+      '\\v 2 two'
+    );
+    expect(withoutFilledVerses('\\v 1 one \\v 2 two', '\\v 1\n\\v 2')).toBe(
+      '\\v 1 one \\v 2 two'
+    );
+  });
+
+  it('tells a suffixed verse from the plain one', () => {
+    expect(withoutFilledVerses('\\v 1a one \\v 1b two', '\\v 1 old')).toBe(
+      '\\v 1a one \\v 1b two'
+    );
+    expect(withoutFilledVerses('\\v 1a one \\v 1b two', '\\v 1a old')).toBe(
+      '\\v 1b two'
+    );
+  });
+
+  it('keeps text before the first marker', () => {
+    expect(withoutFilledVerses('intro \\v 1 one', '\\v 1 old')).toBe('intro');
+  });
+
+  it('keeps text with no markers', () => {
+    expect(withoutFilledVerses('hello', 'old words')).toBe('hello');
+  });
+
+  it('is empty when every verse has words', () => {
+    expect(withoutFilledVerses('\\v 1 one', '\\v 1 old')).toBe('');
   });
 });

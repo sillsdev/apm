@@ -267,7 +267,7 @@ describe('clipTranscription', () => {
     ).toBe('one two');
   });
 
-  it('skips verses already in the transcription', () => {
+  it('marks each segment with its verse', () => {
     expect(
       clipTranscription(
         {
@@ -290,9 +290,8 @@ describe('clipTranscription', () => {
         [
           { start: 0, verse: '1' },
           { start: 5, verse: '2' },
-        ],
-        ['1']
+        ]
       )
-    ).toBe('\\v 2 two');
+    ).toBe('\\v 1 one \\v 2 two');
   });
 });
