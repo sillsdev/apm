@@ -142,9 +142,11 @@ describe('nextUpload pending retry failure', () => {
   };
 
   it('updates existing pending row instead of appending on terminal failure', async () => {
+    // A queued retry is desktop-only, so its file is on disk.
+    const file = Object.assign(makeFile(), { path: '/staged/test.mp3' });
     const action = nextUpload({
       record: baseRecord,
-      files: [makeFile()],
+      files: [file],
       n: 0,
       token: 'token',
       offline: false,
@@ -166,7 +168,12 @@ describe('nextUpload pending retry failure', () => {
     expect(appendPendingMediaUpload).not.toHaveBeenCalled();
   });
 
-  it('appends pending row on terminal failure when not retrying from queue', async () => {
+  // TT-6424: the web has no copy on disk, so there is nothing a later Retry
+  // could upload. Queueing it told the user the take was safe while it only
+  // lived in the page.
+  it('does not queue a failed web upload that has no file on disk', async () => {
+    const cb = jest.fn();
+    const onTerminalFailure = jest.fn();
     const action = nextUpload({
       record: baseRecord,
       files: [makeFile()],
@@ -175,13 +182,16 @@ describe('nextUpload pending retry failure', () => {
       offline: false,
       errorReporter: {} as never,
       uploadType: UploadType.Media,
-      cb: jest.fn(),
+      cb,
+      onTerminalFailure,
     });
     action(dispatch);
     await flushPromises();
 
-    expect(appendPendingMediaUpload).toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith(0, false, undefined, expect.any(String));
+    expect(appendPendingMediaUpload).not.toHaveBeenCalled();
     expect(updatePendingMediaUpload).not.toHaveBeenCalled();
+    expect(onTerminalFailure).not.toHaveBeenCalled();
   });
 });
 

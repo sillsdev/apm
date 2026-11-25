@@ -29,9 +29,8 @@ jest.mock('../store', () => ({
 }));
 
 jest.mock('../selector', () => ({
-  mediaTabSelector: (state: {
-    mediaTab: { uploadComplete: string; uploadFailed: string };
-  }) => state.mediaTab,
+  mediaTabSelector: (state: { mediaTab: { uploadComplete: string } }) =>
+    state.mediaTab,
   sharedSelector: (state: { shared: { mediaAttached: string } }) =>
     state.shared,
 }));
@@ -117,11 +116,11 @@ jest.mock('../context/useGlobal', () => ({
 const mockState = {
   mediaTab: {
     uploadComplete: '{0} of {1} files uploaded successfully.',
-    uploadFailed: 'Upload Failed!',
     pendingUploadQueuedHint: 'See {0}.',
   },
   shared: {
     mediaAttached: 'Media attached',
+    NoSaveWoMedia: 'Save Failed. Check your connection.',
   },
 };
 
@@ -286,7 +285,9 @@ describe('useMediaUpload', () => {
     expect(pullTableList).toHaveBeenCalledTimes(1);
   });
 
-  it('failure path: orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
+  // TT-6424: the lone file's own error (and the recorder's "stay on this
+  // page" that follows it) must stay on screen, not be replaced by "0 of 1".
+  it('failure path: orbit retries, no 0 of 1 snackbar, empty media id, no pullTableList', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
       artifactId: null,
@@ -297,16 +298,45 @@ describe('useMediaUpload', () => {
 
     await expect(
       completeUpload(upload, [makeFile()], 0, false, undefined)
-    ).rejects.toThrow('Upload Failed!');
+    ).rejects.toThrow('Save Failed. Check your connection.');
 
     expect(mockSetOrbitRetries).toHaveBeenCalledWith(
       OrbitNetworkErrorRetries - 1
     );
     expect(pullTableList).not.toHaveBeenCalled();
-    expect(mockShowMessage).toHaveBeenCalledWith(
+    expect(mockShowMessage).not.toHaveBeenCalledWith(
       '0 of 1 files uploaded successfully.'
     );
     expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
+  it('still summarizes a batch of several files that all failed', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<boolean>;
+    const { nextUpload } = require('../store');
+
+    const uploadPromise = upload([makeFile('a.webm'), makeFile('b.webm')]);
+    const assertion = expect(uploadPromise).rejects.toThrow(
+      'Save Failed. Check your connection.'
+    );
+    for (let n = 0; n < 2; n++) {
+      for (let i = 0; i < 50; i++) {
+        if ((nextUpload as jest.Mock).mock.calls.length > n) break;
+        await Promise.resolve();
+      }
+      const { cb } = (nextUpload as jest.Mock).mock.calls[n][0];
+      await cb(n, false, undefined);
+    }
+    await assertion;
+
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      '0 of 2 files uploaded successfully.'
+    );
   });
 
   it('silent success: no snackbar, afterUploadCb still runs', async () => {
@@ -345,7 +375,7 @@ describe('useMediaUpload', () => {
         false,
         undefined
       )
-    ).rejects.toThrow('Upload Failed!');
+    ).rejects.toThrow('Save Failed. Check your connection.');
 
     expect(mockShowMessage).not.toHaveBeenCalled();
     expect(afterUploadCb).toHaveBeenCalledWith('');
@@ -632,7 +662,9 @@ describe('useMediaUpload', () => {
       data?: unknown
     ) => void | Promise<void>;
     await cb(0, false, undefined);
-    await expect(uploadPromise).rejects.toThrow('Upload Failed!');
+    await expect(uploadPromise).rejects.toThrow(
+      'Save Failed. Check your connection.'
+    );
     expect(afterUploadCb).toHaveBeenCalledWith('');
   });
 
