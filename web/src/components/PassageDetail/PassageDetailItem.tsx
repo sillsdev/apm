@@ -21,6 +21,7 @@ import {
   related,
   remoteIdGuid,
   useArtifactType,
+  useLocalizedArtifactType,
   useFetchMediaUrl,
   useOrgDefaults,
   useRole,
@@ -129,7 +130,8 @@ export function PassageDetailItem(props: IProps) {
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
 
-  const { getTypeId, localizedArtifactType } = useArtifactType();
+  const { getTypeId } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
   const { showMessage } = useSnackBar();
   const [recordType, setRecordType] = useState<ArtifactTypeSlug>(
     slugs[0] as ArtifactTypeSlug
@@ -191,11 +193,12 @@ export function PassageDetailItem(props: IProps) {
   const hasBtRecordings = useMemo(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);
     const version = mediaRec?.attributes.versionNumber;
-    const typeNames = slugs.map((s) => localizedArtifactType(s));
     return rowData.some(
-      (r) => typeNames.includes(r.artifactType) && r.sourceVersion === version
+      (r) =>
+        slugs.some((s) => s === r.artifactTypeSlug) &&
+        r.sourceVersion === version
     );
-  }, [rowData, mediafileId, mediafiles, slugs, localizedArtifactType]);
+  }, [rowData, mediafileId, mediafiles, slugs]);
 
   useEffect(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);

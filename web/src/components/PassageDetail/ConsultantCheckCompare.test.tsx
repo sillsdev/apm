@@ -11,9 +11,7 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 jest.mock('../../crud', () => ({
-  useArtifactType: () => ({
-    localizedArtifactType: (item: string) => item,
-  }),
+  useLocalizedArtifactType: () => (item: string) => item,
 }));
 jest.mock('../../selector', () => ({
   sharedSelector: jest.fn(),

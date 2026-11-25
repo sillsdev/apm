@@ -89,7 +89,7 @@ export const SelectMyResource = (props: IProps) => {
           (r) =>
             r?.isResource &&
             !r?.isText &&
-            checkCategory(r?.artifactCategory) &&
+            checkCategory(r?.artifactCategorySlug) &&
             related(r.resource, 'section') === section.id &&
             (r.passageId === '' || r.passageId === passage.id)
         )

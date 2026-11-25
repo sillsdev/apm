@@ -85,8 +85,8 @@ interface IRow {
   mediafile: MediaFileD;
   playItem: string;
   artifactName: string;
-  artifactType: string;
-  artifactCategory: string;
+  artifactTypeSlug: string;
+  artifactCategorySlug: string;
   done: boolean;
   editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;

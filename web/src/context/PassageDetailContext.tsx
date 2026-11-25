@@ -44,7 +44,6 @@ import {
 } from '../crud/useOrgDefaults';
 import { related } from '../crud/related';
 import { remoteId, remoteIdGuid } from '../crud/remoteId';
-import { useArtifactCategory } from '../crud/useArtifactCategory';
 import { useArtifactType } from '../crud/useArtifactType';
 import { BlobStatus, useFetchMediaBlob } from '../crud/useFetchMediaBlob';
 import { useFilteredSteps } from '../crud/useFilteredSteps';
@@ -102,12 +101,10 @@ export interface IRow {
   mediafile: MediaFileD;
   playItem: string;
   artifactName: string;
-  artifactType: string;
-  /** Raw artifact type slug (e.g. 'resource', 'sharedresource') behind artifactType. */
   artifactTypeSlug: string;
   /** Media is (or derives from) a general/project resource -- see generalResourceMedia. */
   isGeneralResource: boolean;
-  artifactCategory: string;
+  artifactCategorySlug: string;
   done: boolean;
   editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;
@@ -305,8 +302,7 @@ const PassageDetailProvider = (props: IProps) => {
   const fetching = useRef('');
   const segmentsCbs = useRef<((segments: string) => void)[]>([]);
   const filteredOrgSteps = useFilteredSteps();
-  const { localizedArtifactType, getTypeId } = useArtifactType();
-  const { localizedArtifactCategory } = useArtifactCategory();
+  const { getTypeId } = useArtifactType();
   const { localizedWorkStep } = useOrgWorkflowSteps();
   const mediaStart = useRef<number | undefined>(undefined);
   const mediaEnd = useRef<number | undefined>(undefined);
@@ -744,8 +740,6 @@ const PassageDetailProvider = (props: IProps) => {
           categories,
           userResources,
           user,
-          localizedCategory: localizedArtifactCategory,
-          localizedType: localizedArtifactType,
         });
         i = newRows.length - 1;
       } else {
@@ -1052,10 +1046,6 @@ const PassageDetailProvider = (props: IProps) => {
       psgId = related(sr, 'passage');
     }
     const allMedia = getAllMediaRecs(psgId ?? passageId, memory);
-    const localize = {
-      localizedCategory: localizedArtifactCategory,
-      localizedType: localizedArtifactType,
-    };
     const pres = getProjectResources();
     let newData = mediaRows({
       artifactTypes,
@@ -1063,7 +1053,6 @@ const PassageDetailProvider = (props: IProps) => {
       userResources,
       mediafiles: allMedia.concat(pres) as MediaFileD[],
       user,
-      ...localize,
     });
 
     const sectId = related(passRec, 'section');
@@ -1076,7 +1065,6 @@ const PassageDetailProvider = (props: IProps) => {
         mediafiles,
         res,
         user,
-        ...localize,
       }).sort((i, j) => i.sequenceNum - j.sequenceNum)
     );
 

@@ -48,6 +48,7 @@ import {
   getMediaInPlans,
   useOrganizedBy,
   useArtifactType,
+  useLocalizedArtifactType,
   ArtifactTypeSlug,
   useTranscription,
   usePassageState,
@@ -193,7 +194,8 @@ export function TranscriptionTab(props: IProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
 
-  const { getTypeId, localizedArtifactType } = useArtifactType();
+  const { getTypeId } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
   const { getSharedResource } = useSharedResRead();
   const projectPlan = useMemo(
     () => projectPlans?.[0] as Plan | undefined,

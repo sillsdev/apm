@@ -377,16 +377,16 @@
             <source>Linked</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">resourceRows.ts</context>
+               <context context-type="sourcefile">useRowTypeLabel.ts</context>
             </context-group>
          </trans-unit>
-      	<trans-unit id="artifactType.projectresource">
-      		<source>General Resource</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">AlertDialog.tsx</context>
-      		</context-group>
-      	</trans-unit>
+         <trans-unit id="artifactType.projectresource">
+            <source>General Resource</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useArtifactType.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="artifactType.qanda">
             <source>Community Test Question and Answer</source>
             <target/>
@@ -6630,7 +6630,7 @@
       		<source>General</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">PassageDetailsArtifactsMobile.tsx</context>
+      			<context context-type="sourcefile">useRowTypeLabel.ts</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.generalResources">

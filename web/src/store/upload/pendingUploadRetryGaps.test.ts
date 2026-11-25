@@ -127,7 +127,7 @@ function makeLwcRow(
   } = overrides;
   return {
     id,
-    artifactType: 'LWC translation',
+    artifactTypeSlug: 'lwctranslation',
     sourceVersion: 1,
     mediafile: {
       id: `${id}-mf`,

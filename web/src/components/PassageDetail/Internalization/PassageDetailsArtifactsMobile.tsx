@@ -27,6 +27,7 @@ import {
   useOrganizedBy,
   findRecord,
   useArtifactCategory,
+  useLocalizedArtifactCategory,
   IArtifactCategory,
   ArtifactCategoryType,
   usePlanType,
@@ -34,6 +35,7 @@ import {
   ArtifactTypeSlug,
   mediaFileName,
 } from '../../../crud';
+import { useRowTypeLabel } from './useRowTypeLabel';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import MediaDisplay from '../../MediaDisplay';
@@ -179,17 +181,15 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
   const { userIsAdmin } = useRole();
+  const rowTypeLabel = useRowTypeLabel();
+  const localizedArtifactCategory = useLocalizedArtifactCategory();
   // Admins see badges for resources that are linked (shared) or general; other users don't.
   const typeBadge = (row: IRow) =>
-    !userIsAdmin
-      ? undefined
-      : // The badge stays short: "General" where the Type column says
-        // "General Resource".
-        row.isGeneralResource
-        ? t.general
-        : row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
-          ? row.artifactType
-          : undefined;
+    userIsAdmin &&
+    (row.isGeneralResource ||
+      row.artifactTypeSlug === ArtifactTypeSlug.SharedResource)
+      ? rowTypeLabel(row)
+      : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   const [editCloseConfirmation, setEditCloseConfirmation] = useState(false);
   const handleLink = useHandleLink({ passage, setLink });
@@ -688,7 +688,10 @@ export function PassageDetailArtifactsMobile() {
               {/^audio/.test(mediaContentType(value.mediafile)) ? (
                 <AudioResourceCard
                   row={value}
-                  subtitle={value.artifactCategory || undefined}
+                  subtitle={
+                    localizedArtifactCategory(value.artifactCategorySlug) ||
+                    undefined
+                  }
                   badge={typeBadge(value)}
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
@@ -703,7 +706,10 @@ export function PassageDetailArtifactsMobile() {
               ) : (
                 <TextResourceCard
                   row={value}
-                  subtitle={value.artifactCategory || undefined}
+                  subtitle={
+                    localizedArtifactCategory(value.artifactCategorySlug) ||
+                    undefined
+                  }
                   badge={typeBadge(value)}
                   expandedId={expandedArtifactNameId}
                   setExpandedId={setExpandedArtifactNameId}

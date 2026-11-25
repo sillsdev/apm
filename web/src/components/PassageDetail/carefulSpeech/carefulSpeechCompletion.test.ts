@@ -34,7 +34,7 @@ function makeRow(
   } = overrides;
   return {
     id,
-    artifactType: 'Back translation',
+    artifactTypeSlug: 'backtranslation',
     sourceVersion: 1,
     mediafile: {
       id: `${id}-mf`,
