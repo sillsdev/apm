@@ -38,7 +38,8 @@ jest.mock('../../../business/referenceText/useReferenceTextPassage', () => ({
 jest.mock('../../../crud', () => ({
   related: jest.fn(() => 'section-1'),
   useArtifactCategory: () => ({
-    scriptureTypeCategory: () => true,
+    scriptureTypeCategory: (slug: string) =>
+      ['scripture', 'biblestory'].includes(slug),
   }),
 }));
 
@@ -61,7 +62,7 @@ const rowData = [
     id: 'res-1',
     isResource: true,
     isText: false,
-    artifactCategorySlug: 'resource',
+    artifactCategorySlug: 'scripture',
     resource: {},
     passageId: '',
     artifactName: 'Emotional-408.mp3',
@@ -70,10 +71,20 @@ const rowData = [
     id: 'res-2',
     isResource: true,
     isText: false,
-    artifactCategorySlug: 'resource',
+    artifactCategorySlug: 'biblestory',
     resource: {},
     passageId: '',
     artifactName: 'i_love_you_mummy-29.mp3',
+  },
+  {
+    // not a Scripture/Bible Story category, so Compare never offers it
+    id: 'res-3',
+    isResource: true,
+    isText: false,
+    artifactCategorySlug: 'resource',
+    resource: {},
+    passageId: '',
+    artifactName: 'commentary.mp3',
   },
 ];
 
@@ -170,6 +181,17 @@ describe('SelectMyResource', () => {
     ]);
     fireEvent.click(options[2]);
     expect(onChange).toHaveBeenCalledWith('referenceText:primary');
+  });
+
+  it('offers only resources in a Scripture or Bible Story category', async () => {
+    renderSelect({});
+
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    const listbox = await screen.findByRole('listbox');
+
+    expect(
+      within(listbox).queryByRole('option', { name: 'commentary.mp3' })
+    ).not.toBeInTheDocument();
   });
 
   it('TT-7819: offers no Reference Text the project lacks', async () => {

@@ -7,5 +7,9 @@ export const useLocalizedArtifactType = (): ((val: string) => string) => {
     artifactTypeSelector,
     shallowEqual
   );
-  return (val: string): string => t.getString(val, null, true) || val;
+  // Translate only names that have a string (built-in slugs); show any other
+  // (user-defined) name as typed. Otherwise getString alone would read "chapter.1" as a
+  // nested path and return "h".
+  return (val: string): string =>
+    (Object.hasOwn(t, val) && t.getString(val)) || val;
 };
