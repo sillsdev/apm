@@ -1,11 +1,18 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { IWsAudioPlayerStrings, OrganizationD } from '../../../model';
-import { playerSelector } from '../../../selector';
+import {
+  ITranscriberStrings,
+  IWsAudioPlayerStrings,
+  OrganizationD,
+} from '../../../model';
+import { playerSelector, transcriberSelector } from '../../../selector';
+import Confirm from '../../AlertDialog';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import SelectAsrLanguage from '../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../business/asr/AsrProgress';
 import type { IAsrState } from '../../../business/asr/asrState';
+import type { AsrResult } from '../../../business/asr/useAsrTaskLifecycle';
+import type { AsrPrompt } from './useTranscribeAsr';
 
 export interface TranscribeAsrDialogsProps {
   team: OrganizationD | undefined;
@@ -15,12 +22,13 @@ export interface TranscribeAsrDialogsProps {
   phonetic: boolean;
   asrOverride: IAsrState | undefined;
   forceAsr: boolean;
-  contentVerses?: string[];
   forceRefresh?: () => void;
   /** Language-dialog close; cancel=true when the shell dismisses. */
   onLanguageClose: (cancel: boolean, asrState?: IAsrState) => void;
   onProgressOpen: (open: boolean) => void;
-  setTranscription: (text: string) => void;
+  onAsrResult: (result: AsrResult) => void;
+  /** A result waiting for Replace or Insert; shows the prompt. */
+  asrPrompt?: AsrPrompt;
   bp: BigDialogBp;
   isMobile?: boolean;
 }
@@ -34,14 +42,15 @@ export function TranscribeAsrDialogs({
   phonetic,
   asrOverride,
   forceAsr,
-  contentVerses = [],
   forceRefresh,
   onLanguageClose,
   onProgressOpen,
-  setTranscription,
+  onAsrResult,
+  asrPrompt,
   bp,
   isMobile = false,
 }: Readonly<TranscribeAsrDialogsProps>) {
+  const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const tPlayer: IWsAudioPlayerStrings = useSelector(
     playerSelector,
     shallowEqual
@@ -83,12 +92,24 @@ export function TranscribeAsrDialogs({
             phonetic={phonetic}
             asrState={asrOverride}
             force={forceAsr}
-            contentVerses={contentVerses}
-            setTranscription={setTranscription}
+            onAsrResult={onAsrResult}
             forceRefresh={forceRefresh}
             onClose={() => onProgressOpen(false)}
           />
         </BigDialog>
+      )}
+      {asrPrompt && (
+        // Dismissing leaves the pane as it was; the result is offered again on
+        // the next run with the same method (TT-7856).
+        <Confirm
+          text={t.asrReplaceExisting}
+          yes={t.asrReplace}
+          no={t.asrInsert}
+          yesResponse={asrPrompt.onReplace}
+          noResponse={asrPrompt.onInsert}
+          onDismiss={asrPrompt.onDismiss}
+          primaryButton="no"
+        />
       )}
     </>
   );

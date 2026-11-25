@@ -71,6 +71,7 @@ import { useSnackBar } from '../../../../hoc/SnackBar';
 import { completeStepAfterSave } from '../../../../context/completeStepAfterSave';
 import { useTranscribeActions } from '../../transcribe/useTranscribeActions';
 import { useTranscribeAsr } from '../../transcribe/useTranscribeAsr';
+import { applyAsrText, type AsrTextMode } from '../../transcribe/insertAsrText';
 import { useTranscribeStepRole } from '../../transcribe/useTranscribeStepRole';
 import { useTranscribeStepNav } from '../../transcribe/useTranscribeStepNav';
 import { useTranscribeProjData } from '../../transcribe/useTranscribeProjData';
@@ -373,12 +374,16 @@ export function PassageDetailTranscribeMobileContent() {
   ]);
 
   const handleTextAdd = useCallback(
-    (newText: string, replace?: boolean) => {
+    (newText: string, mode: AsrTextMode) => {
       if (isReadOnly || !hasPermission || !mediafile) return;
+      // Read the caret now; the textarea keeps it while the prompt is open.
+      const selection = {
+        start: textareaRef.current?.selectionStart ?? 0,
+        end: textareaRef.current?.selectionEnd ?? 0,
+      };
       setTextValue((prev) => {
-        const updated = replace ? newText : prev + newText;
         toolChanged(currentstep, true);
-        return updated;
+        return applyAsrText(prev, newText, mode, selection).value;
       });
     },
     [isReadOnly, hasPermission, mediafile, toolChanged, currentstep]
@@ -397,6 +402,7 @@ export function PassageDetailTranscribeMobileContent() {
     onTextAdd: handleTextAdd,
     getCurrentText: getTextValue,
     hasActiveTask: hasAiTask,
+    mediaId: mediafile?.id,
   });
 
   const handleTextChange = useCallback(
@@ -738,7 +744,8 @@ export function PassageDetailTranscribeMobileContent() {
         forceRefresh={forceRefresh}
         onLanguageClose={asr.handleAsrLanguageClose}
         onProgressOpen={asr.setAsrProgressVisible}
-        setTranscription={asr.handleAutoTranscribe}
+        onAsrResult={asr.handleAutoTranscribe}
+        asrPrompt={asr.asrPrompt}
         bp={BigDialogBp.mobile}
         isMobile
       />

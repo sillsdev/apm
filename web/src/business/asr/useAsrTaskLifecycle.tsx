@@ -77,6 +77,14 @@ function loadVerseTimings(mediaRec: MediaFileD | undefined): AeroVerseTiming[] {
 }
 
 /**
+ * One finished ASR run's text. Replace uses it all; Insert leaves out verses
+ * the pane has words for when it is chosen (see withoutFilledVerses).
+ */
+export interface AsrResult {
+  full: string;
+}
+
+/**
  * Submit, poll, apply clips, and clean up an Aero transcription task.
  * Presentation stays in AsrProgress.
  */
@@ -85,8 +93,7 @@ export function useAsrTaskLifecycle({
   phonetic,
   asrState,
   force,
-  contentVerses,
-  setTranscription,
+  onAsrResult,
   forceRefresh,
   onClose,
 }: {
@@ -94,8 +101,7 @@ export function useAsrTaskLifecycle({
   phonetic: boolean;
   asrState?: IAsrState;
   force?: boolean;
-  contentVerses?: string[];
-  setTranscription: (transcription: string) => void;
+  onAsrResult: (result: AsrResult) => void;
   forceRefresh?: () => void;
   onClose: () => void;
 }) {
@@ -225,17 +231,11 @@ export function useAsrTaskLifecycle({
     if (clip?.state !== 'SUCCESS') return;
     const key = clip.clip || 'clip';
     if (appliedKeysRef.current.has(key)) return;
-    // Forced replace overwrites the whole transcription; skipping completed
-    // verses would drop them (partial) or empty the result (fully transcribed).
-    const text = clipTranscription(
-      clip,
-      phonetic,
-      verseTimingsRef.current,
-      force ? undefined : contentVerses
-    );
-    if (!text) return;
+    // The caller picks Replace or Insert at apply time (TT-7856).
+    const full = clipTranscription(clip, phonetic, verseTimingsRef.current);
+    if (!full) return;
     appliedKeysRef.current.add(key);
-    setTranscription(text);
+    onAsrResult({ full });
   };
 
   const closing = () => {

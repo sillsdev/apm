@@ -28,7 +28,7 @@ import { IAsrState } from './asrState';
 import { useNeedsSisterLanguage } from './useNeedsSisterLanguage';
 import { asrShowsLanguagePicker } from './asrShowsLanguagePicker';
 import { asrPollStateLabel } from './asrPollStateLabel';
-import { useAsrTaskLifecycle } from './useAsrTaskLifecycle';
+import { useAsrTaskLifecycle, type AsrResult } from './useAsrTaskLifecycle';
 
 interface AsrProgressProps {
   mediaId: string;
@@ -38,8 +38,7 @@ interface AsrProgressProps {
   force?: boolean;
   /** Step/primary language when not the project vernacular (e.g. LWC). */
   primaryBcp47?: string;
-  contentVerses?: string[];
-  setTranscription: (transcription: string) => void;
+  onAsrResult: (result: AsrResult) => void;
   /** Bump passage-detail context after the mediafile pull (optional). */
   forceRefresh?: () => void;
   onClose: () => void;
@@ -51,8 +50,7 @@ export default function AsrProgress({
   asrState,
   force,
   primaryBcp47,
-  contentVerses,
-  setTranscription,
+  onAsrResult,
   forceRefresh,
   onClose,
 }: Readonly<AsrProgressProps>) {
@@ -76,8 +74,7 @@ export default function AsrProgress({
       phonetic,
       asrState,
       force,
-      contentVerses,
-      setTranscription,
+      onAsrResult,
       forceRefresh,
       onClose,
     });

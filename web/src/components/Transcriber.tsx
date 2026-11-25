@@ -69,8 +69,10 @@ import { useTranscribeProjData } from './PassageDetail/transcribe/useTranscribeP
 import { TranscribeAsrDialogs } from './PassageDetail/transcribe/TranscribeAsrDialogs';
 import { useOtherEditorName } from './PassageDetail/transcribe/useOtherEditorName';
 import { pickTodoMediaRow } from './PassageDetail/transcribe/pickTodoMediaRow';
+import { applyAsrText } from './PassageDetail/transcribe/insertAsrText';
 import {
   insertAtCursor,
+  resolveSelection,
   logError,
   Severity,
   currentDateTime,
@@ -270,8 +272,6 @@ export function Transcriber(props: Readonly<IProps>) {
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const [suggestedSegs, setSuggestedSegs] = useState<SuggestedSegments>();
   const verseSegs = useRef<string | undefined>(undefined);
-  const [verseLabels, setVerseLabels] = useState<string[]>([]);
-  const [contentVerses, setContentVerses] = useState<string[]>([]);
   const playedSecsRef = useRef<number>(0);
   const segmentsRef = useRef<string | undefined>(undefined);
   const stateRef = useRef<string>(state);
@@ -585,12 +585,6 @@ export function Transcriber(props: Readonly<IProps>) {
       const defaultSegments = mediafile?.attributes?.segments;
       if (defaultSegments) {
         const segs = verseRegionsFromSegments(defaultSegments);
-        const verseLabels: string[] = [];
-        segs.forEach((region) => {
-          const vnum = region?.label?.split(':')[1];
-          if (vnum) verseLabels.push(vnum);
-        });
-        setVerseLabels(verseLabels);
         verseSegs.current = JSON.stringify({ regions: JSON.stringify(segs) });
         setSuggestedSegs({
           mediaId: mediafile.id,
@@ -1048,27 +1042,6 @@ export function Transcriber(props: Readonly<IProps>) {
     };
   };
 
-  useEffect(() => {
-    const transcription = textValue;
-    if (!transcription) return;
-    const newContentVerses: string[] = [];
-    verseLabels.forEach((label) => {
-      const pat = new RegExp(String.raw`\\v\s+${label}\s+[^\\]`);
-      if (pat.test(transcription as string)) {
-        newContentVerses.push(label);
-      }
-    });
-    if (newContentVerses.length === 0) {
-      if (!/\\v/.test(transcription as string)) {
-        newContentVerses.push('no-verses');
-      }
-    }
-    if (JSON.stringify(contentVerses) !== JSON.stringify(newContentVerses)) {
-      setContentVerses(newContentVerses);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textValue, verseLabels, playerMediafile]);
-
   const showTranscription = (val: ITrans) => {
     transcriptionIn.current = val.transcription;
     // Single seed site: row selection always loads through here, so an empty
@@ -1127,17 +1100,11 @@ export function Transcriber(props: Readonly<IProps>) {
     if (teamDefault) setOrgDefault(NamedRegions.Transcription, params);
   };
 
-  const addText = (text: string, atEnd?: boolean) => {
+  const addText = (text: string) => {
     if (transcriptionRef.current) {
       focusOnTranscription();
       const textArea = transcriptionRef.current
         .firstChild as HTMLTextAreaElement;
-      if (atEnd) {
-        // ASR append must not insert at a caret left at 0 after focus,
-        // or a pre-seeded \v 1-5a ends up after the new text.
-        const end = textArea.value?.length ?? 0;
-        textArea.setSelectionRange(end, end);
-      }
       insertAtCursor(textArea, text);
       setTextValue(textArea.value ?? '');
     }
@@ -1148,8 +1115,8 @@ export function Transcriber(props: Readonly<IProps>) {
     return hasTranscriptionTask(mediaRec?.attributes?.segments);
   }, [playerMediafile, mediarecs]);
 
-  // The same ASR flow as mobile transcribe; ASR text goes at the end and
-  // marks the tool changed.
+  // The same ASR flow as mobile transcribe; ASR text replaces the pane, goes
+  // at the end, or at the caret (the user's choice), and marks the tool changed.
   const {
     asrTip,
     asrProgressVisible,
@@ -1162,24 +1129,29 @@ export function Transcriber(props: Readonly<IProps>) {
     handleTranscribe,
     handleAsrLanguageClose,
     handleAutoTranscribe,
+    asrPrompt,
   } = useTranscribeAsr({
     team,
     sharedStr,
     tPlayer,
     showMessage,
-    onTextAdd: (text, replace) => {
-      if (replace && transcriptionRef.current) {
-        const textArea = transcriptionRef.current
-          .firstChild as HTMLTextAreaElement;
-        textArea.value = text;
-        setTextValue(text);
-      } else {
-        addText(text, true);
-      }
+    onTextAdd: (text, mode) => {
+      const textArea = transcriptionRef.current?.firstChild as
+        HTMLTextAreaElement | undefined;
+      if (!textArea) return;
+      const { value, caret } = applyAsrText(textArea.value ?? '', text, mode, {
+        start: textArea.selectionStart ?? 0,
+        end: textArea.selectionEnd ?? 0,
+      });
+      textArea.value = value;
+      setTextValue(value);
+      focusOnTranscription();
+      textArea.setSelectionRange(caret, caret);
       toolChanged(toolId, true);
     },
     getCurrentText: () => transcriptionRef.current?.firstChild?.value ?? '',
     hasActiveTask: hasAiTasks,
+    mediaId: playerMediafile?.id,
   });
 
   const handleAsrProgressVisible = (v: boolean) => {
@@ -1210,21 +1182,21 @@ export function Transcriber(props: Readonly<IProps>) {
     if (!ref || !refMatch(ref)) return;
     const textArea = transcriptionRef.current.firstChild as HTMLTextAreaElement;
     const value = textArea.value ?? '';
-    // Same cursor rule as insertAtCursor: a caret at 0 with no range means append.
     const start = textArea.selectionStart ?? 0;
-    const end = textArea.selectionEnd ?? start;
-    const collapsedAtZero = !start && start === end;
-    const cursor = collapsedAtZero ? value.length : start;
+    const sel = resolveSelection(value.length, {
+      start,
+      end: textArea.selectionEnd ?? start,
+    });
     const edit = applyVerseSegment(
       value,
       ref,
-      cursor,
+      sel.start,
       openingChapter(
         passage?.attributes?.startChapter,
         passage?.attributes?.reference,
         firstUsableVerseReference(segs)
       ),
-      collapsedAtZero ? value.length : end
+      sel.end
     );
     if (edit.text !== value) {
       textArea.value = edit.text;
@@ -1509,11 +1481,11 @@ export function Transcriber(props: Readonly<IProps>) {
           phonetic={phonetic}
           asrOverride={asrOverride}
           forceAsr={forceAsr}
-          contentVerses={contentVerses}
           forceRefresh={forceRefresh}
           onLanguageClose={handleAsrLanguageClose}
           onProgressOpen={handleAsrProgressVisible}
-          setTranscription={handleAutoTranscribe}
+          onAsrResult={handleAutoTranscribe}
+          asrPrompt={asrPrompt}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
           isMobile={isMobile}
         />

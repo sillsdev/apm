@@ -10241,6 +10241,13 @@
                <context context-type="sourcefile">AsrProgress.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.asrInsert">
+            <source>Insert</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeAsrDialogs.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.asrMethod">
             <source>Method</source>
             <target/>
@@ -10274,6 +10281,20 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">AsrProgress.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrReplace">
+            <source>Replace</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeAsrDialogs.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.asrReplaceExisting">
+            <source>Replace the existing transcription with the new auto transcription, or insert it at the cursor?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeAsrDialogs.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.asrRequestFailed">

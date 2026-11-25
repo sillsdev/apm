@@ -1725,11 +1725,14 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "aiWillContinueDifferentLanguage": string;
     "asrChooseLanguage": string;
     "asrFailure": string;
+    "asrInsert": string;
     "asrMethod": string;
     "asrMethodDefault": string;
     "asrMethodHint": string;
     "asrPending": string;
     "asrQueued": string;
+    "asrReplace": string;
+    "asrReplaceExisting": string;
     "asrRequestFailed": string;
     "asrSaveFailed": string;
     "asrSaveTeamDefault": string;

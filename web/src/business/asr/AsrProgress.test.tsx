@@ -184,7 +184,7 @@ const renderAsr = async (
       phonetic={phonetic}
       asrState={asrState}
       force={force}
-      setTranscription={jest.fn()}
+      onAsrResult={jest.fn()}
       onClose={jest.fn()}
     />
   );
@@ -359,7 +359,7 @@ describe('AsrProgress in-flight task', () => {
       <AsrProgress
         mediaId="m1"
         phonetic={false}
-        setTranscription={jest.fn()}
+        onAsrResult={jest.fn()}
         forceRefresh={forceRefresh}
         onClose={jest.fn()}
       />
@@ -434,7 +434,7 @@ describe('AsrProgress in-flight task', () => {
       <AsrProgress
         mediaId="m1"
         phonetic={false}
-        setTranscription={jest.fn()}
+        onAsrResult={jest.fn()}
         onClose={onClose}
       />
     );
@@ -459,7 +459,7 @@ describe('AsrProgress in-flight task', () => {
         { name: NamedRegions.Verse, regionInfo: verseInfo },
       ]);
       orbitMedia = [mediaWith(60, localSegments)];
-      const setTranscription = jest.fn();
+      const onAsrResult = jest.fn();
       mockAxiosPost.mockResolvedValue({
         data: {
           data: {
@@ -502,7 +502,7 @@ describe('AsrProgress in-flight task', () => {
         <AsrProgress
           mediaId="m1"
           phonetic={false}
-          setTranscription={setTranscription}
+          onAsrResult={onAsrResult}
           onClose={jest.fn()}
         />
       );
@@ -514,7 +514,9 @@ describe('AsrProgress in-flight task', () => {
         await Promise.resolve();
       });
 
-      expect(setTranscription).toHaveBeenCalledWith('\\v 1-5 one \\v 6-7 two');
+      expect(onAsrResult).toHaveBeenCalledWith({
+        full: '\\v 1-5 one \\v 6-7 two',
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -574,14 +576,14 @@ describe('AsrProgress in-flight task', () => {
   const runClipToTranscription = async (
     props: Partial<React.ComponentProps<typeof AsrProgress>>
   ) => {
-    const setTranscription = jest.fn();
+    const onAsrResult = jest.fn();
     jest.useFakeTimers();
     try {
       render(
         <AsrProgress
           mediaId="m1"
           phonetic={false}
-          setTranscription={setTranscription}
+          onAsrResult={onAsrResult}
           onClose={jest.fn()}
           {...props}
         />
@@ -596,49 +598,19 @@ describe('AsrProgress in-flight task', () => {
     } finally {
       jest.useRealTimers();
     }
-    return setTranscription;
+    return onAsrResult;
   };
 
-  it('excludes completed verses when appending (not forced)', async () => {
+  // The whole result goes to the caller; Replace or Insert decides what to
+  // keep against the pane when it is applied (TT-7856).
+  it.each([false, true])('sends the whole result (force %s)', async (force) => {
     orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
     mockForceClipSuccess();
 
-    const setTranscription = await runClipToTranscription({
-      force: false,
-      contentVerses: ['1'],
+    const onAsrResult = await runClipToTranscription({ force });
+
+    expect(onAsrResult).toHaveBeenCalledWith({
+      full: '\\v 1 one-new \\v 2 two-new',
     });
-
-    expect(setTranscription).toHaveBeenCalledWith('\\v 2 two-new');
-    expect(setTranscription).not.toHaveBeenCalledWith(
-      expect.stringContaining('\\v 1 ')
-    );
-  });
-
-  it('keeps completed verses on forced replace of a partial transcription', async () => {
-    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
-    mockForceClipSuccess();
-
-    const setTranscription = await runClipToTranscription({
-      force: true,
-      contentVerses: ['1'],
-    });
-
-    expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new'
-    );
-  });
-
-  it('delivers a full result on forced replace when every verse was already transcribed', async () => {
-    orbitMedia = [mediaWith(60, twoVerseLocalSegments())];
-    mockForceClipSuccess();
-
-    const setTranscription = await runClipToTranscription({
-      force: true,
-      contentVerses: ['1', '2'],
-    });
-
-    expect(setTranscription).toHaveBeenCalledWith(
-      '\\v 1 one-new \\v 2 two-new'
-    );
   });
 });

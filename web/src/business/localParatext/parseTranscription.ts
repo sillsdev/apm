@@ -6,7 +6,6 @@ export const parseTranscription = (
   currentPassage: Passage,
   transcription: string
 ) => {
-  // Trailing \s required here; autoTranscriptionToAppend allows an optional one.
   const pattern = new RegExp(
     String.raw`(\\v\s*${VERSE_NUMBER_PATTERN}\s)`,
     'g'
