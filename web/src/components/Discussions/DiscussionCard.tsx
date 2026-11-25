@@ -183,7 +183,6 @@ interface IProps {
   showStep: boolean;
   showReference: boolean;
   onAddComplete?: (id: string) => void;
-  setRef: (ref: any) => void;
   requestHighlight: string;
   refreshList: () => void;
 }
@@ -200,7 +199,6 @@ export const DiscussionCard = (props: IProps) => {
     showStep,
     showReference,
     onAddComplete,
-    setRef,
     requestHighlight,
     refreshList,
   } = props;
@@ -264,7 +262,6 @@ export const DiscussionCard = (props: IProps) => {
   const [editSubject, setEditSubject] = useState(
     discussion.attributes?.subject
   );
-  const assignedToMeRef = useRef(false);
   const {
     permissions,
     canAccess,
@@ -284,7 +281,7 @@ export const DiscussionCard = (props: IProps) => {
   const [editCard, setEditCard] = useState(false);
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
-  const cardRef = useRef<any>(undefined);
+  const cardRef = useRef<HTMLDivElement>(null);
   const commentText = useRef('');
   const [comment, setComment] = useState('');
   const commentMediaId = useRef<string | undefined>(undefined);
@@ -346,6 +343,43 @@ export const DiscussionCard = (props: IProps) => {
           remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
       }),
     });
+  // Hand the discussion to whoever should answer next. Called only after one
+  // of my comments saves: a permission change or list refresh is not a reply,
+  // so it must not reassign the discussion (TT-7888).
+  const handOffAfterMyComment = async () => {
+    if (!discussion.id) return;
+    const assignedToMe =
+      assignedUser?.id === user ||
+      myGroups.some((grp) => grp.id === assignedGroup?.id);
+    if (!assignedToMe) return;
+    let groupId = '';
+    let userId = '';
+    if (hasPermission(PermissionName.CIT) && mentorGroup) {
+      groupId = mentorGroup.id; //a CIT always hands off to the mentors group
+    } else if (hasPermission(PermissionName.Mentor) && citGroup) {
+      groupId = citGroup.id; //a mentor always hands off to the CIT group
+    } else {
+      //otherwise hand back to whoever commented before me
+      const previous = [...myComments]
+        .sort((a, b) =>
+          a.attributes.dateUpdated > b.attributes.dateUpdated ? -1 : 1
+        )
+        .find((c) => CommentAuthor(c) !== user);
+      if (!previous) return;
+      userId = CommentAuthor(previous);
+    }
+    if (
+      groupId === (assignedGroup?.id ?? '') &&
+      userId === (assignedUser?.id ?? '')
+    )
+      return;
+    const t = new RecordTransformBuilder();
+    await memory.update([
+      ...UpdateRelatedRecord(t, discussion, 'group', 'group', groupId, user),
+      ...UpdateRelatedRecord(t, discussion, 'user', 'user', userId, user),
+    ]);
+    setAssigned(groupId, userId);
+  };
   const saveMyComment = async () => {
     if (discussion.id && (commentText.current || commentMediaId.current)) {
       await saveComment(
@@ -355,6 +389,7 @@ export const DiscussionCard = (props: IProps) => {
         commentMediaId.current,
         undefined
       );
+      await handOffAfterMyComment();
     }
     saveCompleted(NewCommentToolId);
     commentText.current = '';
@@ -722,18 +757,6 @@ export const DiscussionCard = (props: IProps) => {
     setChanged(true);
     setChangeAssignment(false);
   };
-  const handleGroupChange = (e: string) => {
-    if (e !== assignedGroup?.id) {
-      setAssigned(e, '');
-      setChanged(true);
-    }
-  };
-  const handleUserChange = (e: string) => {
-    if (e !== assignedUser?.id) {
-      setAssigned('', e);
-      setChanged(true);
-    }
-  };
   const handleAssign = (e: string) => {
     if (e !== assignedGroup?.id && e !== assignedUser?.id) {
       setEditAssigned(e);
@@ -899,61 +922,22 @@ export const DiscussionCard = (props: IProps) => {
     return DiscussionRegion(discussion);
   }, [discussion]);
 
+  // TT-7887: scroll on every locate, including a repeat locate of the same
+  // region (which only bumps refresh), so the card's header comes back into
+  // view even after the user scrolled the list away.
+  const scrollCardIntoView = () =>
+    cardRef.current?.scrollIntoView({ block: 'start' });
+
   useEffect(() => {
     //locate my region
     if (highlightDiscussion === undefined) {
-      if (discussion.id === requestHighlight) setRef(cardRef);
+      if (discussion.id === requestHighlight) scrollCardIntoView();
     } else if (myRegion?.start === highlightDiscussion) {
       handleLocate();
-      setRef(cardRef);
+      scrollCardIntoView();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightDiscussion, myRegion?.start, refresh, requestHighlight]);
-
-  useEffect(() => {
-    assignedToMeRef.current =
-      assignedUser?.id === user ||
-      myGroups.map((grp) => grp.id).includes(assignedGroup?.id ?? 'x');
-  }, [assignedUser, assignedGroup, myGroups, user]);
-
-  useEffect(() => {
-    if (assignedToMeRef.current) {
-      const sortedByUpdatedDesc = [...myComments];
-      sortedByUpdatedDesc.sort((a, b) =>
-        a.attributes.dateUpdated > b.attributes.dateUpdated ? -1 : 1
-      );
-      if (
-        sortedByUpdatedDesc.length > 0 &&
-        related(sortedByUpdatedDesc[0], 'lastModifiedByUser') === user
-      ) {
-        //If I'm a CIT, always assign to mentors group
-        if (hasPermission(PermissionName.CIT) && mentorGroup) {
-          handleGroupChange(mentorGroup.id);
-          setChangeAssignment(false);
-          //If I'm a mentor, always assign to CIT group
-        } else if (hasPermission(PermissionName.Mentor) && citGroup) {
-          handleGroupChange(citGroup.id);
-          setChangeAssignment(false);
-        } else {
-          //otherwise find who commented before me...
-          let ix = 0;
-          for (
-            ;
-            ix < sortedByUpdatedDesc.length &&
-            CommentAuthor(sortedByUpdatedDesc[ix] as CommentD) === user;
-            ix++
-          );
-          if (ix < sortedByUpdatedDesc.length) {
-            handleUserChange(
-              CommentAuthor(sortedByUpdatedDesc[ix] as CommentD)
-            );
-            setChangeAssignment(false);
-          }
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myComments]);
 
   const handleAssignedClick = () => {
     setAssigned(related(discussion, 'group'), related(discussion, 'user'));
@@ -1208,12 +1192,14 @@ export const DiscussionCard = (props: IProps) => {
                     discussion={discussion}
                     commentNumber={j}
                     onEditing={handleEditCard}
+                    onCommentSaved={handOffAfterMyComment}
                   />
                 ))}
                 {!discussion.attributes.resolved && !editCard && (
                   <ReplyCard
                     discussion={discussion}
                     commentNumber={myComments.length}
+                    onCommentSaved={handOffAfterMyComment}
                   />
                 )}
               </Box>

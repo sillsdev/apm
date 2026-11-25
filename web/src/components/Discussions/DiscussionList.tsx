@@ -160,8 +160,6 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
     sort = 'sort',
     changePassage = 'leave passage',
   }
-  const formRef = useRef<any>(undefined);
-  const [highlightedRef, setHighlightedRef] = useState<any>();
   const [highlightNew, setHighlightNew] = useState('');
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
 
@@ -332,15 +330,6 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
     catFilter,
     passage,
   ]);
-
-  useEffect(() => {
-    if (formRef.current && highlightedRef?.current) {
-      formRef.current.scrollTo(
-        0,
-        Math.max(0, highlightedRef.current.offsetTop - 80)
-      );
-    }
-  }, [highlightedRef]);
 
   useEffect(() => {
     if (adding) return;
@@ -583,7 +572,6 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
         </Box>
         {player}
         <StyledPaper
-          ref={formRef}
           id="DiscussionList"
           elevation={0}
           square
@@ -599,7 +587,6 @@ export function DiscussionList({ closeButton, player }: DiscussionListProps) {
                 onAddComplete={adding ? handleAddComplete : undefined}
                 showStep={allSteps}
                 showReference={allPassages}
-                setRef={setHighlightedRef}
                 requestHighlight={highlightNew}
                 refreshList={resetDiscussionList}
               />
