@@ -704,12 +704,26 @@ export const nextUpload =
         await completeCB(false, savedOnDevice, statusNum, statusText);
       };
 
+      // The Upload Pending key is the offline id (TT-7907): the server answers
+      // a retried POST whose first response was lost with the row it already
+      // made, and a take's local-only record gives way to that row.
+      const postBody: MediaUpload = uploadPendingKey
+        ? {
+            data: {
+              ...vndRecord.data,
+              attributes: {
+                ...vndRecord.data.attributes,
+                'offline-id': uploadPendingKey,
+              },
+            },
+          }
+        : vndRecord;
       let json: unknown;
       for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
         try {
           const response = await Axios.post(
             API_CONFIG.host + '/api/mediafiles',
-            vndRecord,
+            postBody,
             {
               headers: {
                 'Content-Type': 'application/vnd.api+json',

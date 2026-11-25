@@ -5,6 +5,7 @@ import {
   UpdateRecordOperation,
   RecordIdentity,
   RecordKeyMap,
+  InitializedRecord,
 } from '@orbit/records';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
@@ -27,6 +28,7 @@ import IndexedDBSource from '@orbit/indexeddb';
 import * as actions from '../store';
 import { ReplaceRelatedRecord } from '../model/baseModel';
 import { pullRemoteToMemory } from '../crud/syncToMemory';
+import { localCopyRemoval } from '../crud/offlineIdCopy';
 import {
   offlineProjectIdsForDeleted,
   offlineProjectsFor,
@@ -174,24 +176,12 @@ export const processDataChanges = async (pdc: {
     };
 
     const DeleteLocalCopy = (
-      offlineId: string | undefined | null,
-      type: string,
+      record: InitializedRecord,
       tb: RecordTransformBuilder,
       localOps: RecordOperation[]
     ) => {
-      if (offlineId) {
-        const myRecord = findRecord(memory, type, offlineId);
-        if (myRecord) {
-          localOps.push(
-            tb
-              .removeRecord({
-                type: type,
-                id: offlineId,
-              })
-              .toOperation()
-          );
-        }
-      }
+      const op = localCopyRemoval(memory, record, tb);
+      if (op) localOps.push(op);
     };
 
     for (const tr of transforms) {
@@ -232,12 +222,7 @@ export const processDataChanges = async (pdc: {
 
             case 'mediafile':
               //await CheckUploadLocal(upRec);
-              DeleteLocalCopy(
-                upRec.record.attributes?.offlineId as string | undefined,
-                upRec.record.type,
-                tb,
-                localOps
-              );
+              DeleteLocalCopy(upRec.record, tb, localOps);
               if (upRec.record.relationships?.passage === undefined)
                 resetRelated(localOps, tb, 'passage', upRec.record);
               const localId = remoteIdGuid(
@@ -277,12 +262,7 @@ export const processDataChanges = async (pdc: {
             case 'intellectualproperty':
             case 'orgkeytermtarget':
             case 'passagestatechange':
-              DeleteLocalCopy(
-                upRec.record.attributes?.offlineId as string | undefined,
-                upRec.record.type,
-                tb,
-                localOps
-              );
+              DeleteLocalCopy(upRec.record, tb, localOps);
               break;
 
             case 'invitation':

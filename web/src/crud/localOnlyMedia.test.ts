@@ -7,30 +7,32 @@ import {
 import type Memory from '@orbit/memory';
 import {
   isLocalOnlyMediafile,
-  linkLocalOnlyMediafile,
   resolveMediafileIdForServer,
   splitLocalOnlyOps,
 } from './localOnlyMedia';
 
-const media = (id: string, audioUrl: string): InitializedRecord => ({
+const media = (
+  id: string,
+  audioUrl: string,
+  offlineId?: string
+): InitializedRecord => ({
   type: 'mediafile',
   id,
-  attributes: { audioUrl },
+  attributes: { audioUrl, ...(offlineId ? { offlineId } : {}) },
 });
 
 const setup = (records: InitializedRecord[] = []) => {
   const keyMap = new RecordKeyMap();
   const byId = new Map(records.map((r) => [`${r.type}:${r.id}`, r]));
-  const sync = jest.fn().mockResolvedValue(undefined);
   const memory = {
     keyMap,
     cache: {
       getRecordSync: ({ type, id }: { type: string; id: string }) =>
         byId.get(`${type}:${id}`),
+      getRecordsSync: (type: string) => records.filter((r) => r.type === type),
     },
-    sync,
   } as unknown as Memory;
-  return { memory, keyMap, sync };
+  return { memory, keyMap };
 };
 
 const tx = (operations: RecordOperation[]): RecordTransform => ({
@@ -140,37 +142,13 @@ describe('splitLocalOnlyOps', () => {
   });
 });
 
-describe('linkLocalOnlyMediafile', () => {
-  it('maps the server id onto the local record', async () => {
-    const { memory, keyMap } = setup([media('k1', 'local-media:k1')]);
-    await linkLocalOnlyMediafile(memory, 'k1', '123');
-    expect(keyMap.keyToId('mediafile', 'remoteId', '123')).toBe('k1');
-    expect(keyMap.idToKey('mediafile', 'remoteId', 'k1')).toBe('123');
-  });
-
-  it('drops a duplicate a sync pulled in first, keeping the local id', async () => {
-    const { memory, keyMap, sync } = setup([
-      media('k1', 'local-media:k1'),
-      media('dup', 'https://s3/x.ogg'),
-    ]);
-    keyMap.pushRecord({
-      type: 'mediafile',
-      id: 'dup',
-      keys: { remoteId: '123' },
-    });
-    await linkLocalOnlyMediafile(memory, 'k1', '123');
-    expect(sync).toHaveBeenCalledTimes(2);
-    expect(keyMap.keyToId('mediafile', 'remoteId', '123')).toBe('k1');
-  });
-});
-
 describe('resolveMediafileIdForServer', () => {
   it('passes server ids through', () => {
     const { memory } = setup();
     expect(resolveMediafileIdForServer(memory, '42')).toBe('42');
   });
 
-  it('maps an uploaded local take to its server id', () => {
+  it('maps a local id to its server id', () => {
     const { memory, keyMap } = setup([media('k1', 'local-media:k1')]);
     keyMap.pushRecord({ type: 'mediafile', id: 'k1', keys: { remoteId: '7' } });
     expect(resolveMediafileIdForServer(memory, 'k1')).toBe('7');
@@ -179,5 +157,23 @@ describe('resolveMediafileIdForServer', () => {
   it('returns undefined while the source take is still local-only', () => {
     const { memory } = setup([media('k1', 'local-media:k1')]);
     expect(resolveMediafileIdForServer(memory, 'k1')).toBeUndefined();
+  });
+
+  it('maps a drained take to the server row that carries its offline id', () => {
+    // TT-7907: the drain sends the blob key as offlineId; the server row is
+    // pulled in under its own id, so a take recorded against the local key
+    // resolves through that row.
+    const { memory, keyMap } = setup([
+      media('k1', 'local-media:k1'),
+      media('g1', 'https://s3/x.ogg', 'k1'),
+    ]);
+    keyMap.pushRecord({ type: 'mediafile', id: 'g1', keys: { remoteId: '7' } });
+    expect(resolveMediafileIdForServer(memory, 'k1')).toBe('7');
+  });
+
+  it('still maps the key once the local copy is gone', () => {
+    const { memory, keyMap } = setup([media('g1', 'https://s3/x.ogg', 'k1')]);
+    keyMap.pushRecord({ type: 'mediafile', id: 'g1', keys: { remoteId: '7' } });
+    expect(resolveMediafileIdForServer(memory, 'k1')).toBe('7');
   });
 });

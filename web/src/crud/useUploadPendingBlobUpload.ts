@@ -10,11 +10,7 @@ import * as actions from '../store';
 import { completePendingUploadRetry } from '../store/upload/completePendingUploadRetry';
 import type { UploadTerminalFailureInfo } from '../store/upload/actions';
 import type { UploadPendingEntry } from '../store/upload/uploadPendingBlobs';
-import {
-  isLocalOnlyMediafile,
-  linkLocalOnlyMediafile,
-  resolveMediafileIdForServer,
-} from './localOnlyMedia';
+import { resolveMediafileIdForServer } from './localOnlyMedia';
 
 export interface UploadPendingBlobOptions {
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
@@ -61,9 +57,6 @@ export function useUploadPendingBlobUpload(): (
           }
           record.sourceMediaId = sourceMediaId;
         }
-        // The Orbit record of a take saved offline has the blob key as id.
-        const localOnly =
-          memory !== undefined && isLocalOnlyMediafile(memory, entry.key);
         dispatch(
           actions.nextUpload({
             // The snapshot was taken from a MediaFileAttributes record at
@@ -85,11 +78,8 @@ export function useUploadPendingBlobUpload(): (
                 const stringId = (data as { stringId?: string } | undefined)
                   ?.stringId;
                 if (success && stringId && memory && remote && backup) {
-                  // Link before the pull so it updates the local record
-                  // instead of adding a second one.
-                  if (localOnly) {
-                    await linkLocalOnlyMediafile(memory, entry.key, stringId);
-                  }
+                  // The upload sent entry.key as offlineId, so this pull
+                  // also replaces a take's local-only record (TT-7907).
                   await completePendingUploadRetry({
                     stringId,
                     restore: entry.request.restore,

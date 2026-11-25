@@ -72,6 +72,8 @@ export interface MediaUpload {
       // multi-word attributes — 'language-bcp47' is silently dropped by the
       // server, which is how Phrase BT takes ended up untagged (TT-7609).
       languagebcp47: string | null;
+      /** Upload Pending key; makes a retried create idempotent (TT-7907). */
+      'offline-id'?: string;
     };
     relationships: {
       'last-modified-by-user': {

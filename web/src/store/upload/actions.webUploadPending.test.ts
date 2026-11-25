@@ -306,6 +306,56 @@ describe('nextUpload on web saves an Upload Pending Local Media Blob', () => {
     );
   });
 
+  describe('offline id (TT-7907)', () => {
+    const offlineIdsSent = () =>
+      mockedAxios.post.mock.calls.map(
+        (c) =>
+          (c[1] as { data: { attributes: Record<string, unknown> } }).data
+            .attributes['offline-id']
+      );
+
+    it('sends the Upload Pending key as the offline id', async () => {
+      run({ pendingUploadIdToClearOnSuccess: 'queued-key' });
+      await settle();
+
+      expect(offlineIdsSent()).toEqual(['queued-key']);
+    });
+
+    it('sends no offline id when the device save failed', async () => {
+      saveUploadPendingBlob.mockRejectedValue(new Error('quota'));
+      run();
+      await settle();
+
+      expect(offlineIdsSent()).toEqual([undefined]);
+    });
+
+    it('retries a lost response under the same offline id and settles one blob', async () => {
+      // The server created row 42, but its response never arrived. The retry
+      // carries the same offline id, so the server returns row 42 again.
+      mockedAxios.post
+        .mockImplementationOnce(async () => {
+          throw Object.assign(new Error('Network Error'), {
+            isAxiosError: true,
+          });
+        })
+        .mockImplementationOnce(async () => vndResponse as never);
+      const cb = run({ pendingUploadIdToClearOnSuccess: 'queued-key' });
+      await settle();
+
+      expect(offlineIdsSent()).toEqual(['queued-key', 'queued-key']);
+      expect(cb).toHaveBeenCalledTimes(1);
+      expect(cb).toHaveBeenCalledWith(
+        0,
+        true,
+        expect.objectContaining({ stringId: '42' })
+      );
+      expect(settleUploadPending).toHaveBeenCalledTimes(1);
+      expect(settleUploadPending).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'queued-key', mediafileId: '42' })
+      );
+    });
+  });
+
   it('saves a separate copy when that blob is already uploading in this tab', async () => {
     claimUploadPending.mockImplementation((key: string) => key !== 'busy-key');
     run({ pendingUploadIdToClearOnSuccess: 'busy-key' });

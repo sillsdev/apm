@@ -7,6 +7,7 @@ import type {
   RecordTransform,
 } from '@orbit/records';
 import { isLocalMediaPath } from '../utils/localMediaPath';
+import { offlineIdOf } from './offlineIdCopy';
 
 /**
  * Web offline recordings (ADR 0016): when a recording cannot reach the server,
@@ -14,8 +15,9 @@ import { isLocalMediaPath } from '../utils/localMediaPath';
  * translation after Careful Speech) can see and play it. That record is
  * **local-only**: its id is the Upload Pending blob key, its `audioUrl` is a
  * `local-media:` path, and it has no server id yet. The Upload Pending drain
- * creates it on the server and then links the server id to it
- * (`linkLocalOnlyMediafile`), which ends its local-only life.
+ * creates it on the server with that key as `offlineId` (TT-7907); when the
+ * server row is pulled in, the offline-id rule (`localCopyRemoval`) removes
+ * the local-only record, which ends its local-only life.
  *
  * Local-only records are never sent through Orbit's remote queue: the server
  * has no row for them, and the drain is what creates one.
@@ -114,44 +116,6 @@ export const splitLocalOnlyOps = (
 };
 
 /**
- * The drain created the server row for local-only mediafile `localId`: map
- * its server id to the existing record, so the following pull updates it in
- * place instead of adding a second record. If a sync already pulled that
- * server row in as another record, that copy is removed (sync, so nothing is
- * sent to the server) and the local record keeps its id, which other offline
- * records may link to.
- */
-export const linkLocalOnlyMediafile = async (
-  memory: Memory,
-  localId: string,
-  remoteId: string
-): Promise<void> => {
-  const keyMap = memory.keyMap;
-  if (!keyMap) return;
-  const other = keyMap.keyToId('mediafile', 'remoteId', remoteId);
-  if (
-    other &&
-    other !== localId &&
-    memory.cache.getRecordSync({ type: 'mediafile', id: other })
-  ) {
-    await memory.sync((t) => t.removeRecord({ type: 'mediafile', id: other }));
-  }
-  keyMap.pushRecord({
-    type: 'mediafile',
-    id: localId,
-    keys: { remoteId },
-  });
-  // Persist the key on the record too; the backup rebuilds the keyMap from it.
-  await memory.sync((t) =>
-    t.updateRecord({
-      type: 'mediafile',
-      id: localId,
-      keys: { remoteId },
-    })
-  );
-};
-
-/**
  * Upload Pending key `nextUpload` hands back (in its failure `data`) when a
  * web take never reached the server but is saved on this device.
  */
@@ -161,17 +125,34 @@ export const savedOnDeviceKey = (data: unknown): string | undefined => {
   return typeof key === 'string' && key !== '' ? key : undefined;
 };
 
+/** Server id of the pulled mediafile whose `offlineId` is `key`, if any. */
+const remoteIdByOfflineId = (
+  memory: Lookup,
+  key: string
+): string | undefined => {
+  const row = memory.cache
+    ?.getRecordsSync('mediafile')
+    .find((r) => offlineIdOf(r) === key);
+  return row
+    ? memory.keyMap?.idToKey('mediafile', 'remoteId', row.id)
+    : undefined;
+};
+
 /**
- * Server id for `id` when it names a mediafile, else `id` unchanged. Returns
- * undefined when `id` is a local-only mediafile not yet on the server, so a
- * recording linked to it must wait.
+ * Server id for `id` when it names a mediafile, else `id` unchanged. A take's
+ * Upload Pending key resolves through the server row sent with it as
+ * `offlineId`, which outlives the local-only record. Returns undefined when
+ * `id` is a local-only mediafile not yet on the server, so a recording linked
+ * to it must wait.
  */
 export const resolveMediafileIdForServer = (
   memory: Lookup,
   id: string | undefined
 ): string | undefined => {
   if (!id || /^\d+$/.test(id)) return id;
-  const remote = memory.keyMap?.idToKey('mediafile', 'remoteId', id);
+  const remote =
+    memory.keyMap?.idToKey('mediafile', 'remoteId', id) ??
+    remoteIdByOfflineId(memory, id);
   if (remote) return remote;
   return isLocalOnlyMediafile(memory, id) ? undefined : id;
 };
