@@ -342,7 +342,6 @@ describe('DiscussionCard automatic handoff (TT-7888)', () => {
             collapsed={false}
             showStep={false}
             showReference={false}
-            setRef={jest.fn()}
             requestHighlight=""
             refreshList={jest.fn()}
           />
