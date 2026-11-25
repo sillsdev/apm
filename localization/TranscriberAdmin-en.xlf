@@ -3462,13 +3462,13 @@
       </unit>
       <unit id="import.itfReconnectCancelled">
          <segment>
-            <source>Sending the changes made offline was stopped. They will be sent the next time you connect or start the app, or you can send them now.</source>
+            <source>Sending the changes made offline as one file was stopped. They are being sent one at a time instead. You can still send them as one file now.</source>
             <target/>
          </segment>
       </unit>
       <unit id="import.itfReconnectFailed">
          <segment>
-            <source>The changes made offline could not be sent. They will be sent the next time you connect or start the app, or you can send them now.</source>
+            <source>The changes made offline could not be sent as one file. They are being sent one at a time instead. You can still send them as one file now.</source>
             <target/>
          </segment>
       </unit>

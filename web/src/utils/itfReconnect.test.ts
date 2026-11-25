@@ -1,7 +1,7 @@
 /**
  * TT-7911: when the connection comes back during a session that needs an ITF,
  * the ITF is built and sent instead of replaying the queued offline edits it
- * carries. Cancel and failure keep the flag and leave the queue untouched.
+ * carries. Cancel and failure keep the flag and replay the queue normally.
  */
 jest.mock('../../api-variable', () => ({
   API_CONFIG: { host: 'https://api.test', snagId: '' },
@@ -222,7 +222,7 @@ describe('ITF on reconnect (TT-7911)', () => {
     expect(getItfReconnectStatus()).toBe('idle');
   });
 
-  it('cancel keeps the flag and leaves the queue untouched', async () => {
+  it('cancel keeps the flag and replays the queue so edits are not parked', async () => {
     markNeedItfSync();
     const queue = new FakeQueue([editPassage, renameTeam]);
     const upload = deferred<void>();
@@ -238,16 +238,15 @@ describe('ITF on reconnect (TT-7911)', () => {
 
     expect(getItfReconnectStatus()).toBe('cancelled');
     expect(needItfSync()).toBe(true);
-    expect(queue.entries).toEqual([editPassage, renameTeam]);
+    // Nothing is dropped; every queued edit is replayed one at a time.
     expect(queue.clear).not.toHaveBeenCalled();
-    expect(queue.sent).toEqual([]);
+    expect(queue.sent).toEqual([editPassage, renameTeam]);
     expect(queue.autoProcess).toBe(true);
     expect(runner.afterSent).not.toHaveBeenCalled();
     expect(runner.setBusy).toHaveBeenLastCalledWith(false);
     // The upload finishing later changes nothing.
     upload.resolve();
     await flush();
-    expect(queue.entries).toEqual([editPassage, renameTeam]);
     expect(needItfSync()).toBe(true);
   });
 
@@ -275,7 +274,7 @@ describe('ITF on reconnect (TT-7911)', () => {
     expect(needItfSync()).toBe(false);
   });
 
-  it('a failed upload keeps the flag, reports, and leaves the queue', async () => {
+  it('a failed upload keeps the flag, reports, and replays the queue', async () => {
     markNeedItfSync();
     const queue = new FakeQueue([editPassage]);
     const runner = makeRunner(queue, {
@@ -290,8 +289,8 @@ describe('ITF on reconnect (TT-7911)', () => {
     expect(getItfReconnectStatus()).toBe('failed');
     expect(runner.reportError).toHaveBeenCalled();
     expect(needItfSync()).toBe(true);
-    expect(queue.entries).toEqual([editPassage]);
-    expect(queue.sent).toEqual([]);
+    expect(queue.sent).toEqual([editPassage]);
+    expect(queue.entries).toEqual([]);
   });
 
   it('runs one ITF at a time when several checks see the same reconnect', async () => {

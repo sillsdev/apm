@@ -148,14 +148,18 @@ const runOnce = async (current: ItfReconnectRunner) => {
       await current.afterSent();
     });
   } catch (err: unknown) {
-    // Cancelled or failed: needItfSync stays set and the queue is left as it
-    // was (not replayed), so the next reconnect or start sends the ITF.
+    // Cancelled or failed: needItfSync stays set so the next reconnect or
+    // start tries the ITF again, but the queue is released and replayed now
+    // rather than left parked, so later edits are not stuck behind it. An
+    // edit replayed here may also be in that next ITF (accepted trade-off).
     if (controller.signal.aborted) {
       setStatus('cancelled');
     } else {
       current.reportError(err);
       setStatus('failed');
     }
+    release();
+    await settleAfter(current, () => current.replay(remote));
   } finally {
     release();
     current.setBusy(false);
