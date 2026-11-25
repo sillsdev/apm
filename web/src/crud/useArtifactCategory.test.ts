@@ -45,12 +45,16 @@ jest.mock('../model/baseModel', () => ({
 }));
 
 jest.mock('react-redux', () => ({
-  useSelector: jest.fn(() => ({
-    chapter: 'Chapter Number',
-    title: 'Title',
-    general: 'General Note',
-    activity: 'Activity',
-  })),
+  useSelector: jest.fn(() => {
+    // Stand-in for LocalizedStrings: the string table plus its getString lookup.
+    const table: Record<string, string> = {
+      chapter: 'Chapter Number',
+      title: 'Title',
+      general: 'General Note',
+      activity: 'Activity',
+    };
+    return { ...table, getString: (key: string) => table[key] ?? null };
+  }),
   shallowEqual: jest.fn(),
 }));
 

@@ -27,6 +27,7 @@ import {
   useOrganizedBy,
   findRecord,
   useArtifactCategory,
+  useLocalizedArtifactCategory,
   IArtifactCategory,
   ArtifactCategoryType,
   usePlanType,
@@ -181,6 +182,7 @@ export function PassageDetailArtifactsMobile() {
   );
   const { userIsAdmin } = useRole();
   const rowTypeLabel = useRowTypeLabel();
+  const localizedArtifactCategory = useLocalizedArtifactCategory();
   // Admins see badges for resources that are linked (shared) or general; other users don't.
   const typeBadge = (row: IRow) =>
     userIsAdmin &&
@@ -686,7 +688,10 @@ export function PassageDetailArtifactsMobile() {
               {/^audio/.test(mediaContentType(value.mediafile)) ? (
                 <AudioResourceCard
                   row={value}
-                  subtitle={value.artifactCategory || undefined}
+                  subtitle={
+                    localizedArtifactCategory(value.artifactCategorySlug) ||
+                    undefined
+                  }
                   badge={typeBadge(value)}
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
@@ -701,7 +706,10 @@ export function PassageDetailArtifactsMobile() {
               ) : (
                 <TextResourceCard
                   row={value}
-                  subtitle={value.artifactCategory || undefined}
+                  subtitle={
+                    localizedArtifactCategory(value.artifactCategorySlug) ||
+                    undefined
+                  }
                   badge={typeBadge(value)}
                   expandedId={expandedArtifactNameId}
                   setExpandedId={setExpandedArtifactNameId}

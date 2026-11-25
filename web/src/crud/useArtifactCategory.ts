@@ -10,6 +10,7 @@ import {
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import localStrings from '../selector/localize';
 import { useSelector, shallowEqual } from 'react-redux';
+import { useLocalizedArtifactCategory } from './useLocalizedArtifactCategory';
 import { related } from './related';
 import { findRecords, findRecord } from './tryFindRecord';
 import {
@@ -64,9 +65,7 @@ export const useArtifactCategory = (teamId?: string) => {
   const specialNoteCategories = ['chapter', 'title'];
   // Ensure chapter/title bootstrap runs at most once per org per successful attempt.
   const specialBootstrapOrgs = useRef<Set<string>>(new Set());
-  const localizedArtifactCategory = (val: string) => {
-    return (t as ISwitches)[val] || val;
-  };
+  const localizedArtifactCategory = useLocalizedArtifactCategory();
 
   const fromLocalizedArtifactCategory = (val: string) => fromLocal[val] || val;
 

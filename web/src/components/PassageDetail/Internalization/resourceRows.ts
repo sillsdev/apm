@@ -24,7 +24,6 @@ interface DataProps {
   categories: ArtifactCategory[];
   userResources: SectionResourceUser[];
   user: string;
-  localizedCategory: (slug: string) => string;
 }
 
 interface RowProps extends DataProps {
@@ -46,7 +45,6 @@ export const oneMediaRow = ({
   categories,
   userResources,
   user,
-  localizedCategory,
   mediafiles = [],
 }: RowProps) => {
   const mediaAttr = media?.attributes;
@@ -98,7 +96,7 @@ export const oneMediaRow = ({
     ),
     artifactTypeSlug: typeNameSlug,
     isGeneralResource,
-    artifactCategory: localizedCategory(catNameSlug),
+    artifactCategorySlug: catNameSlug,
     done,
     editAction: null,
     mediafile: media || ({} as MediaFileD),

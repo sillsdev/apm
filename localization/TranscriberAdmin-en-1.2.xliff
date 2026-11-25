@@ -380,6 +380,13 @@
                <context context-type="sourcefile">useRowTypeLabel.ts</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="artifactType.projectresource">
+            <source>General Resource</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useArtifactType.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="artifactType.qanda">
             <source>Community Test Question and Answer</source>
             <target/>

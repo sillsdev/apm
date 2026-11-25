@@ -76,6 +76,7 @@ export * from './useSecResDelete';
 export * from './useArtifactCategory';
 export * from './useArtifactType';
 export * from './useLocalizedArtifactType';
+export * from './useLocalizedArtifactCategory';
 export * from './useUser';
 export * from './useSecResUserCreate';
 export * from './useSecResUserRead';

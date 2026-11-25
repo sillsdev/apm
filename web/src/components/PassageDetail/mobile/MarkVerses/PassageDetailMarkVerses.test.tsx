@@ -86,7 +86,7 @@ interface IRow {
   playItem: string;
   artifactName: string;
   artifactTypeSlug: string;
-  artifactCategory: string;
+  artifactCategorySlug: string;
   done: boolean;
   editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;

@@ -618,7 +618,7 @@ function rowFromMediafile(m: MediaFileD, isVernacular: boolean): IRow {
     artifactName: '',
     artifactTypeSlug: isVernacular ? '' : 'backtranslation',
     isGeneralResource: false,
-    artifactCategory: '',
+    artifactCategorySlug: '',
     done: false,
     editAction: null,
     resource: null,

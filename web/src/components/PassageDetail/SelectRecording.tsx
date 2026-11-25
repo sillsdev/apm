@@ -14,8 +14,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { useContext, useEffect, useState, useMemo } from 'react';
 import { ISelectRecordingStrings, IState } from '../../model';
 import { IRow, PassageDetailContext } from '../../context/PassageDetailContext';
-import { ArtifactTypeSlug } from '../../crud';
-import { useRowTypeLabel } from './Internalization/useRowTypeLabel';
+import { ArtifactTypeSlug, useLocalizedArtifactType } from '../../crud';
 import { dateOrTime, prettySegment, removeExtension } from '../../utils';
 import { ItemDescription } from '../../control/MediaDescription';
 import { selectRecordingSelector } from '../../selector';
@@ -155,8 +154,7 @@ export const SelectRecording = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inItem]);
 
-  // Localized at render time so the label follows a runtime language change.
-  const rowTypeLabel = useRowTypeLabel();
+  const localizedArtifactType = useLocalizedArtifactType();
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -204,9 +202,11 @@ export const SelectRecording = (props: IProps) => {
                             )
                           )
                         ? 1
-                        : rowTypeLabel(i) < rowTypeLabel(j)
+                        : localizedArtifactType(i.artifactTypeSlug) <
+                            localizedArtifactType(j.artifactTypeSlug)
                           ? -1
-                          : rowTypeLabel(i) > rowTypeLabel(j)
+                          : localizedArtifactType(i.artifactTypeSlug) >
+                              localizedArtifactType(j.artifactTypeSlug)
                             ? 1
                             : i.sourceVersion === j.sourceVersion
                               ? i.artifactName <= j.artifactName
@@ -218,7 +218,7 @@ export const SelectRecording = (props: IProps) => {
                     <RecordingInfo
                       key={r.id}
                       row={r}
-                      typeLabel={rowTypeLabel(r)}
+                      typeLabel={localizedArtifactType(r.artifactTypeSlug)}
                       lang={lang}
                       onClick={handleClick}
                       latestVernacular={latestVernacular}
