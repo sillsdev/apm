@@ -692,6 +692,12 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "incrementalImport": string;
     "invalidITF": string;
     "invalidProject": string;
+    "itfReconnectCancelled": string;
+    "itfReconnectFailed": string;
+    "itfReconnectLeaveWait": string;
+    "itfReconnectRetry": string;
+    "itfReconnectSent": string;
+    "itfReconnectStopAndLeave": string;
     "locale": string;
     "newTeamChainFailed": string;
     "noFile": string;

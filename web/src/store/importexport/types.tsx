@@ -1,3 +1,4 @@
+import type { RecordIdentity } from '@orbit/records';
 import { IAxiosStatus } from '../AxiosStatus';
 
 export enum ExportType {
@@ -19,6 +20,8 @@ export interface FileResponse {
   changes: number;
   filtered: number;
   id: string;
+  /** ITFSYNC/FULLBACKUP: the records the zip carries (TT-7911). */
+  records?: RecordIdentity[];
 }
 // Describing the shape of the paratext integration slice of state
 export interface IImportExportState {

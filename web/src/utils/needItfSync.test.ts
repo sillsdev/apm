@@ -67,52 +67,81 @@ describe('needItfSync', () => {
   });
 });
 
-describe('prepareRemoteQueueForStartup (TT-7905)', () => {
-  const makeRemote = (length: number) =>
-    ({
-      requestQueue: {
-        length,
-        empty: length === 0,
-        skip: jest.fn().mockResolvedValue(undefined),
-        clear: jest.fn().mockResolvedValue(undefined),
+describe('prepareRemoteQueueForStartup (TT-7905, TT-7911)', () => {
+  const passageEdit = {
+    type: 'update',
+    data: {
+      id: 't1',
+      operations: [
+        { op: 'replaceAttribute', record: { type: 'passage', id: 'p1' } },
+      ],
+    },
+  };
+  const teamRename = {
+    type: 'update',
+    data: {
+      id: 't2',
+      operations: [
+        { op: 'updateRecord', record: { type: 'organization', id: 'o1' } },
+      ],
+    },
+  };
+  const makeRemote = (tasks: unknown[]) => {
+    const queue = {
+      autoProcess: true,
+      reified: Promise.resolve(),
+      entries: [...tasks],
+      get length() {
+        return queue.entries.length;
       },
-    }) as unknown as JSONAPISource;
+      skip: jest.fn().mockResolvedValue(undefined),
+      clear: jest.fn(async () => {
+        queue.entries = [];
+      }),
+      push: jest.fn((task: unknown) => {
+        queue.entries.push(task);
+        return new Promise(() => undefined);
+      }),
+    };
+    return { requestQueue: queue } as unknown as JSONAPISource & {
+      requestQueue: typeof queue;
+    };
+  };
 
   it('keeps every queued offline edit when no ITF is being sent', async () => {
-    const remote = makeRemote(3);
-    await prepareRemoteQueueForStartup(remote, false);
+    const remote = makeRemote([passageEdit, teamRename]);
+    await prepareRemoteQueueForStartup(remote, undefined);
     expect(remote.requestQueue.skip).not.toHaveBeenCalled();
     expect(remote.requestQueue.clear).not.toHaveBeenCalled();
+    expect(remote.requestQueue.entries).toHaveLength(2);
   });
 
-  it('clears the whole queue when an ITF holding those edits is being sent', async () => {
-    const remote = makeRemote(3);
-    await prepareRemoteQueueForStartup(remote, true);
-    expect(remote.requestQueue.clear).toHaveBeenCalledTimes(1);
+  it('drops the edits the ITF carries so they are not replayed on top of it', async () => {
+    const remote = makeRemote([passageEdit]);
+    await prepareRemoteQueueForStartup(remote, [{ type: 'passage', id: 'p1' }]);
+    expect(remote.requestQueue.entries).toEqual([]);
     // skip() drops only the first task; the rest would replay on top of the ITF.
     expect(remote.requestQueue.skip).not.toHaveBeenCalled();
   });
 
-  it('clears even when the queue reports 0 before it is reified', async () => {
-    const remote = makeRemote(0);
-    await prepareRemoteQueueForStartup(remote, true);
-    expect(remote.requestQueue.clear).toHaveBeenCalledTimes(1);
+  it('keeps an edit the ITF does not carry, so it is replayed, not lost', async () => {
+    const remote = makeRemote([passageEdit, teamRename]);
+    await prepareRemoteQueueForStartup(remote, [{ type: 'passage', id: 'p1' }]);
+    expect(remote.requestQueue.entries).toEqual([teamRename]);
   });
 
-  it('reports a failed clear instead of throwing', async () => {
-    const remote = makeRemote(2);
-    (remote.requestQueue.clear as jest.Mock).mockRejectedValueOnce(
-      new Error('settling')
-    );
+  it('reports a failed rebuild instead of throwing', async () => {
+    const remote = makeRemote([passageEdit, teamRename]);
+    remote.requestQueue.clear.mockRejectedValueOnce(new Error('settling'));
     await expect(
-      prepareRemoteQueueForStartup(remote, true)
+      prepareRemoteQueueForStartup(remote, [{ type: 'passage', id: 'p1' }])
     ).resolves.toBeUndefined();
     expect(mockLogError).toHaveBeenCalled();
   });
 
   it('does nothing without a remote', async () => {
     await expect(
-      prepareRemoteQueueForStartup(undefined, true)
+      prepareRemoteQueueForStartup(undefined, [{ type: 'passage', id: 'p1' }])
     ).resolves.toBeUndefined();
   });
 });

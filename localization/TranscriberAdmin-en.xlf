@@ -3460,6 +3460,42 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.itfReconnectCancelled">
+         <segment>
+            <source>Sending the changes made offline was stopped. They will be sent the next time you connect or start the app, or you can send them now.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.itfReconnectFailed">
+         <segment>
+            <source>The changes made offline could not be sent. They will be sent the next time you connect or start the app, or you can send them now.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.itfReconnectLeaveWait">
+         <segment>
+            <source>The changes made offline are still being sent. Wait here until they finish, or stop sending and leave. Stopped changes are sent the next time you connect or start the app.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.itfReconnectRetry">
+         <segment>
+            <source>Send now</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.itfReconnectSent">
+         <segment>
+            <source>The changes made offline have been sent.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.itfReconnectStopAndLeave">
+         <segment>
+            <source>Stop and leave</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.locale">
          <segment>
             <source>Preferred Language</source>

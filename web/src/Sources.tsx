@@ -3,7 +3,6 @@ import {
   Plan,
   OfflineProject,
   VProject,
-  ExportType,
   UserD,
   IMainStrings,
 } from './model';
@@ -31,7 +30,6 @@ import {
   skipRemoteQueue,
   needItfSync,
   shouldRunItfSync,
-  clearNeedItfSync,
   prepareRemoteQueueForStartup,
   recoverBackupSyncFail,
 } from './utils';
@@ -47,7 +45,7 @@ import {
   detachOrbitRemote,
   withCoordinatorLock,
 } from './utils/removeOrbitRemote';
-import { electronExport } from './store/importexport/electronExport';
+import { exportItfSync } from './store/importexport/itfSyncExport';
 import { restoreBackup } from './crud/restoreBackup';
 import { AlertSeverity } from './hoc/SnackBar';
 import { updateBackTranslationType } from './crud/updateBackTranslationType';
@@ -60,7 +58,7 @@ import { requestedSchema } from './schema';
 import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
 import { findRecords } from './crud/tryFindRecord';
-import { RecordTransform } from '@orbit/records';
+import { RecordIdentity, RecordTransform } from '@orbit/records';
 import { remoteSyncOperations } from './utils/remoteSyncOperations';
 type StategyError = (...args: unknown[]) => unknown;
 
@@ -407,6 +405,7 @@ const sourcesImpl = async (
 
   let syncBuffer: Buffer | undefined = undefined;
   let syncFile = '';
+  let syncRecords: RecordIdentity[] | undefined;
   if (!offline && isElectron) {
     // Go Online clears authId so goRemote is usually true; that skips the
     // !goRemote restore path, while RestoreBackupOnMount is still racing.
@@ -424,38 +423,15 @@ const sourcesImpl = async (
         needItf: needItfSync(),
       })
     ) {
-      const fr = await electronExport(
-        ExportType.ITFSYNC,
-        undefined, //all artifact types
+      const itf = await exportItfSync({
         memory,
         backup,
-        0,
-        0,
-        '',
-        '',
-        getOfflineProject
-      ).catch((err: Error) => {
-        console.log(
-          'ITFSYNC export failed: ',
-          err.message,
-          err.name,
-          err.cause,
-          err.stack
-        );
-        logError(
-          Severity.error,
-          errorReporter,
-          infoMsg(err, 'ITFSYNC export failed: ')
-        );
-        throw err;
+        getOfflineProject,
+        errorReporter,
       });
-      if (fr && fr.changes > 0) {
-        syncBuffer = fr.buffer;
-        syncFile = fr.message;
-      } else {
-        // Nothing to send — don't keep retrying an empty export.
-        clearNeedItfSync();
-      }
+      syncBuffer = itf?.buffer;
+      syncFile = itf?.fileName ?? '';
+      syncRecords = itf?.records;
     }
   }
   ensureOnline();
@@ -466,11 +442,10 @@ const sourcesImpl = async (
     // order); remote-update-fail is already attached and skips a task the
     // server rejects.
     // Desktop (TT-7905): this used to skip unconditionally, which dropped the
-    // oldest queued offline edit on every online start. Clear the queue only
-    // when the ITF being sent already holds those edits; otherwise keep it so
-    // orbitReset replays all of it.
-    if (isElectron)
-      await prepareRemoteQueueForStartup(remote, syncBuffer !== undefined);
+    // oldest queued offline edit on every online start. Drop only the queued
+    // edits the ITF being sent already holds (TT-7911); orbitReset replays
+    // the rest.
+    if (isElectron) await prepareRemoteQueueForStartup(remote, syncRecords);
     await remote.activated;
     console.log(`Activated remote for user: ${tokData.sub}`);
     let uRecs = (await remote.query((q) =>

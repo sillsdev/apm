@@ -12,6 +12,7 @@ import { LocalKey } from '../utils';
 import Bugsnag from '@bugsnag/js';
 import { orbitReset } from '../crud/orbitReset';
 import { markNeedItfSyncOnDisconnect } from './needItfSync';
+import { startItfOnReconnect } from './itfReconnect';
 
 export function Online(doCheck: boolean, cb: (result: boolean) => void): void {
   const opts = {
@@ -50,6 +51,16 @@ export const useCheckOnline = (label: string) => {
     dispatch(resetOrbitError());
   };
 
+  /** Offline→online edge: send an ITF of the offline edits when one is due
+   *  (TT-7911), otherwise replay the queued edits as before. */
+  const reconnect = async () => {
+    if (startItfOnReconnect({ offline: Boolean(getGlobal('offline')) })) {
+      dispatch(resetOrbitError());
+      return;
+    }
+    await errorReset();
+  };
+
   const checkOnline = (
     cb: (result: boolean) => void,
     forceCheck: boolean = false
@@ -80,7 +91,7 @@ export const useCheckOnline = (label: string) => {
       // on passagestatechanges) and can surface a spurious API Error 500 page.
       if (result) {
         if (getGlobal('connected') !== result) {
-          errorReset().finally(() => {
+          reconnect().finally(() => {
             statusChange(result);
           });
         } else {

@@ -27,6 +27,7 @@ import { updateError } from './orbitStrategyErrors';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { Severity } from './logErrorService';
 import type { IApiError } from '../model';
+import { holdRemoteQueue } from './itfQueue';
 
 const deleteOps = (): RecordOperation[] => [
   { op: 'removeRecord', record: { type: 'plan', id: 'p1' } },
@@ -234,5 +235,27 @@ describe('updateError — held while the browser is offline', () => {
 
     expect(retry).toHaveBeenCalledTimes(1);
     expect(skip).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * TT-7911: a retry timer started before the connection came back must not
+ * replay the queue while a reconnect ITF holds it; the ITF settles the queue.
+ */
+describe('updateError — held by a reconnect ITF', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('does not fire a pending retry while the queue is held', () => {
+    const { retry, handler } = setup();
+
+    handler(makeTransform('tx-itf'), new Error('Failed to fetch'));
+    const release = holdRemoteQueue(undefined);
+    try {
+      jest.runOnlyPendingTimers();
+      expect(retry).not.toHaveBeenCalled();
+    } finally {
+      release();
+    }
   });
 });

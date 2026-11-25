@@ -4035,6 +4035,48 @@
                <context context-type="sourcefile">import.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="import.itfReconnectCancelled">
+            <source>Sending the changes made offline was stopped. They will be sent the next time you connect or start the app, or you can send them now.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ItfReconnectStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.itfReconnectFailed">
+            <source>The changes made offline could not be sent. They will be sent the next time you connect or start the app, or you can send them now.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ItfReconnectStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.itfReconnectLeaveWait">
+            <source>The changes made offline are still being sent. Wait here until they finish, or stop sending and leave. Stopped changes are sent the next time you connect or start the app.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ItfReconnectLeaveDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.itfReconnectRetry">
+            <source>Send now</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ItfReconnectStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.itfReconnectSent">
+            <source>The changes made offline have been sent.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ItfReconnectStatus.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.itfReconnectStopAndLeave">
+            <source>Stop and leave</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ItfReconnectLeaveDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="import.locale">
             <source>Preferred Language</source>
             <target/>

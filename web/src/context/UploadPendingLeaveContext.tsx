@@ -26,6 +26,7 @@ import { infoMsg } from '../utils/infoMsg';
 import { LocalKey, localUserKey } from '../utils/localUserKey';
 import { logError, Severity } from '../utils/logErrorService';
 import { useGlobal } from './useGlobal';
+import { useItfReconnectLeave } from './itfReconnectLeave';
 
 export interface GuardLeaveArgs {
   /** The project being opened; omit when logging out. */
@@ -90,6 +91,7 @@ export function UploadPendingLeaveProvider({
   const [connected] = useGlobal('connected');
   const [offline] = useGlobal('offline');
   const uploadOne = useUploadPendingBlobUpload();
+  const guardItfLeave = useItfReconnectLeave();
   const [gate, setGate] = useState<GateState>(CLOSED);
 
   const logGateError = useCallback(
@@ -138,7 +140,7 @@ export function UploadPendingLeaveProvider({
       );
   }, [project, countPending, logGateError]);
 
-  const guardLeave = useCallback(
+  const guardUploadPendingLeave = useCallback(
     (args: GuardLeaveArgs) => {
       if (isElectron) {
         args.proceed();
@@ -171,6 +173,14 @@ export function UploadPendingLeaveProvider({
         );
     },
     [project, countPending, logGateError]
+  );
+
+  // TT-7911: a reconnect ITF still sending offline changes holds the leave
+  // first; the Upload Pending prompt (web) follows once it has finished.
+  const guardLeave = useCallback(
+    (args: GuardLeaveArgs) =>
+      guardItfLeave(() => guardUploadPendingLeave(args)),
+    [guardItfLeave, guardUploadPendingLeave]
   );
 
   /** Settles the request: closes the dialog, then lets the user leave. */

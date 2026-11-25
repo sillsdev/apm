@@ -10,6 +10,7 @@ import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { orbitErr, orbitRetry } from './infoMsg';
 import { handleUnauthorized } from './handleUnauthorized';
 import { isUnauthorized, isFetchNetworkError } from './httpError';
+import { isRemoteQueueHeld } from './itfQueue';
 
 export interface PullStratErrProps {
   tokenCtx: ITokenContext;
@@ -88,6 +89,9 @@ export const queryError =
       //signal to datachanges that we've had a network error
       setOrbitRetries(OrbitNetworkErrorRetries - 1);
     }
+    // TT-7911: retry() resends the head of the shared queue, which may be an
+    // offline edit a reconnect ITF is sending; that ITF settles the queue.
+    if (isRemoteQueueHeld()) return;
     return remote.requestQueue.retry();
   };
 
@@ -189,6 +193,8 @@ export const updateError = ({
         if (attempt.count === 1)
           orbitError(orbitRetry(null, strings().networkRetrySoon));
         setTimeout(() => {
+          // TT-7911: a reconnect ITF started meanwhile owns the queue now.
+          if (isRemoteQueueHeld()) return;
           remote.requestQueue.retry();
         }, retryDelayMs(attempt.count));
         return;

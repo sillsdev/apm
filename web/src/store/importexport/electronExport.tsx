@@ -13,7 +13,11 @@ import {
 } from '../../model';
 import Memory from '@orbit/memory';
 import { getSerializer } from '../../serializers/getSerializer';
-import { InitializedRecord, RecordKeyMap } from '@orbit/records';
+import {
+  InitializedRecord,
+  RecordIdentity,
+  RecordKeyMap,
+} from '@orbit/records';
 import {
   related,
   remoteId,
@@ -131,6 +135,9 @@ export async function electronExport(
     projRec: ProjectD,
     expType: ExportType
   ) => {
+    /** TT-7911: the records this zip writes, so a sync can tell which queued
+     *  offline edits it already carries. */
+    const written: RecordIdentity[] = [];
     const AddCheckEntry = async (): Promise<string> => {
       const dt = currentDateTime();
       await ipc?.zipAddFile(
@@ -292,11 +299,9 @@ export async function electronExport(
             u.attributes &&
             DateTime.fromISO(u.attributes.dateUpdated) > imported
         );
-        await AddJsonEntry(
-          info.table + 's',
-          info.table === 'project' ? recs : changed,
-          info.sort
-        );
+        const entries = info.table === 'project' ? recs : changed;
+        await AddJsonEntry(info.table + 's', entries, info.sort);
+        for (const r of entries) written.push({ type: r.type, id: r.id });
 
         switch (info.table) {
           case 'user':
@@ -441,7 +446,7 @@ export async function electronExport(
         break;
       }
     }
-    return { zip, numRecs, numFiltered };
+    return { zip, numRecs, numFiltered, written };
   };
 
   let projects: ProjectD[];
@@ -486,8 +491,9 @@ export async function electronExport(
     projects = [getProjRec(projectid)];
   }
   let changedRecs = 0;
+  const exportedRecords: RecordIdentity[] = [];
   for (let ix: number = 0; ix < projects.length; ix++) {
-    const { zip, numRecs, numFiltered } = await createZip(
+    const { zip, numRecs, numFiltered, written } = await createZip(
       await ipc?.zipOpen(),
       projects[ix],
       exportType
@@ -512,13 +518,15 @@ export async function electronExport(
             : fileName(projects[ix], localizedArtifact, '', exportType);
     changedRecs += numRecs;
     if (backupZip) {
-      if (numRecs)
+      if (numRecs) {
         await ipc?.zipAddZip(
           backupZip,
           filename,
           zip,
           projects[ix].attributes.name
         );
+        exportedRecords.push(...written);
+      }
       if (numFiltered) {
         const itf = await createZip(
           await ipc?.zipOpen(),
@@ -565,11 +573,14 @@ export async function electronExport(
       ? await ipc?.zipToBuffer(backupZip as string)
       : undefined;
   await ipc?.zipClose(backupZip as string);
-  return BuildFileResponse(
-    backupWhere,
-    backupName,
-    buffer as Buffer,
-    changedRecs,
-    0
-  );
+  return {
+    ...BuildFileResponse(
+      backupWhere,
+      backupName,
+      buffer as Buffer,
+      changedRecs,
+      0
+    ),
+    records: exportedRecords,
+  };
 }

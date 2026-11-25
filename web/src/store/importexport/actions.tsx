@@ -460,7 +460,7 @@ const extractOrganizationRemoteIdFromImportResponse = (
   return undefined;
 };
 
-interface ProcessImportFileParams {
+export interface ProcessImportFileParams {
   filename: string;
   file: Blob | File;
   itf: boolean;
@@ -473,7 +473,21 @@ interface ProcessImportFileParams {
   dispatch: any;
   /** When true, upload/process still runs but `IMPORT_SUCCESS` is not dispatched (use for multi-file batch). */
   suppressSuccessDispatch?: boolean;
+  /**
+   * TT-7911: cancels the import until the server starts applying it. Checked
+   * before the upload and again before the first import request; once that
+   * request is sent the import runs to the end, because stopping between
+   * chunks would leave it half applied.
+   */
+  signal?: AbortSignal;
 }
+
+const throwIfCancelled = (signal: AbortSignal | undefined) => {
+  if (signal?.aborted)
+    throw signal.reason instanceof Error
+      ? signal.reason
+      : new DOMException('Import cancelled', 'AbortError');
+};
 
 export interface ProcessImportFileResult {
   organizationRemoteId?: number;
@@ -713,7 +727,7 @@ const multipartUpload = async (
   }
 };
 
-const processImportFile = async ({
+export const processImportFile = async ({
   filename,
   file,
   itf,
@@ -725,7 +739,9 @@ const processImportFile = async ({
   completemsg,
   dispatch,
   suppressSuccessDispatch = false,
+  signal,
 }: ProcessImportFileParams): Promise<ProcessImportFileResult> => {
+  throwIfCancelled(signal);
   if (file.size > MAX_FILE_SIZE) {
     const err = new Error(`${MAX_FILE_SIZE / (1024 * 1024 * 1024)} GB`);
     logError(Severity.error, errorReporter, err.message);
@@ -757,6 +773,8 @@ const processImportFile = async ({
     throw err;
   }
 
+  // Last point a cancel can stop the import: nothing has been applied yet.
+  throwIfCancelled(signal);
   dispatch({
     payload: pendingmsg,
     type: IMPORT_PENDING,
@@ -949,6 +967,22 @@ export const importFromExternal =
     }
   };
 
+/** Where an uploaded ITF is applied: the whole account (sync) or one project. */
+export const itfImportTarget = (
+  projectid: number
+): Pick<ProcessImportFileParams, 'getProcessUrl' | 'getInitialStart'> =>
+  projectid === 0
+    ? {
+        getProcessUrl: (uploadedFilename) =>
+          `${API_CONFIG.host}/api/offlineData/sync/${uploadedFilename}/`,
+        getInitialStart: () => '0/0',
+      }
+    : {
+        getProcessUrl: (uploadedFilename) =>
+          `${API_CONFIG.host}/api/offlineData/project/import/${projectid}/${uploadedFilename}/`,
+        getInitialStart: () => '0',
+      };
+
 const importFromElectron =
   (
     filename: string,
@@ -968,14 +1002,7 @@ const importFromElectron =
       filename,
       file,
       itf: true,
-      getProcessUrl: (uploadedFilename) => {
-        if (projectid === 0) {
-          return `${API_CONFIG.host}/api/offlineData/sync/${uploadedFilename}/`;
-        }
-        //import the itf into the project
-        return `${API_CONFIG.host}/api/offlineData/project/import/${projectid}/${uploadedFilename}/`;
-      },
-      getInitialStart: () => (projectid === 0 ? '0/0' : '0'),
+      ...itfImportTarget(projectid),
       token,
       errorReporter,
       pendingmsg,

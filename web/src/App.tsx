@@ -4,6 +4,7 @@ import { UnsavedProvider } from './context/UnsavedContext';
 import SnackBarProvider from './hoc/SnackBar';
 import { HotKeyProvider } from './context/HotKeyContext';
 import { UploadPendingLeaveProvider } from './context/UploadPendingLeaveContext';
+import { ItfReconnectProvider } from './context/ItfReconnectContext';
 import routes from './routes/NavRoutes';
 import { useSelector, shallowEqual } from 'react-redux';
 import { IState } from './model';
@@ -24,7 +25,11 @@ function App(): React.JSX.Element {
         <SnackBarProvider>
           <HotKeyProvider>
             <ThemeProvider theme={theme}>
-              <UploadPendingLeaveProvider>{routes}</UploadPendingLeaveProvider>
+              <ItfReconnectProvider>
+                <UploadPendingLeaveProvider>
+                  {routes}
+                </UploadPendingLeaveProvider>
+              </ItfReconnectProvider>
             </ThemeProvider>
           </HotKeyProvider>
         </SnackBarProvider>

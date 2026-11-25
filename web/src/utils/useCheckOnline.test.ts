@@ -26,6 +26,12 @@ jest.mock('../crud/orbitReset', () => ({
   orbitReset: (...args: unknown[]) => mockOrbitReset(...(args as [])),
 }));
 
+const mockStartItfOnReconnect = jest.fn((_args: { offline: boolean }) => false);
+jest.mock('./itfReconnect', () => ({
+  startItfOnReconnect: (args: { offline: boolean }) =>
+    mockStartItfOnReconnect(args),
+}));
+
 jest.mock('../store', () => ({
   resetOrbitError: () => ({ type: 'RESET_ORBIT_ERROR' }),
 }));
@@ -76,6 +82,7 @@ describe('useCheckOnline (TT-7720)', () => {
     globals.offline = false;
     globals.orbitRetries = 5;
     mockedAxios.get.mockResolvedValue({ data: {} } as never);
+    mockStartItfOnReconnect.mockReturnValue(false);
   });
 
   it('clears orbit error status when already connected without queue.retry', async () => {
@@ -166,5 +173,42 @@ describe('useCheckOnline (TT-7720)', () => {
     expect(setConnected).toHaveBeenCalledWith(false);
     expect(localStorage.getItem('needItfSync')).toBe('true');
     globals.coordinator = savedCoordinator;
+  });
+
+  it('sends an ITF instead of replaying the queue when one is due (TT-7911)', async () => {
+    globals.connected = false;
+    mockStartItfOnReconnect.mockReturnValue(true);
+    const { useCheckOnline } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('./useCheckOnline') as typeof import('./useCheckOnline');
+
+    const { result } = renderHook(() => useCheckOnline('TT-7911'));
+
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        result.current(() => resolve(), true);
+      });
+    });
+
+    expect(mockStartItfOnReconnect).toHaveBeenCalledWith({ offline: false });
+    expect(mockOrbitReset).not.toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({ type: RESET_ORBIT_ERROR });
+    expect(setConnected).toHaveBeenCalledWith(true);
+  });
+
+  it('only asks for an ITF on the reconnect edge (TT-7911)', async () => {
+    const { useCheckOnline } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('./useCheckOnline') as typeof import('./useCheckOnline');
+
+    const { result } = renderHook(() => useCheckOnline('TT-7911'));
+
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        result.current(() => resolve(), true);
+      });
+    });
+
+    expect(mockStartItfOnReconnect).not.toHaveBeenCalled();
   });
 });
