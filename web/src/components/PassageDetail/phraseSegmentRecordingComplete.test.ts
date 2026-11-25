@@ -15,7 +15,7 @@ function makeRow(
 ): IRow {
   return {
     id: `r-${start}-${end}`,
-    artifactType: 'Back translation',
+    artifactTypeSlug: 'backtranslation',
     sourceVersion: 1,
     mediafile: {
       id: `mf-${start}-${end}`,

@@ -9,6 +9,7 @@ export enum ArtifactTypeSlug {
   Activity = 'activity',
   Resource = 'resource',
   SharedResource = 'sharedresource',
+  // Not shown anywhere today but its label is still reachable by slug.
   ProjectResource = 'projectresource',
   IntellectualProperty = 'intellectualproperty',
   KeyTerm = 'keyterm',

@@ -13,6 +13,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { LocalKey, localUserKey } from '../utils';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
+import { InitializedRecord } from '@orbit/records';
 import bugsnagClient from '../auth/bugsnagClient';
 import LocalizedStrings from 'react-localization';
 import localizationReducer from '../store/localization/reducers';
@@ -27,11 +28,18 @@ const createMockLiveQuery = () => ({
   query: () => [],
 });
 
-// Mock memory
-const createMockMemory = (): Memory => {
+// Mock memory. findRecord answers from `records` so org defaults can be read.
+const createMockMemory = (records: InitializedRecord[] = []): Memory => {
+  const find = ({ type, id }: { type: string; id: string }) =>
+    records.find((r) => r.type === type && r.id === id);
+  const cacheQueryBuilder = {
+    findRecord: find,
+    findRecords: (type: string) => records.filter((r) => r.type === type),
+  };
   return {
     cache: {
-      query: () => [],
+      query: (queryFn: any) =>
+        typeof queryFn === 'function' ? queryFn(cacheQueryBuilder) : [],
       liveQuery: createMockLiveQuery,
     },
     query: (queryFn: (q: any) => any) => {
@@ -153,9 +161,10 @@ describe('ProjectsScreen', () => {
       isAdmin?: (team: any) => boolean;
       personalTeam?: string;
       teams?: any[];
+      records?: InitializedRecord[];
     }
   ) => {
-    const memory = createMockMemory();
+    const memory = createMockMemory(options?.records);
 
     // Default options
     const {
@@ -365,6 +374,40 @@ describe('ProjectsScreen', () => {
 
     // ProjectDialog should open (check for dialog role or form elements)
     cy.get('[role="dialog"]').should('be.visible');
+  });
+
+  // TT-7802: on mobile the new project's Language field starts with the team
+  // language, as the desktop Add card does.
+  it('should prefill the team language when adding a project on mobile', () => {
+    cy.viewport(400, 800);
+    const teamId = 'test-team-id';
+    const team = {
+      ...createTestTeam(teamId),
+      attributes: {
+        name: 'Test Team',
+        defaultParams: JSON.stringify({
+          langProps: {
+            bcp47: 'fr',
+            languageName: 'French',
+            font: 'charissil',
+            rtl: false,
+            spellCheck: false,
+          },
+        }),
+      },
+    } as InitializedRecord;
+    setupTeamInLocalStorage(teamId);
+    mountProjectsScreen(createInitialState(), ['/projects'], {
+      isAdmin: (tm: any) => tm?.id === teamId,
+      teams: [team],
+      records: [team],
+    });
+
+    cy.get('#ProjectActAdd').click();
+
+    cy.get('#projectSettings #language-code')
+      .find('input')
+      .should('have.value', 'French (fr)');
   });
 
   it('should not show "Add New Project..." button when isAdmin returns false', () => {

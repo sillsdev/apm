@@ -65,13 +65,11 @@ jest.mock('../../utils/useStepPermission', () => ({
   }),
 }));
 jest.mock('../../crud', () => ({
-  useArtifactType: () => ({
-    localizedArtifactType: (slug: ArtifactTypeSlug) => {
-      if (slug === 'vernacular') return 'Vernacular';
-      else if (slug === 'backtranslation') return 'Phrase Back Translation';
-      else return 'other';
-    },
-  }),
+  useLocalizedArtifactType: () => (slug: ArtifactTypeSlug) => {
+    if (slug === 'vernacular') return 'Vernacular';
+    else if (slug === 'backtranslation') return 'Phrase Back Translation';
+    else return 'other';
+  },
   findRecord: (memory: any, table: any, id: string) => {
     if (table === 'passage')
       return { attributes: { stepComplete: mockPassageStepComplete } };

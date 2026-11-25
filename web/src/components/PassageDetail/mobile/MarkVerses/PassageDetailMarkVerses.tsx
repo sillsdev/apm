@@ -16,7 +16,6 @@ import { related } from '../../../../crud/related';
 import { findRecord } from '../../../../crud/tryFindRecord';
 import { parseRef } from '../../../../crud/passage';
 import { ArtifactTypeSlug } from '../../../../crud/artifactTypeSlug';
-import { useArtifactType } from '../../../../crud/useArtifactType';
 import { usePlanType } from '../../../../crud/usePlanType';
 import { IRegion } from '../../../../crud/useWavesurferRegions';
 import {
@@ -202,7 +201,6 @@ export default function PassageDetailMarkVerses() {
     canDoSectionStep(currentstep, section) &&
     !isLinkedNote(passage, sharedResource);
   const { isMobile } = useMobile();
-  const { localizedArtifactType } = useArtifactType();
   const { showMessage } = useSnackBar();
   const t = useSelector(verseSelector, shallowEqual) as IVerseStrings;
   const ts = useSelector(sharedSelector, shallowEqual) as ISharedStrings;
@@ -298,11 +296,10 @@ export default function PassageDetailMarkVerses() {
   );
 
   const hasBtRecordings = useMemo(() => {
-    const btType = localizedArtifactType(
-      ArtifactTypeSlug.PhraseBackTranslation
+    return rowData.some(
+      (row) => row.artifactTypeSlug === ArtifactTypeSlug.PhraseBackTranslation
     );
-    return rowData.some((row) => row.artifactType === btType);
-  }, [localizedArtifactType, rowData]);
+  }, [rowData]);
 
   const setupData = (items: string[]) => {
     passageRefs.current = items;

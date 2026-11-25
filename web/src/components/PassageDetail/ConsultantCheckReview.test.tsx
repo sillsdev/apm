@@ -23,15 +23,6 @@ jest.mock('../../crud', () => ({
   ArtifactTypeSlug: jest.requireActual('../../crud/artifactTypeSlug')
     .ArtifactTypeSlug,
   findRecord: jest.fn(),
-  useArtifactType: () => ({
-    localizedArtifactType: jest.fn((slug: ArtifactTypeSlug) => {
-      if (slug === 'vernacular') {
-        return 'Vernacular';
-      } else if (slug === 'backtranslation') {
-        return 'Phrase Back Translation';
-      }
-    }),
-  }),
   related: jest.requireActual('../../crud/related').related,
   mediaFileName: (mf: MediaFile | undefined) =>
     mf?.attributes?.s3file || mf?.attributes?.originalFile || '',
@@ -60,17 +51,6 @@ jest.mock('./PassageDetailItem', () => ({
 jest.mock('../../crud/useOrgDefaults', () => ({
   useOrgDefaults: () => ({
     getOrgDefault: jest.fn().mockReturnValue(mockbtDefaultSegParams),
-  }),
-}));
-jest.mock('../../crud/useArtifactType', () => ({
-  useArtifactType: () => ({
-    localizedArtifactType: jest.fn((slug: ArtifactTypeSlug) => {
-      if (slug === 'vernacular') {
-        return 'Vernacular';
-      } else if (slug === 'backtranslation') {
-        return 'Phrase Back Translation';
-      }
-    }),
   }),
 }));
 jest.mock('../ArtifactStatus', () => ({
@@ -116,7 +96,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -135,7 +115,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -162,7 +142,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -187,7 +167,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -206,7 +186,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {} as any,
@@ -223,7 +203,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -235,7 +215,7 @@ describe('ConsultantCheckReview', () => {
       {
         type: 'mediafile',
         id: '2',
-        artifactType: 'Phrase Back Translation',
+        artifactTypeSlug: 'backtranslation',
         mediafile: {
           id: '2',
           attributes: {
@@ -262,7 +242,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -283,7 +263,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -295,7 +275,7 @@ describe('ConsultantCheckReview', () => {
       {
         type: 'mediafile',
         id: '2',
-        artifactType: 'Phrase Back Translation',
+        artifactTypeSlug: 'backtranslation',
         mediafile: {
           id: '2',
           attributes: {
@@ -322,7 +302,7 @@ describe('ConsultantCheckReview', () => {
     mockRowData = [
       {
         id: '1',
-        artifactType: 'Vernacular',
+        artifactTypeSlug: 'vernacular',
         mediafile: {
           id: '1',
           attributes: {
@@ -336,7 +316,7 @@ describe('ConsultantCheckReview', () => {
       {
         type: 'mediafile',
         id: '2',
-        artifactType: 'Phrase Back Translation',
+        artifactTypeSlug: 'backtranslation',
         mediafile: {
           id: '2',
           attributes: {
@@ -357,7 +337,7 @@ describe('ConsultantCheckReview', () => {
       {
         type: 'mediafile',
         id: '3',
-        artifactType: 'Phrase Back Translation',
+        artifactTypeSlug: 'backtranslation',
         mediafile: {
           id: '3',
           attributes: {

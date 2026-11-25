@@ -19,11 +19,7 @@
     'resources',
     'package.json',
   ],
-  asarUnpack: [
-    'resources/**',
-    'node_modules/ffmpeg-static/**',
-    'node_modules/ffprobe-static/**',
-  ],
+  asarUnpack: ['resources/**', 'node_modules/ffmpeg-static/**'],
   extraResources: [
     {
       from: 'migration',

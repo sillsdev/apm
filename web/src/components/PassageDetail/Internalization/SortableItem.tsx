@@ -3,6 +3,8 @@ import { TableRow, PlayButton, DoneButton, ResourceEditAction } from '.';
 import { SectionResourceD } from '../../../model';
 import { ViewButton } from './ViewButton';
 import { MarkDownType, UriLinkType } from '../../../utils/contentType';
+import { useRowTypeLabel } from './useRowTypeLabel';
+import { useLocalizedArtifactCategory } from '../../../crud';
 
 interface IProps {
   value: IRow;
@@ -30,12 +32,16 @@ export const SortableItem = ({
   onEdit,
   onDelete,
   showDragHandle,
-}: IProps) => (
-  <TableRow
-    showDragHandle={showDragHandle}
-    value={
-      {
+}: IProps) => {
+  const rowTypeLabel = useRowTypeLabel();
+  const localizedArtifactCategory = useLocalizedArtifactCategory();
+  return (
+    <TableRow
+      showDragHandle={showDragHandle}
+      value={{
         ...value,
+        artifactType: rowTypeLabel(value),
+        artifactCategory: localizedArtifactCategory(value.artifactCategorySlug),
         playItem:
           contentType === UriLinkType ? (
             <ViewButton id={value.id} cb={onLink} />
@@ -61,7 +67,7 @@ export const SortableItem = ({
             onDelete={onDelete}
           />
         ),
-      } as any
-    }
-  />
-);
+      }}
+    />
+  );
+};

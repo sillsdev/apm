@@ -468,7 +468,6 @@ describe('DiscussionCard add save (TT-7717)', () => {
               showStep={false}
               showReference={false}
               onAddComplete={onAddComplete}
-              setRef={jest.fn()}
               requestHighlight=""
               refreshList={jest.fn()}
             />

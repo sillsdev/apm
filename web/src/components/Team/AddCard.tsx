@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { Card, CardActionArea, Grid } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -6,11 +6,8 @@ import { VProject, DialogMode, ICardsStrings } from '../../model';
 import { cardsSelector } from '../../selector';
 import { TeamContext, TeamIdType } from '../../context/TeamContext';
 import { useGlobal } from '../../context/useGlobal';
-import { ILanguage } from '../../control';
-import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
-import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
-import { useSetTeamLanguageForNewProject } from '../../crud/useSetTeamLanguage';
+import { usePlan } from '../../crud';
 import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
 import { useHome, useJsonParams } from '../../utils';
 import { useReferenceTextsParam } from '../../business/referenceText/useReferenceTextsParam';
@@ -21,6 +18,7 @@ import {
   IProjectDialog,
 } from './ProjectDialog/projectDialogTypes';
 import { useCardHeight } from '../CardSize/useCardSize';
+import { useNewProjectLanguage } from './useNewProjectLanguage';
 
 interface IProps {
   team: TeamIdType;
@@ -47,17 +45,15 @@ export const AddCard = (props: IProps) => {
   const cardHeight = useCardHeight();
 
   const { leaveHome } = useHome();
-  const { getOrgDefault } = useOrgDefaults();
-  const setTeamLanguageForNewProject = useSetTeamLanguageForNewProject();
+  const { teamLanguage, rememberLanguage } = useNewProjectLanguage(
+    teamId || undefined
+  );
   const [open, setOpen] = useState(false);
   const [inProgress] = useState(false);
-
-  const [, setLanguagex] = useState<ILanguage>(initLang);
-  const [projDef, setProjDef] = useState({
+  const [projDef, setProjDef] = useState<IProjectDialog>({
     ...initProjectState,
     isPersonal: !team,
   });
-  const languageRef = useRef<ILanguage>(initLang);
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25S
   const [, setBusy] = useGlobal('importexportBusy');
   const [steps] = useState([
@@ -75,34 +71,12 @@ export const AddCard = (props: IProps) => {
   const { setParam } = useJsonParams();
   const setReferenceTexts = useReferenceTextsParam();
 
-  useEffect(() => {
-    // The personal team id loads after mount; read its language once it does.
-    if (!teamId) return;
-    const language = getOrgDefault(
-      orgDefaultLangProps,
-      teamId
-    ) as typeof initLang;
-    setLanguage(language ?? initLang, true);
-    // getOrgDefault and setLanguage are recreated every render; only a new
-    // team id should re-read the team language.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamId]);
-
-  const setLanguage = (language: ILanguage, init?: boolean) => {
-    languageRef.current = language;
-    setLanguagex(language);
-    setProjDef({ ...projDef, ...language });
-    if (!init && teamId) {
-      setTeamLanguageForNewProject(language, teamId);
-    }
-  };
-
   const handleSolutionShow = (e: React.MouseEvent) => {
     if (team && !isDeveloper && !open) {
       handleClickOpen(e);
       return;
     }
-    if (!preventBoth.current) setOpen(true);
+    if (!preventBoth.current) openDialog();
     preventBoth.current = false;
   };
 
@@ -111,8 +85,15 @@ export const AddCard = (props: IProps) => {
     preventBoth.current = true;
   };
 
-  const handleClickOpen = (e: React.MouseEvent) => {
+  const openDialog = () => {
+    // Read when opened, not at mount: the personal team id loads after mount,
+    // and the team language changes when a project is added (TT-7802).
+    setProjDef((def) => ({ ...def, ...teamLanguage() }));
     setOpen(true);
+  };
+
+  const handleClickOpen = (e: React.MouseEvent) => {
+    openDialog();
     preventBoth.current = true;
     e.stopPropagation();
   };
@@ -155,7 +136,7 @@ export const AddCard = (props: IProps) => {
     );
     defaultParams = setParam(projDefStory, story, defaultParams);
     defaultParams = setReferenceTexts(referenceTexts, defaultParams);
-    setLanguage({ bcp47, languageName, font, rtl, spellCheck });
+    rememberLanguage({ bcp47, languageName, font, rtl, spellCheck });
     projectCreate(
       {
         attributes: {

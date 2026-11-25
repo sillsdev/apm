@@ -8,20 +8,25 @@
 import { jest, beforeEach, describe, expect, test } from '@jest/globals';
 import { renderHook } from '@testing-library/react';
 
-const en = {
+// Stand-in for LocalizedStrings: the string table plus its getString lookup.
+const withGetString = (table: Record<string, string>) => ({
+  ...table,
+  getString: (key: string) => table[key] ?? null,
+});
+const en = withGetString({
   chapter: 'Chapter Number',
   title: 'Title',
   devotional: 'Devotional',
-};
-const es = {
+});
+const es = withGetString({
   chapter: 'Número de capítulo',
   title: 'Título',
   devotional: 'Devocional',
-};
+});
 
 // localStrings hands out a new object identity per language, so the hook can
 // key off the strings object itself.
-let strings: Record<string, string> = en;
+let strings = en;
 
 jest.mock('react-redux', () => ({
   useSelector: jest.fn(() => strings),

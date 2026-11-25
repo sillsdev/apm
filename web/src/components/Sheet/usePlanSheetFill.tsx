@@ -14,7 +14,7 @@ import {
   useOrganizedBy,
   useRole,
   ArtifactTypeSlug,
-  useArtifactType,
+  useLocalizedArtifactType,
   findRecord,
   useShowAssignment,
 } from '../../crud';
@@ -183,7 +183,7 @@ export const usePlanSheetFill = ({
     isAltBook,
     isBeta,
   } = rowTypes(rowInfo);
-  const { localizedArtifactType } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 

@@ -23,13 +23,18 @@ import {
 } from '../../crud/useWavRecorder';
 import { AudioPlayer, AudioPlayerHandle } from '../AudioPlayer';
 import { UnsavedContext } from '../../context/UnsavedContext';
+import { HotKeyContext } from '../../context/HotKeyContext';
 import Uploader from '../Uploader';
 import { Button } from '../../control';
 import BigDialog from '../../hoc/BigDialog';
 import VersionDlg from '../AudioTab/VersionDlg';
 import { usePassageVernacularVersionCount } from '../AudioTab/usePassageVersionAudioRows';
 import SpeakerName from '../SpeakerName';
-import { mediaTabSelector, sharedSelector } from '../../selector';
+import {
+  mediaTabSelector,
+  sharedSelector,
+  wsAudioPlayerSelector,
+} from '../../selector';
 import { loadBlobAsync } from '../../utils';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
@@ -40,15 +45,24 @@ import {
   hasPendingUploadForPassage,
   pendingUploadIds,
 } from '../../store/upload/pendingMediaUploads';
-import { IMediaTabStrings, ISharedStrings } from '../../model';
+import {
+  IMediaTabStrings,
+  ISharedStrings,
+  IWsAudioPlayerStrings,
+} from '../../model';
 import { TimeRange } from '../../control/formatTime';
 import { useSnackBar } from '../../hoc/useSnackBar';
 
 const SaveWait = 500;
+const RECORD_KEY = 'F9';
 
 export function PassageDetailRecord() {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const mt: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const wt: IWsAudioPlayerStrings = useSelector(
+    wsAudioPlayerSelector,
+    shallowEqual
+  );
   const {
     startSave,
     saveCompleted,
@@ -59,6 +73,8 @@ export function PassageDetailRecord() {
     clearCompleted,
     waitForSave,
   } = useContext(UnsavedContext).state;
+  const { subscribe, unsubscribe, localizeHotKey } =
+    useContext(HotKeyContext).state;
   const [reporter] = useGlobal('errorReporter');
   const [plan] = useGlobal('plan'); //will be constant here
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
@@ -247,7 +263,7 @@ export function PassageDetailRecord() {
     } else cb();
   };
 
-  async function handleRecordToggle() {
+  function handleRecordToggle() {
     if (busy || !speaker) return;
 
     if (!recording) {
@@ -258,11 +274,20 @@ export function PassageDetailRecord() {
         return;
       }
       if (hasPendingUpload()) setPendingUploadWarning('record');
-      else await startRecording();
+      else void startRecording();
     } else {
       playerRef.current?.stopRecording();
     }
   }
+
+  useEffect(() => {
+    if (!canRecord) return;
+    subscribe(RECORD_KEY, () => {
+      handleRecordToggle();
+      return true;
+    });
+    return () => unsubscribe(RECORD_KEY);
+  });
 
   const handleUpload = () => {
     saveIfChanged(() => {
@@ -378,6 +403,7 @@ export function PassageDetailRecord() {
             <Box
               role="button"
               aria-label="record"
+              title={wt.record.replace('{0}', localizeHotKey(RECORD_KEY))}
               onClick={handleRecordToggle}
               sx={{
                 width: 80,
@@ -401,6 +427,7 @@ export function PassageDetailRecord() {
           ) : (
             <Button
               onClick={handleRecordToggle}
+              title={wt.stopTip.replace('{0}', localizeHotKey(RECORD_KEY))}
               sx={{
                 width: 120,
                 height: 64,

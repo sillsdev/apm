@@ -42,6 +42,8 @@ const mockRegions = {
   enableDragSelection: jest.fn(() => () => {}),
 };
 const mockSpliceAudio = jest.fn();
+const mockClipAudio = jest.fn();
+const mockSetClip = jest.fn();
 const mockInsertSilenceAudio = jest.fn();
 const mockStartRecording = jest.fn();
 // Stable reference: the player's mic effect depends on this function.
@@ -69,6 +71,7 @@ jest.mock('../crud/waveformRenderer', () => ({
 }));
 jest.mock('../utils/audioUtils', () => ({
   spliceAudio: (...args: unknown[]) => mockSpliceAudio(...args),
+  clipAudio: (...args: unknown[]) => mockClipAudio(...args),
   insertSilenceAudio: (...args: unknown[]) => mockInsertSilenceAudio(...args),
   clampSelectionToHighlights: jest.fn(),
 }));
@@ -81,24 +84,35 @@ jest.mock('../utils/useRecorder', () => ({
 jest.mock('../crud/useUserMedia', () => ({
   useUserMedia: () => mockGetMic,
 }));
+const mockPassage = { isBoldWorkflow: false };
 jest.mock('../context/usePassageDetailContext', () => ({
   __esModule: true,
   default: () => ({
     recording: false,
     setRecording: jest.fn(),
-    isBoldWorkflow: false,
+    isBoldWorkflow: mockPassage.isBoldWorkflow,
   }),
+}));
+const mockGlobals = { offline: true };
+jest.mock('../context/useGlobal', () => ({
+  useGlobal: (key: keyof typeof mockGlobals) => [mockGlobals[key], jest.fn()],
 }));
 jest.mock('../utils/useAudioConversion', () => ({
   useAudioConversion: () => ({
     progress: undefined,
     suppressNoise: jest.fn(),
     convertVoice: jest.fn(),
+    normalize: jest.fn(),
     cancel: jest.fn(),
   }),
 }));
 jest.mock('react-redux', () => ({
-  useSelector: () => ({ reduceNoiseAi: 'Reduce', convertVoiceAi: 'Convert' }),
+  useSelector: () => ({
+    reduceNoiseAi: 'Reduce',
+    convertVoiceAi: 'Convert',
+    playTip: 'Play [{0}]',
+    pauseTip: 'Pause [{0}]',
+  }),
   shallowEqual: jest.fn(),
 }));
 jest.mock('../selector', () => ({
@@ -108,6 +122,19 @@ jest.mock('../selector', () => ({
 jest.mock('./MicrophoneDialog', () => ({ MicrophoneDialog: () => null }));
 jest.mock('./ConvertVoiceDialog', () => ({ ConvertVoiceDialog: () => null }));
 jest.mock('./AiProcessing', () => ({ AiProcessing: () => null }));
+const mockPasted = new Blob(['pasted']);
+jest.mock('./AudioCopyPaste', () => {
+  const MockAudioCopyPaste = ({
+    onPaste,
+  }: {
+    onPaste: (audio: Blob) => void;
+  }) => <button onClick={() => onPaste(mockPasted)}>copy paste</button>;
+  MockAudioCopyPaste.displayName = 'MockAudioCopyPaste';
+  return {
+    AudioCopyPaste: MockAudioCopyPaste,
+    setClip: (...args: unknown[]) => mockSetClip(...args),
+  };
+});
 jest.mock('../control/NoChickenIcon', () => ({
   __esModule: true,
   default: () => null,
@@ -321,6 +348,18 @@ describe('AudioPlayer', () => {
       expect(screen.getByText('0:02 - 0:04')).toBeInTheDocument();
     });
 
+    it('puts the cut audio on the clipboard', async () => {
+      const cut = new Blob(['cut']);
+      mockClipAudio.mockResolvedValueOnce(cut);
+      const ref = renderLoaded({ showCut: true });
+      act(() => ref.current!.updateSelection({ start: 2, end: 4 }));
+
+      await userEvent.click(button('passage cut'));
+
+      expect(mockClipAudio).toHaveBeenCalledWith(AUDIO, 2, 4);
+      expect(mockSetClip).toHaveBeenCalledWith(cut);
+    });
+
     it('inserts silence at the current time', async () => {
       const withSilence = new Blob(['silence']);
       mockInsertSilenceAudio.mockResolvedValueOnce(withSilence);
@@ -346,6 +385,51 @@ describe('AudioPlayer', () => {
       expect(onAudioChange).toHaveBeenLastCalledWith(null);
       expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument();
       expect(button('passage play')).toBeDisabled();
+    });
+  });
+
+  describe('copy and paste', () => {
+    beforeEach(() => {
+      mockGlobals.offline = true;
+      mockPassage.isBoldWorkflow = false;
+    });
+
+    const queryCopyPaste = () =>
+      screen.queryByRole('button', { name: 'copy paste' });
+
+    it('offers copy and paste on a player that records without the record button', () => {
+      renderLoaded({ allowRecord: true });
+      expect(button('copy paste')).toBeInTheDocument();
+    });
+
+    it('does not offer copy and paste with the record button', () => {
+      renderLoaded({ showRecordButton: true });
+      expect(queryCopyPaste()).not.toBeInTheDocument();
+    });
+
+    it('does not offer copy and paste outside an offline session', () => {
+      mockGlobals.offline = false;
+      renderLoaded({ allowRecord: true });
+      expect(queryCopyPaste()).not.toBeInTheDocument();
+    });
+
+    it('does not offer copy and paste in the bold workflow', () => {
+      mockPassage.isBoldWorkflow = true;
+      renderLoaded({ allowRecord: true });
+      expect(queryCopyPaste()).not.toBeInTheDocument();
+    });
+
+    it('loads the pasted audio, and undo restores the audio', async () => {
+      const onAudioChange = jest.fn();
+      renderLoaded({ allowRecord: true, onAudioChange });
+
+      await userEvent.click(button('copy paste'));
+
+      expect(onAudioChange).toHaveBeenLastCalledWith(mockPasted);
+
+      await userEvent.click(button('passage undo'));
+
+      expect(onAudioChange).toHaveBeenLastCalledWith(AUDIO, undefined);
     });
   });
 

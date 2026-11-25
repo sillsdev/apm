@@ -17,7 +17,7 @@ import {
   ToolSlug,
   findRecord,
   ArtifactTypeSlug,
-  useArtifactType,
+  useLocalizedArtifactType,
   useOrgDefaults,
   useUpdateRecord,
   orgDefaultConsCheckComp,
@@ -89,7 +89,7 @@ export function ConsultantCheck() {
   const [, setBusy] = useGlobal('remoteBusy');
   const commitBusy = useRef(false);
   const { showMessage } = useSnackBar();
-  const { localizedArtifactType } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
   const t = useSelector(consultantSelector, shallowEqual);
   const ts = useSelector(sharedSelector, shallowEqual);
   const getGlobal = useGetGlobal();
