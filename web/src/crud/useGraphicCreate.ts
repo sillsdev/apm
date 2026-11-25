@@ -36,7 +36,7 @@ export const useGraphicCreate = () => {
       ...AddRecord(t, graphicRec, user, memory),
       ...ReplaceRelatedRecord(
         t,
-        graphicRec as RecordIdentity,
+        graphicRec,
         'organization',
         'organization',
         organization
@@ -46,7 +46,7 @@ export const useGraphicCreate = () => {
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          graphicRec as RecordIdentity,
+          graphicRec,
           'mediafile',
           'mediafile',
           mediafileId

@@ -8,7 +8,6 @@ import {
 } from '../model';
 import {
   AddRecord,
-  recordRef,
   ReplaceRelatedRecord,
   UpdateRecord,
 } from '../model/baseModel';
@@ -66,17 +65,16 @@ export const useSharedResCreate = ({
       },
     } as SharedResource;
     const t = new RecordTransformBuilder();
-    // AddRecord assigns sharedRes.id, so build the identity after it.
-    const ops = [...AddRecord(t, sharedRes, user, memory)];
-    const srIdentity = recordRef('sharedresource', sharedRes.id);
-    ops.push(
-      ...ReplaceRelatedRecord(t, srIdentity, 'passage', 'passage', passage.id)
-    );
+    const ops = [
+      ...AddRecord(t, sharedRes, user, memory),
+      ...ReplaceRelatedRecord(t, sharedRes, 'passage', 'passage', passage.id),
+    ];
+
     if (cluster) {
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          srIdentity,
+          sharedRes,
           'cluster',
           'organization',
           cluster.id
@@ -87,7 +85,7 @@ export const useSharedResCreate = ({
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          srIdentity,
+          sharedRes,
           'artifactCategory',
           'artifactcategory',
           category
@@ -98,7 +96,7 @@ export const useSharedResCreate = ({
       ops.push(
         ...ReplaceRelatedRecord(
           t,
-          srIdentity,
+          sharedRes,
           'titleMediafile',
           'mediafile',
           mediaId

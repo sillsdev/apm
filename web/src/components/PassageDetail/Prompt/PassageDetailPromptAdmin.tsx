@@ -15,25 +15,25 @@ import {
   remoteIdGuid,
   useArtifactType,
   useOrganizedBy,
+  useSecResCreate,
+  useSecResDelete,
 } from '../../../crud';
-import { ReplaceRelatedRecord } from '../../../model/baseModel';
-import {
-  RecordIdentity,
-  RecordKeyMap,
-  RecordTransformBuilder,
-} from '@orbit/records';
+import { recordRef, ReplaceRelatedRecord } from '../../../model/baseModel';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { useGlobal } from '../../../context/useGlobal';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import MediaRecord from '../../MediaRecord';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 import { isLinkedNote } from '../../../crud/isLinkedNote';
-import { useSecResCreate, useSecResDelete } from '../../../crud';
 import { usePromptSectionResource } from './usePromptSectionResource';
 import { promptPendingRestore } from './promptPendingRestore';
-import { SectionResourceD } from '../../../model';
+import {
+  SectionResourceD,
+  IPromptStrings,
+  ISharedStrings,
+} from '../../../model';
 import { promptSelector, sharedSelector } from '../../../selector';
-import { IPromptStrings, ISharedStrings } from '../../../model';
 import { useMobile } from '../../../utils';
 
 const toolId = 'PromptTool';
@@ -144,12 +144,11 @@ export default function PassageDetailPromptAdmin() {
   }, [promptMediaId, recorderState]);
 
   const linkMediaToStep = async (mediaId: string) => {
-    const mediaRecId = { type: 'mediafile', id: mediaId } as RecordIdentity;
     const t = new RecordTransformBuilder();
     await memory.update([
       ...ReplaceRelatedRecord(
         t,
-        mediaRecId,
+        recordRef('mediafile', mediaId),
         'orgWorkflowStep',
         'orgworkflowstep',
         currentstep
@@ -168,12 +167,11 @@ export default function PassageDetailPromptAdmin() {
       await DeleteSectionResource(existing);
       sectionResourceRef.current = null;
     }
-    const mediaRecId = {
-      type: 'mediafile',
-      id:
-        remoteIdGuid('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ||
-        mediaId,
-    } as RecordIdentity;
+    const mediaRecId = recordRef(
+      'mediafile',
+      remoteIdGuid('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ||
+        mediaId
+    );
     await linkMediaToStep(mediaRecId.id);
     await AddSectionResource(0, null, mediaRecId);
     forceRefresh();

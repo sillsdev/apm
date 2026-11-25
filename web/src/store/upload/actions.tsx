@@ -47,7 +47,8 @@ import {
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
 
-const ipc = window?.api as MainAPI;
+// Call-time read so tests can stub window.api after import (and late Electron bind).
+const ipc = () => window?.api as MainAPI | undefined;
 
 export interface WriteFileLocalResult {
   relativeMediaPath: string;
@@ -86,16 +87,16 @@ export const writeFileLocal = async (
   writeName = local.localname;
   if (!remoteName && filePath === '') writeName += path.sep + file.name;
   await createPathFolder(writeName);
-  while (await ipc?.exists(writeName)) {
+  while (await ipc()?.exists(writeName)) {
     writeName = nextVersion(writeName);
   }
   if (filePath) {
-    await ipc?.copyFile(filePath, writeName);
+    await ipc()?.copyFile(filePath, writeName);
   } else {
     // Modern replacement for deprecated readAsBinaryString
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    await ipc?.write(writeName, bytes, {
+    await ipc()?.write(writeName, bytes, {
       encoding: 'binary',
       flag: 'wx', // write - fail if file exists
     });
@@ -474,14 +475,15 @@ export const nextUpload =
       file: File
     ): Promise<{ absolutePath: string; fileForUpload: File }> => {
       const fromDisk = (file as File & { path?: string }).path;
-      if (fromDisk && ipc && (await ipc.exists(fromDisk))) {
+      const api = ipc();
+      if (fromDisk && api && (await api.exists(fromDisk))) {
         return { absolutePath: fromDisk, fileForUpload: file };
       }
-      if (!ipc?.read || !ipc?.write) {
+      if (!api?.read || !api?.write) {
         return { absolutePath: fromDisk || '', fileForUpload: file };
       }
       const w = await writeFileLocal(file);
-      const buf = await ipc.read(w.absolutePath);
+      const buf = await api.read(w.absolutePath);
       if (!(buf instanceof Uint8Array)) {
         throw new Error('Could not read staged media file');
       }

@@ -3,7 +3,6 @@
 import { schemaMock } from '../test-helpers/schemaMock';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ProjectResourceConfigure from '../components/PassageDetail/Internalization/ProjectResourceConfigure';
 import { MediaFile, MediaFileD, SectionResource } from '../model';
 import { UnsavedProvider } from '../context/UnsavedContext';
 import { PropsWithChildren } from 'react';
@@ -19,10 +18,13 @@ const mockMemory = {
 
 jest.mock('../schema', () => schemaMock(() => mockMemory));
 
+// Barrel utils pulls react-localization (ESM) via useCheckOnline → store.
 jest.mock('../utils', () => ({
   logError: jest.fn(),
-  Severity: { info: 0, error: 1, retry: 2 },
+  Severity: { error: 0, info: 1 },
 }));
+
+import ProjectResourceConfigure from '../components/PassageDetail/Internalization/ProjectResourceConfigure';
 
 // Mock GlobalContext to avoid context errors
 jest.mock('../context/useGlobal', () => ({

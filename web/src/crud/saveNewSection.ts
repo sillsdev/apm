@@ -22,7 +22,7 @@ export const saveNewSection = async (props: IProps) => {
   } as any;
   await memory.update((t) => [
     ...AddRecord(t, sec, user, memory),
-    ...ReplaceRelatedRecord(t, sec as RecordIdentity, 'plan', 'plan', plan.id),
+    ...ReplaceRelatedRecord(t, sec, 'plan', 'plan', plan.id),
   ]);
   return sec as SectionD;
 };
