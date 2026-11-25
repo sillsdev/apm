@@ -98,17 +98,8 @@ import {
 const DiscussionCardRoot = styled(Box)<BoxProps>(() => ({
   width: '100%',
   display: 'flex',
-  '&:hover button': {
-    color: 'black',
-  },
-  '&:hover button[disabled]': {
-    color: 'grey',
-  },
   '& .MuiTypography-root': {
     cursor: 'default ',
-  },
-  '& button': {
-    color: 'lightgrey',
   },
   '& .MuiChip-root': {
     backgroundColor: 'lightgrey',
@@ -116,11 +107,21 @@ const DiscussionCardRoot = styled(Box)<BoxProps>(() => ({
 }));
 
 const EditContainer = styled(Box)<BoxProps>(({ theme }) => ({
-  backgroundColor: theme.palette.background.paper,
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
   width: '100%',
+  // TODO cleanup when we move to the new Discussions design. Fields come from shared components with their own margins and widths, so we even them out here.
+  // Can we instead do some standardization of the field component styling.
+  gap: theme.spacing(1),
+  '& .MuiFormControl-root, & .MuiAutocomplete-root': {
+    margin: 0,
+    width: '100%',
+    maxWidth: 'none',
+  },
+  '& .MuiFormHelperText-root': { color: 'inherit' },
+  // Space the comment field from the Record button below it
+  '& #commentedit': { gap: theme.spacing(1) },
 }));
 
 // see: https://mui.com/material-ui/customization/how-to-customize/
@@ -171,6 +172,7 @@ const cardFlowProps = {
   bgColor: 'background.paper',
   display: 'flex',
   width: '100%',
+  boxSizing: 'border-box',
   flexGrow: 1,
   flexDirection: 'column',
 } as SxProps;
@@ -1023,11 +1025,10 @@ export const DiscussionCard = (props: IProps) => {
                     pendingRestore={pendingRestore}
                   />
                 )}
-                <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
                   <Button
                     id={`ok-${discussion.id}`}
                     onClick={handleSave}
-                    sx={lightButton}
                     disabled={
                       cardSavingRef.current ||
                       segSavingRef.current ||
@@ -1051,7 +1052,6 @@ export const DiscussionCard = (props: IProps) => {
                   <Button
                     id={`cancel-${discussion.id}`}
                     onClick={handleCancel}
-                    sx={lightButton}
                     disabled={cardSavingRef.current || segSavingRef.current}
                   >
                     {ts.cancel}
@@ -1146,42 +1146,45 @@ export const DiscussionCard = (props: IProps) => {
               </Box>
             )}
 
-            <Box
-              sx={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <SmallButton
-                id={`collapseDiscussion-${discussion.id}`}
-                title={t.collapse}
-                onClick={handleToggleCollapse}
+            {/* A new discussion has no comments to show or collapse yet */}
+            {!onAddComplete && (
+              <Box
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
               >
-                {showComments ? <HideIcon /> : <ShowIcon />}
-              </SmallButton>
-              <Typography variant="body2" component="p">
-                {t.comments.replace('{0}', myComments.length.toString())}
-              </Typography>
-              {artifactCategory && artifactCategory !== '' && (
-                <Chip
-                  size="small"
-                  label={t.category.replace('{0}', artifactCategory)}
-                />
-              )}
-              {step && <StageReport step={step} />}
-              {reference && (
-                <Typography
-                  variant="body2"
-                  component="p"
-                  title={reference}
-                  sx={{ overflow: 'hidden' }}
+                <SmallButton
+                  id={`collapseDiscussion-${discussion.id}`}
+                  title={t.collapse}
+                  onClick={handleToggleCollapse}
                 >
-                  {reference}
+                  {showComments ? <HideIcon /> : <ShowIcon />}
+                </SmallButton>
+                <Typography variant="body2" component="p">
+                  {t.comments.replace('{0}', myComments.length.toString())}
                 </Typography>
-              )}
-            </Box>
+                {artifactCategory && artifactCategory !== '' && (
+                  <Chip
+                    size="small"
+                    label={t.category.replace('{0}', artifactCategory)}
+                  />
+                )}
+                {step && <StageReport step={step} />}
+                {reference && (
+                  <Typography
+                    variant="body2"
+                    component="p"
+                    title={reference}
+                    sx={{ overflow: 'hidden' }}
+                  >
+                    {reference}
+                  </Typography>
+                )}
+              </Box>
+            )}
             {showComments && !onAddComplete && (
               <Box sx={cardFlowProps}>
                 {myComments.map((i, j) => (

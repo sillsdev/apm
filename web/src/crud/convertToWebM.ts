@@ -1,5 +1,7 @@
 import { getBlobDiagnostics, logAudioDiagnostic } from './audioDiagnostics';
 
+// TODO cleanup dead code
+
 /**
  * Converts an AudioBuffer to WebM using MediaRecorder API.
  * This is the most efficient method as it uses native browser encoding.

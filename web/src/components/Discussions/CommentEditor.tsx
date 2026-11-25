@@ -269,7 +269,6 @@ export const CommentEditor = (props: IProps) => {
               id="cancel"
               onClick={handleCancel}
               sx={{
-                color: 'background.paper',
                 minWidth: 'auto',
                 padding: '2px 4px',
               }}
@@ -286,7 +285,6 @@ export const CommentEditor = (props: IProps) => {
               id="ok"
               onClick={handleOk}
               sx={{
-                color: 'background.paper',
                 minWidth: 'auto',
                 padding: '2px 4px',
               }}

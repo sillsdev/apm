@@ -18,7 +18,6 @@ jest.mock('../../../context/usePassageDetailContext', () => ({
     setPlaying: jest.fn(),
     setItemPlaying: jest.fn(),
     setCommentPlaying: jest.fn(),
-    handleOldVernacularPlayEnd: jest.fn(),
   }),
 }));
 jest.mock('../../../crud/useOrgDefaults', () => ({

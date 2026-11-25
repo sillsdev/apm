@@ -34,6 +34,7 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
+      disabledText: string;
       waveform: WaveformColors;
     };
   }
@@ -46,6 +47,7 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
+      disabledText: string;
       waveform: WaveformColors;
     };
   }
@@ -152,6 +154,7 @@ export const createAppTheme = (lang: string) =>
           racetrackCurrent: colors.racetrackCurrent,
           racetrackComplete: colors.racetrackComplete,
           racetrackIncomplete: colors.racetrackIncomplete,
+          disabledText: colors.disabledText,
           waveform: {
             cursor: colors.waveformCursor,
             pointSelection: colors.waveformPointSelection,

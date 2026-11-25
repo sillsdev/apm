@@ -15,13 +15,8 @@ jest.mock('./Internalization/SelectMyResource', () => ({
   default: jest.fn(() => <div data-testid="select-resource" />),
 }));
 
-jest.mock('../LimitedMediaPlayer', () => ({
-  LimitedMediaPlayer: jest.fn(() => <div data-testid="limited-media-player" />),
-}));
-
-jest.mock('../../utils', () => ({
-  NamedRegions: { ProjectResource: 'ProjectResource' },
-  getSegments: jest.fn(() => '[]'),
+jest.mock('../MinimalAudioPlayer', () => ({
+  MinimalAudioPlayer: jest.fn(() => <div data-testid="minimal-audio-player" />),
 }));
 
 jest.mock('../../crud/useOrgDefaults', () => ({
@@ -101,7 +96,7 @@ import React, { act } from 'react';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { TeamCheckReference } from './TeamCheckReference';
 import SelectMyResource from './Internalization/SelectMyResource';
-import { LimitedMediaPlayer } from '../LimitedMediaPlayer';
+import { MinimalAudioPlayer } from '../MinimalAudioPlayer';
 import { speakReferenceText } from '../../business/referenceText/speakReferenceText';
 
 const mockSpeak = speakReferenceText as jest.Mock;
@@ -117,7 +112,7 @@ const bsb = {
 const PRIMARY_ID = 'referenceText:primary';
 
 const SelectMyResourceMock = SelectMyResource as unknown as jest.Mock;
-const LimitedMediaPlayerMock = LimitedMediaPlayer as unknown as jest.Mock;
+const MinimalAudioPlayerMock = MinimalAudioPlayer as unknown as jest.Mock;
 
 const storedRow = {
   id: 'res-1',
@@ -137,17 +132,11 @@ function storedResourceInLocalStorage() {
 function buildState(overrides: Record<string, unknown> = {}) {
   return {
     rowData: [],
-    playItem: '',
-    setPlayItem: jest.fn(),
-    setMediaSelected: jest.fn(),
     itemPlaying: false,
-    handleItemPlayEnd: jest.fn(),
-    handleItemTogglePlay: jest.fn(),
     // Speaking a Reference Text stops other passage playback
     setPlaying: jest.fn(),
     setItemPlaying: jest.fn(),
     setCommentPlaying: jest.fn(),
-    handleOldVernacularPlayEnd: jest.fn(),
     section: { id: 'section-1' },
     passage: { id: 'passage-1' },
     currentstep: 'compare-step',
@@ -169,7 +158,7 @@ function renderWithContext(stateOverrides?: Record<string, unknown>) {
 describe('TeamCheckReference', () => {
   beforeEach(() => {
     SelectMyResourceMock.mockClear();
-    LimitedMediaPlayerMock.mockClear();
+    MinimalAudioPlayerMock.mockClear();
     localStorage.clear();
     delete mockPassages.primary;
     delete mockPassages.secondary;
@@ -200,36 +189,51 @@ describe('TeamCheckReference', () => {
     expect(SelectMyResourceMock.mock.calls[0][0].disabled).toBeFalsy();
   });
 
-  // TT-7005 (reopened): when a resource finished, handleEnded cleared playItem
-  // and 500ms later the restore effect re-selected the same resource from
-  // localStorage. That re-armed PassageDetailContext's 2-second auto-play
-  // timer, so the finished resource restarted itself and the player tore down
-  // and remounted on every cycle — the "blinking" QA reported.
-  it('TT-7005: does not re-select the resource after it finishes playing', () => {
+  // TT-7005 (reopened): when a resource finished, the old handleEnded cleared
+  // the resource and the restore effect re-selected it, restarting it and
+  // remounting the player on every cycle — the "blinking" QA reported. The
+  // player now rewinds itself at the end, so nothing here reacts to it.
+  it('TT-7005: keeps the finished resource loaded so play replays it', () => {
     jest.useFakeTimers();
     storedResourceInLocalStorage();
-    const setPlayItem = jest.fn();
-    const handleItemPlayEnd = jest.fn();
 
-    renderWithContext({
-      rowData: [storedRow],
-      setPlayItem,
-      handleItemPlayEnd,
-    });
-    // sanity: the stored choice was restored on mount
-    expect(setPlayItem).toHaveBeenCalledWith('res-1');
-    setPlayItem.mockClear(); // ignore the mount-time restore
-
-    act(() => {
-      LimitedMediaPlayerMock.mock.calls[0][0].onEnded();
-    });
-    expect(handleItemPlayEnd).toHaveBeenCalled();
+    renderWithContext({ rowData: [storedRow] });
+    // the stored choice was restored on mount
+    const props = MinimalAudioPlayerMock.mock.calls.at(-1)[0];
+    expect(props.srcMediaId).toBe('res-1');
+    expect(props.onFinish).toBeUndefined();
 
     act(() => {
       jest.advanceTimersByTime(1000);
     });
 
-    expect(setPlayItem).not.toHaveBeenCalledWith('res-1');
+    expect(MinimalAudioPlayerMock.mock.calls.at(-1)[0].srcMediaId).toBe(
+      'res-1'
+    );
+  });
+
+  it('plays just the chosen clip of a longer recording', () => {
+    const clipRow = {
+      id: 'res-2',
+      mediafile: {
+        id: 'res-2',
+        attributes: {
+          segments: JSON.stringify([
+            {
+              name: 'ProjRes',
+              regionInfo: JSON.stringify([{ start: 4, end: 9 }]),
+            },
+          ]),
+        },
+      },
+    };
+    renderWithContext({ rowData: [clipRow] });
+
+    act(() => SelectMyResourceMock.mock.calls.at(-1)[0].onChange('res-2'));
+
+    const props = MinimalAudioPlayerMock.mock.calls.at(-1)[0];
+    expect(props.srcMediaId).toBe('res-2');
+    expect(props.clip).toEqual({ start: 4, end: 9 });
   });
 
   // TT-7819: Compare offers the project's Reference Texts as resources. One
@@ -240,15 +244,13 @@ describe('TeamCheckReference', () => {
       referenceText: bsb,
       text: 'For God so loved',
     };
-    const setPlayItem = jest.fn();
-    renderWithContext({ setPlayItem });
+    renderWithContext();
 
     act(() => {
       SelectMyResourceMock.mock.calls.at(-1)[0].onChange(PRIMARY_ID);
     });
 
-    expect(setPlayItem).not.toHaveBeenCalledWith(PRIMARY_ID);
-    expect(screen.queryByTestId('limited-media-player')).toBeNull();
+    expect(screen.queryByTestId('minimal-audio-player')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Play' }));
     expect(mockSpeak).toHaveBeenCalledWith(
       bsb,
@@ -266,11 +268,10 @@ describe('TeamCheckReference', () => {
     };
     localStorage.setItem('compare-res', PRIMARY_ID);
     localStorage.setItem('compare-secId', 'section-1');
-    const setPlayItem = jest.fn();
 
-    renderWithContext({ setPlayItem });
+    renderWithContext();
 
-    expect(setPlayItem).not.toHaveBeenCalledWith(PRIMARY_ID);
+    expect(screen.queryByTestId('minimal-audio-player')).toBeNull();
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
   });
 
@@ -280,15 +281,16 @@ describe('TeamCheckReference', () => {
       referenceText: bsb,
       text: 'For God so loved',
     };
-    const setPlayItem = jest.fn();
-    renderWithContext({ rowData: [storedRow], setPlayItem });
+    renderWithContext({ rowData: [storedRow] });
     const { onChange } = SelectMyResourceMock.mock.calls.at(-1)[0];
 
     act(() => onChange(PRIMARY_ID));
     act(() => onChange('res-1'));
 
-    expect(setPlayItem).toHaveBeenLastCalledWith('res-1');
-    expect(screen.getByTestId('limited-media-player')).toBeInTheDocument();
+    expect(MinimalAudioPlayerMock.mock.calls.at(-1)[0].srcMediaId).toBe(
+      'res-1'
+    );
+    expect(screen.getByTestId('minimal-audio-player')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
   });
 });

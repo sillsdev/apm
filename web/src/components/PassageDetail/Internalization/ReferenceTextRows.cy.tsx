@@ -142,7 +142,6 @@ const mount = (variant: 'table' | 'card', texts: ReferenceText[]) => {
     setPlaying: cy.stub(),
     setItemPlaying: cy.stub(),
     setCommentPlaying: cy.stub(),
-    handleOldVernacularPlayEnd: cy.stub(),
   } as unknown as ICtxState; // only what the rows read
 
   cy.mount(

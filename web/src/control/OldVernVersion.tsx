@@ -1,10 +1,11 @@
-import { Chip, IconButton } from '@mui/material';
+import { Chip, CircularProgress, IconButton } from '@mui/material';
 import { LightTooltip } from './LightTooltip';
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
-import { useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import { startEnd } from '../utils';
-import { PassageDetailContext } from '../context/PassageDetailContext';
+import { useLazyAudio } from '../utils/useLazyAudio';
+import { LazyAudioStatus } from '../utils/lazyAudioStatus';
 import { commentCardSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ICommentCardStrings } from '../model';
@@ -16,44 +17,43 @@ interface IProps {
   text: string;
 }
 
+/**
+ * For a discussion or comment made on an earlier version of the passage
+ * recording: shows that version number and plays/stops the part of the old
+ * recording the discussion is about.
+ */
+// TODO cleanup: Should we move this to use the MinimalAudioPlayer component?
 export function OldVernVersion({ id, oldVernVer, mediaId, text }: IProps) {
-  const {
-    oldVernacularPlayItem,
-    oldVernacularPlaying,
-    oldVernacularStart,
-    handleOldVernacularPlayEnd,
-    setMediaSelected,
-  } = useContext(PassageDetailContext).state;
   const t: ICommentCardStrings = useSelector(commentCardSelector, shallowEqual);
 
-  const myRegion = useMemo(() => {
-    return startEnd(text);
-  }, [text]);
-
-  const handlePlayOldClip = (mediaId: string) => () => {
-    if (oldVernacularPlaying) {
-      handleOldVernacularPlayEnd();
-    } else {
-      setMediaSelected(mediaId, myRegion?.start || 0, myRegion?.end || 0);
-    }
+  const myRegion = useMemo(() => startEnd(text), [text]);
+  const player = useLazyAudio({
+    mediaId: oldVernVer ? mediaId : '',
+    clip: { start: myRegion?.start ?? 0, end: myRegion?.end ?? 0 },
+  });
+  // Stop, not pause: the next play starts the clip over.
+  const handleClick = () => {
+    if (player.status !== LazyAudioStatus.Idle) {
+      player.pause();
+      player.seek(0);
+    } else player.play();
   };
 
   return oldVernVer ? (
     <>
-      {oldVernVer && (
-        <LightTooltip title={t.previousVersion}>
-          <Chip label={oldVernVer.toString()} size="small" />
-        </LightTooltip>
-      )}
+      <LightTooltip title={t.previousVersion}>
+        <Chip label={oldVernVer.toString()} size="small" />
+      </LightTooltip>
       <LightTooltip title={t.playOrStop}>
         <IconButton
           id={`play-${id}`}
           size="small"
-          onClick={handlePlayOldClip(mediaId)}
+          onClick={handleClick}
           sx={{ p: '3px', m: '5px' }}
         >
-          {oldVernacularPlayItem === mediaId &&
-          oldVernacularStart === myRegion?.start ? (
+          {player.status === LazyAudioStatus.Loading ? (
+            <CircularProgress size={16} />
+          ) : player.status === LazyAudioStatus.Playing ? (
             <StopIcon fontSize="small" />
           ) : (
             <PlayIcon fontSize="small" />
