@@ -86,9 +86,7 @@ export const oneMediaRow = ({
   );
   newRow.push({
     id: media?.id || '',
-    playItem: '',
     sequenceNum: r?.attributes.sequenceNum || 0,
-    version: mediaAttr?.versionNumber || 0,
     artifactName: resourceArtifactName(
       r?.attributes.description,
       mediaAttr?.originalFile,
@@ -98,7 +96,6 @@ export const oneMediaRow = ({
     isGeneralResource,
     artifactCategorySlug: catNameSlug,
     done,
-    editAction: null,
     mediafile: media || ({} as MediaFileD),
     resource: r,
     isResource: isResource(typeNameSlug),

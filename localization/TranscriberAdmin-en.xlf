@@ -5446,12 +5446,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.action">
-         <segment>
-            <source>Action</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.activity">
          <segment>
             <source>Add Activity</source>
@@ -5557,12 +5551,6 @@
       <unit id="passageDetailArtifacts.clipboard">
          <segment>
             <source>clipboard</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="passageDetailArtifacts.completed">
-         <segment>
-            <source>Completed</source>
             <target/>
          </segment>
       </unit>
@@ -5872,12 +5860,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageDetailArtifacts.resource">
-         <segment>
-            <source>Resource</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="passageDetailArtifacts.resources">
          <segment>
             <source>Resources</source>
@@ -5977,12 +5959,6 @@
       <unit id="passageDetailArtifacts.transcription">
          <segment>
             <source>AI Audio Resource Transcript</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="passageDetailArtifacts.type">
-         <segment>
-            <source>Type</source>
             <target/>
          </segment>
       </unit>

@@ -1,9 +1,5 @@
-import { createRef } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import {
-  MinimalAudioPlayer,
-  MinimalAudioPlayerHandle,
-} from './MinimalAudioPlayer';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MinimalAudioPlayer } from './MinimalAudioPlayer';
 import type { LazyAudio, UseLazyAudioProps } from '../utils/useLazyAudio';
 import { LazyAudioStatus } from '../utils/lazyAudioStatus';
 
@@ -99,32 +95,5 @@ describe('<MinimalAudioPlayer />', () => {
     fireEvent.change(screen.getByRole('slider'), { target: { value: 12 } });
 
     expect(mockPlayer.seek).toHaveBeenLastCalledWith(12);
-  });
-
-  // TODO cleanup after we switch PassageDetailArtifacts to the new design
-  it('reports playing changes', () => {
-    const onPlayingChange = jest.fn();
-    const { rerender } = render(
-      <MinimalAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
-    );
-    mockPlayer = player({ status: LazyAudioStatus.Playing });
-    rerender(
-      <MinimalAudioPlayer srcMediaId="m1" onPlayingChange={onPlayingChange} />
-    );
-    expect(onPlayingChange).toHaveBeenLastCalledWith(true);
-  });
-
-  // TODO cleanup after we switch PassageDetailArtifacts to the new design
-  it('exposes play, pause and toggle through its ref', () => {
-    const ref = createRef<MinimalAudioPlayerHandle>();
-    render(<MinimalAudioPlayer ref={ref} srcMediaId="m1" />);
-
-    act(() => ref.current?.toggle());
-    act(() => ref.current?.pause());
-    act(() => ref.current?.play());
-
-    expect(mockPlayer.toggle).toHaveBeenCalled();
-    expect(mockPlayer.pause).toHaveBeenCalled();
-    expect(mockPlayer.play).toHaveBeenCalled();
   });
 });

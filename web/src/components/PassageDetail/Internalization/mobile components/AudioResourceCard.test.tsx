@@ -7,8 +7,8 @@ jest.mock('../../../MinimalAudioPlayer', () => ({
   __esModule: true,
   default: jest.fn(() => null),
 }));
-jest.mock('../../../../utils/useMobile', () => ({
-  useMobile: () => ({ isMobileWidth: false }),
+jest.mock('./ResourceCardEditActions', () => ({
+  ResourceCardEditActions: () => null,
 }));
 jest.mock('../../../../control/WrapTitle', () => ({
   WrapTitle: ({ children }: { children: React.ReactNode }) => (

@@ -107,7 +107,7 @@ const mockStore = createStore(
   })
 );
 
-const mount = (variant: 'table' | 'card', texts: ReferenceText[]) => {
+const mount = (texts: ReferenceText[]) => {
   const memory = createMockMemory({
     project: [
       {
@@ -160,7 +160,7 @@ const mount = (variant: 'table' | 'card', texts: ReferenceText[]) => {
           <PassageDetailContext.Provider
             value={{ state: ctxState, setState: cy.stub() }}
           >
-            <ReferenceTextRows variant={variant} />
+            <ReferenceTextRows />
           </PassageDetailContext.Provider>
         </OrbitContext.Provider>
       </GlobalProvider>
@@ -178,7 +178,7 @@ describe('ReferenceTextRows', () => {
 
   it('lists Primary then Secondary and shows the Primary text when no voice speaks it', () => {
     serveJohn3();
-    mount('table', [bsb, arabic]);
+    mount([bsb, arabic]);
     // Only a voice for another language, so the result doesn't depend on the machine
     cy.window().then((win) => {
       cy.stub(win.speechSynthesis, 'getVoices').returns([
@@ -192,8 +192,8 @@ describe('ReferenceTextRows', () => {
       ]);
     });
     cy.get('[data-cy="reference-text-secondary"]')
-      .contains('الكتاب المقدس')
-      .should('have.attr', 'dir', 'rtl');
+      .contains('[dir="rtl"]', 'الكتاب المقدس')
+      .should('exist');
     cy.get('[data-cy="reference-text-primary"]')
       .find('button[aria-label="Play"]')
       .click();
@@ -207,7 +207,7 @@ describe('ReferenceTextRows', () => {
     cy.intercept('GET', helloAoChapterUrl('BSB', 'JHN', 3), {
       statusCode: 503,
     }).as('failed');
-    mount('table', [bsb]);
+    mount([bsb]);
     cy.wait('@failed');
     cy.contains('The passage could not be loaded.').should('be.visible');
     serveJohn3();
@@ -226,7 +226,7 @@ describe('ReferenceTextRows', () => {
     cy.intercept('GET', helloAoChapterUrl('arb_vdv', 'JHN', 3), {
       body: { ...jhn3, translation: { id: 'arb_vdv' } },
     });
-    mount('card', [arabic]);
+    mount([arabic]);
     cy.get('[data-cy="reference-text-primary"]')
       .should('contain.text', 'Primary Reference Text')
       .find('button[aria-label="View"]')

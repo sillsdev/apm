@@ -39,7 +39,7 @@ import PassageDetailStepComplete from './PassageDetailStepComplete';
 import PassageDetailChooser from './PassageDetailChooser';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
-import PassageDetailArtifacts from './Internalization/PassageDetailArtifacts';
+import PassageDetailArtifactsMobile from './Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailPrompt from './Prompt/PassageDetailPrompt';
 import PassageDetailParatextIntegration from './PassageDetailParatextIntegration';
 import { PassageDetailDiscuss } from './PassageDetailDiscuss';
@@ -70,7 +70,7 @@ function ChooserStepBody({
   sectionArr: SectionArray;
   plans: Plan[];
 }) {
-  if (tool === ToolSlug.Resource) return <PassageDetailArtifacts />;
+  if (tool === ToolSlug.Resource) return <PassageDetailArtifactsMobile />;
   if (tool === ToolSlug.Paratext) return <PassageDetailParatextIntegration />;
   if (tool === ToolSlug.Export) {
     return (

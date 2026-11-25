@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
-import PassageDetailArtifacts from './PassageDetailArtifacts';
+import PassageDetailArtifacts from './PassageDetailsArtifactsMobile';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { createAppTheme } from '../../../theme';
 import { fireEvent } from '@testing-library/dom';
@@ -81,6 +81,15 @@ jest.mock('../../../crud', () => ({
   ArtifactCategoryType: { Resource: 'resource' },
   usePlanType: () => () => ({ scripture: false, flat: false }),
   mediaFileName: jest.fn(() => ''),
+  useLocalizedArtifactCategory: () => (slug: string) => slug,
+  ArtifactTypeSlug: { SharedResource: 'sharedresource' },
+}));
+
+jest.mock('./useRowTypeLabel', () => ({
+  useRowTypeLabel:
+    () =>
+    ({ isGeneralResource }: { isGeneralResource: boolean }) =>
+      isGeneralResource ? 'General' : 'Linked',
 }));
 
 const mockArtifactTypesResult = [
@@ -128,6 +137,7 @@ jest.mock('../../../utils', () => ({
   getSegments: jest.fn(() => '[]'),
   NamedRegions: { ProjectResource: 'ProjectResource' },
   isUrl: jest.fn(() => true),
+  useMobile: () => ({ isMobileWidth: false }),
 }));
 
 jest.mock('../../../control', () => ({
@@ -137,7 +147,10 @@ jest.mock('../../../control', () => ({
   }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props}>{children}</button>
   ),
+  GrowingSpacer: () => null,
 }));
+
+jest.mock('../../../control/IconMenu', () => () => null);
 
 jest.mock('../../../hoc/VertListDnd', () => ({
   VertListDnd: ({ children }: { children?: React.ReactNode }) => (
@@ -167,10 +180,14 @@ jest.mock('./AddResourceWizard', () => ({
   ),
 }));
 
-jest.mock('./SortableHeader', () => () => null);
 jest.mock('./ReferenceTextRows', () => ({ ReferenceTextRows: () => null }));
-jest.mock('.', () => ({
-  SortableItem: () => null,
+jest.mock('./mobile components/AudioResourceCard', () => ({
+  AudioResourceCard: () => null,
+}));
+jest.mock('./mobile components/TextResourceCard', () => ({
+  TextResourceCard: ({ badge }: { badge?: string }) => (
+    <div data-testid="text-card">{badge}</div>
+  ),
 }));
 jest.mock('../../MediaDisplay', () => () => null);
 jest.mock('./SelectSharedResource', () => () => null);
@@ -178,12 +195,8 @@ jest.mock('./ResourceData', () => () => null);
 jest.mock('../../AlertDialog', () => () => null);
 jest.mock('./FindTabs', () => () => null);
 jest.mock('./FindBibleBrain', () => () => null);
-jest.mock('../../MinimalAudioPlayer', () => () => null);
-jest.mock('./PassageResourceButton', () => ({
-  PassageResourceButton: () => null,
-}));
 jest.mock('../../../control/MarkDownView', () => ({
-  MarkDownView: () => null,
+  CompactMarkDownView: () => null,
 }));
 
 const mockUsePassageDetailContext =
@@ -197,17 +210,9 @@ describe('PassageDetailArtifacts', () => {
       rowData: [],
       section: { id: 'section-1', attributes: { level: 0 } },
       passage: { id: 'passage-1', attributes: { reference: 'GEN 1:1' } },
-      setSelected: jest.fn(),
-      playItem: '',
-      setPlayItem: jest.fn(),
-      setMediaSelected: jest.fn(),
-      itemPlaying: false,
-      setItemPlaying: jest.fn(),
       currentstep: {} as never,
       toggleDone: jest.fn(),
       forceRefresh: jest.fn(),
-      handleItemPlayEnd: jest.fn(),
-      handleItemTogglePlay: jest.fn(),
       sharedResource: undefined,
     } as never);
   });
@@ -231,5 +236,51 @@ describe('PassageDetailArtifacts', () => {
     const launch = screen.getByTestId('wizard-launch');
     expect(launch).toHaveTextContent('"kind":"add"');
     expect(launch).toHaveTextContent('"action":"audio"');
+  });
+
+  it('shows the type badge on a linked resource', () => {
+    mockUsePassageDetailContext.mockReturnValue({
+      ...mockUsePassageDetailContext(),
+      rowData: [
+        {
+          id: 'linked-1',
+          isResource: true,
+          passageId: '',
+          artifactTypeSlug: 'sharedresource',
+          isGeneralResource: false,
+          mediafile: { attributes: { contentType: 'text/markdown' } },
+        },
+        {
+          id: 'plain-1',
+          isResource: true,
+          passageId: '',
+          artifactTypeSlug: 'resource',
+          isGeneralResource: false,
+          mediafile: { attributes: { contentType: 'text/markdown' } },
+        },
+      ],
+    } as never);
+    renderComponent();
+    const [linked, plain] = screen.getAllByTestId('text-card');
+    expect(linked).toHaveTextContent('Linked');
+    expect(plain).toBeEmptyDOMElement();
+  });
+
+  it('shows the type badge on a chunk from a general resource', () => {
+    mockUsePassageDetailContext.mockReturnValue({
+      ...mockUsePassageDetailContext(),
+      rowData: [
+        {
+          id: 'general-1',
+          isResource: true,
+          passageId: '',
+          artifactTypeSlug: 'resource',
+          isGeneralResource: true,
+          mediafile: { attributes: { contentType: 'text/markdown' } },
+        },
+      ],
+    } as never);
+    renderComponent();
+    expect(screen.getByTestId('text-card')).toHaveTextContent('General');
   });
 });

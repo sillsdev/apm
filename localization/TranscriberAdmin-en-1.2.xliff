@@ -6353,13 +6353,6 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.action">
-            <source>Action</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">AddResource.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="passageDetailArtifacts.activity">
             <source>Add Activity</source>
             <target/>
@@ -6486,13 +6479,6 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
-         <trans-unit id="passageDetailArtifacts.completed">
-            <source>Completed</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">PassageMedia.tsx</context>
-            </context-group>
-         </trans-unit>
       	<trans-unit id="passageDetailArtifacts.configure">
       		<source>Configure General</source>
       		<target/>
@@ -6850,13 +6836,6 @@
                <context context-type="sourcefile">AddResource.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="passageDetailArtifacts.resource">
-            <source>Resource</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">AddResource.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="passageDetailArtifacts.resources">
             <source>Resources</source>
             <target/>
@@ -6976,13 +6955,6 @@
                <context context-type="sourcefile">AddResource.tsx</context>
             </context-group>
          </trans-unit>
-      	<trans-unit id="passageDetailArtifacts.type">
-      		<source>Type</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">PassageMedia.tsx</context>
-      		</context-group>
-      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.tip1a">
       		<source>Available for:</source>
       		<target/>

@@ -30,7 +30,6 @@ import {
   IArtifactCategory,
   ArtifactCategoryType,
   usePlanType,
-  useRole,
   ArtifactTypeSlug,
   mediaFileName,
 } from '../../../crud';
@@ -170,14 +169,12 @@ export function PassageDetailArtifactsMobile() {
     () => hasPermission && (!offline || offlineOnly),
     [hasPermission, offline, offlineOnly]
   );
-  const { userIsAdmin } = useRole();
   const rowTypeLabel = useRowTypeLabel();
   const localizedArtifactCategory = useLocalizedArtifactCategory();
-  // Admins see badges for resources that are linked (shared) or general; other users don't.
+  // Resources that are linked (shared) or general carry a type badge.
   const typeBadge = (row: IRow) =>
-    userIsAdmin &&
-    (row.isGeneralResource ||
-      row.artifactTypeSlug === ArtifactTypeSlug.SharedResource)
+    row.isGeneralResource ||
+    row.artifactTypeSlug === ArtifactTypeSlug.SharedResource
       ? rowTypeLabel(row)
       : undefined;
   const [biblebrainClose, setBiblebrainClose] = useState(false);
@@ -603,8 +600,8 @@ export function PassageDetailArtifactsMobile() {
   );
 
   return (
-    <Box sx={{ maxWidth: '800px', margin: '0 auto' }}>
-      <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
+    <Box sx={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+      <Stack sx={{ width: '100%', pt: 2 }} direction="row" spacing={1}>
         {isScripture && (
           <Box>
             <Button onClick={() => handleFindVisible(true)}>
@@ -626,7 +623,6 @@ export function PassageDetailArtifactsMobile() {
       </Stack>
       <Box sx={{ width: '100%' }}>
         <ReferenceTextRows
-          variant="card"
           showDragHandle={modifiable}
           expandedId={expandedArtifactNameId}
           setExpandedId={setExpandedArtifactNameId}
@@ -692,6 +688,7 @@ export function PassageDetailArtifactsMobile() {
         />
       )}
       <BigDialog
+        // TODO cleanup: hard-coded English; localize. Maybe when we switch over this dialog to its new design.
         title={`Research - ${passageRef(passage) || ''}`.trim()}
         titleVariant="h6"
         description={
@@ -746,6 +743,7 @@ export function PassageDetailArtifactsMobile() {
         onCancel={handleEditCancel}
         bp={BigDialogBp.mobile}
         showBottomCancelButton={false}
+        disableBackdropClose
       >
         <ResourceData
           media={mediaRef.current}
