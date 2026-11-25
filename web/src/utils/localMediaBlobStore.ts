@@ -111,7 +111,8 @@ export const isLocalMediaBlobRecord = (
  * (`undefined`) are a normal not-found and are not reported.
  */
 const checkedRow = (value: unknown): LocalMediaBlobRecord | undefined => {
-  if (value === undefined || isLocalMediaBlobRecord(value)) return value;
+  if (value === undefined) return undefined;
+  if (isLocalMediaBlobRecord(value)) return value;
   const key =
     typeof value === 'object' && value !== null && 'key' in value
       ? String(value.key)
