@@ -18,7 +18,9 @@ jest.mock('../auth/bugsnagClient', () => ({ __esModule: true, default: {} }));
 import {
   dropQueuedEditsCarriedByItf,
   holdRemoteQueue,
+  holdRemoteQueueUntilReconnect,
   isRemoteQueueHeld,
+  releaseRemoteQueueOnReconnect,
   isTaskCarriedByItf,
   itfRecordKeys,
 } from './itfQueue';
@@ -201,6 +203,57 @@ describe('holdRemoteQueue (TT-7911)', () => {
     const release = holdRemoteQueue(undefined);
     expect(isRemoteQueueHeld()).toBe(true);
     release();
+    expect(isRemoteQueueHeld()).toBe(false);
+  });
+
+  it('stays held until every holder releases (disconnect hold + ITF)', () => {
+    const queue = new FakeQueue([editPassage]);
+    const releaseDisconnect = holdRemoteQueue(remoteWith(queue));
+    const releaseItf = holdRemoteQueue(remoteWith(queue));
+    releaseDisconnect();
+    // The other holder's release must not undo the ITF's hold.
+    expect(isRemoteQueueHeld()).toBe(true);
+    expect(queue.autoProcess).toBe(false);
+    releaseDisconnect();
+    expect(isRemoteQueueHeld()).toBe(true);
+    releaseItf();
+    expect(isRemoteQueueHeld()).toBe(false);
+    expect(queue.autoProcess).toBe(true);
+  });
+});
+
+describe('holdRemoteQueueUntilReconnect (TT-7911)', () => {
+  afterEach(() => releaseRemoteQueueOnReconnect());
+
+  it('holds once however many disconnects are seen, and one reconnect releases', () => {
+    const queue = new FakeQueue([editPassage]);
+    holdRemoteQueueUntilReconnect(remoteWith(queue));
+    holdRemoteQueueUntilReconnect(remoteWith(queue));
+    expect(isRemoteQueueHeld()).toBe(true);
+    expect(queue.autoProcess).toBe(false);
+    releaseRemoteQueueOnReconnect();
+    expect(isRemoteQueueHeld()).toBe(false);
+    expect(queue.autoProcess).toBe(true);
+  });
+
+  it('a later disconnect with a recreated remote holds that queue too', () => {
+    const before = new FakeQueue([editPassage]);
+    const after = new FakeQueue([editPassage]);
+    holdRemoteQueueUntilReconnect(remoteWith(before));
+    holdRemoteQueueUntilReconnect(remoteWith(after));
+    expect(after.autoProcess).toBe(false);
+    expect(before.autoProcess).toBe(false);
+    releaseRemoteQueueOnReconnect();
+    expect(isRemoteQueueHeld()).toBe(false);
+    expect(after.autoProcess).toBe(true);
+  });
+
+  it('a reconnect with no disconnect hold changes nothing', () => {
+    const queue = new FakeQueue([editPassage]);
+    const releaseItf = holdRemoteQueue(remoteWith(queue));
+    releaseRemoteQueueOnReconnect();
+    expect(isRemoteQueueHeld()).toBe(true);
+    releaseItf();
     expect(isRemoteQueueHeld()).toBe(false);
   });
 });

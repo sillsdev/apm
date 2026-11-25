@@ -8,6 +8,7 @@ import {
   shouldRunItfSync,
 } from './needItfSync';
 import { LocalKey } from './localUserKey';
+import { isRemoteQueueHeld, releaseRemoteQueueOnReconnect } from './itfQueue';
 
 const mockLogError = jest.fn();
 jest.mock('./logErrorService', () => ({
@@ -150,6 +151,7 @@ describe('markNeedItfSyncOnDisconnect (TT-7905)', () => {
   beforeEach(() => {
     localStorage.clear();
   });
+  afterEach(() => releaseRemoteQueueOnReconnect());
   const remote = (length: number) =>
     ({ requestQueue: { length } }) as unknown as JSONAPISource;
 
@@ -183,5 +185,65 @@ describe('markNeedItfSyncOnDisconnect (TT-7905)', () => {
       remote: remote(2),
     });
     expect(needItfSync()).toBe(false);
+  });
+});
+
+/**
+ * TT-7911: the queue is held from the moment the disconnect marks the ITF as
+ * due, not only once the ITF starts. Otherwise a retry timer firing after the
+ * network returns, but before the reconnect edge is seen, sends a queued edit
+ * the ITF then sends again.
+ */
+describe('markNeedItfSyncOnDisconnect holds the queue (TT-7911)', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => releaseRemoteQueueOnReconnect());
+  const remote = (length: number) =>
+    ({
+      requestQueue: { length, autoProcess: true },
+    }) as unknown as JSONAPISource;
+
+  it('holds the queue when the disconnect marks the ITF as needed', () => {
+    const r = remote(2);
+    markNeedItfSyncOnDisconnect({
+      isElectron: true,
+      offline: false,
+      remote: r,
+    });
+    expect(isRemoteQueueHeld()).toBe(true);
+    expect(r.requestQueue.autoProcess).toBe(false);
+  });
+
+  it('holds when an earlier offline session already left the ITF due', () => {
+    markNeedItfSync();
+    markNeedItfSyncOnDisconnect({
+      isElectron: true,
+      offline: false,
+      remote: remote(0),
+    });
+    expect(isRemoteQueueHeld()).toBe(true);
+  });
+
+  it('does not hold when the queue is empty and no ITF is due', () => {
+    markNeedItfSyncOnDisconnect({
+      isElectron: true,
+      offline: false,
+      remote: remote(0),
+    });
+    expect(isRemoteQueueHeld()).toBe(false);
+  });
+
+  it('does not hold on web or in offline-only mode', () => {
+    markNeedItfSync();
+    markNeedItfSyncOnDisconnect({
+      isElectron: false,
+      offline: false,
+      remote: remote(2),
+    });
+    markNeedItfSyncOnDisconnect({
+      isElectron: true,
+      offline: true,
+      remote: remote(2),
+    });
+    expect(isRemoteQueueHeld()).toBe(false);
   });
 });

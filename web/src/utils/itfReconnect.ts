@@ -2,7 +2,11 @@ import type JSONAPISource from '@orbit/jsonapi';
 import { isElectron } from '../../api-variable';
 import type { ItfSyncFile } from '../store/importexport/itfSyncExport';
 import { clearNeedItfSync, needItfSync, shouldRunItfSync } from './needItfSync';
-import { dropQueuedEditsCarriedByItf, holdRemoteQueue } from './itfQueue';
+import {
+  dropQueuedEditsCarriedByItf,
+  holdRemoteQueue,
+  releaseRemoteQueueOnReconnect,
+} from './itfQueue';
 
 /**
  * TT-7911: an ITF built and sent when a running session gets its connection
@@ -178,11 +182,7 @@ export const runItfReconnect = (): Promise<void> => {
   return running;
 };
 
-/**
- * Called on useCheckOnline's offline→online edge. True when an ITF is
- * running or was started, in which case the caller must not replay the queue.
- */
-export const startItfOnReconnect = ({ offline }: { offline: boolean }) => {
+const startIfDue = (offline: boolean) => {
   if (running !== undefined) return true;
   if (
     !runner ||
@@ -193,6 +193,19 @@ export const startItfOnReconnect = ({ offline }: { offline: boolean }) => {
   // runOnce reports its own failures; the promise never rejects.
   void runItfReconnect();
   return true;
+};
+
+/**
+ * Called on useCheckOnline's offline→online edge. True when an ITF is
+ * running or was started, in which case the caller must not replay the queue.
+ * Always ends the hold taken at the disconnect: a run started here took its
+ * own hold synchronously (before its first await) and releases it when it
+ * settles; otherwise the caller replays the queue as before.
+ */
+export const startItfOnReconnect = ({ offline }: { offline: boolean }) => {
+  const started = startIfDue(offline);
+  releaseRemoteQueueOnReconnect();
+  return started;
 };
 
 /** Stops the ITF if the server has not started applying it. */

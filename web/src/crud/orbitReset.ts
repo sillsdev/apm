@@ -8,8 +8,8 @@ export const orbitReset = async (
   setOrbitRetries: (retries: number) => void
 ) => {
   setOrbitRetries(OrbitNetworkErrorRetries);
-  // TT-7911: a reconnect ITF is sending these edits; it replays what is left
-  // (or leaves the queue parked) when it settles.
+  // TT-7911: held from a disconnect that made an ITF due, or while that ITF
+  // runs. The reconnect edge or the ITF's release replays what is left.
   if (isRemoteQueueHeld()) return;
   try {
     const queue = remote?.requestQueue;

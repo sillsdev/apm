@@ -258,4 +258,53 @@ describe('updateError — held by a reconnect ITF', () => {
       release();
     }
   });
+
+  it('waits instead of giving up while held (no skip, rollback or retry)', () => {
+    const { retry, skip, memory, orbitError, failTimes } = setup();
+    const release = holdRemoteQueue(undefined);
+    try {
+      failTimes(makeTransform('tx-held'), OrbitNetworkErrorRetries * 3);
+    } finally {
+      release();
+    }
+
+    expect(retry).not.toHaveBeenCalled();
+    expect(skip).not.toHaveBeenCalled();
+    expect(memory.rollback).not.toHaveBeenCalled();
+    const fatal = orbitError.mock.calls.filter(
+      (c) => (c[0] as IApiError)?.response?.status !== Severity.retry
+    );
+    expect(fatal).toHaveLength(0);
+  });
+
+  it('attempts before and during a hold do not count toward giving up', () => {
+    const { retry, skip, handler, failTimes } = setup();
+    const tx = makeTransform('tx-held');
+    failTimes(tx, OrbitNetworkErrorRetries - 1);
+    // The last allowed attempt's timer is pending when the disconnect holds.
+    handler(tx, new Error('Failed to fetch'));
+    const release = holdRemoteQueue(undefined);
+    jest.runOnlyPendingTimers();
+    release();
+    retry.mockClear();
+
+    // The release replays the queue; a flaky link gets the full budget again.
+    failTimes(tx, OrbitNetworkErrorRetries);
+
+    expect(skip).not.toHaveBeenCalled();
+    expect(retry).toHaveBeenCalledTimes(OrbitNetworkErrorRetries);
+  });
+
+  it('a retry timer from before a hold does not fire after its release', () => {
+    const { retry, handler } = setup();
+
+    handler(makeTransform('tx-held'), new Error('Failed to fetch'));
+    const release = holdRemoteQueue(undefined);
+    release();
+    // The release's own replay sends the queue; a second retry() could
+    // resend an in-flight request.
+    jest.runOnlyPendingTimers();
+
+    expect(retry).not.toHaveBeenCalled();
+  });
 });

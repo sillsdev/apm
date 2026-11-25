@@ -446,7 +446,7 @@ export async function electronExport(
         break;
       }
     }
-    return { zip, numRecs, numFiltered, written };
+    return { numRecs, numFiltered, written };
   };
 
   let projects: ProjectD[];
@@ -490,97 +490,108 @@ export async function electronExport(
   } else {
     projects = [getProjRec(projectid)];
   }
-  let changedRecs = 0;
-  const exportedRecords: RecordIdentity[] = [];
-  for (let ix: number = 0; ix < projects.length; ix++) {
-    const { zip, numRecs, numFiltered, written } = await createZip(
-      await ipc?.zipOpen(),
-      projects[ix],
-      exportType
-    );
-    const filename =
-      exportType === ExportType.ITFBACKUP
-        ? itfb_fileName(projects[ix])
-        : [ExportType.AUDIO, ExportType.ELAN].includes(exportType)
-          ? fileName(
-              projects[ix],
-              `${localizedArtifact}_${exportType}`,
-              '',
-              'zip'
-            )
-          : exportType === ExportType.ITF
-            ? fileName(
-                projects[ix],
-                localizedArtifact,
-                importedDate?.toISO() ?? '',
-                exportType
-              )
-            : fileName(projects[ix], localizedArtifact, '', exportType);
-    changedRecs += numRecs;
-    if (backupZip) {
-      if (numRecs) {
-        await ipc?.zipAddZip(
-          backupZip,
-          filename,
+  // Every zipOpen handle lives in a main-process map until zipClose, so each
+  // one is closed in a finally — reconnect sync runs this repeatedly.
+  try {
+    let changedRecs = 0;
+    const exportedRecords: RecordIdentity[] = [];
+    for (let ix: number = 0; ix < projects.length; ix++) {
+      const zip = await ipc?.zipOpen();
+      try {
+        const { numRecs, numFiltered, written } = await createZip(
           zip,
-          projects[ix].attributes.name
-        );
-        exportedRecords.push(...written);
-      }
-      if (numFiltered) {
-        const itf = await createZip(
-          await ipc?.zipOpen(),
           projects[ix],
-          ExportType.ITF
+          exportType
         );
-        await ipc?.zipAddZip(
-          backupZip,
-          fileName(
-            projects[ix],
-            localizedArtifact,
-            importedDate?.toISO() ?? '',
-            ExportType.ITF
-          ),
-          itf.zip,
-          projects[ix].attributes.name
-        );
+        const filename =
+          exportType === ExportType.ITFBACKUP
+            ? itfb_fileName(projects[ix])
+            : [ExportType.AUDIO, ExportType.ELAN].includes(exportType)
+              ? fileName(
+                  projects[ix],
+                  `${localizedArtifact}_${exportType}`,
+                  '',
+                  'zip'
+                )
+              : exportType === ExportType.ITF
+                ? fileName(
+                    projects[ix],
+                    localizedArtifact,
+                    importedDate?.toISO() ?? '',
+                    exportType
+                  )
+                : fileName(projects[ix], localizedArtifact, '', exportType);
+        changedRecs += numRecs;
+        if (backupZip) {
+          if (numRecs) {
+            await ipc?.zipAddZip(
+              backupZip,
+              filename,
+              zip,
+              projects[ix].attributes.name
+            );
+            exportedRecords.push(...written);
+          }
+          if (numFiltered) {
+            const itfZip = await ipc?.zipOpen();
+            try {
+              await createZip(itfZip, projects[ix], ExportType.ITF);
+              await ipc?.zipAddZip(
+                backupZip,
+                fileName(
+                  projects[ix],
+                  localizedArtifact,
+                  importedDate?.toISO() ?? '',
+                  ExportType.ITF
+                ),
+                itfZip,
+                projects[ix].attributes.name
+              );
+            } finally {
+              if (itfZip) await ipc?.zipClose(itfZip);
+            }
+          }
+        } else {
+          if (numRecs) {
+            const where = await dataPath(filename);
+            await createPathFolder(where);
+            if (sendProgress && writingmsg) sendProgress(writingmsg);
+            await ipc?.zipWrite(zip, where);
+            return BuildFileResponse(
+              where,
+              filename,
+              undefined,
+              changedRecs,
+              numFiltered
+            );
+          } else if (nodatamsg && projects.length === 1)
+            throw new Error(nodatamsg);
+        }
+      } finally {
+        if (zip) await ipc?.zipClose(zip);
       }
-    } else {
-      if (numRecs) {
-        const where = await dataPath(filename);
-        await createPathFolder(where);
-        if (sendProgress && writingmsg) sendProgress(writingmsg);
-        await ipc?.zipWrite(zip, where);
-        await ipc?.zipClose(zip);
-        return BuildFileResponse(
-          where,
-          filename,
-          undefined,
-          changedRecs,
-          numFiltered
-        );
-      } else if (nodatamsg && projects.length === 1) throw new Error(nodatamsg);
     }
+    const backupWhere = await dataPath(backupName);
+    await createPathFolder(backupWhere);
+    if (backupZip) {
+      if (sendProgress && writingmsg) sendProgress(writingmsg);
+      await ipc?.zipWrite(backupZip, backupWhere);
+    }
+    const buffer =
+      exportType === ExportType.ITF && backupZip
+        ? await ipc?.zipToBuffer(backupZip)
+        : undefined;
+    return {
+      ...BuildFileResponse(
+        backupWhere,
+        backupName,
+        buffer as Buffer,
+        changedRecs,
+        0
+      ),
+      records: exportedRecords,
+    };
+  } finally {
+    if (backupZip) await ipc?.zipClose(backupZip);
   }
-  const backupWhere = await dataPath(backupName);
-  await createPathFolder(backupWhere);
-  if (backupZip) {
-    if (sendProgress && writingmsg) sendProgress(writingmsg);
-    await ipc?.zipWrite(backupZip, backupWhere);
-  }
-  const buffer =
-    exportType === ExportType.ITF
-      ? await ipc?.zipToBuffer(backupZip as string)
-      : undefined;
-  await ipc?.zipClose(backupZip as string);
-  return {
-    ...BuildFileResponse(
-      backupWhere,
-      backupName,
-      buffer as Buffer,
-      changedRecs,
-      0
-    ),
-    records: exportedRecords,
-  };
 }

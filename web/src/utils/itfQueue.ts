@@ -6,26 +6,67 @@ import bugsnagClient from '../auth/bugsnagClient';
 
 /**
  * TT-7911: while an ITF holding queued offline edits is built and sent, the
- * remote queue must not replay them (no duplicates). Only one hold exists at a
- * time; the replay paths (orbitReset, updateError's retry timer, queryError)
- * check it before calling `requestQueue.retry()`, which ignores autoProcess.
+ * remote queue must not replay them (no duplicates). The replay paths
+ * (orbitReset, updateError's retry timer, queryError) check the hold before
+ * calling `requestQueue.retry()`, which ignores autoProcess.
+ *
+ * Two owners can hold at once: the disconnect that makes an ITF due (held
+ * until the reconnect edge) and the ITF run itself. The queue is held until
+ * every holder has released. The hold lives in memory only; a restart starts
+ * unheld and the startup ITF settles the persisted queue.
  */
-let heldQueue: { queue?: JSONAPISource['requestQueue'] } | undefined;
+const holders = new Set<symbol>();
+const heldQueues = new Set<JSONAPISource['requestQueue']>();
+/** Bumped when a hold begins, so a retry timer from before it can tell. */
+let holdGeneration = 0;
 
-export const isRemoteQueueHeld = () => heldQueue !== undefined;
+export const isRemoteQueueHeld = () => holders.size > 0;
+
+export const getRemoteQueueHoldGeneration = () => holdGeneration;
 
 /** Stops the remote queue sending until the returned release is called. */
 export const holdRemoteQueue = (remote: JSONAPISource | undefined) => {
-  const hold = { queue: remote?.requestQueue };
-  heldQueue = hold;
-  // autoProcess off: an edit pushed meanwhile waits behind the held tasks
-  // instead of being sent ahead of them.
-  if (hold.queue) hold.queue.autoProcess = false;
+  const holder = Symbol('remote-queue-hold');
+  if (holders.size === 0) holdGeneration += 1;
+  holders.add(holder);
+  const queue = remote?.requestQueue;
+  if (queue) {
+    heldQueues.add(queue);
+    // autoProcess off: an edit pushed meanwhile waits behind the held tasks
+    // instead of being sent ahead of them.
+    queue.autoProcess = false;
+  }
   return () => {
-    if (heldQueue !== hold) return;
-    heldQueue = undefined;
-    if (hold.queue) hold.queue.autoProcess = true;
+    if (!holders.delete(holder) || holders.size > 0) return;
+    heldQueues.forEach((q) => {
+      q.autoProcess = true;
+    });
+    heldQueues.clear();
   };
+};
+
+let releaseDisconnectHold: (() => void) | undefined;
+
+/**
+ * Held from the disconnect that makes an ITF due, so a retry timer firing
+ * after the network returns but before the reconnect edge is noticed cannot
+ * send an edit the ITF then sends again. Repeated disconnects keep one hold:
+ * the new one is taken before the old is released, so the queue never
+ * resumes in between (and a remote recreated by a re-login is held too).
+ */
+export const holdRemoteQueueUntilReconnect = (
+  remote: JSONAPISource | undefined
+) => {
+  const previous = releaseDisconnectHold;
+  releaseDisconnectHold = holdRemoteQueue(remote);
+  previous?.();
+};
+
+/** The reconnect edge ends the disconnect hold; an ITF it started keeps its own. */
+export const releaseRemoteQueueOnReconnect = () => {
+  const release = releaseDisconnectHold;
+  releaseDisconnectHold = undefined;
+  release?.();
 };
 
 const recordKey = (r: RecordIdentity) => `${r.type}:${r.id}`;

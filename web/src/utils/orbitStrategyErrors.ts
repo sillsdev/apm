@@ -10,7 +10,7 @@ import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { orbitErr, orbitRetry } from './infoMsg';
 import { handleUnauthorized } from './handleUnauthorized';
 import { isUnauthorized, isFetchNetworkError } from './httpError';
-import { isRemoteQueueHeld } from './itfQueue';
+import { getRemoteQueueHoldGeneration, isRemoteQueueHeld } from './itfQueue';
 
 export interface PullStratErrProps {
   tokenCtx: ITokenContext;
@@ -90,7 +90,7 @@ export const queryError =
       setOrbitRetries(OrbitNetworkErrorRetries - 1);
     }
     // TT-7911: retry() resends the head of the shared queue, which may be an
-    // offline edit a reconnect ITF is sending; that ITF settles the queue.
+    // offline edit a reconnect ITF will send; whoever holds it replays it.
     if (isRemoteQueueHeld()) return;
     return remote.requestQueue.retry();
   };
@@ -152,16 +152,17 @@ export const updateError = ({
   const strings = () => getStrings?.() ?? fallbackStrings;
 
   /**
-   * Offline: leave the task failed at the head of the queue, so it and every
-   * later edit wait in order, and keep the change in memory. Each edit pushed
-   * meanwhile re-attempts the head and lands here again. useCheckOnline's
-   * offline→online edge runs orbitReset → requestQueue.retry(), which sends
-   * the queue in order. No timer here: a second retry() would reset an
-   * in-flight request and could send it twice. Online, the retry budget
-   * starts fresh.
+   * Offline, or the queue held for a reconnect ITF (TT-7911): leave the task
+   * failed at the head of the queue, so it and every later edit wait in
+   * order, and keep the change in memory. Waiting is not failing, so the
+   * attempt never counts toward giving up. Each edit pushed meanwhile
+   * re-attempts the head and lands here again. useCheckOnline's
+   * offline→online edge (or the ITF's release) replays the queue in order.
+   * No timer here: a second retry() would reset an in-flight request and
+   * could send it twice. Afterwards the retry budget starts fresh.
    */
-  const holdWhileOffline = (attempt: TransformAttempts): boolean => {
-    if (!isBrowserOffline()) return false;
+  const waitForReconnect = (attempt: TransformAttempts): boolean => {
+    if (!isBrowserOffline() && !isRemoteQueueHeld()) return false;
     attempt.count = 0;
     setOrbitRetries(OrbitNetworkErrorRetries - 1);
     if (!attempt.heldNotified) {
@@ -184,7 +185,7 @@ export const updateError = ({
     } else if (isFetchNetworkError(ex)) {
       const attempt = trackAttempts(transform.id);
       // Already skipped: the task is gone from the queue, nothing to retry.
-      if (attempt.gaveUp || holdWhileOffline(attempt)) return;
+      if (attempt.gaveUp || waitForReconnect(attempt)) return;
       attempt.count += 1;
       if (attempt.count <= OrbitNetworkErrorRetries) {
         //signal to datachanges that we've had a network error
@@ -192,9 +193,18 @@ export const updateError = ({
         // Every attempt is the same problem -- say so once, not every 3s.
         if (attempt.count === 1)
           orbitError(orbitRetry(null, strings().networkRetrySoon));
+        const generation = getRemoteQueueHoldGeneration();
         setTimeout(() => {
-          // TT-7911: a reconnect ITF started meanwhile owns the queue now.
-          if (isRemoteQueueHeld()) return;
+          // TT-7911: a hold that began meanwhile (disconnect or reconnect
+          // ITF) owns the queue, and its release replays it. This attempt
+          // was cut short by the hold, so it does not count.
+          if (
+            isRemoteQueueHeld() ||
+            generation !== getRemoteQueueHoldGeneration()
+          ) {
+            attempt.count = 0;
+            return;
+          }
           remote.requestQueue.retry();
         }, retryDelayMs(attempt.count));
         return;

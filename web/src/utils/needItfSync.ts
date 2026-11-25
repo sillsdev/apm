@@ -1,7 +1,10 @@
 import type JSONAPISource from '@orbit/jsonapi';
 import { LocalKey } from './localUserKey';
 import type { RecordIdentity } from '@orbit/records';
-import { dropQueuedEditsCarriedByItf } from './itfQueue';
+import {
+  dropQueuedEditsCarriedByItf,
+  holdRemoteQueueUntilReconnect,
+} from './itfQueue';
 
 /** True when an online-linked user has been working offline and we should
  *  consider sending an ITF on the next online Electron start. */
@@ -33,7 +36,9 @@ export const shouldRunItfSync = ({
 
 /** A dropped network with queued edits is an offline session too, not only a
  *  manual switch to offline mode. Mark it so the next online start sends an
- *  ITF instead of relying on the persisted queue alone. */
+ *  ITF instead of relying on the persisted queue alone.
+ *  TT-7911: once an ITF is due, hold the queue until the reconnect edge so no
+ *  retry sends an edit the ITF will carry (startItfOnReconnect releases it). */
 export const markNeedItfSyncOnDisconnect = ({
   isElectron,
   offline,
@@ -43,9 +48,9 @@ export const markNeedItfSyncOnDisconnect = ({
   offline: boolean;
   remote: JSONAPISource | undefined;
 }) => {
-  if (isElectron && !offline && (remote?.requestQueue?.length ?? 0) > 0) {
-    markNeedItfSync();
-  }
+  if (!isElectron || offline) return;
+  if ((remote?.requestQueue?.length ?? 0) > 0) markNeedItfSync();
+  if (needItfSync()) holdRemoteQueueUntilReconnect(remote);
 };
 
 /** Decide what happens to the persisted remote queue at an online start.

@@ -92,6 +92,9 @@ async function renameProject(page: Page, to: string) {
   await page.locator('#projectSettings').waitFor({ state: 'hidden' });
 }
 
+/** Longer than updateError's longest retry backoff (30 s). */
+const EDGE_HIDDEN_MS = 35_000;
+
 const needItfSyncFlag = (page: Page) =>
   page.evaluate(() => localStorage.getItem('needItfSync'));
 
@@ -153,42 +156,41 @@ test.describe('TT-7911 desktop sends an ITF when the connection comes back', () 
         .poll(() => needItfSyncFlag(page), { timeout: 60_000 })
         .toBe('true');
 
-      // 5. The network comes back. Record what the app sends from here on.
+      // 5. The network comes back, but the app does not notice yet: AmIOnline
+      //    keeps failing for longer than updateError's longest retry backoff
+      //    (30 s). navigator.onLine stays true under session emulation, so
+      //    retry timers were running for the failed edits. Without the hold
+      //    taken at the disconnect (TT-7911), a timer firing in this window
+      //    would send the queued edits directly and the ITF would then send
+      //    the project rename again.
       const sent: string[] = [];
       const onRequest = (r: Request) => {
         if (r.url().startsWith(API_HOST))
           sent.push(`${r.method()} ${r.url().slice(API_HOST.length)}`);
       };
       page.on('request', onRequest);
-      // navigator.onLine stays true under session emulation, so updateError
-      // keeps a retry timer running for the failed edit. Until the reconnect
-      // is noticed, a timer firing now would send the edit directly (the old
-      // replay). Keep edits refused until the ITF has taken the queue, so
-      // this test measures the ITF path, not that race.
-      let refused = 0;
+      const isAmIOnline = (url: URL) =>
+        url.href.startsWith(`${API_HOST}/api/AmIOnline`);
       await page.unroute(`${API_HOST}/**`);
-      await page.route(`${API_HOST}/**`, (route) => {
-        if (route.request().method() === 'PATCH') {
-          refused += 1;
-          return route.abort('internetdisconnected');
-        }
-        return route.continue();
-      });
+      await page.route(isAmIOnline, (route) =>
+        route.abort('internetdisconnected')
+      );
       await launched.app.evaluate(({ session }) =>
         session.defaultSession.enableNetworkEmulation({ offline: false })
       );
+      await page.waitForTimeout(EDGE_HIDDEN_MS);
+      const patchesBeforeEdge = sent.filter((s) => s.startsWith('PATCH '));
+      console.log(
+        `PATCHes while the reconnect was unnoticed: ${patchesBeforeEdge.length}`
+      );
+      expect(patchesBeforeEdge).toEqual([]);
+      expect(await getRemoteQueueLength(page)).toBeGreaterThan(0);
 
-      // 6. The ITF runs in this session: progress, then success.
+      // 6. The reconnect is noticed and the ITF runs in this session:
+      //    progress, then success.
+      await page.unroute(isAmIOnline);
       const status = page.locator('#itfReconnectStatus');
       await expect(status).toBeVisible({ timeout: 60_000 });
-      await page.unroute(`${API_HOST}/**`);
-      console.log(`PATCHes refused before the ITF started: ${refused}`);
-      // The PATCHes refused above never reached the server.
-      sent.splice(
-        0,
-        sent.length,
-        ...sent.filter((s) => !s.startsWith('PATCH '))
-      );
       await expect(status).toContainText('have been sent', {
         timeout: 180_000,
       });

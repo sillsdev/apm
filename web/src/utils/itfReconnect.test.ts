@@ -29,7 +29,12 @@ import {
   type ItfReconnectRunner,
   type ItfReconnectStatus,
 } from './itfReconnect';
-import { markNeedItfSync, needItfSync } from './needItfSync';
+import {
+  markNeedItfSync,
+  markNeedItfSyncOnDisconnect,
+  needItfSync,
+} from './needItfSync';
+import { isRemoteQueueHeld, releaseRemoteQueueOnReconnect } from './itfQueue';
 import { orbitReset } from '../crud/orbitReset';
 import type { ItfSyncFile } from '../store/importexport/itfSyncExport';
 
@@ -328,5 +333,128 @@ describe('ITF on reconnect (TT-7911)', () => {
     expect(runner.uploadItf).toHaveBeenCalledTimes(2);
     expect(getItfReconnectStatus()).toBe('sent');
     expect(needItfSync()).toBe(false);
+  });
+});
+
+/**
+ * TT-7911 retry race: the disconnect that marks the ITF as due holds the
+ * queue, so no retry can send a carried edit between the network returning
+ * and the reconnect edge being noticed. Every reconnect path ends that hold.
+ */
+describe('queue held from the disconnect (TT-7911)', () => {
+  const remoteOf = (queue: FakeQueue) =>
+    ({ requestQueue: queue }) as unknown as JSONAPISource;
+  const disconnect = (queue: FakeQueue) =>
+    markNeedItfSyncOnDisconnect({
+      isElectron: true,
+      offline: false,
+      remote: remoteOf(queue),
+    });
+
+  beforeEach(() => localStorage.clear());
+  afterEach(async () => {
+    cancelItfReconnect();
+    await whenItfReconnectSettled();
+    dismissItfReconnect();
+    setItfReconnectRunner(undefined);
+    releaseRemoteQueueOnReconnect();
+  });
+
+  it('sends nothing directly before the ITF, and the carried edit only once', async () => {
+    const queue = new FakeQueue([editPassage]);
+    const runner = makeRunner(queue);
+
+    disconnect(queue);
+    // An edit made while offline waits behind the held one.
+    void queue.push(renameTeam);
+    // The network is back but the edge is not seen yet: a replay attempt
+    // (orbitReset, a retry timer) must not send.
+    await orbitReset(remoteOf(queue), jest.fn());
+    expect(queue.retry).not.toHaveBeenCalled();
+    expect(queue.autoProcess).toBe(false);
+
+    expect(startItfOnReconnect({ offline: false })).toBe(true);
+    await whenItfReconnectSettled();
+
+    expect(runner.uploadItf).toHaveBeenCalledTimes(1);
+    // The passage edit went in the ITF only; the team rename replays after.
+    expect(queue.sent).toEqual([renameTeam]);
+    expect(isRemoteQueueHeld()).toBe(false);
+    expect(queue.autoProcess).toBe(true);
+  });
+
+  it.each([
+    ['another import is busy', { canStart: jest.fn(() => false) }, false],
+    ['the session is in offline mode', {}, true],
+  ])(
+    'releases and replays when the ITF cannot start (%s)',
+    async (_case, overrides, offline) => {
+      const queue = new FakeQueue([editPassage]);
+      const runner = makeRunner(queue, overrides);
+      disconnect(queue);
+
+      expect(startItfOnReconnect({ offline })).toBe(false);
+      expect(isRemoteQueueHeld()).toBe(false);
+      expect(queue.autoProcess).toBe(true);
+      // useCheckOnline then replays as before.
+      await orbitReset(remoteOf(queue), jest.fn());
+      expect(queue.sent).toEqual([editPassage]);
+      expect(runner.exportItf).not.toHaveBeenCalled();
+    }
+  );
+
+  it('releases and replays when no runner is registered', async () => {
+    const queue = new FakeQueue([editPassage]);
+    disconnect(queue);
+
+    expect(startItfOnReconnect({ offline: false })).toBe(false);
+    expect(isRemoteQueueHeld()).toBe(false);
+    await orbitReset(remoteOf(queue), jest.fn());
+    expect(queue.sent).toEqual([editPassage]);
+  });
+
+  it('releases and replays when the ITF is no longer due', async () => {
+    const queue = new FakeQueue([editPassage]);
+    makeRunner(queue);
+    disconnect(queue);
+    // e.g. the startup sync sent it meanwhile.
+    localStorage.removeItem('needItfSync');
+
+    expect(startItfOnReconnect({ offline: false })).toBe(false);
+    expect(isRemoteQueueHeld()).toBe(false);
+  });
+
+  it('a failed ITF releases and replays the queue', async () => {
+    const queue = new FakeQueue([editPassage]);
+    makeRunner(queue, {
+      uploadItf: jest.fn(async () => {
+        throw new Error('Network Error');
+      }),
+    });
+    disconnect(queue);
+
+    startItfOnReconnect({ offline: false });
+    await whenItfReconnectSettled();
+
+    expect(isRemoteQueueHeld()).toBe(false);
+    expect(queue.sent).toEqual([editPassage]);
+  });
+
+  it('a disconnect during a running ITF is released when it settles', async () => {
+    markNeedItfSync();
+    const queue = new FakeQueue([editPassage]);
+    const upload = deferred<void>();
+    makeRunner(queue, { uploadItf: jest.fn(() => upload.promise) });
+
+    startItfOnReconnect({ offline: false });
+    await flush();
+    disconnect(queue);
+    // Reconnect joins the running ITF.
+    expect(startItfOnReconnect({ offline: false })).toBe(true);
+    upload.resolve();
+    await whenItfReconnectSettled();
+
+    expect(isRemoteQueueHeld()).toBe(false);
+    expect(queue.autoProcess).toBe(true);
   });
 });

@@ -72,6 +72,8 @@ jest.mock('../context/useGlobal', () => ({
   useGetGlobal: () => (key: string) => globals[key],
 }));
 
+import { isRemoteQueueHeld, releaseRemoteQueueOnReconnect } from './itfQueue';
+
 const mockedAxios = Axios as jest.Mocked<typeof Axios>;
 
 describe('useCheckOnline (TT-7720)', () => {
@@ -172,6 +174,9 @@ describe('useCheckOnline (TT-7720)', () => {
 
     expect(setConnected).toHaveBeenCalledWith(false);
     expect(localStorage.getItem('needItfSync')).toBe('true');
+    // TT-7911: held until the reconnect edge so no retry races the ITF.
+    expect(isRemoteQueueHeld()).toBe(true);
+    releaseRemoteQueueOnReconnect();
     globals.coordinator = savedCoordinator;
   });
 
