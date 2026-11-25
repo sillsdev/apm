@@ -1,5 +1,5 @@
 import { TextField, TextFieldProps, MenuItem, styled } from '@mui/material';
-import { ArtifactTypeSlug, useArtifactType } from '../crud';
+import { ArtifactTypeSlug, useLocalizedArtifactType } from '../crud';
 
 const StyledTextField = styled(TextField)<TextFieldProps>(({ theme }) => ({
   '& #select-export-type': {
@@ -18,7 +18,7 @@ interface IProps {
 
 export const SelectExportType = (props: IProps) => {
   const { exportType, setExportType, exportTypes } = props;
-  const { localizedArtifactType } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
 
   const handleExportType = (e: React.ChangeEvent<HTMLInputElement>) => {
     setExportType(e.target.value as ArtifactTypeSlug);

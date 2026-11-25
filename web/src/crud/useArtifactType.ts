@@ -128,7 +128,6 @@ export const useArtifactType = (org?: string) => {
   return {
     getArtifactTypes,
     addNewArtifactType,
-    localizedArtifactType,
     slugFromId,
     localizedArtifactTypeFromId,
     commentId,

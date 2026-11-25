@@ -1,5 +1,5 @@
 import { Checkbox, FormControlLabel, FormGroup, Box } from '@mui/material';
-import { useArtifactType } from '../../crud';
+import { useLocalizedArtifactType } from '../../crud';
 import React from 'react';
 import { Button, ActionRow, rowSx } from '../../control';
 import { ISharedStrings } from '../../model';
@@ -17,7 +17,7 @@ export default function ConsultantCheckCompare({
   onChange,
   allItems,
 }: IProps) {
-  const { localizedArtifactType } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
   const [state, setState] = React.useState(compare);
   const t: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 

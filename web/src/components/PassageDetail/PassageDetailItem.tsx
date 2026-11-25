@@ -21,6 +21,7 @@ import {
   related,
   remoteIdGuid,
   useArtifactType,
+  useLocalizedArtifactType,
   useFetchMediaUrl,
   useOrgDefaults,
   useRole,
@@ -129,7 +130,8 @@ export function PassageDetailItem(props: IProps) {
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
 
-  const { getTypeId, localizedArtifactType } = useArtifactType();
+  const { getTypeId } = useArtifactType();
+  const localizedArtifactType = useLocalizedArtifactType();
   const { showMessage } = useSnackBar();
   const [recordType, setRecordType] = useState<ArtifactTypeSlug>(
     slugs[0] as ArtifactTypeSlug

@@ -156,7 +156,7 @@ export const SelectRecording = (props: IProps) => {
   }, [inItem]);
 
   // Localized at render time so the label follows a runtime language change.
-  const typeLabel = useRowTypeLabel();
+  const rowTypeLabel = useRowTypeLabel();
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -204,9 +204,9 @@ export const SelectRecording = (props: IProps) => {
                             )
                           )
                         ? 1
-                        : typeLabel(i) < typeLabel(j)
+                        : rowTypeLabel(i) < rowTypeLabel(j)
                           ? -1
-                          : typeLabel(i) > typeLabel(j)
+                          : rowTypeLabel(i) > rowTypeLabel(j)
                             ? 1
                             : i.sourceVersion === j.sourceVersion
                               ? i.artifactName <= j.artifactName
@@ -218,7 +218,7 @@ export const SelectRecording = (props: IProps) => {
                     <RecordingInfo
                       key={r.id}
                       row={r}
-                      typeLabel={typeLabel(r)}
+                      typeLabel={rowTypeLabel(r)}
                       lang={lang}
                       onClick={handleClick}
                       latestVernacular={latestVernacular}
